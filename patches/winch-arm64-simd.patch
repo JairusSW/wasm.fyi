@@ -1,0 +1,31 @@
+diff --git a/adapters/wasmtime/src/features.rs b/adapters/wasmtime/src/features.rs
+index bbdf6c5..932de23 100644
+--- a/adapters/wasmtime/src/features.rs
++++ b/adapters/wasmtime/src/features.rs
+@@ -21,6 +21,10 @@ fn policy(winch: bool) -> Vec<(&'static str, WasmFeatures, bool)> {
+         flags.push(("STACK_SWITCHING", WasmFeatures::STACK_SWITCHING, false));
+         if cfg!(target_arch = "aarch64") {
+             flags.push(("THREADS", WasmFeatures::THREADS, false));
++            // Winch ARM64 has incomplete SIMD lowering (for example lane loads
++            // used by the Wago AssemblyScript corpus). Keep that backend policy
++            // explicit so unavailable cells never become generic compile errors.
++            flags.push(("SIMD", WasmFeatures::SIMD, false));
+         }
+     }
+     flags
+@@ -63,9 +67,13 @@ mod tests {
+             let engine = adapter.engine().unwrap();
+             assert_eq!(describe(winch)["supported"]["TAIL_CALL"], json!(!winch));
+             assert_eq!(Module::validate(&engine, tail).is_ok(), !winch);
+-            assert!(Module::validate(&engine, simd).is_ok());
++            let simd_enabled = !(winch && cfg!(target_arch = "aarch64"));
++            assert_eq!(Module::validate(&engine, simd).is_ok(), simd_enabled);
++            if !simd_enabled {
++                assert_eq!(describe(winch)["supported"]["SIMD"], json!(false));
++            }
+             for bytes in [tail.as_slice(), simd.as_slice()] {
+-                if winch && bytes == tail {
++                if (winch && bytes == tail) || (!simd_enabled && bytes == simd) {
+                     continue;
+                 }
+                 let module = Module::new(&engine, bytes).unwrap();

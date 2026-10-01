@@ -62,3 +62,19 @@ test('directory installation failure restores the previous dataset', async () =>
     assert.equal(await readFile(join(destination, 'index.json'), 'utf8'), 'previous');
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
+
+test('original report seal rejects corrupted and unsealed files before rebuilding', async () => {
+  const { verifySeal } = await import('./lib/verify-seal.mjs');
+  const directory = await mkdtemp(join(tmpdir(), 'wasm-fyi-seal-'));
+  try {
+    const bytes = '{"raw":"immutable"}\n';
+    await writeFile(join(directory, 'data.json'), bytes);
+    await writeFile(join(directory, 'checksums.json'), JSON.stringify({ 'data.json': digest(bytes) }));
+    await verifySeal(directory);
+    await writeFile(join(directory, 'data.json'), bytes + ' ');
+    await assert.rejects(verifySeal(directory), /checksum mismatch/);
+    await writeFile(join(directory, 'data.json'), bytes);
+    await writeFile(join(directory, 'unexpected.json'), '{}');
+    await assert.rejects(verifySeal(directory), /exact archive/);
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});

@@ -6,7 +6,7 @@ if (action === 'status') {
   console.log(gh(['api', `repos/${repository}/actions/runners`, '--jq', '{count: .total_count, runners: [.runners[] | {name,status,labels: [.labels[].name]}]}']));
   console.log(gh(['variable', 'list']));
 } else if (action === 'disable') gh(['variable', 'set', 'WASMBENCH_AUTOMATION_ENABLED', '--body', 'false']);
-else if (action === 'enable' || action === 'run') {
+else if (action === 'enable' || action === 'run' || action === 'check') {
   const pool = JSON.parse(gh(['api', `repos/${repository}/actions/runners`]));
   if (!pool.runners.some(r => r.status === 'online' && r.labels.some(l => l.name === 'wasm-bench'))) {
     throw new Error('Register an online self-hosted runner with the wasm-bench label before enabling collection. See docs/updating.md.');
@@ -26,7 +26,7 @@ else if (action === 'enable' || action === 'run') {
   } else {
     const enabled = gh(['variable', 'get', 'WASMBENCH_AUTOMATION_ENABLED']);
     if (enabled !== 'true') throw new Error('Enable the configured measurement runner with just automation-enable first.');
-    gh(['workflow', 'run', 'update-benchmarks.yml']);
+    gh(['workflow', 'run', 'update-benchmarks.yml', ...(action === 'check' ? ['-f', 'launches=3', '-f', 'samples=1', '-f', 'operations=1', '-f', 'warmup=1'] : [])]);
     console.log('Benchmark refresh workflow dispatched.');
   }
-} else throw new Error('Usage: node scripts/automation.mjs status|enable|disable|run');
+} else throw new Error('Usage: node scripts/automation.mjs status|enable|disable|run|check');

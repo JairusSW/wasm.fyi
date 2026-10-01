@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { homedir } from 'node:os';
+import { verifySeal } from './lib/verify-seal.mjs';
 import { command, config, digest, harness, site } from './lib/wasmbench.mjs';
 
 // Shell quoting is needed only at the SSH boundary; local tools use argv arrays.
@@ -32,7 +33,7 @@ if (action === 'doctor') {
   await mkdir(local, { recursive: true });
   const { root } = await harness();
   const wago = resolve(site, process.env.WAGO_SOURCE || settings.collection.wagoSource);
-  process.stdout.write(ssh(`export PATH="$HOME/.cargo/bin:$HOME/go/bin:$HOME/.local/bin:$PATH"; set -eu; for tool in node go cargo rsync git flock; do command -v "$tool"; done; mkdir -p ${quote(remote + '/harness')} ${quote(remote + '/wago')} ${quote(remote + '/site/scripts/lib')} ${quote(remote + '/site/.wasmbench')}`));
+  process.stdout.write(ssh(`export PATH="$HOME/.cargo/bin:$HOME/go/bin:$HOME/.local/bin:$PATH"; set -eu; for tool in node go cargo rsync git flock; do command -v "$tool"; done; mkdir -p ${quote(remote + '/harness')} ${quote(remote + '/wago')} ${quote(remote + '/site/scripts/lib')} ${quote(remote + '/site/.wasmbench')} ${quote(remote + '/site/patches')}`));
   for (const [name, source] of [['harness', root], ['wago', wago]]) {
     const files = command('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'], { cwd: source });
     if (!files.length) throw new Error(`No source files found for ${name}`);
@@ -47,11 +48,12 @@ if (action === 'doctor') {
     await writeFile(join(local, `${name}-source.json`), JSON.stringify({ source, head: command('git', ['rev-parse', 'HEAD'], { cwd: source }).toString().trim(), status: command('git', ['status', '--porcelain'], { cwd: source }).toString() }, null, 2) + '\n');
   }
   rsync([join(site, 'scripts/bench.mjs'), remotePath(remote + '/site/scripts/')]);
-  rsync([join(site, 'scripts/lib/wasmbench.mjs'), remotePath(remote + '/site/scripts/lib/')]);
+  rsync([join(site, 'scripts/lib/wasmbench.mjs'), join(site, 'scripts/lib/corpus.mjs'), join(site, 'scripts/lib/harness-patch.mjs'), remotePath(remote + '/site/scripts/lib/')]);
+  rsync([join(site, 'patches/winch-arm64-simd.patch'), join(site, 'patches/code-preflight.patch'), remotePath(remote + '/site/patches/')]);
   const remoteConfig = join(local, 'wasmbench.config.json');
   await writeFile(remoteConfig, JSON.stringify({ ...settings, root: '../harness', collection: { ...settings.collection, wagoSource: '../wago' } }, null, 2) + '\n');
   rsync([remoteConfig, remotePath(remote + '/site/')]);
-  const overrides = ['WASMBENCH_RUNTIMES', 'WASMBENCH_SUITE', 'WASMBENCH_LAUNCHES', 'WASMBENCH_SAMPLES', 'WASMBENCH_OPERATIONS', 'WASMBENCH_WARMUP']
+  const overrides = ['WASMBENCH_RUNTIMES', 'WASMBENCH_SUITE', 'WASMBENCH_LAUNCHES', 'WASMBENCH_SAMPLES', 'WASMBENCH_OPERATIONS', 'WASMBENCH_WARMUP', 'WASMBENCH_CORPUS_IDS']
     .filter(key => process.env[key]).map(key => `${key}=${quote(process.env[key])}`).join(' ');
   let completed = false;
   try {
@@ -69,7 +71,10 @@ if (action === 'doctor') {
   if (!/^[a-zA-Z0-9-]+$/.test(leaf)) throw new Error('Invalid remote experiment identity');
   const report = join(local, 'experiments', leaf, 'report');
   const { run } = await harness();
-  process.stdout.write(run('verify-report', '--dir', report));
+  await verifySeal(report);
+  for (const path of ['raw', 'raw-memory', 'code/raw']) process.stdout.write(run('verify', '--run', join(report, path)));
+  // Cross-architecture floating point reductions can differ at the final bit.
+  // refresh-data rebuilds derived reports using the Mac's trusted controller.
   await writeFile(join(site, '.wasmbench/latest-hub-report.txt'), report + '\n');
   console.log(`Hub evidence retained at ${local}; remote archive retained at ~/${remote}`);
 } else throw new Error('Usage: node scripts/hub.mjs doctor|collect');

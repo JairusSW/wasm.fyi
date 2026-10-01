@@ -55,6 +55,7 @@ just setup
 just verify             # checks, tests, verified evidence, static site
 just update             # import configured reports and rebuild transactionally
 just bench-build
+just corpus-check       # 65 Wago benchmarks / 72 exact contracts
 just refresh            # collect fresh passes, retain snapshots and rebuild
 just deploy             # deploy the committed branch to GitHub Pages
 ```

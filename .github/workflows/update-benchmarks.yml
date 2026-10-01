@@ -3,6 +3,23 @@ on:
   schedule:
     - cron: '17 3 * * *'
   workflow_dispatch:
+    inputs:
+      launches:
+        description: 'Independent launches (empty uses corpus default)'
+        type: string
+        required: false
+      samples:
+        description: 'Batches per launch (empty uses corpus default)'
+        type: string
+        required: false
+      operations:
+        description: 'Operations per batch (empty uses corpus default)'
+        type: string
+        required: false
+      warmup:
+        description: 'Warmup batches (empty uses corpus default)'
+        type: string
+        required: false
 permissions:
   contents: read
 concurrency:
@@ -19,6 +36,10 @@ jobs:
     env:
       WASMBENCH_ROOT: ${{ vars.WASMBENCH_ROOT }}
       WAGO_SOURCE: ${{ vars.WAGO_SOURCE }}
+      WASMBENCH_LAUNCHES: ${{ inputs.launches }}
+      WASMBENCH_SAMPLES: ${{ inputs.samples }}
+      WASMBENCH_OPERATIONS: ${{ inputs.operations }}
+      WASMBENCH_WARMUP: ${{ inputs.warmup }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7

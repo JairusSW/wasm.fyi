@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { compact, command, config, digest, exists, installDirectory, json, locked, site } from './lib/wasmbench.mjs';
 import { validateData } from './lib/validate-data.mjs';
 
-const { values, positionals } = parseArgs({ options: { append: { type: 'boolean', default: false } }, allowPositionals: true });
+const { values, positionals } = parseArgs({ options: { append: { type: 'boolean', default: false }, rebuild: { type: 'boolean', default: false } }, allowPositionals: true });
 await locked(async () => {
   const work = join(site, '.wasmbench');
   await mkdir(work, { recursive: true });
@@ -17,7 +17,7 @@ await locked(async () => {
   const priorBuild = await exists(join(site, 'build'));
   if (priorBuild) await cp(join(site, 'build'), join(temp, 'build-backup'), { recursive: true });
   try {
-    command(process.execPath, ['scripts/import-wasmbench.mjs', '--output', stagedData, ...positionals], { stdio: 'inherit' });
+    command(process.execPath, ['scripts/import-wasmbench.mjs', '--output', stagedData, ...(values.rebuild ? ['--rebuild'] : []), ...positionals], { stdio: 'inherit' });
     if (values.append && prior) {
       const previous = await validateData(destination);
       const incoming = await validateData(stagedData);
@@ -38,7 +38,7 @@ await locked(async () => {
     command(process.execPath, ['scripts/build-site.mjs'], { stdio: 'inherit' });
     const current = await readFile(join(destination, 'index.json'));
     await writeFile(join(work, 'update-summary.json'), JSON.stringify({ changed: !prior || digest(prior) !== digest(current),
-      indexSha256: digest(current), runs: index.reports.map(r => ({ id: r.runId, created: r.created, sourceSha256: r.id })) }, null, 2) + '\n');
+      indexSha256: digest(current), runs: index.reports.map(r => ({ id: r.runId, created: r.created, sourceSha256: r.sourceReportSha256 || r.id, analysisReportSha256: r.id })) }, null, 2) + '\n');
     await finishStatic(false); finishStatic = null;
     await finishData(false); finishData = null;
     console.log('Website evidence update validated. UI layout and displayed fixture values are unchanged.');

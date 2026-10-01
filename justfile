@@ -107,3 +107,23 @@ runner-install:
 
 runner-status:
     node scripts/runner.mjs status
+
+# Import the configured Wago benchmarks with pinned artifacts and exact oracles.
+corpus-prepare:
+    node scripts/bench.mjs corpus
+
+# Check result contracts across every selected runtime before timing.
+corpus-check:
+    node scripts/bench.mjs corpus-check
+
+# Compile Wago WAT sources into an isolated corpus with compiler/input/output digests.
+corpus-build:
+    node scripts/corpus-source.mjs
+
+# Build from source and verify each rebuilt contract across selected runtimes.
+corpus-source-check:
+    node scripts/corpus-source.mjs --check
+
+# Exercise both hosts and Pages deployment with a bounded three-launch collection.
+automation-check:
+    node scripts/automation.mjs check

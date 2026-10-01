@@ -10,5 +10,5 @@ await locked(async () => {
     command(process.execPath, ['scripts/hub.mjs', 'collect'], { stdio: 'inherit' });
     reports.push((await readFile(join(site, '.wasmbench/latest-hub-report.txt'), 'utf8')).trim());
   }
-  command(process.execPath, ['scripts/update-data.mjs', '--append', ...reports], { stdio: 'inherit' });
+  command(process.execPath, ['scripts/update-data.mjs', '--append', '--rebuild', ...reports], { stdio: 'inherit' });
 }, 'refresh');

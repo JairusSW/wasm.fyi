@@ -74,12 +74,16 @@ just refresh-local       # bounded Mac-only validation
 
 Collection creates unique run IDs under `.wasmbench/experiments/`. It collects a
 minimally instrumented timing pass, a separate matched memory pass, and an optional
-code pass. Each bundle and final report is verified. The unique leaf names matter:
+code pass. Each bundle and final report is verified on its measurement host. Fresh imports
+verify the original archive seal and regenerate the derived report with the Mac
+controller before final verification. AMD64 and ARM64 floating-point reductions
+can differ in their last bit; raw trials and host identities stay unchanged.
+The export retains both the original report digest and the regenerated digest. The unique leaf names matter:
 the harness indexes experiments by output directory name.
 
 Default collection covers Wago/Railshot, wazero/compiler, Wasmtime/Cranelift,
-Wasmtime/Winch and V8 using the core suite, six independent launches, ten batches,
-100 operations per batch and three retained warmup batches. These settings are
+Wasmtime/Winch and V8 using the Wago corpus, six independent launches, five batches,
+one operation per batch and three retained warmup batches. These settings are
 configuration, not claims about old snapshots. Memory runs use single-operation
 batches; code uses a separate compile pass. Phase barriers default off because
 not every selected scalar adapter/scenario supports them. Turn them on only for
@@ -154,6 +158,7 @@ Enable automation from that host's site checkout:
 just automation-status
 just automation-enable   # requires an online wasm-bench runner; records checkout paths
 just automate            # request an immediate fresh-data update and deployment
+just automation-check    # same corpus/hosts/deployment, bounded 3-launch validation
 just automation-disable  # pause scheduled collection; ordinary deployments still work
 ```
 
@@ -167,7 +172,10 @@ The refresh job builds tools before measuring, collects new sealed passes, runs
 `just refresh`, commits only `data/wasmbench` and `static/wasmbench` to `main`, then
 deploys the validated artifact directly to Pages. It does not force-push, merge a
 PR, edit the UI or update unrelated files. A concurrent main-branch change rejects
-the push and stops deployment. All Pages jobs share a concurrency group. Complete
+the push and stops deployment. All Pages jobs share a concurrency group. Manual dispatch accepts explicit
+launch/sample/operation/warmup overrides, recorded in each run. Daily jobs use the
+configured defaults; `automation-check` uses three launches, one batch, one operation
+and one warmup batch to validate the entire path. Complete
 sealed experiment archives are retained as Actions artifacts for 14 days, including
 failed runs when any evidence exists. Failures stop the update and deployment.
 Branch protections must permit this updater's normal push to `main`; if they do
@@ -198,3 +206,57 @@ failed collection; the next collection creates fresh IDs.
 
 Workflow syntax, scheduling and permissions follow the
 [GitHub Actions documentation](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax).
+
+## Corpus selection and source builds
+
+The default daily corpus selects **65 executable Wago benchmarks**, expanded by
+`import-wago` into **72 exact workload contracts**. It includes all 30 PolyBench/C
+kernels, 12 hand-written/compute benchmarks, six AssemblyScript variants and 17
+semantic library benchmarks: hashing, compression, image/audio processing, JSON,
+UTF, regular expressions and numerical code. Selection lives in
+`wasmbench.config.json`; artifacts and inputs must match Wago's catalog digests.
+All exported entry points retain their upstream arguments, initialization, reset
+rules and exact return/memory oracles. Unknown licenses remain explicit rather
+than inheriting a repository license by assumption.
+
+```sh
+just corpus-prepare      # import selection and record coverage/provenance
+just corpus-check        # verify all selected runtime/workload result contracts
+just corpus-build        # rebuild seven Wago WAT workloads in an isolated directory
+just corpus-source-check # rebuild and check the exact results across runtimes
+```
+
+`corpus-build` requires `wat2wasm`. It copies source into
+`.wasmbench/source-builds/`, records compiler version, source/artifact SHA-256 and
+exact build argv, and emits a separate `source/wago/...` suite. The original Wago
+checkout, catalog and artifacts stay intact. The generated manifest path is saved
+in `.wasmbench/latest-source-suite.txt`; use its absolute path as `WASMBENCH_SUITE`
+with `just refresh-local` to measure rebuilt variants. Source-suite overrides are
+local; the daily dual-host workflow imports the configured Wago catalog on each
+host from the same copied source snapshot.
+
+Wago also has source recipes under `corpus/build/` for Rust compute kernels,
+AssemblyScript and PolyBench/C. PolyBench's recipe pins its upstream Git commit
+and uses WASI SDK Clang. Run additional builds in an isolated checkout, record
+compiler/source/flags and new artifact digests, and admit them only with exact
+oracles. Rebuilding is an explicit corpus change; daily measurements reuse pinned
+artifacts so toolchain changes do not silently change the comparison.
+
+The ARM64 Winch policy explicitly disables SIMD because its native lowering is
+incomplete for these workloads. The five AssemblyScript SIMD export cells remain
+visible as unsupported for that backend; the other selected runtimes execute
+those same contracts. The harness capability fix is recorded in `patches/winch-arm64-simd.patch`.
+`just bench-build` applies it to `adapters/wasmtime/src/features.rs` in the
+configured sibling harness if needed; already-applied patches are skipped. A
+patch that no longer matches stops the build for review. Hub receives the same
+source and patch. AMD64 Winch retains SIMD support. `patches/code-preflight.patch` also fixes the
+code-profile sacrificial preflight to validate behavior using the timing adapter
+profile; unavailable vector code extraction then stays unsupported instead of
+blocking collection with a false preflight error. Both fixes are applied by
+`just bench-build` and copied to Hub.
+
+Real workloads use one operation per batch, five batches and six independent
+launches by default; the earlier tiny core-suite setting of 100 operations per
+batch is unsuitable for the broader algorithms. Every fresh pass still runs its
+own sacrificial correctness preflight. Unsupported outcomes get no timing credit;
+incorrect results, crashes and unexpected errors stop the update.
