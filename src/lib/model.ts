@@ -102,8 +102,9 @@ export function leader(s: Scope, label: string, group: PerfGroup, col: number, m
 	const list = CFG.map((c) => ({ c, x: ratio(s, group, c.id, col) }))
 		.filter((e): e is { c: Cfg; x: NonNullable<ReturnType<typeof ratio>> } => e.x != null && isVisible(s, e.c))
 		.sort((a, b) => a.x.r - b.x.r);
+	const places=list.slice(0,3).map(({c,x},i)=>({place:i+1,cfg:c,value:disp(s,group,c.id,col)!.t,ratio:x.r}));
 	if (!list.length)
-		return { label, metric, clear: false as const, versus: 'No selected runtime has this measurement.' };
+		return { label, metric, places, clear: false as const, versus: 'No selected runtime has this measurement.' };
 	const a = list[0];
 	const b = list[1] ?? null;
 	const clear = !!b && Number.isFinite(a.x.ci) && Number.isFinite(b.x.ci) && a.x.r + a.x.ci < b.x.r - b.x.ci;
@@ -112,6 +113,7 @@ export function leader(s: Scope, label: string, group: PerfGroup, col: number, m
 	return {
 		label,
 		metric,
+		places,
 		clear,
 		cfg: a.c,
 		value: da.t,

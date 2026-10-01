@@ -19,14 +19,30 @@
 		<button
 			class="leader hoverbg"
 			onclick={() => onmetric(l.metric)}
-			data-tip={[l.label, l.clear ? [l.value, l.cfg.rt, l.cfg.be].join(' · ') : 'No clear leader', 'Click to see the underlying results'].join('\n')}
+			data-tip={[l.label, 'Places rank measured means; overlapping uncertainty does not establish a clear lead.', 'Click to see the underlying results'].join('\n')}
 		>
 			<span class="kicker">{l.label}</span>
-			{#if l.clear}
-				<span class="mono value">{l.value}</span>
-				<span class="who">
-					<Swatch color={l.cfg.col} bg={l.cfg.hollow ? 'transparent' : l.cfg.col} size={9} />
-					<span class="w5">{l.cfg.rt}</span><span class="mono small fg3">{l.cfg.be}</span>
+			{#if l.places.length}
+				{@const first = l.places[0]}
+				<span class="results">
+					<span class="first" title={`${first.cfg.rt} ${first.cfg.be} · ${first.value}`}>
+						<span class="mono small fg3">1st</span>
+						<span class="mono value">{first.value}</span>
+						<span class="who">
+							<Swatch color={first.cfg.col} bg={first.cfg.hollow ? 'transparent' : first.cfg.col} size={9} />
+							<span class="w5">{first.cfg.rt}</span>
+						</span>
+						<span class="mono small fg3 backend">{first.cfg.be}</span>
+					</span>
+					<span class="places" aria-label="Next places by measured mean">
+						{#each l.places.slice(1) as p (p.cfg.id)}
+							<span class="place" title={`${p.cfg.rt} ${p.cfg.be} · ${p.value}`}>
+								<span class="mono small fg3">{p.place === 2 ? '2nd' : '3rd'}</span>
+								<span class="entrant"><span class="who small"><Swatch color={p.cfg.col} bg={p.cfg.hollow ? 'transparent' : p.cfg.col} size={6} /><span>{p.cfg.rt}</span></span><span class="mono micro fg3 backend">{p.cfg.be}</span></span>
+								<span class="mono small result-value">{p.value}</span>
+							</span>
+						{/each}
+					</span>
 				</span>
 			{:else}
 				<span class="unclear">No clear leader</span>
@@ -38,7 +54,7 @@
 
 <style>
 	.leaders {
-		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
 	}
 	.leader {
 		padding: 12px 14px;
@@ -57,6 +73,46 @@
 		display: flex;
 		align-items: center;
 		gap: 7px;
+	}
+	.results {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+		gap: 16px;
+		align-items: start;
+	}
+	.first,
+	.places {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		min-width: 0;
+	}
+	.place {
+		display: grid;
+		grid-template-columns: 24px minmax(0, 1fr) auto;
+		gap: 5px;
+		align-items: start;
+	}
+	.entrant {
+		min-width: 0;
+	}
+	.entrant .who {
+		gap: 4px;
+	}
+	.entrant .who > span:last-child {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.backend {
+		display: block;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.result-value {
+		white-space: nowrap;
 	}
 	.w5 {
 		font-weight: 500;

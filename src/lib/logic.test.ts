@@ -55,6 +55,17 @@ describe('model', () => {
 		const single={...scope,hide:{B:true,C:true,D:true,E:true,F:true,G:true}};
         expect(leader(single, 'Fastest compilation', 'lat', 0, 'compile').clear).toBe(false);
 	});
+	for(const machine of ['m1','m2'] as const)it(`ranks the first three measured execution means and respects hidden configurations on ${machine}`,()=>{
+		const selected={...scope,machine,hide:{G:true}};
+		const result=leader(selected,'Fastest execution','lat',3,'steady');
+		expect(result.places).toHaveLength(3);
+		expect(result.places.map(p=>p.place)).toEqual([1,2,3]);
+		expect(result.places.some(p=>p.cfg.id==='G')).toBe(false);
+		for(const [i,p] of result.places.entries()){
+			expect(p.ratio).toBe(ratio(selected,'lat',p.cfg.id,3)!.r);
+			if(i)expect(p.ratio).toBeGreaterThanOrEqual(result.places[i-1].ratio);
+		}
+	});
 	it('counts exact corpus children without assigning fabricated failures', () => {
     const fam=COMPAT.flatMap(s=>s.fams).find(f=>f.id==='core-mem')!;
     const cell=compatCell(fam.id,'A',scope);
