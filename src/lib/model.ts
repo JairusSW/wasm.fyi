@@ -3,7 +3,7 @@ import { aggregate } from './aggregates';
 import { viewCell, viewData } from './view-data';
 // Derived computations over the snapshot. Everything here is pure: callers pass
 // the comparison scope (machine, baseline, visible runtimes) explicitly.
-import { CB, CFG, MACH, WF } from './data/runtimes';
+import { CB, CFG, FEATURE_CFG, MACH, WF } from './data/runtimes';
 import { MET, OTM, UNIT } from './data/snapshot';
 import type { Bench, Cfg, CfgId, MachineId, MetricKey, OtMetricKey, RatioCi, Status } from './data/types';
 import { fmtU, fx, n0, relative, type DeltaFormat } from './format';
@@ -156,7 +156,7 @@ export function compatCell(family:string,cid:CfgId,s:Scope,workload?:string):Com
   return result;
 }
 export function kidCells(fam:{id:string;kids:[string,number][]},ci:number,s:Scope) {
-  return fam.kids.map(([name])=>({...compatCell(fam.id,CFG[ci].id,s,name),name}));
+  return fam.kids.map(([name])=>({...compatCell(fam.id,FEATURE_CFG[ci].id,s,name),name}));
 }
 
 export const AVAIL: Record<Avail, [string, string]> = {
@@ -192,5 +192,5 @@ export function cellView(c: CompatCell) {
 	};
 }
 
-export const cfgIndex = (id: CfgId) => CFG.findIndex((c) => c.id === id);
+export const cfgIndex = (id: CfgId) => FEATURE_CFG.findIndex((c) => c.id === id);
 export { CB, fx };

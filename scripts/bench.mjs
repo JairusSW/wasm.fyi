@@ -6,6 +6,7 @@ import { digest, harness, site } from './lib/wasmbench.mjs';
 import { prepareCorpus } from './lib/corpus.mjs';
 import { featureConfigurations } from './lib/feature-configurations.mjs';
 import { patchHarness } from './lib/harness-patch.mjs';
+import { prepareFeatureTools } from './lib/feature-tools.mjs';
 import { verifyV8 } from './lib/v8-preflight.mjs';
 
 const action = process.argv[2];
@@ -13,6 +14,7 @@ const { root, settings, run } = await harness();
 const collection = settings.collection;
 const featureSuite = process.env.WASMBENCH_SUITE?.includes('corpora/features/');
 const runtimes = process.env.WASMBENCH_RUNTIMES || (process.env.WASMBENCH_SUITE?.includes('corpora/features/') ? featureConfigurations(settings) : collection.runtimes).join(',');
+if(featureSuite && ['build','collect'].includes(action))await prepareFeatureTools(root,settings,runtimes.split(','));
 if (runtimes.split(',').some(id => ['wasmer-llvm','wasmer-singlepass'].includes(id))) {
   const sdk=resolve(process.env.WASMBENCH_WASMER_SDK || join(homedir(),'.local/share/wasm-fyi/toolchains/wasmer-c-api-7.3.0/sdk'));
   const manifest=JSON.parse(await readFile(join(sdk,'build.json')));

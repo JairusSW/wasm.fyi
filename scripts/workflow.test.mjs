@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, writeFile, rm, mkdir, stat, symlink } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, writeFile, rm, mkdir, stat, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { command, compact, digest, installDirectory } from './lib/wasmbench.mjs';
@@ -119,6 +119,19 @@ test('directory installation failure restores the previous dataset', async () =>
     assert.equal(await readFile(join(destination, 'index.json'), 'utf8'), 'previous');
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
+test('static evidence rollback backups stay outside the public directory',async()=>{
+  const directory=await mkdtemp(join(tmpdir(),'wasm-fyi-private-backup-'));
+  try {
+    const publicDirectory=join(directory,'public'),destination=join(publicDirectory,'wasmbench'),backup=join(directory,'private-backup'),staged=join(directory,'next');
+    await mkdir(destination,{recursive:true});await writeFile(join(destination,'index.json'),'previous');
+    await mkdir(staged);await writeFile(join(staged,'index.json'),'next');
+    const undo=await installDirectory(staged,destination,backup);
+    assert.deepEqual(await readdir(publicDirectory),['wasmbench']);
+    assert.equal(await readFile(join(backup,'index.json'),'utf8'),'previous');
+    await undo(true);
+    assert.equal(await readFile(join(destination,'index.json'),'utf8'),'previous');
+  } finally {await rm(directory,{recursive:true,force:true});}
+});
 
 test('original report seal rejects corrupted and unsealed files before rebuilding', async () => {
   const { verifySeal } = await import('./lib/verify-seal.mjs');
@@ -201,4 +214,18 @@ test('history baseline refresh preserves retrospective evidence and rejects chan
     const checked=await validateData(staged);
     assert.deepEqual(checked.reports.map(r=>r.runId),[historical.runId,next.runId]);
   }finally{await rm(temporary,{recursive:true,force:true});}
+});
+test('feature cells do not combine changed engines, native dependencies or launch arguments',async()=>{
+  const {featureCandidates,runtimeIdentity}=await import('./lib/feature-support.mjs');
+  const runtime={id:'wasmedge',command:['/engine'],file_sha256:{'/engine':'a'},host_file_sha256:{'/sdk/library':'b'},description:{backend:'interpreter'}};
+  const old={created:'2026-09-30',runtimes:[runtime],workloads:[{id:'features/simd/one',sha256:'x'},{id:'features/simd/two',sha256:'y'}]};
+  const latest={created:'2026-10-01',runtimes:[structuredClone(runtime)],workloads:[{id:'features/simd/one',sha256:'x'}]};
+  assert.equal(featureCandidates([latest,old],'wasmedge','features/simd/two','y').length,1);
+  latest.runtimes[0].host_file_sha256['/sdk/library']='changed';
+  assert.equal(featureCandidates([latest,old],'wasmedge','features/simd/two','y').length,0,'new native library must not inherit an old successful cell');
+  assert.notEqual(runtimeIdentity(runtime),runtimeIdentity(latest.runtimes[0]));
+  const flags=structuredClone(runtime);flags.command.push('--enable-feature');
+  assert.notEqual(runtimeIdentity(runtime),runtimeIdentity(flags));
+  const policy=structuredClone(runtime);policy.native_dependency_policy='different closure';
+  assert.notEqual(runtimeIdentity(runtime),runtimeIdentity(policy));
 });

@@ -17,6 +17,7 @@ async function htmlFiles(directory) {
   }
   return paths;
 }
+assert(!(await readdir(join(site,'build'))).some(name=>name.includes('.previous-') || name.startsWith('.static-data-')), 'Build contains private transactional evidence backups');
 const index = await validateData(join(site, 'build/wasmbench'));
 const source = await validateData(join(site, 'data/wasmbench'));
 assert.deepEqual(index, source, 'Build contains stale benchmark snapshots');

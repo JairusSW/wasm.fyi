@@ -1,5 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { featureCandidates } from './lib/feature-support.mjs';
 import { validateV8Description } from './lib/v8-preflight.mjs';
 import { digest, site, config } from './lib/wasmbench.mjs';
 import { validateData } from './lib/validate-data.mjs';
@@ -26,7 +27,7 @@ for(const os of ['linux','darwin']) {
   const experimental=reports.find(r=>r.host.os===os && r.runtimes.some(c=>c.id==='v8-wasmfx'))?.runtimes.find(c=>c.id==='v8-wasmfx');
   if(experimental)validateV8Description(experimental.description,settings.node,'optimizing-wasmfx-only');
 }
-const configurations = { A:'wasmtime', B:'wasmtime-winch', C:'wasmer-llvm', D:'wasmer-singlepass', E:'wazero', F:'v8-optimizing-only', G:'wago', H:'v8-liftoff-only' };
+const configurations = { A:'wasmtime', B:'wasmtime-winch', C:'wasmer-llvm', D:'wasmer-singlepass', E:'wazero', F:'v8-optimizing-only', G:'wago', H:'v8-liftoff-only', I:'wasmi', J:'wasmedge', K:'wasm3', L:'wavm', M:'spidermonkey', N:'jsc', O:'deno', P:'wamr', Q:'chicory', R:'wasmtime-component-async', S:'v8-wasmfx' };
 const scenarios = { compile:'compile', inst:'instantiate', first:'first-call', steady:'steady' };
 const memoryScenarios={rss:'steady',rssCompile:'compile',rssInst:'instantiate',rssFirst:'first-call'};
 const catalogue = new Map();
@@ -48,7 +49,7 @@ for (const report of reports) for (const w of report.workloads) {
 const reasons=new Map();
 function reasonId(reason) { if(!reasons.has(reason)){reasons.set(reason,reasons.size);output.reasons.push(reason);}return reasons.get(reason); }
 const status = { ok:'ok', unsupported:'unsupported', failed:'failed', 'not-measured':'nm', 'not-collected':'nm' };
-const output = { schema:1, configurations, catalogue:[...catalogue.values()].sort(compareWorkloads), hosts:{}, reports:{}, reasons:[],history:{},threads:{},statistics:{timingSamples:reports.reduce((n,r)=>n+r.summaries.reduce((n,s)=>n+(s.recorded_samples || 0),0),0)} };
+const output = { schema:1, configurations, applicationConfigurations:Object.keys(configurations).filter(slot=>settings.collection.runtimes.includes(configurations[slot])), catalogue:[...catalogue.values()].sort(compareWorkloads), hosts:{}, reports:{}, reasons:[],history:{},threads:{},statistics:{timingSamples:reports.reduce((n,r)=>n+r.summaries.reduce((n,s)=>n+(s.recorded_samples || 0),0),0)} };
 for (const report of reports) output.reports[report.id] = { runId:report.runId, created:report.created, evidence:report.evidence, sha256:report.evidenceSha256, options:report.options,memorySource:report.memorySource,codeSource:report.codeSource,configurations:report.runtimes.map(c=>c.id),host:report.host.os };
 for (const [machine, os] of [['m1','linux'],['m2','darwin']]) {
   const selected = reports.filter(r=>r.host.os===os);
@@ -59,10 +60,10 @@ for (const [machine, os] of [['m1','linux'],['m2','darwin']]) {
   output.hosts[machine]=view;
   for (const [slot,runtime] of Object.entries(configurations)) {
     const config=selected.flatMap(r=>r.runtimes).find(c=>c.id===runtime);
-    if (config) view.configurations[slot]={ runtime, version:config.description.runtime_version, backend:config.description.backend };
+    if (config) view.configurations[slot]={ runtime, version:runtime==='deno' && config.description.build?.startsWith('Deno ')?`${config.description.build.slice(5)} / V8 ${config.description.runtime_version}`:config.description.runtime_version, backend:config.description.backend };
     for (const workload of output.catalogue) {
       // A newer failed/unsupported result wins. Never backfill it with a success.
-      const candidates=selected.filter(r=>r.runtimes.some(c=>c.id===runtime) && r.workloads.some(w=>w.id===workload.id && w.sha256===workload.artifactSha256));
+      const candidates=workload.id.startsWith('features/')?featureCandidates(selected,runtime,workload.id,workload.artifactSha256):selected.filter(r=>r.runtimes.some(c=>c.id===runtime) && r.workloads.some(w=>w.id===workload.id && w.sha256===workload.artifactSha256));
       for (const [i,snapshot] of ['s1','s2'].entries()) {
         const report=candidates[i];
         if (!report) continue;

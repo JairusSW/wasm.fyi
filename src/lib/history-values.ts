@@ -35,7 +35,7 @@ export function historySeries(s:Scope,cid:CfgId,key:OtMetricKey,workload=''):num
 		if(!h.workloads.some(w=>series(w,cid).some(c=>c.report)))return null;
 		return h.points.map((_,i)=>h.workloads.filter(w=>historyCell(s.machine,w,cid,'steady',i).st==='ok').length);
 	}
-	const requested=[...new Set([...(Object.keys(viewData.configurations) as CfgId[]).filter(c=>!s.hide[c]),cid,s.baseline])];
+	const requested=[...new Set([...viewData.applicationConfigurations.filter(c=>!s.hide[c]),cid,s.baseline])];
 	const participants=requested.filter(c=>h.workloads.some(w=>series(w,c).some(valid)));
 	if(!participants.includes(cid))return null;
 	const cohort=h.workloads.filter(w=>participants.every(c=>series(w,c).filter((_,i)=>h.points[i].status==='measured').every(valid)));

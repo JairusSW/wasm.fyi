@@ -14,7 +14,7 @@ const quantile=(xs:number[],q:number)=>{const s=[...xs].sort((a,b)=>a-b);const p
 /** One coherent locked report, a fixed successful shared cohort, no fallback baseline. */
 export function aggregate(s:Scope,group:PerfGroup,cid:CfgId,col:number):Aggregate|null {
 	const metric=metrics[group][col];if(!metric)return null;
-	const ids=Object.keys(viewData.configurations) as CfgId[];
+	const ids=viewData.applicationConfigurations;
 	const visible=ids.filter(id=>!s.hide[id]);
 	const selected=[...new Set([...visible,s.baseline])];
 	const key=JSON.stringify([s.machine,s.snapshot || 's1',s.weighting,selected,cid,group,col]);

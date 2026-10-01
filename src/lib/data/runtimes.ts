@@ -17,6 +17,10 @@ export const RTS: Runtime[] = [
   { id: 'wasm3', name: 'wasm3', lang: 'C', exec: ['Interpreter'], tiers: 'Threaded-code interpreter', arch: ['any (C99)', 'microcontrollers'], wasi: '0.1 (partial)', cm: 'n', repo: 'github.com/wasm3/wasm3', lic: 'MIT', rel: '0.5.0', size: '≈65 KB', embed: ['C', 'Python', 'Rust', 'Go', 'Swift'], notes: ['Minimal-maintenance mode', 'Runs on microcontrollers'] },
   { id: 'chicory', name: 'Chicory', lang: 'Java', exec: ['Interpreter', 'AOT'], tiers: 'Interpreter · AOT to JVM bytecode', arch: ['any (JVM)'], wasi: '0.1', cm: 'n', repo: 'github.com/dylibso/chicory', lic: 'Apache-2.0', rel: '1.5', size: '≈1 MB (jar)', embed: ['Java', 'Kotlin', 'JVM'], notes: ['Pure JVM, no native dependencies', 'Build-time AOT compiles Wasm to Java bytecode'] },
 ];
+RTS.push(
+  {id:'wavm',name:'WAVM',lang:'C++',exec:['JIT'],tiers:'LLVM JIT',arch:['x86-64','AArch64'],wasi:'not tested',cm:'?',repo:'github.com/WAVM/WAVM',lic:'BSD-3-Clause',rel:'not collected',size:'not measured',embed:['C','C++'],notes:['Feature corpus uses the installed source-pinned LLVM embedding.']},
+  {id:'deno',name:'Deno',lang:'Rust',exec:['JIT'],tiers:'V8 production defaults',arch:['x86-64','AArch64'],wasi:'not tested',cm:'?',repo:'github.com/denoland/deno',lic:'MIT',rel:'not collected',size:'not measured',embed:['JavaScript','TypeScript'],notes:['Feature corpus uses a standalone Deno process; browser and Node results are separate configurations.']}
+);
 export const RTB: Record<string, Runtime> = Object.fromEntries(RTS.map(r => [r.id, r]));
 export const SA = ['wasmtime', 'wasmer', 'wazero', 'wago', 'wasmi', 'wasmedge', 'wamr', 'wasm3', 'chicory'];
 export const CFG: Cfg[] = [
@@ -30,14 +34,24 @@ export const CFG: Cfg[] = [
   { id: 'H', rt: 'v8', ver: '14.6', be: 'liftoff-only', kind: 'Liftoff baseline JIT', col: 'var(--rt-v8)', hollow: true },
 ];
 
-for(const c of CFG) {
-  const measured=viewData.hosts.m1.configurations[c.id];
-  if(measured){c.ver=measured.version.length>32?measured.version.slice(0,12):measured.version;c.be=c.id==='F'?'Turboshaft':c.id==='H'?'Liftoff':measured.backend;}
+// Feature-only configurations never participate in application leaderboards.
+export const FEATURE_CFG: Cfg[] = [...CFG,...([
+  ['I','wasmi','interpreter'],['J','wasmedge','interpreter'],['K','wasm3','interpreter'],
+  ['L','wavm','llvm-jit'],['M','spidermonkey','production-default'],['N','jsc','production-default'],
+  ['O','deno','production-default'],['P','wamr','interpreter'],['Q','chicory','interpreter'],
+  ['R','wasmtime','component-async'],['S','v8','Turboshaft + WasmFX flag']
+] as [CfgId,string,string][]).map(([id,rt,be])=>({id,rt,be,ver:'not collected',kind:'Feature corpus configuration',col:`var(--rt-${rt}, var(--fg3))`,hollow:['R','S'].includes(id)}))];
+export const FEATURE_ENGINES = ['v8','spidermonkey','jsc',...SA,'wavm','deno'];
+const shortVersion=(version:string)=>version.startsWith('binary-sha256:')?'sha256:'+version.slice(14,26):version.length>32?version.slice(0,12):version;
+
+for(const c of FEATURE_CFG) {
+  const measured=viewData.hosts.m1.configurations[c.id] || viewData.hosts.m2.configurations[c.id];
+  if(measured){c.ver=shortVersion(measured.version);c.be=c.id==='F'?'Turboshaft':c.id==='H'?'Liftoff':c.id==='S'?'Turboshaft + WasmFX flag':c.id==='R'?measured.backend+' + async':measured.backend;}
   if(c.id==='E'||c.id==='G'){c.interp=false;c.kind='JIT compiler';}
   if(c.id==='C')c.kind='LLVM JIT';
 }
 for(const runtime of RTS) {
-  const c=CFG.find(c=>c.rt===runtime.id);
+  const c=FEATURE_CFG.find(c=>c.rt===runtime.id);
   if(c){runtime.rel=c.ver;runtime.size='not measured';}
   else {runtime.rel='not collected';runtime.size='not measured';}
   if(runtime.id==='wazero')runtime.notes=runtime.notes.filter(note=>!note.includes('interpreter mode'));
@@ -53,14 +67,14 @@ for(const runtime of RTS) {
     ];
   }
 }
-export const WF: Record<CfgId,number> = {A:1,B:1,C:1,D:1,E:1,F:1,G:1,H:1};
+export const WF: Record<CfgId,number> = {A:1,B:1,C:1,D:1,E:1,F:1,G:1,H:1,I:1,J:1,K:1,L:1,M:1,N:1,O:1,P:1,Q:1,R:1,S:1};
 export const MACH: Record<MachineId,Machine> = Object.fromEntries(Object.entries(viewData.hosts).map(([id,h])=>[id,{
-  l:h.label,os:h.os,f:{},off:Object.fromEntries(CFG.filter(c=>!h.configurations[c.id]).map(c=>[c.id,'Configuration not collected on this host']))
+  l:h.label,os:h.os,f:{},off:Object.fromEntries(FEATURE_CFG.filter(c=>!h.configurations[c.id]).map(c=>[c.id,'Configuration not collected on this host']))
 }])) as Record<MachineId,Machine>;
 
-export const CB = Object.fromEntries(CFG.map((c) => [c.id, c])) as Record<CfgId, Cfg>;
+export const CB = Object.fromEntries(FEATURE_CFG.map((c) => [c.id, c])) as Record<CfgId, Cfg>;
 
 export function configVersion(machine:MachineId,id:CfgId){
   const version=viewData.hosts[machine].configurations[id]?.version;
-  return version?version.length>32?version.slice(0,12):version:'not collected';
+  return version?shortVersion(version):'not collected';
 }

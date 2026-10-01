@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fixtures, featureIds } from '../corpora/features/generator.mjs';
 import { featureCompiler } from './lib/feature-toolchain.mjs';
+import { prepareFeatureTools } from './lib/feature-tools.mjs';
 import { featureConfigurations } from './lib/feature-configurations.mjs';
 import { command, digest, harness, site } from './lib/wasmbench.mjs';
 
@@ -73,7 +74,8 @@ if (action === 'build') {
     workloadContracts: workloads.length, recipes }, null, 2) + '\n');
   console.log(`Built ${recipes.length} artifacts and ${workloads.length} contracts; ${covered.size}/${featureIds.length} feature families.`);
 } else if (action === 'check') {
-  const { settings, run } = await harness();
+  const { root:harnessRoot, settings, run } = await harness();
+  await prepareFeatureTools(harnessRoot,settings,(process.env.WASMBENCH_RUNTIMES || featureConfigurations(settings).join(',')).split(','));
   const id = 'features-check-' + new Date().toISOString().replace(/[:.]/g, '-');
   const output = join(site, '.wasmbench/experiments', id);
   try { process.stdout.write(run('check', '--suite', manifest, '--runtimes', process.env.WASMBENCH_RUNTIMES || featureConfigurations(settings).join(','),

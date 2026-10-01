@@ -10,7 +10,7 @@ describe('recorded aggregate cohort',()=>{
 		const result=aggregate(scope,'lat','A',3)!;
 		const reference=viewData.reports[result.report];
 		const raw=JSON.parse(await readFile(new URL('../../data/wasmbench/'+reference.evidence,import.meta.url),'utf8'));
-		const runtimes=Object.values(viewData.configurations);
+		const runtimes=viewData.applicationConfigurations.map(id=>viewData.configurations[id]);
 		const eligible=raw.workloads.filter((w:any)=>runtimes.every(runtime=>{
 			const s=raw.summaries.find((s:any)=>s.runtime===runtime && s.workload===w.id && s.scenario==='steady' && s.profile==='timing');
 			return s?.outcomes.ok>0 && s.median_ns_per_operation>0 && Object.entries(s.outcomes).every(([status,n])=>status==='ok'||status==='unsupported'||n===0);
@@ -46,4 +46,12 @@ describe('recorded aggregate cohort',()=>{
 		expect(Number.isNaN(result?.r)).toBe(true);
 		expect(result?.ratioInterval).toBeUndefined();
 	});
+  it('keeps feature-only configurations outside application and history comparison cohorts',()=>{
+    expect(viewData.applicationConfigurations).toEqual(['A','B','C','D','E','F','G','H']);
+    expect(Object.keys(viewData.configurations).length).toBeGreaterThan(viewData.applicationConfigurations.length);
+    const result=aggregate(scope,'lat','A',3)!;
+    expect(result).not.toBeNull();
+    expect(viewData.reports[result.report].configurations).not.toContain('wasmedge');
+  });
+
 });

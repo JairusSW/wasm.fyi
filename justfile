@@ -21,7 +21,7 @@ check:
 test:
     pnpm test
     pnpm test:ai
-    node --test scripts/workflow.test.mjs scripts/feature-adapter.test.mjs scripts/wasmer-adapter.test.mjs scripts/v8-preflight.test.mjs
+    node --test scripts/workflow.test.mjs scripts/feature-adapter.test.mjs scripts/wasmer-adapter.test.mjs scripts/v8-preflight.test.mjs scripts/extra-feature-adapters.test.mjs
 
 # Validate gathered snapshots and their raw evidence.
 integration-audit:
@@ -158,7 +158,7 @@ features-check: features-adapters
     node scripts/feature-corpus.mjs check
 
 # Collect every feature size and variant on this Mac.
-features-collect:
+features-collect: features-adapters
     WASMBENCH_SUITE="corpora/features/manifest.json" WASMBENCH_VALIDATION_PROFILE=all WASMBENCH_WARMUP=0 WASMBENCH_RECORD_FAILURES=1 node scripts/bench.mjs collect
 
 # Collect every feature size and variant on Hub.
@@ -188,10 +188,18 @@ threads-collect-hub:
 features-test:
     WASMBENCH_REQUIRE_ADAPTER_TESTS=1 node --test scripts/feature-adapter.test.mjs
 
-# Build explicit feature configurations, including the async component compiler.
+# Install pinned SDKs/shells and build every platform feature configuration.
 features-adapters:
     WASMBENCH_SUITE="corpora/features/manifest.json" node scripts/bench.mjs build
 
 # Refresh current comparison engines without rerunning historical Wago binaries.
 history-baseline:
     node scripts/history-baseline.mjs
+
+# Verify native feature lifecycles, reset semantics, digest guards and exact oracles.
+features-adapter-test: features-adapters
+    WASMBENCH_REQUIRE_EXTRA_FEATURE_TESTS=1 node --test scripts/extra-feature-adapters.test.mjs
+
+# Preserve sealed source evidence while sharing storage for identical archived files.
+evidence-deduplicate:
+    node scripts/deduplicate-evidence.mjs

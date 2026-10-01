@@ -45,7 +45,7 @@ await locked(async () => {
     const index = await validateData(stagedData);
     await command(process.execPath, ['scripts/stage-data.mjs', stagedData, join(temp, 'static')], { stdio: 'inherit' });
     finishData = await installDirectory(stagedData, destination);
-    finishStatic = await installDirectory(join(temp, 'static'), staticDestination);
+    finishStatic = await installDirectory(join(temp, 'static'), staticDestination, join(temp,'static-backup'));
     const runtimeIds=(await config()).collection.runtimes.filter(id=>id!=='wago');
     for(const name of ['history','history-hub']){
       const source=join(site,'data',name),staged=join(temp,name);

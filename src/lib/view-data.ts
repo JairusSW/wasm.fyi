@@ -12,7 +12,7 @@ interface Host {
 }
 interface ViewData {
 	threads:Record<MachineId,{created:string;configuration:string;node:string;v8:string;policy:string;evidence:string;sha256:string;results:{compilerMode:string;sharing:string;workers:number;operationsPerWorker:number;launches:{launch:number;samples:{elapsedNs:number;operations:number;verified:boolean}[]}[]}[]}>;
-	schema: number; catalogue: Bench[]; hosts: Record<MachineId,Host>; reasons:string[];
+	applicationConfigurations:CfgId[]; schema: number; catalogue: Bench[]; hosts: Record<MachineId,Host>; reasons:string[];
 	configurations:Record<CfgId,string>;
 	statistics:{timingSamples:number};
 	history:Record<MachineId,{

@@ -3,6 +3,16 @@ import { join } from 'node:path';
 import { featureIds } from '../../corpora/features/generator.mjs';
 import { digest } from './wasmbench.mjs';
 
+export function runtimeIdentity(runtime) {
+  return digest(JSON.stringify({command:runtime.command,files:runtime.file_sha256,hostFiles:runtime.host_file_sha256,nativePolicy:runtime.native_dependency_policy,nativeDependencies:runtime.elf_startup_dependencies,description:runtime.description}));
+}
+export function featureCandidates(reports,runtime,workload,sha) {
+  const latest=reports.find(r=>r.workloads.some(w=>w.id.startsWith('features/')) && r.runtimes.some(c=>c.id===runtime))?.runtimes.find(c=>c.id===runtime);
+  if(!latest)return [];
+  const identity=runtimeIdentity(latest);
+  return reports.filter(r=>r.workloads.some(w=>w.id===workload && w.sha256===sha) && r.runtimes.some(c=>c.id===runtime && runtimeIdentity(c)===identity));
+}
+
 // A newer targeted experiment can fill a cell from an earlier broad run only
 // when every pinned runtime input and the complete description agree. Evidence
 // references stay attached to each cell; versions never silently mix.
@@ -15,7 +25,7 @@ export async function featureSupport(directory, reports) {
     const host=hosts.get(hostKey);
     let raw;
     for(const runtime of report.runtimes) {
-      const identity=digest(JSON.stringify({files:runtime.file_sha256,description:runtime.description}));
+      const identity=runtimeIdentity(runtime);
       if(!host.configurations.has(runtime.id))host.configurations.set(runtime.id,{id:runtime.id,identity,description:runtime.description,cases:new Map()});
       const configuration=host.configurations.get(runtime.id);
       if(configuration.identity!==identity)continue;

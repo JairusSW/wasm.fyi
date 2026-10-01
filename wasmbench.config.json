@@ -27,7 +27,14 @@
     ],
     "featureRuntimes": [
       "wasmer-llvm",
-      "wasmer-singlepass"
+      "wasmer-singlepass",
+      "wasmi",
+      "wasmedge",
+      "wasm3",
+      "wamr",
+      "chicory",
+      "spidermonkey",
+      "deno"
     ],
     "wagoSource": "../../Wago/wago",
     "launches": 6,
@@ -37,7 +44,13 @@
     "memory": true,
     "code": true,
     "timeout": "30s",
-    "phaseBarriers": false
+    "phaseBarriers": false,
+    "featureRuntimesByPlatform": {
+      "darwin": [
+        "wavm",
+        "jsc"
+      ]
+    }
   },
   "retention": 12,
   "hosts": {
@@ -120,5 +133,70 @@
     "version": "26.4.0",
     "v8": "14.6.202.34-node.21",
     "linuxX64Sha256": "5c4286dcd5bbd5acb1ccc7eb0e088bd5eb1e3affad671ee9364004f8f6a4a431"
+  },
+  "featureTools": {
+    "sources": {
+      "wasm3": {
+        "url": "https://codeload.github.com/wasm3/wasm3/tar.gz/refs/tags/v0.5.0",
+        "sha256": "b778dd72ee2251f4fe9e2666ee3fe1c26f06f517c3ffce572416db067546536c",
+        "format": "tar"
+      },
+      "wamr": {
+        "url": "https://codeload.github.com/bytecodealliance/wasm-micro-runtime/tar.gz/refs/tags/WAMR-2.4.5",
+        "sha256": "1ab09d51099f276ca4a1d6629f6b589aab2bd0caa01445e05031a4bed22c199b",
+        "format": "tar"
+      },
+      "chicory-runtime": {
+        "url": "https://repo.maven.apache.org/maven2/com/dylibso/chicory/runtime/1.7.5/runtime-1.7.5.jar",
+        "sha256": "cdbb2bd4e353eacff78da5dd3454694316eaa6d2950aab3d1517dca41ae4a0b2",
+        "format": "jar"
+      },
+      "chicory-wasm": {
+        "url": "https://repo.maven.apache.org/maven2/com/dylibso/chicory/wasm/1.7.5/wasm-1.7.5.jar",
+        "sha256": "16558a66bac04f7e00ea06950f52d87ce2cfff535a54bac2115f2c13e0b3050b",
+        "format": "jar"
+      },
+      "json": {
+        "url": "https://repo.maven.apache.org/maven2/org/json/json/20250517/json-20250517.jar",
+        "sha256": "3ea61b2a06e31edf1c91134fe9106b0ebb16628be169f3db75bc7a2b06b45796",
+        "format": "jar"
+      }
+    },
+    "assets": {
+      "darwin-arm64": {
+        "wasmedge": {
+          "url": "https://github.com/WasmEdge/WasmEdge/releases/download/0.17.1/WasmEdge-0.17.1-darwin_arm64.tar.gz",
+          "sha256": "7f6810f0676f8405586a3edb350ce9a6eb256ef7118f2e327f131b7833d0033e",
+          "format": "tar"
+        },
+        "spidermonkey": {
+          "url": "https://archive.mozilla.org/pub/firefox/releases/143.0/jsshell/jsshell-mac.zip",
+          "sha256": "f6feb7cea0d12a4d0885fb18f5f9b99e0276ef3902cb87b37254b6eae66ad122",
+          "format": "zip"
+        },
+        "deno": {
+          "url": "https://github.com/denoland/deno/releases/download/v2.9.7/deno-aarch64-apple-darwin.zip",
+          "sha256": "5cd46d6268f6f78f5d88bdc7159d20bd44cdaa4b3303474839f87ec6fe7ae25c",
+          "format": "zip"
+        }
+      },
+      "linux-x64": {
+        "wasmedge": {
+          "url": "https://github.com/WasmEdge/WasmEdge/releases/download/0.17.1/WasmEdge-0.17.1-manylinux_2_28_x86_64.tar.gz",
+          "sha256": "27a1abec072ddf45b40e2e81e33c1e5fe9b241f31fd1bbf0182f05097489a07a",
+          "format": "tar"
+        },
+        "spidermonkey": {
+          "url": "https://archive.mozilla.org/pub/firefox/releases/143.0/jsshell/jsshell-linux-x86_64.zip",
+          "sha256": "a0fd07f422935e8a7584841d73b6d5638cd9f01869f1383619377b154f1dad0f",
+          "format": "zip"
+        },
+        "deno": {
+          "url": "https://github.com/denoland/deno/releases/download/v2.9.7/deno-x86_64-unknown-linux-gnu.zip",
+          "sha256": "c6527f24f4b16031d3ae4fa9f658d5f11534c8d84ce7dc8502420280919c3490",
+          "format": "zip"
+        }
+      }
+    }
   }
 }

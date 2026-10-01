@@ -306,3 +306,58 @@ checks. Retry validation after a frontend fix with
 The retry verifies every cached digest and uses the same transactional installation
 and rollback. Rebuilds discard each temporary report after its projection is
 verified; original sealed evidence remains intact.
+
+The complete feature corpus now includes Wasmi, WasmEdge, wasm3, WAMR,
+Chicory, SpiderMonkey and Deno on both hosts, plus WAVM and JavaScriptCore on
+macOS. `just features-adapters` provisions checksum-pinned isolated SDKs and
+shells before building; `just features-adapter-test` verifies real lifecycle
+calls, fresh-instance resets, changed artifact digests, incorrect scalar
+oracles and incorrect memory oracles. `just features-collect` and
+`just features-collect-hub` run every size and variant through separate timing,
+RSS and code passes. The daily refresh includes these configurations automatically.
+
+`just evidence-deduplicate` shares storage for byte-identical large files in
+completed sealed experiments. It preserves every evidence path and checksum;
+keep these archives immutable because identical files can share an inode. The
+daily refresh runs this step before importing reports.
+
+Pinned tools are WasmEdge 0.17.1, wasm3 0.5.0, WAMR 2.4.5, Chicory 1.7.5,
+SpiderMonkey 143.0 and Deno 2.9.7. Wasmi is pinned by the harness Cargo lock.
+The SDK cache is under `~/.local/share/wasm-fyi/toolchains/features-v1-<platform>`;
+its manifest verifies every installed file before collection. macOS needs
+Homebrew OpenJDK 25, or `WASMBENCH_JAVA` pointing to a Java/Javac/Jar installation
+supporting Java 21. Hub uses its installed Java 21. A selected WAVM SDK must
+already exist at `WASMBENCH_WAVM_SDK` or the harness's `.wasmbench/extra-sdk/wavm`.
+No alternative engine is substituted for an unavailable platform configuration.
+
+WAMR uses the classic interpreter with GC and exception handling enabled.
+Its hardware stack guard is disabled to avoid a reproduced clash with Rust's
+macOS guard pages; software stack checks remain. Instantiation selects a 1 MiB
+Wasm stack and zero host-managed application heap, preserving the module's
+initial memory size (the C API's default heap changed the memory.grow oracle
+from 2 to 3 pages). Its compilation window includes C-API store creation and
+module loading/validation. WasmEdge's compile window is loading/validation,
+and Chicory's is parsing/validation. These are not native code generation.
+Chicory includes export lookup and integer marshalling in call timers; JVM JIT,
+allocation and garbage collection remain uncontrolled. All exact scalar and
+memory oracles run outside measured intervals. wasm3 cannot provide a separate
+instantiation window or fresh-instance steady execution under its borrowed
+module/runtime contract; those cells remain adapter-unsupported.
+
+The feature pages use separate feature configurations, including async
+components and flagged WasmFX. These configurations never become participants
+in application leaderboards or history averages. A feature support cell requires
+one recorded configuration to pass the full representative family; partial,
+rejected/failed and adapter-unsupported cases retain their own diagnostics.
+Adapter limitations do not imply that an engine lacks a feature. Shell builds
+are distinct from Chrome, Firefox and Safari releases; browser release histories
+remain uncollected. Wago's Canonical ABI, resources and experimental async
+support remain documented plugin availability until those plugin configurations
+have been measured.
+
+Primary interfaces and build recipes:
+[WAMR build configuration](https://github.com/wasm-micro-runtime/wasm-micro-runtime/blob/WAMR-2.4.5/doc/build_wamr.md),
+[WAMR C API](https://github.com/wasm-micro-runtime/wasm-micro-runtime/blob/WAMR-2.4.5/core/iwasm/include/wasm_c_api.h),
+[Chicory embedding](https://chicory.dev/docs/),
+[WasmEdge release assets](https://github.com/WasmEdge/WasmEdge/releases/tag/0.17.1),
+[Mozilla release shells](https://archive.mozilla.org/pub/firefox/releases/143.0/jsshell/).

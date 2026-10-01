@@ -24,8 +24,7 @@ export async function harness() {
 }
 
 /** Swap a prepared directory; restore the old one if installation fails. */
-export async function installDirectory(staged, destination) {
-  const backup = `${destination}.previous-${process.pid}`;
+export async function installDirectory(staged, destination, backup = `${destination}.previous-${process.pid}`) {
   await mkdir(dirname(destination), { recursive: true });
   const hadPrevious = await exists(destination);
   if (hadPrevious) await rename(destination, backup);

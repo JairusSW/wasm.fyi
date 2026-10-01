@@ -5,7 +5,7 @@
 	import Seg from '$lib/components/Seg.svelte';
 	import Swatch from '$lib/components/Swatch.svelte';
 	import { BROWSERS, COMPAT, FEATS, PROPS } from '$lib/data/features';
-	import { CFG, RTB, SA } from '$lib/data/runtimes';
+	import { FEATURE_CFG, FEATURE_ENGINES, RTB } from '$lib/data/runtimes';
 	import { viewCell } from '$lib/view-data';
 	import type { RatioCi } from '$lib/data/types';
 	import { fmtU, relative, n0 } from '$lib/format';
@@ -20,14 +20,14 @@
 	// ── Support matrix ─────────────────────────────────────────────────────
 	const featCols = [
 		...BROWSERS.map((b) => ({ label: b, sub: 'browser', rt: null as string | null })),
-		...SA.map((id) => ({ label: RTB[id].name, sub: RTB[id].lang, rt: RTB[id].cfg ? id : null }))
+		...FEATURE_ENGINES.map((id) => ({ label: RTB[id].name, sub: RTB[id].lang, rt: RTB[id].cfg ? id : null }))
 	];
 	const groups = $derived([...new Set(FEATS.map(f=>f.g))].map(g=>({g,rows:FEATS.filter(f=>f.g===g).map(f=>{
-    return {f,count:`${featureContracts(f.id).length} representative contracts`,cells:[...BROWSERS.map(()=>({...supportCell('?'),detail:''})), ...SA.map(id=>runtimeSupportCell(id,f,ui.scope))]};
+    return {f,count:`${featureContracts(f.id).length} representative contracts`,cells:[...BROWSERS.map(()=>({...supportCell('?'),detail:''})), ...FEATURE_ENGINES.map(id=>runtimeSupportCell(id,f,ui.scope))]};
   })})));
 
 	// ── Spec tests ─────────────────────────────────────────────────────────
-	const cols = $derived(CFG.filter((c) => isVisible(ui.scope, c)));
+	const cols = $derived(FEATURE_CFG.filter((c) => isVisible(ui.scope, c)));
 	const offCell = { glyph: '—', text: 'config unavailable', sub: '', subColor: 'var(--fg3)', segs: [], color: 'var(--fg3)' };
 
 	// ── Proposal performance ───────────────────────────────────────────────
@@ -139,7 +139,7 @@
 		</table>
 	</div>
 	<div class="note">
-		Results apply to the recorded adapters and host. “Via plugin” indicates documented availability in an optional plugin configuration that has not been benchmarked here: Wago provides WASI through <a href="https://github.com/wago-org/wasi">wago-org/wasi</a> and Component Model execution through <a href="https://github.com/wago-org/component-model">wago-org/component-model</a>. Execution contracts verify exact outputs; structural and interface probes verify compilation only. Browser builds have not been collected. Optional async-component and WasmFX configurations retain their separate identities in the full support evidence. These representative cases do not establish full specification conformance. <a href={siteHref('/wasmbench/feature-support.json')}>Full support evidence</a>.
+		Results apply to the recorded adapters and host. “Via plugin” indicates documented availability in an optional plugin configuration that has not been benchmarked here: Wago provides WASI through <a href="https://github.com/wago-org/wasi">wago-org/wasi</a> and Component Model execution through <a href="https://github.com/wago-org/component-model">wago-org/component-model</a>. Execution contracts verify exact outputs; structural and interface probes verify compilation only. Browser builds have not been collected. All tested configurations, including async components and the WasmFX flag, appear in Corpus tests and Performance. A passed cell requires one configuration to pass the complete family; diagnostics list each configuration separately. Adapter-unsupported contracts do not establish that an engine lacks a feature. Feature-only engines never enter application averages. These representative cases do not establish full specification conformance. <a href={siteHref('/wasmbench/feature-support.json')}>Full support evidence</a>.
 
 	</div>
 {:else if ui.compatView === 'tests'}
@@ -188,7 +188,7 @@
 								<div class="mono micro fg3 indent">{n0(f.total)} {sec.unit}</div>
 							</td>
 							{#each cols as c (c.id)}
-								{@const ci = CFG.indexOf(c)}
+								{@const ci = FEATURE_CFG.indexOf(c)}
 								{@const x = isOff(ui.scope, c.id) ? offCell : cellView(compatCell(f.id, c.id, ui.scope))}
 								<td class="p0">
 									<button
@@ -205,7 +205,7 @@
 							{/each}
 						</tr>
 						{#if open}
-							{@const per = cols.map((c) => kidCells(f, CFG.indexOf(c), ui.scope))}
+							{@const per = cols.map((c) => kidCells(f, FEATURE_CFG.indexOf(c), ui.scope))}
 							{#each f.kids as [name], ki (name)}
 								<tr>
 									<td class="stick kid">{name}</td>

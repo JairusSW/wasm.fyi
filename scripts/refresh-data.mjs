@@ -15,6 +15,7 @@ await locked(async () => {
   if (!process.env.WASMBENCH_SKIP_FEATURES) {
     const featureEnv = { ...process.env, WASMBENCH_SUITE: 'corpora/features/manifest.json', WASMBENCH_VALIDATION_PROFILE: 'all', WASMBENCH_WARMUP: '0', WASMBENCH_RECORD_FAILURES: '1' };
     command(process.execPath, ['scripts/bench.mjs','build'], { stdio:'inherit',env:featureEnv });
+    command(process.execPath,['--test','scripts/extra-feature-adapters.test.mjs'],{stdio:'inherit',env:{...featureEnv,WASMBENCH_REQUIRE_EXTRA_FEATURE_TESTS:'1'}});
     if((featureEnv.WASMBENCH_RUNTIMES || settings.collection.featureRuntimes?.join(',') || '').includes('wasmer-'))command(process.execPath,['--test','scripts/wasmer-adapter.test.mjs'],{stdio:'inherit',env:{...featureEnv,WASMBENCH_REQUIRE_WASMER_TESTS:'1'}});
     command(process.execPath, ['scripts/feature-corpus.mjs', 'check'], { stdio: 'inherit', env: featureEnv });
     command(process.execPath, ['scripts/bench.mjs', 'collect'], { stdio: 'inherit', env: featureEnv });
@@ -28,5 +29,6 @@ await locked(async () => {
     command(process.execPath, ['scripts/thread-workers.mjs'], { stdio: 'inherit' });
     if (!process.argv.includes('--local')) command(process.execPath, ['scripts/hub.mjs','threads'], { stdio: 'inherit' });
   }
+  command(process.execPath,['scripts/deduplicate-evidence.mjs'],{stdio:'inherit'});
   command(process.execPath, ['scripts/update-data.mjs', '--append', '--rebuild', ...reports], { stdio: 'inherit' });
 }, 'refresh');
