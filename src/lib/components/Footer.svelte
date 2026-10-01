@@ -26,6 +26,8 @@
 		<span class="fg2">Methodology</span>
 		<span class="fg2">Contribute</span>
 		<a href="https://github.com/JairusSW/wasm.fyi">GitHub</a>
+		<a href={siteHref('/llms.txt')}>LLM reference</a>
+		<a href={siteHref('/data/llm/index.json')}>Machine-readable data</a>
 	</div>
 </footer>
 

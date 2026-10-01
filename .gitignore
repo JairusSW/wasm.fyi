@@ -15,3 +15,10 @@ vite.config.*.timestamp-*
 
 # Generated from digest-verified report projections before checks and builds.
 src/lib/data/measurements.json
+
+# Regenerated on every build from the verified view and feature evidence.
+/static/llms.txt
+/static/llms-full.txt
+/static/sitemap.xml
+/static/robots.txt
+/static/data/llm/

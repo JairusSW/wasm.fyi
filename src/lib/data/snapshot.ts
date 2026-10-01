@@ -31,13 +31,5 @@ export const BENCH: BenchGroup[] = [...new Set(viewData.catalogue.map(b=>b.group
 }));
 export const ALLB: Bench[] = BENCH.flatMap(g => g.items.map(b => ({ ...b, group: g.g })));
 export const ST_OVR: Record<string, Status> = {};
-export const MET: Record<MetricKey, { l: string; short: string; g: "lat" | "mem" | "code"; c: number; u: string }> = { compile: { l: 'Compilation', short: 'Compile', g: 'lat', c: 0, u: 'ms' }, inst: { l: 'Instantiation', short: 'Instantiate', g: 'lat', c: 1, u: 'ms' }, first: { l: 'First call', short: 'First call', g: 'lat', c: 2, u: 'ms' }, steady: { l: 'Steady execution (per iteration)', short: 'Steady exec', g: 'lat', c: 3, u: 'ms' }, rss: { l: 'Process lifetime peak RSS', short: 'Peak RSS', g: 'mem', c: 2, u: 'MiB' }, code: { l: 'Extracted native image', short: 'Native code', g: 'code', c: 3, u: 'KiB' } };
-export const PHASE_NOTE: Record<MetricKey, string> = {
-  compile: 'Compilation: validation + code generation until the module object is ready. Lazy and tiered backends report only work done before instantiation; interpreters report translation.',
-  inst: 'Instantiation: imports resolved, memories/tables allocated, data/elem segments applied, and the module start function invoked if one is declared. An exported _start is not part of instantiation.',
-  first: 'First call: the first invocation of the entry export (e.g. _start), measured separately. Includes lazy compilation and tier-up triggered by the call.',
-  steady: 'Steady execution: verified embedding calls; independent launch counts and warmup policy are recorded in the linked report.',
-  rss: 'Process lifetime peak RSS from a separate matched memory pass. Includes adapter and runtime; no phase subtraction or heap substitution.',
-  code: 'Pinned extracted native image bytes, including its reported wrappers and data. Unavailable collectors remain not measured; this is not active function code or cumulative emission.',
-};
+export { MET, PHASE_NOTE } from './metrics';
 export const PH_NAMES:string[]=['startup','compile','instantiate','first call','steady','teardown'];

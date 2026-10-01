@@ -1,5 +1,7 @@
 <script lang="ts">
 	import '../app.css';
+	import { base } from '$app/paths';
+	import { SITE_ORIGIN, SITE_DESCRIPTION } from '$lib/site';
 	import { browser } from '$app/environment';
 	import { afterNavigate, beforeNavigate } from '$app/navigation';
 	import { goto, replaceState } from '$lib/navigation';
@@ -74,6 +76,15 @@
 		}
 	}
 </script>
+
+<svelte:head>
+	<meta name="description" content={SITE_DESCRIPTION} />
+	<link rel="canonical" href={SITE_ORIGIN + page.url.pathname} />
+	<link rel="alternate" type="text/plain" title="LLM reference" href={base + '/llms.txt'} />
+	<link rel="alternate" type="text/plain" title="Expanded LLM reference" href={base + '/llms-full.txt'} />
+	<link rel="alternate" type="application/json" title="Machine-readable data" href={base + '/data/llm/index.json'} />
+	<link rel="sitemap" type="application/xml" href={base + '/sitemap.xml'} />
+</svelte:head>
 
 <svelte:window {onkeydown} />
 
