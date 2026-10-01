@@ -1,7 +1,8 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { resolve, join } from 'node:path';
-import { harness, site } from './lib/wasmbench.mjs';
+import { homedir } from 'node:os';
+import { digest, harness, site } from './lib/wasmbench.mjs';
 import { prepareCorpus } from './lib/corpus.mjs';
 import { featureConfigurations } from './lib/feature-configurations.mjs';
 import { patchHarness } from './lib/harness-patch.mjs';
@@ -11,6 +12,12 @@ const { root, settings, run } = await harness();
 const collection = settings.collection;
 const featureSuite = process.env.WASMBENCH_SUITE?.includes('corpora/features/');
 const runtimes = process.env.WASMBENCH_RUNTIMES || (process.env.WASMBENCH_SUITE?.includes('corpora/features/') ? featureConfigurations(settings) : collection.runtimes).join(',');
+if (runtimes.split(',').some(id => ['wasmer-llvm','wasmer-singlepass'].includes(id))) {
+  const sdk=resolve(process.env.WASMBENCH_WASMER_SDK || join(homedir(),'.local/share/wasm-fyi/toolchains/wasmer-c-api-7.3.0/sdk'));
+  const manifest=JSON.parse(await readFile(join(sdk,'build.json')));
+  if(manifest.version!=='7.3.0' || manifest.revision!=='35c10644f7b0aad6fd9458624ceb8429fe7413c4' || digest(await readFile(join(sdk,'lib',manifest.library)))!==manifest.librarySha256)throw new Error('Selected Wasmer SDK differs from its pinned build manifest');
+  process.env.WASMBENCH_WASMER_SDK=sdk;
+}
 const number = (name, fallback, minimum = 1) => {
   const input = process.env[name];
   const value = Number(input?.trim() ? input : fallback);

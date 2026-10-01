@@ -22,6 +22,10 @@
       "wasmtime-winch",
       "v8"
     ],
+    "featureRuntimes": [
+      "wasmer-llvm",
+      "wasmer-singlepass"
+    ],
     "wagoSource": "../../Wago/wago",
     "launches": 6,
     "samples": 5,

@@ -8,8 +8,8 @@ The published measurement endpoints are verified, but the existing views still c
 | --- | --- | --- | --- |
 | A | Wasmtime Cranelift 37.0.1 | Wasmtime Cranelift 46.0.1 | Use measured version and per-host input identity |
 | B | Wasmtime Winch 37.0.1 | Wasmtime Winch 46.0.1 | Use measured version and per-host input identity |
-| C | Wasmer LLVM | No measured configuration | Collect this backend or explicitly show not measured |
-| D | Wasmer singlepass | No measured configuration | Collect this backend or explicitly show not measured |
+| C | Wasmer LLVM | Native Wasmer 7.3.0 feature corpus on Mac | Use exact measured contracts; Hub and broader contracts remain outstanding |
+| D | Wasmer singlepass | Native Wasmer 7.3.0 feature corpus on Mac | SIMD explicitly disabled; use measured subset and retain unsupported outcomes |
 | E | wazero interpreter | wazero compiler 1.12.0 | Do not put compiler measurements under an interpreter label |
 | F | V8 tiered | Default production tiering, different versions per host | Use each host's recorded engine version |
 | G | Wago interpreter | Wago Railshot | Do not put JIT measurements under an interpreter label |
@@ -43,8 +43,22 @@ On the Mac's installed 7.3.0 SDK, Singlepass passes this native preflight. The S
 
 `just wasmer-sdk-build` builds an isolated SDK from release commit `35c10644f7b0aad6fd9458624ceb8429fe7413c4`, with LLVM, Singlepass, Cranelift and WASI enabled. Cranelift is required by the upstream default C API configuration constructor before another compiler can be selected. The build checks the LLVM 22.1 prefix, initializes the pinned NAPI submodule, uses the release's locked dependencies, packages generated headers and records source, compiler and library digests. Set `WASMBENCH_LLVM_PREFIX` on hosts whose LLVM 22.1 installation is elsewhere.
 
-The managed Mac SDK passes the native call probe with **both LLVM and Singlepass**. `just wasmer-preflight` prefers this SDK once built; `WASMBENCH_WASMER_SDK` can explicitly select another prefix. Existing installed SDKs are preserved. This resolves the Mac backend prerequisite; protocol adapters and full benchmark collection for these configurations are still outstanding.
+The managed Mac SDK passes the native call probe with **both LLVM and Singlepass**. `just wasmer-preflight` prefers this SDK once built; `WASMBENCH_WASMER_SDK` can explicitly select another prefix. Existing installed SDKs are preserved.
 
-Hub's installed 7.1.0 SDK also passes Singlepass and reports LLVM unavailable. Its probe was collected under the shared measurement lock. Hub needs an LLVM 22.1 toolchain and the managed SDK build before collecting the same LLVM configuration as the Mac; this remains outstanding.
+`just wasmer-adapters` applies the recorded `patches/harness-wasmer.patch` to the benchmarker, builds distinct `wasmer-llvm` and `wasmer-singlepass` executables and runs their real protocol tests. Compilation uses a temporary store; each instance owns a new store from the same engine and releases it on disposal. Export lookup, integer marshalling and result allocation remain inside call timing. Tests verify fresh-instance memory reset, all three lifecycle phases, memory barriers, multi-value and all-bit i64 results, batched steady calls, digest rejection and guest traps. Startup dependency closure is pinned by the harness.
+
+The entire 232-contract feature corpus has been collected on the Mac for these adapters with three independent timing and memory launches. The adapters currently accept import-free core integer contracts and memory checks; WASI, components, host imports, float/vector oracles and native code-size extraction remain unsupported. LLVM explicitly enables SIMD, relaxed SIMD, exceptions and tail calls. Singlepass disables these proposal flags; its default SIMD flag allowed validation but failed instruction lowering in the corpus. GC, typed function references, memory64 and stack switching are explicitly unavailable in these configurations. These subsets are recorded under the independent analyzer's feature namespace. Unsupported contracts and failed trials retain their evidence without substituted measurements.
+
+To collect this subset separately:
+
+```sh
+WASMBENCH_RUNTIMES=wasmer-llvm,wasmer-singlepass just features-collect
+```
+
+Both configurations are selected by `collection.featureRuntimes` for the default daily feature collection. The refresh tests their native protocols before measuring; Hub does so inside the shared measurement lock. Application and history runtime selections remain separate because these adapters do not implement the full application contract inventory.
+
+Hub's installed 7.1.0 SDK also passes Singlepass and reports LLVM unavailable. `just wasmer-sdk-build-hub` provisions the official Linux x64 LLVM 22.1.8 archive with its release asset SHA-256, then builds the managed SDK under the shared measurement lock. It uses an isolated compatibility wrapper when the archive references a missing build-host `libzstd.a`: the wrapper selects the host's shared zstd through an owned linker symlink, and records wrapper and library hashes. It changes no system installation. The managed Hub 7.3.0 SDK now passes the native preflight for **both LLVM and Singlepass**, matching the Mac source version. Its full feature collection is still being validated.
 
 Primary API references: [Wasmer Rust API](https://wasmerio.github.io/wasmer/crates/doc/wasmer/) and [Wasmer LLVM 7.3.0 source](https://docs.rs/crate/wasmer-compiler-llvm/7.3.0/source/Cargo.toml).
+
+Toolchain distribution: [official LLVM 22.1.8 release](https://github.com/llvm/llvm-project/releases/tag/llvmorg-22.1.8).

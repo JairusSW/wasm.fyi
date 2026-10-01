@@ -58,10 +58,11 @@ if (action === 'doctor') {
   rsync([join(site, 'scripts/lib/validate-data.mjs'), join(site, 'scripts/lib/snapshot-index.mjs'), join(site, 'scripts/lib/verify-seal.mjs'), join(site, 'scripts/lib/measurement-policy.mjs'), remotePath(remote + '/site/scripts/lib/')]);
   rsync([join(site, 'patches/legacy-wago-api.patch'), remotePath(remote + '/site/patches/')]);
   rsync([join(site, 'scripts/bench.mjs'), remotePath(remote + '/site/scripts/')]);
+  rsync([join(site, 'scripts/wasmer-adapter.test.mjs'), remotePath(remote + '/site/scripts/')]);
   rsync([join(site, 'scripts/pack-evidence.mjs'), remotePath(remote + '/site/scripts/')]);
   rsync([join(site, 'scripts/lib/evidence-archive.mjs'), remotePath(remote + '/site/scripts/lib/')]);
   rsync([join(site, 'scripts/lib/wasmbench.mjs'), join(site, 'scripts/lib/corpus.mjs'), join(site, 'scripts/lib/harness-patch.mjs'), join(site, 'scripts/lib/feature-configurations.mjs'), remotePath(remote + '/site/scripts/lib/')]);
-  rsync([join(site, 'patches/harness-capabilities.patch'), remotePath(remote + '/site/patches/')]);
+  rsync([join(site, 'patches/harness-capabilities.patch'), join(site, 'patches/harness-wasmer.patch'), remotePath(remote + '/site/patches/')]);
   rsync(['-r', join(site, 'corpora'), remotePath(remote + '/site/')]);
   if (action === 'history') {
     const revision = command('git',['rev-parse','HEAD'],{cwd:wago}).toString().trim();
@@ -79,7 +80,8 @@ if (action === 'doctor') {
     .filter(key => process.env[key]).map(key => `${key}=${quote(process.env[key])}`).join(' ');
   let completed = false;
   try {
-    const task = action === 'history' ? `WAGO_SOURCE=${quote('../history-source')} WASMBENCH_CORPUS_SOURCE=${quote('../wago')} ${overrides} node scripts/history.mjs collect; cp .wasmbench/history/results.json .wasmbench/history-results.json; cp data/history/weekly.json .wasmbench/history-weekly.json` : action === 'threads' ? `${overrides} node scripts/thread-workers.mjs; cp -r data/threads .wasmbench/threads` : `${overrides} node scripts/bench.mjs build; ${overrides} node scripts/bench.mjs doctor; ${overrides} node scripts/bench.mjs collect`;
+    const nativeTests = process.env.WASMBENCH_SUITE?.includes('corpora/features/') && (process.env.WASMBENCH_RUNTIMES || settings.collection.featureRuntimes?.join(',') || '').includes('wasmer-') ? 'WASMBENCH_REQUIRE_WASMER_TESTS=1 node --test scripts/wasmer-adapter.test.mjs;' : '';
+    const task = action === 'history' ? `WAGO_SOURCE=${quote('../history-source')} WASMBENCH_CORPUS_SOURCE=${quote('../wago')} ${overrides} node scripts/history.mjs collect; cp .wasmbench/history/results.json .wasmbench/history-results.json; cp data/history/weekly.json .wasmbench/history-weekly.json` : action === 'threads' ? `${overrides} node scripts/thread-workers.mjs; cp -r data/threads .wasmbench/threads` : `${overrides} node scripts/bench.mjs build; ${nativeTests} ${overrides} node scripts/bench.mjs doctor; ${overrides} node scripts/bench.mjs collect`;
     process.stdout.write(ssh(`export PATH="$HOME/.cargo/bin:$HOME/go/bin:$HOME/.local/bin:$PATH"; export GOFLAGS="-buildvcs=false"; set -eu; exec 9>"$HOME/${host.workspace}/measurement.lock"; flock -w 3600 9; cd ${quote(remote + '/site')}; ${task}`, 180 * 60 * 1000));
     completed = true;
   } finally {

@@ -20,7 +20,7 @@ check:
 # Test frontend logic and the snapshot workflow.
 test:
     pnpm test
-    node --test scripts/workflow.test.mjs scripts/feature-adapter.test.mjs
+    node --test scripts/workflow.test.mjs scripts/feature-adapter.test.mjs scripts/wasmer-adapter.test.mjs
 
 # Validate gathered snapshots and their raw evidence.
 integration-audit:
@@ -34,6 +34,14 @@ wasmer-preflight-hub:
 
 wasmer-sdk-build:
     node scripts/wasmer-sdk.mjs
+
+# Provision isolated LLVM 22.1 and the pinned native SDK on Hub.
+wasmer-sdk-build-hub:
+    node scripts/wasmer-sdk.mjs hub
+
+# Build explicit compiler adapters and test real lifecycle/reset behavior.
+wasmer-adapters:
+    node scripts/wasmer-adapters.mjs
 
 data-check:
     node scripts/check-data.mjs

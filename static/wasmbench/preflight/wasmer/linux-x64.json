@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "collectedAt": "2026-10-01T12:01:36.197Z",
+  "collectedAt": "2026-10-01T12:35:09.738Z",
   "host": {
     "hostname": "hub",
     "os": "linux",
@@ -21,15 +21,59 @@
     }
   },
   "sdk": {
-    "path": "/home/hub/.wasmer",
-    "library": "/home/hub/.wasmer/lib/libwasmer.so",
-    "librarySha256": "a15eff5fd8d163f86c9c7df44daac5792c161bff0dfcb04311e6bb5f4a394c6c",
+    "path": "/home/hub/.local/share/wasm-fyi/toolchains/wasmer-c-api-7.3.0/sdk",
+    "library": "/home/hub/.local/share/wasm-fyi/toolchains/wasmer-c-api-7.3.0/sdk/lib/libwasmer.so",
+    "librarySha256": "909dd365e92f3876b67b46cb0b3054fe25fd72c1751c9380e67903088fe78594",
     "headers": {
       "wasm.h": "ddd176b26a59bbf00ad34fcdff0f40eff658eb7177448af8ae81d3c300939cc6",
-      "wasm.hh": "7706667c2e91820f15c4e950349d3e9af4c048ac6379443c293936e90c6dcbd7",
-      "wasmer.h": "69a9eda6a6283868df20f7442ba1614179dfeb89a51fd1061f77462f27825c1b",
-      "wasmer_wasm.h": "47c9d928123c5c56616bbc6811e96cf72ad6f01b90c1064cea260a724110d4a5"
-    }
+      "wasmer.h": "f14d41a88945fdb1ebb2e840245983be66efae43af924b7fd6264364735e28c1"
+    },
+    "build": {
+      "schema": 1,
+      "version": "7.3.0",
+      "source": "https://github.com/wasmerio/wasmer",
+      "revision": "35c10644f7b0aad6fd9458624ceb8429fe7413c4",
+      "submodules": "0b6cbe9c4a90d0f002c772ed4ce714107592a37c lib/napi (0b6cbe9)",
+      "lockSha256": "a7a56f632452cf12a0d5fc4e0137a934fa7df47ad9ecbf60684e5896d9f4b443",
+      "features": "sys-default,cranelift,llvm,singlepass,wasi,wasmer-artifact-create,wasmer-artifact-load",
+      "argv": [
+        "cargo",
+        "build",
+        "--manifest-path",
+        "/home/hub/.local/share/wasm-fyi/toolchains/wasmer-c-api-7.3.0/source/lib/c-api/Cargo.toml",
+        "--release",
+        "--locked",
+        "--no-default-features",
+        "--features",
+        "sys-default,cranelift,llvm,singlepass,wasi,wasmer-artifact-create,wasmer-artifact-load"
+      ],
+      "rust": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+      "cargo": "cargo 1.96.0 (30a34c682 2026-05-25)",
+      "llvm": {
+        "prefix": "/home/hub/.local/share/wasm-fyi/toolchains/llvm-22",
+        "buildPrefix": "/home/hub/.local/share/wasm-fyi/toolchains/wasmer-c-api-7.3.0/llvm-compat",
+        "version": "22.1.8",
+        "compatibility": {
+          "reason": "Official LLVM archive references a missing build-host static zstd library; use host shared zstd",
+          "originalSystemLibraries": "-lrt -ldl -lm -lz /usr/lib/x86_64-linux-gnu/libzstd.a -lxml2",
+          "wrapper": "#!/bin/sh\nset -eu\nout=$(\"$WASMBENCH_LLVM_CONFIG\" \"$@\")\ncase \" $* \" in *\" --system-libs \"*) printf \"%s\\n\" \"$out\" | sed \"s@/usr/lib/x86_64-linux-gnu/libzstd.a@-lzstd@g\" ;; *) printf \"%s\\n\" \"$out\" ;; esac\n",
+          "wrapperSha256": "df513c6dfb65ff9b50b283dd858409be9eeaadb27f460cc249b39933f09e2e26",
+          "library": "/usr/lib/x86_64-linux-gnu/libzstd.so.1.5.5",
+          "librarySha256": "0a2128bc10841fb29e76d08d945864dfb0b6a66da5df6df5d8299197439e54bb",
+          "rustflags": " -Lnative=/home/hub/.local/share/wasm-fyi/toolchains/wasmer-c-api-7.3.0/llvm-compat/lib"
+        },
+        "distribution": {
+          "schema": 1,
+          "version": "22.1.8",
+          "url": "https://github.com/llvm/llvm-project/releases/download/llvmorg-22.1.8/LLVM-22.1.8-Linux-X64.tar.xz",
+          "sha256": "df0e1ecf16caf3489a272a5eea4eec9b0d82878f6477fa309504f918a0006384"
+        }
+      },
+      "library": "libwasmer.so",
+      "librarySha256": "909dd365e92f3876b67b46cb0b3054fe25fd72c1751c9380e67903088fe78594"
+    },
+    "buildManifestSource": "{\n  \"schema\": 1,\n  \"version\": \"7.3.0\",\n  \"source\": \"https://github.com/wasmerio/wasmer\",\n  \"revision\": \"35c10644f7b0aad6fd9458624ceb8429fe7413c4\",\n  \"submodules\": \"0b6cbe9c4a90d0f002c772ed4ce714107592a37c lib/napi (0b6cbe9)\",\n  \"lockSha256\": \"a7a56f632452cf12a0d5fc4e0137a934fa7df47ad9ecbf60684e5896d9f4b443\",\n  \"features\": \"sys-default,cranelift,llvm,singlepass,wasi,wasmer-artifact-create,wasmer-artifact-load\",\n  \"argv\": [\n    \"cargo\",\n    \"build\",\n    \"--manifest-path\",\n    \"/home/hub/.local/share/wasm-fyi/toolchains/wasmer-c-api-7.3.0/source/lib/c-api/Cargo.toml\",\n    \"--release\",\n    \"--locked\",\n    \"--no-default-features\",\n    \"--features\",\n    \"sys-default,cranelift,llvm,singlepass,wasi,wasmer-artifact-create,wasmer-artifact-load\"\n  ],\n  \"rust\": \"rustc 1.96.0 (ac68faa20 2026-05-25)\",\n  \"cargo\": \"cargo 1.96.0 (30a34c682 2026-05-25)\",\n  \"llvm\": {\n    \"prefix\": \"/home/hub/.local/share/wasm-fyi/toolchains/llvm-22\",\n    \"buildPrefix\": \"/home/hub/.local/share/wasm-fyi/toolchains/wasmer-c-api-7.3.0/llvm-compat\",\n    \"version\": \"22.1.8\",\n    \"compatibility\": {\n      \"reason\": \"Official LLVM archive references a missing build-host static zstd library; use host shared zstd\",\n      \"originalSystemLibraries\": \"-lrt -ldl -lm -lz /usr/lib/x86_64-linux-gnu/libzstd.a -lxml2\",\n      \"wrapper\": \"#!/bin/sh\\nset -eu\\nout=$(\\\"$WASMBENCH_LLVM_CONFIG\\\" \\\"$@\\\")\\ncase \\\" $* \\\" in *\\\" --system-libs \\\"*) printf \\\"%s\\\\n\\\" \\\"$out\\\" | sed \\\"s@/usr/lib/x86_64-linux-gnu/libzstd.a@-lzstd@g\\\" ;; *) printf \\\"%s\\\\n\\\" \\\"$out\\\" ;; esac\\n\",\n      \"wrapperSha256\": \"df513c6dfb65ff9b50b283dd858409be9eeaadb27f460cc249b39933f09e2e26\",\n      \"library\": \"/usr/lib/x86_64-linux-gnu/libzstd.so.1.5.5\",\n      \"librarySha256\": \"0a2128bc10841fb29e76d08d945864dfb0b6a66da5df6df5d8299197439e54bb\",\n      \"rustflags\": \" -Lnative=/home/hub/.local/share/wasm-fyi/toolchains/wasmer-c-api-7.3.0/llvm-compat/lib\"\n    },\n    \"distribution\": {\n      \"schema\": 1,\n      \"version\": \"22.1.8\",\n      \"url\": \"https://github.com/llvm/llvm-project/releases/download/llvmorg-22.1.8/LLVM-22.1.8-Linux-X64.tar.xz\",\n      \"sha256\": \"df0e1ecf16caf3489a272a5eea4eec9b0d82878f6477fa309504f918a0006384\"\n    }\n  },\n  \"library\": \"libwasmer.so\",\n  \"librarySha256\": \"909dd365e92f3876b67b46cb0b3054fe25fd72c1751c9380e67903088fe78594\"\n}\n",
+    "buildManifestSha256": "69471736aa052cd22fa5a401f5555bbaab3b818735dcfef73bde708f6f3a0b41"
   },
   "compiler": {
     "version": "cc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
@@ -37,27 +81,28 @@
       "cc",
       "-O2",
       "-I",
-      "/home/hub/.wasmer/include",
-      "/home/hub/.cache/wasm-fyi/wasmer-preflight-aa5311b4-ee52-4aec-907f-a49d798415b9/scripts/probes/wasmer-backends.c",
+      "/home/hub/.local/share/wasm-fyi/toolchains/wasmer-c-api-7.3.0/sdk/include",
+      "/home/hub/.cache/wasm-fyi/wasmer-preflight-8df27faf-251c-4a52-8bcc-32cc12544b01/scripts/probes/wasmer-backends.c",
       "-L",
-      "/home/hub/.wasmer/lib",
+      "/home/hub/.local/share/wasm-fyi/toolchains/wasmer-c-api-7.3.0/sdk/lib",
       "-lwasmer",
-      "-Wl,-rpath,/home/hub/.wasmer/lib",
+      "-Wl,-rpath,/home/hub/.local/share/wasm-fyi/toolchains/wasmer-c-api-7.3.0/sdk/lib",
       "-o",
-      "/home/hub/.cache/wasm-fyi/wasmer-preflight-aa5311b4-ee52-4aec-907f-a49d798415b9/.wasmbench/wasmer-preflight/probe"
+      "/home/hub/.cache/wasm-fyi/wasmer-preflight-8df27faf-251c-4a52-8bcc-32cc12544b01/.wasmbench/wasmer-preflight/probe"
     ]
   },
   "collector": {
     "source": "/* Native SDK correctness preflight, not a performance benchmark. */\n#include <wasmer.h>\n#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n\nstatic int failure(const char *phase) {\n  int length = wasmer_last_error_length();\n  if (length > 0 && length < 1024 * 1024) {\n    char *message = calloc((size_t)length + 1, 1);\n    if (message) { wasmer_last_error_message(message, length); fprintf(stderr, \"%s: %s\\n\", phase, message); free(message); }\n  }\n  printf(\"{\\\"status\\\":\\\"failed\\\",\\\"phase\\\":\\\"%s\\\"}\\n\", phase);\n  return 1;\n}\n\nint main(int argc, char **argv) {\n  if (argc != 3) return 2;\n  wasmer_backend_t backend;\n  if (!strcmp(argv[1], \"llvm\")) backend = LLVM;\n  else if (!strcmp(argv[1], \"singlepass\")) backend = SINGLEPASS;\n  else return 2;\n  if (!wasmer_is_backend_available(backend)) {\n    puts(\"{\\\"status\\\":\\\"unavailable\\\",\\\"reason\\\":\\\"SDK backend is not compiled in\\\"}\");\n    return 0;\n  }\n  FILE *file = fopen(argv[2], \"rb\");\n  if (!file || fseek(file, 0, SEEK_END)) return 2;\n  long size = ftell(file);\n  if (size <= 0 || size > 1024 * 1024 || fseek(file, 0, SEEK_SET)) return 2;\n  wasm_byte_vec_t bytes;\n  wasm_byte_vec_new_uninitialized(&bytes, (size_t)size);\n  if (!bytes.data || fread(bytes.data, 1, bytes.size, file) != bytes.size) return 2;\n  fclose(file);\n  wasm_config_t *config = wasm_config_new();\n  wasm_config_set_backend(config, backend);\n  wasm_engine_t *engine = wasm_engine_new_with_config(config);\n  if (!engine) return failure(\"engine\");\n  wasm_store_t *store = wasm_store_new(engine);\n  if (!store) return failure(\"store\");\n  wasm_module_t *module = wasm_module_new(store, &bytes);\n  wasm_byte_vec_delete(&bytes);\n  if (!module) return failure(\"compile\");\n  wasm_extern_vec_t imports = WASM_EMPTY_VEC;\n  wasm_trap_t *trap = NULL;\n  wasm_instance_t *instance = wasm_instance_new(store, module, &imports, &trap);\n  if (!instance || trap) return failure(\"instantiate\");\n  wasm_exporttype_vec_t types;\n  wasm_module_exports(module, &types);\n  wasm_extern_vec_t exports;\n  wasm_instance_exports(instance, &exports);\n  wasm_func_t *function = NULL;\n  for (size_t index = 0; index < types.size && index < exports.size; index++) {\n    const wasm_name_t *name = wasm_exporttype_name(types.data[index]);\n    if (name->size == 9 && !memcmp(name->data, \"benchmark\", 9)) function = wasm_extern_as_func(exports.data[index]);\n  }\n  if (!function) return failure(\"export\");\n  wasm_functype_t *type = wasm_func_type(function);\n  const wasm_valtype_vec_t *params = wasm_functype_params(type);\n  const wasm_valtype_vec_t *results = wasm_functype_results(type);\n  if (params->size != 1 || results->size != 1 || wasm_valtype_kind(params->data[0]) != WASM_I32 || wasm_valtype_kind(results->data[0]) != WASM_I32) return failure(\"signature\");\n  wasm_val_t input = { .kind = WASM_I32, .of.i32 = 1 };\n  wasm_val_t output = { .kind = WASM_I32, .of.i32 = 0 };\n  wasm_val_vec_t inputs = { .size = 1, .data = &input };\n  wasm_val_vec_t outputs = { .size = 1, .data = &output };\n  trap = wasm_func_call(function, &inputs, &outputs);\n  if (trap || output.kind != WASM_I32 || output.of.i32 != 3) return failure(\"oracle\");\n  printf(\"{\\\"status\\\":\\\"ok\\\",\\\"version\\\":\\\"%s\\\",\\\"backend\\\":\\\"%s\\\",\\\"result\\\":\\\"3\\\"}\\n\", wasmer_version(), argv[1]);\n  wasm_functype_delete(type);\n  wasm_exporttype_vec_delete(&types);\n  wasm_extern_vec_delete(&exports);\n  wasm_instance_delete(instance);\n  wasm_module_delete(module);\n  wasm_store_delete(store);\n  wasm_engine_delete(engine);\n  return 0;\n}\n",
     "sourceSha256": "f80be8d10325bf3e54ad4325c7a3cbf9a659f17572b2bb3af82d27b558d9807e",
-    "executableSha256": "387fc5113bcf223be4b10d11e08a7e1d2cce876fdee46690dedfff8199ffcdab"
+    "executableSha256": "048ac47c6c11a21a52a065588f10d2baa586c940c8ab9e78e9fae41c6b434943"
   },
   "configurations": [
     {
       "id": "wasmer-llvm",
       "backend": "llvm",
-      "status": "unavailable",
-      "reason": "SDK backend is not compiled in",
+      "status": "ok",
+      "version": "7.3.0",
+      "result": "3",
       "exitCode": 0,
       "signal": null,
       "stderr": ""
@@ -66,7 +111,7 @@
       "id": "wasmer-singlepass",
       "backend": "singlepass",
       "status": "ok",
-      "version": "7.1.0",
+      "version": "7.3.0",
       "result": "3",
       "exitCode": 0,
       "signal": null,
