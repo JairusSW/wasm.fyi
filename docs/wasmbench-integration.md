@@ -3,6 +3,8 @@
 The visual UI and displayed data providers are unchanged; hosting links now support the GitHub Pages project path. This document maps verified harness
 exports onto the existing data/model boundary; it does not implement that wiring.
 
+The inventory below records the initial exploratory import. Current two-host application, feature, worker and weekly-history collection is described in [features-and-history.md](features-and-history.md); [integration-audit.md](integration-audit.md) records the remaining view wiring. The current snapshot index is the authoritative report inventory.
+
 ## Gathered data
 
 `data/wasmbench/index.json` contains compact, verified report projections. Each
