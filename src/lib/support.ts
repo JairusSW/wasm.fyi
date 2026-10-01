@@ -28,3 +28,16 @@ export const supportOf = (rid:string,f:FeatureRow,scope:Scope):SupportCode => {
   const total=counts.reduce((n,c)=>n+c.total,0),pass=counts.reduce((n,c)=>n+c.pass,0);
   return total>0 && pass===total?'y':pass>0?'p':'?';
 };
+
+/** Documented plugin availability is distinct from a sealed adapter test result. */
+export const WAGO_PLUGIN_SUPPORT:Record<string,{plugin:string;source:string}> = {
+  'wasi-p1':{plugin:'wago-org/wasi',source:'https://github.com/wago-org/wasi'},
+  'wasi-p2':{plugin:'wago-org/wasi',source:'https://github.com/wago-org/wasi'},
+  'component-model':{plugin:'wago-org/component-model',source:'https://github.com/wago-org/component-model'}
+};
+export function runtimeSupportCell(rid:string,f:FeatureRow,scope:Scope) {
+  const code=supportOf(rid,f,scope);
+  const plugin=rid==='wago'?WAGO_PLUGIN_SUPPORT[f.id]:undefined;
+  if(plugin && code==='?')return {...supportCell('p'),text:'via plugin',detail:`Available through ${plugin.plugin}. Plugin configuration has not been benchmarked here. ${plugin.source}`};
+  return {...supportCell(code),text:code==='y'?'corpus passed':code==='p'?'partial corpus':'not verified',detail:''};
+}

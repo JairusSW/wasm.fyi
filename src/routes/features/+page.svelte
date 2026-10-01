@@ -13,8 +13,7 @@
 	import { PROPOSAL_IDS } from '$lib/links';
 	import { cellView, compatCell, featureContracts, featureOutcome, isOff, isVisible, kidCells, mf } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
-	import { browserCell, supportCell } from '$lib/support';
-	import type { SupportCode } from '$lib/data/types';
+	import { supportCell, runtimeSupportCell } from '$lib/support';
 
 	const propLinks = PROPOSAL_IDS.map((id) => ({ id, label: PROPS[id].title }));
 
@@ -24,14 +23,7 @@
 		...SA.map((id) => ({ label: RTB[id].name, sub: RTB[id].lang, rt: RTB[id].cfg ? id : null }))
 	];
 	const groups = $derived([...new Set(FEATS.map(f=>f.g))].map(g=>({g,rows:FEATS.filter(f=>f.g===g).map(f=>{
-    const runtimeCodes=SA.map(id=>{
-      const configs=CFG.filter(c=>c.rt===id);
-      const counts=configs.map(c=>compatCell(f.id,c.id,ui.scope));
-      if(!counts.length || counts.every(c=>!c.run))return '?' as SupportCode;
-      const all=counts.reduce((a,c)=>a+c.total,0),passed=counts.reduce((a,c)=>a+c.pass,0);
-      return (passed===all && all>0?'y':passed>0?'p':'?') as SupportCode;
-    });
-    return {f,count:`${featureContracts(f.id).length} representative contracts`,cells:[...BROWSERS.map(()=>supportCell('?')), ...runtimeCodes.map(code=>({...supportCell(code),text:code==='y'?'corpus passed':code==='p'?'partial corpus':'not verified'}))]};
+    return {f,count:`${featureContracts(f.id).length} representative contracts`,cells:[...BROWSERS.map(()=>({...supportCell('?'),detail:''})), ...SA.map(id=>runtimeSupportCell(id,f,ui.scope))]};
   })})));
 
 	// ── Spec tests ─────────────────────────────────────────────────────────
@@ -136,7 +128,7 @@
 								<div class="mono micro fg3">{r.f.phase} · {r.count}</div>
 							</td>
 							{#each r.cells as x, k (k)}
-								<td class="fcell" style:background={x.bg} data-tip={`${r.f.name} — ${featCols[k].label}\n${x.glyph} ${x.text}\n${r.f.phase}`}>
+								<td class="fcell" style:background={x.bg} data-tip={`${r.f.name} — ${featCols[k].label}\n${x.glyph} ${x.text}\n${r.f.phase}\n${x.detail}`}>
 									<div class="mono small nowrap" style:color={x.color}><span class="micro">{x.glyph}</span> {x.text}</div>
 								</td>
 							{/each}
@@ -147,7 +139,7 @@
 		</table>
 	</div>
 	<div class="note">
-		Results apply to the recorded adapters and host. Execution contracts verify exact outputs; structural and interface probes verify compilation only. Browser builds have not been collected. Optional async-component and WasmFX configurations retain their separate identities in the full support evidence. These representative cases do not establish full specification conformance. <a href={siteHref('/wasmbench/feature-support.json')}>Full support evidence</a>.
+		Results apply to the recorded adapters and host. “Via plugin” indicates documented availability in an optional plugin configuration that has not been benchmarked here: Wago provides WASI through <a href="https://github.com/wago-org/wasi">wago-org/wasi</a> and Component Model execution through <a href="https://github.com/wago-org/component-model">wago-org/component-model</a>. Execution contracts verify exact outputs; structural and interface probes verify compilation only. Browser builds have not been collected. Optional async-component and WasmFX configurations retain their separate identities in the full support evidence. These representative cases do not establish full specification conformance. <a href={siteHref('/wasmbench/feature-support.json')}>Full support evidence</a>.
 
 	</div>
 {:else if ui.compatView === 'tests'}

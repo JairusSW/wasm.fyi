@@ -40,7 +40,17 @@ for(const runtime of RTS) {
   if(c){runtime.rel=c.ver;runtime.size='not measured';}
   else {runtime.rel='not collected';runtime.size='not measured';}
   if(runtime.id==='wazero')runtime.notes=runtime.notes.filter(note=>!note.includes('interpreter mode'));
-  if(runtime.id==='wago'){runtime.exec=['JIT'];runtime.tiers='Railshot';runtime.notes=['Measured Railshot compiler configuration; exact source identity is recorded per report.'];}
+  if(runtime.id==='wago'){
+    runtime.exec=['JIT'];runtime.tiers='Railshot';
+    runtime.wasi='0.1 · 0.2 (plugin)';runtime.cm='y';
+    runtime.repo='github.com/wago-org/wago';
+    runtime.notes=[
+      'Measured Railshot compiler configuration; exact source identity is recorded per report.',
+      'WASI Preview 1 and WASI 0.2 are available through the experimental wago-org/wasi plugin.',
+      'Component Model execution and Canonical ABI linking are available through wago-org/component-model; WASI Preview 2 selects this dependency.',
+      'The recorded core benchmark adapter does not load these plugins; its interface results do not measure plugin support.'
+    ];
+  }
 }
 export const WF: Record<CfgId,number> = {A:1,B:1,C:1,D:1,E:1,F:1,G:1};
 export const MACH: Record<MachineId,Machine> = Object.fromEntries(Object.entries(viewData.hosts).map(([id,h])=>[id,{
