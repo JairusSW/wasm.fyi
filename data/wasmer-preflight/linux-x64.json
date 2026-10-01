@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "collectedAt": "2026-10-01T12:01:36.197Z",
+  "host": {
+    "hostname": "hub",
+    "os": "linux",
+    "arch": "x64"
+  },
+  "scope": "Native SDK compile, instantiate and exact integer export call. Correctness preflight only; no timing, memory, code-size or general feature-support claim.",
+  "artifact": {
+    "id": "features/core-num/integer-multiply-add/1",
+    "sha256": "c32825b7a1475fa5c5e739cfb23c3b820453b0ad0883eec97e8326fe73d12706",
+    "args": [
+      "1"
+    ],
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "3"
+      ]
+    }
+  },
+  "sdk": {
+    "path": "/home/hub/.wasmer",
+    "library": "/home/hub/.wasmer/lib/libwasmer.so",
+    "librarySha256": "a15eff5fd8d163f86c9c7df44daac5792c161bff0dfcb04311e6bb5f4a394c6c",
+    "headers": {
+      "wasm.h": "ddd176b26a59bbf00ad34fcdff0f40eff658eb7177448af8ae81d3c300939cc6",
+      "wasm.hh": "7706667c2e91820f15c4e950349d3e9af4c048ac6379443c293936e90c6dcbd7",
+      "wasmer.h": "69a9eda6a6283868df20f7442ba1614179dfeb89a51fd1061f77462f27825c1b",
+      "wasmer_wasm.h": "47c9d928123c5c56616bbc6811e96cf72ad6f01b90c1064cea260a724110d4a5"
+    }
+  },
+  "compiler": {
+    "version": "cc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+    "argv": [
+      "cc",
+      "-O2",
+      "-I",
+      "/home/hub/.wasmer/include",
+      "/home/hub/.cache/wasm-fyi/wasmer-preflight-aa5311b4-ee52-4aec-907f-a49d798415b9/scripts/probes/wasmer-backends.c",
+      "-L",
+      "/home/hub/.wasmer/lib",
+      "-lwasmer",
+      "-Wl,-rpath,/home/hub/.wasmer/lib",
+      "-o",
+      "/home/hub/.cache/wasm-fyi/wasmer-preflight-aa5311b4-ee52-4aec-907f-a49d798415b9/.wasmbench/wasmer-preflight/probe"
+    ]
+  },
+  "collector": {
+    "source": "/* Native SDK correctness preflight, not a performance benchmark. */\n#include <wasmer.h>\n#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n\nstatic int failure(const char *phase) {\n  int length = wasmer_last_error_length();\n  if (length > 0 && length < 1024 * 1024) {\n    char *message = calloc((size_t)length + 1, 1);\n    if (message) { wasmer_last_error_message(message, length); fprintf(stderr, \"%s: %s\\n\", phase, message); free(message); }\n  }\n  printf(\"{\\\"status\\\":\\\"failed\\\",\\\"phase\\\":\\\"%s\\\"}\\n\", phase);\n  return 1;\n}\n\nint main(int argc, char **argv) {\n  if (argc != 3) return 2;\n  wasmer_backend_t backend;\n  if (!strcmp(argv[1], \"llvm\")) backend = LLVM;\n  else if (!strcmp(argv[1], \"singlepass\")) backend = SINGLEPASS;\n  else return 2;\n  if (!wasmer_is_backend_available(backend)) {\n    puts(\"{\\\"status\\\":\\\"unavailable\\\",\\\"reason\\\":\\\"SDK backend is not compiled in\\\"}\");\n    return 0;\n  }\n  FILE *file = fopen(argv[2], \"rb\");\n  if (!file || fseek(file, 0, SEEK_END)) return 2;\n  long size = ftell(file);\n  if (size <= 0 || size > 1024 * 1024 || fseek(file, 0, SEEK_SET)) return 2;\n  wasm_byte_vec_t bytes;\n  wasm_byte_vec_new_uninitialized(&bytes, (size_t)size);\n  if (!bytes.data || fread(bytes.data, 1, bytes.size, file) != bytes.size) return 2;\n  fclose(file);\n  wasm_config_t *config = wasm_config_new();\n  wasm_config_set_backend(config, backend);\n  wasm_engine_t *engine = wasm_engine_new_with_config(config);\n  if (!engine) return failure(\"engine\");\n  wasm_store_t *store = wasm_store_new(engine);\n  if (!store) return failure(\"store\");\n  wasm_module_t *module = wasm_module_new(store, &bytes);\n  wasm_byte_vec_delete(&bytes);\n  if (!module) return failure(\"compile\");\n  wasm_extern_vec_t imports = WASM_EMPTY_VEC;\n  wasm_trap_t *trap = NULL;\n  wasm_instance_t *instance = wasm_instance_new(store, module, &imports, &trap);\n  if (!instance || trap) return failure(\"instantiate\");\n  wasm_exporttype_vec_t types;\n  wasm_module_exports(module, &types);\n  wasm_extern_vec_t exports;\n  wasm_instance_exports(instance, &exports);\n  wasm_func_t *function = NULL;\n  for (size_t index = 0; index < types.size && index < exports.size; index++) {\n    const wasm_name_t *name = wasm_exporttype_name(types.data[index]);\n    if (name->size == 9 && !memcmp(name->data, \"benchmark\", 9)) function = wasm_extern_as_func(exports.data[index]);\n  }\n  if (!function) return failure(\"export\");\n  wasm_functype_t *type = wasm_func_type(function);\n  const wasm_valtype_vec_t *params = wasm_functype_params(type);\n  const wasm_valtype_vec_t *results = wasm_functype_results(type);\n  if (params->size != 1 || results->size != 1 || wasm_valtype_kind(params->data[0]) != WASM_I32 || wasm_valtype_kind(results->data[0]) != WASM_I32) return failure(\"signature\");\n  wasm_val_t input = { .kind = WASM_I32, .of.i32 = 1 };\n  wasm_val_t output = { .kind = WASM_I32, .of.i32 = 0 };\n  wasm_val_vec_t inputs = { .size = 1, .data = &input };\n  wasm_val_vec_t outputs = { .size = 1, .data = &output };\n  trap = wasm_func_call(function, &inputs, &outputs);\n  if (trap || output.kind != WASM_I32 || output.of.i32 != 3) return failure(\"oracle\");\n  printf(\"{\\\"status\\\":\\\"ok\\\",\\\"version\\\":\\\"%s\\\",\\\"backend\\\":\\\"%s\\\",\\\"result\\\":\\\"3\\\"}\\n\", wasmer_version(), argv[1]);\n  wasm_functype_delete(type);\n  wasm_exporttype_vec_delete(&types);\n  wasm_extern_vec_delete(&exports);\n  wasm_instance_delete(instance);\n  wasm_module_delete(module);\n  wasm_store_delete(store);\n  wasm_engine_delete(engine);\n  return 0;\n}\n",
+    "sourceSha256": "f80be8d10325bf3e54ad4325c7a3cbf9a659f17572b2bb3af82d27b558d9807e",
+    "executableSha256": "387fc5113bcf223be4b10d11e08a7e1d2cce876fdee46690dedfff8199ffcdab"
+  },
+  "configurations": [
+    {
+      "id": "wasmer-llvm",
+      "backend": "llvm",
+      "status": "unavailable",
+      "reason": "SDK backend is not compiled in",
+      "exitCode": 0,
+      "signal": null,
+      "stderr": ""
+    },
+    {
+      "id": "wasmer-singlepass",
+      "backend": "singlepass",
+      "status": "ok",
+      "version": "7.1.0",
+      "result": "3",
+      "exitCode": 0,
+      "signal": null,
+      "stderr": ""
+    }
+  ]
+}

@@ -45,4 +45,6 @@ On the Mac's installed 7.3.0 SDK, Singlepass passes this native preflight. The S
 
 The managed Mac SDK passes the native call probe with **both LLVM and Singlepass**. `just wasmer-preflight` prefers this SDK once built; `WASMBENCH_WASMER_SDK` can explicitly select another prefix. Existing installed SDKs are preserved. This resolves the Mac backend prerequisite; protocol adapters and full benchmark collection for these configurations are still outstanding.
 
+Hub's installed 7.1.0 SDK also passes Singlepass and reports LLVM unavailable. Its probe was collected under the shared measurement lock. Hub needs an LLVM 22.1 toolchain and the managed SDK build before collecting the same LLVM configuration as the Mac; this remains outstanding.
+
 Primary API references: [Wasmer Rust API](https://wasmerio.github.io/wasmer/crates/doc/wasmer/) and [Wasmer LLVM 7.3.0 source](https://docs.rs/crate/wasmer-compiler-llvm/7.3.0/source/Cargo.toml).
