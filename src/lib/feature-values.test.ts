@@ -25,7 +25,8 @@ describe('feature views retain distinct evidence scopes',()=>{
  });
  it('worker evidence includes only verified 1/2/4/8-worker cases on both hosts',()=>{
    for(const host of Object.values(viewData.threads)){
-     expect(host.results).toHaveLength(32);
+     expect(host.results).toHaveLength(64);
+      for(const mode of ['optimizing-only','liftoff-only'])expect(host.results.filter(r=>r.compilerMode===mode)).toHaveLength(32);
      expect([...new Set(host.results.map(r=>r.workers))].sort((a,b)=>a-b)).toEqual([1,2,4,8]);
      for(const r of host.results)for(const l of r.launches)for(const s of l.samples){expect(s.verified).toBe(true);expect(s.operations).toBe(r.workers*r.operationsPerWorker);}
    }

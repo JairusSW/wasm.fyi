@@ -91,7 +91,7 @@ a supported configuration/scenario; no timing headline can come from that pass.
 For a bounded local validation or a different host configuration:
 
 ```sh
-WASMBENCH_RUNTIMES=wazero,v8 WASMBENCH_LAUNCHES=3 \
+WASMBENCH_RUNTIMES=wazero,v8-optimizing-only,v8-liftoff-only WASMBENCH_LAUNCHES=3 \
 WASMBENCH_SAMPLES=3 WASMBENCH_OPERATIONS=10 just refresh-local
 ```
 
@@ -267,3 +267,42 @@ own sacrificial correctness preflight. Unsupported outcomes get no timing credit
 incorrect results, crashes and unexpected errors stop the update.
 
 The daily refresh now includes the original feature corpus, explicit proposal configurations, and real shared-memory worker measurements. Thursday's additional schedule rebuilds eight retrospective weekly Wago revisions. See [feature and history workflow](features-and-history.md) for commands, JSON endpoints, collection scopes, failure handling and historical interpretation. Snapshot inventory schema 2 keeps full evidence in separate hashed files; summary and evidence digests must both be checked by consumers.
+
+### V8 compiler tiers
+
+Headline V8 results use separate `v8-optimizing-only` (Turboshaft) and
+`v8-liftoff-only` configurations. Both disable tier-up and lazy compilation.
+The optimizing mode uses `--no-liftoff`; the baseline uses `--liftoff-only`.
+Both include `--allow-natives-syntax` for a separate calibration module whose
+export is inspected before its first call. Calibration does not inspect every
+workload function, disable internal code caching, or prove background completion.
+V8's optimizing-tier inspection intrinsic retains the legacy name
+`%IsTurboFanFunction`; the pinned modern Wasm pipeline is Turboshaft.
+
+`wasmbench.config.json` pins Node 26.4.0 / V8 14.6.202.34-node.21 on both hosts.
+Collection rejects a different release, incorrect flags or a contradictory
+calibration result. Hub installs the SHA-256-verified Linux archive into its
+private measurement toolchain; its system Node is untouched. The Mac automation
+uses the same exact Node release through `actions/setup-node`.
+
+The optional `v8-wasmfx` feature adapter uses the same eager optimizing lock plus
+`--experimental-wasm-wasmfx`; the recorded harness patch and preflight enforce
+this. Shared-memory worker scaling runs all 32 cases in each eager tier, in separate
+processes with inherited worker flags, with a separate tier calibration in each worker. Execution means still exclude feature workloads.
+
+History retains the eight measured Wago revisions, using the freshly collected
+locked V8 configurations as a fixed current comparison baseline. Previous
+production-tiered V8 measurements are retained as sealed evidence and never
+relabeled as locked tiers.
+
+These builds do not establish an interpreter tier: `--wasm-jitless` still yielded
+Liftoff on the calibration export. An accepted flag is insufficient evidence of
+DrumBrake availability. V8's current Wasm tiers are documented in its
+[architecture guide](https://github.com/v8/v8/blob/main/docs/wasm/architecture.md).
+
+Verified imports are retained at `.wasmbench/verified-inputs` before downstream
+checks. Retry validation after a frontend fix with
+`node scripts/update-data.mjs --append --dataset .wasmbench/verified-inputs`.
+The retry verifies every cached digest and uses the same transactional installation
+and rollback. Rebuilds discard each temporary report after its projection is
+verified; original sealed evidence remains intact.

@@ -343,7 +343,7 @@
  		case "wasmtime", "wasmtime-winch", "wasmtime-pooling", "wasmtime-allocator", "wasmtime-winch-allocator", "wasmtime-code-lifetime", "wasmtime-winch-code-lifetime":
  			r.Command = []string{filepath.Join(root, "adapters", "wasmtime", "target", "release", "adapter-wasmtime")}
  			if strings.HasSuffix(id, "-allocator") {
-@@ -49,12 +51,13 @@
+@@ -49,12 +51,16 @@
  			r.Command = []string{filepath.Join(root, "bin", "adapter-wazero")}
  		case "wazero-interpreter":
  			r.Command = []string{filepath.Join(root, "bin", "adapter-wazero"), "--interpreter"}
@@ -354,8 +354,11 @@
  				return nil, e
  			}
  			r.Command = []string{node}
-+            if id == "v8-wasmfx" { r.Command = append(r.Command, "--experimental-wasm-wasmfx") }
  			mode := ""
++			if id == "v8-wasmfx" {
++				mode = "optimizing-wasmfx-only"
++				r.Command = append(r.Command, "--allow-natives-syntax", "--no-liftoff", "--no-wasm-tier-up", "--no-wasm-lazy-compilation", "--experimental-wasm-wasmfx")
++			}
  			if id == "v8-liftoff-only" {
  				mode = "liftoff-only"
 @@ -742,6 +745,12 @@
@@ -454,3 +457,24 @@
 +		t.Fatalf("unsupported vector code extraction produced measurements: %+v", measured)
 +	}
 +}
+--- a/adapters/v8/compiler-mode.mjs
++++ b/adapters/v8/compiler-mode.mjs
+@@ -2,6 +2,7 @@
+ 
+ export const compilerModeFlags = Object.freeze({
+   'liftoff-only': Object.freeze(['--allow-natives-syntax','--liftoff-only','--no-wasm-tier-up','--no-wasm-lazy-compilation']),
++  'optimizing-wasmfx-only': Object.freeze(['--allow-natives-syntax','--no-liftoff','--no-wasm-tier-up','--no-wasm-lazy-compilation','--experimental-wasm-wasmfx']),
+   'optimizing-only': Object.freeze(['--allow-natives-syntax','--no-liftoff','--no-wasm-tier-up','--no-wasm-lazy-compilation']),
+ });
+ 
+--- a/adapters/v8/compiler-mode.test.mjs
++++ b/adapters/v8/compiler-mode.test.mjs
+@@ -25,7 +25,7 @@
+     assert.equal(evidence.version,'v8-compiler-mode-probe-v1');
+     assert.match(evidence.module_sha256,/^[a-f0-9]{64}$/);
+     assert.equal(evidence.liftoff,mode==='liftoff-only');
+-    assert.equal(evidence.optimizing,mode==='optimizing-only');
++    assert.equal(evidence.optimizing,mode!=='liftoff-only');
+     assert.equal(evidence.scope,'separate_calibration_module_export_before_first_call');
+     assert.equal(evidence.collector_version,process.versions.v8);
+   }

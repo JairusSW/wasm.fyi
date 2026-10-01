@@ -22,10 +22,25 @@ const options = ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=15', '-o', 'Server
 const ssh = (script, timeout = 120_000) => command('ssh', [...options, host.ssh, 'bash -lc ' + quote(script)], { timeout });
 const remotePath = path => `${host.ssh}:${path}`;
 const rsync = (args, compress = true) => command('rsync', ['-a', ...(compress ? ['-z'] : []), '-e', ['ssh', ...options.map(quote)].join(' '), ...args], { stdio: 'inherit', timeout: 30 * 60 * 1000 });
+// Install a private, checksum-pinned Node; never replace Hub's system runtime.
+const nodePin=settings.node;
+if(!/^\d+\.\d+\.\d+$/.test(nodePin.version) || !/^[a-f0-9]{64}$/.test(nodePin.linuxX64Sha256))throw new Error('Invalid Node pin');
+const nodeDirectory=`$HOME/${host.workspace}/toolchains/node-v${nodePin.version}-linux-x64`;
+const nodePath=`export PATH="${nodeDirectory}/bin:$HOME/.cargo/bin:$HOME/go/bin:$HOME/.local/bin:$PATH";`;
+process.stdout.write(ssh(`set -eu; test "$(uname -m)" = x86_64; mkdir -p "$HOME/${host.workspace}/toolchains"; exec 8>"$HOME/${host.workspace}/toolchains/node.lock"; flock -w 300 8;
+if ! test -x "${nodeDirectory}/bin/node"; then
+ task_node_archive=$(mktemp); task_node_stage=$(mktemp -d "$HOME/${host.workspace}/toolchains/node-stage.XXXXXX");
+ trap 'rm -f "$task_node_archive"; rm -rf "$task_node_stage"' EXIT;
+ curl -fLsS --retry 3 https://nodejs.org/dist/v${nodePin.version}/node-v${nodePin.version}-linux-x64.tar.xz -o "$task_node_archive";
+ echo '${nodePin.linuxX64Sha256}  '"$task_node_archive" | sha256sum -c -;
+ tar -xJf "$task_node_archive" -C "$task_node_stage";
+ mv "$task_node_stage/node-v${nodePin.version}-linux-x64" "${nodeDirectory}";
+fi
+${nodePath} test "$(node -p process.versions.node)" = '${nodePin.version}'; test "$(node -p process.versions.v8)" = ${quote(nodePin.v8)}; node --version;`,10*60*1000));
 const action = process.argv[2];
 if (action === 'doctor') {
   command('gtar', ['--version']); command('xz', ['--version']);
-  process.stdout.write(ssh('export PATH="$HOME/.cargo/bin:$HOME/go/bin:$HOME/.local/bin:$PATH"; set -eu; uname -a; for tool in node go cargo rsync git flock tar xz; do command -v "$tool"; done; node --version; go version; cargo --version', 30_000));
+  process.stdout.write(ssh(nodePath+'set -eu; uname -a; for tool in node go cargo rsync git flock tar xz; do command -v "$tool"; done; node --version; go version; cargo --version', 30_000));
 } else if (['collect', 'history', 'threads'].includes(action)) {
   command('gtar', ['--version']);
   command('xz', ['--version']);
@@ -40,7 +55,7 @@ if (action === 'doctor') {
   if (!resume) {
   const { root } = await harness();
   const wago = resolve(site, process.env.WAGO_SOURCE || settings.collection.wagoSource);
-  process.stdout.write(ssh(`export PATH="$HOME/.cargo/bin:$HOME/go/bin:$HOME/.local/bin:$PATH"; set -eu; for tool in node go cargo rsync git flock; do command -v "$tool"; done; mkdir -p ${quote(remote + '/harness')} ${quote(remote + '/wago')} ${quote(remote + '/site/scripts/lib')} ${quote(remote + '/site/.wasmbench')} ${quote(remote + '/site/patches')}`));
+  process.stdout.write(ssh(`${nodePath} set -eu; for tool in node go cargo rsync git flock; do command -v "$tool"; done; mkdir -p ${quote(remote + '/harness')} ${quote(remote + '/wago')} ${quote(remote + '/site/scripts/lib')} ${quote(remote + '/site/.wasmbench')} ${quote(remote + '/site/patches')}`));
   for (const [name, source] of [['harness', root], ['wago', wago]]) {
     const files = command('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'], { cwd: source });
     if (!files.length) throw new Error(`No source files found for ${name}`);
@@ -61,8 +76,8 @@ if (action === 'doctor') {
   rsync([join(site, 'scripts/wasmer-adapter.test.mjs'), remotePath(remote + '/site/scripts/')]);
   rsync([join(site, 'scripts/pack-evidence.mjs'), remotePath(remote + '/site/scripts/')]);
   rsync([join(site, 'scripts/lib/evidence-archive.mjs'), remotePath(remote + '/site/scripts/lib/')]);
-  rsync([join(site, 'scripts/lib/wasmbench.mjs'), join(site, 'scripts/lib/corpus.mjs'), join(site, 'scripts/lib/harness-patch.mjs'), join(site, 'scripts/lib/feature-configurations.mjs'), remotePath(remote + '/site/scripts/lib/')]);
-  rsync(['harness-capabilities.patch','harness-wasmer.patch','harness-wasmer-legacy.patch','harness-wasmer-reset-scope.patch','harness-wasmer-scoped.patch','harness-wasmer-applications.patch','harness-code-profile-policy.patch'].map(name=>join(site,'patches',name)).concat(remotePath(remote+'/site/patches/')));
+  rsync([join(site, 'scripts/lib/wasmbench.mjs'), join(site, 'scripts/lib/corpus.mjs'), join(site, 'scripts/lib/harness-patch.mjs'), join(site, 'scripts/lib/feature-configurations.mjs'), join(site, 'scripts/lib/v8-preflight.mjs'), remotePath(remote + '/site/scripts/lib/')]);
+  rsync(['harness-capabilities.patch','harness-capabilities-legacy.patch','harness-wasmer.patch','harness-wasmer-legacy.patch','harness-wasmer-reset-scope.patch','harness-wasmer-scoped.patch','harness-wasmer-applications.patch','harness-code-profile-policy.patch','harness-v8-wasmfx-lock.patch'].map(name=>join(site,'patches',name)).concat(remotePath(remote+'/site/patches/')));
   rsync(['-r', join(site, 'corpora'), remotePath(remote + '/site/')]);
   if (action === 'history') {
     const revision = command('git',['rev-parse','HEAD'],{cwd:wago}).toString().trim();
@@ -83,13 +98,13 @@ if (action === 'doctor') {
     const selectedRuntimes = process.env.WASMBENCH_RUNTIMES || (process.env.WASMBENCH_SUITE?.includes('corpora/features/') ? [...settings.collection.runtimes,...(settings.collection.featureRuntimes || [])] : settings.collection.runtimes).join(',');
     const nativeTests = selectedRuntimes.includes('wasmer-') ? 'WASMBENCH_REQUIRE_WASMER_TESTS=1 node --test scripts/wasmer-adapter.test.mjs;' : '';
     const task = action === 'history' ? `WAGO_SOURCE=${quote('../history-source')} WASMBENCH_CORPUS_SOURCE=${quote('../wago')} ${overrides} node scripts/history.mjs collect; cp .wasmbench/history/results.json .wasmbench/history-results.json; cp data/history/weekly.json .wasmbench/history-weekly.json` : action === 'threads' ? `${overrides} node scripts/thread-workers.mjs; cp -r data/threads .wasmbench/threads` : `${overrides} node scripts/bench.mjs build; ${nativeTests} ${overrides} node scripts/bench.mjs doctor; ${overrides} node scripts/bench.mjs collect`;
-    process.stdout.write(ssh(`export PATH="$HOME/.cargo/bin:$HOME/go/bin:$HOME/.local/bin:$PATH"; export GOFLAGS="-buildvcs=false"; set -eu; exec 9>"$HOME/${host.workspace}/measurement.lock"; flock -w 3600 9; cd ${quote(remote + '/site')}; ${task}`, 180 * 60 * 1000));
+    process.stdout.write(ssh(`${nodePath} export GOFLAGS="-buildvcs=false"; set -eu; exec 9>"$HOME/${host.workspace}/measurement.lock"; flock -w 3600 9; cd ${quote(remote + '/site')}; ${task}`, 180 * 60 * 1000));
     completed = true;
   } finally {
     // Retain partial evidence too. A failed remote pass never updates site data.
     // Successful reports already contain complete sealed copies of each pass.
     // Keep all original pass directories on failure for diagnosis.
-    const metadata = JSON.parse(ssh(`export PATH="$HOME/.local/bin:$PATH"; set -eu; cd ${quote(remote + '/site')}; node scripts/pack-evidence.mjs .wasmbench ../evidence.tar.xz ${completed ? '--complete' : ''}`, 20 * 60 * 1000).toString());
+    const metadata = JSON.parse(ssh(`${nodePath} set -eu; cd ${quote(remote + '/site')}; node scripts/pack-evidence.mjs .wasmbench ../evidence.tar.xz ${completed ? '--complete' : ''}`, 20 * 60 * 1000).toString());
     const archive = join(local, 'evidence.tar.xz');
     rsync([remotePath(remote + '/evidence.tar.xz'), archive], false);
     if (await fileDigest(archive) !== metadata.sha256) throw new Error('Hub transport archive checksum mismatch');

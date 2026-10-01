@@ -20,7 +20,7 @@ check:
 # Test frontend logic and the snapshot workflow.
 test:
     pnpm test
-    node --test scripts/workflow.test.mjs scripts/feature-adapter.test.mjs scripts/wasmer-adapter.test.mjs
+    node --test scripts/workflow.test.mjs scripts/feature-adapter.test.mjs scripts/wasmer-adapter.test.mjs scripts/v8-preflight.test.mjs
 
 # Validate gathered snapshots and their raw evidence.
 integration-audit:
@@ -176,7 +176,7 @@ history-collect:
 history-collect-hub:
     node scripts/hub.mjs history
 
-# Run all 32 shared-memory contention and worker-scaling cases.
+# Run all 32 shared-memory contention and worker-scaling cases in each V8 tier.
 threads-collect:
     node scripts/thread-workers.mjs
 

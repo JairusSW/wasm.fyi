@@ -65,7 +65,7 @@ describe('model', () => {
       expect(benchVal(scope,ALLB[0],'C','steady',2).st).toBe('nm');
     });
 	it('reports no clear leader when intervals overlap', () => {
-		const single={...scope,hide:{B:true,C:true,D:true,E:true,F:true,G:true}};
+		const single={...scope,hide:{B:true,C:true,D:true,E:true,F:true,G:true,H:true}};
         expect(leader(single, 'Fastest compilation', 'lat', 0, 'compile').clear).toBe(false);
 	});
 	for(const machine of ['m1','m2'] as const)it(`ranks the first three measured execution means and respects hidden configurations on ${machine}`,()=>{

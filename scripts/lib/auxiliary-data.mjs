@@ -5,6 +5,25 @@ import { exists, digest, site } from './wasmbench.mjs';
 import { validateData } from './validate-data.mjs';
 import { datasetFiles } from './snapshot-index.mjs';
 
+export const threadEvidencePath = name => /^(?:[a-f0-9]{64}|(?:darwin-arm64|linux-x64)(?:-(?:optimizing-only|liftoff-only))?)\.json$/.test(name);
+export function validateThreadEvidence(data) {
+  assert([1,2].includes(data.schema),'Unknown worker evidence schema');
+  if(data.collectorSource)assert.equal(digest(data.collectorSource),data.collectorSha256,'Worker collector source digest mismatch');
+  assert.equal(data.feature,'threads');
+  assert.equal(data.results.length,data.schema===2?64:32);
+  if(data.schema===2)for(const mode of ['optimizing-only','liftoff-only']) {
+    assert(data.variants?.[mode],'Missing worker tier identity');
+    assert.equal(data.results.filter(r=>r.compilerMode===mode).length,32,'Incomplete worker tier cohort');
+  }
+  for(const result of data.results) {
+    assert.equal(result.launches.length,3);
+    for(const launch of result.launches) {
+      assert.equal(launch.samples.length,3);
+      for(const sample of launch.samples)assert(sample.verified && sample.elapsedNs>=0);
+    }
+  }
+}
+
 export async function stageAuxiliary(destination) {
   const preflightSource=join(site,'data/wasmer-preflight');
   if(await exists(preflightSource)) {
@@ -50,14 +69,13 @@ export async function stageAuxiliary(destination) {
   if(await exists(source)) {
     const target=join(destination,'threads');await mkdir(target,{recursive:true});
     for(const name of await readdir(source)) {
-      assert(/^(?:[a-f0-9]{64}|(?:darwin-arm64|linux-x64))\.json$/.test(name),'Unsafe thread evidence path');
+      assert(threadEvidencePath(name),'Unsafe thread evidence path');
       if(/^[a-f0-9]{64}\.json$/.test(name)) assert.equal(digest(await readFile(join(source,name))),name.slice(0,-5),'Thread evidence filename digest mismatch');
       else {
         const pointer=JSON.parse(await readFile(join(source,name),'utf8'));
         assert(/^[a-f0-9]{64}\.json$/.test(pointer.evidence),'Unsafe thread evidence reference');
         const bytes=await readFile(join(source,pointer.evidence));assert.equal(digest(bytes),pointer.sha256);
-        const data=JSON.parse(bytes);if(data.collectorSource)assert.equal(digest(data.collectorSource),data.collectorSha256,'Worker collector source digest mismatch');assert.equal(data.feature,'threads');assert.equal(data.results.length,32);
-        for(const result of data.results) {assert.equal(result.launches.length,3);for(const launch of result.launches){assert.equal(launch.samples.length,3);for(const sample of launch.samples)assert(sample.verified && sample.elapsedNs>=0);}}
+        validateThreadEvidence(JSON.parse(bytes));
       }
       await cp(join(source,name),join(target,name));
     }

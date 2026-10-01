@@ -64,6 +64,9 @@ try {
       throughput: data.throughput || [], evidence: `${id}.json`, trials: data.bundle.trials
     });
     console.log(`Verified ${manifest.id}: ${manifest.lock.runtime_configurations.length} configurations, ${manifest.lock.workloads.length} workloads`);
+    // The projection is now in memory. Bound disk usage to one rebuilt report;
+    // original sealed inputs remain available for inspection and retries.
+    if (rebuild) await rm(dir, { recursive: true, force: true });
   }
   const index = [];
   for (const report of reports) {

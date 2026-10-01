@@ -8,7 +8,7 @@ export const RTS: Runtime[] = [
   { id: 'wasmer', name: 'Wasmer', lang: 'Rust', exec: ['JIT', 'AOT'], tiers: 'LLVM · Cranelift · Singlepass', arch: ['x86-64', 'AArch64', 'RISC-V 64'], wasi: '0.1 · WASIX', cm: 'n', repo: 'github.com/wasmerio/wasmer', lic: 'MIT', rel: '6.1.0', size: '11.8 MB', embed: ['Rust', 'C', 'Python', 'Go', 'JS', 'PHP'], cfg: ['C', 'D'], notes: ['Pluggable compiler backends', 'WASIX extends WASI with sockets, threads and fork', 'Headless engine for precompiled artifacts'] },
   { id: 'wazero', name: 'wazero', lang: 'Go', exec: ['Interpreter', 'AOT'], tiers: 'Interpreter · compiler (amd64, arm64)', arch: ['x86-64', 'AArch64', 'any (interpreter)'], wasi: '0.1', cm: 'n', repo: 'github.com/tetratelabs/wazero', lic: 'Apache-2.0', rel: '1.9.0', size: '5.1 MB', embed: ['Go'], cfg: ['E'], notes: ['Zero dependencies, no cgo', 'Compiler mode generates native code ahead of first call', 'Benchmarked here in interpreter mode'] },
   { id: 'wago', name: 'Wago', lang: 'Go', exec: ['Interpreter'], tiers: 'Interpreter', arch: ['any (Go targets)'], wasi: '0.1', cm: 'n', repo: '—', lic: '—', rel: '0.4.2', size: '—', embed: ['Go'], cfg: ['G'], notes: ['Metadata pending maintainer confirmation'] },
-  { id: 'v8', name: 'V8', lang: 'C++', exec: ['JIT'], tiers: 'Liftoff (baseline) → TurboFan (optimizing) · lazy compile + dynamic tier-up', arch: ['x64', 'ARM64', 'IA-32', 'ARM', 'RISC-V', 's390x', 'PPC64', 'LoongArch'], wasi: '— (host provides)', cm: 'n', repo: 'chromium.googlesource.com/v8/v8', lic: 'BSD-3-Clause', rel: '14.1', size: '≈30 MB (incl. JS)', embed: ['C++', 'Node.js', 'Deno', 'Chromium'], cfg: ['F'], engine: 0, notes: ['WasmGC objects live on the JS heap', 'Compiled-module code caching', 'Lazy compilation by default'] },
+  { id: 'v8', name: 'V8', lang: 'C++', exec: ['JIT'], tiers: 'Liftoff (baseline) · Turboshaft (optimizing) · measured separately, eager with tier-up disabled', arch: ['x64', 'ARM64', 'IA-32', 'ARM', 'RISC-V', 's390x', 'PPC64', 'LoongArch'], wasi: '— (host provides)', cm: 'n', repo: 'chromium.googlesource.com/v8/v8', lic: 'BSD-3-Clause', rel: '14.1', size: '≈30 MB (incl. JS)', embed: ['C++', 'Node.js', 'Deno', 'Chromium'], cfg: ['F', 'H'], engine: 0, notes: ['WasmGC objects live on the JS heap', 'Compiled-module code caching', 'Measured configurations disable lazy compilation and tier-up'] },
   { id: 'spidermonkey', name: 'SpiderMonkey', lang: 'C++', exec: ['JIT'], tiers: 'Baseline → Ion (optimizing)', arch: ['x64', 'ARM64', 'x86', 'ARM', 'MIPS64', 'LoongArch', 'RISC-V 64'], wasi: '—', cm: 'n', repo: 'searchfox.org/mozilla-central', lic: 'MPL-2.0', rel: 'Firefox 143', size: '—', embed: ['C++', 'Firefox'], engine: 1, notes: ['Baseline compiler tuned for fast startup', 'Ion backend shared with JS'] },
   { id: 'jsc', name: 'JavaScriptCore', lang: 'C++', exec: ['Interpreter', 'JIT'], tiers: 'IPInt (in-place interpreter) → BBQ → OMG', arch: ['ARM64', 'x64'], wasi: '—', cm: 'n', repo: 'github.com/WebKit/WebKit', lic: 'LGPL-2.1 / BSD-2-Clause', rel: 'Safari 26', size: '—', embed: ['C', 'Swift / Obj-C', 'Safari', 'Bun'], engine: 2, notes: ['In-place interpreter skips a translation step', 'Three tiers with on-stack replacement'] },
   { id: 'wasmi', name: 'Wasmi', lang: 'Rust', exec: ['Interpreter'], tiers: 'Register-based interpreter · lazy translation', arch: ['any (Rust targets)', 'no_std'], wasi: '0.1', cm: 'n', repo: 'github.com/wasmi-labs/wasmi', lic: 'MIT OR Apache-2.0', rel: '0.51', size: '0.9 MB', embed: ['Rust', 'C'], notes: ['Designed for embedded and blockchain use', 'API mirrors Wasmtime', 'Lazy function translation for fast startup'] },
@@ -25,13 +25,14 @@ export const CFG: Cfg[] = [
   { id: 'C', rt: 'wasmer', ver: '6.1.0', be: 'llvm', kind: 'ahead-of-time', col: 'var(--rt-wasmer)', hollow: false },
   { id: 'D', rt: 'wasmer', ver: '6.1.0', be: 'singlepass', kind: 'single-pass JIT', col: 'var(--rt-wasmer)', hollow: true },
   { id: 'E', rt: 'wazero', ver: '1.9.0', be: 'interpreter', kind: 'interpreter', col: 'var(--rt-wazero)', hollow: false, interp: true },
-  { id: 'F', rt: 'v8', ver: '14.1.146', be: 'tiered', kind: 'baseline → optimizing tiers', col: 'var(--rt-v8)', hollow: false },
+  { id: 'F', rt: 'v8', ver: '14.6', be: 'optimizing-only', kind: 'Turboshaft optimizing JIT', col: 'var(--rt-v8)', hollow: false },
   { id: 'G', rt: 'wago', ver: '0.4.2', be: 'interpreter', kind: 'interpreter', col: 'var(--rt-wago)', hollow: false, interp: true },
+  { id: 'H', rt: 'v8', ver: '14.6', be: 'liftoff-only', kind: 'Liftoff baseline JIT', col: 'var(--rt-v8)', hollow: true },
 ];
 
 for(const c of CFG) {
   const measured=viewData.hosts.m1.configurations[c.id];
-  if(measured){c.ver=measured.version.length>32?measured.version.slice(0,12):measured.version;c.be=measured.backend;}
+  if(measured){c.ver=measured.version.length>32?measured.version.slice(0,12):measured.version;c.be=c.id==='F'?'Turboshaft':c.id==='H'?'Liftoff':measured.backend;}
   if(c.id==='E'||c.id==='G'){c.interp=false;c.kind='JIT compiler';}
   if(c.id==='C')c.kind='LLVM JIT';
 }
@@ -52,7 +53,7 @@ for(const runtime of RTS) {
     ];
   }
 }
-export const WF: Record<CfgId,number> = {A:1,B:1,C:1,D:1,E:1,F:1,G:1};
+export const WF: Record<CfgId,number> = {A:1,B:1,C:1,D:1,E:1,F:1,G:1,H:1};
 export const MACH: Record<MachineId,Machine> = Object.fromEntries(Object.entries(viewData.hosts).map(([id,h])=>[id,{
   l:h.label,os:h.os,f:{},off:Object.fromEntries(CFG.filter(c=>!h.configurations[c.id]).map(c=>[c.id,'Configuration not collected on this host']))
 }])) as Record<MachineId,Machine>;

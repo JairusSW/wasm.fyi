@@ -1,6 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { digest, site } from './lib/wasmbench.mjs';
+import { validateV8Description } from './lib/v8-preflight.mjs';
+import { digest, site, config } from './lib/wasmbench.mjs';
 import { validateData } from './lib/validate-data.mjs';
 import { workloadCategory, compareWorkloads } from './lib/workload-category.mjs';
 import { measuredTiming, measuredMemory, measuredCodeImage, measuredHistory } from '../src/lib/measured.ts';
@@ -16,7 +17,16 @@ for (const entry of index.reports) {
   reports.push(JSON.parse(bytes));
 }
 reports.sort((a,b)=>b.created.localeCompare(a.created));
-const configurations = { A:'wasmtime', B:'wasmtime-winch', C:'wasmer-llvm', D:'wasmer-singlepass', E:'wazero', F:'v8', G:'wago' };
+const settings=await config();
+for(const report of reports)for(const runtime of report.runtimes) {
+  const modes={'v8-optimizing-only':'optimizing-only','v8-liftoff-only':'liftoff-only'};
+  if(modes[runtime.id])validateV8Description(runtime.description,settings.node,modes[runtime.id]);
+}
+for(const os of ['linux','darwin']) {
+  const experimental=reports.find(r=>r.host.os===os && r.runtimes.some(c=>c.id==='v8-wasmfx'))?.runtimes.find(c=>c.id==='v8-wasmfx');
+  if(experimental)validateV8Description(experimental.description,settings.node,'optimizing-wasmfx-only');
+}
+const configurations = { A:'wasmtime', B:'wasmtime-winch', C:'wasmer-llvm', D:'wasmer-singlepass', E:'wazero', F:'v8-optimizing-only', G:'wago', H:'v8-liftoff-only' };
 const scenarios = { compile:'compile', inst:'instantiate', first:'first-call', steady:'steady' };
 const memoryScenarios={rss:'steady',rssCompile:'compile',rssInst:'instantiate',rssFirst:'first-call'};
 const catalogue = new Map();
@@ -110,6 +120,17 @@ for(const [machine,name] of [['m1','linux-x64'],['m2','darwin-arm64']]) {
   const bytes=await readFile(join(site,'data/threads',ref.evidence));
   if(digest(bytes)!==ref.sha256)throw new Error('Changed worker evidence');
   const raw=JSON.parse(bytes);
+  if(raw.schema!==2 || raw.results.length!==64)throw new Error('Missing dual-tier worker cohort');
+  for(const mode of ['optimizing-only','liftoff-only']) {
+    const variant=raw.variants?.[mode],flags=['--allow-natives-syntax',mode==='liftoff-only'?'--liftoff-only':'--no-liftoff','--no-wasm-tier-up','--no-wasm-lazy-compilation'];
+    if(!variant || variant.compilerMode!==mode || variant.node!==`v${settings.node.version}` || variant.v8!==settings.node.v8 || JSON.stringify(variant.flags)!==JSON.stringify(flags) || variant.compilerModeProbe?.liftoff!==(mode==='liftoff-only') || variant.compilerModeProbe?.optimizing!==(mode==='optimizing-only'))throw new Error('Worker variant lacks its pinned eager tier lock');
+    if(typeof variant.compilerModeSource!=='string' || digest(variant.compilerModeSource)!==variant.compilerModeSourceSha256 || digest(variant.collectorSource)!==variant.collectorSha256)throw new Error('Worker calibration source digest mismatch');
+    const cases=raw.results.filter(r=>r.compilerMode===mode);
+    if(cases.length!==32 || new Set(cases.map(r=>[r.sharing,r.workers,r.operationsPerWorker].join('|'))).size!==32)throw new Error('Incomplete worker variant cohort');
+    for(const result of cases)for(const launch of result.launches) {
+      if(launch.workerTierProbes?.length!==result.workers || launch.workerTierProbes.some(p=>JSON.stringify(p.flags)!==JSON.stringify(flags) || p.probe?.liftoff!==(mode==='liftoff-only') || p.probe?.optimizing!==(mode==='optimizing-only') || p.probe?.collector_version!==settings.node.v8))throw new Error('Worker tier lock was not independently calibrated');
+    }
+  }
   for(const result of raw.results)for(const launch of result.launches)for(const sample of launch.samples)
     if(!sample.verified || !(sample.elapsedNs>0) || sample.operations!==result.workers*result.operationsPerWorker)throw new Error('Unverified worker result');
   output.threads[machine]={created:raw.created,configuration:raw.configuration,node:raw.node,v8:raw.v8,policy:raw.policy,evidence:ref.evidence,sha256:ref.sha256,results:raw.results};

@@ -31,14 +31,14 @@ describe('measured view boundary', () => {
 	});
 
 	it('never substitutes heap for RSS or compile-only support for execution', () => {
-		const memory = feature.memory.find(memory => memory.runtime === 'v8' && memory.workload === item.id && memory.scenario === 'compile' && memory.metric === 'host.js_heap.end')!;
-		const cell = measuredMemory(feature, 'v8', item.id, item.sha256, 'compile', memory.metric);
+		const memory = feature.memory.find(memory => memory.runtime === 'v8-optimizing-only' && memory.workload === item.id && memory.scenario === 'compile' && memory.metric === 'host.js_heap.end')!;
+		const cell = measuredMemory(feature, 'v8-optimizing-only', item.id, item.sha256, 'compile', memory.metric);
 		expect(cell.status).toBe('ok');
 		if (cell.status === 'ok') expect(cell.value).toBe(memory.median_bytes);
 		const incomplete = structuredClone(feature);
 		incomplete.memory.find(value => value.runtime === memory.runtime && value.workload === memory.workload && value.scenario === memory.scenario && value.metric === memory.metric)!.independent_launches--;
-		expect(measuredMemory(incomplete, 'v8', item.id, item.sha256, 'compile', memory.metric).status).toBe('not-measured');
-		expect(measuredMemory(feature, 'v8', item.id, item.sha256, 'compile', 'invented.rss').status).toBe('not-measured');
+		expect(measuredMemory(incomplete, 'v8-optimizing-only', item.id, item.sha256, 'compile', memory.metric).status).toBe('not-measured');
+		expect(measuredMemory(feature, 'v8-optimizing-only', item.id, item.sha256, 'compile', 'invented.rss').status).toBe('not-measured');
 		const async = feature.workloads.find(workload => workload.id === 'features/cm-async/future-stream-compile/1')!;
 		expect(measuredTiming(feature, 'wasmtime-component-async', async.id, async.sha256, 'compile').status).toBe('ok');
 		expect(measuredTiming(feature, 'wasmtime-component-async', async.id, async.sha256, 'steady').status).toBe('unsupported');

@@ -6,6 +6,7 @@ import { digest, harness, site } from './lib/wasmbench.mjs';
 import { prepareCorpus } from './lib/corpus.mjs';
 import { featureConfigurations } from './lib/feature-configurations.mjs';
 import { patchHarness } from './lib/harness-patch.mjs';
+import { verifyV8 } from './lib/v8-preflight.mjs';
 
 const action = process.argv[2];
 const { root, settings, run } = await harness();
@@ -48,6 +49,7 @@ else if (action === 'build') {
   if (runtimes.split(',').includes('wago')) args.push('--wago-source', resolve(site, process.env.WAGO_SOURCE || collection.wagoSource));
   invoke(...args);
 } else if (action === 'collect') {
+  verifyV8(root, settings.node, runtimes.split(','));
   const id = new Date().toISOString().replace(/[:.]/g, '-') + '-' + randomUUID().slice(0, 8);
   const directory = join(site, '.wasmbench/experiments', id);
   await mkdir(directory, { recursive: true });

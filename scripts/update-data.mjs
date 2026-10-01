@@ -1,12 +1,13 @@
 import { parseArgs } from 'node:util';
 import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
+import { datasetFiles } from './lib/snapshot-index.mjs';
 import { compact, command, config, digest, exists, installDirectory, json, locked, site } from './lib/wasmbench.mjs';
 import { validateData } from './lib/validate-data.mjs';
 import { stageHistoryBaseline } from './lib/history-baseline.mjs';
 import { writeIndex } from './lib/snapshot-index.mjs';
 
-const { values, positionals } = parseArgs({ options: { append: { type: 'boolean', default: false }, rebuild: { type: 'boolean', default: false } }, allowPositionals: true });
+const { values, positionals } = parseArgs({ options: { dataset: {type:'string'}, append: { type: 'boolean', default: false }, rebuild: { type: 'boolean', default: false } }, allowPositionals: true });
 await locked(async () => {
   const work = join(site, '.wasmbench');
   await mkdir(work, { recursive: true });
@@ -20,7 +21,17 @@ await locked(async () => {
   const priorBuild = await exists(join(site, 'build'));
   if (priorBuild) await cp(join(site, 'build'), join(temp, 'build-backup'), { recursive: true });
   try {
-    command(process.execPath, ['scripts/import-wasmbench.mjs', '--output', stagedData, ...(values.rebuild ? ['--rebuild'] : []), ...positionals], { stdio: 'inherit' });
+    if(values.dataset) {
+      if(positionals.length || values.rebuild)throw new Error('--dataset cannot be combined with report paths or --rebuild');
+      const source=resolve(values.dataset),inventory=await validateData(source);
+      await mkdir(stagedData,{recursive:true});
+      for(const name of datasetFiles(inventory))await cp(join(source,name),join(stagedData,name));
+    } else {
+      command(process.execPath, ['scripts/import-wasmbench.mjs', '--output', stagedData, ...(values.rebuild ? ['--rebuild'] : []), ...positionals], { stdio: 'inherit' });
+      await validateData(stagedData);
+      const cache=join(temp,'verified-inputs');await cp(stagedData,cache,{recursive:true});
+      const finish=await installDirectory(cache,join(work,'verified-inputs'));await finish(false);
+    }
     if (values.append && prior) {
       const previous = await validateData(destination);
       const incoming = await validateData(stagedData);
@@ -42,7 +53,7 @@ await locked(async () => {
     }
     command('pnpm', ['check'], { stdio: 'inherit' });
     command('pnpm', ['test'], { stdio: 'inherit' });
-    command(process.execPath, ['--test', 'scripts/workflow.test.mjs'], { stdio: 'inherit' });
+    command(process.execPath, ['--test', 'scripts/workflow.test.mjs', 'scripts/v8-preflight.test.mjs'], { stdio: 'inherit' });
     command(process.execPath, ['scripts/build-site.mjs'], { stdio: 'inherit' });
     const current = await readFile(join(destination, 'index.json'));
     await writeFile(join(work, 'update-summary.json'), JSON.stringify({ changed: !prior || digest(prior) !== digest(current),

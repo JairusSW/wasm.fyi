@@ -11,7 +11,7 @@ interface Host {
 	snapshots: Record<'s1'|'s2',Record<string,ViewCell>>;
 }
 interface ViewData {
-	threads:Record<MachineId,{created:string;configuration:string;node:string;v8:string;policy:string;evidence:string;sha256:string;results:{sharing:string;workers:number;operationsPerWorker:number;launches:{launch:number;samples:{elapsedNs:number;operations:number;verified:boolean}[]}[]}[]}>;
+	threads:Record<MachineId,{created:string;configuration:string;node:string;v8:string;policy:string;evidence:string;sha256:string;results:{compilerMode:string;sharing:string;workers:number;operationsPerWorker:number;launches:{launch:number;samples:{elapsedNs:number;operations:number;verified:boolean}[]}[]}[]}>;
 	schema: number; catalogue: Bench[]; hosts: Record<MachineId,Host>; reasons:string[];
 	configurations:Record<CfgId,string>;
 	statistics:{timingSamples:number};

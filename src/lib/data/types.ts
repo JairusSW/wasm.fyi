@@ -1,4 +1,4 @@
-export type CfgId = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
+export type CfgId = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H';
 export type MachineId = 'm1' | 'm2';
 export type ProposalId = 'simd' | 'gc' | 'memory64' | 'threads';
 export type SupportCode = 'y' | 'f' | 'p' | 'n' | '?' | '-';

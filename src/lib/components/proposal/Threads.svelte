@@ -20,14 +20,16 @@
   const vis=$derived(CFG.filter(c=>isVisible(ui.scope,c)));
   const record=$derived(viewData.threads[ui.machine]);
   const median=(xs:number[])=>{const s=[...xs].sort((a,b)=>a-b);return s[s.length>>1];};
-  const throughput=(sharing:string,workers:number)=>{
-    const r=record.results.find(r=>r.sharing===sharing && r.workers===workers && r.operationsPerWorker===1000000);
+  const throughput=(mode:string,sharing:string,workers:number)=>{
+    const r=record.results.find(r=>r.compilerMode===mode && r.sharing===sharing && r.workers===workers && r.operationsPerWorker===1000000);
     return r?median(r.launches.map(l=>median(l.samples.map(s=>s.operations/s.elapsedNs)))):null;
   };
   const THR_D=$derived.by(()=>{
-    const base=throughput('disjoint',1),contended=throughput('contended',1);
-    const values=base?[1,2,4,8].map(w=>(throughput('disjoint',w) || 0)/base):[];
-    return {F:values.length?[...values,0,0,contended?(throughput('contended',8) || 0)/contended:0]:undefined} as Partial<Record<typeof CFG[number]['id'],number[]>>;
+    return Object.fromEntries(([['F','optimizing-only'],['H','liftoff-only']] as const).map(([id,mode])=>{
+      const base=throughput(mode,'disjoint',1),contended=throughput(mode,'contended',1);
+      const values=base?[1,2,4,8].map(w=>(throughput(mode,'disjoint',w) || 0)/base):[];
+      return [id,values.length?[...values,0,0,contended?(throughput(mode,'contended',8) || 0)/contended:0]:undefined];
+    })) as Partial<Record<typeof CFG[number]['id'],number[]>>;
   });
   const withData=$derived(vis.filter(c=>THR_D[c.id]));
   const lines=$derived(withData.map(c=>({c,p:THR_D[c.id]!.slice(0,4).map((v,k)=>TX(k).toFixed(1)+','+TY(v).toFixed(1)).join(' ')})));
@@ -41,7 +43,7 @@
 
 <div class="cards wide">
 	<div class="card g6">
-		<div><div class="card-title">Throughput scaling</div><div class="note">Node worker embedding · disjoint counters · 1M operations/worker · speedup vs 1 worker · dashed = ideal</div></div>
+		<div><div class="card-title">Throughput scaling</div><div class="note">Node worker embedding · disjoint counters · 1M operations/worker · speedup vs 1 worker · gray dashed = ideal</div></div>
 		<div class="chart">
 			<svg viewBox="0 0 {TW} {TH}">
 				{#each yTicks as t (t.y)}<line x1="44" x2="588" y1={t.y} y2={t.y} style="stroke:var(--line)" />{/each}

@@ -7,6 +7,18 @@ import { command, compact, digest, installDirectory } from './lib/wasmbench.mjs'
 import { packEvidence, fileDigest } from './lib/evidence-archive.mjs';
 import { writeIndex, datasetFiles } from './lib/snapshot-index.mjs';
 import { validateReport, validateData } from './lib/validate-data.mjs';
+import { threadEvidencePath, validateThreadEvidence } from './lib/auxiliary-data.mjs';
+
+test('stages dual-tier worker evidence while rejecting unsafe paths and incomplete cohorts',()=>{
+  for(const name of ['darwin-arm64.json','linux-x64-liftoff-only.json','darwin-arm64-optimizing-only.json','a'.repeat(64)+'.json'])assert(threadEvidencePath(name));
+  for(const name of ['../linux-x64.json','linux-x64-unknown.json','sub/linux-x64.json','linux-x64.json/extra'])assert(!threadEvidencePath(name));
+  const cases=mode=>Array.from({length:32},()=>({compilerMode:mode,launches:Array.from({length:3},()=>({samples:Array.from({length:3},()=>({verified:true,elapsedNs:1}))}))}));
+  validateThreadEvidence({schema:1,feature:'threads',results:cases('optimizing-only')});
+  const data={schema:2,feature:'threads',variants:{'optimizing-only':{},'liftoff-only':{}},results:[...cases('optimizing-only'),...cases('liftoff-only')]};
+  validateThreadEvidence(data);
+  assert.throws(()=>validateThreadEvidence({...data,results:data.results.slice(1)}));
+  assert.throws(()=>validateThreadEvidence({...data,results:[...cases('optimizing-only'),...cases('optimizing-only')]}));
+});
 
 function report() {
   return { id: 'a'.repeat(64), lockSha256: 'b'.repeat(64), runId: 'fixture', created: '2026-10-01T00:00:00Z',
