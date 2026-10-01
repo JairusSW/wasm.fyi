@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { siteHref } from '$lib/links';
 	import { COMPAT, FLAGS, FT } from '$lib/data/features';
 	import { CB, CFG, MACH } from '$lib/data/runtimes';
 	import { ALLB, MET, OV, PHASE_NOTE } from '$lib/data/snapshot';
@@ -271,7 +272,7 @@
 					<pre class="mono">{cell.cmd}</pre>
 				</div>
 				<div class="actions">
-					<a class="primary" href={benchHref(cell.b.id)}>Open benchmark page</a>
+					<a class="primary" href={siteHref(benchHref(cell.b.id))}>Open benchmark page</a>
 					<button class="outline" onclick={() => ui.openProfile(cell.c.rt)}>Runtime profile</button>
 				</div>
 			{:else if compat}

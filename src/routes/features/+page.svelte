@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { siteHref } from '$lib/links';
 	import RtLabel from '$lib/components/RtLabel.svelte';
 	import Seg from '$lib/components/Seg.svelte';
 	import Swatch from '$lib/components/Swatch.svelte';
@@ -136,7 +137,7 @@
 
 {#snippet proposalLinks()}
 	{#each propLinks as p (p.id)}
-		<a class="plink" href="/{p.id}" data-tip="Open the {p.label} page: status, adoption & performance">{p.label}</a>
+		<a class="plink" href={siteHref(`/${p.id}`)} data-tip="Open the {p.label} page: status, adoption & performance">{p.label}</a>
 	{/each}
 {/snippet}
 
@@ -175,7 +176,7 @@
 					{#each g.rows as r (r.f.id)}
 						<tr>
 							<td class="stick fname">
-								{#if r.f.page}<a class="link w5" href="/{r.f.page}">{r.f.name}</a>{:else}<span class="w5">{r.f.name}</span>{/if}
+								{#if r.f.page}<a class="link w5" href={siteHref(`/${r.f.page}`)}>{r.f.name}</a>{:else}<span class="w5">{r.f.name}</span>{/if}
 								<div class="mono micro fg3">{r.f.phase} · {r.count}</div>
 							</td>
 							{#each r.cells as x, k (k)}
@@ -234,7 +235,7 @@
 									<button class="fam" aria-expanded={open} onclick={() => (ui.compatOpen = { ...ui.compatOpen, [f.id]: !open })}>
 										<span class="mono caret">{open ? '▾' : '▸'}</span><span class="w5">{f.name}</span>
 									</button>
-									{#if f.page}<a class="link-quiet small" href="/{f.page}">feature page</a>{/if}
+									{#if f.page}<a class="link-quiet small" href={siteHref(`/${f.page}`)}>feature page</a>{/if}
 								</div>
 								<div class="mono micro fg3 indent">{n0(f.total)} {sec.unit}</div>
 							</td>
@@ -307,7 +308,7 @@
 							<td class="stick fname">
 								<div class="fam-line">
 									<span class="w5">{r.f.name}</span>
-									{#if r.f.page}<a class="link-quiet small" href="/{r.f.page}">feature page</a>{/if}
+									{#if r.f.page}<a class="link-quiet small" href={siteHref(`/${r.f.page}`)}>feature page</a>{/if}
 								</div>
 								<div class="mono micro fg3">{r.corpus}</div>
 							</td>

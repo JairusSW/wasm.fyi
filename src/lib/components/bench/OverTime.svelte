@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { siteHref } from '$lib/links';
+	import { goto } from '$lib/navigation';
 	import { CFG } from '$lib/data/runtimes';
 	import { EVENTS, OTM, OTM_KEYS, SNAPS, verAt } from '$lib/data/snapshot';
 	import type { CfgId } from '$lib/data/types';
@@ -106,7 +107,7 @@
 		/>
 		<span class="s12 fg3">16 weekly snapshots · hover to inspect · ← → keys</span>
 		<span class="s12 fg2">{spEvent}</span>
-		<a class="link-quiet push" href={histHref(ui.histCfg)}>History</a>
+		<a class="link-quiet push" href={siteHref(histHref(ui.histCfg))}>History</a>
 	</div>
 	<div class="tbl-wrap" role="presentation" onmouseleave={() => (hover = null)}>
 		<table class="t sp">
@@ -122,7 +123,7 @@
 				{#each rows as h (h.c.id)}
 					<tr class="hoverbg" onclick={() => goto(histHref(h.c.id))}>
 						<td class="nowrap w1">
-							<a class="rt" href={histHref(h.c.id)} data-tip={`${h.c.rt} ${h.c.ver} · ${h.c.be}\n${h.c.kind}\nClick to open history`}>
+							<a class="rt" href={siteHref(histHref(h.c.id))} data-tip={`${h.c.rt} ${h.c.ver} · ${h.c.be}\n${h.c.kind}\nClick to open history`}>
 								<RtLabel c={h.c} mono />
 							</a>
 						</td>

@@ -45,3 +45,21 @@ The `build/` directory can be deployed to any static host. Unknown paths fall ba
 ## Replacing the synthetic data
 
 The modules in `src/lib/data/` mirror the prototype's data shapes. When the harness publishes versioned snapshot JSON, load it in place of these modules and keep `model.ts` as the derivation layer.
+
+## Update and deployment workflow
+
+Use `just` for the full workflow:
+
+```sh
+just setup
+just verify             # checks, tests, verified evidence, static site
+just update             # import configured reports and rebuild transactionally
+just bench-build
+just refresh            # collect fresh passes, retain snapshots and rebuild
+just deploy             # deploy the committed branch to GitHub Pages
+```
+
+The original UI still displays its synthetic fixtures. Verified measured snapshots
+are shipped separately at `wasmbench/index.json`; no visual redesign is included.
+See [the complete workflow](docs/updating.md) for report selection, measurement
+settings, GitHub Pages, daily automation, failure recovery and runner setup.

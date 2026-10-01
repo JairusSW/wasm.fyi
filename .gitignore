@@ -7,3 +7,8 @@ node_modules
 .env.*
 !.env.example
 vite.config.*.timestamp-*
+
+# Local immutable benchmark runs and workflow staging
+/.wasmbench/
+/.playwright-cli/
+/output/playwright/

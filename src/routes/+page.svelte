@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { siteHref } from '$lib/links';
 	import Swatch from '$lib/components/Swatch.svelte';
 	import { FEATS, PROPS } from '$lib/data/features';
 	import { CFG } from '$lib/data/runtimes';
@@ -87,8 +88,8 @@
 			Independent benchmarks, feature support and proposal performance. Every number links to the run that produced it.
 		</p>
 		<div class="ctas">
-			<a class="btn-primary" href="/benchmarks">Explore benchmarks</a>
-			<a class="btn-outline" href="/features">Feature status</a>
+			<a class="btn-primary" href={siteHref(`/benchmarks`)}>Explore benchmarks</a>
+			<a class="btn-outline" href={siteHref(`/features`)}>Feature status</a>
 		</div>
 	</div>
 	<div class="panel board">
@@ -131,10 +132,10 @@
 	<div class="areas">
 		{#each areas as a (a.t)}
 			<div class="area">
-				<a class="area-title" href={a.href}>{a.t} →</a>
+				<a class="area-title" href={siteHref(a.href)}>{a.t} →</a>
 				<p class="fg2">{a.d}</p>
 				<div class="area-links">
-					{#each a.links as [label, to] (label)}<a class="link" href={to}>{label}</a>{/each}
+					{#each a.links as [label, to] (label)}<a class="link" href={siteHref(to)}>{label}</a>{/each}
 				</div>
 			</div>
 		{/each}
@@ -149,7 +150,7 @@
 	</div>
 	<div class="props">
 		{#each props as p (p.id)}
-			<a class="prop panel" href="/{p.id}" data-tip="Open the {p.title} page: status, adoption & performance">
+			<a class="prop panel" href={siteHref(`/${p.id}`)} data-tip="Open the {p.title} page: status, adoption & performance">
 				<span class="prop-head"><span class="s18 w6">{p.title}</span><span class="mono micro fg3">{p.phase}</span></span>
 				<span class="fg2">{p.q}</span>
 			</a>
@@ -188,7 +189,7 @@
 				<div class="event"><span class="mono s12 fg3">{e.date}</span><span>{e.label}</span></div>
 			{/each}
 		</div>
-		<a class="link" href="/history">All history and change reports</a>
+		<a class="link" href={siteHref(`/history`)}>All history and change reports</a>
 	</div>
 </section>
 

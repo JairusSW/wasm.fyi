@@ -1,0 +1,42 @@
+{
+  "root": "../../Tools/wasm-bench",
+  "reports": [
+    {
+      "path": "reports/five-configurations-lifecycle-graph-v18",
+      "rebuild": true
+    },
+    {
+      "path": "reports/extra-adapters-v2"
+    },
+    {
+      "path": "reports/five-configurations-composite-v3",
+      "rebuild": true
+    }
+  ],
+  "collection": {
+    "suite": "core",
+    "runtimes": [
+      "wago",
+      "wazero",
+      "wasmtime",
+      "wasmtime-winch",
+      "v8"
+    ],
+    "wagoSource": "../../Wago/wago",
+    "launches": 6,
+    "samples": 10,
+    "operations": 100,
+    "warmup": 3,
+    "memory": true,
+    "code": true,
+    "timeout": "30s",
+    "phaseBarriers": false
+  },
+  "retention": 12,
+  "hosts": {
+    "hub": {
+      "ssh": "hub@hub",
+      "workspace": ".cache/wasm-fyi"
+    }
+  }
+}

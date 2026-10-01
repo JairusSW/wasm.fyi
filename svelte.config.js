@@ -6,7 +6,8 @@ const config = {
 	preprocess: vitePreprocess(),
 	kit: {
 		adapter: adapter({ fallback: '404.html' }),
-		prerender: { handleHttpError: 'warn' }
+		paths: { base: process.env.BASE_PATH || '' },
+		prerender: { handleHttpError: 'fail' }
 	}
 };
 

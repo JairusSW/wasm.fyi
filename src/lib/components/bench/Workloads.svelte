@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { siteHref } from '$lib/links';
+	import { goto } from '$lib/navigation';
 	import { CFG } from '$lib/data/runtimes';
 	import { BENCH, MET, PHASE_NOTE } from '$lib/data/snapshot';
 	import { ST } from '$lib/data/status';
@@ -186,7 +187,7 @@
 										onclick={() => (ui.expanded = { ...ui.expanded, [r.b.id]: !r.expanded })}>{r.expanded ? '− ' : '+ '}{r.cases}</button
 									>
 								{/if}
-								<a class="mono name" href={benchHref(r.b.id)}>{r.name}</a>
+								<a class="mono name" href={siteHref(benchHref(r.b.id))}>{r.name}</a>
 								{#each r.tags as t (t)}
 									<button class="tag" onclick={() => tagClick(t)} data-tip={t === 'simd' ? 'Open the SIMD page' : `Filter benchmarks to #${t}`}>#{t}</button>
 								{/each}

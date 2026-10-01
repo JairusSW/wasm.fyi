@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { siteHref } from '$lib/links';
 	import { tick } from 'svelte';
 	import Leaders from '$lib/components/bench/Leaders.svelte';
 	import Matrix from '$lib/components/bench/Matrix.svelte';
@@ -26,7 +27,7 @@
 	<span class="mono small fg3 path">wasm.fyi/benchmarks</span>
 	<h1>Benchmarks</h1>
 	<span class="s12 fg3">Geometric mean over {nShared} · lower is better</span>
-	<a class="link-quiet push" href="/compare">Startup vs throughput model →</a>
+	<a class="link-quiet push" href={siteHref(`/compare`)}>Startup vs throughput model →</a>
 </div>
 
 <Leaders onmetric={showMetric} />

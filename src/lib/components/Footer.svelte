@@ -1,3 +1,7 @@
+<script lang="ts">
+	import { siteHref } from '$lib/links';
+</script>
+
 <footer>
 	<div class="col">
 		<span class="mono brand">wasm.fyi</span>
@@ -6,16 +10,16 @@
 	</div>
 	<div class="col">
 		<span class="eyebrow">Data</span>
-		<a href="/benchmarks">Benchmarks</a>
-		<a href="/history">History</a>
-		<a href="/features">Features</a>
+		<a href={siteHref(`/benchmarks`)}>Benchmarks</a>
+		<a href={siteHref(`/history`)}>History</a>
+		<a href={siteHref(`/features`)}>Features</a>
 	</div>
 	<div class="col">
 		<span class="eyebrow">Proposals</span>
-		<a href="/simd">SIMD</a>
-		<a href="/gc">WasmGC</a>
-		<a href="/memory64">Memory64</a>
-		<a href="/threads">Threads</a>
+		<a href={siteHref(`/simd`)}>SIMD</a>
+		<a href={siteHref(`/gc`)}>WasmGC</a>
+		<a href={siteHref(`/memory64`)}>Memory64</a>
+		<a href={siteHref(`/threads`)}>Threads</a>
 	</div>
 	<div class="col">
 		<span class="eyebrow">Project</span>

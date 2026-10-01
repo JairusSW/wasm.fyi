@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { siteHref } from '$lib/links';
 	import Gc from '$lib/components/proposal/Gc.svelte';
 	import Memory64 from '$lib/components/proposal/Memory64.svelte';
 	import Simd from '$lib/components/proposal/Simd.svelte';
@@ -50,7 +51,7 @@
 	</div>
 	<div class="others">
 		{#each PROPOSAL_IDS as id (id)}
-			<a class="other" class:on={id === data.id} href="/{id}" aria-current={id === data.id ? 'page' : undefined}>{PROPS[id].title}</a>
+			<a class="other" class:on={id === data.id} href={siteHref(`/${id}`)} aria-current={id === data.id ? 'page' : undefined}>{PROPS[id].title}</a>
 		{/each}
 	</div>
 </div>
@@ -97,7 +98,7 @@
 				</div>
 			</div>
 		{/each}
-		<a class="link-quiet" href="/features?view=tests">Spec test results</a>
+		<a class="link-quiet" href={siteHref(`/features?view=tests`)}>Spec test results</a>
 	</div>
 </div>
 

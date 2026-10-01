@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { siteHref } from '$lib/links';
+	import { goto } from '$lib/navigation';
 	import { page } from '$app/state';
 	import { ui } from '$lib/state.svelte';
 
@@ -30,10 +31,10 @@
 </script>
 
 <header>
-	<a class="brand mono" href="/">wasm.fyi</a>
+	<a class="brand mono" href={siteHref(`/`)}>wasm.fyi</a>
 	<nav aria-label="Primary">
 		{#each NAV as [path, label, routes] (path)}
-			<a href={path} aria-current={active(routes) ? 'page' : undefined}>{label}</a>
+			<a href={siteHref(path)} aria-current={active(routes) ? 'page' : undefined}>{label}</a>
 		{/each}
 	</nav>
 	<div class="tools">

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { siteHref } from '$lib/links';
 	import RtLabel from '$lib/components/RtLabel.svelte';
 	import Seg from '$lib/components/Seg.svelte';
 	import { CB, CFG, MACH } from '$lib/data/runtimes';
@@ -249,11 +250,11 @@
 </svelte:head>
 
 <div class="stack6">
-	<div class="crumbs s12 fg3"><a class="link-quiet" href="/benchmarks">Benchmarks</a> / {b.group}</div>
+	<div class="crumbs s12 fg3"><a class="link-quiet" href={siteHref(`/benchmarks`)}>Benchmarks</a> / {b.group}</div>
 	<div class="title-line">
 		<h1 class="mono">{b.id}</h1>
 		{#each b.tags as t (t)}
-			<a class="tag" href={tagHref(t)} data-tip={t === 'simd' ? 'Open the SIMD page' : `Filter benchmarks to #${t}`}>#{t}</a>
+			<a class="tag" href={siteHref(tagHref(t))} data-tip={t === 'simd' ? 'Open the SIMD page' : `Filter benchmarks to #${t}`}>#{t}</a>
 		{/each}
 	</div>
 </div>

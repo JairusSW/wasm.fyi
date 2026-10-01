@@ -1,7 +1,8 @@
 <script lang="ts">
 	import '../app.css';
 	import { browser } from '$app/environment';
-	import { afterNavigate, beforeNavigate, goto, replaceState } from '$app/navigation';
+	import { afterNavigate, beforeNavigate } from '$app/navigation';
+	import { goto, replaceState } from '$lib/navigation';
 	import { page } from '$app/state';
 	import Drawer from '$lib/components/Drawer.svelte';
 	import Footer from '$lib/components/Footer.svelte';

@@ -1,0 +1,75 @@
+name: Refresh benchmarks and deploy
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: wasm-fyi-pages
+  cancel-in-progress: false
+jobs:
+  refresh:
+    if: vars.WASMBENCH_AUTOMATION_ENABLED == 'true'
+    runs-on: [self-hosted, wasm-bench]
+    timeout-minutes: 120
+    permissions:
+      contents: write
+      pages: write
+    env:
+      WASMBENCH_ROOT: ${{ vars.WASMBENCH_ROOT }}
+      WAGO_SOURCE: ${{ vars.WAGO_SOURCE }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '26.4.0'
+      - uses: pnpm/action-setup@v6
+      - uses: extractions/setup-just@v4
+        with:
+          just-version: '1.58.0'
+      - name: Require a configured measurement checkout
+        run: test -n "$WASMBENCH_ROOT" && test -f "$WASMBENCH_ROOT/go.mod"
+      - uses: actions/configure-pages@v6
+        id: pages
+      - run: just setup
+      - run: just bench-build
+      - run: just bench-doctor
+      - run: just hub-doctor
+      - name: Collect separate timing, memory and code passes, validate, and build
+        run: just refresh
+        env:
+          BASE_PATH: ${{ steps.pages.outputs.base_path }}
+      - name: Record validated snapshots on main
+        shell: bash
+        run: |
+          git config user.name 'wasm.fyi benchmark updater'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add -- data/wasmbench static/wasmbench
+          if ! git diff --cached --quiet; then
+            git commit -m 'Update measured benchmark snapshots'
+            git push origin HEAD:main
+          fi
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: build
+      - name: Archive complete sealed experiment evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: wasmbench-experiment-${{ github.run_id }}
+          path: .wasmbench/experiments
+          if-no-files-found: ignore
+          retention-days: 14
+  deploy:
+    needs: refresh
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v5
+        id: deployment
