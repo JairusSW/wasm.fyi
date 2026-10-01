@@ -1,0 +1,13 @@
+--- a/adapters/native/src/main.rs
++++ b/adapters/native/src/main.rs
+@@ -249,8 +249,8 @@
+                     "unsupported: lifecycle requires one operation and zero warmup"
+                 );
+                 ensure!(
+-                    scenario != "steady" || w["reset"] == "stateless" || operations == 1,
+-                    "unsupported: fresh-instance steady requires one operation"
++                    scenario != "steady" || w["reset"] == "stateless" || (operations == 1 && (cfg!(feature = "wasmer_llvm") || cfg!(feature = "wasmer_singlepass"))),
++                    "unsupported: steady requires stateless reset, or one operation under Wasmer fresh-instance policy"
+                 );
+                 let engine = embedding::Engine::new()?;
+                 let shared = if scenario == "compile" || cfg!(feature = "wasm3") {

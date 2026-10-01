@@ -62,7 +62,7 @@ if (action === 'doctor') {
   rsync([join(site, 'scripts/pack-evidence.mjs'), remotePath(remote + '/site/scripts/')]);
   rsync([join(site, 'scripts/lib/evidence-archive.mjs'), remotePath(remote + '/site/scripts/lib/')]);
   rsync([join(site, 'scripts/lib/wasmbench.mjs'), join(site, 'scripts/lib/corpus.mjs'), join(site, 'scripts/lib/harness-patch.mjs'), join(site, 'scripts/lib/feature-configurations.mjs'), remotePath(remote + '/site/scripts/lib/')]);
-  rsync([join(site, 'patches/harness-capabilities.patch'), join(site, 'patches/harness-wasmer.patch'), remotePath(remote + '/site/patches/')]);
+  rsync(['harness-capabilities.patch','harness-wasmer.patch','harness-wasmer-legacy.patch','harness-wasmer-reset-scope.patch'].map(name=>join(site,'patches',name)).concat(remotePath(remote+'/site/patches/')));
   rsync(['-r', join(site, 'corpora'), remotePath(remote + '/site/')]);
   if (action === 'history') {
     const revision = command('git',['rev-parse','HEAD'],{cwd:wago}).toString().trim();
