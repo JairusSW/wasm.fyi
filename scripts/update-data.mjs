@@ -25,7 +25,7 @@ await locked(async () => {
       const reports = [...incoming.reports, ...previous.reports.filter(r => !ids.has(r.runId))]
         .sort((a, b) => b.created.localeCompare(a.created)).slice(0, (await config()).retention || 12);
       for (const r of reports) if (!await exists(join(stagedData, r.evidence))) await cp(join(destination, r.evidence), join(stagedData, r.evidence));
-      await writeFile(join(stagedData, 'index.json'), JSON.stringify({ schema: 1, reports }, null, 2) + '\n');
+      await writeFile(join(stagedData, 'index.json'), JSON.stringify({ schema: 1, reports }) + '\n');
     }
     if (await exists(join(destination, 'report-catalog.json'))) await cp(join(destination, 'report-catalog.json'), join(stagedData, 'report-catalog.json'));
     const index = await validateData(stagedData);

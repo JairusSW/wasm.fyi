@@ -1,5 +1,6 @@
 import { mkdir, readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
+import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { command, digest, exists } from './lib/wasmbench.mjs';
 
@@ -10,6 +11,9 @@ if (action === 'status') {
   if (!await exists(join(directory, '.runner'))) console.log('Runner is not registered. Run just runner-install.');
   else process.stdout.write(command('./svc.sh', ['status'], { cwd: directory }));
 } else if (action === 'install') {
+  if (spawnSync('gtar', ['--version'], { stdio: 'ignore' }).status !== 0) {
+    command('brew', ['install', 'gnu-tar'], { stdio: 'inherit' });
+  }
   await mkdir(directory, { recursive: true });
   const repository = command('gh', ['repo', 'view', '--json', 'nameWithOwner', '--jq', '.nameWithOwner']).toString().trim();
   if (!await exists(join(directory, '.runner'))) {

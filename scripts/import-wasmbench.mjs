@@ -71,7 +71,7 @@ try {
     await writeFile(join(staging, report.evidence), bytes);
     index.push({ ...compact(report), evidenceSha256: digest(bytes) });
   }
-  await writeFile(join(staging, 'index.json'), JSON.stringify({ schema: 1, reports: index }, null, 2) + '\n');
+  await writeFile(join(staging, 'index.json'), JSON.stringify({ schema: 1, reports: index }) + '\n');
   // The inventory belongs to the research pass, not to the deployed snapshot list.
   if (await exists(join(destination, 'report-catalog.json'))) await cp(join(destination, 'report-catalog.json'), join(staging, 'report-catalog.json'));
   await validateData(staging);

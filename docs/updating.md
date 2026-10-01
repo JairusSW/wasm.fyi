@@ -147,7 +147,8 @@ configured harness/source checkouts. The selected runner is this Apple Silicon M
 
 Run `just runner-install` on this Apple Silicon Mac to register the `wasm-bench`
 runner and install its user LaunchAgent. The installer verifies the official runner
-archive checksum; registration tokens are not written into the repository.
+archive checksum and installs GNU tar through Homebrew when needed for the
+macOS Pages packaging action; registration tokens are not written into the repository.
 Install Node, pnpm, just, Go and Rust on the Mac, and Node, Go, Rust and rsync on Hub.
 The runner account must be able to read the harness and Wago source directories.
 The Mac must be awake with the runner user logged in, and Hub must be reachable.
