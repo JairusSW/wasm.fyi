@@ -5,7 +5,7 @@
 	import { ALLB } from '$lib/data/snapshot';
  import { viewCell } from '$lib/view-data';
 	import type { Cfg } from '$lib/data/types';
-	import { fmtU, n0, pc } from '$lib/format';
+	import { fmtU, n0, pc, workloadName } from '$lib/format';
 	import { isOff } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 
@@ -99,8 +99,8 @@
 <div class="row">
 	<Seg
 		options={[
-			['wago/tiny/add', 'wago/tiny/add'],
-			['wago/zlib/inflate', 'wago/zlib/inflate']
+			['wago/tiny/add', workloadName('wago/tiny/add')],
+			['wago/zlib/inflate', workloadName('wago/zlib/inflate')]
 		]}
 		value={ui.xWork}
 		onselect={(v) => (ui.xWork = v)}

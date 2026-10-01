@@ -5,7 +5,7 @@
 	import { BENCH, MET, PHASE_NOTE } from '$lib/data/snapshot';
 	import { ST } from '$lib/data/status';
 	import type { Bench, Cfg, MetricKey } from '$lib/data/types';
-	import { fmtU, fx, n0 } from '$lib/format';
+	import { fmtU, fx, n0, workloadName } from '$lib/format';
 	import { heatRatio } from '$lib/heat';
 	import { benchHref } from '$lib/links';
 	import { benchVal, isVisible } from '$lib/model';
@@ -88,7 +88,7 @@
 				rows.push({
 					kind: 'item',
 					b,
-					name: b.id,
+					name: workloadName(b.id),
 					indent: '12px',
 					cases: b.cases?.length ?? 0,
 					expanded,

@@ -5,7 +5,7 @@
 	import { CB, CFG, MACH } from '$lib/data/runtimes';
 	import { ALLB, MET, OV, PHASE_NOTE } from '$lib/data/snapshot';
 	import { ST, ST_DESC } from '$lib/data/status';
-	import { fmtU, fx, n0 } from '$lib/format';
+	import { fmtU, fx, n0, workloadName } from '$lib/format';
 	import { benchHref } from '$lib/links';
 	import { TOTAL_WORKLOADS, benchVal, cfgIndex, cn, compatCell, cov, featureContracts, featureOutcome, kidCells, ratio, type PerfGroup } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
@@ -42,7 +42,7 @@
         const cmd = report ? `just gather --rebuild /path/to/sealed/${report.runId}/report` : 'No sealed measurement for this cell';
 		return {
 			kicker: `${b.group} · ${MET[d.m].l}`,
-			title: b.id + (d.caseLabel ? ' · ' + d.caseLabel : ''),
+			title: workloadName(b.id) + (d.caseLabel ? ' · ' + d.caseLabel : ''),
 			b,
 			c,
 			ok,
@@ -73,7 +73,7 @@
               {k:'Run',v:report?`${report.runId} · ${report.created}`:'not collected'},
               {k:'Runtime',v:config?`${config.runtime} ${config.version}`:'not collected'},
               {k:'Backend',v:config?.backend || 'not collected'},
-              {k:'Artifact',v:`${b.id} · ${n0(b.kb)} KiB · sha256 ${b.artifactSha256}`},
+              {k:'Artifact',v:`${workloadName(b.id)} · ${n0(b.kb)} KiB · sha256 ${b.artifactSha256}`},
               {k:'Source',v:b.src || 'unavailable'},
               {k:'Machine',v:MACH[s.machine].l},
               {k:'Policy',v:'CPU affinity, scheduling and frequency uncontrolled'},

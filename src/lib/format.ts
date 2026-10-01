@@ -1,6 +1,9 @@
 /** Integer with thousands separators. */
 export const n0 = (n: number): string => Math.round(n).toLocaleString('en-US');
 
+/** Repository provenance stays in the evidence key, outside the workload name. */
+export const workloadName = (id: string): string => id.replace(/^wago\//, '');
+
 /** Ratio as a multiplier, e.g. `1.42×`. */
 export const fx = (r: number): string =>
 	(r >= 100 ? r.toFixed(0) : r >= 10 ? r.toFixed(1) : r.toFixed(2)) + '×';

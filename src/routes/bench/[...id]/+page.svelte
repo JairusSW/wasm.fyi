@@ -6,7 +6,7 @@
 	import { MET, PHASE_NOTE, PH_NAMES, SNAPS } from '$lib/data/snapshot';
 	import { ST } from '$lib/data/status';
 	import type { CfgId, MetricKey } from '$lib/data/types';
-	import { fmtU, n0, pc, pct } from '$lib/format';
+	import { fmtU, n0, pc, pct, workloadName } from '$lib/format';
 	import { benchVal, isVisible, otSeries } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 import { viewCell, viewData } from '$lib/view-data';
@@ -111,14 +111,14 @@ import { historySegments } from '$lib/history-values';
 </script>
 
 <svelte:head>
-	<title>{b.id} · wasm.fyi</title>
-	<meta name="description" content={b.purpose || `${b.id} — ${b.group} workload on wasm.fyi`} />
+	<title>{workloadName(b.id)} · wasm.fyi</title>
+	<meta name="description" content={b.purpose || `${workloadName(b.id)} — ${b.group} workload on wasm.fyi`} />
 </svelte:head>
 
 <div class="stack6">
 	<div class="crumbs s12 fg3"><a class="link-quiet" href={siteHref(`/benchmarks`)}>Benchmarks</a> / {b.group}</div>
 	<div class="title-line">
-		<h1 class="mono">{b.id}</h1>
+		<h1 class="mono">{workloadName(b.id)}</h1>
 		{#each b.tags as t (t)}
 			<a class="tag" href={siteHref(tagHref(t))} data-tip={t === 'simd' ? 'Open the SIMD page' : `Filter benchmarks to #${t}`}>#{t}</a>
 		{/each}

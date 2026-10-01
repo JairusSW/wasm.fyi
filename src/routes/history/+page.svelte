@@ -6,7 +6,7 @@
 	import { CB, CFG } from '$lib/data/runtimes';
 	import { ALLB, EVENTS, HARNESS_BREAK, MET, OTM, OTM_KEYS, PIN, SNAPS, verAt } from '$lib/data/snapshot';
 	import type { CfgId, MetricKey } from '$lib/data/types';
-	import { fmtU, n0, pc, pct } from '$lib/format';
+	import { fmtU, n0, pc, pct, workloadName } from '$lib/format';
 	import { benchVal, isVisible, otSeries } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 import { viewData } from '$lib/view-data';
@@ -175,7 +175,7 @@ import { historyCell, historyChange, historySegments } from '$lib/history-values
           const d=change.delta,interval=change.interval;
           const verdict=change.fixed?'fixed comparison baseline':!interval?'inconclusive':interval[0]>.02?'regressed':interval[1]<-.02?'improved':interval[0]>=-.02 && interval[1]<=.02?'no practical change':'inconclusive';
           const colors:Record<string,string>={regressed:'var(--bad)',improved:'var(--good)',inconclusive:'var(--fg2)','no practical change':'var(--fg3)','fixed comparison baseline':'var(--fg3)'};
-          return {name:b.id,group:b.group,before:fmtU(before.v!,MET[RM].u),after:fmtU(after.v!,MET[RM].u),d,delta:pct(d),ci:interval?`${pct(interval[0])} – ${pct(interval[1])}`:'not available',verdict,vColor:colors[verdict]};
+          return {name:workloadName(b.id),group:b.group,before:fmtU(before.v!,MET[RM].u),after:fmtU(after.v!,MET[RM].u),d,delta:pct(d),ci:interval?`${pct(interval[0])} – ${pct(interval[1])}`:'not available',verdict,vColor:colors[verdict]};
         }).filter(x=>x!=null).sort((a,b)=>Math.abs(b.d)-Math.abs(a.d));
 		const cnt = (v: string) => rows.filter((r) => r.verdict === v).length;
 		const cv = otSeries(s, cid, 'cov');
