@@ -8,7 +8,7 @@
 	import { CFG, RTB, SA } from '$lib/data/runtimes';
 	import { viewCell } from '$lib/view-data';
 	import type { RatioCi } from '$lib/data/types';
-	import { fmtU, fx, n0 } from '$lib/format';
+	import { fmtU, relative, n0 } from '$lib/format';
 	import { heatRatio } from '$lib/heat';
 	import { PROPOSAL_IDS } from '$lib/links';
 	import { cellView, compatCell, featureContracts, featureOutcome, isOff, isVisible, kidCells, mf } from '$lib/model';
@@ -41,7 +41,7 @@
       const cohort=contracts.filter(w=>participants.length && participants.every(c=>{const x=viewCell(ui.scope.machine,ui.scope.snapshot || 's1',w.id,c.id,metric);return x.st==='ok' && x.v!=null && x.v>0;}));
       const values=cols.map(c=>participants.some(p=>p.id===c.id) && cohort.length?Math.exp(cohort.reduce((sum,w)=>sum+Math.log(viewCell(ui.scope.machine,ui.scope.snapshot || 's1',w.id,c.id,metric).v!),0)/cohort.length):null);
       const min=Math.min(...values.filter((v):v is number=>v!=null));
-      return {f,corpus:`${cohort.length} shared contracts / ${contracts.length} eligible`,cells:values.map(v=>v==null?{text:'not measured',sub:'no shared successful cohort',bg:'transparent',color:'var(--fg3)',fw:400}:{text:fmtU(v,unit),sub:v===min?'lowest':fx(v/min).replace('×','× lowest'),bg:heatRatio(v/min),color:'var(--fg)',fw:v===min?600:400})};
+      return {f,corpus:`${cohort.length} shared contracts / ${contracts.length} eligible`,cells:values.map(v=>v==null?{text:'not measured',sub:'no shared successful cohort',bg:'transparent',color:'var(--fg3)',fw:400}:{text:fmtU(v,unit),sub:v===min?'lowest':relative(v/min,ui.deltaFormat)+' vs lowest',bg:heatRatio(v/min),color:'var(--fg)',fw:v===min?600:400})};
     })}));
   });
 

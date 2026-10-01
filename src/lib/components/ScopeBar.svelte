@@ -3,6 +3,7 @@
 	import type { MachineId } from '$lib/data/types';
 	import { ui } from '$lib/state.svelte';
 	import Swatch from './Swatch.svelte';
+	import Seg from './Seg.svelte';
 	import { viewData } from '$lib/view-data';
 
 	const SNAP_OPTS = [
@@ -63,6 +64,10 @@
 				</button>
 			{/each}
 			{#if someHidden}<button class="all" onclick={() => (ui.hide = {})}>all</button>{/if}
+		</div>
+		<div class="delta-format" data-tip="Relative deltas: 1.3× = +30%; 0.7× = −30%. Absolute values and counts stay in their own units.">
+			<span class="small fg3">Deltas</span>
+			<Seg options={['factor', 'percent'].map(v=>[v as 'factor' | 'percent',v==='factor'?'×':'%'])} value={ui.deltaFormat} onselect={v=>ui.deltaFormat=v} label="Delta format" mono />
 		</div>
 		<button class="btn-small adv" aria-expanded={ui.adv} onclick={() => (ui.adv = !ui.adv)}>
 			{ui.adv ? 'Hide run settings' : 'Run settings'}
@@ -125,6 +130,11 @@
 	.adv {
 		margin-left: auto;
 		padding: 3px 9px;
+	}
+	.delta-format {
+		display: flex;
+		align-items: center;
+		gap: 6px;
 	}
 	.adv-grid {
 		display: grid;

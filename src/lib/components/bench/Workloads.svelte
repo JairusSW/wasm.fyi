@@ -5,7 +5,7 @@
 	import { BENCH, MET, PHASE_NOTE } from '$lib/data/snapshot';
 	import { ST } from '$lib/data/status';
 	import type { Bench, Cfg, MetricKey } from '$lib/data/types';
-	import { fmtU, fx, n0, workloadName } from '$lib/format';
+	import { fmtU, relative, n0, workloadName } from '$lib/format';
 	import { heatRatio } from '$lib/heat';
 	import { benchHref } from '$lib/links';
 	import { benchVal, isVisible } from '$lib/model';
@@ -29,7 +29,7 @@
 		const ratio = br.st === 'ok' ? r.v / br.v : null;
 		return {
 			text: fmtU(r.v, u),
-			sub: ratio && c.id !== s.baseline ? fx(ratio) : '',
+			sub: ratio && c.id !== s.baseline ? relative(ratio,ui.deltaFormat) : '',
 			bg: heatRatio(ratio),
 			color: 'var(--fg)',
 			open
@@ -70,7 +70,7 @@
 						return a.st === 'ok' && bb.st === 'ok' ? Math.log(a.v / bb.v) : null;
 					})
 					.filter((x): x is number => x != null);
-				return rs.length ? fx(Math.exp(rs.reduce((x, y) => x + y, 0) / rs.length)) + ` n=${rs.length}` : '—';
+				return rs.length ? relative(Math.exp(rs.reduce((x, y) => x + y, 0) / rs.length),ui.deltaFormat) + ` n=${rs.length}` : '—';
 			});
 			rows.push({ kind: 'group', name: g.g, count: `${items.length} shown · ${n0(g.total)} in corpus`, open: !collapsed, cells: gcells });
 			if (collapsed) continue;

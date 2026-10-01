@@ -4,7 +4,7 @@
 	import { viewData } from '$lib/view-data';
   import { featureValue } from '$lib/feature-values';
 	import type { Cfg } from '$lib/data/types';
-	import { fmtU, fx, geomean, n0 } from '$lib/format';
+	import { fmtU, relative, geomean, n0 } from '$lib/format';
 	import { cn, compatCell, isOff, isVisible, mf } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 	import BarRow from '../BarRow.svelte';
@@ -52,7 +52,7 @@
 				conf: cc.run ? `${n0(cc.pass)}/${n0(cc.total)}` : 'not run',
 				confColor: cc.run && cc.pass < cc.total ? 'var(--st-fail)' : 'var(--fg)',
 				isa: 'not collected',
-				cc: sc && si ? fx(si/sc) : 'not measured',
+				cc: sc && si ? relative(si/sc,ui.deltaFormat) : 'not measured',
 				cs: code!=null ? fmtU(code,'KiB') : 'not collected'
 			};
 		})
@@ -64,7 +64,7 @@
 				const t = kt(k, c);
 				return t.si == null
 					? { a: 'not measured', b: t.sc==null?'scalar not measured':'scalar '+fmtU(t.sc,'ms') }
-					: { a: fmtU(t.si, 'ms'), b: t.sc==null?'scalar not measured':`scalar ${fmtU(t.sc, 'ms')} · ${(t.sc / t.si).toFixed(1)}×` };
+					: { a: fmtU(t.si, 'ms'), b: t.sc==null?'scalar not measured':`scalar ${fmtU(t.sc, 'ms')} · ${relative(t.sc / t.si,ui.deltaFormat)}` };
 			})
 		}))
 	);
@@ -122,7 +122,7 @@
 	</div>
 	{#if bySp && byAbs}
 		<div class="callout">
-			Largest scalar→SIMD gain: {cn(bySp.c)} ({bySp.sp!.toFixed(1)}×). Fastest absolute SIMD time: {cn(byAbs.c)} ({absFmt(byAbs.abs!)}). A large gain
+			Largest scalar→SIMD gain: {cn(bySp.c)} ({relative(bySp.sp!,ui.deltaFormat)}). Fastest absolute SIMD time: {cn(byAbs.c)} ({absFmt(byAbs.abs!)}). A large gain
 			from a slow scalar baseline is not the same as fast SIMD.
 		</div>
 	{/if}
@@ -134,7 +134,7 @@
 					c={r.c}
 					ok={!!r.sp}
 					w={r.sp ? ((r.sp / maxSp) * 100).toFixed(1) + '%' : '0%'}
-					text={r.sp ? r.sp.toFixed(2) + '×' : ''}
+					text={r.sp ? relative(r.sp,ui.deltaFormat) : ''}
 					status="not measured"
 					cols="130px 1fr 110px"
 					valueClass="fg2"

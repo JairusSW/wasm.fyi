@@ -1,13 +1,25 @@
 import { COMPAT } from './data/features';
 import { describe, expect, it } from 'vitest';
 import { ALLB } from './data/snapshot';
-import { fmtU, fx, pct } from './format';
+import { fmtU, fx, pct, relative } from './format';
 import { heatCount, heatRatio } from './heat';
-import { benchVal, compatCell, kidCells, leader, ratio, type Scope } from './model';
+import { benchVal, compatCell, kidCells, leader, ratio, seriesFmt, type Scope } from './model';
 
 const scope: Scope = { machine: 'm1', baseline: 'A', weighting: 'corpus', hide: {} };
 
 describe('format', () => {
+	it('expresses the same ratio as a multiplier or signed percentage',()=>{
+		for(const [value,factor,percent] of [[1.3,'1.30×','+30.0%'],[.7,'0.70×','−30.0%'],[1,'1.00×','±0.0%'],[0,'0.00×','−100.0%']] as const){
+			expect(relative(value,'factor')).toBe(factor);
+			expect(relative(value,'percent')).toBe(percent);
+		}
+	});
+	it('changes only the presentation of history deltas, preserving direction and count units',()=>{
+		const factor=seriesFmt('exec','factor').chg(7,10),percent=seriesFmt('exec','percent').chg(7,10);
+		expect(factor).toEqual({t:'0.70×',good:true,flat:false});
+		expect(percent).toEqual({...factor,t:'−30.0%'});
+		expect(seriesFmt('cov','factor').chg(12,10)).toEqual(seriesFmt('cov','percent').chg(12,10));
+	});
 	it('rescales units', () => {
 		expect(fmtU(0.0049, 'ms')).toBe('4.9 µs');
 		expect(fmtU(41.2, 'ms')).toBe('41.2 ms');

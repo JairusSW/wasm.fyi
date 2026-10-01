@@ -36,7 +36,7 @@ import { historySegments } from '$lib/history-values';
 
 	const rows = $derived.by(() => {
 		const s = ui.scope;
-		const { fv, chg, col } = seriesFmt(ui.otMetric);
+		const { fv, chg, col } = seriesFmt(ui.otMetric,ui.deltaFormat);
 		return CFG.filter((c) => isVisible(s, c)).map((c) => {
 			const vals = otSeries(s, c.id, ui.otMetric);
 			if (!vals) return { c, na: true as const, now: isOff(s, c.id) ? 'unavailable' : 'n/a' };

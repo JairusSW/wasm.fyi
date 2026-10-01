@@ -6,7 +6,7 @@
 	import { CB, CFG } from '$lib/data/runtimes';
 	import { ALLB, EVENTS, HARNESS_BREAK, MET, OTM, OTM_KEYS, PIN, SNAPS, verAt } from '$lib/data/snapshot';
 	import type { CfgId, MetricKey } from '$lib/data/types';
-	import { fmtU, n0, pc, pct, workloadName } from '$lib/format';
+	import { fmtU, n0, pc, pct, relative, workloadName } from '$lib/format';
 	import { benchVal, isVisible, otSeries } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 import { viewData } from '$lib/view-data';
@@ -67,7 +67,7 @@ import { historyCell, historyChange, historySegments } from '$lib/history-values
 			const lo = Math.min(...allV) - 0.01;
 			const hi = Math.max(...allV) + 0.01;
 			Y = (v) => pt + (1 - (v - lo) / (hi - lo)) * (HC - pt - pb);
-			for (let v = Math.ceil(lo * 50) / 50; v <= hi; v += 0.02) ticks.push({ y: Y(v).toFixed(1), t: pc(Y(v), HC), label: pct(v, 0) });
+			for (let v = Math.ceil(lo * 50) / 50; v <= hi; v += 0.02) ticks.push({ y: Y(v).toFixed(1), t: pc(Y(v), HC), label: isCov ? pct(v, 0) : relative(1+v,ui.deltaFormat) });
 		}
 		return { Y, ticks };
 	});
@@ -117,7 +117,7 @@ import { historyCell, historyChange, historySegments } from '$lib/history-values
 	const tip = $derived.by(() => {
 		const hi = hover;
 		if (hi == null || !plotC.length) return null;
-		const fmtH = (id: CfgId, i: number) => (ui.histMode === 'ratio' ? fmtV(val(id, i)) : pct(val(id, i)));
+		const fmtH = (id: CfgId, i: number) => (ui.histMode === 'ratio' ? fmtV(val(id, i)) : isCov ? pct(val(id, i)) : relative(1+val(id,i),ui.deltaFormat));
 		const rows = plotC.filter(c=>Number.isFinite(SER[c.id]![hi]))
 			.map((c) => {
 				const s = SER[c.id]!;
@@ -131,7 +131,7 @@ import { historyCell, historyChange, historySegments } from '$lib/history-values
 					raw: ui.histMode === 'ratio' ? (isCov ? -v : v) : val(c.id, hi),
 					value: fmtH(c.id, hi),
 					ver: verAt(c.id, hi,ui.machine) + (hi > 0 && verAt(c.id, hi,ui.machine) !== verAt(c.id, hi - 1,ui.machine) ? ' ◆ new' : ''),
-					delta: d == null ? '—' : isCov ? (d >= 0 ? '+' : '−') + Math.abs(d) : pct(d),
+					delta: d == null ? '—' : isCov ? (d >= 0 ? '+' : '−') + Math.abs(d) : relative(1+d,ui.deltaFormat),
 					dColor: flat ? 'var(--fg3)' : good ? 'var(--good)' : 'var(--bad)',
 					fw: c.id === ui.histCfg ? 600 : 400,
 					y: scale.Y(val(c.id, hi)).toFixed(1),
@@ -167,7 +167,7 @@ import { historyCell, historyChange, historySegments } from '$lib/history-values
           const d=change.delta,interval=change.interval;
           const verdict=change.fixed?'fixed comparison baseline':!interval?'inconclusive':interval[0]>.02?'regressed':interval[1]<-.02?'improved':interval[0]>=-.02 && interval[1]<=.02?'no practical change':'inconclusive';
           const colors:Record<string,string>={regressed:'var(--bad)',improved:'var(--good)',inconclusive:'var(--fg2)','no practical change':'var(--fg3)','fixed comparison baseline':'var(--fg3)'};
-          return {name:workloadName(b.id),group:b.group,before:fmtU(before.v!,MET[RM].u),after:fmtU(after.v!,MET[RM].u),d,delta:pct(d),ci:interval?`${pct(interval[0])} – ${pct(interval[1])}`:'not available',verdict,vColor:colors[verdict]};
+          return {name:workloadName(b.id),group:b.group,before:fmtU(before.v!,MET[RM].u),after:fmtU(after.v!,MET[RM].u),d,delta:relative(1+d,ui.deltaFormat),ci:interval?`${relative(1+interval[0],ui.deltaFormat)} – ${relative(1+interval[1],ui.deltaFormat)}`:'not available',verdict,vColor:colors[verdict]};
         }).filter(x=>x!=null).sort((a,b)=>Math.abs(b.d)-Math.abs(a.d));
 		const cnt = (v: string) => rows.filter((r) => r.verdict === v).length;
 		const cv = otSeries(s, cid, 'cov');
@@ -190,7 +190,7 @@ import { historyCell, historyChange, historySegments } from '$lib/history-values
 				{ k: 'No practical change', v: cnt('no practical change'), c: 'var(--fg3)' }
 			],
 			other: [
-				{ k: 'Corpus geomean (' + (isCov ? 'execution' : M.l.toLowerCase()) + ')', v: SER[cid] || isCov ? pct(dt - 1) : 'n/a' },
+				{ k: 'Corpus geomean (' + (isCov ? 'execution' : M.l.toLowerCase()) + ')', v: SER[cid] || isCov ? relative(dt,ui.deltaFormat) : 'n/a' },
 				{ k: 'Coverage', v: covText },
 				{ k: 'Process lifetime peak RSS', v: 'See recorded memory series; no inferred phase delta' },
 				{ k: 'Extracted native image', v: 'See recorded image series; no active-code inference' },

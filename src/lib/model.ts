@@ -6,7 +6,7 @@ import { viewCell, viewData } from './view-data';
 import { CB, CFG, MACH, WF } from './data/runtimes';
 import { MET, OTM, UNIT } from './data/snapshot';
 import type { Bench, Cfg, CfgId, MachineId, MetricKey, OtMetricKey, RatioCi, Status } from './data/types';
-import { fmtU, fx, n0, pct } from './format';
+import { fmtU, fx, n0, relative, type DeltaFormat } from './format';
 
 export interface Scope {
 	machine: MachineId;
@@ -85,14 +85,14 @@ export function otSeries(s:Scope,cid:CfgId,key:OtMetricKey,workload=''):number[]
 }
 
 /** Formats a series value and a change between two series values for the metric. */
-export function seriesFmt(key: OtMetricKey) {
+export function seriesFmt(key: OtMetricKey, format: DeltaFormat = 'factor') {
 	const M = OTM[key];
 	const isCov = M.g === 'cov';
 	const fv = (v: number) => (isCov ? n0(v) + ' measured contracts' : fmtU(v, M.u));
 	const chg = (x: number, y: number) =>
 		isCov
 			? { t: (x - y >= 0 ? '+' : '−') + Math.abs(x - y), good: x > y, flat: x === y }
-			: { t: pct(x / y - 1), good: x < y, flat: Math.abs(x / y - 1) < 0.02 };
+			: { t: relative(x / y,format), good: x < y, flat: Math.abs(x / y - 1) < 0.02 };
 	const col = (r: { flat: boolean; good: boolean }) => (r.flat ? 'var(--fg3)' : r.good ? 'var(--good)' : 'var(--bad)');
 	return { fv, chg, col };
 }

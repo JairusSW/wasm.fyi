@@ -2,7 +2,7 @@
 	import { siteHref } from '$lib/links';
 	import { CFG } from '$lib/data/runtimes';
 	import { viewData } from '$lib/view-data';
-	import { pc } from '$lib/format';
+	import { pc, relative } from '$lib/format';
 	import { isVisible } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 	import BarRow from '../BarRow.svelte';
@@ -32,7 +32,7 @@
   const withData=$derived(vis.filter(c=>THR_D[c.id]));
   const lines=$derived(withData.map(c=>({c,p:THR_D[c.id]!.slice(0,4).map((v,k)=>TX(k).toFixed(1)+','+TY(v).toFixed(1)).join(' ')})));
   const ideal=[0,1,2,3].map(k=>TX(k).toFixed(1)+','+TY(2**k).toFixed(1)).join(' ');
-  const yTicks=[1,2,4,8].map(v=>({y:TY(v).toFixed(1),t:pc(TY(v),TH),label:v+'×'}));
+  const yTicks=$derived([1,2,4,8].map(v=>({y:TY(v).toFixed(1),t:pc(TY(v),TH),label:relative(v,ui.deltaFormat)})));
   const xTicks=[1,2,4,8].map((w,k)=>({l:pc(TX(k),TW),label:w+(k===3?' workers':'')}));
   const stOf=(id:string)=>'not collected';
   const stColor=(id:string)=>'var(--fg3)';
@@ -55,7 +55,7 @@
 		</div>
 		<div class="at16">
 			{#each withData as c (c.id)}
-				<span class="item"><RtLabel {c} /><span class="mono">{THR_D[c.id]![3].toFixed(1)}×</span></span>
+				<span class="item"><RtLabel {c} /><span class="mono">{relative(THR_D[c.id]![3],ui.deltaFormat)}</span></span>
 			{/each}
 			<span class="fg3">at 8 workers</span>
 		</div>
@@ -72,7 +72,7 @@
 			<div><div class="card-title">Under contention</div><div class="note">Node worker embedding · contended counter · 1M operations/worker · higher is better</div></div>
 			{#each vis as c (c.id)}
 				{@const d = THR_D[c.id]}
-				<BarRow {c} ok={!!d} w={d ? Math.max(1, (d[6] / 8) * 100).toFixed(1) + '%' : '0%'} text={d ? d[6].toFixed(1) + '× at 8 workers' : ''} status={stOf(c.id)} statusColor={stColor(c.id)} />
+				<BarRow {c} ok={!!d} w={d ? Math.max(1, (d[6] / 8) * 100).toFixed(1) + '%' : '0%'} text={d ? relative(d[6],ui.deltaFormat) + ' at 8 workers' : ''} status={stOf(c.id)} statusColor={stColor(c.id)} />
 			{/each}
 		</div>
 	</div>

@@ -6,7 +6,7 @@
 	import { MET, PHASE_NOTE, PH_NAMES, SNAPS } from '$lib/data/snapshot';
 	import { ST } from '$lib/data/status';
 	import type { CfgId, MetricKey } from '$lib/data/types';
-	import { fmtU, n0, pc, pct, workloadName } from '$lib/format';
+	import { fmtU, n0, pc, relative, workloadName } from '$lib/format';
 	import { benchVal, isVisible, otSeries } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 import { viewCell, viewData } from '$lib/view-data';
@@ -81,7 +81,7 @@ import { historySegments } from '$lib/history-values';
 				c,
 				segments: historySegments(vals,X,Y),
 				now: Number.isFinite(vals[SNAPS.length-1])?fmtU(vals[SNAPS.length-1], 'ms'):'not measured',
-				delta: Number.isFinite(d)?pct(d):'not measured',
+				delta: Number.isFinite(d)?relative(1+d,ui.deltaFormat):'not measured',
 				dColor: Math.abs(d) < 0.02 ? 'var(--fg3)' : d < 0 ? 'var(--good)' : 'var(--bad)'
 			};
 		})

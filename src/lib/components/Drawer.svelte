@@ -5,7 +5,7 @@
 	import { CB, CFG, MACH } from '$lib/data/runtimes';
 	import { ALLB, MET, OV, PHASE_NOTE } from '$lib/data/snapshot';
 	import { ST, ST_DESC } from '$lib/data/status';
-	import { fmtU, fx, n0, workloadName } from '$lib/format';
+	import { fmtU, relative, n0, workloadName } from '$lib/format';
 	import { benchHref } from '$lib/links';
 	import { TOTAL_WORKLOADS, benchVal, cfgIndex, cn, compatCell, cov, featureContracts, featureOutcome, kidCells, ratio, type PerfGroup } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
@@ -52,7 +52,7 @@
 			abs: ok ? fmtU(v, u) : '',
 			absCi: ok && measured.interval ? `95% CI ${fmtU(measured.interval[0],u)} – ${fmtU(measured.interval[1],u)}` : 'CI unavailable',
 			baseName: cn(CB[s.baseline]),
-			ratio: ok && br.st === 'ok' ? fx(v / br.v) : 'n/a',
+			ratio: ok && br.st === 'ok' ? relative(v / br.v,ui.deltaFormat) : 'n/a',
 			baseAbs: br.st === 'ok' ? 'baseline ' + fmtU(br.v, u) : 'baseline not comparable',
 			dots: dots.map((x, i) => ({ x: X(x).toFixed(1), y: (26 + (i % 3) * 4).toFixed(0) })),
 			medX: ok ? X(v).toFixed(1) : '0',
@@ -149,8 +149,8 @@
 				const f = list[0];
 				const l = list[list.length - 1];
 				if (f.c.rt === d.rt && list[1] && f.r + f.ci < list[1].r - list[1].ci)
-					strengths.push({ t: `Lowest ${col.toLowerCase()} in this snapshot — ${f.c.be}`, v: fx(f.r) });
-				if (l.c.rt === d.rt) tradeoffs.push({ t: `Highest ${col.toLowerCase()} in this snapshot — ${l.c.be}`, v: fx(l.r) });
+					strengths.push({ t: `Lowest ${col.toLowerCase()} in this snapshot — ${f.c.be}`, v: relative(f.r,ui.deltaFormat) });
+				if (l.c.rt === d.rt) tradeoffs.push({ t: `Highest ${col.toLowerCase()} in this snapshot — ${l.c.be}`, v: relative(l.r,ui.deltaFormat) });
 			})
 		);
 		if (!strengths.length) strengths.push({ t: 'No metric where this runtime is the clear lowest in this scope.', v: '' });
