@@ -3,27 +3,22 @@
 	import RtLabel from '$lib/components/RtLabel.svelte';
 	import Seg from '$lib/components/Seg.svelte';
 	import { CB, CFG, MACH } from '$lib/data/runtimes';
-	import { CODE, MEMPH, MET, PHASE_NOTE, PH_NAMES, SNAPS } from '$lib/data/snapshot';
+	import { MET, PHASE_NOTE, PH_NAMES, SNAPS } from '$lib/data/snapshot';
 	import { ST } from '$lib/data/status';
 	import type { CfgId, MetricKey } from '$lib/data/types';
-	import { H, fmtU, hex, n0, pc, pct } from '$lib/format';
+	import { fmtU, n0, pc, pct } from '$lib/format';
 	import { benchVal, isVisible, otSeries } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
+import { viewCell, viewData } from '$lib/view-data';
 import { historySegments } from '$lib/history-values';
 
 	let { data } = $props();
 	const b = $derived(data.bench);
-	const sC = $derived(b.kb / 1240);
-	const sS = $derived((b.ms ?? 0) / 412);
 	const vis = $derived(CFG.filter((c) => isVisible(ui.scope, c)));
 	const okC = $derived(vis.filter((c) => benchVal(ui.scope, b, c.id, 'steady').st === 'ok'));
 
 	// ── Latency ────────────────────────────────────────────────────────────
-	const PHASE_TIP: Partial<Record<MetricKey, Partial<Record<CfgId, string>>>> = {
-		compile: { E: 'translation only', G: 'translation only', F: 'baseline tier only (lazy)', C: 'full AOT' },
-		first: { F: 'incl. lazy compile of called funcs', B: 'incl. stub generation' },
-		steady: { F: 'opt tier-up observed at iter 4–9', E: 'no JIT' }
-	};
+	const PHASE_TIP: Partial<Record<MetricKey, Partial<Record<CfgId, string>>>> = {};
 	const phases = $derived(
 		(['compile', 'inst', 'first', 'steady'] as MetricKey[]).map((m) => {
 			const vals = vis.map((c) => ({ c, r: benchVal(ui.scope, b, c.id, m) }));
@@ -48,129 +43,16 @@ import { historySegments } from '$lib/history-values';
 	const pr = 14;
 	const pt = 26;
 	const pb = 28;
-	const FR = [0, 0.05, 0.25, 0.33, 0.47, 0.92, 1];
-	const sel = $derived(ui.memSel.filter((id) => okC.some((c) => c.id === id)));
-	const ph = (id: CfgId) => {
-		const { d, m } = MEMPH[id];
-		const dd = [d[0], d[1] * sC, d[2], d[3] * sS, d[4] * sS, d[5]];
-		const bnd = [0];
-		dd.forEach((x) => bnd.push(bnd[bnd.length - 1] + x));
-		return { dd, bnd, m };
-	};
-	const tf = (v: number) => (ui.memMetric === 'pss' ? Math.max(0.5, v * 0.9 - 1.2) : v);
-	const pts = (id: CfgId): [number, number][] => {
-		const { dd, bnd, m } = ph(id);
-		if (ui.memMetric === 'linear')
-			return [
-				[0, 0],
-				[bnd[2], 0],
-				[bnd[3], 16],
-				[bnd[4], 40],
-				[bnd[4] + dd[4] * 0.3, 64],
-				[bnd[5], 64],
-				[bnd[5] + dd[5] * 0.5, 0],
-				[bnd[6], 0]
-			];
-		const P: [number, number][] = [
-			[0, m[0]],
-			[bnd[1], m[0] + 0.4],
-			[bnd[1] + dd[1] * 0.7, m[1]],
-			[bnd[2], m[2]],
-			[bnd[3], m[3]],
-			[bnd[3] + dd[3] * 0.5, m[4] + 2],
-			[bnd[4], m[4]]
-		];
-		for (let k = 1; k <= 20; k++) {
-			const t = bnd[4] + (dd[4] * k) / 20;
-			let v = id === 'F' ? (k < 8 ? m[4] + (m[5] - 28 - m[4]) * Math.min(1, k / 5) : m[5]) : m[4] + (m[5] - m[4]) * Math.min(1, k / 6);
-			if (k === 20) v = m[6];
-			P.push([t, v + (k < 20 ? (H(id + k) - 0.5) * 1.6 : 0)]);
-		}
-		P.push([bnd[5] + dd[5] * 0.3, m[6] * 0.6], [bnd[6], m[7]]);
-		return P.map(([t, v]) => [t, tf(v)]);
-	};
-
-	const mem = $derived.by(() => {
-		const Tmax = Math.max(...sel.map((id) => ph(id).bnd[6]), 1);
-		const xf = (id: CfgId, t: number) => {
-			if (!ui.memAligned) return t / Tmax;
-			const { dd, bnd } = ph(id);
-			let k = 0;
-			while (k < 5 && t > bnd[k + 1]) k++;
-			return FR[k] + (dd[k] ? (t - bnd[k]) / dd[k] : 0) * (FR[k + 1] - FR[k]);
-		};
-		const px = (f: number) => pl + f * (W - pl - pr);
-		const all = sel.map((id) => ({ id, P: pts(id) }));
-		const ymax = Math.max(...all.flatMap((x) => x.P.map((p) => p[1])), 10) * 1.12;
-		const py = (v: number) => pt + (1 - v / ymax) * (HC - pt - pb);
-		const stp = [10, 20, 25, 50, 100, 200].find((x) => ymax / x <= 5) || 200;
-		const yTicks = [];
-		for (let v = 0; v <= ymax; v += stp) yTicks.push({ y: py(v).toFixed(1), t: pc(py(v), HC), label: v + ' MB' });
-		const series = all.map(({ id, P }) => {
-			const c = CB[id];
-			const pk = P.reduce((a, p) => (p[1] > a[1] ? p : a), P[0]);
-			return {
-				c,
-				points: P.map(([t, v]) => px(xf(id, t)).toFixed(1) + ',' + py(v).toFixed(1)).join(' '),
-				pkX: px(xf(id, pk[0])).toFixed(1),
-				pkY: py(pk[1]).toFixed(1),
-				pkL: `peak* ${pk[1].toFixed(0)} MB`,
-				pkLl: pc(px(xf(id, pk[0])), W),
-				pkLt: pc(py(pk[1]) - 18, HC),
-				ticks: ph(id)
-					.bnd.slice(1, 6)
-					.map((t) => px(xf(id, t)).toFixed(1))
-			};
-		});
-		const prim = sel[0];
-		const bands = prim
-			? PH_NAMES.map((name, k) => {
-					const { bnd } = ph(prim);
-					const x0 = px(xf(prim, bnd[k]));
-					const x1 = px(xf(prim, bnd[k + 1]));
-					return { x: x0.toFixed(1), w: Math.max(0, x1 - x0).toFixed(1), fill: k % 2 ? 'var(--bg3)' : 'transparent', label: x1 - x0 > 46 ? name : '', ll: pc(x0 + 4, W) };
-				})
-			: [];
-		const xTicks = ui.memAligned
-			? []
-			: [0, 0.25, 0.5, 0.75, 1].map((f) => ({
-					l: pc(px(f), W),
-					tf: f === 1 ? 'translateX(-100%)' : f === 0 ? 'none' : 'translateX(-50%)',
-					label: fmtU(Tmax * f, 'ms')
-				}));
-		const rowsSrc = (id: CfgId): [number | null, number][] => {
-			const m = MEMPH[id].m;
-			if (ui.memMetric === 'linear')
-				return [
-					[0, 0],
-					[0, 0],
-					[16, 16],
-					[40, 40],
-					[64, 64],
-					[64, 0],
-					[null, 0]
-				];
-			return (
-				[
-					[m[0] + 0.4, m[0] + 0.4],
-					[m[1], m[2]],
-					[m[3] + 1, m[3]],
-					[m[4] + 2, m[4]],
-					[m[5], m[6]],
-					[m[6], m[7]],
-					[null, m[7]]
-				] as [number | null, number][]
-			).map(([a, e]) => [a == null ? null : tf(a), tf(e)]);
-		};
-		const table = [...PH_NAMES, 'retained @ +1 s'].map((name, k) => ({
-			name,
-			cells: sel.map((id) => {
-				const [pk, e] = rowsSrc(id)[k];
-				return pk == null ? `— / ${e.toFixed(1)}` : `${pk.toFixed(1)} / ${e.toFixed(1)}`;
-			})
-		}));
-		return { yTicks, series, bands, xTicks, table };
-	});
+  const sel=$derived(ui.memSel.filter(id=>vis.some(c=>c.id===id)));
+  // Independent process high-water records do not supply an elapsed lifecycle
+  // curve or phase endpoints. Preserve the plot's empty state instead of joining
+  // unrelated process snapshots into a fabricated trace.
+  const mem=$derived({yTicks:[] as {y:string;t:string;label:string}[],series:[] as {c:typeof CFG[number];points:string;pkX:string;pkY:string;pkL:string;pkLl:string;pkLt:string;ticks:string[]}[],bands:[] as {x:string;w:string;fill:string;label:string;ll:string}[],xTicks:[] as {l:string;tf:string;label:string}[],
+    table:([['Compile process lifetime','rssCompile'],['Instantiate process lifetime','rssInst'],['First-call process lifetime','rssFirst'],['Steady process lifetime','rss']] as const).map(([name,metric])=>({name,cells:sel.map(id=>{
+      if(ui.memMetric!=='rss')return 'not collected';
+      const cell=viewCell(ui.machine,ui.snap,b.id,id,metric);
+      return cell.st==='ok' && cell.v!=null?fmtU(cell.v,'MiB'):'not measured';
+    })}))});
 	const toggleMem = (id: CfgId) => {
 		const on = sel.includes(id);
 		ui.memSel = on ? ui.memSel.filter((x) => x !== id) : [...ui.memSel.filter((x) => okC.some((o) => o.id === x)), id].slice(-3);
@@ -180,15 +62,10 @@ import { historySegments } from '$lib/history-values';
 	);
 
 	// ── Code ───────────────────────────────────────────────────────────────
-	const codeRows = $derived(
-		vis.map((c) => {
-			const k = CODE[c.id];
-			if (!k) return { c, cells: ['n/a — interpreter', '', '', '', '', '', ''] };
-			const f = (v: number | string | null | undefined) => (v == null ? 'not measured' : fmtU((v as number) * sC, 'KB'));
-			const tot = k[2] == null ? null : (k[0] as number) + (k[1] as number) + (k[2] as number);
-			return { c, cells: [f(k[0]), f(k[1]), f(k[2]), tot == null ? 'partial' : f(tot), k[5] ? f(k[5]) : f(tot), String(k[3]), String(k[4])] };
-		})
-	);
+  const codeRows=$derived(vis.map(c=>{
+    const cell=viewCell(ui.machine,ui.snap,b.id,c.id,'code');
+    return {c,cells:['not collected','not collected','not collected',cell.st==='ok' && cell.v!=null?fmtU(cell.v,'KiB'):'not measured','not collected','not collected','not collected']};
+  }));
 
 	// ── History ────────────────────────────────────────────────────────────
 	const spark = $derived(
@@ -210,38 +87,26 @@ import { historySegments } from '$lib/history-values';
 		})
 	);
 
-	const feat = $derived(
-		b.tags.includes('simd')
-			? 'simd128 · bulk-memory'
-			: b.tags.includes('gc')
-				? 'gc · reference-types · tail-call'
-				: b.tags.includes('threads')
-					? 'threads · shared memory'
-					: b.tags.includes('exceptions')
-						? 'exceptions (exnref)'
-						: 'bulk-memory · mutable-globals · sign-ext'
-	);
-	const meta = $derived([
-		{ k: 'Purpose', v: b.purpose || 'Kernel from the ' + b.group.toLowerCase() + ' corpus' },
-		{ k: 'Input', v: b.input || 'fixed seed 42' },
-		{ k: 'Wasm artifact', v: `${n0(b.kb)} KB · sha256 ${hex(b.id)}…` },
-		{ k: 'Required features', v: feat },
-		{ k: 'Imports', v: 'wasi_snapshot_preview1: fd_write, clock_time_get, random_get' },
-		{ k: 'Source / toolchain', v: b.src || 'C · wasi-sdk 24 (clang 19.1.5) -O2' },
-		{ k: 'Coverage', v: `${okC.length} / 7 configurations correct` }
-	]);
-	const record = $derived([
-		{ k: 'Timing run', v: 'r-' + hex(b.id) + ' · clean, no instrumentation' },
-		{ k: 'Memory run', v: 'm-' + hex(b.id + 'm') + ' · instrumented, linked to timing run' },
-		{ k: 'Machine', v: MACH[ui.machine].l },
-		{ k: 'OS', v: MACH[ui.machine].os },
-		{ k: 'Harness', v: 'v3.2.0 (commit 8c41e0a)' },
-		{ k: 'Cache / warmup', v: 'cold · 5 warmup iterations discarded' },
-		{ k: 'Samples', v: '10 independent processes × 30 iterations' },
-		{ k: 'Correctness', v: 'stdout sha256 compared to reference per process' },
-		{ k: 'Raw results', v: 'results/snap-2026-09-28.1/' + b.id + '.jsonl' },
-		{ k: 'Provenance', v: 'project-maintained · not independently reproduced' }
-	]);
+  const references=$derived([...new Set(vis.flatMap(c=>['compile','inst','first','steady','rss','code'].map(metric=>viewCell(ui.machine,ui.snap,b.id,c.id,metric).report)).filter(Boolean))].map(id=>({id,...viewData.reports[id]})));
+  const meta=$derived([
+    {k:'Purpose',v:b.purpose || b.group},{k:'Input',v:b.input || 'not recorded'},
+    {k:'Wasm artifact',v:fmtU(b.kb,'KiB')+' · sha256 '+b.artifactSha256},
+    {k:'Declared features',v:b.tags.join(' · ') || 'none recorded'},
+    {k:'Imports',v:b.imports==null?'not collected':String(b.imports)+' declared imports · '+b.abi},
+    {k:'Source / toolchain',v:b.src || 'not recorded'},
+    {k:'Coverage',v:`${okC.length} / ${vis.length} selected configurations verified for steady execution`}
+  ]);
+  const record=$derived([
+    {k:'Reports',v:references.map(r=>r.runId+' · '+r.created).join(' · ') || 'not collected'},
+    {k:'Memory passes',v:references.map(r=>r.memorySource?.id).filter(Boolean).join(' · ') || 'not collected'},
+    {k:'Code passes',v:references.map(r=>r.codeSource?.id).filter(Boolean).join(' · ') || 'not collected'},
+    {k:'Machine',v:MACH[ui.machine].l},{k:'OS',v:MACH[ui.machine].os},
+    {k:'Sampling / warmup',v:references.map(r=>r.runId+': '+JSON.stringify(r.options)).join(' · ')},
+    {k:'Reset policy',v:b.reset || 'not recorded'},
+    {k:'Correctness oracle',v:JSON.stringify(b.oracle) || 'not recorded'},
+    {k:'Raw evidence',v:references.map(r=>r.evidence+' · sha256 '+r.sha256).join(' · ')},
+    {k:'Provenance',v:'Collected on both named hosts; exact artifacts and adapter identities sealed per report.'}
+  ]);
 	const tagHref = (t: string) => (t === 'simd' ? '/simd' : '/benchmarks?tag=' + encodeURIComponent(t) + '#workloads');
 </script>
 
@@ -328,11 +193,11 @@ import { historySegments } from '$lib/history-values';
 	<div class="panel mem">
 		<div class="mem-head">
 			<span class="w6">{memLabel} — lifecycle timeline</span>
-			<span class="note">up to 3 overlays · phase bands from first selected · ticks mark each series' phase boundaries</span>
+			<span class="note">up to 3 selected configurations · independent scenario processes</span>
 		</div>
 		{#if ui.memAligned}<div class="small warn">Phase-aligned view: each phase is stretched to a fixed width. Horizontal distance is not time.</div>{/if}
-		{#if !sel.length}
-			<div class="empty fg3">Select a configuration to plot. Configurations without a correct run of this workload are not offered.</div>
+		{#if !mem.series.length}
+			<div class="empty fg3">Elapsed memory timelines with phase anchors are not collected. The table reports independent process lifetime high-water values.</div>
 		{:else}
 			<div class="chart">
 				<svg viewBox="0 0 {W} {HC}">
@@ -352,14 +217,14 @@ import { historySegments } from '$lib/history-values';
 				{/each}
 			</div>
 		{/if}
-		<div class="note">* Sampled peak: maximum of 1 ms samples; true peak may be higher. Lifetime high-water mark (VmHWM) is reported once, in Run details — not repeated per phase.</div>
+		<div class="note">Process peak RSS is a lifetime high-water reading from each separate scenario process. PSS and guest-memory phase endpoints are unavailable.</div>
 	</div>
 	{#if sel.length}
 		<div class="tbl-wrap">
 			<table class="t" style:min-width="520px">
 				<thead>
 					<tr>
-						<th>Phase · MB (peak* / end)</th>
+						<th>Scenario · process peak RSS (MiB)</th>
 						{#each sel as id (id)}<th class="r"><RtLabel c={CB[id]} /></th>{/each}
 					</tr>
 				</thead>
@@ -368,7 +233,7 @@ import { historySegments } from '$lib/history-values';
 						<tr>
 							<td class="fg2">{r.name}</td>
 							{#each r.cells as text, k (k)}
-								<td class="mono r" data-tip={`${r.name} — ${CB[sel[k]].rt} ${CB[sel[k]].be}\n${text}\n* sampled peak (1 ms interval)`}>{text}</td>
+								<td class="mono r" data-tip={`${r.name} — ${CB[sel[k]].rt} ${CB[sel[k]].be}\n${text}\nlifetime high-water record`}>{text}</td>
 							{/each}
 						</tr>
 					{/each}
@@ -376,11 +241,10 @@ import { historySegments } from '$lib/history-values';
 			</table>
 		</div>
 	{/if}
-	<div class="note">RSS via smaps_rollup every 1 ms, single process, from an instrumented run linked to the timing run.</div>
+	<div class="note">Memory values come from matched memory-profile runs. Timing and memory are separate measurements; phase end values and physical reclamation are not inferred.</div>
 {:else if ui.bdTab === 'code'}
 	<div class="lede">
-		Module-level generated code at end of run. Overview score uses “Active total” (function code + stubs + metadata). Static size is not a speed or
-		quality score.
+		Extracted native image bytes from a separate code-profile pass. Images can include wrappers and data. Function, stub, metadata, active-tier and cumulative breakdowns are not collected.
 	</div>
 	<div class="tbl-wrap">
 		<table class="t" style:min-width="900px">
@@ -390,7 +254,7 @@ import { historySegments } from '$lib/history-values';
 					<th class="r">Function code</th>
 					<th class="r">Stubs &amp; trampolines</th>
 					<th class="r">Metadata &amp; pools</th>
-					<th class="r">Active total</th>
+					<th class="r">Extracted image</th>
 					<th class="r">Cumulative emitted</th>
 					<th>Compiled functions</th>
 					<th>Tier</th>
@@ -434,7 +298,7 @@ import { historySegments } from '$lib/history-values';
 		{#each record as k (k.k)}
 			<div class="rec"><span class="fg3">{k.k}</span><span class="mono brk">{k.v}</span></div>
 		{/each}
-		<pre class="mono">wbench run --snapshot snap-2026-09-28.1 --workload "{b.id}" --all-configs --phases all --memory-run</pre>
+		<pre class="mono">just refresh</pre>
 	</div>
 {/if}
 

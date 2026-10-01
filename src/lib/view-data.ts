@@ -11,6 +11,7 @@ interface Host {
 	snapshots: Record<'s1'|'s2',Record<string,ViewCell>>;
 }
 interface ViewData {
+	threads:Record<MachineId,{created:string;configuration:string;node:string;v8:string;policy:string;evidence:string;sha256:string;results:{sharing:string;workers:number;operationsPerWorker:number;launches:{launch:number;samples:{elapsedNs:number;operations:number;verified:boolean}[]}[]}[]}>;
 	schema: number; catalogue: Bench[]; hosts: Record<MachineId,Host>; reasons:string[];
 	configurations:Record<CfgId,string>;
 	statistics:{timingSamples:number};
@@ -19,7 +20,7 @@ interface ViewData {
 		workloads:string[];versions:Record<CfgId,string[]>;
 		cells:Record<string,(ViewCell & {role:'retrospective-revision'|'fixed-comparison-baseline'})[]>;
 	}>;
-	reports: Record<string,{runId:string;created:string;evidence:string;sha256:string;options:Record<string,unknown>;configurations:string[];host:string}>;
+	reports: Record<string,{runId:string;created:string;evidence:string;sha256:string;options:Record<string,unknown>;memorySource?:{id:string;note:string};codeSource?:{id:string;note:string};configurations:string[];host:string}>;
 }
 type PackedCell = [number,number,number,number,number,number|null,[number,number]|null,number[]|null,number|null];
 type PackedHistoryCell=[number,number,number|null,[number,number]|null,number[]|null,number|null];

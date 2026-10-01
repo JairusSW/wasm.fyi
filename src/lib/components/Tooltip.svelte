@@ -22,14 +22,18 @@
 			const tip = target.getAttribute('data-tip');
 			if (!tip) return;
 			cur = target;
-			text = tip;
-			shown = true;
-			// Measure after the new text renders.
-			requestAnimationFrame(() => place(x, y));
+            // Focus/scroll events can fire synchronously while Svelte removes
+            // a view. Apply state after that render; discard superseded hovers.
+            queueMicrotask(() => {
+                if (cur !== target) return;
+                text = tip;
+                shown = true;
+                requestAnimationFrame(() => place(x, y));
+            });
 		};
 		const hide = () => {
 			cur = null;
-			shown = false;
+            queueMicrotask(() => { if (!cur) shown = false; });
 		};
 		const closest = (e: Event) => (e.target instanceof Element ? e.target.closest('[data-tip]') : null);
 		const over = (e: MouseEvent) => {

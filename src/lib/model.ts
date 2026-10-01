@@ -6,7 +6,7 @@ import { viewCell, viewData } from './view-data';
 import { CB, CFG, MACH, WF } from './data/runtimes';
 import { MET, OTM, UNIT } from './data/snapshot';
 import type { Bench, Cfg, CfgId, MachineId, MetricKey, OtMetricKey, RatioCi, Status } from './data/types';
-import { H, fmtU, fx, n0, pct } from './format';
+import { fmtU, fx, n0, pct } from './format';
 
 export interface Scope {
 	machine: MachineId;
@@ -133,40 +133,32 @@ export interface CompatCell {
 	name?: string;
 }
 
-export function compatCell(total: number, spec: string): CompatCell {
-	const [av, fr, ex] = spec.split(':') as [Avail, string?, string?];
-	if (av === 'u' || av === '?' || av === 'n') return { av, run: false, total, pass: 0, fail: 0, crash: 0, skip: 0 };
-	let crash = 0;
-	let skip = 0;
-	if (ex) {
-		if (ex[0] === 'c') crash = +ex.slice(1);
-		if (ex[0] === 's') skip = +ex.slice(1);
-	}
-	const runnable = total - skip;
-	const pass = Math.round(runnable * (fr ? parseFloat(fr) : 1));
-	crash = Math.min(crash, runnable - pass);
-	return { av, run: true, total, pass, fail: runnable - pass - crash, crash, skip };
+export function featureContracts(family:string) {
+  return viewData.catalogue.filter(w=>w.id.startsWith('features/'+family+'/') && !w.baseline);
 }
-
-/** Splits a family result across its sub-families; failures land in one deterministic child. */
-export function kidCells(fam: { id: string; total: number; kids: [string, number][]; r: string[] }, ci: number) {
-	const cell = compatCell(fam.total, fam.r[ci]);
-	const k = fam.kids.length;
-	const hit = Math.floor(H(fam.id + ci) * k);
-	let used = 0;
-	return fam.kids.map(([name, sh], i): CompatCell => {
-		const t = i < k - 1 ? Math.round(fam.total * sh) : fam.total - used;
-		used += t;
-		if (!cell.run) return { ...cell, total: t, name };
-		const fail = i === hit ? cell.fail : 0;
-		const crash = i === hit ? cell.crash : 0;
-		const skip = i === k - 1 ? cell.skip : 0;
-		return { av: cell.av, run: true, total: t, pass: Math.max(0, t - fail - crash - skip), fail, crash, skip, name };
-	});
+export function featureOutcome(s:Scope,w:Bench,cid:CfgId) {
+  return viewCell(s.machine,s.snapshot || 's1',w.id,cid,w.evidenceScope==='compile-only'?'compile':w.evidenceScope==='compile-and-instantiate'?'inst':'steady');
+}
+export function compatCell(family:string,cid:CfgId,s:Scope,workload?:string):CompatCell {
+  const contracts=featureContracts(family).filter(w=>!workload || w.id===workload);
+  const result:CompatCell={av:'?',run:false,total:contracts.length,pass:0,fail:0,crash:0,skip:0};
+  for(const w of contracts){
+    const c=featureOutcome(s,w,cid);
+    if(c.st==='ok')result.pass++;
+    else if(c.st==='failed')result.fail++;
+    else if(c.st==='crashed'||c.st==='timeout')result.crash++;
+    else result.skip++;
+    if(c.report)result.run=true;
+  }
+  if(result.run)result.av='d';
+  return result;
+}
+export function kidCells(fam:{id:string;kids:[string,number][]},ci:number,s:Scope) {
+  return fam.kids.map(([name])=>({...compatCell(fam.id,CFG[ci].id,s,name),name}));
 }
 
 export const AVAIL: Record<Avail, [string, string]> = {
-	d: ['●', 'enabled by default'],
+	d: ['●', 'recorded configuration'],
 	f: ['⚑', 'requires flag'],
 	u: ['—', 'unavailable'],
 	'?': ['?', 'unknown'],

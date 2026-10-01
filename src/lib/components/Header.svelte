@@ -46,7 +46,7 @@
 			placeholder="Search workloads   /"
 			aria-label="Search workloads"
 		/>
-		<span class="synthetic mono">SYNTHETIC DATA</span>
+		<span class="synthetic mono">MEASURED DATA</span>
 		<button class="btn-small" onclick={toggleTheme}>{ui.theme === 'dark' ? 'Light theme' : 'Dark theme'}</button>
 	</div>
 </header>

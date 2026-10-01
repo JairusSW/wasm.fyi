@@ -45,10 +45,10 @@
     }
   ],
   "baseline": {
-    "report": "52ea3cec03b3a36b75293aa8b1d7b5b80464cc91e0b48adf71e2265df3c1646b",
-    "runId": "timing-2026-10-01T09-20-55-805Z-9d900c7b",
-    "evidenceSha256": "82b72f91944df7e4b9e56e91c574d5bf9030db9e54e2c40e0a381e09fc757b52",
-    "created": "2026-10-01T09:20:57.753792Z",
+    "report": "0f31caa7c7877b5b904bdba5fe93c0815799aa5477a7afffd5af207b6acb9efe",
+    "runId": "timing-2026-10-01T14-54-44-716Z-0d95fd44",
+    "evidenceSha256": "5f34add51afd1313c3df03ef423a81126601c852db3d98e6f41d1e862ee3eadd",
+    "created": "2026-10-01T14:54:47.423233Z",
     "configurations": [
       {
         "native_dependency_policy": "macho-third-party-closure-v1; system shared-cache libraries excluded; absolute loads remain exact host prerequisites",
@@ -608,6 +608,150 @@
               "MULTI_MEMORY": true,
               "RELAXED_SIMD": true,
               "STACK_SWITCHING": false
+            }
+          }
+        }
+      },
+      {
+        "host_file_sha256": {
+          "/Users/work/.local/share/wasm-fyi/toolchains/wasmer-c-api-7.3.0/sdk/lib/libwasmer.dylib": "6e1561c039a3975b0717a822d3aaf3a8b2dd202cf7e1595d4e309b79a2a38351"
+        },
+        "native_dependency_policy": "macho-third-party-closure-v1; system shared-cache libraries excluded; absolute loads remain exact host prerequisites",
+        "id": "wasmer-llvm",
+        "command": [
+          "/Users/work/Code/Tools/wasm-bench/bin/adapter-wasmer-llvm"
+        ],
+        "file_sha256": {
+          "/Users/work/Code/Tools/wasm-bench/bin/adapter-wasmer-llvm": "d40b15aa38358e19831486de4fe8d677a216f044738949220b567e66c094e2c1"
+        },
+        "description": {
+          "phase_release_policy": "release native instance; compiled module/engine retained except compile samples; no RSS reclamation claim",
+          "phase_barrier_scenarios": [
+            "compile",
+            "instantiate",
+            "first-call",
+            "steady"
+          ],
+          "runtime": "wasmer-llvm",
+          "runtime_version": "7.3.0",
+          "backend": "llvm-jit",
+          "embedding": "standalone Rust/C embedding",
+          "build": "adapter-native/0.1.0; wasmer-llvm",
+          "effective_configuration": {
+            "assemblyscript_abort_policy": "Only env.abort with four i32 parameters and no results; imported callback creates a real guest trap; no other host imports",
+            "call_policy": "embedding export lookup, integer argument/result marshalling and result allocation included; every result verified outside timed batch",
+            "compile_policy": "explicit Wasmer compiler; fresh compilation store and eager module compilation; engine creation excluded; instance creates a fresh store from the same engine",
+            "release_policy": "native instance/store disposal; no physical RSS reclamation claim",
+            "reset_policy": "fresh lifecycle instance; stateless steady retained instance; wasm3 recompiles outside first-call timing",
+            "vector_policy": "Fresh instance per ordered vector sequence; input writes and exact output verification excluded from sum of timed export lookups, integer marshalling and embedding calls; one operation per complete sequence; lifecycle windows match scalar API phases",
+            "wasmi_dispatch": "not applicable; external SDK build identity pinned"
+          },
+          "capabilities": {
+            "can_code_profile": false,
+            "can_compile_separately": true,
+            "can_instantiate_separately": true,
+            "can_run_vectors": true,
+            "can_vector_compile_phases": true,
+            "can_vector_first-call_phases": true,
+            "can_vector_instantiate_phases": true
+          },
+          "scenarios": [
+            "compile",
+            "instantiate",
+            "first-call",
+            "steady"
+          ],
+          "abis": [
+            "core"
+          ],
+          "features": [
+            "mvp"
+          ],
+          "validator_features": {
+            "namespace": "wasmparser/0.251.0",
+            "evidence": "Pinned Wasmer 7.3.0 compiler configuration and explicit C API feature subset; Singlepass SIMD disabled after corpus instruction lowering failures; enabled validation is not a guarantee of complete backend support",
+            "supported": {
+              "EXCEPTIONS": true,
+              "FUNCTION_REFERENCES": false,
+              "GC": false,
+              "LEGACY_EXCEPTIONS": true,
+              "MEMORY64": false,
+              "RELAXED_SIMD": true,
+              "SIMD": true,
+              "STACK_SWITCHING": false,
+              "TAIL_CALL": true
+            }
+          }
+        }
+      },
+      {
+        "host_file_sha256": {
+          "/Users/work/.local/share/wasm-fyi/toolchains/wasmer-c-api-7.3.0/sdk/lib/libwasmer.dylib": "6e1561c039a3975b0717a822d3aaf3a8b2dd202cf7e1595d4e309b79a2a38351"
+        },
+        "native_dependency_policy": "macho-third-party-closure-v1; system shared-cache libraries excluded; absolute loads remain exact host prerequisites",
+        "id": "wasmer-singlepass",
+        "command": [
+          "/Users/work/Code/Tools/wasm-bench/bin/adapter-wasmer-singlepass"
+        ],
+        "file_sha256": {
+          "/Users/work/Code/Tools/wasm-bench/bin/adapter-wasmer-singlepass": "c8096efca53debae2e67f2d6899f82754b0224d1909f0789effbb9f28cab1c06"
+        },
+        "description": {
+          "phase_release_policy": "release native instance; compiled module/engine retained except compile samples; no RSS reclamation claim",
+          "phase_barrier_scenarios": [
+            "compile",
+            "instantiate",
+            "first-call",
+            "steady"
+          ],
+          "runtime": "wasmer-singlepass",
+          "runtime_version": "7.3.0",
+          "backend": "singlepass-jit",
+          "embedding": "standalone Rust/C embedding",
+          "build": "adapter-native/0.1.0; wasmer-singlepass",
+          "effective_configuration": {
+            "assemblyscript_abort_policy": "Only env.abort with four i32 parameters and no results; imported callback creates a real guest trap; no other host imports",
+            "call_policy": "embedding export lookup, integer argument/result marshalling and result allocation included; every result verified outside timed batch",
+            "compile_policy": "explicit Wasmer compiler; fresh compilation store and eager module compilation; engine creation excluded; instance creates a fresh store from the same engine",
+            "release_policy": "native instance/store disposal; no physical RSS reclamation claim",
+            "reset_policy": "fresh lifecycle instance; stateless steady retained instance; wasm3 recompiles outside first-call timing",
+            "vector_policy": "Fresh instance per ordered vector sequence; input writes and exact output verification excluded from sum of timed export lookups, integer marshalling and embedding calls; one operation per complete sequence; lifecycle windows match scalar API phases",
+            "wasmi_dispatch": "not applicable; external SDK build identity pinned"
+          },
+          "capabilities": {
+            "can_code_profile": false,
+            "can_compile_separately": true,
+            "can_instantiate_separately": true,
+            "can_run_vectors": true,
+            "can_vector_compile_phases": true,
+            "can_vector_first-call_phases": true,
+            "can_vector_instantiate_phases": true
+          },
+          "scenarios": [
+            "compile",
+            "instantiate",
+            "first-call",
+            "steady"
+          ],
+          "abis": [
+            "core"
+          ],
+          "features": [
+            "mvp"
+          ],
+          "validator_features": {
+            "namespace": "wasmparser/0.251.0",
+            "evidence": "Pinned Wasmer 7.3.0 compiler configuration and explicit C API feature subset; Singlepass SIMD disabled after corpus instruction lowering failures; enabled validation is not a guarantee of complete backend support",
+            "supported": {
+              "EXCEPTIONS": false,
+              "FUNCTION_REFERENCES": false,
+              "GC": false,
+              "LEGACY_EXCEPTIONS": false,
+              "MEMORY64": false,
+              "RELAXED_SIMD": false,
+              "SIMD": false,
+              "STACK_SWITCHING": false,
+              "TAIL_CALL": false
             }
           }
         }

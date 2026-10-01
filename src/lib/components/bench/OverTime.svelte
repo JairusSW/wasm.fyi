@@ -1,4 +1,5 @@
 <script lang="ts">
+ import { configVersion } from '$lib/data/runtimes';
 	import { siteHref } from '$lib/links';
 	import { goto } from '$lib/navigation';
 	import { CFG } from '$lib/data/runtimes';
@@ -126,7 +127,7 @@ import { historySegments } from '$lib/history-values';
 				{#each rows as h (h.c.id)}
 					<tr class="hoverbg" onclick={() => goto(histHref(h.c.id))}>
 						<td class="nowrap w1">
-							<a class="rt" href={siteHref(histHref(h.c.id))} data-tip={`${h.c.rt} ${h.c.ver} · ${h.c.be}\n${h.c.kind}\nClick to open history`}>
+							<a class="rt" href={siteHref(histHref(h.c.id))} data-tip={`${h.c.rt} ${configVersion(ui.machine,h.c.id)} · ${h.c.be}\n${h.c.kind}\nClick to open history`}>
 								<RtLabel c={h.c} mono />
 							</a>
 						</td>

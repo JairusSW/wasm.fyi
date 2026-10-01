@@ -45,10 +45,10 @@
     }
   ],
   "baseline": {
-    "report": "383f6197812648f86e253a89c38f3b9ac5f6ac51af53f9cf08109d8000b035e1",
-    "runId": "timing-2026-10-01T09-30-42-183Z-0cbe6f24",
-    "evidenceSha256": "350d680435ebe23b78e9bba630885262389bb8460601bee4c0b35840c409d7fb",
-    "created": "2026-10-01T09:30:44.482334469Z",
+    "report": "673e7bdd2b5c91f6ae78ff5553ba18ca13bfca8106fa9f253c49b19ca9d13770",
+    "runId": "timing-2026-10-01T15-05-29-770Z-29ec5c55",
+    "evidenceSha256": "3d3d532a2889f0cdd10cad61aca49133c77f316e9c582ed357683869c631a7fe",
+    "created": "2026-10-01T15:05:32.83428779Z",
     "configurations": [
       {
         "elf_startup_dependencies": {
@@ -75,10 +75,10 @@
         "native_dependency_policy": "linux-glibc-startup-closure-v1; explicit trusted loader --list; exact startup library hashes and loader controls; re-resolved before execution; excludes later dlopen and kernel vDSO",
         "id": "wazero",
         "command": [
-          "/home/hub/.cache/wasm-fyi/hub-2026-10-01T09-24-54-358Z-b3f9db64/harness/bin/adapter-wazero"
+          "/home/hub/.cache/wasm-fyi/hub-2026-10-01T15-03-21-421Z-2e6406f6/harness/bin/adapter-wazero"
         ],
         "file_sha256": {
-          "/home/hub/.cache/wasm-fyi/hub-2026-10-01T09-24-54-358Z-b3f9db64/harness/bin/adapter-wazero": "269847b95db71d87bc8f912cc9eb7c73f59f22a566b755dbf9347041717edc01",
+          "/home/hub/.cache/wasm-fyi/hub-2026-10-01T15-03-21-421Z-2e6406f6/harness/bin/adapter-wazero": "269847b95db71d87bc8f912cc9eb7c73f59f22a566b755dbf9347041717edc01",
           "/lib/x86_64-linux-gnu/libc.so.6": "3a15d66867d83762c7f2f1e37359cb8f6c5743edb369c65285cb0b1c4f7498bf"
         },
         "description": {
@@ -260,10 +260,10 @@
         "native_dependency_policy": "linux-glibc-startup-closure-v1; explicit trusted loader --list; exact startup library hashes and loader controls; re-resolved before execution; excludes later dlopen and kernel vDSO",
         "id": "wasmtime",
         "command": [
-          "/home/hub/.cache/wasm-fyi/hub-2026-10-01T09-24-54-358Z-b3f9db64/harness/adapters/wasmtime/target/release/adapter-wasmtime"
+          "/home/hub/.cache/wasm-fyi/hub-2026-10-01T15-03-21-421Z-2e6406f6/harness/adapters/wasmtime/target/release/adapter-wasmtime"
         ],
         "file_sha256": {
-          "/home/hub/.cache/wasm-fyi/hub-2026-10-01T09-24-54-358Z-b3f9db64/harness/adapters/wasmtime/target/release/adapter-wasmtime": "74a6ca97f3b7303efda376044ca75456451d5023a1479f313ce6db802882b804",
+          "/home/hub/.cache/wasm-fyi/hub-2026-10-01T15-03-21-421Z-2e6406f6/harness/adapters/wasmtime/target/release/adapter-wasmtime": "972469a9c31970c2b2990fd2a3fbed2c3d49ad762cbda9aa5aad270d3353eb13",
           "/lib/x86_64-linux-gnu/libc.so.6": "3a15d66867d83762c7f2f1e37359cb8f6c5743edb369c65285cb0b1c4f7498bf",
           "/lib/x86_64-linux-gnu/libgcc_s.so.1": "d93224d2b0dab4247598be683adca02f5cf00586f99c187579cd7e92058fb7cb",
           "/lib/x86_64-linux-gnu/libm.so.6": "fce00b6f25f459cf4ae0b7fae4257909a1a8a86f9149e7c029a5d617baf1ccd0"
@@ -436,11 +436,11 @@
         "native_dependency_policy": "linux-glibc-startup-closure-v1; explicit trusted loader --list; exact startup library hashes and loader controls; re-resolved before execution; excludes later dlopen and kernel vDSO",
         "id": "wasmtime-winch",
         "command": [
-          "/home/hub/.cache/wasm-fyi/hub-2026-10-01T09-24-54-358Z-b3f9db64/harness/adapters/wasmtime/target/release/adapter-wasmtime",
+          "/home/hub/.cache/wasm-fyi/hub-2026-10-01T15-03-21-421Z-2e6406f6/harness/adapters/wasmtime/target/release/adapter-wasmtime",
           "--winch"
         ],
         "file_sha256": {
-          "/home/hub/.cache/wasm-fyi/hub-2026-10-01T09-24-54-358Z-b3f9db64/harness/adapters/wasmtime/target/release/adapter-wasmtime": "74a6ca97f3b7303efda376044ca75456451d5023a1479f313ce6db802882b804",
+          "/home/hub/.cache/wasm-fyi/hub-2026-10-01T15-03-21-421Z-2e6406f6/harness/adapters/wasmtime/target/release/adapter-wasmtime": "972469a9c31970c2b2990fd2a3fbed2c3d49ad762cbda9aa5aad270d3353eb13",
           "/lib/x86_64-linux-gnu/libc.so.6": "3a15d66867d83762c7f2f1e37359cb8f6c5743edb369c65285cb0b1c4f7498bf",
           "/lib/x86_64-linux-gnu/libgcc_s.so.1": "d93224d2b0dab4247598be683adca02f5cf00586f99c187579cd7e92058fb7cb",
           "/lib/x86_64-linux-gnu/libm.so.6": "fce00b6f25f459cf4ae0b7fae4257909a1a8a86f9149e7c029a5d617baf1ccd0"
@@ -625,14 +625,14 @@
         "id": "v8",
         "command": [
           "/home/hub/.local/bin/node",
-          "/home/hub/.cache/wasm-fyi/hub-2026-10-01T09-24-54-358Z-b3f9db64/harness/adapters/v8/adapter.mjs"
+          "/home/hub/.cache/wasm-fyi/hub-2026-10-01T15-03-21-421Z-2e6406f6/harness/adapters/v8/adapter.mjs"
         ],
         "file_sha256": {
-          "/home/hub/.cache/wasm-fyi/hub-2026-10-01T09-24-54-358Z-b3f9db64/harness/adapters/v8/adapter.mjs": "012857ea387d92996fa51da744886d9f43d7fc5d8e1a4b1d75911775bcb77f97",
-          "/home/hub/.cache/wasm-fyi/hub-2026-10-01T09-24-54-358Z-b3f9db64/harness/adapters/v8/compiler-mode.mjs": "826f6a82054c3551cbbb92d3f4f8ba03f7b1d85a9ea345cd4dfe92028390b529",
-          "/home/hub/.cache/wasm-fyi/hub-2026-10-01T09-24-54-358Z-b3f9db64/harness/adapters/v8/floats.mjs": "4bc5bd022948e2b101df38d8fabfa1e980da2588cf3020c3935d3b7de6eb38ee",
-          "/home/hub/.cache/wasm-fyi/hub-2026-10-01T09-24-54-358Z-b3f9db64/harness/adapters/v8/harness.mjs": "4286207601a1a0adfc3d892c07ac792a5518a5ca59710b025e6d9b4b9a9ba735",
-          "/home/hub/.cache/wasm-fyi/hub-2026-10-01T09-24-54-358Z-b3f9db64/harness/adapters/v8/profiling.mjs": "9cfeb6b8715a9989631d52cb7dd67fe7c4c81ea5ce451831b0e0f8cb9970ce54",
+          "/home/hub/.cache/wasm-fyi/hub-2026-10-01T15-03-21-421Z-2e6406f6/harness/adapters/v8/adapter.mjs": "012857ea387d92996fa51da744886d9f43d7fc5d8e1a4b1d75911775bcb77f97",
+          "/home/hub/.cache/wasm-fyi/hub-2026-10-01T15-03-21-421Z-2e6406f6/harness/adapters/v8/compiler-mode.mjs": "826f6a82054c3551cbbb92d3f4f8ba03f7b1d85a9ea345cd4dfe92028390b529",
+          "/home/hub/.cache/wasm-fyi/hub-2026-10-01T15-03-21-421Z-2e6406f6/harness/adapters/v8/floats.mjs": "4bc5bd022948e2b101df38d8fabfa1e980da2588cf3020c3935d3b7de6eb38ee",
+          "/home/hub/.cache/wasm-fyi/hub-2026-10-01T15-03-21-421Z-2e6406f6/harness/adapters/v8/harness.mjs": "4286207601a1a0adfc3d892c07ac792a5518a5ca59710b025e6d9b4b9a9ba735",
+          "/home/hub/.cache/wasm-fyi/hub-2026-10-01T15-03-21-421Z-2e6406f6/harness/adapters/v8/profiling.mjs": "9cfeb6b8715a9989631d52cb7dd67fe7c4c81ea5ce451831b0e0f8cb9970ce54",
           "/home/hub/.local/bin/node": "3517c2df0b2f8cd7f422b4b8450ef81c6889f08eb03e281d6de9079b15e6a327",
           "/lib/x86_64-linux-gnu/libc.so.6": "3a15d66867d83762c7f2f1e37359cb8f6c5743edb369c65285cb0b1c4f7498bf",
           "/lib/x86_64-linux-gnu/libdl.so.2": "c2994527172cc23b7fb0f7d611b71e00a37da27af12c2e5e9e0dc1a742886c96",
@@ -739,6 +739,238 @@
               "MULTI_MEMORY": true,
               "RELAXED_SIMD": true,
               "STACK_SWITCHING": false
+            }
+          }
+        }
+      },
+      {
+        "elf_startup_dependencies": {
+          "version": "linux-glibc-startup-closure-v1",
+          "interpreter": {
+            "path": "/lib64/ld-linux-x86-64.so.2",
+            "sha256": "c20a2dc8917c755f02b94049356320fe1f62ac7d9f8994731f807d9df39302da"
+          },
+          "libraries": {
+            "libc.so.6": {
+              "path": "/lib/x86_64-linux-gnu/libc.so.6",
+              "sha256": "3a15d66867d83762c7f2f1e37359cb8f6c5743edb369c65285cb0b1c4f7498bf"
+            },
+            "libgcc_s.so.1": {
+              "path": "/lib/x86_64-linux-gnu/libgcc_s.so.1",
+              "sha256": "d93224d2b0dab4247598be683adca02f5cf00586f99c187579cd7e92058fb7cb"
+            },
+            "libm.so.6": {
+              "path": "/lib/x86_64-linux-gnu/libm.so.6",
+              "sha256": "fce00b6f25f459cf4ae0b7fae4257909a1a8a86f9149e7c029a5d617baf1ccd0"
+            },
+            "libstdc++.so.6": {
+              "path": "/lib/x86_64-linux-gnu/libstdc++.so.6",
+              "sha256": "1fd75fe70354a416d75aef22bcae68c47bd25d20e2d0568c30b1a9838cf62f11"
+            },
+            "libwasmer.so": {
+              "path": "/home/hub/.local/share/wasm-fyi/toolchains/wasmer-c-api-7.3.0/sdk/lib/libwasmer.so",
+              "sha256": "909dd365e92f3876b67b46cb0b3054fe25fd72c1751c9380e67903088fe78594"
+            },
+            "libz.so.1": {
+              "path": "/lib/x86_64-linux-gnu/libz.so.1",
+              "sha256": "86200da370f20476a2507e9097a789b5ef97269b4ca8d5e164ad82dab9d99892"
+            }
+          },
+          "control_files": {
+            "/etc/ld.so.cache": "1b2ef9fe7da4550f7b4e998fe2e80e9d2163233f0c7f6ccf22b207e1763c6356",
+            "/etc/ld.so.preload": "absent"
+          }
+        },
+        "host_file_sha256": {
+          "/etc/ld.so.cache": "1b2ef9fe7da4550f7b4e998fe2e80e9d2163233f0c7f6ccf22b207e1763c6356",
+          "/lib64/ld-linux-x86-64.so.2": "c20a2dc8917c755f02b94049356320fe1f62ac7d9f8994731f807d9df39302da"
+        },
+        "native_dependency_policy": "linux-glibc-startup-closure-v1; explicit trusted loader --list; exact startup library hashes and loader controls; re-resolved before execution; excludes later dlopen and kernel vDSO",
+        "id": "wasmer-llvm",
+        "command": [
+          "/home/hub/.cache/wasm-fyi/hub-2026-10-01T15-03-21-421Z-2e6406f6/harness/bin/adapter-wasmer-llvm"
+        ],
+        "file_sha256": {
+          "/home/hub/.cache/wasm-fyi/hub-2026-10-01T15-03-21-421Z-2e6406f6/harness/bin/adapter-wasmer-llvm": "ea7831a0c09ba3e225147b503af39439e6778b5892cdc67f5127201989b965cb",
+          "/home/hub/.local/share/wasm-fyi/toolchains/wasmer-c-api-7.3.0/sdk/lib/libwasmer.so": "909dd365e92f3876b67b46cb0b3054fe25fd72c1751c9380e67903088fe78594",
+          "/lib/x86_64-linux-gnu/libc.so.6": "3a15d66867d83762c7f2f1e37359cb8f6c5743edb369c65285cb0b1c4f7498bf",
+          "/lib/x86_64-linux-gnu/libgcc_s.so.1": "d93224d2b0dab4247598be683adca02f5cf00586f99c187579cd7e92058fb7cb",
+          "/lib/x86_64-linux-gnu/libm.so.6": "fce00b6f25f459cf4ae0b7fae4257909a1a8a86f9149e7c029a5d617baf1ccd0",
+          "/lib/x86_64-linux-gnu/libstdc++.so.6": "1fd75fe70354a416d75aef22bcae68c47bd25d20e2d0568c30b1a9838cf62f11",
+          "/lib/x86_64-linux-gnu/libz.so.1": "86200da370f20476a2507e9097a789b5ef97269b4ca8d5e164ad82dab9d99892"
+        },
+        "description": {
+          "phase_release_policy": "release native instance; compiled module/engine retained except compile samples; no RSS reclamation claim",
+          "phase_barrier_scenarios": [
+            "compile",
+            "instantiate",
+            "first-call",
+            "steady"
+          ],
+          "runtime": "wasmer-llvm",
+          "runtime_version": "7.3.0",
+          "backend": "llvm-jit",
+          "embedding": "standalone Rust/C embedding",
+          "build": "adapter-native/0.1.0; wasmer-llvm",
+          "effective_configuration": {
+            "assemblyscript_abort_policy": "Only env.abort with four i32 parameters and no results; imported callback creates a real guest trap; no other host imports",
+            "call_policy": "embedding export lookup, integer argument/result marshalling and result allocation included; every result verified outside timed batch",
+            "compile_policy": "explicit Wasmer compiler; fresh compilation store and eager module compilation; engine creation excluded; instance creates a fresh store from the same engine",
+            "release_policy": "native instance/store disposal; no physical RSS reclamation claim",
+            "reset_policy": "fresh lifecycle instance; stateless steady retained instance; wasm3 recompiles outside first-call timing",
+            "vector_policy": "Fresh instance per ordered vector sequence; input writes and exact output verification excluded from sum of timed export lookups, integer marshalling and embedding calls; one operation per complete sequence; lifecycle windows match scalar API phases",
+            "wasmi_dispatch": "not applicable; external SDK build identity pinned"
+          },
+          "capabilities": {
+            "can_code_profile": false,
+            "can_compile_separately": true,
+            "can_instantiate_separately": true,
+            "can_run_vectors": true,
+            "can_vector_compile_phases": true,
+            "can_vector_first-call_phases": true,
+            "can_vector_instantiate_phases": true
+          },
+          "scenarios": [
+            "compile",
+            "instantiate",
+            "first-call",
+            "steady"
+          ],
+          "abis": [
+            "core"
+          ],
+          "features": [
+            "mvp"
+          ],
+          "validator_features": {
+            "namespace": "wasmparser/0.251.0",
+            "evidence": "Pinned Wasmer 7.3.0 compiler configuration and explicit C API feature subset; Singlepass SIMD disabled after corpus instruction lowering failures; enabled validation is not a guarantee of complete backend support",
+            "supported": {
+              "EXCEPTIONS": true,
+              "FUNCTION_REFERENCES": false,
+              "GC": false,
+              "LEGACY_EXCEPTIONS": true,
+              "MEMORY64": false,
+              "RELAXED_SIMD": true,
+              "SIMD": true,
+              "STACK_SWITCHING": false,
+              "TAIL_CALL": true
+            }
+          }
+        }
+      },
+      {
+        "elf_startup_dependencies": {
+          "version": "linux-glibc-startup-closure-v1",
+          "interpreter": {
+            "path": "/lib64/ld-linux-x86-64.so.2",
+            "sha256": "c20a2dc8917c755f02b94049356320fe1f62ac7d9f8994731f807d9df39302da"
+          },
+          "libraries": {
+            "libc.so.6": {
+              "path": "/lib/x86_64-linux-gnu/libc.so.6",
+              "sha256": "3a15d66867d83762c7f2f1e37359cb8f6c5743edb369c65285cb0b1c4f7498bf"
+            },
+            "libgcc_s.so.1": {
+              "path": "/lib/x86_64-linux-gnu/libgcc_s.so.1",
+              "sha256": "d93224d2b0dab4247598be683adca02f5cf00586f99c187579cd7e92058fb7cb"
+            },
+            "libm.so.6": {
+              "path": "/lib/x86_64-linux-gnu/libm.so.6",
+              "sha256": "fce00b6f25f459cf4ae0b7fae4257909a1a8a86f9149e7c029a5d617baf1ccd0"
+            },
+            "libstdc++.so.6": {
+              "path": "/lib/x86_64-linux-gnu/libstdc++.so.6",
+              "sha256": "1fd75fe70354a416d75aef22bcae68c47bd25d20e2d0568c30b1a9838cf62f11"
+            },
+            "libwasmer.so": {
+              "path": "/home/hub/.local/share/wasm-fyi/toolchains/wasmer-c-api-7.3.0/sdk/lib/libwasmer.so",
+              "sha256": "909dd365e92f3876b67b46cb0b3054fe25fd72c1751c9380e67903088fe78594"
+            },
+            "libz.so.1": {
+              "path": "/lib/x86_64-linux-gnu/libz.so.1",
+              "sha256": "86200da370f20476a2507e9097a789b5ef97269b4ca8d5e164ad82dab9d99892"
+            }
+          },
+          "control_files": {
+            "/etc/ld.so.cache": "1b2ef9fe7da4550f7b4e998fe2e80e9d2163233f0c7f6ccf22b207e1763c6356",
+            "/etc/ld.so.preload": "absent"
+          }
+        },
+        "host_file_sha256": {
+          "/etc/ld.so.cache": "1b2ef9fe7da4550f7b4e998fe2e80e9d2163233f0c7f6ccf22b207e1763c6356",
+          "/lib64/ld-linux-x86-64.so.2": "c20a2dc8917c755f02b94049356320fe1f62ac7d9f8994731f807d9df39302da"
+        },
+        "native_dependency_policy": "linux-glibc-startup-closure-v1; explicit trusted loader --list; exact startup library hashes and loader controls; re-resolved before execution; excludes later dlopen and kernel vDSO",
+        "id": "wasmer-singlepass",
+        "command": [
+          "/home/hub/.cache/wasm-fyi/hub-2026-10-01T15-03-21-421Z-2e6406f6/harness/bin/adapter-wasmer-singlepass"
+        ],
+        "file_sha256": {
+          "/home/hub/.cache/wasm-fyi/hub-2026-10-01T15-03-21-421Z-2e6406f6/harness/bin/adapter-wasmer-singlepass": "8d47a91842bf89395472b54e82e7e389d06005b421d58b3c8bf5eb27377e1bfe",
+          "/home/hub/.local/share/wasm-fyi/toolchains/wasmer-c-api-7.3.0/sdk/lib/libwasmer.so": "909dd365e92f3876b67b46cb0b3054fe25fd72c1751c9380e67903088fe78594",
+          "/lib/x86_64-linux-gnu/libc.so.6": "3a15d66867d83762c7f2f1e37359cb8f6c5743edb369c65285cb0b1c4f7498bf",
+          "/lib/x86_64-linux-gnu/libgcc_s.so.1": "d93224d2b0dab4247598be683adca02f5cf00586f99c187579cd7e92058fb7cb",
+          "/lib/x86_64-linux-gnu/libm.so.6": "fce00b6f25f459cf4ae0b7fae4257909a1a8a86f9149e7c029a5d617baf1ccd0",
+          "/lib/x86_64-linux-gnu/libstdc++.so.6": "1fd75fe70354a416d75aef22bcae68c47bd25d20e2d0568c30b1a9838cf62f11",
+          "/lib/x86_64-linux-gnu/libz.so.1": "86200da370f20476a2507e9097a789b5ef97269b4ca8d5e164ad82dab9d99892"
+        },
+        "description": {
+          "phase_release_policy": "release native instance; compiled module/engine retained except compile samples; no RSS reclamation claim",
+          "phase_barrier_scenarios": [
+            "compile",
+            "instantiate",
+            "first-call",
+            "steady"
+          ],
+          "runtime": "wasmer-singlepass",
+          "runtime_version": "7.3.0",
+          "backend": "singlepass-jit",
+          "embedding": "standalone Rust/C embedding",
+          "build": "adapter-native/0.1.0; wasmer-singlepass",
+          "effective_configuration": {
+            "assemblyscript_abort_policy": "Only env.abort with four i32 parameters and no results; imported callback creates a real guest trap; no other host imports",
+            "call_policy": "embedding export lookup, integer argument/result marshalling and result allocation included; every result verified outside timed batch",
+            "compile_policy": "explicit Wasmer compiler; fresh compilation store and eager module compilation; engine creation excluded; instance creates a fresh store from the same engine",
+            "release_policy": "native instance/store disposal; no physical RSS reclamation claim",
+            "reset_policy": "fresh lifecycle instance; stateless steady retained instance; wasm3 recompiles outside first-call timing",
+            "vector_policy": "Fresh instance per ordered vector sequence; input writes and exact output verification excluded from sum of timed export lookups, integer marshalling and embedding calls; one operation per complete sequence; lifecycle windows match scalar API phases",
+            "wasmi_dispatch": "not applicable; external SDK build identity pinned"
+          },
+          "capabilities": {
+            "can_code_profile": false,
+            "can_compile_separately": true,
+            "can_instantiate_separately": true,
+            "can_run_vectors": true,
+            "can_vector_compile_phases": true,
+            "can_vector_first-call_phases": true,
+            "can_vector_instantiate_phases": true
+          },
+          "scenarios": [
+            "compile",
+            "instantiate",
+            "first-call",
+            "steady"
+          ],
+          "abis": [
+            "core"
+          ],
+          "features": [
+            "mvp"
+          ],
+          "validator_features": {
+            "namespace": "wasmparser/0.251.0",
+            "evidence": "Pinned Wasmer 7.3.0 compiler configuration and explicit C API feature subset; Singlepass SIMD disabled after corpus instruction lowering failures; enabled validation is not a guarantee of complete backend support",
+            "supported": {
+              "EXCEPTIONS": false,
+              "FUNCTION_REFERENCES": false,
+              "GC": false,
+              "LEGACY_EXCEPTIONS": false,
+              "MEMORY64": false,
+              "RELAXED_SIMD": false,
+              "SIMD": false,
+              "STACK_SWITCHING": false,
+              "TAIL_CALL": false
             }
           }
         }

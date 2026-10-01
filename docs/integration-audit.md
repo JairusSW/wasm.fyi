@@ -1,10 +1,10 @@
 # Measured data integration audit
 
-The published measurement endpoints are verified. The working tree now connects the workload catalogue, workload cells, correctness counts, host/configuration identities and result drawer to measured evidence. Aggregate and history providers now also consume recorded values: aggregate uncertainty resamples independent launch blocks in one coherent report, and history preserves eight retrospective points and fixed comparison baselines. Feature/proposal, detail memory/code and reuse-model consumers still need wiring before this frontend change can be published. Deployment success alone does not prove completed view integration. Reproduce the identity audit with `just integration-audit`.
+The workload catalogue, result cells, aggregates, eight retrospective history points, representative feature tests, proposal results, memory/code details and reuse estimates consume measured evidence. `scripts/view-data.mjs` validates snapshots and generates a compact projection before checks, tests and builds. Aggregates use coherent report cohorts and resample independent launch blocks. Reuse estimates sum measured phase medians and remain explicitly modeled. Missing elapsed memory traces, code breakdowns, browser builds and worker-memory collectors remain unavailable. Reproduce the identity audit with `just integration-audit`.
 
 ## Current configuration mapping
 
-| Existing slot | Existing label | Published configuration | Required treatment |
+| Existing slot | Initial label | Published configuration | Required treatment |
 | --- | --- | --- | --- |
 | A | Wasmtime Cranelift 37.0.1 | Wasmtime Cranelift 46.0.1 | Use measured version and per-host input identity |
 | B | Wasmtime Winch 37.0.1 | Wasmtime Winch 46.0.1 | Use measured version and per-host input identity |
@@ -14,9 +14,9 @@ The published measurement endpoints are verified. The working tree now connects 
 | F | V8 tiered | Default production tiering, different versions per host | Use each host's recorded engine version |
 | G | Wago interpreter | Wago Railshot | Do not put JIT measurements under an interpreter label |
 
-The 21 named preview workloads have no exact identifier match in the measured contract inventory. Wago application contracts and the original feature suite provide real alternatives, but their names, inputs and oracles must be presented accurately. The preview's group totals and 1,284-workload claims are not measured counts.
+The catalogue uses the exact 304 measured identifiers and artifact digests, without aliases to preview workloads.
 
-## Wiring requirements
+## View contracts
 
 1. Replace `src/lib/model.ts` synthetic noise, machine multipliers and fabricated history with case lookups by host, pinned configuration, artifact digest and scenario. Preserve missing, unsupported, failed and compile-only states. Do not interpolate missing history.
 2. Generate the workload catalogue from measured contracts and independently check per-view coverage. Aggregate only the actual shared successful cohort; expose its count. Derive uncertainty from recorded launches rather than assigning synthetic confidence intervals.
@@ -33,7 +33,7 @@ The layout and controls remain unchanged. The requested complete integration rep
 
 `src/lib/measured.ts` loads compact projections through the supplied hosted base path and checks their SHA-256 and index metadata. Callers select a real runtime ID, exact workload ID, artifact digest and scenario. Timing, exact memory observers and extracted code-image bytes have separate accessors. Failed launches withhold values; incomplete memory coverage and unavailable images remain explicit missing states. Image bytes do not imply active function-code bytes.
 
-The history accessor checks host identity and weekly manifest provenance, retains gaps, and labels current comparison engines as a fixed baseline. It does not manufacture historical engine releases. The adapter's tests exercise the checked-in datasets for both hosts and deliberately corrupt projection bytes and metadata. `scripts/view-data.mjs` now calls these accessors to generate the compact view projection before checks, tests and builds. Workload views consume this projection; the remaining aggregate, history and proposal views are still being connected.
+The history accessor checks host identity and weekly manifest provenance, retains gaps, and labels current comparison engines as a fixed baseline. It does not manufacture historical engine releases. The adapter's tests exercise the checked-in datasets for both hosts and deliberately corrupt projection bytes and metadata. `scripts/view-data.mjs` now calls these accessors to generate the compact view projection before checks, tests and builds. All measurement views consume this projection.
 
 ## Wasmer native SDK preflight
 

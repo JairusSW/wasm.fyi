@@ -6,7 +6,7 @@
 	import { CB, CFG } from '$lib/data/runtimes';
 	import { ALLB, EVENTS, HARNESS_BREAK, MET, OTM, OTM_KEYS, PIN, SNAPS, verAt } from '$lib/data/snapshot';
 	import type { CfgId, MetricKey } from '$lib/data/types';
-	import { H, fmtU, hex, n0, pc, pct } from '$lib/format';
+	import { fmtU, n0, pc, pct } from '$lib/format';
 	import { benchVal, isVisible, otSeries } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 import { viewData } from '$lib/view-data';

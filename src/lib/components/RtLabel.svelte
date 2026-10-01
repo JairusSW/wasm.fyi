@@ -1,4 +1,5 @@
 <script lang="ts">
+ import { configVersion } from '$lib/data/runtimes';
 	import type { Cfg } from '$lib/data/types';
 	import { ui } from '$lib/state.svelte';
 	import Swatch from './Swatch.svelte';
@@ -18,20 +19,20 @@
 	}: { c: Cfg; profile?: boolean; mono?: boolean; ver?: boolean; bold?: boolean; size?: number; tip?: string } = $props();
 
 	const bg = $derived(c.hollow ? 'transparent' : c.col);
-	const defaultTip = $derived(`${c.rt} ${c.ver} · ${c.be}\n${c.kind}\nClick to open runtime profile`);
+	const defaultTip = $derived(`${c.rt} ${configVersion(ui.machine,c.id)} · ${c.be}\n${c.kind}\nClick to open runtime profile`);
 </script>
 
 {#if profile}
 	<button class="rl" onclick={() => ui.openProfile(c.rt)} data-tip={tip ?? defaultTip}>
 		<Swatch color={c.col} {bg} {size} />
 		<span class:bold>{c.rt}</span>
-		<span class="be" class:mono>{ver ? c.ver + ' · ' : ''}{c.be}</span>
+		<span class="be" class:mono>{ver ? configVersion(ui.machine,c.id) + ' · ' : ''}{c.be}</span>
 	</button>
 {:else}
 	<span class="rl" data-tip={tip}>
 		<Swatch color={c.col} {bg} {size} />
 		<span class:bold>{c.rt}</span>
-		<span class="be" class:mono>{ver ? c.ver + ' · ' : ''}{c.be}</span>
+		<span class="be" class:mono>{ver ? configVersion(ui.machine,c.id) + ' · ' : ''}{c.be}</span>
 	</span>
 {/if}
 

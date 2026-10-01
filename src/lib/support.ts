@@ -1,3 +1,5 @@
+import { CFG } from './data/runtimes';
+import { compatCell, type Scope } from './model';
 // Feature-support cell helpers shared by the Features matrix and proposal pages.
 import { SUPC } from './data/features';
 import { RTB, SA } from './data/runtimes';
@@ -20,12 +22,9 @@ export const browserCell = (v: string) =>
 	/^\d/.test(v) ? { ...supportCell('y'), text: v } : supportCell(v as SupportCode);
 
 /** Support code for a runtime: engines follow their browser, standalone runtimes use `SA` order. */
-export const supportOf = (rid: string, f: FeatureRow): SupportCode => {
-	const r = RTB[rid];
-	if (r.engine != null) {
-		const v = f.b[r.engine];
-		return /^\d/.test(v) ? 'y' : (v as SupportCode);
-	}
-	const i = SA.indexOf(rid);
-	return i < 0 ? '?' : (f.r[i] as SupportCode);
+export const supportOf = (rid:string,f:FeatureRow,scope:Scope):SupportCode => {
+  const counts=CFG.filter(c=>c.rt===rid).map(c=>compatCell(f.id,c.id,scope));
+  if(!counts.length || counts.every(c=>!c.run))return '?';
+  const total=counts.reduce((n,c)=>n+c.total,0),pass=counts.reduce((n,c)=>n+c.pass,0);
+  return total>0 && pass===total?'y':pass>0?'p':'?';
 };

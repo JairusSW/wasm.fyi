@@ -1,4 +1,5 @@
 <script lang="ts">
+ import { configVersion } from '$lib/data/runtimes';
 	import { siteHref } from '$lib/links';
 	import Swatch from '$lib/components/Swatch.svelte';
 	import { FEATS, PROPS } from '$lib/data/features';
@@ -21,6 +22,7 @@
 		return lb.map((x, i) => ({
 			c: x.c,
 			rank: i + 1,
+            report:x.r!.report,
 			w: Math.max(4, (Math.log(x.r!.r / r0 + 1) / Math.log(rMax / r0 + 1)) * 100).toFixed(1) + '%',
 			val: disp(s, 'lat', x.c.id, 3)!.t
 		}));
@@ -96,14 +98,14 @@
 	<div class="panel board">
 		<div class="board-head">
 			<span class="w6">Fastest execution</span>
-			<span class="mono small fg3">snap-2026-09-28.1 · per call</span>
+			<span class="mono small fg3">{board[0]?viewData.reports[board[0].report].created.slice(0,10):'not measured'} · per invocation</span>
 		</div>
 		<div class="board-rows">
 			{#each board as b (b.c.id)}
 				<button
 					class="board-row"
 					onclick={() => ui.openProfile(b.c.rt)}
-					data-tip={`${b.c.rt} ${b.c.ver} · ${b.c.be}\n${b.c.kind}\nClick to open runtime profile`}
+					data-tip={`${b.c.rt} ${configVersion(ui.machine,b.c.id)} · ${b.c.be}\n${b.c.kind}\nClick to open runtime profile`}
 				>
 					<span class="mono small fg3">{b.rank}</span>
 					<span class="rtname">

@@ -1,16 +1,17 @@
 <script lang="ts">
+ import { configVersion } from '$lib/data/runtimes';
 	import { siteHref } from '$lib/links';
 	import RtLabel from '$lib/components/RtLabel.svelte';
 	import Seg from '$lib/components/Seg.svelte';
 	import Swatch from '$lib/components/Swatch.svelte';
 	import { BROWSERS, COMPAT, FEATS, PROPS } from '$lib/data/features';
 	import { CFG, RTB, SA } from '$lib/data/runtimes';
-	import { OV } from '$lib/data/snapshot';
+	import { viewCell } from '$lib/view-data';
 	import type { RatioCi } from '$lib/data/types';
-	import { H, fmtU, fx, n0 } from '$lib/format';
+	import { fmtU, fx, n0 } from '$lib/format';
 	import { heatRatio } from '$lib/heat';
 	import { PROPOSAL_IDS } from '$lib/links';
-	import { cellView, compatCell, isOff, isVisible, kidCells, mf } from '$lib/model';
+	import { cellView, compatCell, featureContracts, featureOutcome, isOff, isVisible, kidCells, mf } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 	import { browserCell, supportCell } from '$lib/support';
 	import type { SupportCode } from '$lib/data/types';
@@ -22,81 +23,36 @@
 		...BROWSERS.map((b) => ({ label: b, sub: 'browser', rt: null as string | null })),
 		...SA.map((id) => ({ label: RTB[id].name, sub: RTB[id].lang, rt: RTB[id].cfg ? id : null }))
 	];
-	const groups = [...new Set(FEATS.map((f) => f.g))].map((g) => ({
-		g,
-		rows: FEATS.filter((f) => f.g === g).map((f) => {
-			const rc = [...f.r] as SupportCode[];
-			const nYes = f.b.filter((v) => /^\d/.test(v)).length + rc.filter((c) => c === 'y').length;
-			return { f, count: `${nYes} of ${BROWSERS.length + SA.length}`, cells: [...f.b.map(browserCell), ...rc.map(supportCell)] };
-		})
-	}));
+	const groups = $derived([...new Set(FEATS.map(f=>f.g))].map(g=>({g,rows:FEATS.filter(f=>f.g===g).map(f=>{
+    const runtimeCodes=SA.map(id=>{
+      const configs=CFG.filter(c=>c.rt===id);
+      const counts=configs.map(c=>compatCell(f.id,c.id,ui.scope));
+      if(!counts.length || counts.every(c=>!c.run))return '?' as SupportCode;
+      const all=counts.reduce((a,c)=>a+c.total,0),passed=counts.reduce((a,c)=>a+c.pass,0);
+      return (passed===all && all>0?'y':passed>0?'p':'?') as SupportCode;
+    });
+    return {f,count:`${featureContracts(f.id).length} representative contracts`,cells:[...BROWSERS.map(()=>supportCell('?')), ...runtimeCodes.map(code=>({...supportCell(code),text:code==='y'?'corpus passed':code==='p'?'partial corpus':'not verified'}))]};
+  })})));
 
 	// ── Spec tests ─────────────────────────────────────────────────────────
 	const cols = $derived(CFG.filter((c) => isVisible(ui.scope, c)));
 	const offCell = { glyph: '—', text: 'config unavailable', sub: '', subColor: 'var(--fg3)', segs: [], color: 'var(--fg3)' };
 
 	// ── Proposal performance ───────────────────────────────────────────────
-	const PB: Record<string, [number, number]> = {
-		simd: [18, 24],
-		'relaxed-simd': [14, 8],
-		threads: [420, 12],
-		exceptions: [9.5, 10],
-		'tail-call': [31, 6],
-		memory64: [64, 9],
-		gc: [880, 18],
-		'multi-memory': [22, 4],
-		'extended-const': [0.8, 3],
-		'wasi-p1': [140, 14],
-		'wasi-p2': [210, 11],
-		'cm-abi': [12, 9],
-		'cm-res': [6.4, 5],
-		'cm-async': [48, 4]
-	};
-	const PERF_NOTE = {
-		exec: 'Steady-state execution per call · geomean across each proposal corpus.',
-		compile: 'Compilation time · geomean across each proposal corpus.',
-		mem: 'Execution peak RSS increase · geomean across each proposal corpus.'
-	};
-	const perfSecs = $derived.by(() => {
-		const s = ui.scope;
-		const pm = ui.perfMetric;
-		const [grp, col, unit] = ({ exec: ['lat', 3, 'ms'], compile: ['lat', 0, 'ms'], mem: ['mem', 2, 'MB'] } as const)[pm];
-		return COMPAT.slice(1).map((sec) => ({
-			sec: sec.sec,
-			rows: sec.fams.map((f) => {
-				const [base, n] = PB[f.id] || [10, 4];
-				const vals = cols.map((c) => {
-					const ci = CFG.indexOf(c);
-					if (isOff(s, c.id)) return { st: 'unavailable' };
-					const [av, fr] = f.r[ci].split(':');
-					if (av === 'u') return { st: 'unavailable' };
-					if (av === '?' || av === 'n') return { st: 'not measured' };
-					if (fr && parseFloat(fr) < 0.9) return { st: 'fails correctness' };
-					const o = OV[grp].vals[c.id] as RatioCi[];
-					const noise = Math.exp((H(f.id + c.id + pm) - 0.5) * 0.7);
-					const b = pm === 'exec' ? base * 1e-3 : pm === 'compile' ? 2 + n * 1.3 : 8 + base * 0.02;
-					return { v: b * o[col][0] * noise * mf(s.machine, c.id), flag: av === 'f' };
-				});
-				const nums = vals.map((x) => x.v).filter((v): v is number => v != null);
-				const min = Math.min(...nums);
-				return {
-					f,
-					corpus: `proposals/${f.id} · ${n} workloads (pending)`,
-					cells: vals.map((x) =>
-						x.v != null
-							? {
-									text: (x.flag ? '⚑ ' : '') + fmtU(x.v, unit),
-									sub: x.v === min ? 'lowest' : fx(x.v / min).replace('×', '× lowest'),
-									bg: heatRatio(x.v / min),
-									color: 'var(--fg)',
-									fw: x.v === min ? 600 : 400
-								}
-							: { text: x.st!, sub: '', bg: 'transparent', color: x.st === 'fails correctness' ? 'var(--st-fail)' : 'var(--fg3)', fw: 400 }
-					)
-				};
-			})
-		}));
-	});
+	const PERF_NOTE={exec:'Steady execution · shared successful execution contracts per family; compile-only probes excluded.',compile:'Compilation · shared successful contracts per family.',mem:'Steady process peak RSS · shared successful contracts; includes adapter process.'};
+  const perfSecs=$derived.by(()=>{
+    const metric=ui.perfMetric==='exec'?'steady':ui.perfMetric==='compile'?'compile':'rss';
+    const unit=metric==='rss'?'MiB':'ms';
+    return COMPAT.map(sec=>({sec:sec.sec,rows:sec.fams.map(f=>{
+      const contracts=featureContracts(f.id).filter(w=>metric==='compile'||!['compile-only','compile-and-instantiate'].includes(w.evidenceScope || ''));
+      const participants=cols.filter(c=>contracts.some(w=>{const x=viewCell(ui.scope.machine,ui.scope.snapshot || 's1',w.id,c.id,metric);return x.st==='ok' && x.v!=null && x.v>0;}));
+      const cohort=contracts.filter(w=>participants.length && participants.every(c=>{const x=viewCell(ui.scope.machine,ui.scope.snapshot || 's1',w.id,c.id,metric);return x.st==='ok' && x.v!=null && x.v>0;}));
+      const values=cols.map(c=>participants.some(p=>p.id===c.id) && cohort.length?Math.exp(cohort.reduce((sum,w)=>sum+Math.log(viewCell(ui.scope.machine,ui.scope.snapshot || 's1',w.id,c.id,metric).v!),0)/cohort.length):null);
+      const min=Math.min(...values.filter((v):v is number=>v!=null));
+      return {f,corpus:`${cohort.length} shared contracts / ${contracts.length} eligible`,cells:values.map(v=>v==null?{text:'not measured',sub:'no shared successful cohort',bg:'transparent',color:'var(--fg3)',fw:400}:{text:fmtU(v,unit),sub:v===min?'lowest':fx(v/min).replace('×','× lowest'),bg:heatRatio(v/min),color:'var(--fg)',fw:v===min?600:400})};
+    })}));
+  });
+
 </script>
 
 <svelte:head>
@@ -106,13 +62,13 @@
 <div class="head">
 	<span class="mono small fg3 path">wasm.fyi/features</span>
 	<h1>Features</h1>
-	<span class="s12 fg3 lim">Feature status across browsers and runtimes, plus observed spec test results and per-proposal performance.</span>
+	<span class="s12 fg3 lim">Feature status across browsers and runtimes, plus verified representative corpus results and per-proposal performance.</span>
 </div>
 <div class="row">
 	<Seg
 		options={[
 			['support', 'Support'],
-			['tests', 'Spec tests'],
+			['tests', 'Corpus tests'],
 			['perf', 'Performance']
 		]}
 		value={ui.compatView}
@@ -143,7 +99,7 @@
 
 {#if ui.compatView === 'support'}
 	<div class="legend">
-		<span class="lg"><span class="box" style:background="oklch(0.72 0.14 150 / 0.18)"></span>● supported (version shipped)</span>
+		<span class="lg"><span class="box" style:background="oklch(0.72 0.14 150 / 0.18)"></span>● representative corpus passed</span>
 		<span class="lg"><span class="box" style:background="oklch(0.77 0.14 60 / 0.16)"></span>⚑ flag · ◐ partial</span>
 		<span>— no · ? unknown · · not applicable</span>
 		<span class="fg3">Proposal pages:</span>
@@ -191,13 +147,13 @@
 		</table>
 	</div>
 	<div class="note">
-		Browser columns show the first version with the feature enabled by default. Runtime columns use each runtime's default build. Engine-level
-		support (V8, SpiderMonkey, JavaScriptCore) follows its browser. Illustrative data — verify before relying on it.
+		Results apply to the recorded adapters and host. Execution contracts verify exact outputs; structural and interface probes verify compilation only. Browser builds have not been collected. Optional async-component and WasmFX configurations retain their separate identities in the full support evidence. These representative cases do not establish full specification conformance. <a href={siteHref('/wasmbench/feature-support.json')}>Full support evidence</a>.
+
 	</div>
 {:else if ui.compatView === 'tests'}
 	<div class="legend">
 		<span class="kicker">Availability</span>
-		<span>● enabled by default</span><span>⚑ requires flag (tested with flag)</span><span>— unavailable</span><span>? unknown</span><span>· not run</span>
+		<span>● recorded configuration</span><span>⚑ requires flag (tested with flag)</span><span>— unavailable</span><span>? unknown</span><span>· not run</span>
 		<span class="kicker ml">Results</span>
 		<span class="lg"><span class="sbar" style:background="var(--st-pass)"></span>passed</span>
 		<span class="lg"><span class="sbar" style:background="var(--st-fail)"></span>failed</span>
@@ -213,7 +169,7 @@
 					{#each cols as c (c.id)}
 						<th class="ch">
 							<span class="cname"><Swatch color={c.col} bg={c.hollow ? 'transparent' : c.col} />{c.rt}</span>
-							<span class="mono micro fg3">{c.ver} · {c.be}</span>
+							<span class="mono micro fg3">{configVersion(ui.machine,c.id)} · {c.be}</span>
 						</th>
 					{/each}
 				</tr>
@@ -241,7 +197,7 @@
 							</td>
 							{#each cols as c (c.id)}
 								{@const ci = CFG.indexOf(c)}
-								{@const x = isOff(ui.scope, c.id) ? offCell : cellView(compatCell(f.total, f.r[ci]))}
+								{@const x = isOff(ui.scope, c.id) ? offCell : cellView(compatCell(f.id, c.id, ui.scope))}
 								<td class="p0">
 									<button
 										class="tcell hoverbg"
@@ -257,7 +213,7 @@
 							{/each}
 						</tr>
 						{#if open}
-							{@const per = cols.map((c) => kidCells(f, CFG.indexOf(c)))}
+							{@const per = cols.map((c) => kidCells(f, CFG.indexOf(c), ui.scope))}
 							{#each f.kids as [name], ki (name)}
 								<tr>
 									<td class="stick kid">{name}</td>

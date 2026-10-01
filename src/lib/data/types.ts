@@ -98,7 +98,6 @@ export interface OvGroup {
 	label: string;
 	cols: string[];
 	metrics: MetricKey[];
-	vals: Record<CfgId, RatioCi[] | number[] | null>;
 }
 
 export interface OtMetric {
@@ -123,6 +122,9 @@ export interface SnapEvent {
 }
 
 export interface BenchItem {
+	evidenceScope?: string;
+	abi?:string;reset?:string;oracle?:unknown;imports?:number;unitsPerInvocation?:number;workUnit?:string;
+	baseline?: boolean;
 	id: string;
 	artifactSha256?: string;
 	tags: string[];

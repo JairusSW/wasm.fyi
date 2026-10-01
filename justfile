@@ -190,3 +190,7 @@ features-test:
 # Build explicit feature configurations, including the async component compiler.
 features-adapters:
     WASMBENCH_SUITE="corpora/features/manifest.json" node scripts/bench.mjs build
+
+# Refresh current comparison engines without rerunning historical Wago binaries.
+history-baseline:
+    node scripts/history-baseline.mjs

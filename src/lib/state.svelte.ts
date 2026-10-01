@@ -108,8 +108,8 @@ const FIELDS = {
 	memSel: { codec: memSelCodec, routes: ['/bench/[...id]'] },
 	memMetric: { codec: str('mm', 'rss', ['rss', 'pss', 'linear'] as const), routes: ['/bench/[...id]'] },
 	memAligned: { codec: bool('aligned'), routes: ['/bench/[...id]'] },
-	kernel: { codec: str('kernel', 'dot-f32'), routes: ['/[proposal=proposal]'] },
-	xWork: { codec: str('work', 'markdown-parse', ['markdown-parse', 'js-interp/richards']), routes: ['/compare'] },
+	kernel: { codec: str('kernel', 'arithmetic/1'), routes: ['/[proposal=proposal]'] },
+	xWork: { codec: str('work', 'wago/tiny/add', ['wago/tiny/add', 'wago/zlib/inflate']), routes: ['/compare'] },
 	xReuse: { codec: str('reuse', 'single', ['single', 'shared', 'cached'] as const), routes: ['/compare'] },
 	xLog: { codec: num('n', 2, 0, 6), routes: ['/compare'] }
 } satisfies Record<string, { codec: Codec<any>; routes: '*' | string[] }>;
@@ -157,10 +157,10 @@ class UiState {
 	memAligned = $state(false);
 
 	// proposals
-	kernel = $state('dot-f32');
+	kernel = $state('arithmetic/1');
 
 	// compare
-	xWork = $state('markdown-parse');
+	xWork = $state('wago/tiny/add');
 	xReuse = $state<'single' | 'shared' | 'cached'>('single');
 	xLog = $state(2);
 

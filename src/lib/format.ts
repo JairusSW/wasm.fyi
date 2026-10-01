@@ -1,13 +1,3 @@
-/** Deterministic hash of a string to [0, 1). Drives all synthetic noise so renders are stable. */
-export const H = (s: string): number => {
-	let h = 2166136261;
-	for (let i = 0; i < s.length; i++) {
-		h ^= s.charCodeAt(i);
-		h = Math.imul(h, 16777619);
-	}
-	return ((h >>> 0) % 100000) / 100000;
-};
-
 /** Integer with thousands separators. */
 export const n0 = (n: number): string => Math.round(n).toLocaleString('en-US');
 
@@ -39,8 +29,5 @@ export const fmtU = (v: number, u: string): string => {
 
 /** `v` as a percentage of `tot`, for positioning overlays on scaled SVGs. */
 export const pc = (v: number, tot: number): string => ((v / tot) * 100).toFixed(2) + '%';
-
-/** Short hex id derived from a seed, for synthetic run ids and commits. */
-export const hex = (seed: string, max = 0xffffff): string => Math.floor(H(seed) * max).toString(16);
 
 export const geomean = (xs: number[]): number => Math.exp(xs.reduce((a, x) => a + Math.log(x), 0) / xs.length);

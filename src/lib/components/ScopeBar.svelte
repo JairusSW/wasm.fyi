@@ -24,12 +24,12 @@
 
 	const advItems = $derived([
 		{ k: 'OS', v: MACH[ui.machine].os },
-		{ k: 'Runtimes', v: [...new Set(CFG.map((c) => c.rt + ' ' + c.ver))].join(' · ') },
-		{ k: 'Aggregation', v: 'geomean · corpus-balanced · shared workloads only' },
+		{ k: 'Runtimes', v: Object.values(viewData.hosts[ui.machine].configurations).map(c=>c!.runtime+' '+c!.version).join(' · ') },
+		{ k: 'Aggregation', v: 'geomean · '+ui.weighting+' weighting · shared successful cohort' },
 		{ k: 'Cache state', v: 'cold — no on-disk artifact cache' },
 		{ k: 'Compilation workers', v: 'Per-runtime configuration; CPU affinity uncontrolled' },
 		{ k: 'Warmup & sampling', v: 'Per-cell sealed report records launches, samples and warmups' },
-		{ k: 'Feature flags', v: 'runtime defaults (flagged runs separate)' },
+		{ k: 'Feature flags', v: 'Pinned adapter configuration in each sealed report; optional configurations separate' },
 		{ k: 'Instrumentation', v: 'none in timing runs · memory from linked runs' },
 		{ k: 'Isolation', v: 'Scheduling, frequency and filesystem caches uncontrolled' }
 	]);

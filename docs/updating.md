@@ -1,11 +1,10 @@
 # Updating and deploying wasm.fyi
 
 The `justfile` is the entry point for local work and GitHub Actions. The original
-visual UI, markup structure and styling are preserved. Its displayed benchmark
-values still come from synthetic fixtures; gathered measurements are deployed as
-versioned JSON at `wasmbench/index.json`. Wiring those measurements into the
-existing model is documented separately in [wasmbench-integration.md](wasmbench-integration.md).
-This workflow does not imply that synthetic charts have become measured results.
+visual layout, controls and styling are preserved. Displayed measurements come from
+checksum-verified sealed reports; static raw evidence is published under
+`wasmbench/`. [integration-audit.md](integration-audit.md) documents the view mapping
+and the limits of each measurement.
 
 ## Local website workflow
 

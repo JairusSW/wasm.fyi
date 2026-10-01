@@ -17,7 +17,7 @@ for (const entry of index.reports) {
 reports.sort((a,b)=>b.created.localeCompare(a.created));
 const configurations = { A:'wasmtime', B:'wasmtime-winch', C:'wasmer-llvm', D:'wasmer-singlepass', E:'wazero', F:'v8', G:'wago' };
 const scenarios = { compile:'compile', inst:'instantiate', first:'first-call', steady:'steady' };
-const memoryScenarios={rss:'steady',rssCompile:'compile',rssInst:'instantiate'};
+const memoryScenarios={rss:'steady',rssCompile:'compile',rssInst:'instantiate',rssFirst:'first-call'};
 const catalogue = new Map();
 for (const report of reports) for (const w of report.workloads) {
   if (!/^(wago|features)\//.test(w.id) || catalogue.has(w.id)) continue;
@@ -26,19 +26,19 @@ for (const report of reports) for (const w of report.workloads) {
   const baselineReport=reports.find(r=>r.runtimes.some(c=>c.id==='wasmtime') && r.workloads.some(item=>item.id===w.id && item.sha256===w.sha256));
   const baseline=baselineReport?measuredTiming(baselineReport,'wasmtime',w.id,w.sha256,'steady'):null;
   catalogue.set(w.id, {
-    id:w.id, artifactSha256:w.sha256, tags:[...(w.features || []),...(w.original_contract?.tags || [])],
+    id:w.id, artifactSha256:w.sha256, evidenceScope:w.provenance?.scope, baseline:!!w.provenance?.baseline, tags:[...(w.features || []),...(w.original_contract?.tags || [])],
     kb:structure.bytes/1024, ms:baseline?.status==='ok'?baseline.value/1e6:null,
     group:w.id.startsWith('wago/')?'Wago applications':`Features · ${w.provenance?.feature || w.features?.[0] || 'baseline'}`,
     purpose:w.original_contract?.desc || `${w.provenance?.scope || w.abi} · ${w.work_unit} · ${w.units_per_invocation} units/invocation`,
     input:JSON.stringify(w.args || w.vectors || []), src:w.source || w.generator,
-    unitsPerInvocation:w.units_per_invocation, workUnit:w.work_unit
+    unitsPerInvocation:w.units_per_invocation, workUnit:w.work_unit, abi:w.abi, reset:w.reset, oracle:w.oracle, imports:structure.imports
   });
 }
 const reasons=new Map();
 function reasonId(reason) { if(!reasons.has(reason)){reasons.set(reason,reasons.size);output.reasons.push(reason);}return reasons.get(reason); }
 const status = { ok:'ok', unsupported:'unsupported', failed:'failed', 'not-measured':'nm', 'not-collected':'nm' };
-const output = { schema:1, configurations, catalogue:[...catalogue.values()], hosts:{}, reports:{}, reasons:[],history:{},statistics:{timingSamples:reports.reduce((n,r)=>n+r.summaries.reduce((n,s)=>n+(s.recorded_samples || 0),0),0)} };
-for (const report of reports) output.reports[report.id] = { runId:report.runId, created:report.created, evidence:report.evidence, sha256:report.evidenceSha256, options:report.options,configurations:report.runtimes.map(c=>c.id),host:report.host.os };
+const output = { schema:1, configurations, catalogue:[...catalogue.values()], hosts:{}, reports:{}, reasons:[],history:{},threads:{},statistics:{timingSamples:reports.reduce((n,r)=>n+r.summaries.reduce((n,s)=>n+(s.recorded_samples || 0),0),0)} };
+for (const report of reports) output.reports[report.id] = { runId:report.runId, created:report.created, evidence:report.evidence, sha256:report.evidenceSha256, options:report.options,memorySource:report.memorySource,codeSource:report.codeSource,configurations:report.runtimes.map(c=>c.id),host:report.host.os };
 for (const [machine, os] of [['m1','linux'],['m2','darwin']]) {
   const selected = reports.filter(r=>r.host.os===os);
   if (!selected.length) throw new Error('Missing measured host: '+os);
@@ -80,7 +80,7 @@ for(const [machine,name] of [['m1','history-hub'],['m2','history']]) {
     const bytes=await readFile(join(directory,entry.projection));
     if(digest(bytes)!==entry.projectionSha256)throw new Error('Changed history input');
     const report=JSON.parse(bytes);snapshots.push(report);
-    output.reports[report.id]={runId:report.runId,created:report.created,evidence:name+'/'+report.evidence,sha256:report.evidenceSha256,options:report.options,configurations:report.runtimes.map(c=>c.id),host:report.host.os,historical:true};
+    if(!output.reports[report.id])output.reports[report.id]={runId:report.runId,created:report.created,evidence:name+'/'+report.evidence,sha256:report.evidenceSha256,options:report.options,memorySource:report.memorySource,codeSource:report.codeSource,configurations:report.runtimes.map(c=>c.id),host:report.host.os,historical:true};
   }
   const baseline=snapshots.find(s=>s.id===weekly.baseline.report);
   if(!baseline)throw new Error('Missing fixed history baseline');
@@ -104,6 +104,15 @@ for(const [machine,name] of [['m1','history-hub'],['m2','history']]) {
   }
 }
 if(JSON.stringify(output.history.m1.points.map(p=>p.date))!==JSON.stringify(output.history.m2.points.map(p=>p.date)))throw new Error('Historical host dates differ');
+for(const [machine,name] of [['m1','linux-x64'],['m2','darwin-arm64']]) {
+  const ref=JSON.parse(await readFile(join(site,'data/threads',name+'.json')));
+  const bytes=await readFile(join(site,'data/threads',ref.evidence));
+  if(digest(bytes)!==ref.sha256)throw new Error('Changed worker evidence');
+  const raw=JSON.parse(bytes);
+  for(const result of raw.results)for(const launch of result.launches)for(const sample of launch.samples)
+    if(!sample.verified || !(sample.elapsedNs>0) || sample.operations!==result.workers*result.operationsPerWorker)throw new Error('Unverified worker result');
+  output.threads[machine]={created:raw.created,configuration:raw.configuration,node:raw.node,v8:raw.v8,policy:raw.policy,evidence:ref.evidence,sha256:ref.sha256,results:raw.results};
+}
 // Compact the browser projection without rounding a measurement or interval.
 output.encoding = 'indexed-cells-v1';
 output.metrics = [...Object.keys(scenarios),...Object.keys(memoryScenarios),'code'];

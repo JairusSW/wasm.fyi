@@ -1,13 +1,16 @@
 <script lang="ts">
 	import { CFG } from '$lib/data/runtimes';
-	import { GC_D, GC_W } from '$lib/data/snapshot';
-	import { H } from '$lib/format';
+	import { featureValue, familyValue } from '$lib/feature-values';
+ import { featureContracts } from '$lib/model';
+ import { fmtU } from '$lib/format';
 	import { isVisible } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 	import BarRow from '../BarRow.svelte';
 	import RtLabel from '../RtLabel.svelte';
 
-	const vis = $derived(CFG.filter((c) => isVisible(ui.scope, c)));
+	const GC_W=featureContracts('gc').map(w=>[w.id,w.purpose || '',1] as [string,string,number]);
+  const GC_D=$derived(Object.fromEntries(CFG.map(c=>[c.id,{thr:familyValue(ui.scope,'gc',c.id),ratio:familyValue(ui.scope,'gc',c.id,'rss'),st:'not measured',col:'not collected'}])));
+  const vis = $derived(CFG.filter((c) => isVisible(ui.scope, c)));
 	const thrMax = $derived(Math.max(...vis.map((c) => GC_D[c.id].thr || 0), 1));
 	const ratioMax = $derived(Math.max(...vis.map((c) => GC_D[c.id].ratio || 0), 1));
 	const stColor = (st?: string) => (st?.startsWith('fails') ? 'var(--st-fail)' : 'var(--fg3)');
@@ -15,22 +18,21 @@
 </script>
 
 <div class="lede">
-	Allocation-heavy workloads varying allocation rate, live-set size, object lifetime and graph shape. GC on/off is not a switch like scalar vs SIMD
-	— comparisons against linear-memory builds need matched allocation policies, so none are shown here.
+	Exact struct, array, cast and i31 contracts at multiple operation counts. Invocation timing includes the recorded guest work; it does not measure isolated collector pauses.
 </div>
 <div class="cards">
 	<div class="card">
-		<div><div class="card-title">Allocation throughput</div><div class="note">geomean across 4 GC workloads · higher is better</div></div>
+		<div><div class="card-title">GC corpus execution</div><div class="note">geomean across successful complete GC corpus · lower is better</div></div>
 		{#each vis as c (c.id)}
 			{@const d = GC_D[c.id]}
-			<BarRow {c} ok={!!d.thr} w={w(d.thr ?? 0, thrMax)} text="{d.thr} M obj/s" status={d.st} statusColor={stColor(d.st)} />
+			<BarRow {c} ok={!!d.thr} w={w(d.thr ?? 0, thrMax)} text={d.thr==null?'':fmtU(d.thr,'ms')} status={d.st} statusColor={stColor(d.st)} />
 		{/each}
 	</div>
 	<div class="card">
-		<div><div class="card-title">Peak heap ÷ live set</div><div class="note">memory overhead at steady state · lower is better</div></div>
+		<div><div class="card-title">Steady process peak RSS</div><div class="note">includes adapter process · lower is better</div></div>
 		{#each vis as c (c.id)}
 			{@const d = GC_D[c.id]}
-			<BarRow {c} ok={!!d.ratio} w={w(d.ratio ?? 0, ratioMax)} text="{d.ratio?.toFixed(1)}× live set" status={d.st} statusColor={stColor(d.st)} />
+			<BarRow {c} ok={!!d.ratio} w={w(d.ratio ?? 0, ratioMax)} text={d.ratio==null?'':fmtU(d.ratio,'MiB')} status={d.st} statusColor={stColor(d.st)} />
 		{/each}
 	</div>
 </div>
@@ -48,11 +50,8 @@
 					<td class="pad"><div class="mono">{id}</div><div class="small fg3">{desc}</div></td>
 					{#each vis as c (c.id)}
 						{@const d = GC_D[c.id]}
-						{#if d.thr}
-							<td class="mono r pad">{(d.thr * k * (1 + (H(id + c.id) - 0.5) * 0.3)).toFixed(0)} M/s</td>
-						{:else}
-							<td class="mono r pad fg3">{d.st}</td>
-						{/if}
+            {@const v=featureValue(ui.scope,id,c.id)}
+            <td class="mono r pad">{v==null?'not measured':fmtU(v,'ms')}</td>
 					{/each}
 				</tr>
 			{/each}
@@ -66,11 +65,7 @@
 			<RtLabel {c} />
 			<span class="mono small">{GC_D[c.id].col}</span>
 			<span class="mono small fg2"
-				>{c.id === 'F'
-					? 'p50 0.42 ms · p99 3.1 ms · max 7.8 ms (n = 4,120 collections)'
-					: GC_D[c.id].thr
-						? 'not collector-aware — pauses not reported'
-						: '—'}</span
+				>{'Collector pause distribution not collected'}</span
 			>
 		</div>
 	{/each}

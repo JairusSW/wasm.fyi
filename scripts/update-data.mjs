@@ -3,6 +3,7 @@ import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { compact, command, config, digest, exists, installDirectory, json, locked, site } from './lib/wasmbench.mjs';
 import { validateData } from './lib/validate-data.mjs';
+import { stageHistoryBaseline } from './lib/history-baseline.mjs';
 import { writeIndex } from './lib/snapshot-index.mjs';
 
 const { values, positionals } = parseArgs({ options: { append: { type: 'boolean', default: false }, rebuild: { type: 'boolean', default: false } }, allowPositionals: true });
@@ -15,6 +16,7 @@ await locked(async () => {
   const stagedData = join(temp, 'data');
   const prior = await exists(join(destination, 'index.json')) ? await readFile(join(destination, 'index.json')) : null;
   let finishData, finishStatic;
+  const finishHistories=[];
   const priorBuild = await exists(join(site, 'build'));
   if (priorBuild) await cp(join(site, 'build'), join(temp, 'build-backup'), { recursive: true });
   try {
@@ -33,6 +35,11 @@ await locked(async () => {
     await command(process.execPath, ['scripts/stage-data.mjs', stagedData, join(temp, 'static')], { stdio: 'inherit' });
     finishData = await installDirectory(stagedData, destination);
     finishStatic = await installDirectory(join(temp, 'static'), staticDestination);
+    const runtimeIds=(await config()).collection.runtimes.filter(id=>id!=='wago');
+    for(const name of ['history','history-hub']){
+      const source=join(site,'data',name),staged=join(temp,name);
+      if(await stageHistoryBaseline(source,destination,index.reports,staged,runtimeIds))finishHistories.push(await installDirectory(staged,source));
+    }
     command('pnpm', ['check'], { stdio: 'inherit' });
     command('pnpm', ['test'], { stdio: 'inherit' });
     command(process.execPath, ['--test', 'scripts/workflow.test.mjs'], { stdio: 'inherit' });
@@ -40,10 +47,13 @@ await locked(async () => {
     const current = await readFile(join(destination, 'index.json'));
     await writeFile(join(work, 'update-summary.json'), JSON.stringify({ changed: !prior || digest(prior) !== digest(current),
       indexSha256: digest(current), runs: index.reports.map(r => ({ id: r.runId, created: r.created, sourceSha256: r.sourceReportSha256 || r.id, analysisReportSha256: r.id })) }, null, 2) + '\n');
+    for(const finish of finishHistories)await finish(false);
+    finishHistories.length=0;
     await finishStatic(false); finishStatic = null;
     await finishData(false); finishData = null;
-    console.log('Website evidence update validated. UI layout and displayed fixture values are unchanged.');
+    console.log('Website evidence update validated. Measured views and raw evidence are current; UI layout is preserved.');
   } catch (error) {
+    for(const finish of finishHistories.reverse())await finish(true);
     if (finishStatic) await finishStatic(true);
     if (finishData) await finishData(true);
     await rm(join(site, 'build'), { recursive: true, force: true });

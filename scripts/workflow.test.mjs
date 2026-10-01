@@ -157,3 +157,36 @@ test('a failed launch withholds headline timing even when other launches succeed
   assert.equal(projected.latency_status,'failed_cell');assert.equal(value.median_ns_per_operation,123);
   assert.deepEqual(withholdFailedCells([{...value,outcomes:{ok:3}}]),[{...value,outcomes:{ok:3}}]);
 });
+
+test('history baseline refresh preserves retrospective evidence and rejects changed hosts or artifacts',async()=>{
+  const {stageHistoryBaseline}=await import('./lib/history-baseline.mjs');
+  const temporary=await mkdtemp(join(tmpdir(),'wasm-fyi-baseline-'));
+  try {
+    const source=join(temporary,'history'),current=join(temporary,'current'),staged=join(temporary,'staged');
+    await mkdir(source);await mkdir(current);
+    const make=async(directory,value)=>{
+      value.evidence=value.id+'.json';
+      const bytes=JSON.stringify(value);
+      await writeFile(join(directory,value.evidence),bytes);
+      return {...compact(value),evidenceSha256:digest(bytes)};
+    };
+    const old={...report(),id:'1'.repeat(64),runId:'old-baseline',created:'2026-09-30T00:00:00Z'};
+    const historical={...report(),id:'2'.repeat(64),runId:'historical-wago',created:'2026-10-01T01:00:00Z'};
+    const oldProjected=await make(source,old),pastProjected=await make(source,historical);
+    await writeIndex(source,[pastProjected,oldProjected]);
+    const results=[{targetWeek:'2026-08-06',runId:historical.runId,collectedAt:historical.created,revision:'3'.repeat(40)}];
+    await writeFile(join(source,'weekly.json'),JSON.stringify({baseline:{report:old.id},results}));
+    const next={...report(),id:'4'.repeat(64),runId:'new-baseline',created:'2026-10-01T02:00:00Z'};
+    const nextProjected=await make(current,next);
+    const changedHost={...nextProjected,host:{...nextProjected.host,os:'other'}};
+    const changedArtifact={...nextProjected,workloads:[{...nextProjected.workloads[0],sha256:'5'.repeat(64)}]};
+    assert.equal(await stageHistoryBaseline(source,current,[changedHost,changedArtifact],staged,['engine/backend']),false);
+    assert.equal(await stageHistoryBaseline(source,current,[nextProjected],staged,['uncollected/backend']),false);
+    assert.equal(await stageHistoryBaseline(source,current,[nextProjected],staged,['engine/backend']),true);
+    const weekly=JSON.parse(await readFile(join(staged,'weekly.json'),'utf8'));
+    assert.equal(weekly.baseline.report,next.id);assert.deepEqual(weekly.results,results);
+    assert.equal(await readFile(join(staged,historical.evidence),'utf8'),await readFile(join(source,historical.evidence),'utf8'));
+    const checked=await validateData(staged);
+    assert.deepEqual(checked.reports.map(r=>r.runId),[historical.runId,next.runId]);
+  }finally{await rm(temporary,{recursive:true,force:true});}
+});

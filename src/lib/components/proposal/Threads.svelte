@@ -1,6 +1,7 @@
 <script lang="ts">
+	import { siteHref } from '$lib/links';
 	import { CFG } from '$lib/data/runtimes';
-	import { THR_D } from '$lib/data/snapshot';
+	import { viewData } from '$lib/view-data';
 	import { pc } from '$lib/format';
 	import { isVisible } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
@@ -13,29 +14,34 @@
 	const tpr = 12;
 	const tpt = 12;
 	const tpb = 28;
-	const TX = (k: number) => tpl + (k * (TW - tpl - tpr)) / 4;
-	const TY = (v: number) => tpt + (1 - v / 16) * (TH - tpt - tpb);
+	const TX = (k: number) => tpl + (k * (TW - tpl - tpr)) / 3;
+	const TY = (v: number) => tpt + (1 - v / 8) * (TH - tpt - tpb);
 
-	const vis = $derived(CFG.filter((c) => isVisible(ui.scope, c)));
-	const withData = $derived(vis.filter((c) => THR_D[c.id]));
-	const lines = $derived(
-		withData.map((c) => ({
-			c,
-			p: THR_D[c.id]!.slice(0, 5)
-				.map((v, k) => TX(k).toFixed(1) + ',' + TY(v).toFixed(1))
-				.join(' ')
-		}))
-	);
-	const ideal = [0, 1, 2, 3, 4].map((k) => TX(k).toFixed(1) + ',' + TY(Math.pow(2, k)).toFixed(1)).join(' ');
-	const yTicks = [1, 4, 8, 12, 16].map((v) => ({ y: TY(v).toFixed(1), t: pc(TY(v), TH), label: v + '×' }));
-	const xTicks = [1, 2, 4, 8, 16].map((w, k) => ({ l: pc(TX(k), TW), label: w + (k === 4 ? ' workers' : '') }));
-	const stOf = (id: string) => (id === 'G' ? 'crashed' : 'unsupported');
-	const stColor = (id: string) => (id === 'G' ? 'var(--st-crash)' : 'var(--fg3)');
+  const vis=$derived(CFG.filter(c=>isVisible(ui.scope,c)));
+  const record=$derived(viewData.threads[ui.machine]);
+  const median=(xs:number[])=>{const s=[...xs].sort((a,b)=>a-b);return s[s.length>>1];};
+  const throughput=(sharing:string,workers:number)=>{
+    const r=record.results.find(r=>r.sharing===sharing && r.workers===workers && r.operationsPerWorker===1000000);
+    return r?median(r.launches.map(l=>median(l.samples.map(s=>s.operations/s.elapsedNs)))):null;
+  };
+  const THR_D=$derived.by(()=>{
+    const base=throughput('disjoint',1),contended=throughput('contended',1);
+    const values=base?[1,2,4,8].map(w=>(throughput('disjoint',w) || 0)/base):[];
+    return {F:values.length?[...values,0,0,contended?(throughput('contended',8) || 0)/contended:0]:undefined} as Partial<Record<typeof CFG[number]['id'],number[]>>;
+  });
+  const withData=$derived(vis.filter(c=>THR_D[c.id]));
+  const lines=$derived(withData.map(c=>({c,p:THR_D[c.id]!.slice(0,4).map((v,k)=>TX(k).toFixed(1)+','+TY(v).toFixed(1)).join(' ')})));
+  const ideal=[0,1,2,3].map(k=>TX(k).toFixed(1)+','+TY(2**k).toFixed(1)).join(' ');
+  const yTicks=[1,2,4,8].map(v=>({y:TY(v).toFixed(1),t:pc(TY(v),TH),label:v+'×'}));
+  const xTicks=[1,2,4,8].map((w,k)=>({l:pc(TX(k),TW),label:w+(k===3?' workers':'')}));
+  const stOf=(id:string)=>'not collected';
+  const stColor=(id:string)=>'var(--fg3)';
+
 </script>
 
 <div class="cards wide">
 	<div class="card g6">
-		<div><div class="card-title">Throughput scaling</div><div class="note">parallel workload, speedup vs 1 worker · dashed = ideal</div></div>
+		<div><div class="card-title">Throughput scaling</div><div class="note">Node worker embedding · disjoint counters · 1M operations/worker · speedup vs 1 worker · dashed = ideal</div></div>
 		<div class="chart">
 			<svg viewBox="0 0 {TW} {TH}">
 				{#each yTicks as t (t.y)}<line x1="44" x2="588" y1={t.y} y2={t.y} style="stroke:var(--line)" />{/each}
@@ -49,9 +55,9 @@
 		</div>
 		<div class="at16">
 			{#each withData as c (c.id)}
-				<span class="item"><RtLabel {c} /><span class="mono">{THR_D[c.id]![4].toFixed(1)}×</span></span>
+				<span class="item"><RtLabel {c} /><span class="mono">{THR_D[c.id]![3].toFixed(1)}×</span></span>
 			{/each}
-			<span class="fg3">at 16 workers</span>
+			<span class="fg3">at 8 workers</span>
 		</div>
 	</div>
 	<div class="col">
@@ -59,11 +65,11 @@
 			<div><div class="card-title">Memory per worker</div><div class="note">RSS increase per additional worker · lower is better</div></div>
 			{#each vis as c (c.id)}
 				{@const d = THR_D[c.id]}
-				<BarRow {c} ok={!!d} w={d ? Math.max(1, (d[5] / 3.6) * 100).toFixed(1) + '%' : '0%'} text={d ? d[5].toFixed(1) + ' MB / worker' : ''} status={stOf(c.id)} statusColor={stColor(c.id)} />
+				<BarRow {c} ok={false} w="0%" text="" status={stOf(c.id)} statusColor={stColor(c.id)} />
 			{/each}
 		</div>
 		<div class="card">
-			<div><div class="card-title">Under contention</div><div class="note">atomic-counter, 8 workers on one cache line · higher is better</div></div>
+			<div><div class="card-title">Under contention</div><div class="note">Node worker embedding · contended counter · 1M operations/worker · higher is better</div></div>
 			{#each vis as c (c.id)}
 				{@const d = THR_D[c.id]}
 				<BarRow {c} ok={!!d} w={d ? Math.max(1, (d[6] / 8) * 100).toFixed(1) + '%' : '0%'} text={d ? d[6].toFixed(1) + '× at 8 workers' : ''} status={stOf(c.id)} statusColor={stColor(c.id)} />
@@ -71,6 +77,8 @@
 		</div>
 	</div>
 </div>
+
+<div class="note">Node {record.node} · V8 {record.v8} · collected {record.created}. {record.policy} <a href={siteHref('/wasmbench/threads/'+record.evidence)}>All 32 verified worker cases</a></div>
 
 <style>
 	.wide {

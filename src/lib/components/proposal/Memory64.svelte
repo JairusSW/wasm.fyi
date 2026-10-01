@@ -1,35 +1,37 @@
 <script lang="ts">
 	import { CFG } from '$lib/data/runtimes';
-	import { M64_D, M64_W } from '$lib/data/snapshot';
-	import { H } from '$lib/format';
+	import { featureValue, familyValue } from '$lib/feature-values';
+ import { featureContracts } from '$lib/model';
+ import { fmtU } from '$lib/format';
 	import { isVisible } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 	import BarRow from '../BarRow.svelte';
 	import RtLabel from '../RtLabel.svelte';
 
-	const vis = $derived(CFG.filter((c) => isVisible(ui.scope, c)));
+	const M64_W=featureContracts('memory64').map(w=>[w.id,w.purpose || ''] as [string,string]);
+ const M64_D=$derived(Object.fromEntries(CFG.map(c=>[c.id,[familyValue(ui.scope,'memory64',c.id),familyValue(ui.scope,'memory64',c.id,'compile')]])));
+ const vis = $derived(CFG.filter((c) => isVisible(ui.scope, c)));
 	const execMax = $derived(Math.max(...vis.map((c) => M64_D[c.id]?.[0] ?? 0), 1));
 	const compMax = $derived(Math.max(...vis.map((c) => M64_D[c.id]?.[1] ?? 0), 1));
 	const w = (v: number, max: number) => Math.max(1, (v / max) * 100).toFixed(1) + '%';
 </script>
 
 <div class="lede">
-	Deliberately matched wasm32 and wasm64 builds of the same source and input. 32-bit memories can use guard pages for bounds checks; 64-bit
-	memories generally need explicit checks.
+	Memory64 load/store, fill/copy and growth contracts at multiple input sizes. The scalar baseline has different memory work and cannot establish wasm32 overhead.
 </div>
 <div class="cards">
 	<div class="card">
-		<div><div class="card-title">Execution overhead vs wasm32</div><div class="note">geomean across matched workloads · lower is better</div></div>
+		<div><div class="card-title">Memory64 execution</div><div class="note">geomean across complete Memory64 corpus · lower is better</div></div>
 		{#each vis as c (c.id)}
 			{@const d = M64_D[c.id]}
-			<BarRow {c} ok={!!d} w={w(d?.[0] ?? 0, execMax)} text={d ? '+' + d[0].toFixed(1) + '%' + (d[2] ? ' ⚑' : '') : ''} status="unsupported" />
+			<BarRow {c} ok={d?.[0]!=null} w={w(d?.[0] ?? 0, execMax)} text={d?.[0]==null?'':fmtU(d[0],'ms')} status="not measured" />
 		{/each}
 	</div>
 	<div class="card">
-		<div><div class="card-title">Compilation overhead vs wasm32</div><div class="note">lower is better</div></div>
+		<div><div class="card-title">Memory64 compilation</div><div class="note">lower is better</div></div>
 		{#each vis as c (c.id)}
 			{@const d = M64_D[c.id]}
-			<BarRow {c} ok={!!d} w={w(d?.[1] ?? 0, compMax)} text={d ? '+' + d[1].toFixed(1) + '%' : ''} status="unsupported" />
+			<BarRow {c} ok={d?.[1]!=null} w={w(d?.[1] ?? 0, compMax)} text={d?.[1]==null?'':fmtU(d[1],'ms')} status="not measured" />
 		{/each}
 	</div>
 </div>
@@ -47,11 +49,8 @@
 					<td class="pad"><div class="mono">{id}</div><div class="small fg3">{desc}</div></td>
 					{#each vis as c (c.id)}
 						{@const d = M64_D[c.id]}
-						{#if d}
-							<td class="mono r pad">+{(d[0] * (0.5 + H(id + c.id) * 1.1)).toFixed(1)}%</td>
-						{:else}
-							<td class="mono r pad fg3">unsupported</td>
-						{/if}
+            {@const value=featureValue(ui.scope,id,c.id)}
+            <td class="mono r pad">{value==null?'not measured':fmtU(value,'ms')}</td>
 					{/each}
 				</tr>
 			{/each}

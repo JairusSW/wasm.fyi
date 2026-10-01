@@ -72,7 +72,7 @@
 		<div class="snap">
 			<span
 				class="mono taken"
-				data-tip={'Complete snapshot — every configuration ran the same harness (v3.2.0), corpus and machine in one batch.\nPick another snapshot in the scope bar.'}
+				data-tip={'Aggregates use a shared successful cohort in one sealed report. Individual workload cells retain their own report references.\nPick another snapshot in the scope bar.'}
 				>{snapTaken}</span
 			>
 			<span class="small fg3">{snapAgo}</span>

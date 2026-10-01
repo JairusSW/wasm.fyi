@@ -6,7 +6,7 @@
 	<div class="col">
 		<span class="mono brand">wasm.fyi</span>
 		<span class="fg3 s12">The reference for WebAssembly runtimes.</span>
-		<span class="small warn">Preview — synthetic data.</span>
+		<span class="small warn">Measured adapters · representative corpora.</span>
 	</div>
 	<div class="col">
 		<span class="eyebrow">Data</span>

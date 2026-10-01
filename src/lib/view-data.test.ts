@@ -26,7 +26,7 @@ describe('existing workload views consume measured evidence',()=>{
 	it('preserves explicit unsupported and unavailable cells without old-success fallback',()=>{
 		const b=ALLB.find(b=>b.id==='wago/json-as-simd/serializeN')!;
 		expect(benchVal(scope,b,'D','steady')).toEqual({st:'unsupported'});
-		expect(benchVal({...scope,snapshot:'s2'},b,'D','steady')).toEqual({st:'nm'});
+		expect(benchVal({...scope,snapshot:'s2'},b,'D','steady')).toEqual({st:viewCell('m1','s2',b.id,'D','steady').st});
 		expect(benchVal(scope,{...b,id:'uncollected/input'},'A','steady')).toEqual({st:'nm'});
 	});
 });

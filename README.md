@@ -60,11 +60,8 @@ just refresh            # collect fresh passes, retain snapshots and rebuild
 just deploy             # deploy the committed branch to GitHub Pages
 ```
 
-The original UI still displays its synthetic fixtures. Verified measured snapshots
-are shipped separately at `wasmbench/index.json`; no visual redesign is included.
-See [the complete workflow](docs/updating.md) for report selection, measurement
-settings, GitHub Pages, daily automation, failure recovery and runner setup.
+The existing pages now consume checksum-verified measurements for both hosts. The workload catalogue includes 72 Wago application contracts and 232 original feature contracts. Layout and styling are preserved; factual labels distinguish process lifetime RSS, extracted native images, compile-only checks and retrospective history. Missing measurements remain explicit.
 
 The [feature and history workflow](docs/features-and-history.md) covers 232 feature
 contracts across all 25 displayed families, 32 real worker tests, and eight weekly
-Wago revisions. Results stay separate from the existing UI.
+Wago revisions. The existing views consume the verified data.

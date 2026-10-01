@@ -19,6 +19,15 @@ describe('recorded weekly history',()=>{
 		expect(before.report).toBe(after.report);
 		expect(historyChange(before,after)).toEqual({delta:0,interval:[0,0],fixed:true});
 	});
+	it('includes both native Wasmer backends as fixed current comparisons on each host',()=>{
+    for(const machine of ['m1','m2'] as const)for(const cid of ['C','D'] as const){
+      expect(viewData.history[machine].versions[cid][0]).toBe('7.3.0');
+      const first=historyCell(machine,'wago/tiny/add',cid,'steady',0);
+      const last=historyCell(machine,'wago/tiny/add',cid,'steady',7);
+      expect(first.st).toBe('ok');expect(first.report).toBe(last.report);
+      expect(historyChange(first,last)).toEqual({delta:0,interval:[0,0],fixed:true});
+    }
+  });
 	it('retains a failed historical contract as a gap instead of interpolating it',()=>{
 		const entry=Object.entries(viewData.history.m1.cells).find(([key,cells])=>key.endsWith('|G|steady') && cells.some(c=>c.st==='failed'))!;
 		const workload=entry[0].slice(0,-'|G|steady'.length);

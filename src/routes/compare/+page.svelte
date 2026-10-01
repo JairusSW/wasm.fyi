@@ -2,7 +2,8 @@
 	import RtLabel from '$lib/components/RtLabel.svelte';
 	import Seg from '$lib/components/Seg.svelte';
 	import { CFG } from '$lib/data/runtimes';
-	import { XW } from '$lib/data/snapshot';
+	import { ALLB } from '$lib/data/snapshot';
+ import { viewCell } from '$lib/view-data';
 	import type { Cfg } from '$lib/data/types';
 	import { fmtU, n0, pc } from '$lib/format';
 	import { isOff } from '$lib/model';
@@ -31,19 +32,24 @@
 	};
 
 	const model = $derived.by(() => {
-		const W0 = XW[ui.xWork];
+		const workload=ALLB.find(b=>b.id===ui.xWork) || ALLB.find(b=>b.id==='wago/tiny/add')!;
+    const W0=Object.fromEntries(CFG.map(c=>{
+      const cells=['compile','inst','first','steady'].map(metric=>viewCell(ui.machine,ui.snap,workload.id,c.id,metric));
+      const sameReport=cells.every(x=>x.report===cells[0].report);
+      return [c.id,sameReport && cells.every(x=>x.st==='ok' && x.v!=null)?[...cells.map(x=>x.v!),null]:null];
+    }));
 		const excluded: { c: Cfg; why: string }[] = [];
 		const live: { c: Cfg; a: Phases }[] = [];
 		for (const c of CFG) {
 			const a = W0[c.id];
 			if (isOff(ui.scope, c.id)) excluded.push({ c, why: 'unavailable on this machine' });
-			else if (!a) excluded.push({ c, why: 'failed correctness on this workload — no performance credit' });
-			else if (total(a, 1) == null) excluded.push({ c, why: 'no supported cached-artifact workflow' });
+			else if (!a) excluded.push({ c, why: 'missing, unsupported or failed phase measurement in the selected snapshot' });
+			else if (total(a, 1) == null) excluded.push({ c, why: 'cached-artifact loading was not measured' });
 			else live.push({ c, a });
 		}
 		const now = live.map((x) => ({ ...x, t: total(x.a, n)! })).sort((a, b) => a.t - b.t);
-		const tmin = now[0].t;
-		const tmax = now[now.length - 1].t;
+		const tmin = now[0]?.t || 1;
+		const tmax = now.at(-1)?.t || 1;
 		const bars = now.map((x, i) => ({
 			c: x.c,
 			rank: i + 1,
@@ -52,17 +58,17 @@
 		}));
 		const grid = Array.from({ length: 61 }, (_, i) => Math.max(1, Math.round(Math.pow(10, i / 10))));
 		const allT = live.flatMap((x) => [total(x.a, 1)!, total(x.a, 1e6)!]);
-		const lo = Math.log10(Math.min(...allT));
-		const hi = Math.log10(Math.max(...allT));
+		const lo = Math.log10(Math.min(...(allT.length?allT:[1])));
+		const hi = Math.log10(Math.max(...(allT.length?allT:[10])));
 		const X = (k: number) => pl + (Math.log10(k) / 6) * (W - pl - pr);
-		const Y = (t: number) => pt + (1 - (Math.log10(t) - lo) / (hi - lo)) * (HC - pt - pb);
+		const Y = (t: number) => pt + (1 - (Math.log10(t) - lo) / (hi - lo || 1)) * (HC - pt - pb);
 		const lines = live.map((x) => ({ c: x.c, p: grid.map((k) => X(k).toFixed(1) + ',' + Y(total(x.a, k)!).toFixed(1)).join(' ') }));
 		const yTicks = [];
 		for (let e = Math.ceil(lo); e <= hi; e++) yTicks.push({ y: Y(10 ** e).toFixed(1), t: pc(Y(10 ** e), HC), label: fmtU(10 ** e, 'ms') });
 		const xTicks = [0, 1, 2, 3, 4, 5, 6].map((e) => ({ l: pc(X(10 ** e), W), label: e === 0 ? '1' : '10' + '⁰¹²³⁴⁵⁶'[e] }));
 		const cross: { n: string; c: Cfg }[] = [];
 		let prev: Cfg | null = null;
-		for (let k = 0; k <= 600; k++) {
+		for (let k = 0; live.length && k <= 600; k++) {
 			const nn = Math.max(1, Math.round(Math.pow(10, k / 100)));
 			const L = live.map((x) => ({ c: x.c, t: total(x.a, nn)! })).sort((a, b) => a.t - b.t)[0];
 			if (!prev || L.c.id !== prev.id) {
@@ -93,8 +99,8 @@
 <div class="row">
 	<Seg
 		options={[
-			['markdown-parse', 'markdown-parse'],
-			['js-interp/richards', 'js-interp/richards']
+			['wago/tiny/add', 'wago/tiny/add'],
+			['wago/zlib/inflate', 'wago/zlib/inflate']
 		]}
 		value={ui.xWork}
 		onselect={(v) => (ui.xWork = v)}
@@ -160,8 +166,7 @@
 			<div class="li"><RtLabel c={c.c} /><span class="fg2 why">{c.why}</span></div>
 		{/each}
 		<div class="note mt4">
-			v8 tiered uses its observed per-call curve (slower until tier-up), not a constant steady-state estimate. Medians are summed; the sum is not a
-			percentile.
+			This model sums independently measured phase medians from the same sealed report. Steady cost is assumed constant; tier-up curves and cached-artifact load costs were not collected. The estimate is not a measured percentile.
 		</div>
 	</div>
 </div>

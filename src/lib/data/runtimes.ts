@@ -38,6 +38,7 @@ for(const c of CFG) {
 for(const runtime of RTS) {
   const c=CFG.find(c=>c.rt===runtime.id);
   if(c){runtime.rel=c.ver;runtime.size='not measured';}
+  else {runtime.rel='not collected';runtime.size='not measured';}
   if(runtime.id==='wazero')runtime.notes=runtime.notes.filter(note=>!note.includes('interpreter mode'));
   if(runtime.id==='wago'){runtime.exec=['JIT'];runtime.tiers='Railshot';runtime.notes=['Measured Railshot compiler configuration; exact source identity is recorded per report.'];}
 }
@@ -47,3 +48,8 @@ export const MACH: Record<MachineId,Machine> = Object.fromEntries(Object.entries
 }])) as Record<MachineId,Machine>;
 
 export const CB = Object.fromEntries(CFG.map((c) => [c.id, c])) as Record<CfgId, Cfg>;
+
+export function configVersion(machine:MachineId,id:CfgId){
+  const version=viewData.hosts[machine].configurations[id]?.version;
+  return version?version.length>32?version.slice(0,12):version:'not collected';
+}

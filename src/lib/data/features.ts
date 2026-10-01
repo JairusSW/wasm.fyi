@@ -1,8 +1,17 @@
-// Feature status, proposal metadata and spec-test results. Synthetic preview data.
+// Representative feature corpus identities; results come from sealed reports.
+import { viewData } from "../view-data";
 import type { CompatSection, FeatureRow, Proposal, ProposalId, SupportCode } from './types';
 
 export const BROWSERS = ['Chrome', 'Firefox', 'Safari'];
 export const FEATS: FeatureRow[] = [
+  { g: 'Core instructions', id: 'core-num', name: 'Numeric instructions', phase: 'Core corpus', b: ['?', '?', '?'], r: '?????????' },
+  { g: 'Core instructions', id: 'core-mem', name: 'Memory instructions', phase: 'Core corpus', b: ['?', '?', '?'], r: '?????????' },
+  { g: 'Core instructions', id: 'core-ctl', name: 'Control flow', phase: 'Core corpus', b: ['?', '?', '?'], r: '?????????' },
+  { g: 'Core instructions', id: 'core-tab', name: 'Tables', phase: 'Core corpus', b: ['?', '?', '?'], r: '?????????' },
+  { g: 'Core instructions', id: 'core-val', name: 'Structural validation', phase: 'Compile / instantiate probes', b: ['?', '?', '?'], r: '?????????' },
+  { g: 'System interfaces', id: 'cm-abi', name: 'Canonical ABI', phase: 'Component corpus', b: ['?', '?', '?'], r: '?????????' },
+  { g: 'System interfaces', id: 'cm-res', name: 'Resources', phase: 'Component corpus', b: ['?', '?', '?'], r: '?????????' },
+  { g: 'System interfaces', id: 'cm-async', name: 'Async components', phase: 'Compile-only probes', b: ['?', '?', '?'], r: '?????????' },
   { g: 'Wasm 2.0', id: 'bulk-memory', name: 'Bulk memory', phase: 'Phase 5 · Wasm 2.0', b: ['75', '79', '15'], r: 'yyy?yyypy' },
   { g: 'Wasm 2.0', id: 'reference-types', name: 'Reference types', phase: 'Phase 5 · Wasm 2.0', b: ['96', '79', '15'], r: 'yyy?yyyny' },
   { g: 'Wasm 2.0', id: 'multi-value', name: 'Multi-value', phase: 'Phase 5 · Wasm 2.0', b: ['85', '78', '13.1'], r: 'yyy?yyyyy' },
@@ -28,37 +37,19 @@ export const PROPS: Record<ProposalId, Proposal> = {
   memory64: { title: 'Memory64', long: '64-bit linear memory addressing', q: 'What does 64-bit addressing cost compared to a matched 32-bit build?', repo: 'github.com/WebAssembly/memory64', ver: 'WebAssembly 3.0', hist: [['2018', 'Proposal started'], ['2021', 'Phase 3 — implementation'], ['2025', 'Phase 4 and WebAssembly 3.0']], tools: [['Emscripten', 'y', '-sMEMORY64'], ['clang / wasi-sdk', 'y', '--target=wasm64'], ['rustc', 'p', 'wasm64-unknown-unknown (tier 3)'], ['Binaryen', 'y', '--enable-memory64'], ['Go', 'n', '']] },
   threads: { title: 'Threads', long: 'Shared memory and atomics', q: 'How does throughput scale with worker count, and what does each worker cost?', repo: 'github.com/WebAssembly/threads', ver: 'Phase 4 (not yet in a release)', hist: [['2017', 'Proposal started'], ['2019', 'Shipped in Chrome 74'], ['2020', 'Shipped in Firefox 79'], ['2023', 'Phase 4']], tools: [['Emscripten', 'y', '-pthread'], ['clang / wasi-sdk', 'y', 'wasm32-wasip1-threads'], ['rustc', 'p', 'nightly, build-std'], ['Binaryen', 'y', '--enable-threads'], ['Go', 'n', '']] },
 };
+const familyIds=[...new Set(viewData.catalogue.filter(w=>w.id.startsWith('features/')).map(w=>w.id.split('/')[1]))];
 export const COMPAT: CompatSection[] = [
-  { sec: 'Core specification', unit: 'assertions', suite: 'WebAssembly/testsuite @ 3f2a9c1 (2026-09-12)', fams: [
-    { id: 'core-num', name: 'Numeric instructions', total: 18420, kids: [['Integer (i32 / i64)', .5], ['Float (f32 / f64)', .44], ['Conversions', .06]], r: ['d', 'd', 'd', 'd:.9998', 'd:.9991', 'd', 'd:.9964'] },
-    { id: 'core-mem', name: 'Memory & data', total: 3210, kids: [['Load / store', .58], ['Bulk memory', .29], ['memory.grow / size', .13]], r: ['d', 'd', 'd', 'd', 'd:.9975', 'd', 'd:.991:c2'] },
-    { id: 'core-ctl', name: 'Control flow', total: 2644, kids: [['Blocks & branches', .62], ['Calls & call_indirect', .38]], r: ['d', 'd', 'd', 'd:.9992', 'd', 'd', 'd:.9981'] },
-    { id: 'core-tab', name: 'Tables & reference types', total: 1720, kids: [['Table ops', .55], ['funcref / externref', .45]], r: ['d', 'd', 'd:.9988', 'd', 'd:.994', 'd', 'd:.982'] },
-    { id: 'core-val', name: 'Validation & binary format', total: 4112, kids: [['Malformed binaries', .41], ['Invalid modules', .59]], r: ['d', 'd', 'd', 'd', 'd', 'd', 'd:.9971:s14'] }] },
-  { sec: 'Proposals & extensions', unit: 'assertions', suite: 'WebAssembly/testsuite proposals/ @ 3f2a9c1', fams: [
-    { id: 'simd', name: 'Fixed-width SIMD', total: 2847, page: 'simd', kids: [['Lane operations', .34], ['Arithmetic', .46], ['Loads / stores', .2]], r: ['d', 'd', 'd', 'd:.9993', 'u', 'd', 'd:.962'] },
-    { id: 'relaxed-simd', name: 'Relaxed SIMD', total: 212, kids: [['madd / nmadd', .3], ['swizzle / laneselect', .4], ['trunc / dot', .3]], r: ['f', 'f', 'f:.98', 'u', 'u', 'd', 'u'] },
-    { id: 'threads', page: 'threads', name: 'Threads & atomics', total: 624, kids: [['Atomic RMW', .6], ['wait / notify', .4]], r: ['d:.995', 'd:.995', 'd:.99:c3', 'f:.96', 'u', 'd', 'f:.88:c9'] },
-    { id: 'exceptions', name: 'Exception handling (exnref)', total: 488, kids: [['throw / try_table', .7], ['throw_ref', .3]], r: ['d', 'd', 'f:.97', 'f:.94', 'u', 'd', '?'] },
-    { id: 'tail-call', name: 'Tail calls', total: 176, kids: [['return_call', .5], ['return_call_indirect', .5]], r: ['d', 'd', 'd', 'u', 'd', 'd', 'd:.97'] },
-    { id: 'memory64', page: 'memory64', name: 'Memory64', total: 1934, kids: [['i64 addressing', .7], ['Bounds', .3]], r: ['d', 'd:.998', 'f:.99', 'u', 'u', 'd', 'u'] },
-    { id: 'gc', page: 'gc', name: 'Garbage collection (WasmGC)', total: 3102, kids: [['Structs & arrays', .45], ['Casts & subtyping', .35], ['i31', .2]], r: ['d:.998', 'd:.998', 'f:.91:c6', 'f:.87', 'u', 'd', 'u'] },
-    { id: 'multi-memory', name: 'Multiple memories', total: 402, kids: [['Addressing', 1]], r: ['d', 'd', 'f', 'u', 'u', 'f', '?'] },
-    { id: 'extended-const', name: 'Extended constant expressions', total: 64, kids: [['Global initializers', 1]], r: ['d', 'd', 'd', 'd', 'n', 'd', '?'] }] },
-  { sec: 'Host interfaces (WASI)', unit: 'test cases', suite: 'WebAssembly/wasi-testsuite @ 9e0d44b (2026-09-03)', fams: [
-    { id: 'wasi-p1', name: 'WASI preview1', total: 412, kids: [['fd_*', .45], ['path_*', .3], ['clocks / random / poll', .25]], r: ['d', 'd', 'd:.995', 'd:.99', 'd:.98', 'u', 'd:.94'] },
-    { id: 'wasi-p2', name: 'WASI 0.2', total: 1180, kids: [['cli', .2], ['filesystem', .45], ['sockets', .2], ['http', .15]], r: ['d:.99', 'd:.99', 'f:.93', 'u', 'u', 'u', 'u'] }] },
-  { sec: 'Component Model', unit: 'test files', suite: 'component-model tests @ 71c5e02 (2026-08-28)', fams: [
-    { id: 'cm-abi', name: 'Canonical ABI', total: 540, kids: [['lift / lower', .7], ['strings', .3]], r: ['d:.998', 'd:.998', 'f:.94', 'u', 'u', 'u', 'u'] },
-    { id: 'cm-res', name: 'Resources', total: 230, kids: [['own / borrow', 1]], r: ['d', 'd', 'f:.9', 'u', 'u', 'u', 'u'] },
-    { id: 'cm-async', name: 'Async (0.3 preview)', total: 188, kids: [['streams / futures', 1]], r: ['f:.72:s30', 'f:.72:s30', '?', 'u', 'u', 'u', 'n'] }] },
+  {sec:'Core instruction corpus',unit:'contracts',suite:'Original MIT corpus · independent exact oracles',fams:[]},
+  {sec:'Feature and interface corpus',unit:'contracts',suite:'Original MIT corpus · independent exact oracles',fams:[]}
 ];
-export const FLAGS: Record<string, string> = { 'relaxed-simd': '--wasm-relaxed-simd', threads: '--wasm-threads', exceptions: '--wasm-exnref', memory64: '--wasm-memory64', gc: '--wasm-gc', 'multi-memory': '--wasm-multi-memory', 'wasi-p2': '--wasi-p2', 'cm-abi': '--component-model', 'cm-res': '--component-model', 'cm-async': '--component-model-async' };
-export const FT: Record<string, [string, string, string, string, string, string][]> = {
-  'core-num': [['f32.wast', 'assert_return', '(f32.nearest (f32.const -0x1.fffffep+22))', 'f32:-0x1p+23', 'f32:-0x1.fffffcp+22', 'round-to-nearest-even differs in interpreter fast path']],
-  'core-mem': [['memory_grow.wast', 'assert_return', '(memory.grow (i32.const 0x10000))', 'i32:-1', 'i32:0', 'grow past declared max accepted when reservation succeeds']],
-  simd: [['simd_lane.wast', 'assert_return', '(i8x16.extract_lane_s 15 (v128.const i8x16 … -1))', 'i32:-1', 'i32:255', 'sign extension missing in lane extract'], ['simd_f32x4.wast', 'assert_return', '(f32x4.min (v128.const f32x4 -0 …) (v128.const f32x4 0 …))', 'f32x4:-0 …', 'f32x4:0 …', 'signed-zero ordering in min lowering']],
-  threads: [['atomic.wast', 'assert_return', '(i64.atomic.rmw.cmpxchg (i32.const 8) …)', 'i64:0x8000000000000000', 'i64:0', 'torn 64-bit compare-exchange']],
-  gc: [['ref_cast.wast', 'assert_trap', '(ref.cast (ref $t) (local.get 0))', 'trap: cast failure', 'returned ref', 'subtype check skips final types']],
-  exceptions: [['throw_ref.wast', 'assert_exception', '(throw_ref (local.get $exn))', 'exception $e', 'trap: uncaught', 'exnref not preserved across try_table']],
-};
+for(const id of familyIds) {
+  const workloads=viewData.catalogue.filter(w=>w.id.startsWith('features/'+id+'/') && !w.baseline);
+  const metadata=FEATS.find(f=>f.id===id);
+  COMPAT[id.startsWith('core-')?0:1].fams.push({id,name:metadata?.name || id,total:workloads.length,page:metadata?.page,
+    kids:workloads.map(w=>[w.id,1]),r:[]});
+}
+// Browser release histories and uncollected engine defaults are not inferred
+// from a Node embedding or a configuration-specific corpus run.
+for(const f of FEATS){f.b=['?','?','?'];f.r='?????????';}
+export const FLAGS: Record<string,string> = {};
+export const FT: Record<string,[string,string,string,string,string,string][]> = {};

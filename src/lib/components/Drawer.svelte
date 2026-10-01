@@ -1,12 +1,13 @@
 <script lang="ts">
+ import { configVersion } from '$lib/data/runtimes';
 	import { siteHref } from '$lib/links';
 	import { COMPAT, FLAGS, FT } from '$lib/data/features';
 	import { CB, CFG, MACH } from '$lib/data/runtimes';
 	import { ALLB, MET, OV, PHASE_NOTE } from '$lib/data/snapshot';
 	import { ST, ST_DESC } from '$lib/data/status';
-	import { H, fmtU, fx, hex, n0 } from '$lib/format';
+	import { fmtU, fx, n0 } from '$lib/format';
 	import { benchHref } from '$lib/links';
-	import { TOTAL_WORKLOADS, benchVal, cfgIndex, cn, compatCell, cov, kidCells, ratio, type PerfGroup } from '$lib/model';
+	import { TOTAL_WORKLOADS, benchVal, cfgIndex, cn, compatCell, cov, featureContracts, featureOutcome, kidCells, ratio, type PerfGroup } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 	import Swatch from './Swatch.svelte';
 	import { viewCell, viewData, viewReason } from '$lib/view-data';
@@ -97,46 +98,17 @@
 		const f = sec.fams.find((x) => x.id === d.fam)!;
 		const ci = cfgIndex(d.cid);
 		const c = CB[d.cid];
-		const k = d.kid != null ? kidCells(f, ci)[d.kid] : compatCell(f.total, f.r[ci]);
-		const avail = {
-			d: 'enabled by default',
-			f: 'requires flag · tested with ' + (FLAGS[f.id] || '--enable-' + f.id),
-			u: 'unavailable in this configuration',
-			'?': 'unknown — no versioned metadata; not run',
-			n: 'available but not run in this snapshot'
-		}[k.av];
-		const T = FT[f.id];
-		const fails = [];
-		for (let i = 0; i < Math.min(k.fail, 4); i++) {
-			const t = T ? T[i % T.length] : null;
-			const line = 40 + Math.floor(H(f.id + d.cid + i) * 2400);
-			fails.push({
-				st: 'failed',
-				stColor: 'var(--st-fail)',
-				file: (t ? t[0] : f.id.replace('core-', '') + '.wast') + ':' + line,
-				kind: t ? t[1] : 'assert_return',
-				expr: t ? t[2] : '(invoke "run" (i32.const 7))',
-				exp: t ? t[3] : 'i32:0',
-				act: t ? t[4] : 'i32:1',
-				diag: t ? t[5] : 'result mismatch',
-				issue: `${c.rt}#${1000 + Math.floor(H(f.id + i + c.rt) * 8000)} (synthetic)`
-			});
-		}
-		for (let i = 0; i < Math.min(k.crash, 2); i++)
-			fails.push({
-				st: 'crashed',
-				stColor: 'var(--st-crash)',
-				file: `${f.id}.wast:${200 + i * 37}`,
-				kind: 'assert_return',
-				expr: '(invoke "stress")',
-				exp: 'returns normally',
-				act: 'SIGSEGV (exit 139)',
-				diag: 'crash in generated code; core dump in run record',
-				issue: 'no linked issue'
-			});
+		const k = d.kid != null ? kidCells(f, ci, ui.scope)[d.kid] : compatCell(f.id, d.cid, ui.scope);
+		const avail = k.run?'Recorded adapter configuration · representative contracts':'No recorded result';
+    const contracts=featureContracts(f.id).filter(w=>d.kid==null || w.id===f.kids[d.kid][0]);
+    const fails=contracts.map(w=>({w,cell:featureOutcome(ui.scope,w,d.cid)})).filter(x=>x.cell.st!=='ok').map(({w,cell})=>({
+      st:cell.st,stColor:cell.st==='failed'?'var(--st-fail)':'var(--fg3)',file:w.src || w.id,
+      kind:w.evidenceScope || 'unrecorded scope',expr:w.id,exp:'independent corpus oracle',act:cell.st,
+      diag:viewReason(cell) || 'No recorded diagnostic',issue:cell.report?`Evidence: ${cell.report}`:'No report collected'
+    }));
 		const run = (v: number) => (k.run ? n0(v) : '—');
 		return {
-			kicker: `${sec.sec} · spec test results`,
+			kicker: `${sec.sec} · representative contracts`,
 			title: f.name + (d.kid != null ? ' / ' + f.kids[d.kid][0] : ''),
 			c,
 			avail,
@@ -147,15 +119,15 @@
 				{ k: 'Failed', v: run(k.fail), c: 'var(--st-fail)' },
 				{ k: 'Crashed', v: run(k.crash), c: 'var(--st-crash)' },
 				{ k: 'Skipped', v: run(k.skip), c: 'var(--fg2)' },
-				{ k: 'Timed out', v: k.run ? '0' : '—', c: 'var(--fg2)' },
-				{ k: 'Not run', v: k.run ? '0' : n0(k.total), c: 'var(--fg2)' }
+				{ k: 'Timed out', v: 'see raw outcomes', c: 'var(--fg2)' },
+				{ k: 'Not run', v: n0(contracts.filter(w=>!featureOutcome(ui.scope,w,d.cid).report).length), c: 'var(--fg2)' }
 			],
 			meta: [
 				{ k: 'Counting unit', v: `${sec.unit} (${n0(k.total)} total)` },
 				{ k: 'Suite', v: sec.suite },
-				{ k: 'Configuration', v: `${c.rt} ${c.ver} · ${c.be}` },
-				{ k: 'Tested', v: '2026-09-27 14:02 UTC · run t-' + hex(f.id + c.id) },
-				{ k: 'Harness', v: 'wast-runner v1.9 · harness v3.2.0' }
+				{ k: 'Configuration', v: `${c.rt} ${configVersion(ui.machine,c.id)} · ${c.be}` },
+				{ k: 'Tested', v: [...new Set(contracts.map(w=>featureOutcome(ui.scope,w,d.cid).report).filter(Boolean))].map(id=>viewData.reports[id].created).join(' · ') || 'not collected' },
+				{ k: 'Scope', v: 'Execution verifies outputs; compile-only probes verify structural acceptance. Skipped includes unsupported or uncollected contracts.' }
 			]
 		};
 	});
@@ -187,8 +159,8 @@
 		const coverage = [
 			...cfgs.map((c) => ({ k: `${c.be} — correct workloads`, v: `${n0(cov(c.id,ui.scope)[0])} / ${TOTAL_WORKLOADS}` })),
 			...cfgs.map((c) => ({
-				k: `${c.be} — proposals enabled by default`,
-				v: `${fams.filter((f) => f.r[cfgIndex(c.id)][0] === 'd').length} / ${fams.length}`
+				k: `${c.be} — feature families with all corpus contracts passed`,
+				v: `${fams.filter(f=>{const x=compatCell(f.id,c.id,ui.scope);return x.run && x.total>0 && x.pass===x.total;}).length} / ${fams.length}`
 			}))
 		];
 		return { title: d.rt, cfgs, strengths, tradeoffs, coverage };
@@ -217,12 +189,12 @@
 			{#if cell}
 				<div class="ident">
 					<Swatch color={cell.c.col} bg={cell.c.hollow ? 'transparent' : cell.c.col} size={9} />
-					<span class="w5">{cell.c.rt} {cell.c.ver}</span>
+					<span class="w5">{cell.c.rt} {configVersion(ui.machine,cell.c.id)}</span>
 					<span class="mono small fg3">{cell.c.be} · {cell.metric}</span>
 				</div>
 				<div class="status" style:color={cell.st[2]}>
 					<span class="mono">{cell.st[0]}</span><span class="w5">{cell.st[1]}</span>
-					{#if cell.ok}<span class="fg2">output checksum matched reference (sha256)</span>{/if}
+					{#if cell.ok}<span class="fg2">recorded independent oracle verified</span>{/if}
 				</div>
 				{#if cell.ok}
 					<div class="tiles two">
@@ -279,7 +251,7 @@
 			{:else if compat}
 				<div class="ident">
 					<Swatch color={compat.c.col} bg={compat.c.hollow ? 'transparent' : compat.c.col} size={9} />
-					<span class="w5">{compat.c.rt} {compat.c.ver}</span>
+					<span class="w5">{compat.c.rt} {configVersion(ui.machine,compat.c.id)}</span>
 					<span class="mono small fg3">{compat.c.be}</span>
 				</div>
 				<div class="s12"><span class="fg3">Availability: </span>{compat.avail}</div>
@@ -318,7 +290,7 @@
 					{#each profile.cfgs as c (c.id)}
 						<div class="cfg-line">
 							<Swatch color={c.col} bg={c.hollow ? 'transparent' : c.col} />
-							<span class="mono">{c.ver} · {c.be}</span><span class="fg3">{c.kind}</span>
+							<span class="mono">{configVersion(ui.machine,c.id)} · {c.be}</span><span class="fg3">{c.kind}</span>
 						</div>
 					{/each}
 				</div>

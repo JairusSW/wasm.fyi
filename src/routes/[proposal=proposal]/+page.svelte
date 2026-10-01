@@ -19,21 +19,21 @@
 		{ k: 'Phase', v: PF.phase },
 		{ k: 'Standard', v: P.ver },
 		{ k: 'Spec repository', v: P.repo },
-		{ k: 'Feature metadata', v: 'feature-meta v14 · 2026-09-01' }
+		{ k: 'Evidence scope', v: 'Representative adapter corpus · browser builds uncollected' }
 	]);
 	const browsers = $derived(BROWSERS.map((b, i) => ({ name: b, ...browserCell(PF.b[i]) })));
 	const tools = $derived(P.tools.map(([name, c, flag]) => ({ name, flag, ...supportCell(c) })));
 	const groups = $derived(
 		(
 			[
-				['y', 'Supported'],
+				['y', 'Corpus passed'],
 				['f', 'Behind a flag'],
 				['p', 'Partial'],
 				['n', 'Not supported'],
 				['?', 'Unknown']
 			] as [SupportCode, string][]
 		)
-			.map(([code, label]) => ({ label, glyph: supportCell(code).glyph, items: RTS.filter((r) => supportOf(r.id, PF) === code) }))
+			.map(([code, label]) => ({ label, glyph: supportCell(code).glyph, items: RTS.filter((r) => supportOf(r.id, PF, ui.scope) === code) }))
 			.filter((x) => x.items.length)
 	);
 </script>
@@ -92,7 +92,7 @@
 						{#if r.cfg}
 							<button class="rt" onclick={() => ui.openProfile(r.id)} data-tip="Open {r.name} runtime profile">{r.name}</button>
 						{:else}
-							<span class="rt" data-tip="{r.name} is tracked but not benchmarked in this preview">{r.name}</span>
+							<span class="rt" data-tip="{r.name} is tracked but not collected in the recorded adapter configurations">{r.name}</span>
 						{/if}
 					{/each}
 				</div>

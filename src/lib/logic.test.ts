@@ -1,3 +1,4 @@
+import { COMPAT } from './data/features';
 import { describe, expect, it } from 'vitest';
 import { ALLB } from './data/snapshot';
 import { fmtU, fx, pct } from './format';
@@ -54,12 +55,11 @@ describe('model', () => {
 		const single={...scope,hide:{B:true,C:true,D:true,E:true,F:true,G:true}};
         expect(leader(single, 'Fastest compilation', 'lat', 0, 'compile').clear).toBe(false);
 	});
-	it('splits spec results consistently', () => {
-		const c = compatCell(3210, 'd:.991:c2');
-		expect(c.pass + c.fail + c.crash + c.skip).toBe(3210);
-		const fam = { id: 'core-mem', total: 3210, kids: [['a', 0.58], ['b', 0.29], ['c', 0.13]] as [string, number][], r: ['d:.991:c2'] };
-		const kids = kidCells(fam, 0);
-		expect(kids.reduce((a, k) => a + k.total, 0)).toBe(3210);
-		expect(kids.reduce((a, k) => a + k.fail, 0)).toBe(c.fail);
-	});
+	it('counts exact corpus children without assigning fabricated failures', () => {
+    const fam=COMPAT.flatMap(s=>s.fams).find(f=>f.id==='core-mem')!;
+    const cell=compatCell(fam.id,'A',scope);
+    const kids=kidCells(fam,0,scope);
+    for(const field of ['total','pass','fail','crash','skip'] as const)expect(kids.reduce((sum,k)=>sum+k[field],0)).toBe(cell[field]);
+    expect(compatCell('uncollected-family','A',scope).run).toBe(false);
+  });
 });
