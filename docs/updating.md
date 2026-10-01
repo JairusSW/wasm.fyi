@@ -139,13 +139,15 @@ when Pages is configured for a custom domain.
 `.github/workflows/update-benchmarks.yml` is scheduled daily at **03:17 UTC**, and
 can be dispatched manually. It runs only when `WASMBENCH_AUTOMATION_ENABLED=true`.
 It requires a registered self-hosted runner with the `wasm-bench` label and the
-configured harness/source checkouts. This repo initially has no registered runner.
+configured harness/source checkouts. The selected runner is this Apple Silicon Mac, coordinating Hub over SSH.
 
 Run `just runner-install` on this Apple Silicon Mac to register the `wasm-bench`
 runner and install its user LaunchAgent. The installer verifies the official runner
 archive checksum; registration tokens are not written into the repository.
 Install Node, pnpm, just, Go and Rust on the Mac, and Node, Go, Rust and rsync on Hub.
 The runner account must be able to read the harness and Wago source directories.
+The Mac must be awake with the runner user logged in, and Hub must be reachable.
+The LaunchAgent starts at login; `just runner-status` checks its local service.
 Enable automation from that host's site checkout:
 
 ```sh

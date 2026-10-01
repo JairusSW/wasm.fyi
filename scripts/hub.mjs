@@ -17,12 +17,12 @@ const sockets = join(homedir(), '.cache/wasm-fyi/ssh');
 await mkdir(sockets, { recursive: true });
 const socket = join(sockets, digest(Buffer.from(site)).slice(0, 12));
 const options = ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=15', '-o', 'ServerAliveInterval=15', '-o', 'ServerAliveCountMax=3', '-o', 'ControlMaster=auto', '-o', 'ControlPersist=600', '-o', `ControlPath=${socket}`];
-const ssh = script => command('ssh', [...options, host.ssh, 'bash -lc ' + quote(script)], { timeout: 110 * 60 * 1000 });
+const ssh = (script, timeout = 120_000) => command('ssh', [...options, host.ssh, 'bash -lc ' + quote(script)], { timeout });
 const remotePath = path => `${host.ssh}:${path}`;
-const rsync = (args) => command('rsync', ['-a', '-e', ['ssh', ...options.map(quote)].join(' '), ...args], { stdio: 'inherit', timeout: 30 * 60 * 1000 });
+const rsync = (args) => command('rsync', ['-az', '-e', ['ssh', ...options.map(quote)].join(' '), ...args], { stdio: 'inherit', timeout: 30 * 60 * 1000 });
 const action = process.argv[2];
 if (action === 'doctor') {
-  process.stdout.write(ssh('export PATH="$HOME/.cargo/bin:$HOME/go/bin:$HOME/.local/bin:$PATH"; set -eu; uname -a; for tool in node go cargo rsync git flock; do command -v "$tool"; done; node --version; go version; cargo --version'));
+  process.stdout.write(ssh('export PATH="$HOME/.cargo/bin:$HOME/go/bin:$HOME/.local/bin:$PATH"; set -eu; uname -a; for tool in node go cargo rsync git flock; do command -v "$tool"; done; node --version; go version; cargo --version', 30_000));
 } else if (action === 'collect') {
   // Copy source files into isolated, immutable-per-experiment directories. Neither
   // host's working checkout nor another experiment is reset or cleaned.
@@ -53,11 +53,16 @@ if (action === 'doctor') {
   rsync([remoteConfig, remotePath(remote + '/site/')]);
   const overrides = ['WASMBENCH_RUNTIMES', 'WASMBENCH_SUITE', 'WASMBENCH_LAUNCHES', 'WASMBENCH_SAMPLES', 'WASMBENCH_OPERATIONS', 'WASMBENCH_WARMUP']
     .filter(key => process.env[key]).map(key => `${key}=${quote(process.env[key])}`).join(' ');
+  let completed = false;
   try {
-    process.stdout.write(ssh(`export PATH="$HOME/.cargo/bin:$HOME/go/bin:$HOME/.local/bin:$PATH"; set -eu; exec 9>"$HOME/${host.workspace}/measurement.lock"; flock -n 9; cd ${quote(remote + '/site')}; ${overrides} node scripts/bench.mjs build; ${overrides} node scripts/bench.mjs doctor; ${overrides} node scripts/bench.mjs collect`));
+    process.stdout.write(ssh(`export PATH="$HOME/.cargo/bin:$HOME/go/bin:$HOME/.local/bin:$PATH"; set -eu; exec 9>"$HOME/${host.workspace}/measurement.lock"; flock -n 9; cd ${quote(remote + '/site')}; ${overrides} node scripts/bench.mjs build; ${overrides} node scripts/bench.mjs doctor; ${overrides} node scripts/bench.mjs collect`, 110 * 60 * 1000));
+    completed = true;
   } finally {
     // Retain partial evidence too. A failed remote pass never updates site data.
-    rsync([remotePath(remote + '/site/.wasmbench/'), local + '/']);
+    // Successful reports already contain complete sealed copies of each pass.
+    // Keep all original pass directories on failure for diagnosis.
+    const exclusions = completed ? ['--exclude=experiments/*/timing-*', '--exclude=experiments/*/memory-*', '--exclude=experiments/*/code-*'] : [];
+    rsync([...exclusions, remotePath(remote + '/site/.wasmbench/'), local + '/']);
   }
   const remoteReport = (await readFile(join(local, 'latest-report.txt'), 'utf8')).trim();
   const leaf = remoteReport.split('/').at(-2);
