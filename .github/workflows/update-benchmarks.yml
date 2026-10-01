@@ -9,6 +9,10 @@ on:
         description: 'Also rebuild the eight retrospective weekly points on both hosts'
         type: boolean
         default: false
+      history_only:
+        description: 'Refresh weekly history using the published application baseline'
+        type: boolean
+        default: false
       launches:
         description: 'Independent launches (empty uses corpus default)'
         type: string
@@ -68,11 +72,12 @@ jobs:
       - run: just bench-doctor
       - run: just hub-doctor
       - name: Collect separate timing, memory and code passes, validate, and build
+        if: inputs.history_only != true
         run: just refresh
         env:
           BASE_PATH: ${{ steps.pages.outputs.base_path }}
       - name: Refresh eight weekly Wago revisions on both hosts
-        if: github.event.schedule == '17 6 * * 4' || inputs.history
+        if: github.event.schedule == '17 6 * * 4' || inputs.history || inputs.history_only
         run: |
           just history-collect
           just history-collect-hub

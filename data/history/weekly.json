@@ -44,176 +44,11 @@
       "revisionDate": "2026-09-23T16:44:56-07:00"
     }
   ],
-  "results": [
-    {
-      "targetWeek": "2026-08-06T00:00:00.000Z",
-      "revision": "391b8d19d52f001359cf269fe10186147e1fc6a5",
-      "revisionDate": "2026-08-05T12:22:12-07:00",
-      "status": "measured",
-      "collectedAt": "2026-10-01T08:16:51.462445Z",
-      "reportSha256": "77c019b639deb0d14ed10b6af12e071d336008a6b1e00f8c4f714e6c5f82aca3",
-      "runId": "timing-2026-10-01T08-16-50-345Z-5fa261e0",
-      "suiteSha256": "16c96d2a443b74e60e7568e91016f0a8ac0040a497fe25fc9bd0393296dc1c5b",
-      "failedCases": [
-        {
-          "workload": "wago/lz4/compress",
-          "scenario": "first-call",
-          "status": "preflight_failed",
-          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
-        },
-        {
-          "workload": "wago/lz4/compress",
-          "scenario": "compile",
-          "status": "preflight_failed",
-          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
-        },
-        {
-          "workload": "wago/lz4/compress",
-          "scenario": "instantiate",
-          "status": "preflight_failed",
-          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
-        },
-        {
-          "workload": "wago/lz4/compress",
-          "scenario": "steady",
-          "status": "preflight_failed",
-          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
-        }
-      ]
-    },
-    {
-      "targetWeek": "2026-08-13T00:00:00.000Z",
-      "revision": "2825f1258e3c0c61976da5ec5619d8d283fa2b36",
-      "revisionDate": "2026-08-12T16:47:48-07:00",
-      "status": "measured",
-      "collectedAt": "2026-10-01T08:17:18.666881Z",
-      "reportSha256": "f0d133e6e2c6da86ef4deb14b3690d1b96b1d1331caca3e9f58a27ed12c9ab2d",
-      "runId": "timing-2026-10-01T08-17-17-724Z-0e17dabd",
-      "suiteSha256": "16c96d2a443b74e60e7568e91016f0a8ac0040a497fe25fc9bd0393296dc1c5b",
-      "failedCases": [
-        {
-          "workload": "wago/lz4/compress",
-          "scenario": "first-call",
-          "status": "preflight_failed",
-          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
-        },
-        {
-          "workload": "wago/lz4/compress",
-          "scenario": "compile",
-          "status": "preflight_failed",
-          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
-        },
-        {
-          "workload": "wago/lz4/compress",
-          "scenario": "instantiate",
-          "status": "preflight_failed",
-          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
-        },
-        {
-          "workload": "wago/lz4/compress",
-          "scenario": "steady",
-          "status": "preflight_failed",
-          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
-        }
-      ]
-    },
-    {
-      "targetWeek": "2026-08-20T00:00:00.000Z",
-      "revision": "f9073ae76eb4481f29f3e4df6b6f0dbff51fe781",
-      "revisionDate": "2026-08-15T23:13:18-07:00",
-      "status": "measured",
-      "collectedAt": "2026-10-01T08:17:45.602464Z",
-      "reportSha256": "a1edd797d3a6d5df98cbe7f5c696f526956acc0fddf55490b1f48efdb461f381",
-      "runId": "timing-2026-10-01T08-17-44-626Z-a0d18fec",
-      "suiteSha256": "16c96d2a443b74e60e7568e91016f0a8ac0040a497fe25fc9bd0393296dc1c5b",
-      "failedCases": [
-        {
-          "workload": "wago/lz4/compress",
-          "scenario": "first-call",
-          "status": "preflight_failed",
-          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
-        },
-        {
-          "workload": "wago/lz4/compress",
-          "scenario": "compile",
-          "status": "preflight_failed",
-          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
-        },
-        {
-          "workload": "wago/lz4/compress",
-          "scenario": "instantiate",
-          "status": "preflight_failed",
-          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
-        },
-        {
-          "workload": "wago/lz4/compress",
-          "scenario": "steady",
-          "status": "preflight_failed",
-          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
-        }
-      ]
-    },
-    {
-      "targetWeek": "2026-08-27T00:00:00.000Z",
-      "revision": "cb32e996cf3fd24dbd54fafc05e4ea5203a23ae3",
-      "revisionDate": "2026-08-25T22:37:06-04:00",
-      "status": "measured",
-      "collectedAt": "2026-10-01T08:18:12.825489Z",
-      "reportSha256": "762d10f66bdefd9c64789b9844314fce4085013380483e520d017d269fc31973",
-      "runId": "timing-2026-10-01T08-18-11-865Z-14c1dc61",
-      "suiteSha256": "16c96d2a443b74e60e7568e91016f0a8ac0040a497fe25fc9bd0393296dc1c5b",
-      "failedCases": []
-    },
-    {
-      "targetWeek": "2026-09-03T00:00:00.000Z",
-      "revision": "b40f0305906928dd415ae677fdfba5f1a608f464",
-      "revisionDate": "2026-09-02T16:07:12-04:00",
-      "status": "measured",
-      "collectedAt": "2026-10-01T08:18:39.776764Z",
-      "reportSha256": "aa574e158a9c9fc95e8b9988c630d2b4911a300225f8a61c6920d0027096b5da",
-      "runId": "timing-2026-10-01T08-18-38-660Z-a66d6c82",
-      "suiteSha256": "16c96d2a443b74e60e7568e91016f0a8ac0040a497fe25fc9bd0393296dc1c5b",
-      "failedCases": []
-    },
-    {
-      "targetWeek": "2026-09-10T00:00:00.000Z",
-      "revision": "3ca7525fa1f3e8962a4a46525883908ce0d44032",
-      "revisionDate": "2026-09-09T15:52:26-07:00",
-      "status": "measured",
-      "collectedAt": "2026-10-01T08:19:06.722734Z",
-      "reportSha256": "242c27671f095843e82eff3344fc590d657878ef1f54b9c86c546dd002f3fe10",
-      "runId": "timing-2026-10-01T08-19-05-587Z-e1b4bbf8",
-      "suiteSha256": "16c96d2a443b74e60e7568e91016f0a8ac0040a497fe25fc9bd0393296dc1c5b",
-      "failedCases": []
-    },
-    {
-      "targetWeek": "2026-09-17T00:00:00.000Z",
-      "revision": "7ce41c25dc14bf409f0cb9e9e27c6232821f84b4",
-      "revisionDate": "2026-09-16T11:49:12-07:00",
-      "status": "measured",
-      "collectedAt": "2026-10-01T08:19:31.350202Z",
-      "reportSha256": "b2c05809e91d5aaef981583fc8e36eedb17c48bfd9c33ba6a60f3682c4bd4038",
-      "runId": "timing-2026-10-01T08-19-30-328Z-3d452ac9",
-      "suiteSha256": "16c96d2a443b74e60e7568e91016f0a8ac0040a497fe25fc9bd0393296dc1c5b",
-      "failedCases": []
-    },
-    {
-      "targetWeek": "2026-09-24T00:00:00.000Z",
-      "revision": "beeaab03ae931dbd1ab26748ad611441f2d20ed0",
-      "revisionDate": "2026-09-23T16:44:56-07:00",
-      "status": "measured",
-      "collectedAt": "2026-10-01T08:19:56.389754Z",
-      "reportSha256": "38ba521b1011290b8f3e64c12f312564aa0499f9a55f151d2ad44c69a229b1fb",
-      "runId": "timing-2026-10-01T08-19-55-424Z-562159f6",
-      "suiteSha256": "16c96d2a443b74e60e7568e91016f0a8ac0040a497fe25fc9bd0393296dc1c5b",
-      "failedCases": []
-    }
-  ],
   "baseline": {
-    "report": "05022e954b6a6178d37a7c97045d266c7cda76f0aa6fe8208a10a718feb31690",
-    "runId": "timing-2026-10-01T06-52-18-258Z-8915a924",
-    "evidenceSha256": "21752e837545b945234898d9fd24519face1688c48984f22ca697e7b957ac7aa",
-    "created": "2026-10-01T06:52:20.435198Z",
+    "report": "52ea3cec03b3a36b75293aa8b1d7b5b80464cc91e0b48adf71e2265df3c1646b",
+    "runId": "timing-2026-10-01T09-20-55-805Z-9d900c7b",
+    "evidenceSha256": "82b72f91944df7e4b9e56e91c574d5bf9030db9e54e2c40e0a381e09fc757b52",
+    "created": "2026-10-01T09:20:57.753792Z",
     "configurations": [
       {
         "native_dependency_policy": "macho-third-party-closure-v1; system shared-cache libraries excluded; absolute loads remain exact host prerequisites",
@@ -222,7 +57,7 @@
           "/Users/work/Code/Tools/wasm-bench/bin/adapter-wazero"
         ],
         "file_sha256": {
-          "/Users/work/Code/Tools/wasm-bench/bin/adapter-wazero": "221ea8d28e1195a377bdca987435e324176103f81a987e5147ec2f01e315f362"
+          "/Users/work/Code/Tools/wasm-bench/bin/adapter-wazero": "881f35b468392497b05a4a125c13b9a5b29329171b4190ad3b1bfa81b48079b5"
         },
         "description": {
           "phase_release_policy": "close measured instance and compiled module; engine retained; no forced GC; native continuation stages discard capture after active invocation and close verified instance; shared compiled module/engine retained until batch close",
@@ -358,6 +193,12 @@
               "EXCEPTIONS": false,
               "EXTENDED_CONST": false,
               "FUNCTION_REFERENCES": false,
+              "GC": false,
+              "LEGACY_EXCEPTIONS": false,
+              "MEMORY64": false,
+              "MULTI_MEMORY": false,
+              "RELAXED_SIMD": false,
+              "STACK_SWITCHING": false,
               "TAIL_CALL": false,
               "THREADS": false
             }
@@ -371,7 +212,7 @@
           "/Users/work/Code/Tools/wasm-bench/adapters/wasmtime/target/release/adapter-wasmtime"
         ],
         "file_sha256": {
-          "/Users/work/Code/Tools/wasm-bench/adapters/wasmtime/target/release/adapter-wasmtime": "c70566ff6684a24eff6be7163a81885f0c179d0ad1d8b35ac6f24e2c4eae8db5"
+          "/Users/work/Code/Tools/wasm-bench/adapters/wasmtime/target/release/adapter-wasmtime": "d0cf0cf4acab87448d21fd29aa5ed19e97e70cd043245b93b1baffe8f6d13229"
         },
         "description": {
           "phase_release_policy": "drop measured Store and Module; engine retained; no forced allocator reclamation",
@@ -491,14 +332,19 @@
           ],
           "validator_features": {
             "namespace": "wasmparser/0.251.0",
-            "evidence": "Wasmtime 46.0.1 config.rs default features and compiler_panicking_wasm_features; explicitly applied Config::wasm_features subset; enabled validation is not a guarantee of complete backend instruction support",
+            "evidence": "Wasmtime 46.0.1 config.rs default features and compiler_panicking_wasm_features; explicitly applied Config::wasm_features subset; enabled validation is not a guarantee of complete backend instruction support; optional --component-async uses the component-async-probes Cargo feature and explicitly enables wasm_component_model_async",
             "supported": {
+              "CM_ASYNC": false,
+              "CM_ASYNC_STACKFUL": false,
               "EXCEPTIONS": false,
               "FUNCTION_REFERENCES": false,
               "GC": false,
+              "GC_TYPES": false,
               "LEGACY_EXCEPTIONS": false,
               "RELAXED_SIMD": true,
-              "TAIL_CALL": true
+              "STACK_SWITCHING": false,
+              "TAIL_CALL": true,
+              "THREADS": false
             }
           }
         }
@@ -511,7 +357,7 @@
           "--winch"
         ],
         "file_sha256": {
-          "/Users/work/Code/Tools/wasm-bench/adapters/wasmtime/target/release/adapter-wasmtime": "c70566ff6684a24eff6be7163a81885f0c179d0ad1d8b35ac6f24e2c4eae8db5"
+          "/Users/work/Code/Tools/wasm-bench/adapters/wasmtime/target/release/adapter-wasmtime": "d0cf0cf4acab87448d21fd29aa5ed19e97e70cd043245b93b1baffe8f6d13229"
         },
         "description": {
           "phase_release_policy": "drop measured Store and Module; engine retained; no forced allocator reclamation",
@@ -631,8 +477,10 @@
           ],
           "validator_features": {
             "namespace": "wasmparser/0.251.0",
-            "evidence": "Wasmtime 46.0.1 config.rs default features and compiler_panicking_wasm_features; explicitly applied Config::wasm_features subset; enabled validation is not a guarantee of complete backend instruction support",
+            "evidence": "Wasmtime 46.0.1 config.rs default features and compiler_panicking_wasm_features; explicitly applied Config::wasm_features subset; enabled validation is not a guarantee of complete backend instruction support; optional --component-async uses the component-async-probes Cargo feature and explicitly enables wasm_component_model_async",
             "supported": {
+              "CM_ASYNC": false,
+              "CM_ASYNC_STACKFUL": false,
               "EXCEPTIONS": false,
               "FUNCTION_REFERENCES": false,
               "GC": false,
@@ -656,7 +504,7 @@
         ],
         "file_sha256": {
           "/Users/work/.local/share/wasm-fyi/actions-runner/_work/_tool/node/26.4.0/arm64/bin/node": "d23e520f5bcd497bdd0c6a6242356a4fd255abaceba7c3549727caacb936ddae",
-          "/Users/work/Code/Tools/wasm-bench/adapters/v8/adapter.mjs": "a69b80862804540a459e1a01b04e869a4cdb8405f08eeb47ebeeb1d7a2014976",
+          "/Users/work/Code/Tools/wasm-bench/adapters/v8/adapter.mjs": "012857ea387d92996fa51da744886d9f43d7fc5d8e1a4b1d75911775bcb77f97",
           "/Users/work/Code/Tools/wasm-bench/adapters/v8/compiler-mode.mjs": "826f6a82054c3551cbbb92d3f4f8ba03f7b1d85a9ea345cd4dfe92028390b529",
           "/Users/work/Code/Tools/wasm-bench/adapters/v8/floats.mjs": "4bc5bd022948e2b101df38d8fabfa1e980da2588cf3020c3935d3b7de6eb38ee",
           "/Users/work/Code/Tools/wasm-bench/adapters/v8/harness.mjs": "4286207601a1a0adfc3d892c07ac792a5518a5ca59710b025e6d9b4b9a9ba735",
@@ -710,6 +558,8 @@
             "can_float_phases": true,
             "can_float_teardown": true,
             "can_float_trajectory": true,
+            "can_host_profile_js-string-builtins-v1": true,
+            "can_host_profile_threads-defined-v1": true,
             "can_instantiate_separately": true,
             "can_measure_host_allocations": false,
             "can_measure_invocation_traps": true,
@@ -747,9 +597,186 @@
             "simd",
             "reference-types",
             "multi-value"
-          ]
+          ],
+          "validator_features": {
+            "namespace": "wasmparser/0.251.0",
+            "evidence": "Representative valid proposal modules tested with WebAssembly.validate under the recorded Node flags; this gates unavailable configurations, not proposal conformance",
+            "supported": {
+              "EXCEPTIONS": true,
+              "GC": true,
+              "MEMORY64": true,
+              "MULTI_MEMORY": true,
+              "RELAXED_SIMD": true,
+              "STACK_SWITCHING": false
+            }
+          }
         }
       }
     ]
-  }
+  },
+  "results": [
+    {
+      "targetWeek": "2026-08-06T00:00:00.000Z",
+      "revision": "391b8d19d52f001359cf269fe10186147e1fc6a5",
+      "revisionDate": "2026-08-05T12:22:12-07:00",
+      "status": "measured",
+      "collectedAt": "2026-10-01T10:17:42.517329Z",
+      "failedCases": [
+        {
+          "workload": "wago/lz4/compress",
+          "scenario": "first-call",
+          "status": "preflight_failed",
+          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
+        },
+        {
+          "workload": "wago/lz4/compress",
+          "scenario": "compile",
+          "status": "preflight_failed",
+          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
+        },
+        {
+          "workload": "wago/lz4/compress",
+          "scenario": "instantiate",
+          "status": "preflight_failed",
+          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
+        },
+        {
+          "workload": "wago/lz4/compress",
+          "scenario": "steady",
+          "status": "preflight_failed",
+          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
+        }
+      ],
+      "reportSha256": "7b8ada6aa53879a905727cbbedd31b49d4bdfe3ea97dcfdcc3f14b069b0c6a52",
+      "runId": "timing-2026-10-01T10-17-41-100Z-c052b3a4",
+      "suiteSha256": "16c96d2a443b74e60e7568e91016f0a8ac0040a497fe25fc9bd0393296dc1c5b"
+    },
+    {
+      "targetWeek": "2026-08-13T00:00:00.000Z",
+      "revision": "2825f1258e3c0c61976da5ec5619d8d283fa2b36",
+      "revisionDate": "2026-08-12T16:47:48-07:00",
+      "status": "measured",
+      "collectedAt": "2026-10-01T10:18:11.411191Z",
+      "failedCases": [
+        {
+          "workload": "wago/lz4/compress",
+          "scenario": "first-call",
+          "status": "preflight_failed",
+          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
+        },
+        {
+          "workload": "wago/lz4/compress",
+          "scenario": "compile",
+          "status": "preflight_failed",
+          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
+        },
+        {
+          "workload": "wago/lz4/compress",
+          "scenario": "instantiate",
+          "status": "preflight_failed",
+          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
+        },
+        {
+          "workload": "wago/lz4/compress",
+          "scenario": "steady",
+          "status": "preflight_failed",
+          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
+        }
+      ],
+      "reportSha256": "909efdfa0f7a5d615f4fe790aa043a9f156ef3f73ee3085d0f176ffca2c22426",
+      "runId": "timing-2026-10-01T10-18-10-100Z-be1648f9",
+      "suiteSha256": "16c96d2a443b74e60e7568e91016f0a8ac0040a497fe25fc9bd0393296dc1c5b"
+    },
+    {
+      "targetWeek": "2026-08-20T00:00:00.000Z",
+      "revision": "f9073ae76eb4481f29f3e4df6b6f0dbff51fe781",
+      "revisionDate": "2026-08-15T23:13:18-07:00",
+      "status": "measured",
+      "collectedAt": "2026-10-01T10:18:40.470908Z",
+      "failedCases": [
+        {
+          "workload": "wago/lz4/compress",
+          "scenario": "first-call",
+          "status": "preflight_failed",
+          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
+        },
+        {
+          "workload": "wago/lz4/compress",
+          "scenario": "compile",
+          "status": "preflight_failed",
+          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
+        },
+        {
+          "workload": "wago/lz4/compress",
+          "scenario": "instantiate",
+          "status": "preflight_failed",
+          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
+        },
+        {
+          "workload": "wago/lz4/compress",
+          "scenario": "steady",
+          "status": "preflight_failed",
+          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
+        }
+      ],
+      "reportSha256": "7e68278dd9c1892dd2942551260b7ce431a342f9aa4866641fc6e409d6ee7caa",
+      "runId": "timing-2026-10-01T10-18-39-125Z-0523489e",
+      "suiteSha256": "16c96d2a443b74e60e7568e91016f0a8ac0040a497fe25fc9bd0393296dc1c5b"
+    },
+    {
+      "targetWeek": "2026-08-27T00:00:00.000Z",
+      "revision": "cb32e996cf3fd24dbd54fafc05e4ea5203a23ae3",
+      "revisionDate": "2026-08-25T22:37:06-04:00",
+      "status": "measured",
+      "collectedAt": "2026-10-01T10:19:10.102115Z",
+      "failedCases": [],
+      "reportSha256": "6020adc229028696efd489f193f16a6f6919e48e780fdc63b55f3059eb337e2a",
+      "runId": "timing-2026-10-01T10-19-08-745Z-b2f81a30",
+      "suiteSha256": "16c96d2a443b74e60e7568e91016f0a8ac0040a497fe25fc9bd0393296dc1c5b"
+    },
+    {
+      "targetWeek": "2026-09-03T00:00:00.000Z",
+      "revision": "b40f0305906928dd415ae677fdfba5f1a608f464",
+      "revisionDate": "2026-09-02T16:07:12-04:00",
+      "status": "measured",
+      "collectedAt": "2026-10-01T10:19:38.284959Z",
+      "failedCases": [],
+      "reportSha256": "5cb3d1b834d48177f562cf3647d5e1d492c51fd3f68c834960e904e46f9dce5d",
+      "runId": "timing-2026-10-01T10-19-36-939Z-1955cb48",
+      "suiteSha256": "16c96d2a443b74e60e7568e91016f0a8ac0040a497fe25fc9bd0393296dc1c5b"
+    },
+    {
+      "targetWeek": "2026-09-10T00:00:00.000Z",
+      "revision": "3ca7525fa1f3e8962a4a46525883908ce0d44032",
+      "revisionDate": "2026-09-09T15:52:26-07:00",
+      "status": "measured",
+      "collectedAt": "2026-10-01T10:20:06.806615Z",
+      "failedCases": [],
+      "reportSha256": "3282478058123ebbcc1b960752fe45474099e91eecf08d74a2096227b87a52a0",
+      "runId": "timing-2026-10-01T10-20-05-446Z-f17ff079",
+      "suiteSha256": "16c96d2a443b74e60e7568e91016f0a8ac0040a497fe25fc9bd0393296dc1c5b"
+    },
+    {
+      "targetWeek": "2026-09-17T00:00:00.000Z",
+      "revision": "7ce41c25dc14bf409f0cb9e9e27c6232821f84b4",
+      "revisionDate": "2026-09-16T11:49:12-07:00",
+      "status": "measured",
+      "collectedAt": "2026-10-01T10:20:33.974837Z",
+      "failedCases": [],
+      "reportSha256": "b3db50df8a6dc262c3945fcce3c82e048eb26be3f020ec1ef8433f85fa71d36e",
+      "runId": "timing-2026-10-01T10-20-32-625Z-888018d5",
+      "suiteSha256": "16c96d2a443b74e60e7568e91016f0a8ac0040a497fe25fc9bd0393296dc1c5b"
+    },
+    {
+      "targetWeek": "2026-09-24T00:00:00.000Z",
+      "revision": "beeaab03ae931dbd1ab26748ad611441f2d20ed0",
+      "revisionDate": "2026-09-23T16:44:56-07:00",
+      "status": "measured",
+      "collectedAt": "2026-10-01T10:21:01.897925Z",
+      "failedCases": [],
+      "reportSha256": "4c0dd598a97ed9bfd8a86911e6d56421680e1f0fbc825c59afa5257b09cc1c38",
+      "runId": "timing-2026-10-01T10-21-00-528Z-d9a1c457",
+      "suiteSha256": "16c96d2a443b74e60e7568e91016f0a8ac0040a497fe25fc9bd0393296dc1c5b"
+    }
+  ]
 }

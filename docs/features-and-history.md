@@ -20,6 +20,8 @@ just deploy
 
 `just refresh` collects the selected Wago application corpus and every feature workload on both hosts, runs the worker tests, verifies the sealed evidence, and builds the site. The daily Actions schedule publishes the result directly to GitHub Pages. Thursday's second schedule also reconstructs the eight preceding weekly Wago revisions on both hosts. An immediate dispatch with `history=true` does the same backfill. The registered Mac coordinates `hub@hub`; both jobs use the shared Hub measurement lock and wait up to an hour behind other measurements. Existing host checkouts are preserved.
 
+Dispatch with `history_only=true` to refresh and deploy history against the already published application baseline without repeating the daily collection. Fresh source-only history workspaces build their independent analyzer before measuring historical engines.
+
 ## Original corpus
 
 `corpora/features/generator.mjs` produces 104 artifacts with 232 exact contracts across all 25 feature families represented by the website. Most execution cases vary through 1, 64, and 4,096 guest operations. Memory-bandwidth cases use 64, 4,096, and 65,536 bytes; compilation cases vary function/global/canonical-builtin counts. Scalar baselines are explicitly tagged and excluded from support claims. The corpus is original MIT code; adapted Preview 2 commands also contain the pinned Wasmtime command adapter and its license.

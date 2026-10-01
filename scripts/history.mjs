@@ -26,6 +26,10 @@ await writeFile(join(directory,'plan.json'),JSON.stringify(plan,null,2)+'\n');
 if (action === 'plan') { console.log(JSON.stringify(plan,null,2)); }
 else if (action === 'collect') await locked(async () => {
   const { root, run } = await harness();
+  // Remote workspaces contain source only. Build the independent analyzer once
+  // before copying it into each historical adapter workspace.
+  const analyzer = join(root,'adapters/wasmtime/target/release/wasm-analyze');
+  if (!await exists(analyzer)) command('cargo',['build','--release','--locked','--manifest-path',join(root,'adapters/wasmtime/Cargo.toml'),'--bin','wasm-analyze'],{stdio:'inherit',env:{...process.env,CARGO_TARGET_DIR:join(root,'adapters/wasmtime/target')}});
   const baseline = await exists(join(directory,'wago-suite.json')) ? join(directory,'wago-suite.json') : await prepareCorpus(settings,run,directory);
   const fixedWorkloads = JSON.parse(await readFile(baseline,'utf8'));
   const suiteSha256 = digest(await readFile(baseline));
@@ -52,7 +56,7 @@ else if (action === 'collect') await locked(async () => {
     }
     // Reuse the independently pinned analyzer; each engine binary is built here.
     await mkdir(join(isolated,'adapters/wasmtime/target/release'),{recursive:true});
-    await cp(join(root,'adapters/wasmtime/target/release/wasm-analyze'),join(isolated,'adapters/wasmtime/target/release/wasm-analyze'));
+    await cp(analyzer,join(isolated,'adapters/wasmtime/target/release/wasm-analyze'));
     const env = { ...process.env, WASMBENCH_ROOT: isolated, WAGO_SOURCE: worktree, WASMBENCH_SUITE: baseline,
       WASMBENCH_RUNTIMES:'wago', WASMBENCH_RECORD_FAILURES:'1', WASMBENCH_WARMUP:'0', WASMBENCH_LAUNCHES:process.env.WASMBENCH_LAUNCHES || '3', WASMBENCH_SAMPLES:process.env.WASMBENCH_SAMPLES || '3' };
     try {
