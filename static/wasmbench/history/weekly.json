@@ -620,7 +620,7 @@
       "revision": "391b8d19d52f001359cf269fe10186147e1fc6a5",
       "revisionDate": "2026-08-05T12:22:12-07:00",
       "status": "measured",
-      "collectedAt": "2026-10-01T10:17:42.517329Z",
+      "collectedAt": "2026-10-01T10:39:17.617653Z",
       "failedCases": [
         {
           "workload": "wago/lz4/compress",
@@ -647,8 +647,8 @@
           "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
         }
       ],
-      "reportSha256": "7b8ada6aa53879a905727cbbedd31b49d4bdfe3ea97dcfdcc3f14b069b0c6a52",
-      "runId": "timing-2026-10-01T10-17-41-100Z-c052b3a4",
+      "reportSha256": "126850019110841aacc602f233af04384438714cb73a7aa19dae506af957ebe7",
+      "runId": "timing-2026-10-01T10-39-16-571Z-8f7f0763",
       "suiteSha256": "16c96d2a443b74e60e7568e91016f0a8ac0040a497fe25fc9bd0393296dc1c5b"
     },
     {
@@ -656,7 +656,7 @@
       "revision": "2825f1258e3c0c61976da5ec5619d8d283fa2b36",
       "revisionDate": "2026-08-12T16:47:48-07:00",
       "status": "measured",
-      "collectedAt": "2026-10-01T10:18:11.411191Z",
+      "collectedAt": "2026-10-01T10:39:44.834134Z",
       "failedCases": [
         {
           "workload": "wago/lz4/compress",
@@ -683,8 +683,8 @@
           "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
         }
       ],
-      "reportSha256": "909efdfa0f7a5d615f4fe790aa043a9f156ef3f73ee3085d0f176ffca2c22426",
-      "runId": "timing-2026-10-01T10-18-10-100Z-be1648f9",
+      "reportSha256": "9b3495000ccf45dae8c7591a1719fb9c095bad06a78ff0d3b5af300125a81947",
+      "runId": "timing-2026-10-01T10-39-43-749Z-9f60b970",
       "suiteSha256": "16c96d2a443b74e60e7568e91016f0a8ac0040a497fe25fc9bd0393296dc1c5b"
     },
     {
@@ -692,7 +692,7 @@
       "revision": "f9073ae76eb4481f29f3e4df6b6f0dbff51fe781",
       "revisionDate": "2026-08-15T23:13:18-07:00",
       "status": "measured",
-      "collectedAt": "2026-10-01T10:18:40.470908Z",
+      "collectedAt": "2026-10-01T10:40:12.38623Z",
       "failedCases": [
         {
           "workload": "wago/lz4/compress",
@@ -719,8 +719,8 @@
           "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
         }
       ],
-      "reportSha256": "7e68278dd9c1892dd2942551260b7ce431a342f9aa4866641fc6e409d6ee7caa",
-      "runId": "timing-2026-10-01T10-18-39-125Z-0523489e",
+      "reportSha256": "b24a0ebac17b596e232260b1c9b968708c6ce9ede672610737b7373ee234bc8c",
+      "runId": "timing-2026-10-01T10-40-11-298Z-92d0e15f",
       "suiteSha256": "16c96d2a443b74e60e7568e91016f0a8ac0040a497fe25fc9bd0393296dc1c5b"
     },
     {
@@ -728,10 +728,10 @@
       "revision": "cb32e996cf3fd24dbd54fafc05e4ea5203a23ae3",
       "revisionDate": "2026-08-25T22:37:06-04:00",
       "status": "measured",
-      "collectedAt": "2026-10-01T10:19:10.102115Z",
+      "collectedAt": "2026-10-01T10:40:40.17539Z",
       "failedCases": [],
-      "reportSha256": "6020adc229028696efd489f193f16a6f6919e48e780fdc63b55f3059eb337e2a",
-      "runId": "timing-2026-10-01T10-19-08-745Z-b2f81a30",
+      "reportSha256": "39605cadfbd6225b3c775c0227f16a26878e9cc705fe86652eb7f4fb3c78e936",
+      "runId": "timing-2026-10-01T10-40-39-035Z-f7eb04a4",
       "suiteSha256": "16c96d2a443b74e60e7568e91016f0a8ac0040a497fe25fc9bd0393296dc1c5b"
     },
     {
@@ -739,10 +739,10 @@
       "revision": "b40f0305906928dd415ae677fdfba5f1a608f464",
       "revisionDate": "2026-09-02T16:07:12-04:00",
       "status": "measured",
-      "collectedAt": "2026-10-01T10:19:38.284959Z",
+      "collectedAt": "2026-10-01T10:41:07.023398Z",
       "failedCases": [],
-      "reportSha256": "5cb3d1b834d48177f562cf3647d5e1d492c51fd3f68c834960e904e46f9dce5d",
-      "runId": "timing-2026-10-01T10-19-36-939Z-1955cb48",
+      "reportSha256": "1e81575d2c6cd58dd6621a7ca83c1b76a954c386eb20b67ce59f507fd6ee0f7f",
+      "runId": "timing-2026-10-01T10-41-05-918Z-8d820156",
       "suiteSha256": "16c96d2a443b74e60e7568e91016f0a8ac0040a497fe25fc9bd0393296dc1c5b"
     },
     {
@@ -750,10 +750,10 @@
       "revision": "3ca7525fa1f3e8962a4a46525883908ce0d44032",
       "revisionDate": "2026-09-09T15:52:26-07:00",
       "status": "measured",
-      "collectedAt": "2026-10-01T10:20:06.806615Z",
+      "collectedAt": "2026-10-01T10:41:33.777817Z",
       "failedCases": [],
-      "reportSha256": "3282478058123ebbcc1b960752fe45474099e91eecf08d74a2096227b87a52a0",
-      "runId": "timing-2026-10-01T10-20-05-446Z-f17ff079",
+      "reportSha256": "a7c4e56cfd1d9f531927d664738cdcf2f6d791f70df0a542bb5fc72eb762ad63",
+      "runId": "timing-2026-10-01T10-41-32-658Z-d0d878cc",
       "suiteSha256": "16c96d2a443b74e60e7568e91016f0a8ac0040a497fe25fc9bd0393296dc1c5b"
     },
     {
@@ -761,10 +761,10 @@
       "revision": "7ce41c25dc14bf409f0cb9e9e27c6232821f84b4",
       "revisionDate": "2026-09-16T11:49:12-07:00",
       "status": "measured",
-      "collectedAt": "2026-10-01T10:20:33.974837Z",
+      "collectedAt": "2026-10-01T10:41:58.915751Z",
       "failedCases": [],
-      "reportSha256": "b3db50df8a6dc262c3945fcce3c82e048eb26be3f020ec1ef8433f85fa71d36e",
-      "runId": "timing-2026-10-01T10-20-32-625Z-888018d5",
+      "reportSha256": "24291fe5a2bba880b5150ea99ace77fc089840164205d01d519d79581f9cb79c",
+      "runId": "timing-2026-10-01T10-41-57-800Z-6c4b30e8",
       "suiteSha256": "16c96d2a443b74e60e7568e91016f0a8ac0040a497fe25fc9bd0393296dc1c5b"
     },
     {
@@ -772,10 +772,10 @@
       "revision": "beeaab03ae931dbd1ab26748ad611441f2d20ed0",
       "revisionDate": "2026-09-23T16:44:56-07:00",
       "status": "measured",
-      "collectedAt": "2026-10-01T10:21:01.897925Z",
+      "collectedAt": "2026-10-01T10:42:24.943061Z",
       "failedCases": [],
-      "reportSha256": "4c0dd598a97ed9bfd8a86911e6d56421680e1f0fbc825c59afa5257b09cc1c38",
-      "runId": "timing-2026-10-01T10-21-00-528Z-d9a1c457",
+      "reportSha256": "950c3b0b3a83c151264ed51fe9c3234180f8717bfb5ed24c1d3cba3574716589",
+      "runId": "timing-2026-10-01T10-42-23-800Z-5165ab4b",
       "suiteSha256": "16c96d2a443b74e60e7568e91016f0a8ac0040a497fe25fc9bd0393296dc1c5b"
     }
   ]
