@@ -4,6 +4,7 @@ import { command, config, site, locked } from './lib/wasmbench.mjs';
 // Serialize collection independently; update-data owns the installation lock.
 await locked(async () => {
   const settings=await config();
+  if((process.env.WASMBENCH_RUNTIMES || settings.collection.runtimes.join(',')).includes('wasmer-'))command(process.execPath,['--test','scripts/wasmer-adapter.test.mjs'],{stdio:'inherit',env:{...process.env,WASMBENCH_REQUIRE_WASMER_TESTS:'1'}});
   command(process.execPath, ['scripts/bench.mjs', 'collect'], { stdio: 'inherit' });
   const report = (await readFile(join(site, '.wasmbench/latest-report.txt'), 'utf8')).trim();
   const reports = [report];

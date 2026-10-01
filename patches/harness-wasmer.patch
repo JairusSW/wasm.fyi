@@ -1,8 +1,6 @@
-diff --git a/adapters/native/Cargo.toml b/adapters/native/Cargo.toml
-index c689585..83d727e 100644
 --- a/adapters/native/Cargo.toml
 +++ b/adapters/native/Cargo.toml
-@@ -9,6 +9,8 @@ wasmi = ["dep:wasmi"]
+@@ -9,6 +9,8 @@
  wavm = []
  wasm3 = []
  wasmedge = []
@@ -11,8 +9,6 @@ index c689585..83d727e 100644
  
  [dependencies]
  anyhow = "1"
-diff --git a/adapters/native/build.rs b/adapters/native/build.rs
-index 25b36c9..4f00468 100644
 --- a/adapters/native/build.rs
 +++ b/adapters/native/build.rs
 @@ -1,21 +1,30 @@
@@ -52,7 +48,7 @@ index 25b36c9..4f00468 100644
      println!("cargo:rerun-if-env-changed={key}");
      let sdk = PathBuf::from(env::var(&key).unwrap_or_else(|_| {
          panic!("set {key} to an installed runtime SDK prefix (include/ and lib/)")
-@@ -27,10 +36,16 @@ fn main() {
+@@ -27,10 +36,16 @@
          .cpp(true)
          .std("c++17")
          .include(sdk.join("include"))
@@ -71,7 +67,7 @@ index 25b36c9..4f00468 100644
          let version = env::var(&version_key).unwrap_or_else(|_| {
              panic!("set {version_key} to the selected SDK version or source commit")
          });
-@@ -44,7 +59,7 @@ fn main() {
+@@ -44,7 +59,7 @@
          build.define("WB_VERSION", Some(format!("\"{version}\"").as_str()));
      }
      build.compile("wb_embedding");
@@ -80,7 +76,7 @@ index 25b36c9..4f00468 100644
      println!("cargo:rerun-if-changed=src/embedding.h");
      println!(
          "cargo:rustc-link-search=native={}",
-@@ -52,7 +67,8 @@ fn main() {
+@@ -52,7 +67,8 @@
      );
      println!(
          "cargo:rustc-link-lib={}",
@@ -90,11 +86,18 @@ index 25b36c9..4f00468 100644
              "wavm" => "WAVM",
              "wasm3" => "m3",
              _ => "wasmedge",
-diff --git a/adapters/native/src/main.rs b/adapters/native/src/main.rs
-index f3f996d..81f13e8 100644
 --- a/adapters/native/src/main.rs
 +++ b/adapters/native/src/main.rs
-@@ -147,11 +147,17 @@ impl Adapter {
+@@ -14,6 +14,8 @@
+ mod ffi;
+ #[cfg(not(feature = "wasmi"))]
+ use ffi as embedding;
++#[cfg(any(feature="wasmer_llvm",feature="wasmer_singlepass"))]
++mod vectors;
+ const RUNTIME: &str = env!("WB_RUNTIME");
+ fn scenarios() -> Vec<&'static str> {
+     if cfg!(feature = "wasm3") {
+@@ -147,21 +149,34 @@
              "invalid protocol envelope"
          );
          match req["method"].as_str().unwrap_or("") {
@@ -111,12 +114,78 @@ index f3f996d..81f13e8 100644
 +                if cfg!(feature="wasmer_llvm") || cfg!(feature="wasmer_singlepass") {
 +                    description["description"]["validator_features"]=json!({"namespace":"wasmparser/0.251.0","evidence":"Pinned Wasmer 7.3.0 compiler configuration and explicit C API feature subset; Singlepass SIMD disabled after corpus instruction lowering failures; enabled validation is not a guarantee of complete backend support","supported":{"GC":false,"FUNCTION_REFERENCES":false,"MEMORY64":false,"STACK_SWITCHING":false,"SIMD":cfg!(feature="wasmer_llvm"),"RELAXED_SIMD":cfg!(feature="wasmer_llvm"),"EXCEPTIONS":cfg!(feature="wasmer_llvm"),"LEGACY_EXCEPTIONS":cfg!(feature="wasmer_llvm"),"TAIL_CALL":cfg!(feature="wasmer_llvm")}});
 +                }
++                if cfg!(feature="wasmer_llvm") || cfg!(feature="wasmer_singlepass") { description["description"]["capabilities"]["can_code_profile"]=json!(false);
++                    description["description"]["capabilities"]["can_run_vectors"]=json!(true);
++                    for name in ["compile","instantiate","first-call"] { description["description"]["capabilities"][format!("can_vector_{name}_phases")]=json!(true); }
++                    description["description"]["effective_configuration"]["vector_policy"]=json!("Fresh instance per ordered vector sequence; input writes and exact output verification excluded from sum of timed export lookups, integer marshalling and embedding calls; one operation per complete sequence; lifecycle windows match scalar API phases");
++                    description["description"]["effective_configuration"]["assemblyscript_abort_policy"]=json!("Only env.abort with four i32 parameters and no results; imported callback creates a real guest trap; no other host imports"); }
 +                Ok(description)
 +            },
              "prepare" => {
                  self.prep = None;
                  self.bytes.clear();
-@@ -243,8 +249,8 @@ impl Adapter {
+                 let p = &req["prepare"];
+                 let w = &p["workload"];
++                let vector_contract = (cfg!(feature="wasmer_llvm") || cfg!(feature="wasmer_singlepass")) && w["oracle"]["kind"] == "exact_vectors";
++                let assemblyscript = (cfg!(feature="wasmer_llvm") || cfg!(feature="wasmer_singlepass")) && w["host_profile"] == "assemblyscript-abort-v1";
+                 ensure!(
+                     ["timing", "memory"].contains(&field(p, "profile")?)
+                         && w["abi"] == "core"
+                         && ["stateless", "fresh_instance_per_sample"].contains(&field(w, "reset")?)
+-                        && w["oracle"]["kind"] == "exact_u64"
++                        && (w["oracle"]["kind"] == "exact_u64" || vector_contract)
+                         && !field(w, "export")?.is_empty(),
+                     "unsupported: core integer scalar timing/memory only"
+                 );
+@@ -176,6 +191,7 @@
+                     "guest_density",
+                     "snapshot_density",
+                 ] {
++                    if key == "host_profile" && assemblyscript || key == "vectors" && vector_contract { continue; }
+                     ensure!(
+                         w[key].is_null() || w[key] == "",
+                         "unsupported: extended workload contract {key}"
+@@ -189,6 +205,8 @@
+                 );
+                 values(&w["args"])?;
+                 values(&w["oracle"]["expected"])?;
++                #[cfg(any(feature="wasmer_llvm",feature="wasmer_singlepass"))]
++                if vector_contract { vectors::validate(w)?; }
+                 let bytes = fs::read(field(p, "artifact")?)?;
+                 ensure!(
+                     hex::encode(Sha256::digest(&bytes)) == field(p, "artifact_sha256")?,
+@@ -201,8 +219,8 @@
+                             "unsupported: core binary required"
+                         ),
+                         wasmparser::Payload::ImportSection(imports) => ensure!(
+-                            imports.count() == 0,
+-                            "unsupported: import-free modules only"
++                            imports.count() == 0 || assemblyscript,
++                            "unsupported: import-free modules or explicit AssemblyScript abort profile only"
+                         ),
+                         _ => {}
+                     }
+@@ -212,6 +230,8 @@
+                 Ok(json!({}))
+             }
+             "run" => {
++                #[cfg(any(feature="wasmer_llvm",feature="wasmer_singlepass"))]
++                if self.prep.as_ref().is_some_and(|p|p["workload"]["oracle"]["kind"] == "exact_vectors") { return self.run_vectors(req,input); }
+                 let p = self
+                     .prep
+                     .as_ref()
+@@ -237,14 +257,18 @@
+                 };
+                 let samples = bounded("samples", 1, 100000)?;
+                 let operations = bounded("operations", 1, 1000000)?;
+-                let warmup = bounded("warmup", 0, 100000)?;
++                let requested_warmup = bounded("warmup", 0, 100000)?;
++                // The harness protocol applies warmups only to steady samples.
++                // Fresh lifecycle samples must remain cold even when collection
++                // options also request warmups for steady measurements.
++                let warmup = if scenario != "steady" && (cfg!(feature = "wasmer_llvm") || cfg!(feature = "wasmer_singlepass")) { 0 } else { requested_warmup };
+                 ensure!(
+                     scenario == "steady" || (operations == 1 && warmup == 0),
                      "unsupported: lifecycle requires one operation and zero warmup"
                  );
                  ensure!(
@@ -127,7 +196,7 @@ index f3f996d..81f13e8 100644
                  );
                  let engine = embedding::Engine::new()?;
                  let shared = if scenario == "compile" || cfg!(feature = "wasm3") {
-@@ -256,7 +262,7 @@ impl Adapter {
+@@ -256,7 +280,7 @@
                  if scenario == "steady" && shared.is_none() {
                      steady_module = Some(engine.compile(&self.bytes)?);
                  }
@@ -136,7 +205,7 @@ index f3f996d..81f13e8 100644
                      let mut target =
                          engine.instantiate(shared.as_ref().or(steady_module.as_ref()).unwrap())?;
                      initialize(&mut target, w)?;
-@@ -291,7 +297,7 @@ impl Adapter {
+@@ -291,7 +315,7 @@
                      } else {
                          None
                      };
@@ -145,41 +214,24 @@ index f3f996d..81f13e8 100644
                          let mut target =
                              engine.instantiate(shared.as_ref().or(local.as_ref()).unwrap())?;
                          initialize(&mut target, w)?;
-diff --git a/experiment/extra_runtimes.go b/experiment/extra_runtimes.go
-index a2f7dc5..cdbeb77 100644
---- a/experiment/extra_runtimes.go
-+++ b/experiment/extra_runtimes.go
-@@ -58,7 +58,7 @@ func extraRuntimeCommand(root, id string) ([]string, bool, error) {
- 		return append(args, "runtime="+id, "binary-sha256="+digest), true, nil
- 	}
- 	switch id {
--	case "wasmi", "wavm", "wasm3", "wasmedge":
-+	case "wasmi", "wavm", "wasm3", "wasmedge", "wasmer-llvm", "wasmer-singlepass":
- 		return []string{NativeExecutable(filepath.Join(root, "bin", "adapter-"+id))}, true, nil
- 	}
- 	return nil, false, nil
-@@ -84,12 +84,12 @@ func validateExtraProbe(data []byte) error {
- // BuildExtraRuntime uses an installed shell or explicitly selected native SDK.
- // It never silently falls back to another runtime or downloads SDKs.
- func BuildExtraRuntime(ctx context.Context, root, id string) (bool, error) {
--	if !slices.Contains([]string{"wasmi", "wavm", "wasm3", "wasmedge", "spidermonkey", "jsc", "v8-shell", "deno"}, id) {
-+	if !slices.Contains([]string{"wasmi", "wavm", "wasm3", "wasmedge", "wasmer-llvm", "wasmer-singlepass", "spidermonkey", "jsc", "v8-shell", "deno"}, id) {
- 		return false, nil
- 	}
- 	switch id {
--	case "wasmi", "wavm", "wasm3", "wasmedge":
--		cmd := exec.CommandContext(ctx, "cargo", "build", "--release", "--locked", "--no-default-features", "--features", id, "--target-dir", filepath.Join(root, "adapters", "native", "target", id))
-+	case "wasmi", "wavm", "wasm3", "wasmedge", "wasmer-llvm", "wasmer-singlepass":
-+		cmd := exec.CommandContext(ctx, "cargo", "build", "--release", "--locked", "--no-default-features", "--features", strings.ReplaceAll(id, "-", "_"), "--target-dir", filepath.Join(root, "adapters", "native", "target", id))
- 		cmd.Dir = filepath.Join(root, "adapters", "native")
- 		cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
- 		if err := cmd.Run(); err != nil {
-diff --git a/adapters/native/src/wasmer.cpp b/adapters/native/src/wasmer.cpp
-new file mode 100644
-index 0000000..299f447
+--- a/adapters/native/src/ffi.rs
++++ b/adapters/native/src/ffi.rs
+@@ -74,6 +74,12 @@
+     }
+ }
+ impl Instance {
++    pub fn signature(&self,name:&str) -> Result<(Vec<u8>,Vec<u8>)> {
++        let name=CString::new(name)?;let mut params=[0u8;32];let mut results=[0u8;32];let mut np=32usize;let mut nr=32usize;
++        unsafe {ensure!(wb_signature(self.0.as_ptr(),name.as_ptr(),params.as_mut_ptr(),&mut np,results.as_mut_ptr(),&mut nr)==0,"{}",error());}
++        ensure!(np<=32 && nr<=32,"invalid signature bounds");
++        Ok((params[..np].to_vec(),results[..nr].to_vec()))
++    }
+     pub fn call(&mut self, name: &str, args: &[u64]) -> Result<Vec<u64>> {
+         let name = CString::new(name)?;
+         let mut params = [0u8; 32];
 --- /dev/null
 +++ b/adapters/native/src/wasmer.cpp
-@@ -0,0 +1,104 @@
+@@ -0,0 +1,126 @@
 +// Wasmer C API embedding: explicit compiler, fresh store for every instance.
 +#include "embedding.h"
 +#include <wasmer.h>
@@ -222,6 +274,13 @@ index 0000000..299f447
 +static uint8_t kind(const wasm_valtype_t* t) {
 +    auto k=wasm_valtype_kind(t);return k==WASM_I32?0x7f:k==WASM_I64?0x7e:0;
 +}
++static wasm_trap_t* assemblyscript_abort(void* env,const wasm_val_vec_t*,wasm_val_vec_t*) {
++    static const char text[]="AssemblyScript abort";
++    const wasm_message_t message={sizeof(text)-1,const_cast<char*>(text)};
++    auto trap=wasm_trap_new(static_cast<wasm_store_t*>(env),&message);
++    if(!trap)std::abort();
++    return trap;
++}
 +extern "C" {
 +const char* wb_error(){return wb_last_error.c_str();}
 +const char* wb_version(){return wasmer_version();}
@@ -253,7 +312,22 @@ index 0000000..299f447
 +void* wb_instance_new(void* value,void* module){WB_TRY{
 +    auto e=static_cast<Engine*>(value);auto m=static_cast<wasm_module_t*>(module);auto i=std::make_unique<Instance>();
 +    i->store=wasm_store_new(e->engine);if(!i->store)throw last_error("instance store");
-+    wasm_extern_vec_t imports=WASM_EMPTY_VEC;wasm_trap_t* trap=nullptr;
++    wasm_importtype_vec_t imported;wasm_module_imports(m,&imported);
++    std::unique_ptr<wasm_importtype_vec_t,decltype(&wasm_importtype_vec_delete)> imported_owner(&imported,wasm_importtype_vec_delete);
++    std::vector<std::unique_ptr<wasm_func_t,decltype(&wasm_func_delete)>> functions;
++    std::vector<wasm_extern_t*> values;
++    for(size_t k=0;k<imported.size;k++){
++        const auto name=wasm_importtype_name(imported.data[k]),space=wasm_importtype_module(imported.data[k]);
++        if(std::string(space->data,space->size)!="env" || std::string(name->data,name->size)!="abort")throw std::runtime_error("unsupported: only AssemblyScript env.abort import is bound");
++        const auto type=wasm_externtype_as_functype_const(wasm_importtype_type(imported.data[k]));
++        if(!type)throw std::runtime_error("unsupported: env.abort must be a function");
++        const auto params=wasm_functype_params(type),results=wasm_functype_results(type);
++        if(params->size!=4 || results->size!=0)throw std::runtime_error("unsupported: env.abort signature mismatch");
++        for(size_t n=0;n<params->size;n++)if(wasm_valtype_kind(params->data[n])!=WASM_I32)throw std::runtime_error("unsupported: env.abort requires four i32 parameters");
++        auto f=wasm_func_new_with_env(i->store,type,assemblyscript_abort,i->store,nullptr);
++        if(!f)throw last_error("abort callback");functions.emplace_back(f,wasm_func_delete);values.push_back(wasm_func_as_extern(f));
++    }
++    wasm_extern_vec_t imports={values.size(),values.data()};wasm_trap_t* trap=nullptr;
 +    i->instance=wasm_instance_new(i->store,m,&imports,&trap);
 +    if(trap)throw trap_error(trap);if(!i->instance)throw last_error("instantiate");
 +    wasm_instance_exports(i->instance,&i->exports);
@@ -284,3 +358,128 @@ index 0000000..299f447
 +    *n=wasm_memory_data_size(m);return reinterpret_cast<uint8_t*>(wasm_memory_data(m));
 +}WB_CATCH(nullptr)}
 +}
+--- /dev/null
++++ b/adapters/native/src/vectors.rs
+@@ -0,0 +1,95 @@
++// Ordered vector calls use one fresh instance per sequence. Input writes and
++// exact output checks stay outside the sum of timed embedding calls.
++use super::*;
++
++fn number(v: &Value, name: &str, maximum: u64) -> Result<usize> {
++    let value=v[name].as_u64().ok_or_else(||anyhow::anyhow!("invalid vector {name}"))?;
++    ensure!(value<=maximum,"vector {name} exceeds bound");
++    Ok(usize::try_from(value)?)
++}
++fn address(target: &mut embedding::Instance,v: &Value,key: &str,fallback: usize) -> Result<usize> {
++    match v[key].as_str().filter(|s|!s.is_empty()) {
++        None=>Ok(fallback),
++        Some(name)=>{
++            let (params,results)=target.signature(name)?;
++            ensure!(params.is_empty() && results==[0x7f],"unsupported: vector pointer export must be () -> i32");
++            let result=target.call(name,&[])?;Ok(usize::try_from(result[0])?)
++        }
++    }
++}
++pub(super) fn validate(w: &Value) -> Result<Vec<(Vec<u8>,Vec<u8>)>> {
++    ensure!(w["oracle"]["kind"]=="exact_vectors" && w["reset"]=="fresh_instance_per_sample" && w["input"].is_null()
++        && w["args"].as_array().is_some_and(|a|a.is_empty()) && w["oracle"]["expected"].as_array().is_some_and(|a|a.is_empty())
++        && w["oracle"]["memory"].as_array().is_none_or(|a|a.is_empty()) && w["oracle"]["output_pointer_export"].as_str().unwrap_or("").is_empty()
++        && w["host_profile"].as_str().unwrap_or("").is_empty(),"unsupported: ambiguous ordered vector contract");
++    let v=&w["vectors"];
++    number(v,"input_offset",u32::MAX as u64)?;number(v,"output_offset",u32::MAX as u64)?;
++    let output=number(v,"output_len",u32::MAX as u64)?;ensure!(output>0,"empty vector output");
++    let budget=number(w,"vector_byte_budget",64*1024*1024)?;
++    let modulus=if v["mod"].is_null(){0}else{number(v,"mod",u32::MAX as u64)?};
++    let cases=v["cases"].as_array().ok_or_else(||anyhow::anyhow!("vector cases required"))?;
++    ensure!(!cases.is_empty(),"empty vector sequence");
++    let mut total=0usize;let mut prepared=Vec::new();
++    for case in cases {
++        let length=number(case,"len",u32::MAX as u64)?;
++        total=total.checked_add(length).and_then(|n|n.checked_add(output)).ok_or_else(||anyhow::anyhow!("vector budget overflow"))?;
++        ensure!(total<=budget,"vector input/oracle byte budget exceeded");
++        let text=field(case,"out")?;ensure!(text.len()==output.checked_mul(2).ok_or_else(||anyhow::anyhow!("vector hex length overflow"))?,"vector oracle length mismatch");
++        let expected=hex::decode(text)?;
++        let input=(0..length).map(|i|if modulus==0{0}else{(i%modulus) as u8}).collect();
++        prepared.push((input,expected));
++    }
++    Ok(prepared)
++}
++impl Adapter {
++    pub(super) fn run_vectors(&self,req: &Value,input: &mut impl BufRead) -> Result<Value> {
++        let prep=self.prep.as_ref().ok_or_else(||anyhow::anyhow!("prepare required"))?;
++        let w=&prep["workload"];let v=&w["vectors"];let r=&req["run"];
++        let prepared=validate(w)?;
++        let scenario=field(r,"scenario")?;let profile=field(prep,"profile")?;
++        let phased=r["phase_barriers"].as_bool().unwrap_or(false);
++        ensure!(["compile","instantiate","first-call","steady"].contains(&scenario) && ["timing","memory"].contains(&profile),"unsupported: vector scenario/profile");
++        ensure!(!phased || profile=="memory" && scenario!="steady","unsupported: vector barriers require memory lifecycle scenario");
++        let samples=number(r,"samples",100000)?;ensure!(samples>0,"empty vector sample batch");
++        let requested_warmup=number(r,"warmup",100000)?;let warmup=if scenario=="steady"{requested_warmup}else{0};
++        ensure!(number(r,"operations",1000000)?>0,"empty vector operation batch");
++        let engine=embedding::Engine::new()?;
++        let shared=if scenario=="compile"{None}else{Some(engine.compile(&self.bytes)?)};
++        let stages=match scenario {"compile"=>["before_compile","compiled","released"],"instantiate"=>["before_instantiate","instantiated","instance_released"],_=>["before_first_call","first_call_returned","first_call_released"]};
++        let mut out=Vec::new();
++        for index in 0..samples+warmup {
++            let mut elapsed=0u128;
++            let mut owned=None;
++            if scenario=="compile" {
++                if phased{barrier(input,&req["id"],index,stages[0])?;}
++                let start=Instant::now();owned=Some(engine.compile(&self.bytes)?);elapsed=start.elapsed().as_nanos();
++                if phased{barrier(input,&req["id"],index,stages[1])?;}
++            }
++            if phased && scenario=="instantiate"{barrier(input,&req["id"],index,stages[0])?;}
++            let start=Instant::now();let mut target=engine.instantiate(shared.as_ref().or(owned.as_ref()).unwrap())?;
++            if scenario=="instantiate"{elapsed=start.elapsed().as_nanos();}
++            if phased && scenario=="instantiate"{barrier(input,&req["id"],index,stages[1])?;}
++            initialize(&mut target,w)?;
++            let export=field(w,"export")?;let (params,results)=target.signature(export)?;
++            ensure!(params==[0x7f,0x7f,0x7f] && results.iter().all(|t|[0x7f,0x7e].contains(t)),"unsupported: vector export requires three i32 arguments and integer results");
++            let from=address(&mut target,v,"input_ptr_export",number(v,"input_offset",u32::MAX as u64)?)?;
++            let to=address(&mut target,v,"output_ptr_export",number(v,"output_offset",u32::MAX as u64)?)?;
++            for (case,(data,expected)) in prepared.iter().enumerate() {
++                ensure!((from as u64)+(data.len() as u64)<=1u64<<32 && (to as u64)+(expected.len() as u64)<=1u64<<32,"vector address overflow");
++                range(&mut target,from,data.len())?.copy_from_slice(data);
++                if phased && scenario=="first-call" && case==0{barrier(input,&req["id"],index,stages[0])?;}
++                if ["first-call","steady"].contains(&scenario) {
++                    let start=Instant::now();target.call(export,&[from as u64,data.len() as u64,to as u64])?;elapsed=elapsed.checked_add(start.elapsed().as_nanos()).ok_or_else(||anyhow::anyhow!("elapsed overflow"))?;
++                } else {target.call(export,&[from as u64,data.len() as u64,to as u64])?;}
++                if phased && scenario=="first-call" && case+1==prepared.len(){barrier(input,&req["id"],index,stages[1])?;}
++                ensure!(range(&mut target,to,expected.len())?==expected,"incorrect result: vector {case} memory mismatch");
++            }
++            let mut sample=json!({"index":index,"warmup":index<warmup,"elapsed_ns":u64::try_from(elapsed)?,"operations":1,"sample_type":if ["first-call","steady"].contains(&scenario){"sequence_call_sum"}else{"individual_operation"},"verified":true});
++            if profile=="memory" {sample["observations"]=json!([{"metric":"guest.memory.logical","definition_version":1,"value":target.memory()?.len(),"unit":"bytes","scope":"guest_linear_memory","phase":format!("{scenario}/vector_verified"),"collector":"runtime memory API","collector_version":embedding::version(),"quality":"engine_reported","profile":"memory","status":"available","normalization_denominator":"instance"}]);}
++            drop(target);drop(owned);
++            if phased{barrier(input,&req["id"],index,stages[2])?;}
++            out.push(sample);
++        }
++        Ok(json!({"samples":out}))
++    }
++}
+--- a/experiment/extra_runtimes.go
++++ b/experiment/extra_runtimes.go
+@@ -58,7 +58,7 @@
+ 		return append(args, "runtime="+id, "binary-sha256="+digest), true, nil
+ 	}
+ 	switch id {
+-	case "wasmi", "wavm", "wasm3", "wasmedge":
++	case "wasmi", "wavm", "wasm3", "wasmedge", "wasmer-llvm", "wasmer-singlepass":
+ 		return []string{NativeExecutable(filepath.Join(root, "bin", "adapter-"+id))}, true, nil
+ 	}
+ 	return nil, false, nil
+@@ -84,12 +84,12 @@
+ // BuildExtraRuntime uses an installed shell or explicitly selected native SDK.
+ // It never silently falls back to another runtime or downloads SDKs.
+ func BuildExtraRuntime(ctx context.Context, root, id string) (bool, error) {
+-	if !slices.Contains([]string{"wasmi", "wavm", "wasm3", "wasmedge", "spidermonkey", "jsc", "v8-shell", "deno"}, id) {
++	if !slices.Contains([]string{"wasmi", "wavm", "wasm3", "wasmedge", "wasmer-llvm", "wasmer-singlepass", "spidermonkey", "jsc", "v8-shell", "deno"}, id) {
+ 		return false, nil
+ 	}
+ 	switch id {
+-	case "wasmi", "wavm", "wasm3", "wasmedge":
+-		cmd := exec.CommandContext(ctx, "cargo", "build", "--release", "--locked", "--no-default-features", "--features", id, "--target-dir", filepath.Join(root, "adapters", "native", "target", id))
++	case "wasmi", "wavm", "wasm3", "wasmedge", "wasmer-llvm", "wasmer-singlepass":
++		cmd := exec.CommandContext(ctx, "cargo", "build", "--release", "--locked", "--no-default-features", "--features", strings.ReplaceAll(id, "-", "_"), "--target-dir", filepath.Join(root, "adapters", "native", "target", id))
+ 		cmd.Dir = filepath.Join(root, "adapters", "native")
+ 		cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+ 		if err := cmd.Run(); err != nil {
