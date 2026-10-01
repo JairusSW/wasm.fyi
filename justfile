@@ -26,6 +26,12 @@ test:
 integration-audit:
     node scripts/integration-audit.mjs
 
+wasmer-preflight:
+    node scripts/wasmer-preflight.mjs local
+
+wasmer-preflight-hub:
+    node scripts/wasmer-preflight.mjs hub
+
 data-check:
     node scripts/check-data.mjs
 

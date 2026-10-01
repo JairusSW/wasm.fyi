@@ -6,6 +6,25 @@ import { validateData } from './validate-data.mjs';
 import { datasetFiles } from './snapshot-index.mjs';
 
 export async function stageAuxiliary(destination) {
+  const preflightSource=join(site,'data/wasmer-preflight');
+  if(await exists(preflightSource)) {
+    const target=join(destination,'preflight/wasmer');await mkdir(target,{recursive:true});
+    for(const name of await readdir(preflightSource)) {
+      assert(/^(darwin-arm64|linux-x64)\.json$/.test(name),'Unsafe Wasmer preflight path');
+      const data=JSON.parse(await readFile(join(preflightSource,name),'utf8'));
+      assert.equal(data.schema,1);
+      assert.equal(name,data.host.os+'-'+data.host.arch+'.json','Preflight host mismatch');
+      assert(data.scope.includes('Correctness preflight only'),'Preflight must not claim benchmark measurements');
+      assert.equal(digest(data.collector.source),data.collector.sourceSha256,'Native probe source digest mismatch');
+      for(const sha of [data.artifact.sha256,data.sdk.librarySha256,data.collector.executableSha256,...Object.values(data.sdk.headers)])assert(/^[a-f0-9]{64}$/.test(sha),'Invalid preflight input digest');
+      assert.deepEqual(data.configurations.map(c=>c.id),['wasmer-llvm','wasmer-singlepass']);
+      for(const configuration of data.configurations) {
+        assert(['ok','unavailable','failed','crashed'].includes(configuration.status));
+        if(configuration.status==='ok'){assert.equal(configuration.result,'3');assert.equal(configuration.exitCode,0);assert(configuration.version);}
+      }
+      await cp(join(preflightSource,name),join(target,name));
+    }
+  }
   for (const [sourceName,targetName] of [['history','history'],['history-hub','history-hub']]) {
     const source=join(site,'data',sourceName);
     if (!await exists(join(source,'index.json'))) continue;
