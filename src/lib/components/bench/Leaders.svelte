@@ -31,8 +31,8 @@
 						<span class="who">
 							<Swatch color={first.cfg.col} bg={first.cfg.hollow ? 'transparent' : first.cfg.col} size={9} />
 							<span class="w5">{first.cfg.rt}</span>
+							<span class="mono small fg3 backend">{first.cfg.be}</span>
 						</span>
-						<span class="mono small fg3 backend">{first.cfg.be}</span>
 					</span>
 					<span class="places" aria-label="Next places by measured mean">
 						{#each l.places.slice(1) as p (p.cfg.id)}
@@ -79,6 +79,17 @@
 		grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
 		gap: 16px;
 		align-items: start;
+	}
+	.first .who {
+		min-width: 0;
+		gap: 5px;
+	}
+	.first .w5 {
+		flex: none;
+	}
+	.first .backend {
+		min-width: 0;
+		flex: 1;
 	}
 	.first,
 	.places {
