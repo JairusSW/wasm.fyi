@@ -26,7 +26,6 @@
 				{@const first = l.places[0]}
 				<span class="results">
 					<span class="first" title={`${first.cfg.rt} ${first.cfg.be} · ${first.value}`}>
-						<span class="mono small fg3">1st</span>
 						<span class="mono value">{first.value}</span>
 						<span class="who">
 							<Swatch color={first.cfg.col} bg={first.cfg.hollow ? 'transparent' : first.cfg.col} size={9} />
