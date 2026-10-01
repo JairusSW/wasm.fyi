@@ -2,7 +2,7 @@
 
 A public, inspectable reference for comparing WebAssembly runtimes: what performs best for a workload, which runtimes support which features, what changed over time, and why.
 
-> **Preview:** every number on the site is synthetic and labeled as such.
+> The deployed UI consumes checksum-verified measured evidence. Missing, failed and unsupported results remain explicit; representative corpus tests are not complete specification conformance.
 
 ## Stack
 
@@ -42,9 +42,9 @@ The `build/` directory can be deployed to any static host. Unknown paths fall ba
 - **Drawers** (result cell, spec-test failures, runtime profile) are global and close on Esc.
 - **Keyboard:** `/` focuses search, ← → cycle the over-time metric on Benchmarks and History.
 
-## Replacing the synthetic data
+## Measured data
 
-The modules in `src/lib/data/` mirror the prototype's data shapes. When the harness publishes versioned snapshot JSON, load it in place of these modules and keep `model.ts` as the derivation layer.
+The modules in `src/lib/data/` retain the original UI data shapes. `scripts/view-data.mjs` regenerates the measured projection from checksum-verified report evidence before checks, tests and builds; `model.ts` remains the derivation layer.
 
 ## Update and deployment workflow
 
@@ -65,3 +65,14 @@ The existing pages now consume checksum-verified measurements for both hosts. Th
 The [feature and history workflow](docs/features-and-history.md) covers 232 feature
 contracts across all 25 displayed families, 32 real worker tests, and eight weekly
 Wago revisions. The existing views consume the verified data.
+
+## LLM and crawler access
+
+Every `pnpm build` (including `just verify` and the Pages deployment workflow)
+regenerates `/llms.txt`, `/llms-full.txt`, `/data/llm/index.json`, benchmark JSON
+shards, `robots.txt` and `sitemap.xml` from the same verified data as the UI.
+Generation is offline and deterministic. There is no separate scheduled job or
+manual copy of benchmark numbers to keep up to date.
+
+See [machine-readable access](docs/llm-access.md) for the data contract, provenance,
+URL/base-path behavior, and validation commands.

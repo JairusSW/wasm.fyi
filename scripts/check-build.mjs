@@ -1,6 +1,8 @@
+import { checkAiMetadata } from './ai-metadata.mjs';
 import assert from 'node:assert/strict';
-import { readFile, readdir, mkdtemp, rm } from 'node:fs/promises';
-import { join } from 'node:path';
+import { readFile, readdir, mkdtemp, rm, stat } from 'node:fs/promises';
+import { join, resolve, relative } from 'node:path';
+import { siteUrl } from './lib/ai-metadata.mjs';
 import { tmpdir } from 'node:os';
 import { stageAuxiliary } from './lib/auxiliary-data.mjs';
 import { featureSupport } from './lib/feature-support.mjs';
@@ -32,12 +34,30 @@ try {
   }
   await compare(expectedAux);
 } finally {await rm(expectedAux,{recursive:true,force:true});}
+await checkAiMetadata(join(site, 'build'));
 const root = await readFile(join(site, 'build/index.html'), 'utf8');
 assert(root.includes('The reference for WebAssembly runtimes.'), 'Homepage was not prerendered');
 const pages = await htmlFiles(join(site, 'build'));
+const buildRoot = join(site, 'build');
+const publicRoot = siteUrl('', process.env.BASE_PATH || '');
+async function checkPublicLink(href, from = publicRoot) {
+  const url = new URL(href, from);
+  assert(url.href.startsWith(publicRoot), `Link leaves configured public root: ${url}`);
+  const pathname = decodeURIComponent(url.pathname.slice(new URL(publicRoot).pathname.length));
+  const target = resolve(buildRoot, pathname, url.pathname.endsWith('/') ? 'index.html' : '');
+  assert(target.startsWith(buildRoot + '/'), `Unsafe output link: ${url}`);
+  assert((await stat(target)).isFile(), `Missing output link: ${url}`);
+}
+const sitemap = await readFile(join(buildRoot, 'sitemap.xml'), 'utf8');
+for (const match of sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)) await checkPublicLink(match[1].replaceAll('&amp;', '&'));
 for (const path of pages) {
   if (path.endsWith('/404.html')) continue;
   const html = await readFile(path, 'utf8');
+  const canonical = /<link rel="canonical" href="([^"]+)"/.exec(html)?.[1];
+  assert.equal(canonical, new URL(relative(buildRoot, path).replace(/index\.html$/, ''), publicRoot).href, `Wrong canonical URL: ${path}`);
+  const alternateLinks = [...html.matchAll(/<link rel="alternate"[^>]+href="([^"]+)"/g)];
+  assert.equal(alternateLinks.length, 3, `Missing machine discovery links: ${path}`);
+  for (const [, href] of alternateLinks) await checkPublicLink(href, canonical);
   assert(!/<h1[^>]*>500<\/h1>|500 Internal Error/.test(html), `Prerender error: ${path}`);
 }
 console.log(`Verified ${pages.length} static pages and ${index.reports.length} deployed evidence snapshots.`);
