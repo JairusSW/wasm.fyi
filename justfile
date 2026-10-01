@@ -23,6 +23,9 @@ test:
     node --test scripts/workflow.test.mjs scripts/feature-adapter.test.mjs
 
 # Validate gathered snapshots and their raw evidence.
+integration-audit:
+    node scripts/integration-audit.mjs
+
 data-check:
     node scripts/check-data.mjs
 
