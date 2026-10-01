@@ -22,15 +22,18 @@ export function aggregate(s:Scope,group:PerfGroup,cid:CfgId,col:number):Aggregat
 	const remember=(value:Aggregate|null)=>{if(cache.size>512)cache.clear();cache.set(key,value);return value;};
 	const os=s.machine==='m1'?'linux':'darwin';
 	const snapshot=s.snapshot || 's1';
-	const candidate=Object.entries(viewData.reports).find(([id,r])=>r.host===os && selected.every(c=>r.configurations.includes(viewData.configurations[c])) && viewData.catalogue.some(w=>viewCell(s.machine,snapshot,w.id,selected[0],metric).report===id));
+	// Feature probes have their own performance views; execution headlines
+	// compare application contracts, including first-call execution.
+	const workloads=group==='lat' && col>=2?viewData.catalogue.filter(w=>!w.id.startsWith('features/')):viewData.catalogue;
+	const candidate=Object.entries(viewData.reports).find(([id,r])=>r.host===os && selected.every(c=>r.configurations.includes(viewData.configurations[c])) && workloads.some(w=>viewCell(s.machine,snapshot,w.id,selected[0],metric).report===id));
 	if(!candidate)return remember(null);
 	const [report]=candidate;
 	const cell=(w:string,c:CfgId)=>viewCell(s.machine,snapshot,w,c,metric);
 	const available=(c:ViewCell)=>c.report===report && c.st==='ok' && c.v!=null && Number.isFinite(c.v) && c.v>0;
 	// An unavailable code/memory collector does not become zero or a slow result.
-	const participants=group==='lat'?selected:selected.filter(c=>viewData.catalogue.some(w=>available(cell(w.id,c))));
+	const participants=group==='lat'?selected:selected.filter(c=>workloads.some(w=>available(cell(w.id,c))));
 	if(!participants.includes(cid))return remember(null);
-	const cohort=viewData.catalogue.filter(w=>participants.every(c=>available(cell(w.id,c))));
+	const cohort=workloads.filter(w=>participants.every(c=>available(cell(w.id,c))));
 	if(!cohort.length)return remember(null);
 	const groupCounts=new Map<string,number>();for(const w of cohort)groupCounts.set(w.group,(groupCounts.get(w.group)||0)+1);
 	const weights=cohort.map(w=>s.weighting==='workload'?1/cohort.length:1/(groupCounts.size*groupCounts.get(w.group)!));

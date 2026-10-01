@@ -1,11 +1,31 @@
 import { readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
-import { ALLB } from './data/snapshot';
+import { ALLB, BENCH } from './data/snapshot';
 import { benchVal, type Scope } from './model';
 import { viewCell, viewData } from './view-data';
 
 const scope:Scope={machine:'m1',baseline:'A',hide:{},weighting:'corpus'};
 describe('existing workload views consume measured evidence',()=>{
+	it('groups applications by operation and places every feature group last',()=>{
+		const applications=ALLB.filter(w=>!w.id.startsWith('features/'));
+		expect(applications).toHaveLength(72);
+		expect(new Set(applications.map(w=>w.group)).size).toBeGreaterThan(5);
+		expect(BENCH.some(g=>g.g.includes('Wago'))).toBe(false);
+		for(const catalogue of [viewData.catalogue,ALLB]) {
+			const firstFeature=catalogue.findIndex(w=>w.id.startsWith('features/'));
+			expect(firstFeature).toBe(72);
+			expect(catalogue.slice(firstFeature).every(w=>w.id.startsWith('features/'))).toBe(true);
+		}
+		for(const [id,group] of [
+			['wago/json-as/serializeN','JSON & serialization'],
+			['wago/lz4/compress','Compression'],
+			['wago/polybench-gemm/polybench_run','Linear algebra'],
+			['wago/polybench-jacobi-2d/polybench_run','Stencils'],
+			['wago/drwav/pcm-decode-seek','Audio'],
+			['wago/raytrace/render','Graphics & images'],
+			['wago/utf-as/convertN','Text & parsing']
+		])expect(applications.find(w=>w.id===id)?.group).toBe(group);
+	});
 	it('uses exact workload identifiers and independent artifact digests',()=>{
 		expect(ALLB).toHaveLength(304);
 		expect(new Set(ALLB.map(b=>b.id)).size).toBe(ALLB.length);

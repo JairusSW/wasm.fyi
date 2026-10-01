@@ -2,6 +2,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { digest, site } from './lib/wasmbench.mjs';
 import { validateData } from './lib/validate-data.mjs';
+import { workloadCategory, compareWorkloads } from './lib/workload-category.mjs';
 import { measuredTiming, measuredMemory, measuredCodeImage, measuredHistory } from '../src/lib/measured.ts';
 
 // This is the view projection of verified evidence, never a source of measurements.
@@ -28,7 +29,7 @@ for (const report of reports) for (const w of report.workloads) {
   catalogue.set(w.id, {
     id:w.id, artifactSha256:w.sha256, evidenceScope:w.provenance?.scope, baseline:!!w.provenance?.baseline, tags:[...(w.features || []),...(w.original_contract?.tags || [])],
     kb:structure.bytes/1024, ms:baseline?.status==='ok'?baseline.value/1e6:null,
-    group:w.id.startsWith('wago/')?'Wago applications':`Features · ${w.provenance?.feature || w.features?.[0] || 'baseline'}`,
+    group:workloadCategory(w),
     purpose:w.original_contract?.desc || `${w.provenance?.scope || w.abi} · ${w.work_unit} · ${w.units_per_invocation} units/invocation`,
     input:JSON.stringify(w.args || w.vectors || []), src:w.source || w.generator,
     unitsPerInvocation:w.units_per_invocation, workUnit:w.work_unit, abi:w.abi, reset:w.reset, oracle:w.oracle, imports:structure.imports
@@ -37,7 +38,7 @@ for (const report of reports) for (const w of report.workloads) {
 const reasons=new Map();
 function reasonId(reason) { if(!reasons.has(reason)){reasons.set(reason,reasons.size);output.reasons.push(reason);}return reasons.get(reason); }
 const status = { ok:'ok', unsupported:'unsupported', failed:'failed', 'not-measured':'nm', 'not-collected':'nm' };
-const output = { schema:1, configurations, catalogue:[...catalogue.values()], hosts:{}, reports:{}, reasons:[],history:{},threads:{},statistics:{timingSamples:reports.reduce((n,r)=>n+r.summaries.reduce((n,s)=>n+(s.recorded_samples || 0),0),0)} };
+const output = { schema:1, configurations, catalogue:[...catalogue.values()].sort(compareWorkloads), hosts:{}, reports:{}, reasons:[],history:{},threads:{},statistics:{timingSamples:reports.reduce((n,r)=>n+r.summaries.reduce((n,s)=>n+(s.recorded_samples || 0),0),0)} };
 for (const report of reports) output.reports[report.id] = { runId:report.runId, created:report.created, evidence:report.evidence, sha256:report.evidenceSha256, options:report.options,memorySource:report.memorySource,codeSource:report.codeSource,configurations:report.runtimes.map(c=>c.id),host:report.host.os };
 for (const [machine, os] of [['m1','linux'],['m2','darwin']]) {
   const selected = reports.filter(r=>r.host.os===os);

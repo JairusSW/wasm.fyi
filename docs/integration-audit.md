@@ -1,6 +1,6 @@
 # Measured data integration audit
 
-The workload catalogue, result cells, aggregates, eight retrospective history points, representative feature tests, proposal results, memory/code details and reuse estimates consume measured evidence. `scripts/view-data.mjs` validates snapshots and generates a compact projection before checks, tests and builds. Aggregates use coherent report cohorts and resample independent launch blocks. Reuse estimates sum measured phase medians and remain explicitly modeled. Missing elapsed memory traces, code breakdowns, browser builds and worker-memory collectors remain unavailable. Reproduce the identity audit with `just integration-audit`.
+The workload catalogue, result cells, aggregates, eight retrospective history points, representative feature tests, proposal results, memory/code details and reuse estimates consume measured evidence. `scripts/view-data.mjs` validates snapshots and generates a compact projection before checks, tests and builds. Aggregates use coherent report cohorts and resample independent launch blocks. First-call and steady execution averages exclude feature probes; those contracts remain in dedicated feature performance views. Reuse estimates sum measured phase medians and remain explicitly modeled. Missing elapsed memory traces, code breakdowns, browser builds and worker-memory collectors remain unavailable. Reproduce the identity audit with `just integration-audit`.
 
 ## Current configuration mapping
 
@@ -14,7 +14,7 @@ The workload catalogue, result cells, aggregates, eight retrospective history po
 | F | V8 tiered | Default production tiering, different versions per host | Use each host's recorded engine version |
 | G | Wago interpreter | Wago Railshot | Do not put JIT measurements under an interpreter label |
 
-The catalogue uses the exact 304 measured identifiers and artifact digests, without aliases to preview workloads.
+The catalogue uses the exact 304 measured identifiers and artifact digests, without aliases to preview workloads. The 72 application contracts are grouped by operation into 12 categories, with all feature groups following the application groups. Category-balanced averages use these operation categories rather than the source repository.
 
 ## View contracts
 

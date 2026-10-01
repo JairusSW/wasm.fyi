@@ -6,10 +6,10 @@
 	import OverTime from '$lib/components/bench/OverTime.svelte';
 	import Workloads from '$lib/components/bench/Workloads.svelte';
 	import type { MetricKey } from '$lib/data/types';
-	import { isOff } from '$lib/model';
+	import { sharedCount } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 
-	const nShared = $derived(isOff(ui.scope, 'D') ? '1,108 shared workloads' : '1,112 shared workloads');
+	const nShared = $derived(`${sharedCount(ui.scope)} shared application workloads`);
 
 	/** Switch the per-workload matrix to a metric and bring it into view. */
 	async function showMetric(m: MetricKey) {
