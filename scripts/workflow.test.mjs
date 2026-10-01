@@ -1,9 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, writeFile, rm, mkdir } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile, rm, mkdir, stat, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { compact, digest, installDirectory } from './lib/wasmbench.mjs';
+import { command, compact, digest, installDirectory } from './lib/wasmbench.mjs';
+import { packEvidence, fileDigest } from './lib/evidence-archive.mjs';
 import { validateReport, validateData } from './lib/validate-data.mjs';
 
 function report() {
@@ -17,6 +18,30 @@ function report() {
 }
 
 test('retains true zero, missing intervals and partial failure outcomes', () => validateReport(report()));
+test('evidence transport preserves duplicate bytes and source files and retains failed passes', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'wasm-fyi-transport-'));
+  try {
+    const source = join(directory, 'source'), output = join(directory, 'output');
+    await mkdir(join(source, 'experiments/run/report/raw'), { recursive: true });
+    await mkdir(join(source, 'experiments/run/timing-run'), { recursive: true });
+    await mkdir(output);
+    const paths = ['experiments/run/report/data.json', 'experiments/run/report/raw/duplicate.json'];
+    for (const path of paths) await writeFile(join(source, path), 'same sealed bytes');
+    await writeFile(join(source, 'experiments/run/timing-run/partial.json'), 'partial evidence');
+    const archive = join(directory, 'evidence.tar.xz');
+    const metadata = await packEvidence(source, archive, true);
+    assert.equal(metadata.files, 2); assert.equal(metadata.uniqueFiles, 1);
+    assert.equal(metadata.sha256, await fileDigest(archive));
+    command('tar', ['-xJf', archive, '-C', output]);
+    for (const path of paths) assert.equal(await readFile(join(output, path), 'utf8'), 'same sealed bytes');
+    assert.equal((await stat(join(output, paths[0]))).ino, (await stat(join(output, paths[1]))).ino);
+    await writeFile(join(output, paths[0]), 'changed owned copy');
+    assert.equal(await readFile(join(source, paths[0]), 'utf8'), 'same sealed bytes');
+    assert.equal((await packEvidence(source, archive, false)).files, 3);
+    await symlink(join(source, paths[0]), join(source, 'unsafe-link'));
+    await assert.rejects(packEvidence(source, archive), /regular files only/);
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
 test('rejects diagnostic timing masquerading as latency', () => {
   const value = report(); value.summaries[0].latency_status = 'not_timing_pass';
   assert.throws(() => validateReport(value), /Diagnostic latency/);

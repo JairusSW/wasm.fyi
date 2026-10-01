@@ -14,6 +14,9 @@ if (action === 'status') {
   if (spawnSync('gtar', ['--version'], { stdio: 'ignore' }).status !== 0) {
     command('brew', ['install', 'gnu-tar'], { stdio: 'inherit' });
   }
+  if (spawnSync('xz', ['--version'], { stdio: 'ignore' }).status !== 0) {
+    command('brew', ['install', 'xz'], { stdio: 'inherit' });
+  }
   await mkdir(directory, { recursive: true });
   const repository = command('gh', ['repo', 'view', '--json', 'nameWithOwner', '--jq', '.nameWithOwner']).toString().trim();
   if (!await exists(join(directory, '.runner'))) {

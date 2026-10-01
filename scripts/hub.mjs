@@ -1,9 +1,10 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { homedir } from 'node:os';
 import { verifySeal } from './lib/verify-seal.mjs';
+import { fileDigest } from './lib/evidence-archive.mjs';
 import { command, config, digest, harness, site } from './lib/wasmbench.mjs';
 
 // Shell quoting is needed only at the SSH boundary; local tools use argv arrays.
@@ -20,11 +21,14 @@ const socket = join(sockets, digest(Buffer.from(site)).slice(0, 12));
 const options = ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=15', '-o', 'ServerAliveInterval=15', '-o', 'ServerAliveCountMax=3', '-o', 'ControlMaster=auto', '-o', 'ControlPersist=600', '-o', `ControlPath=${socket}`];
 const ssh = (script, timeout = 120_000) => command('ssh', [...options, host.ssh, 'bash -lc ' + quote(script)], { timeout });
 const remotePath = path => `${host.ssh}:${path}`;
-const rsync = (args) => command('rsync', ['-az', '-e', ['ssh', ...options.map(quote)].join(' '), ...args], { stdio: 'inherit', timeout: 30 * 60 * 1000 });
+const rsync = (args, compress = true) => command('rsync', ['-a', ...(compress ? ['-z'] : []), '-e', ['ssh', ...options.map(quote)].join(' '), ...args], { stdio: 'inherit', timeout: 30 * 60 * 1000 });
 const action = process.argv[2];
 if (action === 'doctor') {
-  process.stdout.write(ssh('export PATH="$HOME/.cargo/bin:$HOME/go/bin:$HOME/.local/bin:$PATH"; set -eu; uname -a; for tool in node go cargo rsync git flock; do command -v "$tool"; done; node --version; go version; cargo --version', 30_000));
+  command('gtar', ['--version']); command('xz', ['--version']);
+  process.stdout.write(ssh('export PATH="$HOME/.cargo/bin:$HOME/go/bin:$HOME/.local/bin:$PATH"; set -eu; uname -a; for tool in node go cargo rsync git flock tar xz; do command -v "$tool"; done; node --version; go version; cargo --version', 30_000));
 } else if (action === 'collect') {
+  command('gtar', ['--version']);
+  command('xz', ['--version']);
   // Copy source files into isolated, immutable-per-experiment directories. Neither
   // host's working checkout nor another experiment is reset or cleaned.
   const id = 'hub-' + new Date().toISOString().replace(/[:.]/g, '-') + '-' + randomUUID().slice(0, 8);
@@ -48,6 +52,8 @@ if (action === 'doctor') {
     await writeFile(join(local, `${name}-source.json`), JSON.stringify({ source, head: command('git', ['rev-parse', 'HEAD'], { cwd: source }).toString().trim(), status: command('git', ['status', '--porcelain'], { cwd: source }).toString() }, null, 2) + '\n');
   }
   rsync([join(site, 'scripts/bench.mjs'), remotePath(remote + '/site/scripts/')]);
+  rsync([join(site, 'scripts/pack-evidence.mjs'), remotePath(remote + '/site/scripts/')]);
+  rsync([join(site, 'scripts/lib/evidence-archive.mjs'), remotePath(remote + '/site/scripts/lib/')]);
   rsync([join(site, 'scripts/lib/wasmbench.mjs'), join(site, 'scripts/lib/corpus.mjs'), join(site, 'scripts/lib/harness-patch.mjs'), remotePath(remote + '/site/scripts/lib/')]);
   rsync([join(site, 'patches/winch-arm64-simd.patch'), join(site, 'patches/code-preflight.patch'), remotePath(remote + '/site/patches/')]);
   const remoteConfig = join(local, 'wasmbench.config.json');
@@ -63,8 +69,13 @@ if (action === 'doctor') {
     // Retain partial evidence too. A failed remote pass never updates site data.
     // Successful reports already contain complete sealed copies of each pass.
     // Keep all original pass directories on failure for diagnosis.
-    const exclusions = completed ? ['--exclude=experiments/*/timing-*', '--exclude=experiments/*/memory-*', '--exclude=experiments/*/code-*'] : [];
-    rsync([...exclusions, remotePath(remote + '/site/.wasmbench/'), local + '/']);
+    const metadata = JSON.parse(ssh(`export PATH="$HOME/.local/bin:$PATH"; set -eu; cd ${quote(remote + '/site')}; node scripts/pack-evidence.mjs .wasmbench ../evidence.tar.xz ${completed ? '--complete' : ''}`, 20 * 60 * 1000).toString());
+    const archive = join(local, 'evidence.tar.xz');
+    rsync([remotePath(remote + '/evidence.tar.xz'), archive], false);
+    if (await fileDigest(archive) !== metadata.sha256) throw new Error('Hub transport archive checksum mismatch');
+    command('gtar', ['-xJf', archive, '-C', local], { timeout: 15 * 60 * 1000 });
+    await writeFile(join(local, 'transport.json'), JSON.stringify(metadata, null, 2) + '\n');
+    await rm(archive);
   }
   const remoteReport = (await readFile(join(local, 'latest-report.txt'), 'utf8')).trim();
   const leaf = remoteReport.split('/').at(-2);

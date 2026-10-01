@@ -109,7 +109,12 @@ from the Mac's harness and Wago checkouts into new experiment directories on Hub
 builds adapters there, collects all three passes, and copies sealed evidence back.
 Existing Hub checkouts are untouched. Source HEAD and dirty status accompany the
 archive. Toolchain and runtime build identities remain in the sealed evidence.
-A persistent SSH control socket is reused during collection. Tailscale may require
+A persistent SSH control socket is reused during collection.
+Evidence travels in an XZ-compressed tar archive: identical files are hard-linked in
+an owned transport copy, so repeated runtime executables are stored once. Original
+experiment files stay intact. The controller verifies the archive digest, restores
+all paths, and then verifies the report seal and each raw bundle.
+Tailscale may require
 interactive authentication; authenticate before enabling unattended updates. If
 SSH access expires, the job fails and preserves the last published site.
 
@@ -147,9 +152,9 @@ configured harness/source checkouts. The selected runner is this Apple Silicon M
 
 Run `just runner-install` on this Apple Silicon Mac to register the `wasm-bench`
 runner and install its user LaunchAgent. The installer verifies the official runner
-archive checksum and installs GNU tar through Homebrew when needed for the
-macOS Pages packaging action; registration tokens are not written into the repository.
-Install Node, pnpm, just, Go and Rust on the Mac, and Node, Go, Rust and rsync on Hub.
+archive checksum and installs GNU tar and XZ through Homebrew when needed for
+Pages packaging and evidence transport; registration tokens are not written into the repository.
+Install Node, pnpm, just, Go and Rust on the Mac, and Node, Go, Rust, rsync, tar and XZ on Hub.
 The runner account must be able to read the harness and Wago source directories.
 The Mac must be awake with the runner user logged in, and Hub must be reachable.
 The LaunchAgent starts at login; `just runner-status` checks its local service.
