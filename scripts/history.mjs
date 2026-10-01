@@ -36,7 +36,9 @@ else if (action === 'collect') await locked(async () => {
   const results = [];
   for (const week of weeks) {
     const worktree = join(directory,'revisions',week.revision);
-    if (!await exists(worktree)) command('git',['worktree','add','--detach',worktree,week.revision],{cwd:source,stdio:'inherit'});
+    // Actions checkout can remove our files while Git retains registration in
+    // the separate source repository. Recover only this missing owned path.
+    if (!await exists(worktree)) command('git',['worktree','add','--force','--detach',worktree,week.revision],{cwd:source,stdio:'inherit'});
     const isolated = join(directory,'harness-'+week.revision);
     await mkdir(isolated,{recursive:true});
     const files = command('git',['ls-files','-z'],{cwd:root});
