@@ -1,0 +1,347 @@
+/* Design tokens — dark is the default theme. */
+:root {
+	--bg: #0d0e10;
+	--bg2: #131518;
+	--bg3: #1a1d21;
+	--line: #23272c;
+	--line2: #31363c;
+	--fg: #e4e6e9;
+	--fg2: #a6acb4;
+	--fg3: #7d848d;
+	--hover: #1c1f24;
+	--rt-wasmtime: oklch(0.72 0.13 255);
+	--rt-wasmer: oklch(0.79 0.13 75);
+	--rt-wazero: oklch(0.72 0.14 305);
+	--rt-v8: oklch(0.77 0.11 190);
+	--rt-wago: oklch(0.73 0.14 350);
+	--st-pass: oklch(0.72 0.14 150);
+	--st-fail: oklch(0.67 0.19 27);
+	--st-crash: oklch(0.62 0.21 5);
+	--st-warn: oklch(0.77 0.14 60);
+	--st-skip: #495058;
+	--good: oklch(0.72 0.11 170);
+	--bad: oklch(0.72 0.13 45);
+	--focus: oklch(0.82 0.14 95);
+	--sans: 'IBM Plex Sans', system-ui, sans-serif;
+	--mono: 'IBM Plex Mono', ui-monospace, monospace;
+	--shadow-float: 0 6px 18px rgba(0, 0, 0, 0.28);
+	color-scheme: dark;
+}
+[data-theme='light'] {
+	--bg: #f6f6f4;
+	--bg2: #ffffff;
+	--bg3: #f0f0ed;
+	--line: #e3e3df;
+	--line2: #cfcfca;
+	--fg: #16171a;
+	--fg2: #4a4e55;
+	--fg3: #676c74;
+	--hover: #f1f1ee;
+	--rt-wasmtime: oklch(0.54 0.16 255);
+	--rt-wasmer: oklch(0.62 0.14 70);
+	--rt-wazero: oklch(0.54 0.17 305);
+	--rt-v8: oklch(0.57 0.11 195);
+	--rt-wago: oklch(0.57 0.18 355);
+	--st-pass: oklch(0.56 0.14 150);
+	--st-fail: oklch(0.55 0.2 27);
+	--st-crash: oklch(0.5 0.2 5);
+	--st-warn: oklch(0.6 0.15 60);
+	--st-skip: #c7c9cc;
+	--good: oklch(0.62 0.12 170);
+	--bad: oklch(0.64 0.15 45);
+	--focus: oklch(0.55 0.18 250);
+	color-scheme: light;
+}
+
+/* Base */
+html,
+body {
+	margin: 0;
+	background: var(--bg);
+}
+body {
+	color: var(--fg);
+	font-family: var(--sans);
+	font-size: 13px;
+	line-height: 1.45;
+	-webkit-font-smoothing: antialiased;
+}
+a {
+	color: var(--fg);
+	text-decoration: underline;
+	text-decoration-color: var(--line2);
+	text-underline-offset: 2px;
+}
+a:hover {
+	text-decoration-color: var(--fg);
+}
+:focus-visible {
+	outline: 2px solid var(--focus);
+	outline-offset: 1px;
+}
+button,
+select,
+input {
+	font: inherit;
+	color: inherit;
+}
+button {
+	background: none;
+	border: 0;
+	padding: 0;
+	cursor: pointer;
+	text-align: inherit;
+}
+select {
+	background: var(--bg2);
+	border: 1px solid var(--line2);
+	padding: 3px 6px;
+	border-radius: 0;
+}
+h1,
+h2,
+h3,
+p {
+	margin: 0;
+}
+
+/* Type helpers */
+.mono {
+	font-family: var(--mono);
+	font-variant-numeric: tabular-nums;
+}
+.fg2 {
+	color: var(--fg2);
+}
+.fg3 {
+	color: var(--fg3);
+}
+.small {
+	font-size: 11px;
+}
+.micro {
+	font-size: 10px;
+}
+.nowrap {
+	white-space: nowrap;
+}
+.r {
+	text-align: right;
+}
+.kicker {
+	font-size: 11px;
+	color: var(--fg3);
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+}
+.note {
+	font-size: 11px;
+	color: var(--fg3);
+}
+.lede {
+	font-size: 12px;
+	color: var(--fg2);
+}
+
+/* Links styled as text */
+.link {
+	color: var(--fg);
+	text-decoration: underline;
+	text-decoration-color: var(--line2);
+	text-underline-offset: 3px;
+}
+.link:hover {
+	text-decoration-color: var(--fg);
+}
+.link-quiet {
+	color: var(--fg2);
+	text-decoration: underline;
+	font-size: 12px;
+}
+
+/* Buttons */
+.btn-primary {
+	display: inline-block;
+	background: var(--fg);
+	color: var(--bg);
+	border: 0;
+	padding: 10px 18px;
+	font-size: 14px;
+	font-weight: 500;
+	text-decoration: none;
+}
+.btn-outline {
+	display: inline-block;
+	background: none;
+	color: var(--fg);
+	border: 1px solid var(--line2);
+	padding: 10px 18px;
+	font-size: 14px;
+	text-decoration: none;
+}
+.btn-outline:hover {
+	background: var(--hover);
+}
+.btn-small {
+	border: 1px solid var(--line2);
+	padding: 3px 8px;
+	font-size: 12px;
+	color: var(--fg2);
+}
+
+/* Surfaces */
+.panel {
+	border: 1px solid var(--line);
+	background: var(--bg2);
+}
+.card {
+	border: 1px solid var(--line);
+	background: var(--bg2);
+	padding: 12px 14px;
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+}
+.card-title {
+	font-weight: 600;
+}
+.tiles {
+	display: grid;
+	gap: 1px;
+	background: var(--line);
+	border: 1px solid var(--line);
+}
+.tiles > * {
+	background: var(--bg2);
+}
+.cards {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr));
+	gap: 14px;
+}
+.stack {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+.row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 14px;
+}
+
+/* Tables */
+.tbl-wrap {
+	overflow: auto;
+	border: 1px solid var(--line);
+	background: var(--bg2);
+}
+table.t {
+	border-collapse: collapse;
+	width: 100%;
+	font-size: 12px;
+}
+table.t th {
+	text-align: left;
+	padding: 6px 12px;
+	font-weight: 500;
+	font-size: 11px;
+	color: var(--fg3);
+	border-bottom: 1px solid var(--line);
+	white-space: nowrap;
+}
+table.t td {
+	padding: 5px 12px;
+	border-bottom: 1px solid var(--line);
+}
+table.t .r {
+	text-align: right;
+}
+
+/* Sticky matrix tables */
+table.mx {
+	border-collapse: separate;
+	border-spacing: 0;
+	width: 100%;
+}
+table.mx th {
+	background: var(--bg2);
+	border-bottom: 1px solid var(--line2);
+	font-weight: 500;
+	white-space: nowrap;
+}
+table.mx thead th {
+	position: sticky;
+	top: 0;
+	z-index: 2;
+}
+table.mx .stick {
+	position: sticky;
+	left: 0;
+	z-index: 1;
+	background: var(--bg2);
+}
+table.mx thead th.stick {
+	z-index: 3;
+}
+table.mx td {
+	border-bottom: 1px solid var(--line);
+}
+table.mx td + td,
+table.mx th + th {
+	border-left: 1px solid var(--line);
+}
+table.mx tr.sec td {
+	background: var(--bg3);
+}
+.th-label {
+	text-align: left;
+	padding: 8px 12px;
+	font-size: 11px;
+	color: var(--fg3);
+}
+
+/* Cell buttons inside matrices */
+.cellbtn {
+	display: block;
+	width: 100%;
+	border: 0;
+	text-align: right;
+}
+.cellbtn:hover {
+	outline: 1px solid var(--fg3);
+	outline-offset: -1px;
+}
+.hoverbg:hover {
+	background: var(--hover);
+}
+
+/* Horizontal bar rows (runtime label · bar · value) */
+.bar-row {
+	display: grid;
+	grid-template-columns: 140px 1fr 120px;
+	gap: 8px;
+	align-items: center;
+	font-size: 12px;
+}
+.bar {
+	height: 8px;
+	opacity: 0.85;
+}
+
+/* SVG overlay labels */
+.axis-label {
+	position: absolute;
+	font-size: 10px;
+	color: var(--fg3);
+	font-family: var(--mono);
+	white-space: nowrap;
+	pointer-events: none;
+	line-height: 1;
+}
+.float {
+	background: var(--bg);
+	border: 1px solid var(--line2);
+	box-shadow: var(--shadow-float);
+}
