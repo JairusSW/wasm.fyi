@@ -21,14 +21,6 @@ import { historyCell, historyChange, historySegments } from '$lib/history-values
 	const X = (i: number) => pl + (i * (W - pl - pr)) / (SNAPS.length-1);
 	const STEP = (W - pl - pr) / (SNAPS.length-1);
 	const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-	const SUB = {
-		exec: 'steady execution per call',
-		compile: 'compilation time',
-		inst: 'instantiation time',
-		mem: 'process lifetime peak RSS',
-		code: 'extracted native image',
-		cov: 'correct contracts in the fixed historical corpus (higher is better)'
-	};
 	const NOTE = {
 		exec: 'steady-state per call',
 		compile: 'module compile time',
@@ -221,9 +213,7 @@ import { historyCell, historyChange, historySegments } from '$lib/history-values
 
 <div class="head">
 	<h1>History</h1>
-	<span class="s12 fg3"
-		>Retrospective Wago revisions · {SUB[M.key]} · frozen cohort · fixed comparison-engine baseline{isCov ? ' · workload table below shows execution' : ''}</span
-	>
+	<span class="subtitle fg3">Retrospective Wago revisions · frozen cohort · fixed comparison-engine baseline</span>
 </div>
 <Tabs options={OTM_KEYS.map((k) => [k, OTM[k].l])} value={ui.otMetric} onselect={(k) => (ui.otMetric = k)} />
 <Carousel title="{M.l} History" sub="{oi + 1} / {OTM_KEYS.length} · {NOTE[M.key]}" onprev={() => step(-1)} onnext={() => step(1)} noun="metric" />
@@ -355,6 +345,7 @@ import { historyCell, historyChange, historySegments } from '$lib/history-values
 		<span class="mono small fg3">{rep.range}</span>
 		<span class="small fg3 push">threshold ±2% · change must clear threshold including 95% CI</span>
 	</div>
+	{#if isCov}<div class="note">The workload change report shows execution.</div>{/if}
 	{#if rep.spans}
 		<div class="warn">
 			This range crosses a recorded measurement boundary; do not attribute the difference to the runtime alone.
@@ -409,6 +400,10 @@ import { historyCell, historyChange, historySegments } from '$lib/history-values
 	h1 {
 		font-size: 16px;
 		font-weight: 600;
+	}
+	.subtitle {
+		font-size: 11px;
+		line-height: 16px;
 	}
 	.s12 {
 		font-size: 12px;

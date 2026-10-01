@@ -16,8 +16,8 @@
 	<div class="head">
 		<button class="arrow" onclick={onprev} aria-label="Previous {noun}">‹</button>
 		<div class="titles">
-			<span class="title">{title}</span>
-			<span class="sub">{sub}</span>
+			<span class="title" title={title}>{title}</span>
+			<span class="sub" title={sub}>{sub}</span>
 		</div>
 		<button class="arrow" onclick={onnext} aria-label="Next {noun}">›</button>
 	</div>
@@ -30,11 +30,17 @@
 		flex-wrap: wrap;
 		align-items: center;
 		gap: 4px 12px;
+		max-width: 100%;
+		min-width: 0;
 	}
 	.head {
-		display: flex;
+		display: grid;
+		grid-template-columns: 28px minmax(0, 1fr) 28px;
 		align-items: center;
 		gap: 10px;
+		width: 440px;
+		max-width: 100%;
+		flex: none;
 		min-width: 0;
 	}
 	.arrow {
@@ -61,9 +67,17 @@
 	.title {
 		font-size: 15px;
 		font-weight: 600;
+		line-height: 20px;
 	}
 	.sub {
-		font-size: 11px;
+		font-size: 10px;
+		line-height: 14px;
 		color: var(--fg3);
+	}
+	.title,
+	.sub {
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 </style>
