@@ -9,7 +9,8 @@ if (!isMainThread) {
   parentPort.on('message', ({operations,address}) => { instance.exports.increment(operations,address); parentPort.postMessage('done'); });
   parentPort.postMessage('ready');
 } else {
-  const collectorSha256=digest(await readFile(fileURLToPath(import.meta.url)));
+  const collectorSource=await readFile(fileURLToPath(import.meta.url),'utf8');
+  const collectorSha256=digest(collectorSource);
   const nodeExecutableSha256=digest(await readFile(process.execPath));
   const artifact = await readFile(join(site,'corpora/features/artifacts/threads-workers.wasm'));
   const source = await readFile(join(site,'corpora/features/sources/threads-workers.wat'));
@@ -55,7 +56,7 @@ if (!isMainThread) {
   if(digest(await readFile(fileURLToPath(import.meta.url)))!==collectorSha256)throw new Error('Worker collector source changed during measurement');
   const result={schema:1,created:new Date().toISOString(),feature:'threads',configuration:'Node worker_threads / shared imported WebAssembly.Memory',
     host:{hostname:hostname(),os:platform(),arch:arch(),logicalCpus:cpus().length},node:process.version,v8:process.versions.v8,flags:process.execArgv,
-    artifactSha256:digest(artifact),sourceSha256:digest(source),collectorSha256,nodeExecutableSha256,collector:'node:process.hrtime.bigint',
+    artifactSha256:digest(artifact),sourceSha256:digest(source),collectorSha256,collectorSource,nodeExecutableSha256,collector:'node:process.hrtime.bigint',
     policy:'Three independently created worker groups; one warmup and three verified batches each. Timer includes message dispatch, concurrent guest atomic increments and completion messages, excludes module compilation/worker startup and oracle checks. Disjoint counters are 64 bytes apart. No CPU affinity or frequency control.',results};
   const bytes=JSON.stringify(result)+'\n';const sha256=digest(bytes);
   const directory=join(site,'data/threads');await mkdir(directory,{recursive:true});

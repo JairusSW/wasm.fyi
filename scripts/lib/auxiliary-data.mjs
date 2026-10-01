@@ -36,7 +36,7 @@ export async function stageAuxiliary(destination) {
         const pointer=JSON.parse(await readFile(join(source,name),'utf8'));
         assert(/^[a-f0-9]{64}\.json$/.test(pointer.evidence),'Unsafe thread evidence reference');
         const bytes=await readFile(join(source,pointer.evidence));assert.equal(digest(bytes),pointer.sha256);
-        const data=JSON.parse(bytes);assert.equal(data.feature,'threads');assert.equal(data.results.length,32);
+        const data=JSON.parse(bytes);if(data.collectorSource)assert.equal(digest(data.collectorSource),data.collectorSha256,'Worker collector source digest mismatch');assert.equal(data.feature,'threads');assert.equal(data.results.length,32);
         for(const result of data.results) {assert.equal(result.launches.length,3);for(const launch of result.launches){assert.equal(launch.samples.length,3);for(const sample of launch.samples)assert(sample.verified && sample.elapsedNs>=0);}}
       }
       await cp(join(source,name),join(target,name));
