@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { homedir, hostname, platform, arch } from 'node:os';
 import { resolve, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { site, config, command, digest, locked } from './lib/wasmbench.mjs';
+import { site, config, command, digest, locked, exists } from './lib/wasmbench.mjs';
 
 const action = process.argv[2] || 'local';
 const source = join(site, 'scripts/probes/wasmer-backends.c');
@@ -11,11 +11,16 @@ const artifact = join(site, 'corpora/features/artifacts/core-num-integer-multipl
 const hashFile = async path => digest(await readFile(path));
 const quote = value => "'" + String(value).replaceAll("'", "'\\''") + "'";
 if (action === 'local') await locked(async () => {
-  const sdk = resolve(process.env.WASMBENCH_WASMER_SDK || join(homedir(), '.wasmer'));
+  const managed = join(homedir(), '.local/share/wasm-fyi/toolchains/wasmer-c-api-7.3.0/sdk');
+  const sdk = resolve(process.env.WASMBENCH_WASMER_SDK || (await exists(join(managed,'build.json')) ? managed : join(homedir(), '.wasmer')));
   const library = join(sdk, 'lib', platform() === 'darwin' ? 'libwasmer.dylib' : 'libwasmer.so');
   const headers = {};
   for (const name of (await readdir(join(sdk, 'include'))).filter(name => /\.(h|hh)$/.test(name)).sort()) headers[name] = await hashFile(join(sdk, 'include', name));
   const librarySha256 = await hashFile(library);
+  const manifestPath=join(sdk,'build.json');
+  const buildBytes=await exists(manifestPath)?await readFile(manifestPath):null;
+  const build=buildBytes?JSON.parse(buildBytes):null;
+  if(build && build.librarySha256!==librarySha256)throw new Error('Managed SDK library differs from its build manifest');
   const sourceBytes = await readFile(source);
   const artifactSha256 = await hashFile(artifact);
   const directory = join(site, '.wasmbench/wasmer-preflight');
@@ -34,11 +39,12 @@ if (action === 'local') await locked(async () => {
   }
   if (librarySha256 !== await hashFile(library) || digest(sourceBytes) !== await hashFile(source)) throw new Error('SDK library or probe source changed during preflight');
   if (artifactSha256 !== await hashFile(artifact) || executableSha256 !== await hashFile(executable)) throw new Error('Artifact or probe executable changed during preflight');
+  if(buildBytes && digest(buildBytes)!==await hashFile(manifestPath))throw new Error('SDK build manifest changed during preflight');
   for (const [name, sha] of Object.entries(headers)) if (sha !== await hashFile(join(sdk, 'include', name))) throw new Error('SDK headers changed during preflight');
   const report = { schema: 1, collectedAt: new Date().toISOString(), host: { hostname: hostname(), os: platform(), arch: arch() },
     scope: 'Native SDK compile, instantiate and exact integer export call. Correctness preflight only; no timing, memory, code-size or general feature-support claim.',
     artifact: { id: 'features/core-num/integer-multiply-add/1', sha256: artifactSha256, args: ['1'], oracle: { kind: 'exact_u64', expected: ['3'] } },
-    sdk: { path: sdk, library, librarySha256, headers }, compiler: { version: command('cc', ['--version']).toString().split('\n')[0], argv: ['cc', ...args] },
+    sdk: { path: sdk, library, librarySha256, headers, build, buildManifestSource:buildBytes?buildBytes.toString():null, buildManifestSha256:buildBytes?digest(buildBytes):null }, compiler: { version: command('cc', ['--version']).toString().split('\n')[0], argv: ['cc', ...args] },
     collector: { source: sourceBytes.toString(), sourceSha256: digest(sourceBytes), executableSha256 }, configurations };
   const destination = join(site, 'data/wasmer-preflight');
   await mkdir(destination, { recursive: true });

@@ -16,6 +16,7 @@ export async function stageAuxiliary(destination) {
       assert.equal(name,data.host.os+'-'+data.host.arch+'.json','Preflight host mismatch');
       assert(data.scope.includes('Correctness preflight only'),'Preflight must not claim benchmark measurements');
       assert.equal(digest(data.collector.source),data.collector.sourceSha256,'Native probe source digest mismatch');
+      if(data.sdk.build){assert.equal(digest(data.sdk.buildManifestSource),data.sdk.buildManifestSha256,'SDK build manifest digest mismatch');assert.deepEqual(JSON.parse(data.sdk.buildManifestSource),data.sdk.build);assert.equal(data.sdk.build.librarySha256,data.sdk.librarySha256);}
       for(const sha of [data.artifact.sha256,data.sdk.librarySha256,data.collector.executableSha256,...Object.values(data.sdk.headers)])assert(/^[a-f0-9]{64}$/.test(sha),'Invalid preflight input digest');
       assert.deepEqual(data.configurations.map(c=>c.id),['wasmer-llvm','wasmer-singlepass']);
       for(const configuration of data.configurations) {

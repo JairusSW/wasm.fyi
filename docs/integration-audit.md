@@ -41,4 +41,8 @@ The history accessor checks host identity and weekly manifest provenance, retain
 
 On the Mac's installed 7.3.0 SDK, Singlepass passes this native preflight. The SDK reports LLVM is not compiled in, even though the installed CLI can compile the same module with LLVM. Therefore an LLVM native adapter needs an SDK build that enables LLVM; CLI flag presence cannot substitute for a working embedded backend. The LLVM compiler crate for this version selects LLVM 22; the Mac has LLVM 22.1.8, while Hub currently has LLVM 18. Host SDK versions also differ. These facts must be resolved or recorded before collecting comparable configurations.
 
+`just wasmer-sdk-build` builds an isolated SDK from release commit `35c10644f7b0aad6fd9458624ceb8429fe7413c4`, with LLVM, Singlepass, Cranelift and WASI enabled. Cranelift is required by the upstream default C API configuration constructor before another compiler can be selected. The build checks the LLVM 22.1 prefix, initializes the pinned NAPI submodule, uses the release's locked dependencies, packages generated headers and records source, compiler and library digests. Set `WASMBENCH_LLVM_PREFIX` on hosts whose LLVM 22.1 installation is elsewhere.
+
+The managed Mac SDK passes the native call probe with **both LLVM and Singlepass**. `just wasmer-preflight` prefers this SDK once built; `WASMBENCH_WASMER_SDK` can explicitly select another prefix. Existing installed SDKs are preserved. This resolves the Mac backend prerequisite; protocol adapters and full benchmark collection for these configurations are still outstanding.
+
 Primary API references: [Wasmer Rust API](https://wasmerio.github.io/wasmer/crates/doc/wasmer/) and [Wasmer LLVM 7.3.0 source](https://docs.rs/crate/wasmer-compiler-llvm/7.3.0/source/Cargo.toml).

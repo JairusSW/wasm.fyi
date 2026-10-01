@@ -32,6 +32,9 @@ wasmer-preflight:
 wasmer-preflight-hub:
     node scripts/wasmer-preflight.mjs hub
 
+wasmer-sdk-build:
+    node scripts/wasmer-sdk.mjs
+
 data-check:
     node scripts/check-data.mjs
 
