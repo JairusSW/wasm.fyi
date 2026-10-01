@@ -5,7 +5,7 @@ import {join,resolve} from 'node:path';
 import {readFile,mkdtemp,writeFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {fixtures,featureIds} from '../corpora/features/generator.mjs';
-import {digest,site,config} from './lib/wasmbench.mjs';
+import {digest,site,config,exists} from './lib/wasmbench.mjs';
 
 test('checked-in feature artifacts and provenance cover every declared family',async()=>{
   const manifest=JSON.parse(await readFile(join(site,'corpora/features/manifest.json'),'utf8'));
@@ -32,9 +32,13 @@ test('checked-in feature artifacts and provenance cover every declared family',a
   }
 });
 
-test('all proposal admission stays independent of runtime support and rejects malformed input',async()=>{
+test('all proposal admission stays independent of runtime support and rejects malformed input',async(context)=>{
   const settings=await config();const root=resolve(site,process.env.WASMBENCH_ROOT || settings.root);
   const analyzer=join(root,'adapters/wasmtime/target/release/wasm-analyze');
+  if(!await exists(analyzer)) {
+    assert.notEqual(process.env.WASMBENCH_REQUIRE_ADAPTER_TESTS,'1','Build the independent analyzer before running feature admission tests');
+    context.skip('Independent analyzer is exercised on the measurement runner');return;
+  }
   const stack=join(site,'corpora/features/artifacts/stack-switching-continuation-create-resume.wasm');
   assert.notEqual(spawnSync(analyzer,[stack,'default']).status,0);
   assert.equal(spawnSync(analyzer,[stack,'all']).status,0);

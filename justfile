@@ -20,7 +20,7 @@ check:
 # Test frontend logic and the snapshot workflow.
 test:
     pnpm test
-    node --test scripts/workflow.test.mjs
+    node --test scripts/workflow.test.mjs scripts/feature-adapter.test.mjs
 
 # Validate gathered snapshots and their raw evidence.
 data-check:
@@ -165,7 +165,7 @@ threads-collect-hub:
 
 # Verify corpus digests and independent proposal-admission behavior.
 features-test:
-    node --test scripts/feature-adapter.test.mjs
+    WASMBENCH_REQUIRE_ADAPTER_TESTS=1 node --test scripts/feature-adapter.test.mjs
 
 # Build explicit feature configurations, including the async component compiler.
 features-adapters:
