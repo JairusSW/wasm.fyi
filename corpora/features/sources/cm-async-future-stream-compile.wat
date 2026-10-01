@@ -1,0 +1,1 @@
+(component (type $f (future u32)) (type $s (stream u32)) (core func (canon future.new $f)) (core func (canon stream.new $s)))

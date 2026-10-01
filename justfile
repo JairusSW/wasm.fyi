@@ -127,3 +127,46 @@ corpus-source-check:
 # Exercise both hosts and Pages deployment with a bounded three-launch collection.
 automation-check:
     node scripts/automation.mjs check
+
+# Rebuild the original feature corpus with the pinned compiler and WASI adapter.
+features-build:
+    node scripts/feature-corpus.mjs build
+
+# Execute exact feature oracles across all configured runtimes.
+features-check: features-adapters
+    node scripts/feature-corpus.mjs check
+
+# Collect every feature size and variant on this Mac.
+features-collect:
+    WASMBENCH_SUITE="corpora/features/manifest.json" WASMBENCH_VALIDATION_PROFILE=all WASMBENCH_WARMUP=0 WASMBENCH_RECORD_FAILURES=1 node scripts/bench.mjs collect
+
+# Collect every feature size and variant on Hub.
+features-collect-hub:
+    WASMBENCH_SUITE="corpora/features/manifest.json" WASMBENCH_VALIDATION_PROFILE=all WASMBENCH_WARMUP=0 WASMBENCH_RECORD_FAILURES=1 node scripts/hub.mjs collect
+
+# Resolve the eight weekly Wago revisions without measuring.
+history-plan:
+    node scripts/history.mjs plan
+
+# Measure the eight historical revisions against a fixed current corpus.
+history-collect:
+    node scripts/history.mjs collect
+
+# Backfill the same historical revisions on Hub, then retrieve verified reports.
+history-collect-hub:
+    node scripts/hub.mjs history
+
+# Run all 32 shared-memory contention and worker-scaling cases.
+threads-collect:
+    node scripts/thread-workers.mjs
+
+threads-collect-hub:
+    node scripts/hub.mjs threads
+
+# Verify corpus digests and independent proposal-admission behavior.
+features-test:
+    node --test scripts/feature-adapter.test.mjs
+
+# Build explicit feature configurations, including the async component compiler.
+features-adapters:
+    WASMBENCH_SUITE="corpora/features/manifest.json" node scripts/bench.mjs build

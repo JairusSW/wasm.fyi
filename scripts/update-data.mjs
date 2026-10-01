@@ -3,6 +3,7 @@ import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { compact, command, config, digest, exists, installDirectory, json, locked, site } from './lib/wasmbench.mjs';
 import { validateData } from './lib/validate-data.mjs';
+import { writeIndex } from './lib/snapshot-index.mjs';
 
 const { values, positionals } = parseArgs({ options: { append: { type: 'boolean', default: false }, rebuild: { type: 'boolean', default: false } }, allowPositionals: true });
 await locked(async () => {
@@ -25,7 +26,7 @@ await locked(async () => {
       const reports = [...incoming.reports, ...previous.reports.filter(r => !ids.has(r.runId))]
         .sort((a, b) => b.created.localeCompare(a.created)).slice(0, (await config()).retention || 12);
       for (const r of reports) if (!await exists(join(stagedData, r.evidence))) await cp(join(destination, r.evidence), join(stagedData, r.evidence));
-      await writeFile(join(stagedData, 'index.json'), JSON.stringify({ schema: 1, reports }) + '\n');
+      await writeIndex(stagedData, reports);
     }
     if (await exists(join(destination, 'report-catalog.json'))) await cp(join(destination, 'report-catalog.json'), join(stagedData, 'report-catalog.json'));
     const index = await validateData(stagedData);

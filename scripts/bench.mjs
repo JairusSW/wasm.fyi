@@ -3,12 +3,14 @@ import { randomUUID } from 'node:crypto';
 import { resolve, join } from 'node:path';
 import { harness, site } from './lib/wasmbench.mjs';
 import { prepareCorpus } from './lib/corpus.mjs';
+import { featureConfigurations } from './lib/feature-configurations.mjs';
 import { patchHarness } from './lib/harness-patch.mjs';
 
 const action = process.argv[2];
 const { root, settings, run } = await harness();
 const collection = settings.collection;
-const runtimes = process.env.WASMBENCH_RUNTIMES || collection.runtimes.join(',');
+const featureSuite = process.env.WASMBENCH_SUITE?.includes('corpora/features/');
+const runtimes = process.env.WASMBENCH_RUNTIMES || (process.env.WASMBENCH_SUITE?.includes('corpora/features/') ? featureConfigurations(settings) : collection.runtimes).join(',');
 const number = (name, fallback, minimum = 1) => {
   const input = process.env[name];
   const value = Number(input?.trim() ? input : fallback);
@@ -16,6 +18,16 @@ const number = (name, fallback, minimum = 1) => {
   return value;
 };
 const invoke = (...args) => process.stdout.write(run(...args));
+const pass = (...args) => {
+  try { invoke(...args); } catch (error) {
+    if (process.env.WASMBENCH_RECORD_FAILURES !== '1' || args[0] !== 'run') throw error;
+    const output = args[args.indexOf('--out') + 1];
+    // Only an intact sealed bundle can turn trial failures into data. Missing
+    // evidence and transport/infrastructure errors still stop the update.
+    invoke('verify', '--run', output);
+    console.log('Recorded failed trial outcomes; no failed-cell timings may be published.');
+  }
+};
 if (action === 'corpus') await prepareCorpus(settings, run);
 else if (action === 'corpus-check') {
   const suite = await prepareCorpus(settings, run);
@@ -34,25 +46,25 @@ else if (action === 'build') {
   await mkdir(directory, { recursive: true });
   const timing = join(directory, `timing-${id}`);
   const suite = await prepareCorpus(settings, run, directory);
-  const shared = ['--suite', suite, '--runtimes', runtimes, '--timeout', collection.timeout];
-  invoke('run', ...shared, '--profile', 'timing', '--launches', String(number('WASMBENCH_LAUNCHES', collection.launches)),
-    '--samples', String(number('WASMBENCH_SAMPLES', collection.samples)), '--operations', String(number('WASMBENCH_OPERATIONS', collection.operations)),
+  const shared = ['--suite', suite, '--runtimes', runtimes, '--timeout', collection.timeout, ...(process.env.WASMBENCH_VALIDATION_PROFILE ? ['--validation-profile', process.env.WASMBENCH_VALIDATION_PROFILE] : [])];
+  pass('run', ...shared, '--profile', 'timing', '--launches', String(number('WASMBENCH_LAUNCHES', featureSuite ? 3 : collection.launches)),
+    '--samples', String(number('WASMBENCH_SAMPLES', featureSuite ? 3 : collection.samples)), '--operations', String(number('WASMBENCH_OPERATIONS', collection.operations)),
     '--warmup', String(number('WASMBENCH_WARMUP', collection.warmup, 0)), '--out', timing);
   invoke('verify', '--run', timing);
   const report = join(directory, 'report');
   const reportArgs = ['report', '--run', timing, '--out', report];
   if (collection.memory) {
     const memory = join(directory, `memory-${id}`);
-    const args = ['run', ...shared, '--profile', 'memory', '--launches', String(number('WASMBENCH_LAUNCHES', collection.launches)),
+    const args = ['run', ...shared, '--profile', 'memory', '--launches', String(number('WASMBENCH_LAUNCHES', featureSuite ? 3 : collection.launches)),
       '--samples', '1', '--operations', '1', '--warmup', '0', '--out', memory];
     if (collection.phaseBarriers) args.push('--phase-barriers');
-    invoke(...args);
+    pass(...args);
     invoke('verify', '--run', memory);
     reportArgs.push('--memory-run', memory);
   }
   if (collection.code) {
     const code = join(directory, `code-${id}`);
-    invoke('run', ...shared, '--profile', 'code', '--scenarios', 'compile', '--launches', '1', '--samples', '1', '--operations', '1', '--warmup', '0', '--out', code);
+    pass('run', ...shared, '--profile', 'code', '--scenarios', 'compile', '--launches', '1', '--samples', '1', '--operations', '1', '--warmup', '0', '--out', code);
     invoke('verify', '--run', code);
     reportArgs.push('--code-run', code);
   }

@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { command, site } from './wasmbench.mjs';
 
 export function patchHarness(root) {
-  for (const name of ['winch-arm64-simd.patch', 'code-preflight.patch']) {
+  for (const name of ['harness-capabilities.patch']) {
     const patch = join(site, 'patches', name);
     const applies = args => spawnSync('git', ['apply', ...args, patch], { cwd: root, stdio: 'ignore' }).status === 0;
     if (applies(['--reverse', '--check'])) continue;

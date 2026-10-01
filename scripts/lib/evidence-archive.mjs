@@ -25,6 +25,7 @@ export async function packEvidence(source, archive, complete = false) {
         const path = relative ? relative + '/' + entry.name : entry.name;
         // Completed reports already contain all sealed passes. Failed runs keep
         // their original pass directories for diagnosis.
+        if (/^history\/(?:harness-[^/]+|revisions)$/.test(path)) continue;
         if (complete && /^experiments\/[^/]+\/(timing|memory|code)-[^/]+$/.test(path)) continue;
         if (entry.isDirectory()) await walk(path);
         else {

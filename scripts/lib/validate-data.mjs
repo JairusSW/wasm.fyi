@@ -27,6 +27,9 @@ export function validateReport(report) {
     assert(!cells.has(key), 'Duplicate summary cell'); cells.add(key);
     assert(nonnegative(s.median_ns_per_operation), 'Invalid latency median');
     assert(interval(s.ci95_low, s.ci95_high), 'Invalid latency interval');
+    if (Object.entries(s.outcomes || {}).some(([status,count]) => !['ok','unsupported'].includes(status) && count > 0)) {
+      assert(s.median_ns_per_operation === null && s.ci95_low == null && s.ci95_high == null, 'Failed cell has a headline latency value');
+    }
     if (s.median_ns_per_operation !== null) {
       assert.equal(s.latency_status, 'timing_pass', 'Diagnostic latency leaked into headline data');
       assert.equal(s.profile, 'timing', 'Non-timing summary leaked into headline data');
@@ -47,8 +50,23 @@ export function validateReport(report) {
 }
 export async function validateData(directory) {
   const index = await json(resolve(directory, 'index.json'));
-  assert.equal(index.schema, 1, 'Unsupported frontend projection schema');
+  assert([1, 2].includes(index.schema), 'Unsupported frontend projection schema');
   assert(index.reports?.length, 'No reports in snapshot index');
+  if (index.schema === 2) {
+    const reports = [];
+    for (const entry of index.reports) {
+      assert(sha.test(entry.id) && entry.projection === `${entry.id}.summary.json`, 'Unsafe projection path');
+      assert(sha.test(entry.projectionSha256), 'Missing projection digest');
+      const bytes = await readFile(resolve(directory, entry.projection));
+      assert.equal(digest(bytes), entry.projectionSha256, 'Projection digest mismatch');
+      const report = JSON.parse(bytes);
+      for (const field of ['id', 'runId', 'created', 'host', 'evidence', 'evidenceSha256']) {
+        assert.deepEqual(report[field], entry[field], `Projection metadata mismatch: ${field}`);
+      }
+      reports.push(report);
+    }
+    index.reports = reports;
+  }
   const identities = new Set();
   for (const report of index.reports) {
     validateReport(report);

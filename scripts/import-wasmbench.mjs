@@ -5,6 +5,8 @@ import { resolve, join } from 'node:path';
 import { compact, digest, exists, harness, installDirectory, site } from './lib/wasmbench.mjs';
 import { validateData } from './lib/validate-data.mjs';
 import { verifySeal } from './lib/verify-seal.mjs';
+import { withholdFailedCells } from './lib/measurement-policy.mjs';
+import { writeIndex } from './lib/snapshot-index.mjs';
 
 const { values, positionals } = parseArgs({ options: { output: { type: 'string' }, rebuild: { type: 'boolean', default: false } }, allowPositionals: true });
 const { root, settings, run } = await harness();
@@ -54,7 +56,7 @@ try {
       analysisVersion: data.analysis_version, source: source.path.split('/').at(-1),
       host: manifest.host, options: manifest.lock.options, lockSha256: manifest.lock_sha256,
       runtimes: manifest.lock.runtime_configurations, workloads: manifest.lock.workloads,
-      summaries: data.summaries, memory: data.memory_stages || [], memorySource: data.memory_source || null,
+      summaries: withholdFailedCells(data.summaries), memory: data.memory_stages || [], memorySource: data.memory_source || null,
       metrics: data.metrics, scenarios: data.scenarios,
       latencyPolicy: data.headline_latency_policy, artifactStructures: data.artifact_structures || [],
       artifactAdmission: data.bundle.artifact_admission || [], codeRecords: data.code_records || [],
@@ -68,10 +70,11 @@ try {
     // Raw evidence is machine-readable; compact encoding keeps broad corpora
     // within GitHub file and Pages artifact limits without dropping samples.
     const bytes = JSON.stringify(report) + '\n';
+    if (Buffer.byteLength(bytes) > 95 * 1024 * 1024) throw new Error('Evidence exceeds the GitHub single-file publication budget; reduce collection samples or split the configured corpus before publishing.');
     await writeFile(join(staging, report.evidence), bytes);
     index.push({ ...compact(report), evidenceSha256: digest(bytes) });
   }
-  await writeFile(join(staging, 'index.json'), JSON.stringify({ schema: 1, reports: index }) + '\n');
+  await writeIndex(staging, index);
   // The inventory belongs to the research pass, not to the deployed snapshot list.
   if (await exists(join(destination, 'report-catalog.json'))) await cp(join(destination, 'report-catalog.json'), join(staging, 'report-catalog.json'));
   await validateData(staging);

@@ -1,0 +1,11 @@
+(component
+    (core module $d (global $count (mut i64) (i64.const 0)) (func (export "drop") (param i32) (global.set $count (i64.add (global.get $count) (i64.const 1)))) (func (export "count") (result i64) global.get $count))
+    (core instance $di (instantiate $d))
+    (type $r (resource (rep i32) (dtor (core func $di "drop"))))
+    (core func $new (canon resource.new $r)) (core func $drop (canon resource.drop $r))
+    (core instance $res (export "new" (func $new)) (export "drop" (func $drop)))
+    (core module $m (import "res" "new" (func $new (param i32) (result i32))) (import "res" "drop" (func $drop (param i32))) (import "count" "count" (func $count (result i64)))
+      (func (export "benchmark") (param $n i64) (result i64) (local $i i64)
+        (loop $loop (call $drop (call $new (i32.wrap_i64 (local.get $i)))) (local.set $i (i64.add (local.get $i) (i64.const 1))) (br_if $loop (i64.lt_u (local.get $i) (local.get $n)))) (call $count)))
+    (core instance $mi (instantiate $m (with "res" (instance $res)) (with "count" (instance $di))))
+    (func (export "benchmark") (param "count" u64) (result u64) (canon lift (core func $mi "benchmark"))))

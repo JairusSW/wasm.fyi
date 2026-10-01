@@ -1,0 +1,1 @@
+(module (memory $a 2 2) (memory $b 2 2) (func (export "benchmark") (param $n i32) (result i32) (memory.fill $a (i32.const 0) (i32.const 13) (local.get $n)) (memory.copy $b $a (i32.const 0) (i32.const 0) (local.get $n)) (i32.load8_u $b (i32.sub (local.get $n) (i32.const 1)))))

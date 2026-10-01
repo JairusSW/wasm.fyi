@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { command, compact, digest, installDirectory } from './lib/wasmbench.mjs';
 import { packEvidence, fileDigest } from './lib/evidence-archive.mjs';
+import { writeIndex, datasetFiles } from './lib/snapshot-index.mjs';
 import { validateReport, validateData } from './lib/validate-data.mjs';
 
 function report() {
@@ -18,6 +19,25 @@ function report() {
 }
 
 test('retains true zero, missing intervals and partial failure outcomes', () => validateReport(report()));
+test('external projections retain evidence and reject changed summaries or index metadata', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'wasm-fyi-index-'));
+  try {
+    const value = report(), bytes = JSON.stringify(value);
+    await writeFile(join(directory, value.evidence), bytes);
+    const projected = { ...compact(value), evidenceSha256: digest(bytes) };
+    await writeIndex(directory, [projected]);
+    const validated = await validateData(directory);
+    assert.deepEqual(validated.reports, [projected]);
+    assert.equal(datasetFiles(validated).length, 3);
+    const index = JSON.parse(await readFile(join(directory, 'index.json')));
+    index.reports[0].runId = 'wrong-run';
+    await writeFile(join(directory, 'index.json'), JSON.stringify(index));
+    await assert.rejects(validateData(directory), /Projection metadata mismatch/);
+    await writeIndex(directory, [projected]);
+    await writeFile(join(directory, value.id + '.summary.json'), '{}');
+    await assert.rejects(validateData(directory), /Projection digest mismatch/);
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
 test('evidence transport preserves duplicate bytes and source files and retains failed passes', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'wasm-fyi-transport-'));
   try {
@@ -102,4 +122,38 @@ test('original report seal rejects corrupted and unsealed files before rebuildin
     await writeFile(join(directory, 'unexpected.json'), '{}');
     await assert.rejects(verifySeal(directory), /exact archive/);
   } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
+test('feature support excludes scalar baselines and distinguishes failures and compile-only evidence', async () => {
+  const { featureSupport } = await import('./lib/feature-support.mjs');
+  const directory = await mkdtemp(join(tmpdir(), 'wasm-fyi-feature-support-'));
+  try {
+    const workloads = [
+      {id:'features/gc/allocation/64',sha256:'a'.repeat(64),provenance:{scope:'execution'}},
+      {id:'features/gc/access-scalar-baseline/64',sha256:'b'.repeat(64),provenance:{baseline:true}},
+      {id:'features/cm-async/future/1',sha256:'c'.repeat(64),provenance:{scope:'compile-only'}}
+    ];
+    const trials = [
+      {workload:workloads[0].id,runtime_configuration:'r',scenario:'compile',status:'ok'},
+      {workload:workloads[0].id,runtime_configuration:'r',scenario:'first-call',status:'preflight_failed',reason:'incorrect oracle'},
+      {workload:workloads[1].id,runtime_configuration:'r',scenario:'first-call',status:'ok'},
+      {workload:workloads[2].id,runtime_configuration:'r',scenario:'compile',status:'ok'}
+    ];
+    await writeFile(join(directory,'raw.json'),JSON.stringify({trials}));
+    const matrix=await featureSupport(directory,[{id:'e',created:'2026-10-01',host:{hostname:'test',os:'test',arch:'test'},runtimes:[{id:'r'}],workloads,evidence:'raw.json',evidenceSha256:'d'}]);
+    const features=matrix.hosts[0].configurations[0].features;
+    const gc=features.find(f=>f.id==='gc');assert.equal(gc.cases.length,1);assert.equal(gc.executed,0);assert.equal(gc.failed,1);
+    assert.deepEqual(gc.cases[0].reasons,['incorrect oracle']);
+    assert.equal(features.find(f=>f.id==='cm-async').compiledOnly,1);
+    assert.equal(features.find(f=>f.id==='simd').coverage,'not-tested');
+  } finally {await rm(directory,{recursive:true,force:true});}
+});
+
+test('a failed launch withholds headline timing even when other launches succeeded',async()=>{
+  const {withholdFailedCells}=await import('./lib/measurement-policy.mjs');
+  const value={median_ns_per_operation:123,ci95_low:100,ci95_high:150,outcomes:{ok:2,error:1},latency_status:'timing_pass'};
+  const [projected]=withholdFailedCells([value]);
+  assert.equal(projected.median_ns_per_operation,null);assert.equal(projected.ci95_low,null);assert.equal(projected.ci95_high,null);
+  assert.equal(projected.latency_status,'failed_cell');assert.equal(value.median_ns_per_operation,123);
+  assert.deepEqual(withholdFailedCells([{...value,outcomes:{ok:3}}]),[{...value,outcomes:{ok:3}}]);
 });

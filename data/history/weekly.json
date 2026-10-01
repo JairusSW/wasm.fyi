@@ -1,0 +1,755 @@
+{
+  "schema": 1,
+  "policy": "Retrospective measurements of weekly Wago commits on current hosts/toolchains against one fixed corpus. collectedAt is actual collection time, never targetWeek. Comparison engines use a fixed current baseline, not reconstructed historical versions.",
+  "anchor": "2026-10-01T00:00:00.000Z",
+  "weeks": [
+    {
+      "targetWeek": "2026-08-06T00:00:00.000Z",
+      "revision": "391b8d19d52f001359cf269fe10186147e1fc6a5",
+      "revisionDate": "2026-08-05T12:22:12-07:00"
+    },
+    {
+      "targetWeek": "2026-08-13T00:00:00.000Z",
+      "revision": "2825f1258e3c0c61976da5ec5619d8d283fa2b36",
+      "revisionDate": "2026-08-12T16:47:48-07:00"
+    },
+    {
+      "targetWeek": "2026-08-20T00:00:00.000Z",
+      "revision": "f9073ae76eb4481f29f3e4df6b6f0dbff51fe781",
+      "revisionDate": "2026-08-15T23:13:18-07:00"
+    },
+    {
+      "targetWeek": "2026-08-27T00:00:00.000Z",
+      "revision": "cb32e996cf3fd24dbd54fafc05e4ea5203a23ae3",
+      "revisionDate": "2026-08-25T22:37:06-04:00"
+    },
+    {
+      "targetWeek": "2026-09-03T00:00:00.000Z",
+      "revision": "b40f0305906928dd415ae677fdfba5f1a608f464",
+      "revisionDate": "2026-09-02T16:07:12-04:00"
+    },
+    {
+      "targetWeek": "2026-09-10T00:00:00.000Z",
+      "revision": "3ca7525fa1f3e8962a4a46525883908ce0d44032",
+      "revisionDate": "2026-09-09T15:52:26-07:00"
+    },
+    {
+      "targetWeek": "2026-09-17T00:00:00.000Z",
+      "revision": "7ce41c25dc14bf409f0cb9e9e27c6232821f84b4",
+      "revisionDate": "2026-09-16T11:49:12-07:00"
+    },
+    {
+      "targetWeek": "2026-09-24T00:00:00.000Z",
+      "revision": "beeaab03ae931dbd1ab26748ad611441f2d20ed0",
+      "revisionDate": "2026-09-23T16:44:56-07:00"
+    }
+  ],
+  "results": [
+    {
+      "targetWeek": "2026-08-06T00:00:00.000Z",
+      "revision": "391b8d19d52f001359cf269fe10186147e1fc6a5",
+      "revisionDate": "2026-08-05T12:22:12-07:00",
+      "status": "measured",
+      "collectedAt": "2026-10-01T08:16:51.462445Z",
+      "reportSha256": "77c019b639deb0d14ed10b6af12e071d336008a6b1e00f8c4f714e6c5f82aca3",
+      "runId": "timing-2026-10-01T08-16-50-345Z-5fa261e0",
+      "suiteSha256": "16c96d2a443b74e60e7568e91016f0a8ac0040a497fe25fc9bd0393296dc1c5b",
+      "failedCases": [
+        {
+          "workload": "wago/lz4/compress",
+          "scenario": "first-call",
+          "status": "preflight_failed",
+          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
+        },
+        {
+          "workload": "wago/lz4/compress",
+          "scenario": "compile",
+          "status": "preflight_failed",
+          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
+        },
+        {
+          "workload": "wago/lz4/compress",
+          "scenario": "instantiate",
+          "status": "preflight_failed",
+          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
+        },
+        {
+          "workload": "wago/lz4/compress",
+          "scenario": "steady",
+          "status": "preflight_failed",
+          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
+        }
+      ]
+    },
+    {
+      "targetWeek": "2026-08-13T00:00:00.000Z",
+      "revision": "2825f1258e3c0c61976da5ec5619d8d283fa2b36",
+      "revisionDate": "2026-08-12T16:47:48-07:00",
+      "status": "measured",
+      "collectedAt": "2026-10-01T08:17:18.666881Z",
+      "reportSha256": "f0d133e6e2c6da86ef4deb14b3690d1b96b1d1331caca3e9f58a27ed12c9ab2d",
+      "runId": "timing-2026-10-01T08-17-17-724Z-0e17dabd",
+      "suiteSha256": "16c96d2a443b74e60e7568e91016f0a8ac0040a497fe25fc9bd0393296dc1c5b",
+      "failedCases": [
+        {
+          "workload": "wago/lz4/compress",
+          "scenario": "first-call",
+          "status": "preflight_failed",
+          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
+        },
+        {
+          "workload": "wago/lz4/compress",
+          "scenario": "compile",
+          "status": "preflight_failed",
+          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
+        },
+        {
+          "workload": "wago/lz4/compress",
+          "scenario": "instantiate",
+          "status": "preflight_failed",
+          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
+        },
+        {
+          "workload": "wago/lz4/compress",
+          "scenario": "steady",
+          "status": "preflight_failed",
+          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
+        }
+      ]
+    },
+    {
+      "targetWeek": "2026-08-20T00:00:00.000Z",
+      "revision": "f9073ae76eb4481f29f3e4df6b6f0dbff51fe781",
+      "revisionDate": "2026-08-15T23:13:18-07:00",
+      "status": "measured",
+      "collectedAt": "2026-10-01T08:17:45.602464Z",
+      "reportSha256": "a1edd797d3a6d5df98cbe7f5c696f526956acc0fddf55490b1f48efdb461f381",
+      "runId": "timing-2026-10-01T08-17-44-626Z-a0d18fec",
+      "suiteSha256": "16c96d2a443b74e60e7568e91016f0a8ac0040a497fe25fc9bd0393296dc1c5b",
+      "failedCases": [
+        {
+          "workload": "wago/lz4/compress",
+          "scenario": "first-call",
+          "status": "preflight_failed",
+          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
+        },
+        {
+          "workload": "wago/lz4/compress",
+          "scenario": "compile",
+          "status": "preflight_failed",
+          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
+        },
+        {
+          "workload": "wago/lz4/compress",
+          "scenario": "instantiate",
+          "status": "preflight_failed",
+          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
+        },
+        {
+          "workload": "wago/lz4/compress",
+          "scenario": "steady",
+          "status": "preflight_failed",
+          "reason": "sacrificial check check-27-0: error: wasm trap: linear memory access out of bounds\n    at lz4_compress_run (func[2])"
+        }
+      ]
+    },
+    {
+      "targetWeek": "2026-08-27T00:00:00.000Z",
+      "revision": "cb32e996cf3fd24dbd54fafc05e4ea5203a23ae3",
+      "revisionDate": "2026-08-25T22:37:06-04:00",
+      "status": "measured",
+      "collectedAt": "2026-10-01T08:18:12.825489Z",
+      "reportSha256": "762d10f66bdefd9c64789b9844314fce4085013380483e520d017d269fc31973",
+      "runId": "timing-2026-10-01T08-18-11-865Z-14c1dc61",
+      "suiteSha256": "16c96d2a443b74e60e7568e91016f0a8ac0040a497fe25fc9bd0393296dc1c5b",
+      "failedCases": []
+    },
+    {
+      "targetWeek": "2026-09-03T00:00:00.000Z",
+      "revision": "b40f0305906928dd415ae677fdfba5f1a608f464",
+      "revisionDate": "2026-09-02T16:07:12-04:00",
+      "status": "measured",
+      "collectedAt": "2026-10-01T08:18:39.776764Z",
+      "reportSha256": "aa574e158a9c9fc95e8b9988c630d2b4911a300225f8a61c6920d0027096b5da",
+      "runId": "timing-2026-10-01T08-18-38-660Z-a66d6c82",
+      "suiteSha256": "16c96d2a443b74e60e7568e91016f0a8ac0040a497fe25fc9bd0393296dc1c5b",
+      "failedCases": []
+    },
+    {
+      "targetWeek": "2026-09-10T00:00:00.000Z",
+      "revision": "3ca7525fa1f3e8962a4a46525883908ce0d44032",
+      "revisionDate": "2026-09-09T15:52:26-07:00",
+      "status": "measured",
+      "collectedAt": "2026-10-01T08:19:06.722734Z",
+      "reportSha256": "242c27671f095843e82eff3344fc590d657878ef1f54b9c86c546dd002f3fe10",
+      "runId": "timing-2026-10-01T08-19-05-587Z-e1b4bbf8",
+      "suiteSha256": "16c96d2a443b74e60e7568e91016f0a8ac0040a497fe25fc9bd0393296dc1c5b",
+      "failedCases": []
+    },
+    {
+      "targetWeek": "2026-09-17T00:00:00.000Z",
+      "revision": "7ce41c25dc14bf409f0cb9e9e27c6232821f84b4",
+      "revisionDate": "2026-09-16T11:49:12-07:00",
+      "status": "measured",
+      "collectedAt": "2026-10-01T08:19:31.350202Z",
+      "reportSha256": "b2c05809e91d5aaef981583fc8e36eedb17c48bfd9c33ba6a60f3682c4bd4038",
+      "runId": "timing-2026-10-01T08-19-30-328Z-3d452ac9",
+      "suiteSha256": "16c96d2a443b74e60e7568e91016f0a8ac0040a497fe25fc9bd0393296dc1c5b",
+      "failedCases": []
+    },
+    {
+      "targetWeek": "2026-09-24T00:00:00.000Z",
+      "revision": "beeaab03ae931dbd1ab26748ad611441f2d20ed0",
+      "revisionDate": "2026-09-23T16:44:56-07:00",
+      "status": "measured",
+      "collectedAt": "2026-10-01T08:19:56.389754Z",
+      "reportSha256": "38ba521b1011290b8f3e64c12f312564aa0499f9a55f151d2ad44c69a229b1fb",
+      "runId": "timing-2026-10-01T08-19-55-424Z-562159f6",
+      "suiteSha256": "16c96d2a443b74e60e7568e91016f0a8ac0040a497fe25fc9bd0393296dc1c5b",
+      "failedCases": []
+    }
+  ],
+  "baseline": {
+    "report": "05022e954b6a6178d37a7c97045d266c7cda76f0aa6fe8208a10a718feb31690",
+    "runId": "timing-2026-10-01T06-52-18-258Z-8915a924",
+    "evidenceSha256": "21752e837545b945234898d9fd24519face1688c48984f22ca697e7b957ac7aa",
+    "created": "2026-10-01T06:52:20.435198Z",
+    "configurations": [
+      {
+        "native_dependency_policy": "macho-third-party-closure-v1; system shared-cache libraries excluded; absolute loads remain exact host prerequisites",
+        "id": "wazero",
+        "command": [
+          "/Users/work/Code/Tools/wasm-bench/bin/adapter-wazero"
+        ],
+        "file_sha256": {
+          "/Users/work/Code/Tools/wasm-bench/bin/adapter-wazero": "221ea8d28e1195a377bdca987435e324176103f81a987e5147ec2f01e315f362"
+        },
+        "description": {
+          "phase_release_policy": "close measured instance and compiled module; engine retained; no forced GC; native continuation stages discard capture after active invocation and close verified instance; shared compiled module/engine retained until batch close",
+          "phase_barrier_scenarios": [
+            "compile",
+            "teardown",
+            "app-init",
+            "instantiate",
+            "density",
+            "first-call",
+            "steady",
+            "guest-density",
+            "checkpoint-create",
+            "checkpoint-restore",
+            "checkpoint-first-write",
+            "checkpoint-execute",
+            "continuation-create",
+            "continuation-resume",
+            "continuation-first-write",
+            "continuation-execute"
+          ],
+          "runtime": "wazero",
+          "runtime_version": "1.12.0",
+          "backend": "compiler",
+          "embedding": "Go API",
+          "build": "go\tgo1.26.5\npath\tgithub.com/wasmbench/wasmbench/adapters/wazero\nmod\tgithub.com/wasmbench/wasmbench\tv0.0.0-20261001041445-f208b1868d46+dirty\t\ndep\tgithub.com/tetratelabs/wazero\tv1.12.0\th1:DuWcpNu/FzgEXgGBDp8J1Spc+CWOvvtvVyjKlaZopYU=\ndep\tgolang.org/x/sys\tv0.44.0\th1:ildZl3J4uzeKP07r2F++Op7E9B29JRUy+a27EibtBTQ=\nbuild\t-buildmode=exe\nbuild\t-compiler=gc\nbuild\t-trimpath=true\nbuild\tCGO_ENABLED=1\nbuild\tGOARCH=arm64\nbuild\tGOOS=darwin\nbuild\tGOARM64=v8.0\nbuild\tvcs=git\nbuild\tvcs.revision=f208b1868d46b72fca0fd0e05548efea5faf91a0\nbuild\tvcs.time=2026-10-01T04:14:45Z\nbuild\tvcs.modified=true\n",
+          "effective_configuration": {
+            "app_init_release_policy": "close verified instance; compiled module and engine retained; no forced GC",
+            "backend": "compiler",
+            "command_lifecycle_phases_policy": "compile/instantiate/first-call memory API windows; prepared imports and capture buffers excluded; instantiate includes Wasm start but excludes Emscripten constructors/argv; first-call includes bounded capture and host calls; output/exit verification before release; fresh instance each sample; module/engine retained except compile module; no forced reclamation",
+            "command_teardown_policy": "after verified command termination close remaining instance/module/stdin/runtime resources; proc_exit may already close instance during execution; fixture cleanup and capture-buffer reclamation excluded; no forced GC",
+            "compilation_cache": "disabled",
+            "context_termination": "enabled",
+            "core_features": "api.CoreFeaturesV2",
+            "counter_first_call_policy": "fresh initialized instance per sample; engine/module retained; exactly one requested call, no hidden verification pre-call; setup/input/export resolution before counter window, verification/result copy/release after; no memory instrumentation",
+            "counter_policy": "core exact scalar compile/instantiate phase handshakes; one operation, no warmup; no allocator snapshots; perf collected externally over cgroup barrier window including transport/background work; verification and release excluded",
+            "counter_steady_policy": "stateless exact scalar; fresh engine/module/initialized instance per request retained across explicit warmup and measured batches; every call result verified after each batch; no hidden pre-call or memory snapshots; result slice container prepared before barrier; embedding Call allocations and barrier transport included; raw counts per batch, not per invocation",
+            "cpu_profile_policy": "interpreter only; sampled Go process CPU over entire run request including setup, warmup and verification; no guest-only attribution or native stack-unwinding claim; raw runtime/pprof gzip; 16 MiB cap; no forced GC",
+            "density_policy": "fresh simultaneous group; shared_module uses one engine/module; separate_engines compiles once per fresh engine; timer includes engine construction, compile, instantiate/start, initialization, input and workload invocation; verification and release excluded; no forced GC",
+            "emscripten_host": "emscripten-stdio-v1; bounded stdout/stderr and pinned stdin; deterministic clocks/randomness; filesystem syscalls fail closed; argv marshaled through stackAlloc; fresh instance per sample",
+            "engine_init_policy": "time configured runtime construction only; register imports, compile resident workload bytes, instantiate and verify behavior using each measured runtime after timer stop; release outside timer; Go allocation snapshots include untimed usability verification and release; no forced reclamation",
+            "guest_checkpoint_policy": "eager-memory-scalar-v1 exact generated fixture only: entire fixed memory and one mutable i32; no imports/tables/passive segments/GC objects/active stack; creation includes allocation and copy; restore copies into a separately instantiated target (instantiation excluded); first write is ordinary eager-copy guest call, NOT COW; execution is one full-memory checksum call; setup and verification excluded; source mutated after save to verify independence; engine/module retained, source/target fresh each sample; no forced GC or whole-instance snapshot claim",
+            "guest_density_policy": "exact fixed memory plus scalar fixture; fresh simultaneous groups sharing one retained engine/module; fresh_initialize fills all memory or eager_guest_restore copies a shared independent guest-state payload; optional first write changes one byte and scalar; source initialization/save/isolation and compile excluded; timer includes instantiate/start and initialize or restore and optional write; all instance checksums/full state verification excluded; no whole-instance snapshot, COW, untouched-page, forced GC or reclamation claim",
+            "harness_calibration_policy": "empty-local-harness-v1: timing only; resident stateless core scalar workload checked before sampling; preallocated uint64-equivalent slots; timed local loop writes iteration+1 to every slot without Wasm/embedding calls; every slot verified after timer; no warmup, barriers or memory instrumentation; sample result is iteration count, not guest output; no automatic subtraction or performance scoring",
+            "instantiate_release_policy": "close verified instance; compiled module and engine retained; no forced GC",
+            "native_continuation_protocol": "wazero-native-execution-stack-v1",
+            "native_continuation_scope": "execution stack only; no memory/global/whole-instance/COW restoration; one capture restored once in its active invocation; restore clock ends at resumed guest host marker; fresh instances; module/engine retained; no forced GC",
+            "start_functions": "explicit_disabled",
+            "sustained_policy": "fixed batch count on one fresh initialized retained instance/engine/module; invocation one retained; only declared warmup; all results verified outside timers; monotonic session clocks; target is cumulative non-warmup API time, not wall/service throughput; memory snapshots bracket operations, excluding verification; final engine/module/instance close outside timers with no forced GC or physical-reclamation claim",
+            "sustained_post_collection_policy": "optional memory-only diagnostic: one explicit runtime.GC after logical engine/module/instance close and reference drop; separate monotonic bracket includes allocator snapshots; adapter and sample evidence remain alive; Go heap only, not physical reclamation or leak qualification",
+            "teardown_policy": "verify each fresh instance before timing runtime close (instance/module/engine); no forced GC",
+            "vector_first_call_phases_policy": "fresh initialized instance; pointers and first input prepared before before_first_call; first_call_returned follows last ordered call before its output oracle; memory window includes intercase input writes and oracle checks, unlike sequence_call_sum timers; final oracle and verified instance release follow returned barrier; compiled module retained; no forced reclamation",
+            "vector_instantiate_phases_policy": "fresh instance; prepared module/engine retained; instantiation includes Wasm start; explicit initialization, ordered vector calls, oracle verification and release outside API window; no forced GC",
+            "wasi_host": "wazero-wasi_snapshot_preview1-1.12.0; readonly fixture root; empty env; zero random; default synthetic clocks; fresh stdin and instance; bounded stream capture included in call",
+            "wasi_reactor_host": "wazero Preview 1 1.12.0; no preopens, argv, env or network; empty stdin; zero random; default synthetic clocks; nonempty stdout/stderr writes rejected; _initialize exactly once per fresh instance before input/calls; Wasm start included in instantiation; steady stateless instance retained without hidden pre-call"
+          },
+          "capabilities": {
+            "can_command_compile_phases": true,
+            "can_command_first-call_phases": true,
+            "can_command_instantiate_phases": true,
+            "can_command_teardown_phases": true,
+            "can_compile_separately": true,
+            "can_counter_compile": true,
+            "can_counter_first-call": true,
+            "can_counter_instantiate": true,
+            "can_counter_steady": true,
+            "can_density": true,
+            "can_disable_code_cache": true,
+            "can_export_native_code": false,
+            "can_float_phases": true,
+            "can_float_teardown": true,
+            "can_float_trajectory": true,
+            "can_guest_checkpoint": true,
+            "can_guest_density": true,
+            "can_instantiate_separately": true,
+            "can_measure_host_allocations": true,
+            "can_measure_invocation_traps": true,
+            "can_native_continuation": true,
+            "can_observe_tiers": false,
+            "can_profile_go_cpu_steady": false,
+            "can_run_commands": true,
+            "can_run_reactors": true,
+            "can_run_vectors": true,
+            "can_snapshot": false,
+            "can_sustained_execution": true,
+            "can_sustained_post_collection": true,
+            "can_vector_compile_phases": true,
+            "can_vector_first-call_phases": true,
+            "can_vector_instantiate_phases": true,
+            "can_vector_teardown_phases": true,
+            "can_verify_float_bits_v1": true,
+            "can_verify_invocation_traps": true
+          },
+          "scenarios": [
+            "engine-init",
+            "compile",
+            "instantiate",
+            "first-call",
+            "steady",
+            "trajectory",
+            "teardown",
+            "app-init",
+            "harness-calibration",
+            "continuation-create",
+            "continuation-resume",
+            "continuation-first-write",
+            "continuation-execute",
+            "density",
+            "sustained",
+            "guest-density",
+            "checkpoint-create",
+            "checkpoint-restore",
+            "checkpoint-first-write",
+            "checkpoint-execute"
+          ],
+          "abis": [
+            "core",
+            "wasi-command",
+            "emscripten",
+            "wasi-reactor"
+          ],
+          "features": [
+            "mvp",
+            "bulk-memory",
+            "simd",
+            "reference-types",
+            "multi-value"
+          ],
+          "validator_features": {
+            "namespace": "wasmparser/0.251.0",
+            "evidence": "wazero v1.12.0 api/features.go and experimental/features.go; engine explicitly configured WithCoreFeatures(api.CoreFeaturesV2)",
+            "supported": {
+              "EXCEPTIONS": false,
+              "EXTENDED_CONST": false,
+              "FUNCTION_REFERENCES": false,
+              "TAIL_CALL": false,
+              "THREADS": false
+            }
+          }
+        }
+      },
+      {
+        "native_dependency_policy": "macho-third-party-closure-v1; system shared-cache libraries excluded; absolute loads remain exact host prerequisites",
+        "id": "wasmtime",
+        "command": [
+          "/Users/work/Code/Tools/wasm-bench/adapters/wasmtime/target/release/adapter-wasmtime"
+        ],
+        "file_sha256": {
+          "/Users/work/Code/Tools/wasm-bench/adapters/wasmtime/target/release/adapter-wasmtime": "c70566ff6684a24eff6be7163a81885f0c179d0ad1d8b35ac6f24e2c4eae8db5"
+        },
+        "description": {
+          "phase_release_policy": "drop measured Store and Module; engine retained; no forced allocator reclamation",
+          "phase_barrier_scenarios": [
+            "steady",
+            "first-call",
+            "compile",
+            "teardown",
+            "app-init",
+            "instantiate",
+            "density",
+            "density-cycle"
+          ],
+          "runtime": "wasmtime",
+          "runtime_version": "46.0.1",
+          "backend": "cranelift",
+          "embedding": "Rust API",
+          "build": "Cargo.lock / release",
+          "effective_configuration": {
+            "aot_policy": "produce: resident Wasm bytes through compile and serialize; deserialize locally produced immutable bytes and verify behavior outside timer; load: deserialize resident bytes serialized by the same configured engine before sampling, verify behavior outside timer; no arbitrary native artifact ingestion; release outside timers",
+            "app_init_release_policy": "drop verified store/instance; compiled module and engine retained; no forced allocator reclamation",
+            "cache": "disabled",
+            "command_lifecycle_phases_policy": "compile/instantiate/first-call memory API windows; prepared Store/WASI/imports and capture buffers excluded; instantiate includes Wasm start but excludes Emscripten constructors/argv; first-call includes bounded capture and host calls; output/exit verification before release; fresh Store/instance each sample; module/engine retained except compile module; no forced reclamation",
+            "command_teardown_policy": "after verified command termination drop store (WASI context, preopens, stdin), module, linker, and engine; fixture cleanup and capture-buffer reclamation excluded; no forced allocator reclamation",
+            "component_command_lifecycle_policy": "compile: resident component bytes through Component::new including validation, engine/linker retained; instantiate: prepared Store/WASI/imports through typed Command::instantiate including nested core start functions but excluding wasi:cli/run; first-call: wasi:cli/run only; exact command verification outside compile/instantiate timers; fresh fixture root, WASI context and instance each sample; memory barriers before/returned/released; release drops Store/instance and staging root, compiled component retained except compile; capture buffers retained through sample evidence construction; no forced reclamation",
+            "component_model": "enabled",
+            "component_u64_call_policy": "host-import-free named component export with 0..16 u64 parameters and one u64 result; fresh Store/instance per sample; compile: resident bytes through Component::new including validation; instantiate: empty linker and prepared Store through instantiate including nested core start; first-call: checked Func::call and post_return; signature lookup and exact oracle verification outside timers; one operation; separate timing/memory passes; memory-only before/returned/released barriers; release drops Store and compile-owned Component outside timers, engine/linker and shared compiled component retained; no forced allocator reclamation; no counters/profiling or arbitrary WIT support",
+            "counter_first_call_policy": "fresh initialized store/instance per sample; engine/module retained; exactly one requested call; setup/imports/input/argument and result buffers prepared before collection; verification/result copy/store drop after; no memory snapshots or allocator purge",
+            "counter_policy": "core exact scalar compile/instantiate phase handshakes; one operation, no warmup; no memory snapshots; perf collected externally over cgroup barrier window including transport/background work; verification and release excluded",
+            "counter_steady_policy": "stateless exact scalar; fresh engine/module/store/initialized instance per request retained across explicit warmup and measured batches; separate result buffers allocated before collection; every result verified afterward; no hidden pre-call, snapshots or allocator purge; raw counts per batch include embedding and barrier transport",
+            "density_cycle_policy": "fresh engine/module resources retained across samples; no untimed instance prewarm; each sample creates and verifies fresh instances, then drops Stores; first cycle retained; engine/module construction excluded from timer; final batch resource drop follows final barrier; no forced allocator purge",
+            "density_policy": "fresh simultaneous stores/instances; shared_module one engine/module; separate_engines fresh engine/compile per instance; timer includes engine construction, compile, store/instantiate/start, initialization/input and workload call; verification/release excluded; drop stores then modules then engines; no forced allocator reclamation",
+            "emscripten_host": "emscripten-stdio-v1; pinned argv/stdin, bounded output, deterministic clocks/randomness; filesystem syscalls fail closed; constructors then main(argc,argv); fresh instance per sample",
+            "engine_init_policy": "time configured Engine construction only; compile resident workload bytes, instantiate and verify behavior using each measured engine after timer stop; release outside timer; no forced reclamation",
+            "harness_calibration_policy": "empty-local-harness-v1: timing only; resident stateless core scalar workload checked before sampling; preallocated uint64-equivalent slots; timed local loop writes iteration+1 to every slot without Wasm/embedding calls; every slot verified after timer; no warmup, barriers or memory instrumentation; sample result is iteration count, not guest output; no automatic subtraction or performance scoring",
+            "instance_allocation": "on-demand; Wasmtime 46.0.1 defaults",
+            "instantiate_release_policy": "drop verified store/instance; compiled module and engine retained; store/import preparation excluded from instantiation; no forced allocator reclamation",
+            "materialization": "synchronous-api-and-complete-native-ranges-v1",
+            "parallel_compilation": "false",
+            "strategy": "cranelift",
+            "teardown_policy": "verify each fresh instance before timing store, module, and engine drop; no forced allocator reclamation",
+            "validator_feature_policy": "wasmtime-default-subset-v1",
+            "vector_first_call_phases_policy": "fresh initialized instance; pointers and first input prepared before before_first_call; first_call_returned follows last ordered call before its output oracle; memory window includes intercase input writes and oracle checks, unlike sequence_call_sum timers; final oracle and verified instance release follow returned barrier; compiled module retained; no forced reclamation",
+            "vector_instantiate_phases_policy": "fresh store/instance; prepared imports/module/engine outside instantiation window; includes Wasm start; explicit initialization and ordered vector oracle verification outside API window; drop verified store with module/engine retained; no forced reclamation",
+            "wasi_host": "wasmtime-wasi 46.0.1; readonly fixture root; empty env; zero random; synthetic clocks advancing 1ms per read; fresh owned WASI context; bounded capture included in call",
+            "wasi_reactor_host": "wasi-preview1-reactor-noio-v1; wasmtime-wasi 46.0.1; empty args/env/stdin, no preopens/network, zero random; wall clock starts 1640995200000000000ns, monotonic starts zero, both advance 1ms/read; reject nonempty stdout/stderr including ignored write errors; Wasm start inside instantiation, explicit _initialize once before input; fresh WASI context per instance; stateless steady retains instance across explicit warmup and samples without hidden pre-call; teardown drops store/module/linker/engine after verification, no forced allocator reclamation; logical memory post-verification, no native allocator instrumentation"
+          },
+          "capabilities": {
+            "can_command_compile_phases": true,
+            "can_command_first-call_phases": true,
+            "can_command_instantiate_phases": true,
+            "can_command_teardown_phases": true,
+            "can_compile_components": true,
+            "can_compile_materialized": true,
+            "can_compile_separately": true,
+            "can_component_command_lifecycle": true,
+            "can_component_command_phases": true,
+            "can_component_u64_calls_v1": true,
+            "can_component_u64_memory_v1": true,
+            "can_counter_compile": true,
+            "can_counter_first-call": true,
+            "can_counter_instantiate": true,
+            "can_counter_steady": true,
+            "can_density": true,
+            "can_density_cycle": true,
+            "can_disable_code_cache": true,
+            "can_execute_components": false,
+            "can_export_native_code": true,
+            "can_float_phases": true,
+            "can_float_teardown": true,
+            "can_float_trajectory": true,
+            "can_instantiate_separately": true,
+            "can_measure_host_allocations": false,
+            "can_measure_invocation_traps": true,
+            "can_observe_tiers": false,
+            "can_run_commands": true,
+            "can_run_component_commands": true,
+            "can_run_reactors": true,
+            "can_run_vectors": true,
+            "can_snapshot": false,
+            "can_vector_compile_phases": true,
+            "can_vector_first-call_phases": true,
+            "can_vector_instantiate_phases": true,
+            "can_vector_teardown_phases": true,
+            "can_verify_float_bits_v1": true,
+            "can_verify_invocation_traps": true
+          },
+          "scenarios": [
+            "harness-calibration",
+            "density",
+            "density-cycle",
+            "engine-init",
+            "compile",
+            "compile-materialized",
+            "instantiate",
+            "app-init",
+            "first-call",
+            "steady",
+            "trajectory",
+            "aot-produce",
+            "aot-load",
+            "teardown"
+          ],
+          "abis": [
+            "core",
+            "wasi-command",
+            "wasi-reactor",
+            "component",
+            "emscripten"
+          ],
+          "features": [
+            "mvp",
+            "bulk-memory",
+            "simd",
+            "reference-types",
+            "multi-value"
+          ],
+          "validator_features": {
+            "namespace": "wasmparser/0.251.0",
+            "evidence": "Wasmtime 46.0.1 config.rs default features and compiler_panicking_wasm_features; explicitly applied Config::wasm_features subset; enabled validation is not a guarantee of complete backend instruction support",
+            "supported": {
+              "EXCEPTIONS": false,
+              "FUNCTION_REFERENCES": false,
+              "GC": false,
+              "LEGACY_EXCEPTIONS": false,
+              "RELAXED_SIMD": true,
+              "TAIL_CALL": true
+            }
+          }
+        }
+      },
+      {
+        "native_dependency_policy": "macho-third-party-closure-v1; system shared-cache libraries excluded; absolute loads remain exact host prerequisites",
+        "id": "wasmtime-winch",
+        "command": [
+          "/Users/work/Code/Tools/wasm-bench/adapters/wasmtime/target/release/adapter-wasmtime",
+          "--winch"
+        ],
+        "file_sha256": {
+          "/Users/work/Code/Tools/wasm-bench/adapters/wasmtime/target/release/adapter-wasmtime": "c70566ff6684a24eff6be7163a81885f0c179d0ad1d8b35ac6f24e2c4eae8db5"
+        },
+        "description": {
+          "phase_release_policy": "drop measured Store and Module; engine retained; no forced allocator reclamation",
+          "phase_barrier_scenarios": [
+            "steady",
+            "first-call",
+            "compile",
+            "teardown",
+            "app-init",
+            "instantiate",
+            "density",
+            "density-cycle"
+          ],
+          "runtime": "wasmtime",
+          "runtime_version": "46.0.1",
+          "backend": "winch",
+          "embedding": "Rust API",
+          "build": "Cargo.lock / release",
+          "effective_configuration": {
+            "aot_policy": "produce: resident Wasm bytes through compile and serialize; deserialize locally produced immutable bytes and verify behavior outside timer; load: deserialize resident bytes serialized by the same configured engine before sampling, verify behavior outside timer; no arbitrary native artifact ingestion; release outside timers",
+            "app_init_release_policy": "drop verified store/instance; compiled module and engine retained; no forced allocator reclamation",
+            "cache": "disabled",
+            "command_lifecycle_phases_policy": "compile/instantiate/first-call memory API windows; prepared Store/WASI/imports and capture buffers excluded; instantiate includes Wasm start but excludes Emscripten constructors/argv; first-call includes bounded capture and host calls; output/exit verification before release; fresh Store/instance each sample; module/engine retained except compile module; no forced reclamation",
+            "command_teardown_policy": "after verified command termination drop store (WASI context, preopens, stdin), module, linker, and engine; fixture cleanup and capture-buffer reclamation excluded; no forced allocator reclamation",
+            "component_command_lifecycle_policy": "compile: resident component bytes through Component::new including validation, engine/linker retained; instantiate: prepared Store/WASI/imports through typed Command::instantiate including nested core start functions but excluding wasi:cli/run; first-call: wasi:cli/run only; exact command verification outside compile/instantiate timers; fresh fixture root, WASI context and instance each sample; memory barriers before/returned/released; release drops Store/instance and staging root, compiled component retained except compile; capture buffers retained through sample evidence construction; no forced reclamation",
+            "component_model": "enabled",
+            "component_u64_call_policy": "host-import-free named component export with 0..16 u64 parameters and one u64 result; fresh Store/instance per sample; compile: resident bytes through Component::new including validation; instantiate: empty linker and prepared Store through instantiate including nested core start; first-call: checked Func::call and post_return; signature lookup and exact oracle verification outside timers; one operation; separate timing/memory passes; memory-only before/returned/released barriers; release drops Store and compile-owned Component outside timers, engine/linker and shared compiled component retained; no forced allocator reclamation; no counters/profiling or arbitrary WIT support",
+            "counter_first_call_policy": "fresh initialized store/instance per sample; engine/module retained; exactly one requested call; setup/imports/input/argument and result buffers prepared before collection; verification/result copy/store drop after; no memory snapshots or allocator purge",
+            "counter_policy": "core exact scalar compile/instantiate phase handshakes; one operation, no warmup; no memory snapshots; perf collected externally over cgroup barrier window including transport/background work; verification and release excluded",
+            "counter_steady_policy": "stateless exact scalar; fresh engine/module/store/initialized instance per request retained across explicit warmup and measured batches; separate result buffers allocated before collection; every result verified afterward; no hidden pre-call, snapshots or allocator purge; raw counts per batch include embedding and barrier transport",
+            "density_cycle_policy": "fresh engine/module resources retained across samples; no untimed instance prewarm; each sample creates and verifies fresh instances, then drops Stores; first cycle retained; engine/module construction excluded from timer; final batch resource drop follows final barrier; no forced allocator purge",
+            "density_policy": "fresh simultaneous stores/instances; shared_module one engine/module; separate_engines fresh engine/compile per instance; timer includes engine construction, compile, store/instantiate/start, initialization/input and workload call; verification/release excluded; drop stores then modules then engines; no forced allocator reclamation",
+            "emscripten_host": "emscripten-stdio-v1; pinned argv/stdin, bounded output, deterministic clocks/randomness; filesystem syscalls fail closed; constructors then main(argc,argv); fresh instance per sample",
+            "engine_init_policy": "time configured Engine construction only; compile resident workload bytes, instantiate and verify behavior using each measured engine after timer stop; release outside timer; no forced reclamation",
+            "harness_calibration_policy": "empty-local-harness-v1: timing only; resident stateless core scalar workload checked before sampling; preallocated uint64-equivalent slots; timed local loop writes iteration+1 to every slot without Wasm/embedding calls; every slot verified after timer; no warmup, barriers or memory instrumentation; sample result is iteration count, not guest output; no automatic subtraction or performance scoring",
+            "instance_allocation": "on-demand; Wasmtime 46.0.1 defaults",
+            "instantiate_release_policy": "drop verified store/instance; compiled module and engine retained; store/import preparation excluded from instantiation; no forced allocator reclamation",
+            "materialization": "synchronous-api-and-complete-native-ranges-v1",
+            "parallel_compilation": "false",
+            "strategy": "winch",
+            "teardown_policy": "verify each fresh instance before timing store, module, and engine drop; no forced allocator reclamation",
+            "validator_feature_policy": "wasmtime-default-subset-v1",
+            "vector_first_call_phases_policy": "fresh initialized instance; pointers and first input prepared before before_first_call; first_call_returned follows last ordered call before its output oracle; memory window includes intercase input writes and oracle checks, unlike sequence_call_sum timers; final oracle and verified instance release follow returned barrier; compiled module retained; no forced reclamation",
+            "vector_instantiate_phases_policy": "fresh store/instance; prepared imports/module/engine outside instantiation window; includes Wasm start; explicit initialization and ordered vector oracle verification outside API window; drop verified store with module/engine retained; no forced reclamation",
+            "wasi_host": "wasmtime-wasi 46.0.1; readonly fixture root; empty env; zero random; synthetic clocks advancing 1ms per read; fresh owned WASI context; bounded capture included in call",
+            "wasi_reactor_host": "wasi-preview1-reactor-noio-v1; wasmtime-wasi 46.0.1; empty args/env/stdin, no preopens/network, zero random; wall clock starts 1640995200000000000ns, monotonic starts zero, both advance 1ms/read; reject nonempty stdout/stderr including ignored write errors; Wasm start inside instantiation, explicit _initialize once before input; fresh WASI context per instance; stateless steady retains instance across explicit warmup and samples without hidden pre-call; teardown drops store/module/linker/engine after verification, no forced allocator reclamation; logical memory post-verification, no native allocator instrumentation"
+          },
+          "capabilities": {
+            "can_command_compile_phases": true,
+            "can_command_first-call_phases": true,
+            "can_command_instantiate_phases": true,
+            "can_command_teardown_phases": true,
+            "can_compile_components": true,
+            "can_compile_materialized": true,
+            "can_compile_separately": true,
+            "can_component_command_lifecycle": true,
+            "can_component_command_phases": true,
+            "can_component_u64_calls_v1": true,
+            "can_component_u64_memory_v1": true,
+            "can_counter_compile": true,
+            "can_counter_first-call": true,
+            "can_counter_instantiate": true,
+            "can_counter_steady": true,
+            "can_density": true,
+            "can_density_cycle": true,
+            "can_disable_code_cache": true,
+            "can_execute_components": false,
+            "can_export_native_code": true,
+            "can_float_phases": true,
+            "can_float_teardown": true,
+            "can_float_trajectory": true,
+            "can_instantiate_separately": true,
+            "can_measure_host_allocations": false,
+            "can_measure_invocation_traps": true,
+            "can_observe_tiers": false,
+            "can_run_commands": true,
+            "can_run_component_commands": true,
+            "can_run_reactors": true,
+            "can_run_vectors": true,
+            "can_snapshot": false,
+            "can_vector_compile_phases": true,
+            "can_vector_first-call_phases": true,
+            "can_vector_instantiate_phases": true,
+            "can_vector_teardown_phases": true,
+            "can_verify_float_bits_v1": true,
+            "can_verify_invocation_traps": true
+          },
+          "scenarios": [
+            "harness-calibration",
+            "density",
+            "density-cycle",
+            "engine-init",
+            "compile",
+            "compile-materialized",
+            "instantiate",
+            "app-init",
+            "first-call",
+            "steady",
+            "trajectory",
+            "aot-produce",
+            "aot-load",
+            "teardown"
+          ],
+          "abis": [
+            "core",
+            "wasi-command",
+            "wasi-reactor",
+            "component",
+            "emscripten"
+          ],
+          "features": [
+            "mvp",
+            "bulk-memory",
+            "simd",
+            "reference-types",
+            "multi-value"
+          ],
+          "validator_features": {
+            "namespace": "wasmparser/0.251.0",
+            "evidence": "Wasmtime 46.0.1 config.rs default features and compiler_panicking_wasm_features; explicitly applied Config::wasm_features subset; enabled validation is not a guarantee of complete backend instruction support",
+            "supported": {
+              "EXCEPTIONS": false,
+              "FUNCTION_REFERENCES": false,
+              "GC": false,
+              "GC_TYPES": false,
+              "LEGACY_EXCEPTIONS": false,
+              "RELAXED_SIMD": false,
+              "SIMD": false,
+              "STACK_SWITCHING": false,
+              "TAIL_CALL": false,
+              "THREADS": false
+            }
+          }
+        }
+      },
+      {
+        "native_dependency_policy": "macho-third-party-closure-v1; system shared-cache libraries excluded; absolute loads remain exact host prerequisites",
+        "id": "v8",
+        "command": [
+          "/Users/work/.local/share/wasm-fyi/actions-runner/_work/_tool/node/26.4.0/arm64/bin/node",
+          "/Users/work/Code/Tools/wasm-bench/adapters/v8/adapter.mjs"
+        ],
+        "file_sha256": {
+          "/Users/work/.local/share/wasm-fyi/actions-runner/_work/_tool/node/26.4.0/arm64/bin/node": "d23e520f5bcd497bdd0c6a6242356a4fd255abaceba7c3549727caacb936ddae",
+          "/Users/work/Code/Tools/wasm-bench/adapters/v8/adapter.mjs": "a69b80862804540a459e1a01b04e869a4cdb8405f08eeb47ebeeb1d7a2014976",
+          "/Users/work/Code/Tools/wasm-bench/adapters/v8/compiler-mode.mjs": "826f6a82054c3551cbbb92d3f4f8ba03f7b1d85a9ea345cd4dfe92028390b529",
+          "/Users/work/Code/Tools/wasm-bench/adapters/v8/floats.mjs": "4bc5bd022948e2b101df38d8fabfa1e980da2588cf3020c3935d3b7de6eb38ee",
+          "/Users/work/Code/Tools/wasm-bench/adapters/v8/harness.mjs": "4286207601a1a0adfc3d892c07ac792a5518a5ca59710b025e6d9b4b9a9ba735",
+          "/Users/work/Code/Tools/wasm-bench/adapters/v8/profiling.mjs": "9cfeb6b8715a9989631d52cb7dd67fe7c4c81ea5ce451831b0e0f8cb9970ce54"
+        },
+        "description": {
+          "phase_release_policy": "drop module and instance JS references; engine caches and garbage collection uncontrolled; no forced GC",
+          "phase_barrier_scenarios": [
+            "compile",
+            "teardown",
+            "app-init",
+            "instantiate",
+            "density",
+            "first-call",
+            "steady"
+          ],
+          "runtime": "v8",
+          "runtime_version": "14.6.202.34-node.21",
+          "backend": "production-default-tiering",
+          "embedding": "Node.js WebAssembly API",
+          "build": "v26.4.0",
+          "effective_configuration": {
+            "app_init_release_policy": "drop verified instance and initializer references; compiled module retained; no engine disposal or forced GC",
+            "counter_first_call_policy": "fresh initialized instance per sample; module retained, engine/cache/GC uncontrolled; export and arguments resolved before collection; exactly one requested call; result normalization/verification/reference release after; no memory snapshots; background compiler and transport work included in cgroup window",
+            "counter_policy": "core exact scalar compile/instantiate phase handshakes; one operation, no warmup; no memory snapshots; external cgroup window includes transport, adapter and background compiler work; verification and reference release excluded; API return is not proof of final tier completion; engine/cache/GC remain uncontrolled",
+            "counter_steady_policy": "stateless exact scalar; fresh module wrapper/initialized instance per request retained across explicit warmup and measured batches; process engine/cache/GC uncontrolled; arguments and result container prepared before collection, every result normalized/verified afterward; no hidden pre-call or snapshots; raw counts per batch include embedding, background compiler and barrier transport",
+            "cpu_profile_policy": "Node inspector local session, no listening port; 1000us requested sampling interval; V8 isolate stacks over complete run request including setup/warmup/verification; not all-process threads or guest-only CPU; native profile JSON retained with no time-delta conversion to CPU totals",
+            "density_policy": "shared_module only; one new JS Module wrapper and fresh simultaneous instances per sample; process V8 engine reused, internal code cache uncontrolled; timer includes compile/instantiate/start/init/input/invoke, not engine construction; release drops JS references only, no forced GC or engine disposal",
+            "flags": "[]",
+            "harness_calibration_policy": "empty-local-harness-v1: timing only; resident stateless core scalar workload checked before sampling; preallocated uint64-equivalent slots; timed local loop writes iteration+1 to every slot without Wasm/embedding calls; every slot verified after timer; no warmup, barriers or memory instrumentation; sample result is iteration count, not guest output; no automatic subtraction or performance scoring",
+            "instantiate_release_policy": "drop verified instance references; compiled module retained; no engine disposal or forced GC",
+            "module_cache": "uncontrolled",
+            "node": "v26.4.0",
+            "sustained_policy": "fixed batches on one fresh initialized JS module/instance; invocation one retained, explicit warmup only; arguments/results prepared before timers; every result verified after timers and heap snapshots; monotonic session windows; cumulative measured non-warmup API target; production-default tiering, engine/code cache/background compilation uncontrolled and tiers unobserved; final release drops module/instance/export JS references only, not engine disposal or physical reclamation; no forced GC",
+            "teardown_policy": "verify each fresh instance before timing JS instance/module reference release; no engine disposal or forced GC; reclamation unobserved",
+            "tiering": "production-default",
+            "vector_first_call_phases_policy": "fresh initialized instance; pointers and first input prepared before before_first_call; first_call_returned follows last ordered call before its output oracle; memory window includes intercase input writes and oracle checks, unlike sequence_call_sum timers; final oracle and verified instance release follow returned barrier; compiled module retained; no forced reclamation",
+            "vector_instantiate_phases_policy": "fresh JS instance; prepared module/imports retained; Wasm start included; explicit initialization and ordered vector verification outside API window; release drops instance/export references, not physical reclamation; no forced GC"
+          },
+          "capabilities": {
+            "can_compile_separately": true,
+            "can_control_compiler_mode": false,
+            "can_counter_compile": true,
+            "can_counter_first-call": true,
+            "can_counter_instantiate": true,
+            "can_counter_steady": true,
+            "can_density": true,
+            "can_density_separate_engines": false,
+            "can_disable_code_cache": false,
+            "can_export_native_code": false,
+            "can_float_phases": true,
+            "can_float_teardown": true,
+            "can_float_trajectory": true,
+            "can_instantiate_separately": true,
+            "can_measure_host_allocations": false,
+            "can_measure_invocation_traps": true,
+            "can_observe_tiers": false,
+            "can_profile_v8_cpu_steady": true,
+            "can_run_vectors": true,
+            "can_snapshot": false,
+            "can_sustained_execution": true,
+            "can_sustained_post_collection": false,
+            "can_vector_compile_phases": true,
+            "can_vector_first-call_phases": true,
+            "can_vector_instantiate_phases": true,
+            "can_vector_teardown_phases": true,
+            "can_verify_float_bits_v1": true,
+            "can_verify_invocation_traps": true
+          },
+          "scenarios": [
+            "harness-calibration",
+            "compile",
+            "instantiate",
+            "app-init",
+            "first-call",
+            "steady",
+            "trajectory",
+            "teardown",
+            "density",
+            "sustained"
+          ],
+          "abis": [
+            "core"
+          ],
+          "features": [
+            "mvp",
+            "bulk-memory",
+            "simd",
+            "reference-types",
+            "multi-value"
+          ]
+        }
+      }
+    ]
+  }
+}

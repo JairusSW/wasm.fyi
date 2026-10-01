@@ -1,0 +1,1 @@
+(module (memory (export "memory") i64 2 256) (func (export "benchmark") (param $n i32) (result i32) (memory.fill (i64.const 0) (i32.const 7) (i64.extend_i32_u (local.get $n))) (memory.copy (i64.const 65536) (i64.const 0) (i64.extend_i32_u (local.get $n))) (i32.load8_u (i64.add (i64.const 65536) (i64.extend_i32_u (i32.sub (local.get $n) (i32.const 1)))))))

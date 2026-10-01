@@ -1,0 +1,20 @@
+(component
+    (component $child
+      (core module $m (func (export "step") (param i64) (result i64) local.get 0 i64.const 1 i64.add))
+      (core instance $i (instantiate $m))
+      (func (export "step") (param "value" u64) (result u64) (canon lift (core func $i "step"))))
+    (instance $ci (instantiate $child))
+    (alias export $ci "step" (func $step))
+    (component $caller
+      (import "step" (func $step (param "value" u64) (result u64)))
+    (core func $lower (canon lower (func $step)))
+    (core instance $host (export "step" (func $lower)))
+    (core module $bench (import "host" "step" (func $step (param i64) (result i64)))
+      (func (export "benchmark") (param $n i64) (result i64) (local $i i64) (local $sum i64)
+        (loop $loop (local.set $sum (i64.add (local.get $sum) (call $step (local.get $i))))
+          (local.set $i (i64.add (local.get $i) (i64.const 1))) (br_if $loop (i64.lt_u (local.get $i) (local.get $n)))) (local.get $sum)))
+    (core instance $b (instantiate $bench (with "host" (instance $host))))
+    (func (export "benchmark") (param "count" u64) (result u64) (canon lift (core func $b "benchmark"))))
+    (instance $caller-i (instantiate $caller (with "step" (func $step))))
+    (alias export $caller-i "benchmark" (func $benchmark))
+    (export "benchmark" (func $benchmark)))

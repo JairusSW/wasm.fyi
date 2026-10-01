@@ -1,0 +1,456 @@
+--- a/adapters/v8/adapter.mjs
++++ b/adapters/v8/adapter.mjs
+@@ -22,6 +22,18 @@
+ }
+ 
+ let prep, bytes, module, instance, imports;
++const featureProbes = {"MEMORY64": "AGFzbQEAAAABBgFgAX8BfwMCAQAFBQEFAoACBxYCBm1lbW9yeQIACWJlbmNobWFyawAACj0BOwECfwNAIAICfyABQf8/cUECdK0gATYCACABQf8/cUECdK0oAgALaiECIAFBAWohASABIABJDQALIAILAB4EbmFtZQIMAQADAAFuAQFpAgFhAwkBAAEABGxvb3A=", "EXCEPTIONS": "AGFzbQEAAAABCgJgAX8AYAF/AX8DAgEBDQMBAAAHDQEJYmVuY2htYXJrAAAKLQErAQJ/A0AgAgJ/H0ABAAAAIAEIAAsAC2ohAiABQQFqIQEgASAASQ0ACyACCwApBG5hbWUCDAEAAwABbgEBaQIBYQMOAQACAARsb29wAQNvdXQLBAEAAXQ=", "GC": "AGFzbQEAAAABBgFgAX8BfwMCAQAHDQEJYmVuY2htYXJrAAAKJAEiAQJ/A0AgAiAB+xz7HmohAiABQQFqIQEgASAASQ0ACyACCwAeBG5hbWUCDAEAAwABbgEBaQIBYQMJAQABAARsb29w", "RELAXED_SIMD": "AGFzbQEAAAABBgFgAX8BfwMCAQAHDQEJYmVuY2htYXJrAAAKOAE2AQJ/A0AgAiABs/0TQwAAAED9E0MAAIA//RP9hQL9HwKpaiECIAFBAWohASABIABJDQALIAILAB4EbmFtZQIMAQADAAFuAQFpAgFhAwkBAAEABGxvb3A=", "STACK_SWITCHING": "AGFzbQEAAAABCAJgAX8Bf10AAwMCAAAHDQEJYmVuY2htYXJrAAEJBQEDAAEAChUCBwAgAEEHagsLACAA0gDgAeMBAAsAFwRuYW1lAQcBAAR0YXNrBAcCAAFmAQFj", "MULTI_MEMORY": "AGFzbQEAAAABBgFgAX8BfwMCAQAFBwIBAgIBAgIHDQEJYmVuY2htYXJrAAAKWwFZAQJ/A0AgAgJ/IAFB/z9xQQJ0IAE2AgAgAUH/P3FBAnQgAUEHajZCAQAgAUH/P3FBAnQoQgEAIAFB/z9xQQJ0KAIAawtqIQIgAUEBaiEBIAEgAEkNAAsgAgsAJwRuYW1lAgwBAAMAAW4BAWkCAWEDCQEAAQAEbG9vcAYHAgABYQEBYg=="};
++const validatorFeatures = {namespace: "wasmparser/0.251.0", evidence: "Representative valid proposal modules tested with WebAssembly.validate under the recorded Node flags; this gates unavailable configurations, not proposal conformance", supported: Object.fromEntries(Object.entries(featureProbes).map(([name, encoded]) => [name, WebAssembly.validate(Buffer.from(encoded, "base64"))]))};
++
++function stringBuiltinsAvailable() {
++  try {
++    const bytes=Buffer.from("AGFzbQEAAAABDAJgAm9/AX9gAX8BfwJDAgdzdHJpbmdzGmFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6A28ADndhc206anMtc3RyaW5nCmNoYXJDb2RlQXQAAAMCAQEHDQEJYmVuY2htYXJrAAEKJwElAQJ/A0AgAiMAIAFBGnAQAGohAiABQQFqIQEgASAASQ0ACyACCwAtBG5hbWUBBwEABGNoYXICDAEBAwABbgEBaQIBYQMJAQEBAARsb29wBwQBAAFz","base64");
++    const module=new WebAssembly.Module(bytes,{builtins:["js-string"],importedStringConstants:"strings"});
++    return new WebAssembly.Instance(module,{}).exports.benchmark(1)===97;
++  } catch { return false; }
++}
++function compileModule(bytes) { return prep?.workload.host_profile === "js-string-builtins-v1" ? new WebAssembly.Module(bytes, {builtins: ["js-string"], importedStringConstants: "strings"}) : new WebAssembly.Module(bytes); }
++
+ let floatSignature;
+ const scenarios = ['harness-calibration', 'compile', 'instantiate', 'app-init', 'first-call', 'steady', 'trajectory', 'teardown', 'density', 'sustained'];
+ const hash = b => crypto.createHash('sha256').update(b).digest('hex');
+@@ -68,7 +80,7 @@
+   }
+   for(const check of prep.workload.oracle.memory||[]){const want=Buffer.from(check.hex,'hex');const memory=target.exports.memory;const offset=base+check.offset;if(!Number.isSafeInteger(offset)||offset<0||offset>0xffffffff||!memory||offset+want.length>memory.buffer.byteLength||!Buffer.from(memory.buffer,offset,want.length).equals(want))throw new Error('incorrect result: memory oracle mismatch');}
+ }
+-function setup() { module ??= new WebAssembly.Module(bytes); instance ??= initialize(construct()); }
++function setup() { module ??= compileModule(bytes); instance ??= initialize(construct()); }
+ function observation(metric, value, scope, phase) {
+   return {metric, value, scope, phase, definition_version: 1, unit: 'bytes', collector: 'node:process.memoryUsage', collector_version: process.version, quality: 'engine_reported', profile: 'memory', status: 'available', normalization_denominator: 'process_snapshot'};
+ }
+@@ -127,7 +139,7 @@
+     const results=[];
+     try {
+       const start=now();
+-      compiled=new WebAssembly.Module(bytes);
++      compiled=compileModule(bytes);
+       if(WebAssembly.Module.imports(compiled).length)throw new Error('density requires import-free modules');
+       for(let j=0;j<d.instances;j++){
+         held.push(initialize(new WebAssembly.Instance(compiled,{})));
+@@ -156,7 +168,7 @@
+     await barrier(req,i,'before_compile');
+     const before=prep.profile==='memory'?process.memoryUsage():undefined;
+     const start=now();
+-    let compiled=new WebAssembly.Module(bytes);
++    let compiled=compileModule(bytes);
+     const elapsed=now()-start;
+     const after=prep.profile==='memory'?process.memoryUsage():undefined;
+     await barrier(req,i,'compiled');
+@@ -183,13 +195,13 @@
+     if(!Number.isSafeInteger(total)||total>w.vector_byte_budget)throw new Error('vector input/oracle byte budget exceeded');
+   }
+   const cases=v.cases.map(c=>{const input=Buffer.alloc(c.len);if(mod>0)for(let j=0;j<input.length;j++)input[j]=(j%mod)&255;return {input,expected:Buffer.from(c.out,'hex')};});
+-  const shared=['compile','teardown'].includes(r.scenario)?undefined:new WebAssembly.Module(bytes);
++  const shared=['compile','teardown'].includes(r.scenario)?undefined:compileModule(bytes);
+   const timedCalls=['first-call','steady'].includes(r.scenario),warmup=r.scenario==='steady'?r.warmup:0,samples=[];
+   for(let i=-warmup;i<r.samples;i++){
+     if(r.phase_barriers&&r.scenario==='compile')await barrier(req,i,'before_compile');
+     let before=prep.profile==='memory'?process.memoryUsage():undefined;
+     let compiled=shared,elapsed=0n;
+-    if(['compile','teardown'].includes(r.scenario)){const start=now();compiled=new WebAssembly.Module(bytes);elapsed=now()-start;}
++    if(['compile','teardown'].includes(r.scenario)){const start=now();compiled=compileModule(bytes);elapsed=now()-start;}
+     const compileAfter=r.phase_barriers&&r.scenario==='compile'?process.memoryUsage():undefined;
+     if(r.phase_barriers&&r.scenario==='compile')await barrier(req,i,'compiled');
+     if(r.phase_barriers&&r.scenario==='instantiate'){
+@@ -255,7 +267,7 @@
+ async function runAppInit(r,req) {
+   const w=prep.workload;
+   if(!w.initialize||w.abi!=='core'||w.oracle.kind!=='exact_u64'||w.vectors||w.command||(r.phase_barriers&&prep.profile!=='memory')||!['timing','memory'].includes(prep.profile)||!Number.isInteger(r.samples)||r.samples>100000)throw new Error('unsupported app-init contract/profile/batch');
+-  const compiled=new WebAssembly.Module(bytes),samples=[];
++  const compiled=compileModule(bytes),samples=[];
+   for(let i=0;i<r.samples;i++) {
+     let target=new WebAssembly.Instance(compiled,imports),init=target.exports[w.initialize];
+     if(typeof init!=='function'||init.length!==0)throw new Error('initializer must be () -> ()');
+@@ -278,7 +290,7 @@
+   return {samples};
+ }
+ async function steadyCounters(r,req) {
+-  const compiled=new WebAssembly.Module(bytes),samples=[];
++  const compiled=compileModule(bytes),samples=[];
+   const target=initialize(new WebAssembly.Instance(compiled,imports));
+   const fn=target.exports[prep.workload.export],args=argumentsForCall();
+   if(typeof fn!=='function')throw new Error('missing workload export');
+@@ -299,7 +311,7 @@
+   return {samples};
+ }
+ async function firstCallCounters(r,req) {
+-  const compiled=new WebAssembly.Module(bytes),samples=[];
++  const compiled=compileModule(bytes),samples=[];
+   for(let i=0;i<r.samples;i++) {
+     let target=initialize(new WebAssembly.Instance(compiled,imports));
+     let fn=target.exports[prep.workload.export];
+@@ -322,7 +334,7 @@
+ async function instantiatePhases(r,req) {
+   const w=prep.workload;
+   if(w.abi!=='core'||!['exact_u64','float_bits_v1'].includes(w.oracle.kind)||w.vectors||w.command||!['memory','counters'].includes(prep.profile)||!['stateless','fresh_instance_per_sample'].includes(w.reset)||!Number.isInteger(r.samples)||r.samples<1||r.samples>100000)throw new Error('unsupported instantiation barriers');
+-  const compiled=new WebAssembly.Module(bytes),samples=[];
++  const compiled=compileModule(bytes),samples=[];
+   for(let i=0;i<r.samples;i++) {
+     await barrier(req,i,'before_instantiate');
+     const before=prep.profile==='memory'?process.memoryUsage():undefined,start=now();
+@@ -343,7 +355,7 @@
+   const w=prep.workload, codes={unreachable:'unreachable','memory access out of bounds':'memory_out_of_bounds','divide by zero':'integer_divide_by_zero','divide result unrepresentable':'integer_overflow'};
+   if(!Object.values(codes).includes(w.oracle.expected_trap)||w.abi!=='core'||w.reset!=='fresh_instance_per_sample'||!w.export||w.host_profile||w.initialize||w.input||w.command||w.vectors||(w.args||[]).length||(w.oracle.expected||[]).length||(w.oracle.memory||[]).length||w.oracle.output_pointer_export)throw new Error('unsupported or ambiguous invocation-trap contract');
+   if(!['timing','memory'].includes(prep.profile)||r.phase_barriers||!['first-call','steady'].includes(r.scenario)||!Number.isInteger(r.samples)||r.samples<1||r.samples>100000||!Number.isInteger(r.warmup)||r.warmup<0||r.warmup>100000||!Number.isInteger(r.operations)||r.operations<1||r.operations>1000000)throw new Error('unsupported trap scenario/profile/batch');
+-  const compiled=new WebAssembly.Module(bytes),warmup=r.scenario==='steady'?r.warmup:0,samples=[];
++  const compiled=compileModule(bytes),warmup=r.scenario==='steady'?r.warmup:0,samples=[];
+   for(let i=0;i<r.samples+warmup;i++){
+     const target=new WebAssembly.Instance(compiled,Object.create(null)),f=target.exports[w.export];
+     if(typeof f!=='function'||f.length!==0)throw new Error('missing or parameterized trap export');
+@@ -368,7 +380,7 @@
+     case 'describe': {
+       if(compilerMode!=='production-default')compilerModeProbe??=verifyCompilerMode(compilerMode);
+       return {description: compilerDescription({
+-      runtime: 'v8', runtime_version: process.versions.v8, backend: compilerMode==='production-default'?'production-default-tiering':compilerMode, embedding: 'Node.js WebAssembly API', build: process.version,
++      validator_features: validatorFeatures, runtime: 'v8', runtime_version: process.versions.v8, backend: compilerMode==='production-default'?'production-default-tiering':compilerMode, embedding: 'Node.js WebAssembly API', build: process.version,
+       effective_configuration: {
+         vector_instantiate_phases_policy:'fresh JS instance; prepared module/imports retained; Wasm start included; explicit initialization and ordered vector verification outside API window; release drops instance/export references, not physical reclamation; no forced GC',
+         vector_first_call_phases_policy:'fresh initialized instance; pointers and first input prepared before before_first_call; first_call_returned follows last ordered call before its output oracle; memory window includes intercase input writes and oracle checks, unlike sequence_call_sum timers; final oracle and verified instance release follow returned barrier; compiled module retained; no forced reclamation',
+@@ -379,14 +391,14 @@
+         counter_first_call_policy:'fresh initialized instance per sample; module retained, engine/cache/GC uncontrolled; export and arguments resolved before collection; exactly one requested call; result normalization/verification/reference release after; no memory snapshots; background compiler and transport work included in cgroup window',
+         counter_policy:'core exact scalar compile/instantiate phase handshakes; one operation, no warmup; no memory snapshots; external cgroup window includes transport, adapter and background compiler work; verification and reference release excluded; API return is not proof of final tier completion; engine/cache/GC remain uncontrolled',
+         density_policy:'shared_module only; one new JS Module wrapper and fresh simultaneous instances per sample; process V8 engine reused, internal code cache uncontrolled; timer includes compile/instantiate/start/init/input/invoke, not engine construction; release drops JS references only, no forced GC or engine disposal',node: process.version, flags: JSON.stringify(process.execArgv), module_cache: 'uncontrolled', tiering: 'production-default', instantiate_release_policy: 'drop verified instance references; compiled module retained; no engine disposal or forced GC', app_init_release_policy: 'drop verified instance and initializer references; compiled module retained; no engine disposal or forced GC', teardown_policy: 'verify each fresh instance before timing JS instance/module reference release; no engine disposal or forced GC; reclamation unobserved'},
+-      capabilities: {'can_vector_first-call_phases':true,can_vector_instantiate_phases:true,can_control_compiler_mode:false,can_sustained_execution:true,can_sustained_post_collection:false,can_profile_v8_cpu_steady:true,can_counter_steady:true,'can_counter_first-call':true,can_counter_compile:true,can_counter_instantiate:true,can_density:true,can_density_separate_engines:false,can_float_teardown: true, can_float_phases: true, can_float_trajectory: true, can_verify_float_bits_v1: true, can_verify_invocation_traps: true, can_measure_invocation_traps: true, can_run_vectors: true, can_vector_compile_phases: true, can_vector_teardown_phases: true, can_compile_separately: true, can_instantiate_separately: true, can_disable_code_cache: false, can_observe_tiers: false, can_export_native_code: false, can_measure_host_allocations: false, can_snapshot: false},
++      capabilities: {'can_host_profile_js-string-builtins-v1':stringBuiltinsAvailable(),'can_host_profile_threads-defined-v1':true,'can_vector_first-call_phases':true,can_vector_instantiate_phases:true,can_control_compiler_mode:false,can_sustained_execution:true,can_sustained_post_collection:false,can_profile_v8_cpu_steady:true,can_counter_steady:true,'can_counter_first-call':true,can_counter_compile:true,can_counter_instantiate:true,can_density:true,can_density_separate_engines:false,can_float_teardown: true, can_float_phases: true, can_float_trajectory: true, can_verify_float_bits_v1: true, can_verify_invocation_traps: true, can_measure_invocation_traps: true, can_run_vectors: true, can_vector_compile_phases: true, can_vector_teardown_phases: true, can_compile_separately: true, can_instantiate_separately: true, can_disable_code_cache: false, can_observe_tiers: false, can_export_native_code: false, can_measure_host_allocations: false, can_snapshot: false},
+       scenarios, phase_barrier_scenarios:['compile','teardown','app-init','instantiate','density','first-call','steady'], phase_release_policy:'drop module and instance JS references; engine caches and garbage collection uncontrolled; no forced GC', abis: ['core'], features: ['mvp', 'bulk-memory', 'simd', 'reference-types', 'multi-value']
+     })}; }
+     case 'prepare':
+       if(compilerMode!=='production-default')compilerModeProbe??=verifyCompilerMode(compilerMode);
+       prep = req.prepare;
+       floatSignature=undefined; module=instance=undefined;
+-      if(prep.workload.host_profile&&!['identity-v1','assemblyscript-abort-v1'].includes(prep.workload.host_profile))throw new Error('unsupported host profile');
++      if(prep.workload.host_profile&&!['identity-v1','assemblyscript-abort-v1','js-string-builtins-v1','threads-defined-v1'].includes(prep.workload.host_profile))throw new Error('unsupported host profile');
+       imports=Object.create(null);
+       if(prep.workload.host_profile==='identity-v1')imports.wasmbench=Object.assign(Object.create(null),{identity:v=>v});
+       if(prep.workload.host_profile==='assemblyscript-abort-v1')imports.env=Object.assign(Object.create(null),{abort:(message,file,line,column)=>{throw new Error(`AssemblyScript abort: message_ptr=${message>>>0} file_ptr=${file>>>0} line=${line>>>0} column=${column>>>0}`);}});
+@@ -453,7 +465,7 @@
+           for (let j = 0; j < operations; j++) {
+             const start = now();
+             switch (r.scenario) {
+-              case 'compile': { const compiled = new WebAssembly.Module(bytes); elapsed += now() - start; const created=initialize(new WebAssembly.Instance(compiled,imports));verify(invoke(created),created); break; }
++              case 'compile': { const compiled = compileModule(bytes); elapsed += now() - start; const created=initialize(new WebAssembly.Instance(compiled,imports));verify(invoke(created),created); break; }
+               case 'instantiate': { const created = construct(); elapsed += now() - start; initialize(created);verify(invoke(created),created); break; }
+               case 'teardown': instance = module = undefined; elapsed += now() - start; break;
+             }
+--- a/adapters/wago/main.go
++++ b/adapters/wago/main.go
+@@ -480,7 +480,8 @@
+ 				resp.Description.Configuration["counter_first_call_policy"] = "fresh initialized instance per sample; compiled module retained; exactly one requested call, no hidden verification pre-call; setup/input/export resolution before counter window, verification/result copy/release after; no memory instrumentation"
+ 				resp.Description.Configuration["counter_policy"] = "core exact scalar compile/instantiate phase handshakes; one operation, no warmup; no allocator snapshots; perf collected externally over cgroup barrier window including transport/background work; verification and release excluded"
+ 				resp.Description.Configuration["density_policy"] = "Runtime.Compile/Instantiate: fresh simultaneous group; shared_module one runtime/module; separate_engines fresh runtime and compilation per instance; timer includes engine construction, compile, instantiate/start, initialization, input and workload invocation; verification and release excluded; release waits Runtime.CloseContext and Module.Close; no forced GC"
+-				resp.Description.Capabilities["can_export_native_code"] = true
++				resp.Description.ValidatorFeatures = &protocol.ValidatorFeaturePolicy{Namespace: "wasmparser/0.251.0", Evidence: "Pinned Wago decoder does not implement proposal continuation type decoding; runtime-private continuation APIs are distinct", Supported: map[string]bool{"STACK_SWITCHING": false}}
++                resp.Description.Capabilities["can_export_native_code"] = true
+ 				resp.Description.Capabilities["can_verify_float_bits_v1"] = true
+ 				resp.Description.Capabilities["can_float_phases"] = true
+ 				resp.Description.Capabilities["can_float_teardown"] = true
+--- a/adapters/wasmtime/Cargo.toml
++++ b/adapters/wasmtime/Cargo.toml
+@@ -4,6 +4,7 @@
+ edition = "2024"
+ 
+ [features]
++component-async-probes = ["wasmtime/component-model-async"]
+ native-allocator = []
+ native-code-lifetime = ["dep:rustix", "dep:wasmtime-internal-jit-icache-coherence"]
+ process-snapshot = ["dep:wat"]
+--- a/adapters/wasmtime/src/bin/wasm-analyze.rs
++++ b/adapters/wasmtime/src/bin/wasm-analyze.rs
+@@ -11,7 +11,7 @@
+ fn main() -> Result<()> {
+     let mut args = std::env::args().skip(1);
+     let path = args.next().ok_or_else(|| {
+-        anyhow::anyhow!("usage: wasm-analyze FILE.wasm [default|wasm1|wasm2|wasm3]")
++        anyhow::anyhow!("usage: wasm-analyze FILE.wasm [default|wasm1|wasm2|wasm3|all]")
+     })?;
+     let profile = args.next().unwrap_or_else(|| "default".into());
+     if args.next().is_some() {
+@@ -28,6 +28,7 @@
+ fn feature_policy(profile: &str) -> Result<WasmFeatures> {
+     Ok(match profile {
+         "default" => WasmFeatures::default(),
++        "all" => WasmFeatures::all(),
+         "wasm1" => WasmFeatures::WASM1,
+         "wasm2" => WasmFeatures::WASM2,
+         "wasm3" => WasmFeatures::WASM3,
+--- a/adapters/wasmtime/src/features.rs
++++ b/adapters/wasmtime/src/features.rs
+@@ -16,11 +16,22 @@
+         ("EXCEPTIONS", WasmFeatures::EXCEPTIONS, false),
+         ("LEGACY_EXCEPTIONS", WasmFeatures::LEGACY_EXCEPTIONS, false),
+     ];
++    if !winch {
++        flags.push(("GC_TYPES", WasmFeatures::GC_TYPES, false));
++        flags.push(("THREADS", WasmFeatures::THREADS, false));
++        flags.push(("STACK_SWITCHING", WasmFeatures::STACK_SWITCHING, false));
++    }
++    flags.push(("CM_ASYNC", WasmFeatures::CM_ASYNC, false));
++    flags.push(("CM_ASYNC_STACKFUL", WasmFeatures::CM_ASYNC_STACKFUL, false));
+     if winch {
+         flags.push(("GC_TYPES", WasmFeatures::GC_TYPES, false));
+         flags.push(("STACK_SWITCHING", WasmFeatures::STACK_SWITCHING, false));
+         if cfg!(target_arch = "aarch64") {
+             flags.push(("THREADS", WasmFeatures::THREADS, false));
++            // Winch ARM64 has incomplete SIMD lowering (for example lane loads
++            // used by the Wago AssemblyScript corpus). Keep that backend policy
++            // explicit so unavailable cells never become generic compile errors.
++            flags.push(("SIMD", WasmFeatures::SIMD, false));
+         }
+     }
+     flags
+@@ -30,16 +41,25 @@
+     for (_, flag, enabled) in policy(winch) {
+         config.wasm_features(flag, enabled);
+     }
++    #[cfg(feature = "component-async-probes")]
++    if std::env::args().any(|arg| arg == "--component-async") {
++        config.wasm_component_model_async(true);
++    }
+ }
+ 
+ pub fn describe(winch: bool) -> Value {
+-    let supported: serde_json::Map<String, Value> = policy(winch)
++    #[allow(unused_mut)]
++    let mut supported: serde_json::Map<String, Value> = policy(winch)
+         .into_iter()
+         .map(|(name, _, enabled)| (name.to_owned(), json!(enabled)))
+         .collect();
++    #[cfg(feature = "component-async-probes")]
++    if std::env::args().any(|arg| arg == "--component-async") {
++        supported.insert("CM_ASYNC".to_owned(), json!(true));
++    }
+     json!({
+         "namespace": "wasmparser/0.251.0",
+-        "evidence": "Wasmtime 46.0.1 config.rs default features and compiler_panicking_wasm_features; explicitly applied Config::wasm_features subset; enabled validation is not a guarantee of complete backend instruction support",
++        "evidence": "Wasmtime 46.0.1 config.rs default features and compiler_panicking_wasm_features; explicitly applied Config::wasm_features subset; enabled validation is not a guarantee of complete backend instruction support; optional --component-async uses the component-async-probes Cargo feature and explicitly enables wasm_component_model_async",
+         "supported": supported
+     })
+ }
+@@ -63,9 +83,13 @@
+             let engine = adapter.engine().unwrap();
+             assert_eq!(describe(winch)["supported"]["TAIL_CALL"], json!(!winch));
+             assert_eq!(Module::validate(&engine, tail).is_ok(), !winch);
+-            assert!(Module::validate(&engine, simd).is_ok());
++            let simd_enabled = !(winch && cfg!(target_arch = "aarch64"));
++            assert_eq!(Module::validate(&engine, simd).is_ok(), simd_enabled);
++            if !simd_enabled {
++                assert_eq!(describe(winch)["supported"]["SIMD"], json!(false));
++            }
+             for bytes in [tail.as_slice(), simd.as_slice()] {
+-                if winch && bytes == tail {
++                if (winch && bytes == tail) || (!simd_enabled && bytes == simd) {
+                     continue;
+                 }
+                 let module = Module::new(&engine, bytes).unwrap();
+--- a/adapters/wazero/features.go
++++ b/adapters/wazero/features.go
+@@ -11,6 +11,8 @@
+ 		Supported: map[string]bool{
+ 			"THREADS": false, "TAIL_CALL": false, "EXTENDED_CONST": false,
+ 			"EXCEPTIONS": false, "FUNCTION_REFERENCES": false,
++            "RELAXED_SIMD": false, "GC": false, "MEMORY64": false,
++            "MULTI_MEMORY": false, "STACK_SWITCHING": false, "LEGACY_EXCEPTIONS": false,
+ 		},
+ 	}
+ }
+--- a/cmd/wasmbench/main.go
++++ b/cmd/wasmbench/main.go
+@@ -493,7 +493,7 @@
+ 	case "analyze":
+ 		f := flags("analyze")
+ 		artifact := f.String("artifact", "", "Wasm input file")
+-		featureProfile := f.String("features", "default", "pinned wasmparser validation profile: default, wasm1, wasm2, wasm3")
++		featureProfile := f.String("features", "default", "pinned wasmparser validation profile: default, wasm1, wasm2, wasm3, all")
+ 		if e = f.Parse(args[1:]); e != nil {
+ 			return e
+ 		}
+@@ -650,6 +650,11 @@
+ 				if e = cmd.Run(); e != nil {
+ 					return e
+ 				}
++            case "wasmtime-component-async":
++                cmd := exec.CommandContext(ctx, "cargo", "build", "--release", "--locked", "--features", "component-async-probes", "--target-dir", "target/component-async", "--bin", "adapter-wasmtime")
++                cmd.Dir = filepath.Join(root, "adapters", "wasmtime")
++                cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
++                if e = cmd.Run(); e != nil { return e }
+ 			case "wasmtime", "wasmtime-winch", "wasmtime-pooling", "wasmtime-allocator", "wasmtime-winch-allocator", "wasmtime-code-lifetime", "wasmtime-winch-code-lifetime":
+ 				cmd := exec.CommandContext(ctx, "cargo", "build", "--release", "--locked")
+ 				if strings.HasSuffix(rt, "-allocator") {
+@@ -675,7 +680,7 @@
+ 				if e = cmd.Run(); e != nil {
+ 					return e
+ 				}
+-			case "v8", "v8-liftoff-only", "v8-optimizing-only", "v8-tier-observed", "v8-tier-traced":
++			case "v8", "v8-wasmfx", "v8-liftoff-only", "v8-optimizing-only", "v8-tier-observed", "v8-tier-traced":
+ 				script := "adapters/v8/adapter.mjs"
+ 				if rt == "v8-tier-observed" || rt == "v8-tier-traced" {
+ 					script = "adapters/v8/tier-adapter.mjs"
+@@ -703,7 +708,7 @@
+ 		archiveTools := f.Bool("archive-tools", true, "preserve exact runner, adapters and analyzer in the run bundle")
+ 		requirePartition := f.Bool("require-isolated-cpu-partition", false, "require empty isolated cgroup-parent and disjoint controller CPUs at run boundaries")
+ 		hostPolicyPath := f.String("host-policy", "", "observed host baseline JSON; immutable once locked")
+-		validationProfile := f.String("validation-profile", "default", "independent admission: default, wasm1, wasm2, wasm3 (existing locks preserve their policy)")
++		validationProfile := f.String("validation-profile", "default", "independent admission: default, wasm1, wasm2, wasm3, all (existing locks preserve their policy)")
+ 		suite := f.String("suite", "core", "core, scaling, lifecycle, reactors, traps, floats, checkpoints, continuations, process-snapshots, process-snapshot-density, guest-density, sustained, or workload manifest path")
+ 		rts := f.String("runtimes", "wazero,v8", "comma-separated adapter configurations")
+ 		profile := f.String("profile", "timing", "timing, memory, code, counters, profiling")
+--- a/experiment/analyzer.go
++++ b/experiment/analyzer.go
+@@ -77,7 +77,7 @@
+ 		return nil
+ 	}
+ 	digest, err := hex.DecodeString(a.SHA256)
+-	if err != nil || len(digest) != 32 || !recordedPathAbsolute(a.Executable) || !slices.Contains([]string{"default", "wasm1", "wasm2", "wasm3"}, a.Profile) || a.Name != "wasmparser" || a.Version != "0.251.0" || !slices.Contains([]string{"core-structure-v2", "core-structure-v3", "artifact-structure-v1"}, a.AnalysisVersion) {
++	if err != nil || len(digest) != 32 || !recordedPathAbsolute(a.Executable) || !slices.Contains([]string{"default", "wasm1", "wasm2", "wasm3", "all"}, a.Profile) || a.Name != "wasmparser" || a.Version != "0.251.0" || !slices.Contains([]string{"core-structure-v2", "core-structure-v3", "artifact-structure-v1"}, a.AnalysisVersion) {
+ 		return fmt.Errorf("invalid or unsupported analyzer lock")
+ 	}
+ 	return nil
+--- /dev/null
++++ b/experiment/feature_compile_request_test.go
+@@ -0,0 +1,14 @@
++package experiment
++
++import (
++ "testing"
++ "github.com/wasmbench/wasmbench/protocol"
++)
++
++func TestFeatureComponentCompilePreflightPreservesCompileScenario(t *testing.T) {
++ w := protocol.Workload{ABI:"component", Oracle:protocol.Oracle{Kind:"component_compile_only"}}
++ req := trialRequest(Options{Samples:3,Operations:7,Warmup:9,PhaseBarriers:true},w,"compile",-1)
++ if req.Scenario!="compile" || req.Samples!=1 || req.Operations!=1 || req.Warmup!=0 || req.PhaseBarriers {t.Fatalf("invalid compile-only preflight: %+v",req)}
++ w.ABI="core";w.Oracle.Kind="exact_u64"
++ if req=trialRequest(Options{},w,"compile",-1);req.Scenario!="first-call" {t.Fatalf("scalar oracle preflight changed: %+v",req)}
++}
+--- a/experiment/runner.go
++++ b/experiment/runner.go
+@@ -29,6 +29,8 @@
+ 				backend = "winch"
+ 			}
+ 			r.Command = []string{filepath.Join(root, "adapters", "wasmtime", "target", "process-snapshot", "release", "qualify-process-snapshot"), "--adapter=" + backend}
++        case "wasmtime-component-async":
++            r.Command = []string{filepath.Join(root, "adapters", "wasmtime", "target", "component-async", "release", "adapter-wasmtime"), "--component-async"}
+ 		case "wasmtime", "wasmtime-winch", "wasmtime-pooling", "wasmtime-allocator", "wasmtime-winch-allocator", "wasmtime-code-lifetime", "wasmtime-winch-code-lifetime":
+ 			r.Command = []string{filepath.Join(root, "adapters", "wasmtime", "target", "release", "adapter-wasmtime")}
+ 			if strings.HasSuffix(id, "-allocator") {
+@@ -49,12 +51,13 @@
+ 			r.Command = []string{filepath.Join(root, "bin", "adapter-wazero")}
+ 		case "wazero-interpreter":
+ 			r.Command = []string{filepath.Join(root, "bin", "adapter-wazero"), "--interpreter"}
+-		case "v8", "v8-liftoff-only", "v8-optimizing-only":
++		case "v8", "v8-wasmfx", "v8-liftoff-only", "v8-optimizing-only":
+ 			node, e := exec.LookPath("node")
+ 			if e != nil {
+ 				return nil, e
+ 			}
+ 			r.Command = []string{node}
++            if id == "v8-wasmfx" { r.Command = append(r.Command, "--experimental-wasm-wasmfx") }
+ 			mode := ""
+ 			if id == "v8-liftoff-only" {
+ 				mode = "liftoff-only"
+@@ -742,6 +745,12 @@
+ 			return
+ 		}
+ 	}
++	if w.HostProfile == "js-string-builtins-v1" || w.HostProfile == "threads-defined-v1" {
++        if !r.Description.Capabilities["can_host_profile_"+w.HostProfile] {
++            t.Status, t.Reason = "unsupported", "adapter does not advertise host profile: "+w.HostProfile
++            return
++        }
++    }
+ 	if !slices.Contains(r.Description.ABIs, w.ABI) {
+ 		t.Status = "unsupported"
+ 		t.Reason = "ABI not advertised"
+@@ -990,7 +999,7 @@
+ 		}
+ 	}()
+ 	prepareProfile := o.Profile
+-	if block < 0 && (o.Profile == "counters" || o.Profile == "profiling" || (w.ProcessSnapshot != nil && o.Profile == "memory")) {
++	if block < 0 && (o.Profile == "counters" || o.Profile == "profiling" || o.Profile == "code" || (w.ProcessSnapshot != nil && o.Profile == "memory")) {
+ 		prepareProfile = "timing"
+ 	}
+ 	_, e = c.Call(protocol.Request{Method: "prepare", Prepare: &protocol.Preparation{Artifact: filepath.Join(root, w.Artifact), ArtifactSHA256: w.SHA256, Workload: resolveCommandFiles(w, root), Profile: prepareProfile}})
+@@ -1300,6 +1309,9 @@
+ 			r.Samples = 2
+ 		}
+ 	}
++	if block < 0 && w.ABI == "component" && w.Oracle.Kind == "component_compile_only" {
++        r = protocol.RunRequest{Scenario: "compile", Samples: 1, Operations: 1}
++    }
+ 	if w.Density != nil {
+ 		r.Scenario, r.Operations, r.Warmup = "density", 1, 0
+ 		if scenario == "density-cycle" {
+--- /dev/null
++++ b/experiment/website_code_preflight_test.go
+@@ -0,0 +1,61 @@
++package experiment
++
++import (
++	"context"
++	"os"
++	"path/filepath"
++	"testing"
++	"time"
++
++	"github.com/wasmbench/wasmbench/agent"
++	"github.com/wasmbench/wasmbench/corpus"
++	"github.com/wasmbench/wasmbench/protocol"
++)
++
++func TestWebsiteCodePassVectorPreflight(t *testing.T) {
++	root, err := filepath.Abs("..")
++	if err != nil {
++		t.Fatal(err)
++	}
++	binary := filepath.Join(root, "bin", "adapter-wazero")
++	if _, err := os.Stat(binary); os.IsNotExist(err) {
++		t.Skip("build wazero adapter first")
++	}
++	runtimes, err := ResolveRuntimes(root, []string{"wazero"})
++	if err != nil {
++		t.Fatal(err)
++	}
++	client, err := agent.Start(context.Background(), runtimes[0].Command, filepath.Join(t.TempDir(), "describe"), 10*time.Second)
++	if err != nil {
++		t.Fatal(err)
++	}
++	description, err := client.Call(protocol.Request{Method: "describe"})
++	client.Close()
++	if err != nil {
++		t.Fatal(err)
++	}
++	runtime := runtimes[0]
++	runtime.Description = description.Description
++	data, err := os.ReadFile(filepath.Join(root, "corpus/testdata/vector-lifecycle.wasm"))
++	if err != nil {
++		t.Fatal(err)
++	}
++	directory := t.TempDir()
++	if err := os.Mkdir(filepath.Join(directory, "logs"), 0700); err != nil {
++		t.Fatal(err)
++	}
++	if err := os.WriteFile(filepath.Join(directory, "vector.wasm"), data, 0600); err != nil {
++		t.Fatal(err)
++	}
++	workload := protocol.Workload{Schema: 1, ID: "vector", Artifact: "vector.wasm", SHA256: corpus.Hash(data), ABI: "core", Export: "benchmark", Reset: "fresh_instance_per_sample", WorkUnit: "vector_sequence", Units: 1,
++		Vectors: &protocol.VectorContract{InputOffset: 32, OutputOffset: 16, OutputLen: 1, Mod: 3, Cases: []protocol.VectorCase{{Out: "ab"}, {Len: 7, Out: "ab"}}}, VectorByteBudget: 1024, Oracle: protocol.Oracle{Kind: "exact_vectors"}}
++	options := Options{Profile: "code", Samples: 1, Operations: 1, Timeout: 10 * time.Second}
++	check := runTrial(context.Background(), directory, options, runtime, workload, "steady", -1, "preflight")
++	if check.Status != "ok" {
++		t.Fatalf("code-profile correctness preflight failed: %+v", check)
++	}
++	measured := runTrial(context.Background(), directory, options, runtime, workload, "compile", 0, "code")
++	if measured.Status != "unsupported" || len(measured.Samples) != 0 {
++		t.Fatalf("unsupported vector code extraction produced measurements: %+v", measured)
++	}
++}

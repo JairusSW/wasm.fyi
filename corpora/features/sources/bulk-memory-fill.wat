@@ -1,0 +1,1 @@
+(module (memory (export "memory") 2 256) (func (export "benchmark") (param $n i32) (result i32) (memory.fill (i32.const 0) (i32.const 7) (local.get $n)) (i32.add (i32.load8_u (i32.const 0)) (i32.load8_u (i32.sub (local.get $n) (i32.const 1))))))

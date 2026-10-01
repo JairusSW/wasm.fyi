@@ -2,6 +2,7 @@ import { mkdir, readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
+import { featureCompiler, featureToolchainRoot } from './lib/feature-toolchain.mjs';
 import { command, digest, exists } from './lib/wasmbench.mjs';
 
 const directory = process.env.WASMBENCH_RUNNER_DIR || join(homedir(), '.local/share/wasm-fyi/actions-runner');
@@ -16,6 +17,10 @@ if (action === 'status') {
   }
   if (spawnSync('xz', ['--version'], { stdio: 'ignore' }).status !== 0) {
     command('brew', ['install', 'xz'], { stdio: 'inherit' });
+  }
+  const wasmTools = spawnSync(await featureCompiler(),['--version'],{encoding:'utf8'});
+  if(wasmTools.status!==0 || !wasmTools.stdout.startsWith('wasm-tools 1.260.0')) {
+    command('cargo',['install','wasm-tools','--version','1.260.0','--locked','--root',featureToolchainRoot],{stdio:'inherit'});
   }
   await mkdir(directory, { recursive: true });
   const repository = command('gh', ['repo', 'view', '--json', 'nameWithOwner', '--jq', '.nameWithOwner']).toString().trim();

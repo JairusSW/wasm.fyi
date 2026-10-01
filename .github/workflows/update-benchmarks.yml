@@ -2,8 +2,13 @@ name: Refresh benchmarks and deploy
 on:
   schedule:
     - cron: '17 3 * * *'
+    - cron: '17 6 * * 4'
   workflow_dispatch:
     inputs:
+      history:
+        description: 'Also rebuild the eight retrospective weekly points on both hosts'
+        type: boolean
+        default: false
       launches:
         description: 'Independent launches (empty uses corpus default)'
         type: string
@@ -29,7 +34,7 @@ jobs:
   refresh:
     if: vars.WASMBENCH_AUTOMATION_ENABLED == 'true'
     runs-on: [self-hosted, wasm-bench]
-    timeout-minutes: 120
+    timeout-minutes: 240
     permissions:
       contents: write
       pages: write
@@ -58,10 +63,20 @@ jobs:
         id: pages
       - run: just setup
       - run: just bench-build
+      - run: just features-build
+      - run: just features-test
       - run: just bench-doctor
       - run: just hub-doctor
       - name: Collect separate timing, memory and code passes, validate, and build
         run: just refresh
+        env:
+          BASE_PATH: ${{ steps.pages.outputs.base_path }}
+      - name: Refresh eight weekly Wago revisions on both hosts
+        if: github.event.schedule == '17 6 * * 4' || inputs.history
+        run: |
+          just history-collect
+          just history-collect-hub
+          just build
         env:
           BASE_PATH: ${{ steps.pages.outputs.base_path }}
       - name: Record validated snapshots on main
@@ -69,7 +84,7 @@ jobs:
         run: |
           git config user.name 'wasm.fyi benchmark updater'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add -- data/wasmbench static/wasmbench
+          git add -- corpora/features data static/wasmbench
           if ! git diff --cached --quiet; then
             git commit -m 'Update measured benchmark snapshots'
             git push origin HEAD:main

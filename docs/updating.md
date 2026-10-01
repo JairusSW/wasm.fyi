@@ -266,3 +266,5 @@ launches by default; the earlier tiny core-suite setting of 100 operations per
 batch is unsuitable for the broader algorithms. Every fresh pass still runs its
 own sacrificial correctness preflight. Unsupported outcomes get no timing credit;
 incorrect results, crashes and unexpected errors stop the update.
+
+The daily refresh now includes the original feature corpus, explicit proposal configurations, and real shared-memory worker measurements. Thursday's additional schedule rebuilds eight retrospective weekly Wago revisions. See [feature and history workflow](features-and-history.md) for commands, JSON endpoints, collection scopes, failure handling and historical interpretation. Snapshot inventory schema 2 keeps full evidence in separate hashed files; summary and evidence digests must both be checked by consumers.

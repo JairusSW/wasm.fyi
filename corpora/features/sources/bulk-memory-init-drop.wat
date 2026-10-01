@@ -1,0 +1,1 @@
+(module (memory (export "memory") 2 256) (data $d "abcdefg") (func (export "benchmark") (param i32) (result i32) (memory.init $d (i32.const 0) (i32.const 0) (i32.const 7)) (data.drop $d) (i32.add (i32.load8_u (i32.const 0)) (i32.load8_u (i32.const 6)))))

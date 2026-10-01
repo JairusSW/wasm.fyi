@@ -1,0 +1,251 @@
+--- a/adapters/wago/vectors.go
++++ b/adapters/wago/vectors.go
+@@ -14,12 +14,12 @@
+ 	if err != nil {
+ 		return err
+ 	}
+-	f, err := m.WasmFunc(a.prep.Workload.Export)
++	f, err := m.PrepareFunction(a.prep.Workload.Export)
+ 	if err != nil {
+ 		return err
+ 	}
+ 	return p.Run(protocol.VectorInstance{Pointer: func(name string) ([]uint64, error) {
+-		f, err := m.WasmFunc(name)
++		f, err := m.PrepareFunction(name)
+ 		if err != nil {
+ 			return nil, err
+ 		}
+@@ -96,7 +96,7 @@
+ 			close()
+ 			return protocol.VectorInstance{}, 0, nil, err
+ 		}
+-		f, err := m.WasmFunc(a.prep.Workload.Export)
++		f, err := m.PrepareFunction(a.prep.Workload.Export)
+ 		if err != nil {
+ 			close()
+ 			return protocol.VectorInstance{}, 0, nil, err
+@@ -104,10 +104,10 @@
+ 		instance := protocol.VectorInstance{
+ 			ReleaseBarrier: func(i int, stage string) error { return a.barrier(protocol.PhaseEvent{SampleIndex: i, Stage: stage}) },
+ 			Snapshot: func() []protocol.Observation {
+-				return append(apiObservations, protocol.Observation{Metric: "guest.memory.logical", DefinitionVersion: 1, Value: protocol.Value(float64(len(m.Memory().UnsafeBytes()))), Unit: "bytes", Scope: "guest_linear_memory", Phase: scenario + "/vector_verified", Collector: "wago.Memory", CollectorVersion: sourceRevision, Quality: "engine_reported", Profile: "memory", Status: "available", Denominator: "instance"})
++				return append(apiObservations, protocol.Observation{Metric: "guest.memory.logical", DefinitionVersion: 1, Value: protocol.Value(float64(len(m.Memory().Bytes()))), Unit: "bytes", Scope: "guest_linear_memory", Phase: scenario + "/vector_verified", Collector: "wago.Memory", CollectorVersion: sourceRevision, Quality: "engine_reported", Profile: "memory", Status: "available", Denominator: "instance"})
+ 			},
+ 			Pointer: func(name string) ([]uint64, error) {
+-				f, err := m.WasmFunc(name)
++				f, err := m.PrepareFunction(name)
+ 				if err != nil {
+ 					return nil, err
+ 				}
+--- a/adapters/wago/counters.go
++++ b/adapters/wago/counters.go
+@@ -90,7 +90,7 @@
+ 			if err = a.initialize(m); err != nil {
+ 				return protocol.Sample{}, err
+ 			}
+-			fn, err := m.WasmFunc(a.prep.Workload.Export)
++			fn, err := m.PrepareFunction(a.prep.Workload.Export)
+ 			if err != nil {
+ 				return protocol.Sample{}, err
+ 			}
+--- a/adapters/wago/traps.go
++++ b/adapters/wago/traps.go
+@@ -35,7 +35,7 @@
+ 		if err != nil {
+ 			return protocol.TrapInstance{}, err
+ 		}
+-		f, err := m.WasmFunc(a.prep.Workload.Export)
++		f, err := m.PrepareFunction(a.prep.Workload.Export)
+ 		if err != nil {
+ 			m.Close()
+ 			return protocol.TrapInstance{}, err
+@@ -48,7 +48,7 @@
+ 				return func() []protocol.Observation {
+ 					observations := finish()
+ 					if m.Memory() != nil {
+-						observations = append(observations, protocol.Observation{Metric: "guest.memory.logical", DefinitionVersion: 1, Value: protocol.Value(float64(len(m.Memory().UnsafeBytes()))), Unit: "bytes", Scope: "guest_linear_memory", Phase: r.Scenario + "/after_trap", Collector: "wago.Memory", CollectorVersion: sourceRevision, Quality: "engine_reported", Profile: "memory", Status: "available", Denominator: "instance"})
++						observations = append(observations, protocol.Observation{Metric: "guest.memory.logical", DefinitionVersion: 1, Value: protocol.Value(float64(len(m.Memory().Bytes()))), Unit: "bytes", Scope: "guest_linear_memory", Phase: r.Scenario + "/after_trap", Collector: "wago.Memory", CollectorVersion: sourceRevision, Quality: "engine_reported", Profile: "memory", Status: "available", Denominator: "instance"})
+ 					}
+ 					return observations
+ 				}
+--- a/adapters/wago/instantiate.go
++++ b/adapters/wago/instantiate.go
+@@ -60,7 +60,7 @@
+ 			if err := a.initialize(m); err != nil {
+ 				return protocol.Sample{}, err
+ 			}
+-			fn, err := m.WasmFunc(a.prep.Workload.Export)
++			fn, err := m.PrepareFunction(a.prep.Workload.Export)
+ 			if err != nil {
+ 				return protocol.Sample{}, err
+ 			}
+--- a/adapters/wago/density.go
++++ b/adapters/wago/density.go
+@@ -54,7 +54,7 @@
+ 		if err := a.initialize(m); err != nil {
+ 			return err
+ 		}
+-		f, err := m.WasmFunc(a.prep.Workload.Export)
++		f, err := m.PrepareFunction(a.prep.Workload.Export)
+ 		if err != nil {
+ 			return err
+ 		}
+@@ -112,7 +112,7 @@
+ 				var logical uint64
+ 				for _, m := range g.instances {
+ 					if m.Memory() != nil {
+-						logical += uint64(len(m.Memory().UnsafeBytes()))
++						logical += uint64(len(m.Memory().Bytes()))
+ 					}
+ 				}
+ 				obs = append(obs, protocol.Observation{Metric: "density.guest_memory.logical", DefinitionVersion: 1, Value: protocol.Value(float64(logical)), Unit: "bytes", Scope: "instance_group_linear_memory", Phase: "density_ready", Collector: "wago.Memory", CollectorVersion: sourceRevision, Quality: "engine_reported", Profile: "memory", Status: "available", Denominator: "instance_group"})
+--- a/adapters/wago/app_init.go
++++ b/adapters/wago/app_init.go
+@@ -33,7 +33,7 @@
+ 				return protocol.Sample{}, err
+ 			}
+ 			defer m.Close()
+-			init, err := m.WasmFunc(a.prep.Workload.Initialize)
++			init, err := m.PrepareFunction(a.prep.Workload.Initialize)
+ 			if err != nil {
+ 				return protocol.Sample{}, err
+ 			}
+@@ -67,7 +67,7 @@
+ 			if err = a.applyInput(m); err != nil {
+ 				return protocol.Sample{}, err
+ 			}
+-			fn, err := m.WasmFunc(a.prep.Workload.Export)
++			fn, err := m.PrepareFunction(a.prep.Workload.Export)
+ 			if err != nil {
+ 				return protocol.Sample{}, err
+ 			}
+--- a/adapters/wago/main.go
++++ b/adapters/wago/main.go
+@@ -27,8 +27,8 @@
+ 	wasm         []byte
+ 	compiled     *wago.Compiled
+ 	instance     *wago.Instance
+-	fn           *wago.WasmFunc
+-	imports      *wago.Imports
++	fn           *wago.PreparedFunction
++	imports      wago.Imports
+ 	hostRuntime  *wago.Runtime
+ 	hostIdentity *wago.HostFuncRef
+ }
+@@ -70,7 +70,7 @@
+ }
+ func (a *adapter) initialize(m *wago.Instance) error {
+ 	if name := a.prep.Workload.Initialize; name != "" {
+-		f, e := m.WasmFunc(name)
++		f, e := m.PrepareFunction(name)
+ 		if e != nil {
+ 			return e
+ 		}
+@@ -83,7 +83,7 @@
+ }
+ func (a *adapter) applyInput(m *wago.Instance) error {
+ 	return a.prep.Workload.Input.Apply(func(name string) ([]uint64, error) {
+-		f, err := m.WasmFunc(name)
++		f, err := m.PrepareFunction(name)
+ 		if err != nil {
+ 			return nil, err
+ 		}
+@@ -102,7 +102,7 @@
+ 	if e = a.initialize(a.instance); e != nil {
+ 		return e
+ 	}
+-	a.fn, e = a.instance.WasmFunc(a.prep.Workload.Export)
++	a.fn, e = a.instance.PrepareFunction(a.prep.Workload.Export)
+ 	return e
+ }
+ func (a *adapter) setup() error {
+@@ -149,7 +149,7 @@
+ 	}
+ 	var base uint64
+ 	if name := a.prep.Workload.Oracle.OutputPointerExport; name != "" {
+-		f, err := m.WasmFunc(name)
++		f, err := m.PrepareFunction(name)
+ 		if err != nil {
+ 			return fmt.Errorf("incorrect result: output pointer: %w", err)
+ 		}
+@@ -187,7 +187,7 @@
+ 	if a.prep.Workload.Vectors != nil {
+ 		return a.checkVectors(m)
+ 	}
+-	f, e := m.WasmFunc(a.prep.Workload.Export)
++	f, e := m.PrepareFunction(a.prep.Workload.Export)
+ 	if e != nil {
+ 		return e
+ 	}
+@@ -365,8 +365,8 @@
+ 						return nil, e
+ 					}
+ 					if e = a.initialize(m); e == nil {
+-						var f *wago.WasmFunc
+-						f, e = m.WasmFunc(a.prep.Workload.Export)
++						var f *wago.PreparedFunction
++						f, e = m.PrepareFunction(a.prep.Workload.Export)
+ 						if e == nil {
+ 							var v []uint64
+ 							v, e = f.Invoke(a.prep.Workload.Args...)
+@@ -397,7 +397,7 @@
+ 					}
+ 					// Trust only immutable bytes produced locally by this compile.
+ 					// Round-trip and behavioral verification are outside production timing.
+-					restored, e := wago.LoadTrustedArtifact(artifact)
++					restored, e := wago.Load(artifact)
+ 					if e != nil {
+ 						return nil, e
+ 					}
+@@ -410,7 +410,7 @@
+ 					start := time.Now()
+ 					// serialized was generated by a.compiled.MarshalBinary above;
+ 					// no caller-supplied native artifact is accepted by this adapter.
+-					c, e := wago.LoadTrustedArtifact(serialized)
++					c, e := wago.Load(serialized)
+ 					elapsed += time.Since(start).Nanoseconds()
+ 					if e != nil {
+ 						return nil, e
+@@ -431,7 +431,7 @@
+ 			runtime.ReadMemStats(&after)
+ 			s.Observations = collectors.GoMemoryObservations(before, after, r.Scenario, "batch_including_untimed_verification_and_release")
+ 			if a.instance != nil && a.instance.Memory() != nil {
+-				s.Observations = append(s.Observations, protocol.Observation{Metric: "guest.memory.logical", DefinitionVersion: 1, Value: protocol.Value(float64(len(a.instance.Memory().UnsafeBytes()))), Unit: "bytes", Scope: "guest_linear_memory", Phase: r.Scenario, Collector: "wago.Memory", CollectorVersion: sourceRevision, Quality: "engine_reported", Profile: "memory", Status: "available", Denominator: "instance"})
++				s.Observations = append(s.Observations, protocol.Observation{Metric: "guest.memory.logical", DefinitionVersion: 1, Value: protocol.Value(float64(len(a.instance.Memory().Bytes()))), Unit: "bytes", Scope: "guest_linear_memory", Phase: r.Scenario, Collector: "wago.Memory", CollectorVersion: sourceRevision, Quality: "engine_reported", Profile: "memory", Status: "available", Denominator: "instance"})
+ 			}
+ 		}
+ 		if r.PhaseBarriers {
+@@ -464,7 +464,7 @@
+ 				if info, ok := debug.ReadBuildInfo(); ok {
+ 					build = info.String()
+ 				}
+-				resp.Description = &protocol.Description{Runtime: "wago", Version: sourceRevision, Backend: "railshot", Embedding: "Go API / WasmFunc.Invoke", Build: build, Configuration: map[string]string{"runtime_config": fmt.Sprint(wago.NewRuntimeConfig()), "module_cache": "disabled", "source_revision": sourceRevision}, Capabilities: map[string]bool{"can_compile_separately": true, "can_instantiate_separately": true, "can_disable_code_cache": true, "can_measure_host_allocations": true, "can_export_native_code": false, "can_snapshot": false, "can_observe_tiers": false}, Scenarios: []string{"compile", "instantiate", "first-call", "steady", "trajectory", "teardown", "aot-produce", "aot-load"}, ABIs: []string{"core"}, Features: []string{"mvp", "bulk-memory", "simd"}}
++				resp.Description = &protocol.Description{Runtime: "wago", Version: sourceRevision, Backend: "railshot", Embedding: "Go API / historical PreparedFunction.Invoke compatibility mapping", Build: build, Configuration: map[string]string{"runtime_config": fmt.Sprint(wago.NewRuntimeConfig()), "module_cache": "disabled", "source_revision": sourceRevision}, Capabilities: map[string]bool{"can_compile_separately": true, "can_instantiate_separately": true, "can_disable_code_cache": true, "can_measure_host_allocations": true, "can_export_native_code": false, "can_snapshot": false, "can_observe_tiers": false}, Scenarios: []string{"compile", "instantiate", "first-call", "steady", "trajectory", "teardown", "aot-produce", "aot-load"}, ABIs: []string{"core"}, Features: []string{"mvp", "bulk-memory", "simd"}}
+ 				resp.Description.Scenarios = append(resp.Description.Scenarios, "app-init")
+ 				resp.Description.Scenarios = append(resp.Description.Scenarios, protocol.HarnessCalibrationScenario)
+ 				resp.Description.Configuration["harness_calibration_policy"] = protocol.HarnessCalibrationPolicy
+@@ -511,20 +511,18 @@
+ 				}
+ 				if a.prep.Workload.HostProfile == "identity-v1" {
+ 					a.hostRuntime = wago.NewRuntime()
+-					a.hostIdentity, e = a.hostRuntime.NewHostFuncRef(func(v int32) int32 { return v }, wago.FuncSig{Params: []wago.ValType{wago.ValI32}, Results: []wago.ValType{wago.ValI32}})
++					a.hostIdentity, e = a.hostRuntime.NewHostFuncRef(wago.HostFunc(func(_ wago.HostModule, args, results []uint64) { results[0] = args[0] }), wago.FuncSig{Params: []wago.ValType{wago.ValI32}, Results: []wago.ValType{wago.ValI32}})
+ 					if e != nil {
+ 						break
+ 					}
+-					a.imports = wago.NewImports().Function("wasmbench", "identity", a.hostIdentity)
++					a.imports = wago.Imports{"wasmbench.identity": a.hostIdentity}
+ 				} else if a.prep.Workload.HostProfile == protocol.AssemblyScriptAbortProfile {
+ 					a.hostRuntime = wago.NewRuntime()
+-					a.hostIdentity, e = a.hostRuntime.NewHostFuncRef(wago.HostCallFunc(func(call wago.HostCall) {
+-						panic(wago.HostTrap{Err: protocol.AssemblyScriptAbort(uint32(call.I32(0)), uint32(call.I32(1)), uint32(call.I32(2)), uint32(call.I32(3)))})
+-					}), wago.FuncSig{Params: []wago.ValType{wago.ValI32, wago.ValI32, wago.ValI32, wago.ValI32}})
++					a.hostIdentity, e = a.hostRuntime.NewHostFuncRef(wago.HostFunc(func(_ wago.HostModule, args, _ []uint64) { panic(protocol.AssemblyScriptAbort(uint32(args[0]), uint32(args[1]), uint32(args[2]), uint32(args[3]))) }), wago.FuncSig{Params: []wago.ValType{wago.ValI32, wago.ValI32, wago.ValI32, wago.ValI32}})
+ 					if e != nil {
+ 						break
+ 					}
+-					a.imports = wago.NewImports().Function("env", "abort", a.hostIdentity)
++					a.imports = wago.Imports{"env.abort": a.hostIdentity}
+ 				} else if a.prep.Workload.HostProfile != "" {
+ 					e = fmt.Errorf("unsupported host profile")
+ 					break

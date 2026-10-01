@@ -64,3 +64,7 @@ The original UI still displays its synthetic fixtures. Verified measured snapsho
 are shipped separately at `wasmbench/index.json`; no visual redesign is included.
 See [the complete workflow](docs/updating.md) for report selection, measurement
 settings, GitHub Pages, daily automation, failure recovery and runner setup.
+
+The [feature and history workflow](docs/features-and-history.md) covers 232 feature
+contracts across all 25 displayed families, 32 real worker tests, and eight weekly
+Wago revisions. Results stay separate from the existing UI.
