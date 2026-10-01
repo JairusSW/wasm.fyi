@@ -4,7 +4,7 @@
 	import type { MetricKey, OvKey } from '$lib/data/types';
 	import { n0 } from '$lib/format';
 	import { heatCount, heatRatio } from '$lib/heat';
-	import { TOTAL_WORKLOADS, cov, disp, isOff, isVisible, ratio } from '$lib/model';
+	import { TOTAL_WORKLOADS, sharedCount, cov, disp, isOff, isVisible, ratio } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 	import Carousel from '../Carousel.svelte';
 	import RtLabel from '../RtLabel.svelte';
@@ -18,9 +18,9 @@
 	const g = $derived(OV[ui.group]);
 
 	const SHARED_NOTE: Record<OvKey, string> = {
-		lat: '172 workloads excluded — not correct on every runtime.',
-		mem: 'Peak RSS increase per phase.',
-		code: 'Interpreters: not applicable.',
+		lat: 'Successful shared contracts from one locked report.',
+		mem: 'Process lifetime peak RSS in each separate memory scenario.',
+		code: 'Extracted image bytes; unavailable collectors remain unmeasured.',
 		cov: `All ${TOTAL_WORKLOADS} measured contracts.`
 	};
 
@@ -50,7 +50,7 @@
 				}
 				const grp = ui.group as 'lat' | 'mem' | 'code';
 				const r = ratio(s, grp, c.id, i);
-				if (!r) return { text: off ? 'unavailable' : 'n/a', bg: 'transparent', color: 'var(--fg3)' };
+				if (!r) return { text: disp(s,grp,c.id,i)?.t || (off?'unavailable':'not measured'), bg:'transparent',color:'var(--fg3)' };
 				return { text: disp(s, grp, c.id, i)!.t, bg: heatRatio(r.r), color: 'var(--fg)' };
 			});
 			return {
@@ -62,8 +62,8 @@
 		});
 	});
 
-	const snapTaken = $derived(ui.snap === 's1' ? 'Snapshot · Sep 28, 2026 03:41 UTC' : 'Snapshot · Sep 21, 2026 03:38 UTC');
-	const snapAgo = $derived(ui.snap === 's1' ? '2 days ago' : '9 days ago · newer snapshot available');
+	const snapTaken = $derived(ui.snap === 's1' ? 'Latest measured cells' : 'Previous measured cells');
+	const snapAgo = $derived(`${sharedCount(ui.scope)} shared successful contracts in the latency cohort`);
 </script>
 
 <div class="stack">

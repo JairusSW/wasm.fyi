@@ -8,6 +8,7 @@
 	import { href } from '$lib/links';
 	import { isOff, isVisible, otSeries, seriesFmt } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
+import { historySegments } from '$lib/history-values';
 	import Carousel from '../Carousel.svelte';
 	import RtLabel from '../RtLabel.svelte';
 	import Tabs from '../Tabs.svelte';
@@ -16,9 +17,9 @@
 		exec: 'steady-state per call',
 		compile: 'module compile time',
 		inst: 'instantiation time',
-		mem: 'execution peak RSS Δ',
-		code: 'active native code size',
-		cov: 'correct workloads of 1,284 · higher is better'
+		mem: 'process lifetime peak RSS',
+		code: 'extracted native image size',
+		cov: 'correct contracts in the fixed historical corpus · higher is better'
 	};
 
 	let hover = $state<{ i: number; row: CfgId } | null>(null);
@@ -29,8 +30,8 @@
 	};
 
 	// Sparkline geometry in a 600×34 viewBox stretched to the cell width.
-	const WX = (i: number) => 6 + i * (588 / 15);
-	const STEP = 588 / 15;
+	const WX = (i: number) => 6 + i * (588 / (SNAPS.length-1));
+	const STEP = 588 / (SNAPS.length-1);
 
 	const rows = $derived.by(() => {
 		const s = ui.scope;
@@ -38,19 +39,21 @@
 		return CFG.filter((c) => isVisible(s, c)).map((c) => {
 			const vals = otSeries(s, c.id, ui.otMetric);
 			if (!vals) return { c, na: true as const, now: isOff(s, c.id) ? 'unavailable' : 'n/a' };
-			const lo = Math.min(...vals);
-			const hi = Math.max(...vals);
+			const finite=vals.filter(Number.isFinite);
+			const lo = Math.min(...finite);
+			const hi = Math.max(...finite);
 			const WY = (v: number) => 30 - ((v - lo) / (hi - lo || 1)) * 26;
-			const points = vals.map((v, k) => WX(k).toFixed(1) + ',' + WY(v).toFixed(1)).join(' ');
+			const segments=historySegments(vals,WX,WY);
 			const hi_ = hover?.i;
-			const hv = hi_ != null;
-			const hd = hv && hi_ > 0 ? chg(vals[hi_], vals[hi_ - 1]) : null;
-			const d8 = chg(vals[15], vals[7]);
+			const hv = hi_ != null && Number.isFinite(vals[hi_]);
+			const hd = hv && hi_ > 0 && Number.isFinite(vals[hi_-1]) ? chg(vals[hi_], vals[hi_ - 1]) : null;
+			const first=vals.find(Number.isFinite),last=vals[SNAPS.length-1];
+            const d8 = first!=null && Number.isFinite(last)?chg(last,first):null;
 			const tipOn = hv && hover!.row === c.id;
 			return {
 				c,
 				na: false as const,
-				points,
+				segments,
 				hv,
 				hx: hv ? WX(hi_).toFixed(1) : '0',
 				dl: hv ? pc(WX(hi_), 600) : '0%',
@@ -59,7 +62,7 @@
 				tip: tipOn
 					? {
 							date: SNAPS[hi_].date,
-							ver: `${c.rt} ${verAt(c.id, hi_)}`,
+							ver: `${c.rt} ${verAt(c.id, hi_,ui.machine)}`,
 							val: fv(vals[hi_]),
 							delta: hd ? hd.t + ' vs prev week' : 'first snapshot',
 							dColor: hd ? col(hd) : 'var(--fg3)',
@@ -69,9 +72,9 @@
 							tf: hi_ > 9 ? 'translate(calc(-100% - 10px), -50%)' : 'translate(10px, -50%)'
 						}
 					: null,
-				now: hv ? fv(vals[hi_]) : fv(vals[15]),
-				delta: hv ? (hd ? hd.t : '—') : d8.t,
-				dColor: hv ? (hd ? col(hd) : 'var(--fg3)') : col(d8)
+				now: hv ? fv(vals[hi_]) : Number.isFinite(last)?fv(last):'not measured',
+				delta: hv ? (hd ? hd.t : '—') : d8?.t || 'not measured',
+				dColor: hv ? (hd ? col(hd) : 'var(--fg3)') : d8?col(d8):'var(--fg3)'
 			};
 		});
 	});
@@ -105,7 +108,7 @@
 			onnext={() => step(1)}
 			noun="metric"
 		/>
-		<span class="s12 fg3">16 weekly snapshots · hover to inspect · ← → keys</span>
+		<span class="s12 fg3">{SNAPS.length} retrospective weekly points · hover to inspect · ← → keys</span>
 		<span class="s12 fg2">{spEvent}</span>
 		<a class="link-quiet push" href={siteHref(histHref(ui.histCfg))}>History</a>
 	</div>
@@ -114,9 +117,9 @@
 			<thead>
 				<tr>
 					<th>Runtime</th>
-					<th class="mono">{sh == null ? '06-15 → 09-28' : 'snap-' + SNAPS[sh].date}</th>
+					<th class="mono">{sh == null ? SNAPS[0].short+' → '+SNAPS[SNAPS.length-1].short : 'snap-' + SNAPS[sh].date}</th>
 					<th class="r">{sh == null ? 'Now' : 'At snapshot'}</th>
-					<th class="r">{sh == null ? 'Δ 8 weeks' : 'Δ prev week'}</th>
+					<th class="r">{sh == null ? 'Δ first → last point' : 'Δ prev week'}</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -132,7 +135,7 @@
 								{#if !h.na}
 									<svg viewBox="0 0 600 34" preserveAspectRatio="none">
 										{#if h.hv}<line x1={h.hx} x2={h.hx} y1="0" y2="34" class="cross" />{/if}
-										<polyline points={h.points} style:stroke={h.c.col} style:stroke-dasharray={h.c.hollow ? '4 3' : 'none'} />
+										{#each h.segments as points}<polyline {points} style:stroke={h.c.col} style:stroke-dasharray={h.c.hollow ? '4 3' : 'none'} />{/each}
 										{#each SNAPS as p (p.i)}
 											<rect
 												role="presentation"

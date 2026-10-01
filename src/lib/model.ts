@@ -1,8 +1,10 @@
+import { historySeries } from './history-values';
+import { aggregate } from './aggregates';
 import { viewCell, viewData } from './view-data';
 // Derived computations over the snapshot. Everything here is pure: callers pass
 // the comparison scope (machine, baseline, visible runtimes) explicitly.
 import { CB, CFG, MACH, WF } from './data/runtimes';
-import { MET, OTM, OV, REF, SNAPS, ST_OVR, UNIT } from './data/snapshot';
+import { MET, OTM, UNIT } from './data/snapshot';
 import type { Bench, Cfg, CfgId, MachineId, MetricKey, OtMetricKey, RatioCi, Status } from './data/types';
 import { H, fmtU, fx, n0, pct } from './format';
 
@@ -37,7 +39,6 @@ export const isOff = (s: Scope, id: CfgId) => !!MACH[s.machine].off[id];
 export const isVisible = (s: Scope, c: Cfg) => !s.hide[c.id];
 export const visibleCfgs = (s: Scope) => CFG.filter((c) => isVisible(s, c));
 
-const perf = (group: PerfGroup, cid: CfgId) => OV[group].vals[cid] as RatioCi[] | null;
 export const cov = (cid: CfgId, scope?:Scope) => {
   const counts=[0,0,0,0,0];
   for(const b of viewData.catalogue){
@@ -48,27 +49,21 @@ export const cov = (cid: CfgId, scope?:Scope) => {
   return counts;
 };
 
-/** Aggregate ratio vs the baseline config for one overview column, with CI half-width. */
-export function ratio(s: Scope, group: PerfGroup, cid: CfgId, col: number) {
-	const o = perf(group, cid);
-	if (!o || isOff(s, cid)) return null;
-	const k = (id: CfgId) => mf(s.machine, id) * (s.weighting === 'workload' && group !== 'code' ? WF[id] : 1);
-	const bid = perf(group, s.baseline) && !isOff(s, s.baseline) ? s.baseline : 'A';
-	const bb = perf(group, bid)![col][0] * k(bid);
-	return { r: (o[col][0] * k(cid)) / bb, ci: (o[col][1] * k(cid)) / bb };
+/** Ratio and uncertainty from independent launch blocks in one locked cohort. */
+export function ratio(s:Scope,group:PerfGroup,cid:CfgId,col:number) {
+  const a=aggregate(s,group,cid,col);
+  return a && Number.isFinite(a.r)?{r:a.r,ci:a.ci,interval:a.ratioInterval,count:a.count,report:a.report}:null;
 }
-
-/** Aggregate absolute value in the column's unit. */
-export function absOf(s: Scope, group: PerfGroup, cid: CfgId, col: number) {
-	const o = perf(group, cid);
-	if (!o || isOff(s, cid)) return null;
-	const k = mf(s.machine, cid) * (s.weighting === 'workload' && group !== 'code' ? WF[cid] : 1);
-	return { v: o[col][0] * k * REF[group][col], ci: o[col][1] * k * REF[group][col] };
+export function absOf(s:Scope,group:PerfGroup,cid:CfgId,col:number) {
+  const a=aggregate(s,group,cid,col);
+  return a?{v:a.v,ci:a.interval?Math.max(Math.abs(a.v-a.interval[0]),Math.abs(a.interval[1]-a.v)):Number.NaN,interval:a.interval,count:a.count,report:a.report}:null;
 }
-
-export function disp(s: Scope, group: PerfGroup, cid: CfgId, col: number) {
-	const a = absOf(s, group, cid, col);
-	return a && { t: fmtU(a.v, UNIT[group]), ci: '± ' + fmtU(a.ci, UNIT[group]).replace(/^0\.0+ /, '0 ') };
+export function sharedCount(s:Scope,group:PerfGroup='lat',col=3) {
+  return CFG.map(c=>aggregate(s,group,c.id,col)).find(a=>a)?.count || 0;
+}
+export function disp(s:Scope,group:PerfGroup,cid:CfgId,col:number) {
+  const a=absOf(s,group,cid,col);
+  return a && {t:fmtU(a.v,UNIT[group]),ci:a.interval?`95% CI ${fmtU(a.interval[0],UNIT[group])} – ${fmtU(a.interval[1],UNIT[group])}`:'CI unavailable'};
 }
 
 export type BenchResult = { st: 'ok'; v: number } | { st: Exclude<Status, 'ok'> };
@@ -84,48 +79,16 @@ export function benchVal(s: Scope, b: Bench, cid: CfgId, m: MetricKey, caseF = 1
   return {st:'ok',v:cell.v};
 }
 
-/** Steady-execution history value for a config at snapshot `i`. */
-export function histVal(cid: CfgId, i: number, seed = '') {
-	const base = (OV.lat.vals[cid] as RatioCi[])[3][0];
-	let f = 1;
-	if (cid === 'A') f = i < 10 ? 1.068 : 1;
-	if (cid === 'B') f = i < 10 ? 1.01 : 1;
-	if (cid === 'C') f = 1.03 - 0.002 * i;
-	if (cid === 'F') f = i >= 13 ? 1 : 0.958;
-	if (cid === 'G') f = 1.16 - 0.01 * i;
-	return base * f * (1 + (H(seed + cid + 'h' + i) - 0.5) * (seed ? 0.03 : 0.012));
-}
-
-/** Weekly series for one metric. `seed` makes a per-workload variant. Null when not applicable. */
-export function otSeries(s: Scope, cid: CfgId, key: OtMetricKey, seed = ''): number[] | null {
-	const M = OTM[key];
-	const g = M.g;
-	if (g === 'cov') {
-		if (isOff(s, cid)) return null;
-		const o = cov(cid,s);
-		return SNAPS.map(
-			(p) => o[0] - Math.round((15 - p.i) * H(cid + 'cv') * 0.9 + (p.i < 10 && (cid === 'A' || cid === 'B') ? 3 : 0))
-		);
-	}
-	const o = perf(g, cid);
-	if (!o || isOff(s, cid)) return null;
-	const lat = (OV.lat.vals[cid] as RatioCi[])[3][0];
-	const trend = (i: number) => histVal(cid, i, seed) / lat;
-	return SNAPS.map(
-		(p) =>
-			o[M.c][0] *
-			REF[g][M.c] *
-			mf(s.machine, cid) *
-			(1 + (trend(p.i) - 1) * M.k) *
-			(M.key === 'exec' ? 1 : 1 + (H(cid + M.key + p.i) - 0.5) * 0.02)
-	);
+/** Recorded weekly values; NaN marks a gap in a plotted per-workload series. */
+export function otSeries(s:Scope,cid:CfgId,key:OtMetricKey,workload=''):number[]|null {
+  return historySeries(s,cid,key,workload);
 }
 
 /** Formats a series value and a change between two series values for the metric. */
 export function seriesFmt(key: OtMetricKey) {
 	const M = OTM[key];
 	const isCov = M.g === 'cov';
-	const fv = (v: number) => (isCov ? n0(v) + ' / 1,284' : fmtU(v, M.u));
+	const fv = (v: number) => (isCov ? n0(v) + ' measured contracts' : fmtU(v, M.u));
 	const chg = (x: number, y: number) =>
 		isCov
 			? { t: (x - y >= 0 ? '+' : '−') + Math.abs(x - y), good: x > y, flat: x === y }
@@ -137,13 +100,13 @@ export function seriesFmt(key: OtMetricKey) {
 /** Headline leader for one aggregate: clear only when the 95% intervals do not overlap. */
 export function leader(s: Scope, label: string, group: PerfGroup, col: number, metric: MetricKey) {
 	const list = CFG.map((c) => ({ c, x: ratio(s, group, c.id, col) }))
-		.filter((e): e is { c: Cfg; x: { r: number; ci: number } } => e.x != null && isVisible(s, e.c))
+		.filter((e): e is { c: Cfg; x: NonNullable<ReturnType<typeof ratio>> } => e.x != null && isVisible(s, e.c))
 		.sort((a, b) => a.x.r - b.x.r);
 	if (!list.length)
 		return { label, metric, clear: false as const, versus: 'No selected runtime has this measurement.' };
 	const a = list[0];
 	const b = list[1] ?? null;
-	const clear = !b || a.x.r + a.x.ci < b.x.r - b.x.ci;
+	const clear = !!b && Number.isFinite(a.x.ci) && Number.isFinite(b.x.ci) && a.x.r + a.x.ci < b.x.r - b.x.ci;
 	const da = disp(s, group, a.c.id, col)!;
 	const db = b ? disp(s, group, b.c.id, col)! : { t: '' };
 	return {

@@ -3,12 +3,13 @@
 	import RtLabel from '$lib/components/RtLabel.svelte';
 	import Seg from '$lib/components/Seg.svelte';
 	import { CB, CFG, MACH } from '$lib/data/runtimes';
-	import { CODE, MEMPH, MET, PHASE_NOTE, PH_NAMES } from '$lib/data/snapshot';
+	import { CODE, MEMPH, MET, PHASE_NOTE, PH_NAMES, SNAPS } from '$lib/data/snapshot';
 	import { ST } from '$lib/data/status';
 	import type { CfgId, MetricKey } from '$lib/data/types';
 	import { H, fmtU, hex, n0, pc, pct } from '$lib/format';
 	import { benchVal, isVisible, otSeries } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
+import { historySegments } from '$lib/history-values';
 
 	let { data } = $props();
 	const b = $derived(data.bench);
@@ -193,17 +194,17 @@
 	const spark = $derived(
 		vis.map((c) => {
 			const vals = otSeries(ui.scope, c.id, 'exec', b.id);
-			if (!vals) return { c, points: '', now: 'n/a', delta: '', dColor: 'var(--fg3)' };
-			const lo = Math.min(...vals);
-			const hi = Math.max(...vals);
-			const X = (i: number) => 2 + i * (156 / 15);
+			if (!vals) return { c, segments: [], now: 'not collected', delta: '', dColor: 'var(--fg3)' };
+			const lo = Math.min(...vals.filter(Number.isFinite));
+			const hi = Math.max(...vals.filter(Number.isFinite));
+			const X = (i: number) => 2 + i * (156 / (SNAPS.length-1));
 			const Y = (v: number) => 21 - ((v - lo) / (hi - lo || 1)) * 18;
-			const d = vals[15] / vals[7] - 1;
+			const d = vals[SNAPS.length-1] / vals[0] - 1;
 			return {
 				c,
-				points: vals.map((v, k) => X(k).toFixed(1) + ',' + Y(v).toFixed(1)).join(' '),
-				now: fmtU(vals[15], 'ms'),
-				delta: pct(d),
+				segments: historySegments(vals,X,Y),
+				now: Number.isFinite(vals[SNAPS.length-1])?fmtU(vals[SNAPS.length-1], 'ms'):'not measured',
+				delta: Number.isFinite(d)?pct(d):'not measured',
 				dColor: Math.abs(d) < 0.02 ? 'var(--fg3)' : d < 0 ? 'var(--good)' : 'var(--bad)'
 			};
 		})
@@ -410,15 +411,15 @@
 	<div class="tbl-wrap">
 		<table class="t" style:min-width="600px">
 			<thead>
-				<tr><th>Configuration</th><th>Steady exec · 16 snapshots</th><th class="r">Now</th><th class="r">Δ 8 weeks</th></tr>
+				<tr><th>Configuration</th><th>Steady exec · {SNAPS.length} retrospective points</th><th class="r">Now</th><th class="r">Δ first → last point</th></tr>
 			</thead>
 			<tbody>
 				{#each spark as h (h.c.id)}
 					<tr>
 						<td class="nowrap"><RtLabel c={h.c} /></td>
 						<td class="sp">
-							{#if h.points}
-								<svg viewBox="0 0 160 24" class="mini"><polyline points={h.points} style:stroke={h.c.col} style:stroke-dasharray={h.c.hollow ? '4 3' : 'none'} class="ln" /></svg>
+							{#if h.segments.length}
+								<svg viewBox="0 0 160 24" class="mini">{#each h.segments as points}<polyline {points} style:stroke={h.c.col} style:stroke-dasharray={h.c.hollow ? '4 3' : 'none'} class="ln" />{/each}</svg>
 							{/if}
 						</td>
 						<td class="mono r">{h.now}</td>

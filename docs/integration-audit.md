@@ -1,6 +1,6 @@
 # Measured data integration audit
 
-The published measurement endpoints are verified. The working tree now connects the workload catalogue, workload cells, correctness counts, host/configuration identities and result drawer to measured evidence. Aggregate, history and proposal consumers still need wiring before this frontend change can be published. Deployment success alone does not prove completed view integration. Reproduce the identity audit with `just integration-audit`.
+The published measurement endpoints are verified. The working tree now connects the workload catalogue, workload cells, correctness counts, host/configuration identities and result drawer to measured evidence. Aggregate and history providers now also consume recorded values: aggregate uncertainty resamples independent launch blocks in one coherent report, and history preserves eight retrospective points and fixed comparison baselines. Feature/proposal, detail memory/code and reuse-model consumers still need wiring before this frontend change can be published. Deployment success alone does not prove completed view integration. Reproduce the identity audit with `just integration-audit`.
 
 ## Current configuration mapping
 

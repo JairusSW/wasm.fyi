@@ -2,7 +2,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { digest, site } from './lib/wasmbench.mjs';
 import { validateData } from './lib/validate-data.mjs';
-import { measuredTiming, measuredMemory, measuredCodeImage } from '../src/lib/measured.ts';
+import { measuredTiming, measuredMemory, measuredCodeImage, measuredHistory } from '../src/lib/measured.ts';
 
 // This is the view projection of verified evidence, never a source of measurements.
 const root = join(site, 'data/wasmbench');
@@ -17,6 +17,7 @@ for (const entry of index.reports) {
 reports.sort((a,b)=>b.created.localeCompare(a.created));
 const configurations = { A:'wasmtime', B:'wasmtime-winch', C:'wasmer-llvm', D:'wasmer-singlepass', E:'wazero', F:'v8', G:'wago' };
 const scenarios = { compile:'compile', inst:'instantiate', first:'first-call', steady:'steady' };
+const memoryScenarios={rss:'steady',rssCompile:'compile',rssInst:'instantiate'};
 const catalogue = new Map();
 for (const report of reports) for (const w of report.workloads) {
   if (!/^(wago|features)\//.test(w.id) || catalogue.has(w.id)) continue;
@@ -36,8 +37,8 @@ for (const report of reports) for (const w of report.workloads) {
 const reasons=new Map();
 function reasonId(reason) { if(!reasons.has(reason)){reasons.set(reason,reasons.size);output.reasons.push(reason);}return reasons.get(reason); }
 const status = { ok:'ok', unsupported:'unsupported', failed:'failed', 'not-measured':'nm', 'not-collected':'nm' };
-const output = { schema:1, configurations, catalogue:[...catalogue.values()], hosts:{}, reports:{}, reasons:[] };
-for (const report of reports) output.reports[report.id] = { runId:report.runId, created:report.created, evidence:report.evidence, sha256:report.evidenceSha256, options:report.options };
+const output = { schema:1, configurations, catalogue:[...catalogue.values()], hosts:{}, reports:{}, reasons:[],history:{},statistics:{timingSamples:reports.reduce((n,r)=>n+r.summaries.reduce((n,s)=>n+(s.recorded_samples || 0),0),0)} };
+for (const report of reports) output.reports[report.id] = { runId:report.runId, created:report.created, evidence:report.evidence, sha256:report.evidenceSha256, options:report.options,configurations:report.runtimes.map(c=>c.id),host:report.host.os };
 for (const [machine, os] of [['m1','linux'],['m2','darwin']]) {
   const selected = reports.filter(r=>r.host.os===os);
   if (!selected.length) throw new Error('Missing measured host: '+os);
@@ -54,22 +55,58 @@ for (const [machine, os] of [['m1','linux'],['m2','darwin']]) {
       for (const [i,snapshot] of ['s1','s2'].entries()) {
         const report=candidates[i];
         if (!report) continue;
-        for (const metric of [...Object.keys(scenarios),'rss','code']) {
-          const cell=metric==='rss'?measuredMemory(report,runtime,workload.id,workload.artifactSha256,'steady','process.peak_rss'):
+        for (const metric of [...Object.keys(scenarios),...Object.keys(memoryScenarios),'code']) {
+          const cell=memoryScenarios[metric]?measuredMemory(report,runtime,workload.id,workload.artifactSha256,memoryScenarios[metric],'process.peak_rss'):
             metric==='code'?measuredCodeImage(report,runtime,workload.id,workload.artifactSha256):
             measuredTiming(report,runtime,workload.id,workload.artifactSha256,scenarios[metric]);
-          const factor=metric==='rss'?1024**2:metric==='code'?1024:1e6;
+          const factor=memoryScenarios[metric]?1024**2:metric==='code'?1024:1e6;
           const summary=report.summaries.find(s=>s.runtime===runtime && s.workload===workload.id && s.scenario===(scenarios[metric] || 'steady') && s.profile==='timing');
+          const memory=memoryScenarios[metric]?report.memory.find(m=>m.runtime===runtime && m.workload===workload.id && m.scenario===memoryScenarios[metric] && m.metric==='process.peak_rss'):null;
+          const launchMedians=memoryScenarios[metric]?(memory?.launch_values || []).map(v=>v.bytes/factor):metric==='code'?[]:Object.values(summary?.launch_medians || {}).map(v=>v/factor);
           view.snapshots[snapshot][`${workload.id}|${slot}|${metric}`]={st:status[cell.status], ...(cell.status==='ok'?{v:cell.value/factor, ...(cell.interval?{interval:cell.interval.map(v=>v/factor)}:{})}:{reason:reasonId(cell.reason)}),report:report.id,
-            ...(summary?{launchMedians:Object.values(summary.launch_medians || {}).map(v=>v/1e6)}:{})};
+            launchMedians};
         }
       }
     }
   }
 }
+for(const [machine,name] of [['m1','history-hub'],['m2','history']]) {
+  const directory=join(site,'data',name);
+  await validateData(directory);
+  const inventory=JSON.parse(await readFile(join(directory,'index.json')));
+  const weekly=JSON.parse(await readFile(join(directory,'weekly.json')));
+  const snapshots=[];
+  for(const entry of inventory.reports){
+    const bytes=await readFile(join(directory,entry.projection));
+    if(digest(bytes)!==entry.projectionSha256)throw new Error('Changed history input');
+    const report=JSON.parse(bytes);snapshots.push(report);
+    output.reports[report.id]={runId:report.runId,created:report.created,evidence:name+'/'+report.evidence,sha256:report.evidenceSha256,options:report.options,configurations:report.runtimes.map(c=>c.id),host:report.host.os,historical:true};
+  }
+  const baseline=snapshots.find(s=>s.id===weekly.baseline.report);
+  if(!baseline)throw new Error('Missing fixed history baseline');
+  const history={points:weekly.results.map(w=>({date:w.targetWeek.slice(0,10),revision:w.revision,collectedAt:w.collectedAt,status:w.status})),workloads:baseline.workloads.map(w=>w.id),cells:{},versions:{}};
+  output.history[machine]=history;
+  for(const [slot,runtime] of Object.entries(configurations)) {
+    const description=baseline.runtimes.find(c=>c.id===runtime)?.description;
+    history.versions[slot]=weekly.results.map(w=>slot==='G'?w.revision:description?.runtime_version || 'not collected');
+    for(const w of baseline.workloads) {
+      const canonical=catalogue.get(w.id);if(!canonical || canonical.artifactSha256!==w.sha256)throw new Error('Historical corpus differs from current contract: '+w.id);
+      for(const [metric,scenario] of Object.entries({...scenarios,rss:'steady',code:'compile'})) {
+        history.cells[`${w.id}|${slot}|${metric}`]=measuredHistory(weekly,snapshots,baseline.host,runtime,w.id,w.sha256,scenario).map((point,i)=>{
+          const report=runtime==='wago'?snapshots.find(s=>s.runId===weekly.results[i].runId):baseline;
+          const cell=weekly.results[i].status!=='measured' || !report?point.cell:metric==='rss'?measuredMemory(report,runtime,w.id,w.sha256,'steady','process.peak_rss'):metric==='code'?measuredCodeImage(report,runtime,w.id,w.sha256):point.cell;
+          const factor=metric==='rss'?1024**2:metric==='code'?1024:1e6;
+          const summary=report?.summaries.find(s=>s.runtime===runtime && s.workload===w.id && s.scenario===scenario && s.profile==='timing');
+          return {st:status[cell.status],...(cell.status==='ok'?{v:cell.value/factor,...(cell.interval?{interval:cell.interval.map(v=>v/factor)}:{})}:{reason:reasonId(cell.reason)}),report:cell.evidence?.report || '',role:point.role,launchMedians:metric==='rss'||metric==='code'?[]:Object.values(summary?.launch_medians || {}).map(v=>v/factor)};
+        });
+      }
+    }
+  }
+}
+if(JSON.stringify(output.history.m1.points.map(p=>p.date))!==JSON.stringify(output.history.m2.points.map(p=>p.date)))throw new Error('Historical host dates differ');
 // Compact the browser projection without rounding a measurement or interval.
 output.encoding = 'indexed-cells-v1';
-output.metrics = [...Object.keys(scenarios),'rss','code'];
+output.metrics = [...Object.keys(scenarios),...Object.keys(memoryScenarios),'code'];
 output.statuses = ['ok','unsupported','failed','nm'];
 output.reportIds = Object.keys(output.reports);
 const workloadIndex=new Map(output.catalogue.map((w,i)=>[w.id,i]));
@@ -80,6 +117,10 @@ for(const host of Object.values(output.hosts)) for(const snapshot of ['s1','s2']
     const fields=key.split('|');const metric=fields.pop(),slot=fields.pop(),workload=fields.join('|');
     return [workloadIndex.get(workload),slots.indexOf(slot),output.metrics.indexOf(metric),output.statuses.indexOf(c.st),reportIndex.get(c.report),c.v ?? null,c.interval ?? null,c.launchMedians ?? null,c.reason ?? null];
   });
+}
+for(const history of Object.values(output.history))for(const [key,cells] of Object.entries(history.cells)) {
+  if(cells.every(c=>c.st==='nm'&&!c.report)){delete history.cells[key];continue;}
+  history.cells[key]=cells.map(c=>[output.statuses.indexOf(c.st),reportIndex.get(c.report) ?? -1,c.v ?? null,c.interval ?? null,c.launchMedians ?? null,c.reason ?? null]);
 }
 await writeFile(join(site,'src/lib/data/measurements.json'),JSON.stringify(output)+'\n');
 console.log(`Generated measured view catalogue: ${output.catalogue.length} contracts, ${Object.keys(output.hosts).length} hosts.`);

@@ -13,41 +13,40 @@ export const OV: Record<OvKey, OvGroup> = {
   lat: { label: 'Latency', cols: ['Compilation', 'Instantiation', 'First call', 'Steady execution'], metrics: ['compile', 'inst', 'first', 'steady'], vals: {
     A: [[1, .03], [1, .04], [1, .05], [1, .02]], B: [[.21, .01], [.97, .05], [.80, .06], [2.9, .08]], C: [[6.8, .3], [.62, .05], [.41, .03], [.93, .03]],
     D: [[.34, .02], [1.04, .05], [.9, .06], [2.4, .07]], E: [[.04, .004], [.88, .06], [3.1, .2], [28.4, 1.4]], F: [[.12, .01], [1.41, .07], [.70, .05], [1.12, .04]], G: [[.06, .005], [.66, .06], [2.4, .15], [11.6, .6]] } },
-  mem: { label: 'Memory', cols: ['Compile peak Δ', 'Instantiate peak Δ', 'Execution peak Δ', 'Retained @ +1 s'], metrics: ['rss', 'rss', 'rss', 'rss'], vals: {
+  mem: { label: 'Memory', cols: ['Compile run peak RSS', 'Instantiate run peak RSS', 'Steady run peak RSS', 'Retained @ +1 s'], metrics: ['rss', 'rss', 'rss', 'rss'], vals: {
     A: [[1, .04], [1, .03], [1, .03], [1, .06]], B: [[.44, .03], [.98, .03], [1.03, .03], [.81, .05]], C: [[2.9, .12], [.74, .04], [.96, .03], [1.9, .1]],
     D: [[.51, .03], [1.01, .03], [1.05, .03], [.86, .05]], E: [[.12, .01], [.93, .04], [1.10, .04], [.42, .03]], F: [[.38, .03], [1.22, .05], [1.31, .05], [1.12, .07]], G: [[.15, .01], [.64, .03], [.97, .03], [.39, .03]] } },
-  code: { label: 'Machine Code', cols: ['Function code', 'Stubs & trampolines', 'Metadata & pools', 'Active total', 'Cumulative emitted'], metrics: ['code', 'code', 'code', 'code', 'code'], vals: {
+  code: { label: 'Machine Code', cols: ['Function code', 'Stubs & trampolines', 'Metadata & pools', 'Extracted native image', 'Cumulative emitted'], metrics: ['code', 'code', 'code', 'code', 'code'], vals: {
     A: [[1, .01], [1, .01], [1, .01], [1, .01], [1, .01]], B: [[1.71, .01], [1.1, .01], [1.3, .01], [1.62, .01], [1.62, .01]], C: [[.84, .01], [.62, .01], [1.4, .01], [.96, .01], [.96, .01]],
     D: [[2.2, .01], [1.2, .01], [1.5, .01], [2.1, .01], [2.1, .01]], E: null, F: [[.86, .01], [1.3, .01], [1.1, .01], [.91, .01], [1.64, .01]], G: null } },
   cov: { label: 'Correctness', cols: ['Correct', 'Failed', 'Crashed / timeout', 'Unsupported / disabled', 'Not measured'], metrics: ['steady', 'steady', 'steady', 'steady', 'steady'], vals: {
     A: [1261, 4, 1, 18, 0], B: [1261, 4, 1, 18, 0], C: [1240, 2, 9, 18, 15], D: [1198, 11, 3, 72, 0], E: [1179, 6, 2, 97, 0], F: [1270, 3, 0, 11, 0], G: [1152, 21, 14, 97, 0] } },
 };
 export const REF: Record<"lat" | "mem" | "code", number[]> = { lat: [41.2, 0.186, 2.14, 0.0049], mem: [38.4, 6.2, 21.7, 3.9], code: [612, 48, 96, 756, 756] };
-export const UNIT: Record<"lat" | "mem" | "code", string> = { lat: 'ms', mem: 'MB', code: 'KB' };
+export const UNIT: Record<"lat" | "mem" | "code", string> = { lat: 'ms', mem: 'MiB', code: 'KiB' };
 export const OTM: Record<OtMetricKey, OtMetric> = {
   exec: { key: 'exec', l: 'Execution', g: 'lat', c: 3, u: 'ms', k: 1 },
   compile: { key: 'compile', l: 'Compilation', g: 'lat', c: 0, u: 'ms', k: 0.6 },
   inst: { key: 'inst', l: 'Instantiation', g: 'lat', c: 1, u: 'ms', k: 0.3 },
-  mem: { key: 'mem', l: 'Memory', g: 'mem', c: 2, u: 'MB', k: 0.4 },
-  code: { key: 'code', l: 'Machine Code', g: 'code', c: 3, u: 'KB', k: 0.5 },
+  mem: { key: 'mem', l: 'Memory', g: 'mem', c: 2, u: 'MiB', k: 0.4 },
+  code: { key: 'code', l: 'Machine Code', g: 'code', c: 3, u: 'KiB', k: 0.5 },
   cov: { key: 'cov', l: 'Correctness', g: 'cov', c: 0, u: 'n', k: 0 },
 };
 export const OTM_KEYS = Object.keys(OTM) as OtMetricKey[];
-export const SNAPS: Snap[] = Array.from({ length: 16 }, (_, i) => { const d = new Date(Date.UTC(2026, 5, 15 + 7 * i)); const iso = d.toISOString().slice(0, 10); return { i, date: iso, short: iso.slice(5) }; });
-export const HARNESS_BREAK = 0;
-export const PIN = 6;
-export const EVENTS: SnapEvent[] = [
-  { i: 10, kind: 'release', label: 'wasmtime 37.0.0' },
-  { i: 11, kind: 'corpus', label: 'corpus 2026.08 (+14; cohort frozen)' },
-  { i: 13, kind: 'release', label: 'v8 14.1.146 · wasmtime 37.0.1' },
-];
-export const verAt = (cid: CfgId, i: number): string => ({ A: i < 10 ? '36.0.2' : i < 13 ? '37.0.0' : '37.0.1', B: i < 10 ? '36.0.2' : i < 13 ? '37.0.0' : '37.0.1', C: i < 8 ? '6.0.1' : '6.1.0', D: i < 8 ? '6.0.1' : '6.1.0', E: '1.9.0', F: i < 13 ? '14.0.365' : '14.1.146', G: i < 9 ? '0.4.1' : '0.4.2' }[cid]);
+export const SNAPS: Snap[] = viewData.history.m1.points.map((p,i)=>({i,date:p.date,short:p.date.slice(5)}));
+export const HARNESS_BREAK=0;
+export const PIN=0;
+export const EVENTS:SnapEvent[]=viewData.history.m1.points.map((p,i)=>({i,kind:'revision',label:`Retrospective Wago revision ${p.revision.slice(0,12)}`}));
+export const verAt=(cid:CfgId,i:number,machine:'m1'|'m2'='m1')=>{
+  const v=viewData.history[machine].versions[cid]?.[i];
+  return cid==='G'?v?.slice(0,12) || 'not collected':v && v!=='not collected'?`fixed ${v}`:'not collected';
+};
 export const BENCH: BenchGroup[] = [...new Set(viewData.catalogue.map(b=>b.group))].map(g=>({
   g, items:viewData.catalogue.filter(b=>b.group===g), total:viewData.catalogue.filter(b=>b.group===g).length
 }));
 export const ALLB: Bench[] = BENCH.flatMap(g => g.items.map(b => ({ ...b, group: g.g })));
 export const ST_OVR: Record<string, Status> = {};
-export const MET: Record<MetricKey, { l: string; short: string; g: "lat" | "mem" | "code"; c: number; u: string }> = { compile: { l: 'Compilation', short: 'Compile', g: 'lat', c: 0, u: 'ms' }, inst: { l: 'Instantiation', short: 'Instantiate', g: 'lat', c: 1, u: 'ms' }, first: { l: 'First call', short: 'First call', g: 'lat', c: 2, u: 'ms' }, steady: { l: 'Steady execution (per iteration)', short: 'Steady exec', g: 'lat', c: 3, u: 'ms' }, rss: { l: 'Process lifetime peak RSS', short: 'Peak RSS', g: 'mem', c: 2, u: 'MB' }, code: { l: 'Extracted native image', short: 'Native code', g: 'code', c: 3, u: 'KB' } };
+export const MET: Record<MetricKey, { l: string; short: string; g: "lat" | "mem" | "code"; c: number; u: string }> = { compile: { l: 'Compilation', short: 'Compile', g: 'lat', c: 0, u: 'ms' }, inst: { l: 'Instantiation', short: 'Instantiate', g: 'lat', c: 1, u: 'ms' }, first: { l: 'First call', short: 'First call', g: 'lat', c: 2, u: 'ms' }, steady: { l: 'Steady execution (per iteration)', short: 'Steady exec', g: 'lat', c: 3, u: 'ms' }, rss: { l: 'Process lifetime peak RSS', short: 'Peak RSS', g: 'mem', c: 2, u: 'MiB' }, code: { l: 'Extracted native image', short: 'Native code', g: 'code', c: 3, u: 'KiB' } };
 export const PHASE_NOTE: Record<MetricKey, string> = {
   compile: 'Compilation: validation + code generation until the module object is ready. Lazy and tiered backends report only work done before instantiation; interpreters report translation.',
   inst: 'Instantiation: imports resolved, memories/tables allocated, data/elem segments applied, and the module start function invoked if one is declared. An exported _start is not part of instantiation.',

@@ -2,10 +2,11 @@
 	import { siteHref } from '$lib/links';
 	import Swatch from '$lib/components/Swatch.svelte';
 	import { FEATS, PROPS } from '$lib/data/features';
-	import { CFG } from '$lib/data/runtimes';
+	import { CFG, RTS } from '$lib/data/runtimes';
+	import { viewData } from '$lib/view-data';
 	import { EVENTS, SNAPS } from '$lib/data/snapshot';
 	import { PROPOSAL_IDS, href } from '$lib/links';
-	import { disp, isOff, isVisible, ratio } from '$lib/model';
+	import { TOTAL_WORKLOADS, sharedCount, disp, isOff, isVisible, ratio } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 
 	const board = $derived.by(() => {
@@ -24,13 +25,13 @@
 			val: disp(s, 'lat', x.c.id, 3)!.t
 		}));
 	});
-	const nShared = $derived(isOff(ui.scope, 'D') ? '1,108 shared workloads' : '1,112 shared workloads');
+	const nShared = $derived(`${sharedCount(ui.scope)} shared measured contracts`);
 
 	const tiles = [
-		['12', 'runtimes & engines tracked'],
-		['1,284', 'benchmark workloads'],
-		['318,421', 'measurements'],
-		['17', 'features tracked'],
+		[String(RTS.length), 'runtimes & engines tracked'],
+		[String(TOTAL_WORKLOADS), 'measured contracts'],
+		[String(viewData.statistics.timingSamples), 'recorded timing samples'],
+		['25', 'feature families'],
 		['2', 'machines']
 	];
 
@@ -47,7 +48,7 @@
 		},
 		{
 			t: 'History',
-			d: 'Every metric over time, with release markers and change reports that separate real regressions from noise.',
+			d: 'Every metric over time, with source revisions, recorded gaps and a fixed comparison-engine baseline.',
 			href: '/history',
 			links: [
 				['Execution trend', '/history'],
@@ -114,7 +115,7 @@
 				</button>
 			{/each}
 		</div>
-		<div class="board-foot small fg3">Geometric mean over {nShared} on AMD Ryzen 9 7950X · synthetic preview data</div>
+		<div class="board-foot small fg3">Geometric mean over {nShared} in one pinned report · independent launch bootstrap</div>
 	</div>
 </section>
 

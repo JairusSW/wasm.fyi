@@ -32,6 +32,8 @@ export const fmtU = (v: number, u: string): string => {
 	if (u === 'µs') return v < 1000 ? v.toFixed(v < 10 ? 2 : 1) + ' µs' : (v / 1000).toFixed(2) + ' ms';
 	if (u === 'MB') return v.toFixed(1) + ' MB';
 	if (u === 'KB') return v >= 1024 ? (v / 1024).toFixed(2) + ' MB' : v.toFixed(0) + ' KB';
+	if (u === 'MiB') return v.toFixed(1) + ' MiB';
+	if (u === 'KiB') return v >= 1024 ? (v / 1024).toFixed(2) + ' MiB' : v.toFixed(0) + ' KiB';
 	return String(v);
 };
 

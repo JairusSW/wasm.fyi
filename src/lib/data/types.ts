@@ -118,7 +118,7 @@ export interface Snap {
 
 export interface SnapEvent {
 	i: number;
-	kind: 'release' | 'corpus' | 'harness';
+	kind: 'release' | 'corpus' | 'harness' | 'revision';
 	label: string;
 }
 

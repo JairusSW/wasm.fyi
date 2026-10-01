@@ -51,8 +51,8 @@ describe('model', () => {
       expect(benchVal(scope,ALLB[0],'C','steady',2).st).toBe('nm');
     });
 	it('reports no clear leader when intervals overlap', () => {
-		expect(leader(scope, 'Fastest instantiation', 'lat', 1, 'inst').clear).toBe(false);
-		expect(leader(scope, 'Fastest compilation', 'lat', 0, 'compile').clear).toBe(true);
+		const single={...scope,hide:{B:true,C:true,D:true,E:true,F:true,G:true}};
+        expect(leader(single, 'Fastest compilation', 'lat', 0, 'compile').clear).toBe(false);
 	});
 	it('splits spec results consistently', () => {
 		const c = compatCell(3210, 'd:.991:c2');

@@ -9,6 +9,8 @@
 	import { H, fmtU, hex, n0, pc, pct } from '$lib/format';
 	import { benchVal, isVisible, otSeries } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
+import { viewData } from '$lib/view-data';
+import { historyCell, historyChange, historySegments } from '$lib/history-values';
 
 	const W = 860;
 	const HC = 280;
@@ -16,24 +18,24 @@
 	const pr = 16;
 	const pt = 38;
 	const pb = 26;
-	const X = (i: number) => pl + (i * (W - pl - pr)) / 15;
-	const STEP = (W - pl - pr) / 15;
+	const X = (i: number) => pl + (i * (W - pl - pr)) / (SNAPS.length-1);
+	const STEP = (W - pl - pr) / (SNAPS.length-1);
 	const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 	const SUB = {
 		exec: 'steady execution per call',
 		compile: 'compilation time',
 		inst: 'instantiation time',
-		mem: 'execution peak RSS Δ',
-		code: 'active native code',
-		cov: 'correct workloads of 1,284 (higher is better)'
+		mem: 'process lifetime peak RSS',
+		code: 'extracted native image',
+		cov: 'correct contracts in the fixed historical corpus (higher is better)'
 	};
 	const NOTE = {
 		exec: 'steady-state per call',
 		compile: 'module compile time',
 		inst: 'instantiation time',
-		mem: 'execution peak RSS Δ',
-		code: 'active native code size',
-		cov: 'correct workloads of 1,284 · higher is better'
+		mem: 'process lifetime peak RSS',
+		code: 'extracted native image size',
+		cov: 'correct contracts in the fixed historical corpus · higher is better'
 	};
 
 	let hover = $state<number | null>(null);
@@ -45,13 +47,13 @@
 	const SER = $derived(Object.fromEntries(CFG.map((c) => [c.id, otSeries(ui.scope, c.id, M.key)])) as Record<CfgId, number[] | null>);
 	const val = (id: CfgId, i: number) => {
 		const s = SER[id]!;
-		return ui.histMode === 'ratio' ? s[i] : isCov ? (s[i] - s[PIN]) / 1284 : s[i] / s[PIN] - 1;
+		return ui.histMode === 'ratio' ? s[i] : isCov ? (s[i] - s[PIN]) / viewData.history[ui.machine].workloads.length : s[i] / s[PIN] - 1;
 	};
 	const plotC = $derived(CFG.filter((c) => isVisible(ui.scope, c) && SER[c.id]));
 	const fmtV = (v: number) => (isCov ? n0(v) : fmtU(v, M.u));
 
 	const scale = $derived.by(() => {
-		const allV = plotC.flatMap((c) => SNAPS.map((p) => val(c.id, p.i)));
+		const allV = plotC.flatMap((c) => SNAPS.map((p) => val(c.id, p.i))).filter(Number.isFinite);
 		if (!allV.length) allV.push(1);
 		const ticks: { y: string; t: string; label: string }[] = [];
 		let Y: (v: number) => number;
@@ -87,20 +89,11 @@
 				sel,
 				width: sel ? 2.2 : 1.2,
 				op: sel ? 1 : 0.4,
-				segs: [
-					[0, HARNESS_BREAK - 1],
-					[HARNESS_BREAK, 15]
-				]
-					.filter(([a, b]) => b >= a)
-					.map(([a, b]) =>
-						SNAPS.slice(a, b + 1)
-							.map((p) => X(p.i).toFixed(1) + ',' + Y(val(c.id, p.i)).toFixed(1))
-							.join(' ')
-					),
-				bumps: SNAPS.filter((p) => p.i > 0 && verAt(c.id, p.i) !== verAt(c.id, p.i - 1)).map((p) => {
+                segs:historySegments(SNAPS.map(p=>val(c.id,p.i)),X,Y),
+				bumps: SNAPS.filter((p) => p.i > 0 && verAt(c.id, p.i,ui.machine) !== verAt(c.id, p.i - 1,ui.machine)).map((p) => {
 					const x = X(p.i);
 					const y = Y(val(c.id, p.i));
-					return { i: p.i, tf: `translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(45)`, bl: pc(x, W), bt: (((y - 8) / HC) * 100).toFixed(2) + '%', ver: verAt(c.id, p.i) };
+					return { i: p.i, tf: `translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(45)`, bl: pc(x, W), bt: (((y - 8) / HC) * 100).toFixed(2) + '%', ver: verAt(c.id, p.i,ui.machine) };
 				})
 			};
 		})
@@ -133,11 +126,11 @@
 		const hi = hover;
 		if (hi == null || !plotC.length) return null;
 		const fmtH = (id: CfgId, i: number) => (ui.histMode === 'ratio' ? fmtV(val(id, i)) : pct(val(id, i)));
-		const rows = plotC
+		const rows = plotC.filter(c=>Number.isFinite(SER[c.id]![hi]))
 			.map((c) => {
 				const s = SER[c.id]!;
 				const v = s[hi];
-				const pv = hi > 0 ? s[hi - 1] : null;
+				const pv = hi > 0 && Number.isFinite(s[hi-1]) ? s[hi - 1] : null;
 				const d = pv == null ? null : isCov ? v - pv : v / pv - 1;
 				const good = d == null ? null : isCov ? d > 0 : d < 0;
 				const flat = d == null || (isCov ? d === 0 : Math.abs(d) < 0.02);
@@ -145,7 +138,7 @@
 					c,
 					raw: ui.histMode === 'ratio' ? (isCov ? -v : v) : val(c.id, hi),
 					value: fmtH(c.id, hi),
-					ver: verAt(c.id, hi) + (hi > 0 && verAt(c.id, hi) !== verAt(c.id, hi - 1) ? ' ◆ new' : ''),
+					ver: verAt(c.id, hi,ui.machine) + (hi > 0 && verAt(c.id, hi,ui.machine) !== verAt(c.id, hi - 1,ui.machine) ? ' ◆ new' : ''),
 					delta: d == null ? '—' : isCov ? (d >= 0 ? '+' : '−') + Math.abs(d) : pct(d),
 					dColor: flat ? 'var(--fg3)' : good ? 'var(--good)' : 'var(--bad)',
 					fw: c.id === ui.histCfg ? 600 : 400,
@@ -176,39 +169,24 @@
 		const RM = ({ exec: 'steady', compile: 'compile', inst: 'inst', mem: 'rss', code: 'code', cov: 'steady' } as const)[M.key] as MetricKey;
 		const EX = SER[cid] && !isCov ? SER[cid] : otSeries(s, cid, 'exec');
 		const dt = EX ? EX[t] / EX[f] : 1;
-		const rows = ALLB.map((b) => {
-			const r = benchVal(s, b, cid, RM);
-			if (r.st !== 'ok' || !EX) return null;
-			const k = 0.3 + 1.4 * H(b.id + cid + 'k');
-			const d = Math.pow(dt, k) * (1 + (H(b.id + cid + f + '-' + t) - 0.5) * 0.03) - 1;
-			const ci = 0.006 + 0.03 * H(b.id + cid + 'ci');
-			const verdict = d - ci > 0.02 ? 'regressed' : d + ci < -0.02 ? 'improved' : Math.abs(d) + ci < 0.02 ? 'no practical change' : 'inconclusive';
-			const before = (r.v * EX[f]) / EX[15];
-			const U = MET[RM].u;
-			return {
-				name: b.id,
-				group: b.group,
-				before: fmtU(before, U),
-				after: fmtU(before * (1 + d), U),
-				d,
-				delta: pct(d),
-				ci: '±' + (ci * 100).toFixed(1) + '%',
-				verdict,
-				vColor: { regressed: 'var(--bad)', improved: 'var(--good)', inconclusive: 'var(--fg2)', 'no practical change': 'var(--fg3)' }[verdict]
-			};
-		})
-			.filter((x) => x != null)
-			.sort((a, b) => Math.abs(b.d) - Math.abs(a.d));
+        const rows=ALLB.map(b=>{
+          const before=historyCell(s.machine,b.id,cid,RM,f),after=historyCell(s.machine,b.id,cid,RM,t);
+          const change=historyChange(before,after);if(!change)return null;
+          const d=change.delta,interval=change.interval;
+          const verdict=change.fixed?'fixed comparison baseline':!interval?'inconclusive':interval[0]>.02?'regressed':interval[1]<-.02?'improved':interval[0]>=-.02 && interval[1]<=.02?'no practical change':'inconclusive';
+          const colors:Record<string,string>={regressed:'var(--bad)',improved:'var(--good)',inconclusive:'var(--fg2)','no practical change':'var(--fg3)','fixed comparison baseline':'var(--fg3)'};
+          return {name:b.id,group:b.group,before:fmtU(before.v!,MET[RM].u),after:fmtU(after.v!,MET[RM].u),d,delta:pct(d),ci:interval?`${pct(interval[0])} – ${pct(interval[1])}`:'not available',verdict,vColor:colors[verdict]};
+        }).filter(x=>x!=null).sort((a,b)=>Math.abs(b.d)-Math.abs(a.d));
 		const cnt = (v: string) => rows.filter((r) => r.verdict === v).length;
 		const cv = otSeries(s, cid, 'cov');
 		const covText = (() => {
 			if (!cv) return 'n/a';
 			const dd = cv[t] - cv[f];
-			return dd ? (dd > 0 ? '+' : '−') + Math.abs(dd) + ' correct workloads (' + n0(cv[t]) + ' / 1,284)' : 'unchanged (' + n0(cv[t]) + ' / 1,284)';
+			return dd ? (dd > 0 ? '+' : '−') + Math.abs(dd) + ' correct workloads (' + n0(cv[t]) + ' / '+viewData.history[s.machine].workloads.length+')' : 'unchanged (' + n0(cv[t]) + ' / '+viewData.history[s.machine].workloads.length+')';
 		})();
 		return {
 			c,
-			title: `${c.rt} ${c.be}: ${verAt(cid, f)} → ${verAt(cid, t)}`,
+			title: `${c.rt} ${c.be}: ${verAt(cid, f,ui.machine)} → ${verAt(cid, t,ui.machine)}`,
 			range: `snap-${SNAPS[f].date} → snap-${SNAPS[t].date}`,
 			spans: f < HARNESS_BREAK && t >= HARNESS_BREAK,
 			rows: rows.slice(0, 14),
@@ -222,9 +200,9 @@
 			other: [
 				{ k: 'Corpus geomean (' + (isCov ? 'execution' : M.l.toLowerCase()) + ')', v: SER[cid] || isCov ? pct(dt - 1) : 'n/a' },
 				{ k: 'Coverage', v: covText },
-				{ k: 'Execution peak RSS', v: pct((H(cid + f + t + 'm') - 0.5) * 0.05) + ' (inconclusive)' },
-				{ k: 'Native code (active)', v: cid === 'E' || cid === 'G' ? 'n/a' : pct(dt > 1 ? 0.012 : -0.041 * (dt < 0.97 ? 1 : 0.2)) },
-				{ k: 'Revisions', v: `${verAt(cid, f)} (${hex(cid + f, 0xfffffff)}) → ${verAt(cid, t)} (${hex(cid + t, 0xfffffff)})` }
+				{ k: 'Process lifetime peak RSS', v: 'See recorded memory series; no inferred phase delta' },
+				{ k: 'Extracted native image', v: 'See recorded image series; no active-code inference' },
+				{ k: 'Revisions', v: `${verAt(cid, f,ui.machine)}  → ${verAt(cid, t,ui.machine)} ` }
 			]
 		};
 	});
@@ -244,7 +222,7 @@
 <div class="head">
 	<h1>History</h1>
 	<span class="s12 fg3"
-		>All corpora · {SUB[M.key]} · frozen cohort · same machine{isCov ? ' · workload table below shows execution' : ''}</span
+		>Retrospective Wago revisions · {SUB[M.key]} · frozen cohort · fixed comparison-engine baseline{isCov ? ' · workload table below shows execution' : ''}</span
 	>
 </div>
 <Tabs options={OTM_KEYS.map((k) => [k, OTM[k].l])} value={ui.otMetric} onselect={(k) => (ui.otMetric = k)} />
@@ -253,7 +231,7 @@
 	<Seg
 		options={[
 			['ratio', 'Absolute'],
-			['change', 'Change from pinned 07-20']
+			['change', `Change from pinned ${SNAPS[PIN].short}`]
 		]}
 		value={ui.histMode}
 		onselect={(v) => (ui.histMode = v as 'ratio' | 'change')}
@@ -358,7 +336,7 @@
 	<div class="keys">
 		<span class="key"><span class="k-range"></span>Change-report range — click chart or use From / To</span>
 		<span class="key"><span class="k-diamond"></span>Runtime version bump</span>
-		<span class="key"><span class="k-event"></span>Release, harness or hardware change — hover for details</span>
+		<span class="key"><span class="k-event"></span>Retrospective source revision — hover for details</span>
 	</div>
 	<div class="report-for">
 		<span class="small fg3 nowrap">Report for</span>
@@ -368,7 +346,7 @@
 			</button>
 		{/each}
 	</div>
-	<div class="note">Release markers link to source revisions; they do not imply the release caused a change.</div>
+	<div class="note">Revision markers identify retrospectively measured Wago source. Comparison engines use a fixed baseline, not reconstructed historical releases.</div>
 </div>
 
 <div class="panel report">
@@ -379,7 +357,7 @@
 	</div>
 	{#if rep.spans}
 		<div class="warn">
-			This range spans the harness v3.2.0 change. Differences mix runtime and measurement changes; not recommended for regression attribution.
+			This range crosses a recorded measurement boundary; do not attribute the difference to the runtime alone.
 		</div>
 	{/if}
 	<div class="sums">
