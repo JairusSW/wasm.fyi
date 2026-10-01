@@ -1,5 +1,7 @@
 // Benchmark snapshot: aggregates, corpus, per-phase data and proposal workloads.
-// Synthetic preview data — every number here is made up and labeled as such in the UI.
+// Workload catalogue and cells use sealed evidence; remaining aggregate and
+// proposal providers below are pending replacement before frontend publication.
+import { viewData } from '../view-data';
 import type { Bench, BenchGroup, CfgId, MetricKey, OtMetric, OtMetricKey, OvGroup, OvKey, Snap, SnapEvent, Status } from './types';
 
 export const GC_W: [string, string, number][] = [['binary-trees', 'depth 18 · short-lived nodes', 1], ['kotlin-maps', 'HashMap churn · Kotlin/Wasm', .7], ['dart-json', 'JSON decode → object graph · Dart', .45], ['graph-longlived', '1M-node live graph, random mutation', .3]];
@@ -40,43 +42,19 @@ export const EVENTS: SnapEvent[] = [
   { i: 13, kind: 'release', label: 'v8 14.1.146 · wasmtime 37.0.1' },
 ];
 export const verAt = (cid: CfgId, i: number): string => ({ A: i < 10 ? '36.0.2' : i < 13 ? '37.0.0' : '37.0.1', B: i < 10 ? '36.0.2' : i < 13 ? '37.0.0' : '37.0.1', C: i < 8 ? '6.0.1' : '6.1.0', D: i < 8 ? '6.0.1' : '6.1.0', E: '1.9.0', F: i < 13 ? '14.0.365' : '14.1.146', G: i < 9 ? '0.4.1' : '0.4.2' }[cid]);
-export const BENCH: BenchGroup[] = [
-  { g: 'Applications', total: 38, items: [
-    { id: 'sqlite-speedtest1', tags: ['database'], kb: 1240, ms: 412, purpose: 'SQLite speedtest1 (--size 20) against an in-memory database', input: 'size=20 · in-memory', src: 'sqlite 3.46.1 · wasi-sdk 24 (clang 19.1.5) -O2' },
-    { id: 'zstd-compress', tags: ['compression'], kb: 520, ms: 88, cases: [['level=1', .46], ['level=3', 1], ['level=19', 7.9]], purpose: 'Compress a 16 MiB mixed corpus', input: '16 MiB silesia subset', src: 'zstd 1.5.6 · wasi-sdk 24 -O3' },
-    { id: 'js-interp/richards', tags: ['interpreter'], kb: 890, ms: 156, purpose: 'Embedded JS engine running the Richards benchmark', input: 'richards.js × 50', src: 'quickjs-ng 0.8 · wasi-sdk 24 -O2' },
-    { id: 'image-resize/lanczos', tags: ['numerical', 'simd'], kb: 210, ms: 64, purpose: 'Lanczos-3 resize 4096² → 1024², SIMD build', input: '4096×4096 RGBA', src: 'rust 1.82 · +simd128' },
-    { id: 'markdown-parse', tags: ['parsing'], kb: 340, ms: 23, purpose: 'CommonMark parse + render of the spec document', input: 'spec.md (212 KB)', src: 'pulldown-cmark 0.12 · rust 1.82' },
-    { id: 'protobuf-decode', tags: ['parsing', 'allocation'], kb: 410, ms: 31, purpose: 'Decode 20k nested messages', input: '48 MB wire data', src: 'prost 0.13 · rust 1.82' }] },
-  { g: 'Algorithms', total: 212, items: [
-    { id: 'nbody', tags: ['numerical'], kb: 12, ms: 98 }, { id: 'fannkuch-redux', tags: ['numerical'], kb: 9, ms: 211 },
-    { id: 'sha256', tags: ['hashing'], kb: 14, ms: 12 }, { id: 'regex-dfa', tags: ['parsing'], kb: 48, ms: 44 }, { id: 'json-parse', tags: ['parsing', 'allocation'], kb: 36, ms: 18 }] },
-  { g: 'Runtime mechanisms', total: 846, items: [
-    { id: 'host-call/i32→i32 ×10⁶', tags: ['host calls'], kb: 4, ms: 9.1 }, { id: 'call-indirect ×10⁶', tags: ['dispatch'], kb: 5, ms: 14 },
-    { id: 'memory.grow ×1,024', tags: ['memory'], kb: 3, ms: 2.2 }, { id: 'bulk-memory-copy 64 MiB', tags: ['memory'], kb: 3, ms: 5.4 }] },
-  { g: 'Proposal workloads', total: 164, items: [
-    { id: 'simd/dot-f32', tags: ['simd'], kb: 6, ms: 3.1 }, { id: 'gc/binary-trees depth=18', tags: ['gc', 'allocation'], kb: 22, ms: 120 },
-    { id: 'eh/throw-deep', tags: ['exceptions'], kb: 8, ms: 7.7 }, { id: 'threads/atomic-counter ×8', tags: ['threads'], kb: 7, ms: 26 }] },
-  { g: 'Scaling tests', total: 24, items: [
-    { id: 'scale/funcs-10k', tags: ['compile scaling'], kb: 2100, ms: .4 }, { id: 'scale/huge-func-1M', tags: ['compile scaling'], kb: 3900, ms: 1.1 }] },
-];
+export const BENCH: BenchGroup[] = [...new Set(viewData.catalogue.map(b=>b.group))].map(g=>({
+  g, items:viewData.catalogue.filter(b=>b.group===g), total:viewData.catalogue.filter(b=>b.group===g).length
+}));
 export const ALLB: Bench[] = BENCH.flatMap(g => g.items.map(b => ({ ...b, group: g.g })));
-export const ST_OVR: Record<string, Status> = {
-  'gc/binary-trees depth=18|E': 'unsupported', 'gc/binary-trees depth=18|G': 'unsupported', 'gc/binary-trees depth=18|D': 'disabled',
-  'threads/atomic-counter ×8|E': 'unsupported', 'threads/atomic-counter ×8|G': 'crashed', 'threads/atomic-counter ×8|D': 'disabled',
-  'eh/throw-deep|D': 'failed', 'eh/throw-deep|E': 'unsupported', 'eh/throw-deep|G': 'failed',
-  'simd/dot-f32|E': 'unsupported', 'image-resize/lanczos|E': 'unsupported',
-  'scale/huge-func-1M|C': 'timeout', 'scale/huge-func-1M|G': 'failed', 'markdown-parse|G': 'failed',
-  'host-call/i32→i32 ×10⁶|C': 'nm', 'protobuf-decode|D|code': 'nm',
-};
-export const MET: Record<MetricKey, { l: string; short: string; g: "lat" | "mem" | "code"; c: number; u: string }> = { compile: { l: 'Compilation', short: 'Compile', g: 'lat', c: 0, u: 'ms' }, inst: { l: 'Instantiation', short: 'Instantiate', g: 'lat', c: 1, u: 'ms' }, first: { l: 'First call', short: 'First call', g: 'lat', c: 2, u: 'ms' }, steady: { l: 'Steady execution (per iteration)', short: 'Steady exec', g: 'lat', c: 3, u: 'ms' }, rss: { l: 'Execution peak RSS', short: 'Peak RSS', g: 'mem', c: 2, u: 'MB' }, code: { l: 'Native code (active)', short: 'Native code', g: 'code', c: 3, u: 'KB' } };
+export const ST_OVR: Record<string, Status> = {};
+export const MET: Record<MetricKey, { l: string; short: string; g: "lat" | "mem" | "code"; c: number; u: string }> = { compile: { l: 'Compilation', short: 'Compile', g: 'lat', c: 0, u: 'ms' }, inst: { l: 'Instantiation', short: 'Instantiate', g: 'lat', c: 1, u: 'ms' }, first: { l: 'First call', short: 'First call', g: 'lat', c: 2, u: 'ms' }, steady: { l: 'Steady execution (per iteration)', short: 'Steady exec', g: 'lat', c: 3, u: 'ms' }, rss: { l: 'Process lifetime peak RSS', short: 'Peak RSS', g: 'mem', c: 2, u: 'MB' }, code: { l: 'Extracted native image', short: 'Native code', g: 'code', c: 3, u: 'KB' } };
 export const PHASE_NOTE: Record<MetricKey, string> = {
   compile: 'Compilation: validation + code generation until the module object is ready. Lazy and tiered backends report only work done before instantiation; interpreters report translation.',
   inst: 'Instantiation: imports resolved, memories/tables allocated, data/elem segments applied, and the module start function invoked if one is declared. An exported _start is not part of instantiation.',
   first: 'First call: the first invocation of the entry export (e.g. _start), measured separately. Includes lazy compilation and tier-up triggered by the call.',
-  steady: 'Steady execution: median iteration after 5 discarded warmup iterations · 10 independent processes × 30 iterations each.',
-  rss: 'Execution peak RSS: sampled VmRSS maximum during steady execution minus RSS at phase start. From a linked instrumented run, not the timing run.',
-  code: 'Native code (active): executable function code + stubs + metadata resident at end of run. Cumulative emitted code across tier changes is shown in the Native code group.',
+  steady: 'Steady execution: verified embedding calls; independent launch counts and warmup policy are recorded in the linked report.',
+  rss: 'Process lifetime peak RSS from a separate matched memory pass. Includes adapter and runtime; no phase subtraction or heap substitution.',
+  code: 'Pinned extracted native image bytes, including its reported wrappers and data. Unavailable collectors remain not measured; this is not active function code or cumulative emission.',
 };
 export const MEMPH: Record<CfgId, { d: number[]; m: number[] }> = {
   A: { d: [6, 420, 1.2, 38, 1800, 12], m: [4.1, 96, 58, 76, 118, 131, 127, 22] },

@@ -1,6 +1,6 @@
 # Measured data integration audit
 
-The published measurement endpoints are verified, but the existing views still consume synthetic preview data. Deployment success proves data publication, not completed view integration. Reproduce the identity audit with `just integration-audit`.
+The published measurement endpoints are verified. The working tree now connects the workload catalogue, workload cells, correctness counts, host/configuration identities and result drawer to measured evidence. Aggregate, history and proposal consumers still need wiring before this frontend change can be published. Deployment success alone does not prove completed view integration. Reproduce the identity audit with `just integration-audit`.
 
 ## Current configuration mapping
 
@@ -27,13 +27,13 @@ The 21 named preview workloads have no exact identifier match in the measured co
 7. Replace fabricated drill-down samples, memory traces, run facts and issue links with recorded evidence, or show explicit absence. Reuse-model predictions must distinguish modeled behavior from directly measured lifecycles.
 8. Check every existing route and control on both host selections, then verify deployed values against their raw evidence hashes. A green static-page build alone does not prove these behaviors.
 
-The layout and controls have not been changed. The scope decision about replacing their displayed preview values is pending.
+The layout and controls remain unchanged. The requested complete integration replaces data and factual labels in those controls; it does not redesign their presentation.
 
 ## Adapter available for wiring
 
 `src/lib/measured.ts` loads compact projections through the supplied hosted base path and checks their SHA-256 and index metadata. Callers select a real runtime ID, exact workload ID, artifact digest and scenario. Timing, exact memory observers and extracted code-image bytes have separate accessors. Failed launches withhold values; incomplete memory coverage and unavailable images remain explicit missing states. Image bytes do not imply active function-code bytes.
 
-The history accessor checks host identity and weekly manifest provenance, retains gaps, and labels current comparison engines as a fixed baseline. It does not manufacture historical engine releases. The adapter's tests exercise the checked-in datasets for both hosts and deliberately corrupt projection bytes and metadata. This boundary is ready for view integration; the existing views do not call it yet.
+The history accessor checks host identity and weekly manifest provenance, retains gaps, and labels current comparison engines as a fixed baseline. It does not manufacture historical engine releases. The adapter's tests exercise the checked-in datasets for both hosts and deliberately corrupt projection bytes and metadata. `scripts/view-data.mjs` now calls these accessors to generate the compact view projection before checks, tests and builds. Workload views consume this projection; the remaining aggregate, history and proposal views are still being connected.
 
 ## Wasmer native SDK preflight
 

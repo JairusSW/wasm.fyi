@@ -163,7 +163,7 @@ class UiState {
 	xReuse = $state<'single' | 'shared' | 'cached'>('single');
 	xLog = $state(2);
 
-	scope: Scope = $derived({ machine: this.machine, baseline: this.baseline, weighting: this.weighting, hide: this.hide });
+	scope: Scope = $derived({ machine: this.machine, baseline: this.baseline, weighting: this.weighting, hide: this.hide, snapshot:this.snap });
 
 	/** Applies URL params for `routeId`. Scope keys missing from the URL keep their current value. */
 	loadFromUrl(url: URL, routeId: string | null) {

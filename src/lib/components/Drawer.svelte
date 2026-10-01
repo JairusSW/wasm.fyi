@@ -6,9 +6,10 @@
 	import { ST, ST_DESC } from '$lib/data/status';
 	import { H, fmtU, fx, hex, n0 } from '$lib/format';
 	import { benchHref } from '$lib/links';
-	import { benchVal, cfgIndex, cn, compatCell, cov, kidCells, ratio, type PerfGroup } from '$lib/model';
+	import { TOTAL_WORKLOADS, benchVal, cfgIndex, cn, compatCell, cov, kidCells, ratio, type PerfGroup } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 	import Swatch from './Swatch.svelte';
+	import { viewCell, viewData, viewReason } from '$lib/view-data';
 
 	const d = $derived(ui.drawer);
 	let copied = $state(false);
@@ -27,15 +28,17 @@
 		const r = benchVal(s, b, c.id, d.m, d.cf);
 		const br = benchVal(s, b, s.baseline, d.m, d.cf);
 		const t = ST[r.st];
-		const cv = c.interp ? 0.06 : 0.03;
+		const measured = viewCell(s.machine,ui.snap,b.id,c.id,d.m);
+		const report = viewData.reports[measured.report];
+		const config = viewData.hosts[s.machine].configurations[c.id];
 		const ok = r.st === 'ok';
 		const v = ok ? r.v : 0;
-		const dots = ok ? Array.from({ length: 10 }, (_, i) => v * (1 + (H(b.id + c.id + d.m + i) - 0.5) * cv * 2)) : [];
-		const lo = ok ? Math.min(...dots) * 0.995 : 0;
-		const hi = ok ? Math.max(...dots) * 1.005 : 1;
-		const X = (x: number) => 10 + ((x - lo) / (hi - lo)) * 400;
+		const dots = ok && d.m !== 'rss' && d.m !== 'code' ? measured.launchMedians || [] : [];
+		const lo = dots.length ? Math.min(...dots) : v;
+		const hi = dots.length ? Math.max(...dots) : v;
+		const X = (x: number) => 10 + ((x - lo) / (hi - lo || 1)) * 400;
 		const sorted = [...dots].sort((a, b2) => a - b2);
-		const cmd = `wbench run --snapshot snap-2026-09-28.1 \\\n  --config ${c.rt}@${c.ver}:${c.be} \\\n  --workload "${b.group.toLowerCase().split(' ')[0]}/${b.id}${d.caseLabel ? ' ' + d.caseLabel : ''}" \\\n  --phase ${d.m} --processes 10 --iters 30 --warmup 5 \\\n  --machine ${s.machine === 'm1' ? 'x86-7950x-03' : 'arm-altra-01'}`;
+        const cmd = report ? `just gather --rebuild /path/to/sealed/${report.runId}/report` : 'No sealed measurement for this cell';
 		return {
 			kicker: `${b.group} · ${MET[d.m].l}`,
 			title: b.id + (d.caseLabel ? ' · ' + d.caseLabel : ''),
@@ -44,39 +47,37 @@
 			ok,
 			metric: MET[d.m].short,
 			st: t,
-			stDesc: ST_DESC[r.st] ?? '',
+			stDesc: viewReason(measured) || ST_DESC[r.st] || '',
 			abs: ok ? fmtU(v, u) : '',
-			absCi: ok ? `95% CI ${fmtU(sorted[1], u)} – ${fmtU(sorted[8], u)}` : '',
+			absCi: ok && measured.interval ? `95% CI ${fmtU(measured.interval[0],u)} – ${fmtU(measured.interval[1],u)}` : 'CI unavailable',
 			baseName: cn(CB[s.baseline]),
 			ratio: ok && br.st === 'ok' ? fx(v / br.v) : 'n/a',
 			baseAbs: br.st === 'ok' ? 'baseline ' + fmtU(br.v, u) : 'baseline not comparable',
 			dots: dots.map((x, i) => ({ x: X(x).toFixed(1), y: (26 + (i % 3) * 4).toFixed(0) })),
 			medX: ok ? X(v).toFixed(1) : '0',
-			boxX: ok ? X(sorted[2]).toFixed(1) : '0',
-			boxW: ok ? Math.max(2, X(sorted[7]) - X(sorted[2])).toFixed(1) : '0',
+			boxX: ok && measured.interval ? X(measured.interval[0]).toFixed(1) : '0',
+			boxW: ok && measured.interval ? Math.max(2,X(measured.interval[1])-X(measured.interval[0])).toFixed(1) : '0',
 			minL: ok ? fmtU(lo, u) : '',
 			maxL: ok ? fmtU(hi, u) : '',
-			stats: ok
-				? [
-						{ k: 'Samples', v: '10 proc × 30 iter' },
-						{ k: 'Warmup discarded', v: '5 iter / proc' },
-						{ k: 'Median', v: fmtU(v, u) },
-						{ k: 'IQR', v: fmtU(sorted[7] - sorted[2], u) },
-						{ k: 'CV (process medians)', v: (cv * 58).toFixed(1) + '%' },
-						{ k: 'p90 (all iters)', v: fmtU(v * (1 + cv * 1.4), u) }
-					]
-				: [],
+            stats: ok ? [
+              {k:'Independent launches',v:String(report?.options.launches || 'unavailable')},
+              {k:'Samples requested / launch',v:String(report?.options.samples || 'unavailable')},
+              {k:'Steady warmups / launch',v:String(report?.options.warmup ?? 'unavailable')},
+              {k:'Median',v:fmtU(v,u)},
+              {k:'Observer',v:d.m==='rss'?'process.peak_rss':d.m==='code'?'extracted native image':'verified embedding calls'},
+              {k:'Evidence',v:report?report.sha256.slice(0,12)+'…':'unavailable'}
+            ] : [],
 			phaseNote: PHASE_NOTE[d.m],
-			record: [
-				{ k: 'Run', v: 'r-' + hex(b.id + c.id).padStart(6, '0') + ' · 2026-09-28 03:41 UTC' },
-				{ k: 'Runtime', v: `${c.rt} ${c.ver} (commit ${hex(c.rt, 0xfffffff)})` },
-				{ k: 'Backend / flags', v: `${c.be} · defaults` },
-				{ k: 'Artifact', v: `${b.id}.wasm · ${n0(b.kb)} KB · sha256 ${hex(b.id)}…` },
-				{ k: 'Toolchain', v: b.src || 'wasi-sdk 24 (clang 19.1.5) -O2' },
-				{ k: 'Machine', v: MACH[s.machine].l },
-				{ k: 'Harness', v: 'v3.2.0 · cold cache · 1 compile worker' },
-				{ k: 'Provenance', v: 'project-maintained runner · not independently reproduced' }
-			],
+            record: [
+              {k:'Run',v:report?`${report.runId} · ${report.created}`:'not collected'},
+              {k:'Runtime',v:config?`${config.runtime} ${config.version}`:'not collected'},
+              {k:'Backend',v:config?.backend || 'not collected'},
+              {k:'Artifact',v:`${b.id} · ${n0(b.kb)} KiB · sha256 ${b.artifactSha256}`},
+              {k:'Source',v:b.src || 'unavailable'},
+              {k:'Machine',v:MACH[s.machine].l},
+              {k:'Policy',v:'CPU affinity, scheduling and frequency uncontrolled'},
+              {k:'Evidence SHA-256',v:report?.sha256 || 'unavailable'}
+            ],
 			cmd
 		};
 	});
@@ -184,7 +185,7 @@
 		if (!tradeoffs.length) tradeoffs.push({ t: 'Not the highest on any aggregate in this scope.', v: '' });
 		const fams = COMPAT[1].fams;
 		const coverage = [
-			...cfgs.map((c) => ({ k: `${c.be} — correct workloads`, v: `${n0(cov(c.id)[0])} / 1,284` })),
+			...cfgs.map((c) => ({ k: `${c.be} — correct workloads`, v: `${n0(cov(c.id,ui.scope)[0])} / ${TOTAL_WORKLOADS}` })),
 			...cfgs.map((c) => ({
 				k: `${c.be} — proposals enabled by default`,
 				v: `${fams.filter((f) => f.r[cfgIndex(c.id)][0] === 'd').length} / ${fams.length}`
@@ -252,7 +253,7 @@
 								<div><span class="fg3">{s.k}</span><span class="mono">{s.v}</span></div>
 							{/each}
 						</div>
-						<div class="note">p99 omitted: 300 iterations are insufficient for a stable 99th percentile (threshold 1,000).</div>
+						<div class="note">Recorded independent launch medians; missing distributions and intervals remain unavailable.</div>
 					</div>
 				{:else}
 					<div class="desc mono">{cell.stDesc}</div>
@@ -266,7 +267,7 @@
 				</div>
 				<div class="sect">
 					<div class="between">
-						<span class="kicker">Reproduce</span>
+						<span class="kicker">Reanalyze sealed report</span>
 						<button class="copy" onclick={copyCmd}>{copied ? 'Copied' : 'Copy'}</button>
 					</div>
 					<pre class="mono">{cell.cmd}</pre>

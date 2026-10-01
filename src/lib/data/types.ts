@@ -124,9 +124,10 @@ export interface SnapEvent {
 
 export interface BenchItem {
 	id: string;
+	artifactSha256?: string;
 	tags: string[];
 	kb: number;
-	ms: number;
+	ms: number | null;
 	cases?: [string, number][];
 	purpose?: string;
 	input?: string;

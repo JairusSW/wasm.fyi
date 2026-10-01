@@ -5,11 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build",
+    "build": "node scripts/view-data.mjs && vite build",
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo ''",
-    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-    "test": "vitest run"
+    "check": "node scripts/view-data.mjs && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "test": "node scripts/view-data.mjs && vitest run"
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.10",

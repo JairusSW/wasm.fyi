@@ -13,7 +13,7 @@
 	let { data } = $props();
 	const b = $derived(data.bench);
 	const sC = $derived(b.kb / 1240);
-	const sS = $derived(b.ms / 412);
+	const sS = $derived((b.ms ?? 0) / 412);
 	const vis = $derived(CFG.filter((c) => isVisible(ui.scope, c)));
 	const okC = $derived(vis.filter((c) => benchVal(ui.scope, b, c.id, 'steady').st === 'ok'));
 

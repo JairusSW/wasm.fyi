@@ -1,5 +1,6 @@
-// Runtime and configuration metadata. Synthetic preview data — replace with
-// versioned snapshot JSON once the harness publishes real results.
+// Measured configurations and hosts use pinned report identities. The standalone
+// registry remains descriptive; it is not a benchmark or conformance result.
+import { viewData } from '../view-data';
 import type { Cfg, CfgId, Machine, MachineId, Runtime } from './types';
 
 export const RTS: Runtime[] = [
@@ -28,10 +29,21 @@ export const CFG: Cfg[] = [
   { id: 'G', rt: 'wago', ver: '0.4.2', be: 'interpreter', kind: 'interpreter', col: 'var(--rt-wago)', hollow: false, interp: true },
 ];
 
-export const WF: Record<CfgId, number> = { A: 1, B: 1.04, C: .97, D: 1.03, E: 1.12, F: .98, G: 1.09 };
-export const MACH: Record<MachineId, Machine> = {
-  m1: { l: 'AMD Ryzen 9 7950X — 16C/32T · 4.5 GHz fixed · 64 GB DDR5-5200', os: 'Ubuntu 24.04.1 · Linux 6.8.0-45 · x86_64 · governor=performance · boost off', f: {}, off: {} },
-  m2: { l: 'Ampere Altra Q80-30 — 80C · 3.0 GHz · 256 GB DDR4-3200', os: 'Debian 13 · Linux 6.12.9 · aarch64 · governor=performance', f: { B: 1.08, C: .97, E: 1.15, F: 1.1, G: .94 }, off: { D: 'singlepass backend is not built for aarch64 in wasmer 6.1.0' } },
-};
+for(const c of CFG) {
+  const measured=viewData.hosts.m1.configurations[c.id];
+  if(measured){c.ver=measured.version.length>32?measured.version.slice(0,12):measured.version;c.be=measured.backend;}
+  if(c.id==='E'||c.id==='G'){c.interp=false;c.kind='JIT compiler';}
+  if(c.id==='C')c.kind='LLVM JIT';
+}
+for(const runtime of RTS) {
+  const c=CFG.find(c=>c.rt===runtime.id);
+  if(c){runtime.rel=c.ver;runtime.size='not measured';}
+  if(runtime.id==='wazero')runtime.notes=runtime.notes.filter(note=>!note.includes('interpreter mode'));
+  if(runtime.id==='wago'){runtime.exec=['JIT'];runtime.tiers='Railshot';runtime.notes=['Measured Railshot compiler configuration; exact source identity is recorded per report.'];}
+}
+export const WF: Record<CfgId,number> = {A:1,B:1,C:1,D:1,E:1,F:1,G:1};
+export const MACH: Record<MachineId,Machine> = Object.fromEntries(Object.entries(viewData.hosts).map(([id,h])=>[id,{
+  l:h.label,os:h.os,f:{},off:Object.fromEntries(CFG.filter(c=>!h.configurations[c.id]).map(c=>[c.id,'Configuration not collected on this host']))
+}])) as Record<MachineId,Machine>;
 
 export const CB = Object.fromEntries(CFG.map((c) => [c.id, c])) as Record<CfgId, Cfg>;

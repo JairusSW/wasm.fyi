@@ -12,3 +12,6 @@ vite.config.*.timestamp-*
 /.wasmbench/
 /.playwright-cli/
 /output/playwright/
+
+# Generated from digest-verified report projections before checks and builds.
+src/lib/data/measurements.json

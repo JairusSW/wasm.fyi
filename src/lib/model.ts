@@ -1,3 +1,4 @@
+import { viewCell, viewData } from './view-data';
 // Derived computations over the snapshot. Everything here is pure: callers pass
 // the comparison scope (machine, baseline, visible runtimes) explicitly.
 import { CB, CFG, MACH, WF } from './data/runtimes';
@@ -10,11 +11,12 @@ export interface Scope {
 	baseline: CfgId;
 	weighting: 'corpus' | 'workload';
 	hide: Partial<Record<CfgId, boolean>>;
+	snapshot?: 's1' | 's2';
 }
 
 export type PerfGroup = 'lat' | 'mem' | 'code';
 
-export const TOTAL_WORKLOADS = 1284;
+export const TOTAL_WORKLOADS = viewData.catalogue.length;
 
 /** Swatch/identity fields for a config, spread into view rows. */
 export const sw = (c: Cfg) => ({
@@ -36,7 +38,15 @@ export const isVisible = (s: Scope, c: Cfg) => !s.hide[c.id];
 export const visibleCfgs = (s: Scope) => CFG.filter((c) => isVisible(s, c));
 
 const perf = (group: PerfGroup, cid: CfgId) => OV[group].vals[cid] as RatioCi[] | null;
-export const cov = (cid: CfgId) => OV.cov.vals[cid] as number[];
+export const cov = (cid: CfgId, scope?:Scope) => {
+  const counts=[0,0,0,0,0];
+  for(const b of viewData.catalogue){
+    const c=viewCell(scope?.machine || 'm1',scope?.snapshot || 's1',b.id,cid,'steady');
+    const i=c.st==='ok'?0:c.st==='failed'?1:['crashed','timeout'].includes(c.st)?2:['unsupported','disabled'].includes(c.st)?3:4;
+    counts[i]++;
+  }
+  return counts;
+};
 
 /** Aggregate ratio vs the baseline config for one overview column, with CI half-width. */
 export function ratio(s: Scope, group: PerfGroup, cid: CfgId, col: number) {
@@ -65,23 +75,13 @@ export type BenchResult = { st: 'ok'; v: number } | { st: Exclude<Status, 'ok'> 
 
 /** One workload × config × metric result, or the reason there is none. */
 export function benchVal(s: Scope, b: Bench, cid: CfgId, m: MetricKey, caseF = 1): BenchResult {
-	const st = ST_OVR[b.id + '|' + cid + '|' + m] || ST_OVR[b.id + '|' + cid];
-	if (isOff(s, cid)) return { st: 'unavail' };
-	if (st && st !== 'ok') return { st };
-	const o = perf(MET[m].g, cid);
-	if (!o) return { st: 'na' };
-	const mult = o[MET[m].c][0] * mf(s.machine, cid);
-	const base = {
-		compile: b.kb * 0.12,
-		inst: 0.15 + b.kb * 0.0009,
-		first: b.ms * 1.3 + b.kb * 0.01,
-		steady: b.ms,
-		rss: 18 + b.kb * 0.06,
-		code: b.kb * 2.3
-	}[m];
-	const noise = Math.exp((H(b.id + cid + m) - 0.5) * (m === 'code' ? 0.3 : 0.5));
-	const cf = m === 'steady' || m === 'first' ? caseF : 1;
-	return { st: 'ok', v: base * mult * noise * cf };
+  if (isOff(s,cid)) return {st:'unavail'};
+  // Case multipliers belonged to the preview. A distinct input needs its own
+  // measured contract; never manufacture timing for an uncollected variant.
+  if (caseF !== 1) return {st:'nm'};
+  const cell=viewCell(s.machine,s.snapshot || 's1',b.id,cid,m);
+  if(cell.st !== 'ok' || cell.v == null) return {st:cell.st === 'ok'?'nm':cell.st};
+  return {st:'ok',v:cell.v};
 }
 
 /** Steady-execution history value for a config at snapshot `i`. */
@@ -102,7 +102,7 @@ export function otSeries(s: Scope, cid: CfgId, key: OtMetricKey, seed = ''): num
 	const g = M.g;
 	if (g === 'cov') {
 		if (isOff(s, cid)) return null;
-		const o = cov(cid);
+		const o = cov(cid,s);
 		return SNAPS.map(
 			(p) => o[0] - Math.round((15 - p.i) * H(cid + 'cv') * 0.9 + (p.i < 10 && (cid === 'A' || cid === 'B') ? 3 : 0))
 		);

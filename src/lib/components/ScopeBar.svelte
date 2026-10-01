@@ -3,10 +3,11 @@
 	import type { MachineId } from '$lib/data/types';
 	import { ui } from '$lib/state.svelte';
 	import Swatch from './Swatch.svelte';
+	import { viewData } from '$lib/view-data';
 
 	const SNAP_OPTS = [
-		['s1', 'snap-2026-09-28.1'],
-		['s2', 'snap-2026-09-21.2']
+		['s1', 'Latest measured cells'],
+		['s2', 'Previous measured cells']
 	] as const;
 
 	const someHidden = $derived(Object.values(ui.hide).some(Boolean));
@@ -26,11 +27,11 @@
 		{ k: 'Runtimes', v: [...new Set(CFG.map((c) => c.rt + ' ' + c.ver))].join(' · ') },
 		{ k: 'Aggregation', v: 'geomean · corpus-balanced · shared workloads only' },
 		{ k: 'Cache state', v: 'cold — no on-disk artifact cache' },
-		{ k: 'Compilation workers', v: '1 thread, pinned to core 2' },
-		{ k: 'Warmup & sampling', v: '5 warmup iters · 10 processes × 30 iters' },
+		{ k: 'Compilation workers', v: 'Per-runtime configuration; CPU affinity uncontrolled' },
+		{ k: 'Warmup & sampling', v: 'Per-cell sealed report records launches, samples and warmups' },
 		{ k: 'Feature flags', v: 'runtime defaults (flagged runs separate)' },
 		{ k: 'Instrumentation', v: 'none in timing runs · memory from linked runs' },
-		{ k: 'Isolation', v: 'isolcpus=2-3 · ASLR on · SMT sibling idle' }
+		{ k: 'Isolation', v: 'Scheduling, frequency and filesystem caches uncontrolled' }
 	]);
 </script>
 
@@ -55,7 +56,7 @@
 					aria-pressed={on}
 					onclick={() => toggle(c.id)}
 					ondblclick={(e) => solo(e, c.id)}
-					data-tip={`${c.rt} ${c.ver} · ${c.be}\n${c.kind}\n${on ? 'Click to hide · double-click to show only this' : 'Hidden · click to show, double-click to solo'}`}
+					data-tip={`${c.rt} ${viewData.hosts[ui.machine].configurations[c.id]?.version || 'not collected'} · ${c.be}\n${c.kind}\n${on ? 'Click to hide · double-click to show only this' : 'Hidden · click to show, double-click to solo'}`}
 				>
 					<Swatch color={c.col} bg={c.hollow ? 'transparent' : c.col} />{c.rt}
 					<span class="be">{c.be}</span>

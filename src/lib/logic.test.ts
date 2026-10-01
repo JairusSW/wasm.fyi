@@ -39,19 +39,17 @@ describe('model', () => {
 	it('baseline ratio is 1', () => {
 		expect(ratio(scope, 'lat', 'A', 3)!.r).toBe(1);
 	});
-	it('interpreters have no machine code, never zero', () => {
-		expect(ratio(scope, 'code', 'E', 3)).toBeNull();
-		const b = ALLB.find((x) => x.id === 'nbody')!;
-		expect(benchVal(scope, b, 'E', 'code').st).toBe('na');
-	});
-	it('marks configs unavailable on a machine', () => {
-		const b = ALLB[0];
-		expect(benchVal({ ...scope, machine: 'm2' }, b, 'D', 'steady').st).toBe('unavail');
-	});
-	it('keeps distinct failure states', () => {
-		const b = ALLB.find((x) => x.id === 'scale/huge-func-1M')!;
-		expect(benchVal(scope, b, 'C', 'steady').st).toBe('timeout');
-	});
+    it('keeps unavailable code collectors distinct from true zero', () => {
+      const b=ALLB.find(b=>b.id==='wago/tiny/add')!;
+      expect(benchVal(scope,b,'C','code').st).toBe('nm');
+    });
+    it('reads Singlepass measurements on the actual Mac rather than a machine multiplier', () => {
+      const b=ALLB.find(b=>b.id==='wago/tiny/add')!;
+      expect(benchVal({...scope,machine:'m2'},b,'D','steady').st).toBe('ok');
+    });
+    it('never scales a measurement into an uncollected input case', () => {
+      expect(benchVal(scope,ALLB[0],'C','steady',2).st).toBe('nm');
+    });
 	it('reports no clear leader when intervals overlap', () => {
 		expect(leader(scope, 'Fastest instantiation', 'lat', 1, 'inst').clear).toBe(false);
 		expect(leader(scope, 'Fastest compilation', 'lat', 0, 'compile').clear).toBe(true);

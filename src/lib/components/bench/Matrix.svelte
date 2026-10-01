@@ -4,7 +4,7 @@
 	import type { MetricKey, OvKey } from '$lib/data/types';
 	import { n0 } from '$lib/format';
 	import { heatCount, heatRatio } from '$lib/heat';
-	import { cov, disp, isOff, isVisible, ratio } from '$lib/model';
+	import { TOTAL_WORKLOADS, cov, disp, isOff, isVisible, ratio } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 	import Carousel from '../Carousel.svelte';
 	import RtLabel from '../RtLabel.svelte';
@@ -21,12 +21,12 @@
 		lat: '172 workloads excluded — not correct on every runtime.',
 		mem: 'Peak RSS increase per phase.',
 		code: 'Interpreters: not applicable.',
-		cov: 'All 1,284 workloads.'
+		cov: `All ${TOTAL_WORKLOADS} measured contracts.`
 	};
 
 	/** Badness of a count within its column across runtimes available on this machine, 0…1. */
 	const countBadness = (col: number, v: number) => {
-		const vals = CFG.filter((k) => !isOff(ui.scope, k.id)).map((k) => cov(k.id)[col]);
+		const vals = CFG.filter((k) => !isOff(ui.scope, k.id)).map((k) => cov(k.id,ui.scope)[col]);
 		const lo = Math.min(...vals);
 		const hi = Math.max(...vals);
 		const t = hi > lo ? (v - lo) / (hi - lo) : 0;
@@ -37,7 +37,7 @@
 		const s = ui.scope;
 		return CFG.filter((c) => isVisible(s, c)).map((c) => {
 			const off = isOff(s, c.id);
-			const cv = cov(c.id);
+			const cv = cov(c.id,ui.scope);
 			const cells = g.cols.map((_, i) => {
 				if (ui.group === 'cov') {
 					const v = cv[i];
@@ -56,7 +56,7 @@
 			return {
 				c,
 				cells,
-				covShort: off ? '—' : n0(cv[0]) + ' / 1,284',
+				covShort: off ? '—' : n0(cv[0]) + ' / ' + TOTAL_WORKLOADS,
 				covBg: off ? 'transparent' : heatCount(countBadness(0, cv[0]))
 			};
 		});
