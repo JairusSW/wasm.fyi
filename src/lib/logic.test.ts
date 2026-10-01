@@ -9,6 +9,7 @@ const scope: Scope = { machine: 'm1', baseline: 'A', weighting: 'corpus', hide: 
 
 describe('format', () => {
 	it('expresses the same ratio as a multiplier or signed percentage',()=>{
+		expect(relative(1.3)).toBe('+30.0%');
 		for(const [value,factor,percent] of [[1.3,'1.30×','+30.0%'],[.7,'0.70×','−30.0%'],[1,'1.00×','±0.0%'],[0,'0.00×','−100.0%']] as const){
 			expect(relative(value,'factor')).toBe(factor);
 			expect(relative(value,'percent')).toBe(percent);

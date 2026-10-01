@@ -86,7 +86,7 @@ const METRICS = ['compile', 'inst', 'first', 'steady', 'rss', 'code'] as const;
 
 /** Each URL-backed field: its codec and the routes it belongs to (`*` = scope, every route). */
 const FIELDS = {
-	deltaFormat: { codec: str('delta', 'factor', ['factor', 'percent'] as const), routes: '*' },
+	deltaFormat: { codec: str('delta', 'percent', ['factor', 'percent'] as const), routes: '*' },
 	machine: { codec: str<MachineId>('m', 'm1', ['m1', 'm2']), routes: '*' },
 	snap: { codec: str('snap', 's1', ['s1', 's2']), routes: '*' },
 	hide: { codec: hideCodec, routes: '*' },
@@ -120,7 +120,7 @@ type FieldKey = keyof Fields;
 
 class UiState {
 	// scope
-	deltaFormat = $state<'factor' | 'percent'>('factor');
+	deltaFormat = $state<'factor' | 'percent'>('percent');
 	machine = $state<MachineId>('m1');
 	snap = $state<'s1' | 's2'>('s1');
 	hide = $state<Partial<Record<CfgId, boolean>>>({});

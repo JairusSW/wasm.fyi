@@ -14,7 +14,7 @@ export const pct = (d: number, p = 1): string =>
 
 export type DeltaFormat = 'factor' | 'percent';
 /** The same relative quantity: 1.3× = +30%, and 0.7× = −30%. */
-export const relative = (ratio: number, format: DeltaFormat = 'factor'): string =>
+export const relative = (ratio: number, format: DeltaFormat = 'percent'): string =>
 	format === 'percent' ? pct(ratio - 1) : fx(ratio);
 
 /** Value in its natural unit, rescaled to stay readable (µs ↔ ms ↔ s, KB ↔ MB). */

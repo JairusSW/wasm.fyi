@@ -85,7 +85,7 @@ export function otSeries(s:Scope,cid:CfgId,key:OtMetricKey,workload=''):number[]
 }
 
 /** Formats a series value and a change between two series values for the metric. */
-export function seriesFmt(key: OtMetricKey, format: DeltaFormat = 'factor') {
+export function seriesFmt(key: OtMetricKey, format: DeltaFormat = 'percent') {
 	const M = OTM[key];
 	const isCov = M.g === 'cov';
 	const fv = (v: number) => (isCov ? n0(v) + ' measured contracts' : fmtU(v, M.u));
