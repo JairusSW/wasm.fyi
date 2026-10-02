@@ -62,7 +62,8 @@ export function absOf(s:Scope,group:PerfGroup,cid:CfgId,col:number) {
   return a?{v:a.v,ci:a.interval?Math.max(Math.abs(a.v-a.interval[0]),Math.abs(a.interval[1]-a.v)):Number.NaN,interval:a.interval,count:a.count,report:a.report}:null;
 }
 export function sharedCount(s:Scope,group:PerfGroup='lat',col=3) {
-  return CFG.map(c=>aggregate(s,group,c.id,col)).find(a=>a)?.count || 0;
+  const application=CFG.filter(c=>viewData.applicationConfigurations.includes(viewData.configurations[c.id] as CfgId));
+  return application.map(c=>aggregate(s,group,c.id,col)).find(a=>a)?.count || 0;
 }
 export function disp(s:Scope,group:PerfGroup,cid:CfgId,col:number) {
   const a=absOf(s,group,cid,col);

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { ALLB, BENCH } from './data/snapshot';
 import { benchVal, type Scope } from './model';
 import { viewCell, viewData } from './view-data';
+import { CFG } from './data/runtimes';
 
 const scope:Scope={machine:'m1',baseline:'A',hide:{},weighting:'corpus'};
 describe('existing workload views consume measured evidence',()=>{
@@ -43,6 +44,12 @@ describe('existing workload views consume measured evidence',()=>{
 		expect(new Set(ALLB.map(b=>b.id)).size).toBe(ALLB.length);
 		for(const b of ALLB)expect(b.artifactSha256).toMatch(/^[a-f0-9]{64}$/);
 		expect(ALLB.some(b=>b.id==='sqlite-speedtest1')).toBe(false);
+	});
+	it('lists every benchmarked engine configuration on the Benchmarks page',()=>{
+		expect(CFG.map(config=>config.id)).toEqual(Object.keys(viewData.configurations));
+		expect(viewData.applicationConfigurations).toEqual(['A','B','C','D','E','F','G','H']);
+		for(const id of ['I','J','K','M','N','O','P','Q','R','S'] as const)
+			expect(viewData.hosts.m1.configurations[id]||viewData.hosts.m2.configurations[id]).toBeDefined();
 	});
 	for(const machine of ['m1','m2'] as const)it(`matches ${machine} rendered cell units to the sealed summary`,async()=>{
 		const b=ALLB.find(b=>b.id==='wago/tiny/add')!;

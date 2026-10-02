@@ -23,7 +23,7 @@ RTS.push(
 );
 export const RTB: Record<string, Runtime> = Object.fromEntries(RTS.map(r => [r.id, r]));
 export const SA = ['wasmtime', 'wasmer', 'wazero', 'wago', 'wasmi', 'wasmedge', 'wamr', 'wasm3', 'chicory'];
-export const CFG: Cfg[] = [
+const applicationCFG: Cfg[] = [
   { id: 'A', rt: 'wasmtime', ver: '37.0.1', be: 'cranelift', kind: 'optimizing JIT', col: 'var(--rt-wasmtime)', hollow: false },
   { id: 'B', rt: 'wasmtime', ver: '37.0.1', be: 'winch', kind: 'baseline JIT', col: 'var(--rt-wasmtime)', hollow: true },
   { id: 'C', rt: 'wasmer', ver: '6.1.0', be: 'llvm', kind: 'ahead-of-time', col: 'var(--rt-wasmer)', hollow: false },
@@ -34,13 +34,16 @@ export const CFG: Cfg[] = [
   { id: 'H', rt: 'v8', ver: '14.6', be: 'liftoff-only', kind: 'Liftoff baseline JIT', col: 'var(--rt-v8)', hollow: true },
 ];
 
-// Feature-only configurations never participate in application leaderboards.
-export const FEATURE_CFG: Cfg[] = [...CFG,...([
+// The per-workload Benchmarks matrix includes each measured engine configuration.
+// Aggregate leaderboards still use viewData.applicationConfigurations only.
+const additionalCFG: Cfg[] = ([
   ['I','wasmi','interpreter'],['J','wasmedge','interpreter'],['K','wasm3','interpreter'],
   ['L','wavm','llvm-jit'],['M','spidermonkey','production-default'],['N','jsc','production-default'],
   ['O','deno','production-default'],['P','wamr','interpreter'],['Q','chicory','interpreter'],
   ['R','wasmtime','component-async'],['S','v8','Turboshaft + WasmFX flag']
-] as [CfgId,string,string][]).map(([id,rt,be])=>({id,rt,be,ver:'not collected',kind:'Feature corpus configuration',col:`var(--rt-${rt}, var(--fg3))`,hollow:['R','S'].includes(id)}))];
+ ] as [CfgId,string,string][]).map(([id,rt,be])=>({id,rt,be,ver:'not collected',kind:'Measured engine configuration',col:`var(--rt-${rt}, var(--fg3))`,hollow:['R','S'].includes(id)}));
+export const CFG: Cfg[] = [...applicationCFG,...additionalCFG];
+export const FEATURE_CFG: Cfg[] = CFG;
 export const FEATURE_ENGINES = ['v8','spidermonkey','jsc',...SA,'wavm','deno'];
 const shortVersion=(version:string)=>version.startsWith('binary-sha256:')?'sha256:'+version.slice(14,26):version.length>32?version.slice(0,12):version;
 
