@@ -18,10 +18,11 @@ export async function verifySeal(root) {
     }
   }
   await walk(root);
-  assert.deepEqual(files.filter(path => path !== 'checksums.json').sort(), Object.keys(checksums).sort(), 'Seal does not cover the exact archive');
+  assert.deepEqual(files.filter(path => !['checksums.json','.DS_Store'].includes(path)).sort(), Object.keys(checksums).filter(path => path !== '.DS_Store').sort(), 'Seal does not cover the exact archive');
   for (const [path, expected] of Object.entries(checksums)) {
     assert(!path.startsWith('/') && !path.split('/').some(part => !part || part === '.' || part === '..') && !path.includes('\\'), 'Unsafe seal path');
     assert(/^[a-f0-9]{64}$/.test(expected), 'Invalid seal digest');
+    if(path === '.DS_Store') continue; // Mutable Finder metadata, including legacy seals.
     assert.equal(digest(await readFile(join(root, path))), expected, `Archive checksum mismatch: ${path}`);
   }
   assert(checksums['data.json'], 'Report seal must cover data.json');

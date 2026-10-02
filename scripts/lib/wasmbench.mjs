@@ -10,7 +10,7 @@ export const exists = path => access(path).then(() => true, () => false);
 export const json = async path => JSON.parse(await readFile(path, 'utf8'));
 export const config = () => json(resolve(site, 'wasmbench.config.json'));
 export function command(binary, args, options = {}) {
-  try { return execFileSync(binary, args, { cwd: site, stdio: ['ignore', 'pipe', 'inherit'], maxBuffer: 32 * 1024 * 1024, ...options }); }
+  try { return execFileSync(binary, args, { cwd: site, stdio: [options.input === undefined ? 'ignore' : 'pipe', 'pipe', 'inherit'], maxBuffer: 32 * 1024 * 1024, ...options }); }
   catch (error) {
     if (error.stdout?.length) process.stdout.write(error.stdout);
     throw new Error(`${binary} failed (${error.status ?? error.code ?? 'unknown status'})`);

@@ -1,4 +1,4 @@
-import {readFile,writeFile,mkdir,rename,rm} from 'node:fs/promises';
+import {readFile,writeFile,mkdir,rename,rm,statfs} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
@@ -22,11 +22,11 @@ const {root:base}=await harness();
 await mkdir(directory,{recursive:true});
 const env={...process.env,GOWORK:'off',GOFLAGS:'-buildvcs=false'};
 const active=await readFile(join(site,'.wasmbench/full-2026-10-02/active-runs.json'),'utf8').then(JSON.parse,()=>null);
-const localPid=process.platform==='darwin'?active?.mac?.pid:null;
-if(localPid) {
+const localOwners=process.platform==='darwin'?[active?.mac?.pid,active?.macRecovery?.pid]:[];
+for(const localPid of localOwners.filter(Boolean)) {
   try{
     process.kill(localPid,0);
-    if(command('ps',['-p',String(localPid),'-o','args=']).toString().includes('scripts/full-run.mjs'))throw Error('Current Mac collection still owns the host; run history after its supervisor exits.');
+    if(/scripts\/(full-run|resume-collection)\.mjs/.test(command('ps',['-p',String(localPid),'-o','args=']).toString()))throw Error('Current Mac collection still owns the host; run history after its collector exits.');
   }
   catch(error){if(error.code!=='ESRCH')throw error;}
 }
@@ -64,6 +64,11 @@ await locked(async()=>{
           }
           result.configurations.push(cached);await save();continue;
         } catch(error){console.log('Historical cache rejected:',job.release.engine,job.release.tag,configuration,error.message);}
+      }
+      const space=await statfs(directory);
+      if(Number(space.bavail)*Number(space.bsize)<20*1024**3) {
+        state.phase='paused-low-disk';state.reason='Less than 20 GiB available; collection stopped before another build.';await save();
+        throw Error(state.reason);
       }
       const entry={id:configuration,status:'building',startedAt:new Date().toISOString()};result.configurations.push(entry);await save();
       const attempt=join(directory,'jobs',job.id,configuration,new Date().toISOString().replace(/[:.]/g,'-')+'-'+randomUUID().slice(0,8));
@@ -121,13 +126,15 @@ await locked(async()=>{
         }
         const report=join(attempt,'report');invoke(...reportArgs,'--out',report);invoke('verify-report','--dir',report);
         entry.status='collected';entry.report=report;entry.sha256=digest(await readFile(join(report,'data.json')));entry.collectedAt=new Date().toISOString();
-        // The sealed passes archive their exact tools. Keep source and logs,
-        // but discard only this attempt's disposable Cargo build intermediates.
-        for(const adapter of ['wasmtime','native'])await rm(join(root,'adapters',adapter,'target'),{recursive:true,force:true});
-        entry.buildIntermediatesRemoved=true;
       } catch(error) {
         entry.status=error.code==='BINDING_PENDING'?'pending-binding':'runner-error';entry.reason=error.message;
         console.error('Historical performance job:',job.release.engine,job.release.tag,configuration,entry.status,error.message);
+      }
+      finally {
+        // Failed SDK builds also leave large intermediates. Preserve their
+        // sources and diagnostics while removing only this owned attempt's targets.
+        for(const adapter of ['wasmtime','native'])await rm(join(root,'adapters',adapter,'target'),{recursive:true,force:true,maxRetries:5,retryDelay:200});
+        entry.buildIntermediatesRemoved=true;
       }
       entry.completedAt=new Date().toISOString();await save();
     }

@@ -21,7 +21,7 @@ check:
 test:
     pnpm test
     pnpm test:ai
-    node --test scripts/plugin-evidence.test.mjs scripts/retention.test.mjs scripts/release-policy.test.mjs scripts/weekly-history.test.mjs scripts/workflow.test.mjs scripts/application-corpus.test.mjs scripts/feature-adapter.test.mjs scripts/wasmer-adapter.test.mjs scripts/v8-preflight.test.mjs scripts/extra-feature-adapters.test.mjs
+    node --test scripts/plugin-evidence.test.mjs scripts/retention.test.mjs scripts/release-policy.test.mjs scripts/weekly-history.test.mjs scripts/workflow.test.mjs scripts/application-corpus.test.mjs scripts/feature-adapter.test.mjs scripts/wasmer-adapter.test.mjs scripts/v8-preflight.test.mjs scripts/extra-feature-adapters.test.mjs scripts/command-input.test.mjs scripts/verify-seal.test.mjs
 
 # Validate gathered snapshots and their raw evidence.
 integration-audit:
@@ -77,6 +77,10 @@ bench-build:
 # Collect a new sealed timing/memory/code experiment without updating the site.
 collect:
     node scripts/bench.mjs collect
+
+# Finish memory/code passes from verified timing, preserving exact engine identities.
+collect-resume timing:
+    node scripts/resume-collection.mjs {{quote(timing)}}
 
 # Collect on the Mac and Hub, retain snapshots, validate and build.
 refresh:
@@ -206,7 +210,7 @@ history-baseline:
 
 # Verify native feature lifecycles, reset semantics, digest guards and exact oracles.
 features-adapter-test: features-adapters
-    WASMBENCH_REQUIRE_EXTRA_FEATURE_TESTS=1 node --test scripts/extra-feature-adapters.test.mjs
+    WASMBENCH_REQUIRE_EXTRA_FEATURE_TESTS=1 node --test scripts/extra-feature-adapters.test.mjs scripts/command-input.test.mjs scripts/verify-seal.test.mjs
 
 # Preserve sealed source evidence while sharing storage for identical archived files.
 evidence-deduplicate:

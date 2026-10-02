@@ -54,7 +54,7 @@ function patchBase(root) {
 }
 
 export function patchHarness(root) {
-  const names=['harness-wazero-compile-freshness.patch','harness-v8-compile-freshness.patch'];
+  const names=['harness-wazero-compile-freshness.patch','harness-v8-compile-freshness.patch','harness-finder-metadata.patch'];
   const check=(name,args)=>spawnSync('git',['apply',...args,join(site,'patches',name)],{cwd:root,stdio:'ignore'}).status===0;
   const peeled=[];
   for(const name of [...names].reverse())if(check(name,['--reverse','--check'])) {

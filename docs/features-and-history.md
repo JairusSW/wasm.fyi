@@ -69,7 +69,7 @@ The runner installer provisions wasm-tools 1.260.0 when needed. For a standalone
 
 Primary references: [WebAssembly specification tests](https://github.com/WebAssembly/spec/tree/main/test/core), [stack switching proposal](https://github.com/WebAssembly/stack-switching/blob/main/proposals/stack-switching/Explainer.md), [JS string builtins proposal](https://github.com/WebAssembly/js-string-builtins/blob/main/proposals/js-string-builtins/Overview.md), [wasm-tools](https://github.com/bytecodealliance/wasm-tools), [WASI testsuite](https://github.com/WebAssembly/wasi-testsuite), and [Wasmtime 46.0.1](https://github.com/bytecodealliance/wasmtime/releases/tag/v46.0.1).
 
-Daily evidence installation also refreshes the fixed current comparison baseline against the exact historical application artifacts, including the native Wasmer configurations. It preserves every historical Wago report, target week and collection date. `just history-baseline` updates only this baseline from already verified application reports; `just build` then stages it for publication. Comparison lines repeat one current measurement and do not describe past engine releases.
+Manual evidence installation also refreshes the fixed current comparison baseline against the exact historical application artifacts, including the native Wasmer configurations. It preserves every historical Wago report, target week and collection date. `just history-baseline` updates only this baseline from already verified application reports; `just build` then stages it for publication. Comparison lines repeat one current measurement and do not describe past engine releases.
 
 ## Stable and development compatibility
 
@@ -80,3 +80,10 @@ The Features Compatibility matrix shows one latest **measured released** identit
 The public `wasmbench/feature-support.json` retains `versions` alongside the latest `configurations` for each host. Each version has independent contract outcomes and evidence references. The browser projection uses only artifacts matching the current corpus and only the contract’s required scenario (compile, instantiate, or steady execution). Older versions and different compiler modes cannot fill a missing result in another build.
 
 `just wago-plugin-tests` runs the official Component Model fixtures on the Mac and `hub@hub` concurrently. Hub also runs the official Preview 1 WASI testsuite using the released plugin's Linux-only runner. Both engine and plugin dependencies use published releases in external modfiles. Correctness collection does not acquire the performance measurement lock. Reports retain failures and skips. Official suite counts exclude plugin unit tests and Wasmtime regression cases; an unavailable official runner is shown as unmeasured. This does not change the supported status of optional plugin features or supply performance timings. The command publishes sealed evidence; `just build` and the Pages deployment publish the website.
+
+
+## Recovering interrupted collection
+
+If timing completed but a later pass stopped, set `WASMBENCH_ROOT` to the original isolated harness and `WASMBENCH_BIN` to its controller, then run `just collect-resume <timing-bundle>`. Recovery verifies the original seal and requires unchanged adapter commands, file hashes, descriptions, and workload IDs/digests before starting the missing memory and code passes. Outputs and recovery status stay beside the original experiment; recovery does not install or publish data automatically.
+
+Root `.DS_Store` files are mutable Finder metadata and are excluded from evidence sealing and verification, including legacy seals. All benchmark files, nested metadata, symlinks, and unexpected files retain strict verification. Original seals are preserved. Historical collection removes only each attempt's disposable Cargo target directories after successful or failed builds, retaining sources and diagnostics, and stops before another build if less than 20 GiB is available.

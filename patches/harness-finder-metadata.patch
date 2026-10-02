@@ -1,0 +1,97 @@
+diff --git a/experiment/storage.go b/experiment/storage.go
+index b57961b..9c173f1 100644
+--- a/experiment/storage.go
++++ b/experiment/storage.go
+@@ -88,6 +120,10 @@ func Seal(root string) error {
+ 		if d.Type()&os.ModeSymlink != 0 {
+ 			return fmt.Errorf("symlink in bundle")
+ 		}
++		// Finder metadata at the bundle root is not benchmark evidence.
++		if rel == ".DS_Store" {
++			return nil
++		}
+ 		hash, e := DigestFile(path)
+ 		hashes[filepath.ToSlash(rel)] = hash
+ 		return e
+@@ -109,6 +145,11 @@ func Verify(root string) error {
+ 		if !filepath.IsLocal(rel) {
+ 			return fmt.Errorf("unsafe bundle path %q", rel)
+ 		}
++		// Legacy seals may include mutable Finder metadata. Preserve the seal
++		// while checking every evidence file against its original digest.
++		if rel == ".DS_Store" {
++			continue
++		}
+ 		path := filepath.Join(root, rel)
+ 		info, e := os.Lstat(path)
+ 		if e != nil {
+@@ -133,6 +174,12 @@ func Verify(root string) error {
+ 			return nil
+ 		}
+ 		rel, _ := filepath.Rel(root, path)
++		if rel == ".DS_Store" {
++			if d.Type()&os.ModeSymlink != 0 {
++				return fmt.Errorf("symlink in bundle")
++			}
++			return nil
++		}
+ 		if rel != "checksums.json" {
+ 			if _, ok := hashes[filepath.ToSlash(rel)]; !ok {
+ 				return fmt.Errorf("unsealed file: %s", rel)
+diff --git a/experiment/finder_metadata_test.go b/experiment/finder_metadata_test.go
+new file mode 100644
+index 0000000..88ff26a
+--- /dev/null
++++ b/experiment/finder_metadata_test.go
+@@ -0,0 +1,51 @@
++package experiment
++
++import (
++	"os"
++	"path/filepath"
++	"testing"
++)
++
++func TestFinderMetadataSeal(t *testing.T) {
++	root := t.TempDir()
++	put := func(name, value string) {
++		t.Helper()
++		if err := os.WriteFile(filepath.Join(root, name), []byte(value), 0600); err != nil {
++			t.Fatal(err)
++		}
++	}
++	put("data.json", "evidence")
++	put(".DS_Store", "finder before")
++	if err := Seal(root); err != nil {
++		t.Fatal(err)
++	}
++	put(".DS_Store", "finder after")
++	if err := Verify(root); err != nil {
++		t.Fatalf("Finder metadata invalidated evidence: %v", err)
++	}
++	put("data.json", "tampered")
++	if err := Verify(root); err == nil {
++		t.Fatal("accepted changed evidence")
++	}
++	put("data.json", "evidence")
++	put("unknown", "unexpected")
++	if err := Verify(root); err == nil {
++		t.Fatal("accepted unsealed file")
++	}
++}
++func TestLegacyFinderSeal(t *testing.T) {
++	root := t.TempDir()
++	if err := os.WriteFile(filepath.Join(root, "data.json"), []byte("evidence"), 0600); err != nil {
++		t.Fatal(err)
++	}
++	hash, err := DigestFile(filepath.Join(root, "data.json"))
++	if err != nil {
++		t.Fatal(err)
++	}
++	if err := WriteJSON(filepath.Join(root, "checksums.json"), map[string]string{"data.json": hash, ".DS_Store": "old Finder digest"}); err != nil {
++		t.Fatal(err)
++	}
++	if err := Verify(root); err != nil {
++		t.Fatal(err)
++	}
++}
