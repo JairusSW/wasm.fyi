@@ -1,5 +1,6 @@
 <script lang="ts">
  import PlugIcon from '$lib/components/PlugIcon.svelte';
+ import FeatureResult from '$lib/components/FeatureResult.svelte';
  import FeatureEvidence from '$lib/components/FeatureEvidence.svelte';
  import type { FeatureTrack } from '$lib/support';
 	import { siteHref } from '$lib/links';
@@ -13,7 +14,7 @@
 	import { PROPOSAL_IDS } from '$lib/links';
 	import { featureContracts } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
-	import { supportCell, engineFeatureVersions, runtimeFeatureTrack, WAGO_PLUGIN_SUPPORT, pluginTests, pluginSupportEvidence } from '$lib/support';
+	import { supportCell, engineFeatureVersions, runtimeFeatureTrack, pluginSupportEvidence } from '$lib/support';
 
 	let evidence=$state<{feature:string;engine:string;track:FeatureTrack}|null>(null);
   const channels=['stable'] as const;
@@ -24,7 +25,7 @@
 		...FEATURE_ENGINES.map((id) => ({ label: RTB[id].name, sub: RTB[id].lang, rt: id }))
 	];
 	const groups = $derived([...new Set(FEATS.map(f=>f.g))].map(g=>({g,rows:FEATS.filter(f=>f.g===g).map(f=>{
-    return {f,count:`${featureContracts(f.id).length} tests`,cells:[...FEATURE_ENGINES.map(id=>({...supportCell('?'),detail:'',tracks:channels.map(channel=>runtimeFeatureTrack(id,f,ui.scope,channel,undefined))}))]};
+    return {f,count:`${featureContracts(f.id).length} corpus tests`,cells:[...FEATURE_ENGINES.map(id=>({...supportCell('?'),detail:'',tracks:channels.map(channel=>runtimeFeatureTrack(id,f,ui.scope,channel,undefined))}))]};
   })})));
 
 	// ── Spec tests ─────────────────────────────────────────────────────────
@@ -91,8 +92,8 @@
 {#if ui.compatView !== 'perf'}
 	<div class="legend">
 		<span class="lg"><span class="box" style:background="oklch(0.72 0.14 150 / 0.18)"></span>● passed</span>
-		<span class="lg"><span class="box" style:background="oklch(0.77 0.14 60 / 0.16)"></span>⚑ flag · ◐ partial</span>
-		<span>passed / total tests · — unmeasured</span>
+		<span class="lg"><span class="box" style:background="oklch(0.77 0.14 60 / 0.16)"></span>⚑ flag</span>
+		<span>passed / total · bar: pass / fail / skip or unsupported · — unmeasured</span>
     <span class="lg"><PlugIcon /> plugin</span>
 		<span class="fg3">Proposal pages:</span>
 		{@render proposalLinks()}
@@ -140,34 +141,19 @@
                   {@const supportedPlugin=featCols[k].rt==='wago'?pluginSupportEvidence(r.f.id,ui.scope.machine):undefined}
 								<td class="fcell">
                   {#if supportedPlugin}
-                    <a class="support-track suite-track mono" href={siteHref(supportedPlugin.official?supportedPlugin.evidence:'/wasmbench/conformance/index.json')}
-                      aria-label={`${r.f.name}, Wago plugin: ${supportedPlugin.official?`${supportedPlugin.passed} of ${supportedPlugin.total} official cases passed, ${supportedPlugin.failed} failed, ${supportedPlugin.skipped} skipped`:'official suite unmeasured'}. Open suite evidence`}
-                      data-tip-summary={JSON.stringify({title:`Wago · ${r.f.name}`,subtitle:`Released plugin ${supportedPlugin.version}`,rows:supportedPlugin.official?[{label:supportedPlugin.label,pass:supportedPlugin.passed,total:supportedPlugin.total,failed:supportedPlugin.failed,skipped:supportedPlugin.skipped,missing:0}]:[],hint:supportedPlugin.official?`${supportedPlugin.scope || 'Official upstream suite'}; skips count toward the total. Performance remains unmeasured.`:'Official suite not collected for this feature on this host. Performance remains unmeasured.'})}>
-                      <span class="suite-label"><PlugIcon /><span>{supportedPlugin.official?`${supportedPlugin.passed}/${supportedPlugin.total}`:'—'}</span></span>
-                      {#if supportedPlugin.official && supportedPlugin.total}
-                        <span class="suite-bar" aria-hidden="true"><span class="pass" style:width={`${100*supportedPlugin.passed/supportedPlugin.total}%`}></span><span class="fail" style:width={`${100*supportedPlugin.failed/supportedPlugin.total}%`}></span><span class="skip" style:width={`${100*supportedPlugin.skipped/supportedPlugin.total}%`}></span></span>
-                      {/if}
-                    </a>
+                    <FeatureResult plugin passed={supportedPlugin.passed} total={supportedPlugin.total} failed={supportedPlugin.failed} skipped={supportedPlugin.skipped} measured={supportedPlugin.official}
+                      href={siteHref(supportedPlugin.official?supportedPlugin.evidence:'/wasmbench/conformance/index.json')}
+                      label={`${r.f.name}, Wago plugin: ${supportedPlugin.official?`${supportedPlugin.passed} of ${supportedPlugin.total} official cases passed, ${supportedPlugin.failed} failed, ${supportedPlugin.skipped} skipped`:'official suite unmeasured'}. Open suite evidence`}
+                      tooltip={JSON.stringify({title:`Wago · ${r.f.name}`,subtitle:`Official suite · released plugin ${supportedPlugin.version}`,rows:supportedPlugin.official?[{label:supportedPlugin.label,pass:supportedPlugin.passed,total:supportedPlugin.total,failed:supportedPlugin.failed,skipped:supportedPlugin.skipped,missing:0}]:[],hint:supportedPlugin.official?`${supportedPlugin.scope || 'Official upstream suite'}; skips count toward the total. Performance remains unmeasured.`:'Official suite not collected for this feature on this host. Performance remains unmeasured.'})} />
                   {:else if x.tracks}
                     {#each x.tracks as track}
-                      <button class="support-track mono" class:development={track.channel==='development'} style:background={track.bg} style:color={track.color}
-                        aria-label={`${r.f.name}, ${featCols[k].label}, ${track.channel}: ${track.text}, ${track.pass} of ${track.expected} tests passed. Open corpus results`}
-                        data-tip-summary={JSON.stringify({title:`${featCols[k].label} · ${r.f.name}`,subtitle:`${track.channel==='stable'?'Published release':'Development build'} · ${track.version || 'not collected'}`,rows:track.configurations.map(c=>({label:c.backend+(['v8-wasmfx','wasmtime-component-async'].includes(c.id)?' ⚑':''),pass:c.pass,total:c.total,failed:c.failed,skipped:c.skipped,missing:c.missing})),hint:track.configurations.length?'Click to inspect individual tests':'No measurements for this track'})}
-                        onclick={()=>evidence={feature:r.f.name,engine:featCols[k].label,track}}>
-                        <span class="track-label"></span><span>{track.glyph}</span>
-                        <span>{track.configurations.length?`${track.pass}/${track.expected}`:'—'}</span>
-                      </button>
+                      {@const best=track.configurations.filter(c=>c.pass===track.pass).sort((a,b)=>a.failed-b.failed)[0]}
+                      <FeatureResult passed={track.pass} total={track.expected} failed={best?.failed || 0} skipped={best?.skipped || 0} missing={best?.missing || 0} measured={!!track.configurations.length} flagged={track.text==='corpus passed · flag'}
+                        label={`${r.f.name}, ${featCols[k].label}: ${track.pass} of ${track.expected} corpus tests passed. Open corpus results`}
+                        tooltip={JSON.stringify({title:`${featCols[k].label} · ${r.f.name}`,subtitle:`Corpus tests · published release ${track.version || 'not collected'}`,rows:track.configurations.map(c=>({label:c.backend+(['v8-wasmfx','wasmtime-component-async'].includes(c.id)?' ⚑':''),pass:c.pass,total:c.total,failed:c.failed,skipped:c.skipped,missing:c.missing})),hint:track.configurations.length?'Click to inspect individual tests':'No measurements for this track'})}
+                        onselect={()=>evidence={feature:r.f.name,engine:featCols[k].label,track}} />
                     {/each}
                   {:else}<div class="mono small nowrap" style:color={x.color}><span class="micro">{x.glyph}</span> {x.text}</div>{/if}
-                                    {#if featCols[k].rt==='wago' && WAGO_PLUGIN_SUPPORT[r.f.id]}
-                      {@const plugin=pluginTests[ui.scope.machine][r.f.id] || (r.f.id.startsWith('cm-')?supportedPlugin:undefined)}
-                      {#if plugin?.official}
-                        <a class="micro fg3 nowrap link" href={siteHref(plugin.evidence)}
-                          data-tip-summary={JSON.stringify({title:`${r.f.name} · ${plugin.label}`,subtitle:`Wago ${plugin.engine} · plugin ${plugin.version}`,rows:[{label:plugin.label,pass:plugin.passed,total:plugin.total,failed:plugin.failed,skipped:plugin.skipped,missing:0}],hint:'Separate correctness suite; performance remains unmeasured. Click for the sealed report.'})}>{plugin.label} ↗</a>
-                      {:else}
-                        <div class="micro fg3 nowrap" data-tip="Supported through the published Wago plugin. Official suite not collected for this feature on this host.">Official · unmeasured</div>
-                      {/if}
-                    {/if}
 </td>
 							{/each}
 						</tr>
@@ -310,15 +296,6 @@
 		padding: 6px 10px;
 	}
 
-  .development { opacity:0.58; }
-  .support-track { display:flex;align-items:center;gap:7px;width:100%;padding:1px 4px;font-size:11px;line-height:16px;white-space:nowrap; }
-
-  .suite-track { flex-direction:column;align-items:stretch;gap:3px;color:var(--fg); }
-  .suite-label { display:flex;align-items:center;gap:4px; }
-  .suite-bar { display:flex;height:3px;width:100%;background:var(--line);overflow:hidden; }
-  .suite-bar .pass { background:var(--st-pass); }.suite-bar .fail { background:var(--st-fail); }.suite-bar .skip { background:var(--st-skip); }
-  .support-track:hover,.support-track:focus-visible { outline:1px solid var(--line2); }
-  .track-label { display:none; }
   .track-version { display:flex;gap:5px;align-items:center;margin-top:5px;max-width:140px;text-align:left; }
   .track-version > span:last-child { overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
 </style>
