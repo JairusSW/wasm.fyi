@@ -1,4 +1,5 @@
 <script lang="ts">
+ import PlugIcon from '$lib/components/PlugIcon.svelte';
  import FeatureEvidence from '$lib/components/FeatureEvidence.svelte';
  import type { FeatureTrack } from '$lib/support';
 	import { siteHref } from '$lib/links';
@@ -92,6 +93,7 @@
 		<span class="lg"><span class="box" style:background="oklch(0.72 0.14 150 / 0.18)"></span>● passed</span>
 		<span class="lg"><span class="box" style:background="oklch(0.77 0.14 60 / 0.16)"></span>⚑ flag · ◐ partial</span>
 		<span>passed / total tests · — unmeasured</span>
+    <span class="lg"><PlugIcon /> plugin</span>
 		<span class="fg3">Proposal pages:</span>
 		{@render proposalLinks()}
 	</div>
@@ -139,9 +141,9 @@
 								<td class="fcell">
                   {#if supportedPlugin}
                     <a class="support-track suite-track mono" href={siteHref(supportedPlugin.official?supportedPlugin.evidence:'/wasmbench/conformance/index.json')}
-                      aria-label={`${r.f.name}, Wago: ${supportedPlugin.official?`${supportedPlugin.passed} of ${supportedPlugin.total} official cases passed, ${supportedPlugin.failed} failed, ${supportedPlugin.skipped} skipped`:'official suite unmeasured'}. Open suite evidence`}
+                      aria-label={`${r.f.name}, Wago plugin: ${supportedPlugin.official?`${supportedPlugin.passed} of ${supportedPlugin.total} official cases passed, ${supportedPlugin.failed} failed, ${supportedPlugin.skipped} skipped`:'official suite unmeasured'}. Open suite evidence`}
                       data-tip-summary={JSON.stringify({title:`Wago · ${r.f.name}`,subtitle:`Released plugin ${supportedPlugin.version}`,rows:supportedPlugin.official?[{label:supportedPlugin.label,pass:supportedPlugin.passed,total:supportedPlugin.total,failed:supportedPlugin.failed,skipped:supportedPlugin.skipped,missing:0}]:[],hint:supportedPlugin.official?`${supportedPlugin.scope || 'Official upstream suite'}; skips count toward the total. Performance remains unmeasured.`:'Official suite not collected for this feature on this host. Performance remains unmeasured.'})}>
-                      <span>{supportedPlugin.official?`${supportedPlugin.passed}/${supportedPlugin.total}`:'—'}</span>
+                      <span class="suite-label"><PlugIcon /><span>{supportedPlugin.official?`${supportedPlugin.passed}/${supportedPlugin.total}`:'—'}</span></span>
                       {#if supportedPlugin.official && supportedPlugin.total}
                         <span class="suite-bar" aria-hidden="true"><span class="pass" style:width={`${100*supportedPlugin.passed/supportedPlugin.total}%`}></span><span class="fail" style:width={`${100*supportedPlugin.failed/supportedPlugin.total}%`}></span><span class="skip" style:width={`${100*supportedPlugin.skipped/supportedPlugin.total}%`}></span></span>
                       {/if}
@@ -312,6 +314,7 @@
   .support-track { display:flex;align-items:center;gap:7px;width:100%;padding:1px 4px;font-size:11px;line-height:16px;white-space:nowrap; }
 
   .suite-track { flex-direction:column;align-items:stretch;gap:3px;color:var(--fg); }
+  .suite-label { display:flex;align-items:center;gap:4px; }
   .suite-bar { display:flex;height:3px;width:100%;background:var(--line);overflow:hidden; }
   .suite-bar .pass { background:var(--st-pass); }.suite-bar .fail { background:var(--st-fail); }.suite-bar .skip { background:var(--st-skip); }
   .support-track:hover,.support-track:focus-visible { outline:1px solid var(--line2); }
