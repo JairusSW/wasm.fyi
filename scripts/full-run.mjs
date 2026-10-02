@@ -16,7 +16,7 @@ async function step(name,args,extra={}){
 }
 await save();
 try{
- const env={WASMBENCH_SUITE:'all',WASMBENCH_RUNTIMES:runtimes.join(','),WASMBENCH_VALIDATION_PROFILE:'all',WASMBENCH_RECORD_FAILURES:'1'};
+ const env={WASMBENCH_SUITE:'all',WASMBENCH_RUNTIMES:runtimes.join(','),WASMBENCH_VALIDATION_PROFILE:'all',WASMBENCH_RECORD_FAILURES:'1',WASMBENCH_TIMEOUT:'300s'};
  await step('build',['scripts/bench.mjs','build'],env);
  await step('compile-audit',['scripts/compile-latency-audit.mjs',join(directory,'compile-audit')]);
  await step('collect',['scripts/bench.mjs','collect'],env);

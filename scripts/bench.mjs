@@ -12,7 +12,7 @@ import { verifyV8 } from './lib/v8-preflight.mjs';
 
 const action = process.argv[2];
 const { root, settings, run } = await harness();
-const collection = settings.collection;
+const collection = {...settings.collection, timeout:process.env.WASMBENCH_TIMEOUT || settings.collection.timeout};
 const featureSuite = process.env.WASMBENCH_SUITE?.includes('corpora/features/') || process.env.WASMBENCH_SUITE==='all';
 const runtimes = process.env.WASMBENCH_RUNTIMES || (featureSuite ? featureConfigurations(settings) : collection.runtimes).join(',');
 if(['build','collect','corpus-check'].includes(action) && runtimes.split(',').includes('wago')) {
