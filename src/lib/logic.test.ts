@@ -1,7 +1,7 @@
 import { COMPAT } from './data/features';
 import { describe, expect, it } from 'vitest';
 import { ALLB } from './data/snapshot';
-import { fmtU, fx, pct, relative } from './format';
+import { fmtU, fmtUGroup, fx, pct, relative } from './format';
 import { heatCount, heatRatio } from './heat';
 import { benchVal, compatCell, isVisible, kidCells, leader, ratio, seriesFmt, type Scope } from './model';
 
@@ -23,9 +23,16 @@ describe('format', () => {
 	});
 	it('rescales units', () => {
 		expect(fmtU(0.0049, 'ms')).toBe('4.9 µs');
+		expect(fmtU(0.00001, 'ms')).toBe('10 ns');
+		expect(fmtU(0.000001, 'ms')).toBe('1 ns');
+		expect(fmtU(0.0000001, 'ms')).toBe('0.1 ns');
 		expect(fmtU(41.2, 'ms')).toBe('41.2 ms');
-		expect(fmtU(1500, 'ms')).toBe('1.50 s');
+		expect(fmtU(1500, 'ms')).toBe('1.5 s');
 		expect(fmtU(2048, 'KB')).toBe('2.00 MB');
+	});
+	it('shares a useful time unit across adjacent values where their range allows it',()=>{
+		expect(fmtUGroup([0.0008,0.0012],'ms')).toEqual(['800 ns','1200 ns']);
+		expect(fmtUGroup([0.00001,0.5],'ms')).toEqual(['10 ns','500 µs']);
 	});
 	it('formats ratios and deltas', () => {
 		expect(fx(1.234)).toBe('1.23×');

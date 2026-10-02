@@ -40,18 +40,18 @@ describe('existing workload views consume measured evidence',()=>{
     }
   });
 	it('uses exact workload identifiers and independent artifact digests',()=>{
-		expect(ALLB).toHaveLength(398);
+		expect(ALLB).toHaveLength(389);
 		expect(new Set(ALLB.map(b=>b.id)).size).toBe(ALLB.length);
 		for(const b of ALLB)expect(b.artifactSha256).toMatch(/^[a-f0-9]{64}$/);
 		expect(ALLB.some(b=>b.id==='sqlite-speedtest1')).toBe(false);
 	});
 	it('lists every benchmarked engine configuration on the Benchmarks page',()=>{
-		expect(CFG.map(config=>config.id)).toEqual(Object.keys(viewData.configurations).filter(id=>id!=='H'));
+		expect(CFG.map(config=>config.id)).toEqual(Object.keys(viewData.configurations).filter(id=>!['H','S'].includes(id)));
 		expect(CFG.find(config=>config.id==='F')?.be).toBe('production-default');
 		expect(CFG.some(config=>config.id==='H')).toBe(false);
 		expect(viewData.configurations.F).toBe('v8');
 		expect(viewData.applicationConfigurations).toEqual(['A','B','C','D','E','G']);
-		for(const id of ['I','J','K','M','N','O','P','Q','R','S'] as const)
+		for(const id of ['I','J','K','M','N','O','P','Q','R'] as const)
 			expect(viewData.hosts.m1.configurations[id]||viewData.hosts.m2.configurations[id]).toBeDefined();
 	});
 	for(const machine of ['m1','m2'] as const)it(`matches ${machine} rendered cell units to the sealed summary`,async()=>{

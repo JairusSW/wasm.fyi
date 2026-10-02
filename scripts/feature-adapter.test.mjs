@@ -14,7 +14,7 @@ test('checked-in feature artifacts and provenance cover every declared family',a
   const displayed=[...new Set([...ui.matchAll(/\bid: '([^']+)'/g)].map(match=>match[1]))];
   assert.deepEqual([...featureIds].sort(),displayed.sort(),'Feature corpus no longer matches displayed families');
   assert.deepEqual(build.missingFeatures,[]);assert.equal(build.recipes.length,fixtures().length);
-  assert.equal(manifest.length,232);
+  assert.equal(manifest.length,223);
   for(const feature of featureIds)assert(manifest.some(w=>w.features.includes(feature)&&!w.provenance.baseline),`Missing actual ${feature} workload`);
   const generated = new Map(fixtures().map(f=>[`${f.feature}-${f.name}`,f]));
   for(const recipe of build.recipes) {
@@ -32,16 +32,13 @@ test('checked-in feature artifacts and provenance cover every declared family',a
   }
 });
 
-test('all proposal admission stays independent of runtime support and rejects malformed input',async(context)=>{
+test('independent admission rejects malformed input',async(context)=>{
   const settings=await config();const root=resolve(site,process.env.WASMBENCH_ROOT || settings.root);
   const analyzer=join(root,'adapters/wasmtime/target/release/wasm-analyze');
   if(!await exists(analyzer)) {
     assert.notEqual(process.env.WASMBENCH_REQUIRE_ADAPTER_TESTS,'1','Build the independent analyzer before running feature admission tests');
     context.skip('Independent analyzer is exercised on the measurement runner');return;
   }
-  const stack=join(site,'corpora/features/artifacts/stack-switching-continuation-create-resume.wasm');
-  assert.notEqual(spawnSync(analyzer,[stack,'default']).status,0);
-  assert.equal(spawnSync(analyzer,[stack,'all']).status,0);
   const directory=await mkdtemp(join(tmpdir(),'wasm-fyi-invalid-feature-'));
   try {const path=join(directory,'invalid.wasm');await writeFile(path,Buffer.from('0061736d010000000104016000','hex'));assert.notEqual(spawnSync(analyzer,[path,'all']).status,0);}finally{await rm(directory,{recursive:true,force:true});}
 });

@@ -39,7 +39,7 @@ const additionalCFG: Cfg[] = ([
   ['I','wasmi','interpreter'],['J','wasmedge','interpreter'],['K','wasm3','interpreter'],
   ['L','wavm','llvm-jit'],['M','spidermonkey','production-default'],['N','jsc','production-default'],
   ['O','deno','production-default'],['P','wamr','interpreter'],['Q','chicory','interpreter'],
-  ['R','wasmtime','component-async'],['S','v8','production-default + WasmFX flag']
+  ['R','wasmtime','component-async']
  ] as [CfgId,string,string][]).map(([id,rt,be])=>({id,rt,be,ver:'not collected',kind:'Measured engine configuration',col:`var(--rt-${rt}, var(--fg3))`,hollow:['R','S'].includes(id)}));
 export const CFG: Cfg[] = [...applicationCFG,...additionalCFG];
 export const FEATURE_CFG: Cfg[] = CFG;
@@ -49,7 +49,7 @@ const shortVersion=(version:string)=>version.startsWith('binary-sha256:')?'sha25
 for(const c of FEATURE_CFG) {
   const measured=viewData.hosts.m1.configurations[c.id] || viewData.hosts.m2.configurations[c.id];
   const released=[...viewData.featureVersions.m1,...viewData.featureVersions.m2].find(v=>v.id===viewData.configurations[c.id] && v.channel==='stable' && v.description.runtime_version===measured?.version);
-  if(measured && (released || !/^[a-f0-9]{40}(?:\/|$)|nightly|snapshot|canary|0\.0\.0-prerelease/i.test(measured.version))){c.ver=shortVersion(released?.version || measured.version);c.be=c.id==='F'?'production-default':c.id==='S'?'production-default + WasmFX flag':c.id==='R'?measured.backend+' + async':measured.backend;}
+  if(measured && (released || !/^[a-f0-9]{40}(?:\/|$)|nightly|snapshot|canary|0\.0\.0-prerelease/i.test(measured.version))){c.ver=shortVersion(released?.version || measured.version);c.be=c.id==='F'?'production-default':c.id==='R'?measured.backend+' + async':measured.backend;}
   if(c.id==='E'||c.id==='G'){c.interp=false;c.kind='JIT compiler';}
   if(c.id==='C')c.kind='LLVM JIT';
 }

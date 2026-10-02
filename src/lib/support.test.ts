@@ -26,14 +26,13 @@ describe('optional plugin availability',()=>{
   });
 });
 
-describe('experimental feature configurations',()=>{
-  for(const machine of ['m1','m2'] as const)it(`labels flag-only stack switching passes on ${machine}`,()=>{
+describe('excluded experimental feature configurations',()=>{
+  for(const machine of ['m1','m2'] as const)it(`does not expose archived WasmFX evidence on ${machine}`,()=>{
     const scope:Scope={machine,baseline:'A',hide:{},weighting:'workload'};
-    const feature=FEATS.find(f=>f.id==='stack-switching')!;
-    expect(supportOf('v8',feature,scope)).toBe('f');
-    const cell=runtimeSupportCell('v8',feature,scope);
-    expect(cell.text).toBe('corpus passed · flag');
-    expect(cell.detail).toContain('WasmFX flag');
+    const feature=FEATS.find(f=>f.id==='threads')!;
+    const track=runtimeFeatureTrack('v8',feature,scope,'stable');
+    expect(track.configurations.some(c=>c.id==='v8-wasmfx')).toBe(false);
+    expect(runtimeSupportCell('v8',feature,scope).detail).not.toContain('WasmFX');
   });
 });
 
@@ -64,7 +63,7 @@ describe('combined compatibility and corpus counts',()=>{
     const track=runtimeFeatureTrack('v8',feature,scope,'stable');
     expect(track.pass).toBe(track.expected);
     expect(track.configurations.length).toBeGreaterThan(0);
-    expect(track.configurations.every(c=>['v8','v8-wasmfx'].includes(c.id))).toBe(true);
+    expect(track.configurations.every(c=>c.id==='v8')).toBe(true);
     expect(track.configurations.some(c=>c.backend.includes('production-default'))).toBe(true);
     for(const c of track.configurations){
       expect(c.pass+c.failed+c.skipped+c.missing).toBe(c.total);

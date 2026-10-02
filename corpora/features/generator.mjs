@@ -25,7 +25,7 @@ const triangular = n => (n * (n - 1) / 2) >>> 0;
 export const featureIds = ['core-num', 'core-mem', 'core-ctl', 'core-tab', 'core-val',
   'bulk-memory', 'reference-types', 'multi-value', 'simd', 'gc', 'memory64',
   'exceptions', 'tail-call', 'relaxed-simd', 'multi-memory', 'extended-const',
-  'js-string-builtins', 'threads', 'stack-switching', 'wasi-p1', 'wasi-p2',
+  'js-string-builtins', 'threads', 'wasi-p1', 'wasi-p2',
   'component-model', 'cm-abi', 'cm-res', 'cm-async'];
 
 export function fixtures() {
@@ -135,14 +135,6 @@ export function fixtures() {
   loop('threads', 'wait-mismatch-notify', `(block (result i32) (i32.atomic.store (i32.const 0) ${i}) (drop (memory.atomic.notify (i32.const 0) (i32.const 1))) (memory.atomic.wait32 (i32.const 0) (i32.add ${i} (i32.const 1)) (i64.const 0)))`, () => 1, shared, '', '', { hostProfile: 'threads-defined-v1' });
   loop('threads', 'atomic-fence', `(block (result i32) (atomic.fence) ${i})`, x => x, shared, '', '', { hostProfile: 'threads-defined-v1' });
   baseline('threads', 'non-atomic', x => x);
-  // Actual proposal continuations, distinct from runtime-private snapshot APIs.
-  add('stack-switching', 'continuation-create-resume', `(module (type $f (func (param i32) (result i32))) (type $c (cont $f)) (func $task (type $f) local.get 0 i32.const 7 i32.add) (elem declare func $task) (func (export "benchmark") (param i32) (result i32) (resume $c (local.get 0) (cont.new $c (ref.func $task)))))`, n => n + 7, { units: 1, workUnit: 'continuation', dimension: 'input_value' });
-
-  loop('stack-switching', 'continuation-allocation-loop', `(resume $c ${i} (cont.new $c (ref.func $task)))`, x=>x+7,
-    '(type $f (func (param i32) (result i32))) (type $c (cont $f)) (func $task (type $f) local.get 0 i32.const 7 i32.add) (elem declare func $task)');
-  add('stack-switching', 'continuation-loop-body', `(module (type $f (func (param i32) (result i32))) (type $c (cont $f))
-    (func $task (type $f) (local $i i32) (local $a i32) (loop $loop (local.set $a (i32.add (local.get $a) (local.get $i))) (local.set $i (i32.add (local.get $i) (i32.const 1))) (br_if $loop (i32.lt_u (local.get $i) (local.get 0)))) (local.get $a))
-    (elem declare func $task) (func (export "benchmark") (param i32) (result i32) (resume $c (local.get 0) (cont.new $c (ref.func $task)))))`, triangular);
   for (const size of [1, 64, 4096]) {
     for (const operation of ['fd-write', 'stdin-read', 'clock-monotonic', 'random-get', 'arguments']) {
       const stdout = operation === 'random-get' ? 'ok' : operation === 'fd-write' || operation === 'stdin-read' ? 'x'.repeat(size) : 'x';

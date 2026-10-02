@@ -284,10 +284,9 @@ calibration result. Hub installs the SHA-256-verified Linux archive into its
 private measurement toolchain; its system Node is untouched. The Mac automation
 uses the same exact Node release through `actions/setup-node`.
 
-The optional `v8-wasmfx` feature adapter uses the same eager optimizing lock plus
-`--experimental-wasm-wasmfx`; the recorded harness patch and preflight enforce
-this. Shared-memory worker scaling runs all 32 cases in each eager tier, in separate
-processes with inherited worker flags, with a separate tier calibration in each worker. Execution means still exclude feature workloads.
+V8 feature collection uses Node's production-default tiering without experimental
+feature flags. Shared-memory worker scaling runs its 32 defined cases in separate
+processes with inherited worker flags. Execution means still exclude feature workloads.
 
 History retains the eight measured Wago revisions, using the freshly collected
 locked V8 configurations as a fixed current comparison baseline. Previous
@@ -344,7 +343,7 @@ instantiation window or fresh-instance steady execution under its borrowed
 module/runtime contract; those cells remain adapter-unsupported.
 
 The feature pages use separate feature configurations, including async
-components and flagged WasmFX. These configurations never become participants
+components. These configurations never become participants
 in application leaderboards or history averages. A feature support cell requires
 one recorded configuration to pass the full representative family; partial,
 rejected/failed and adapter-unsupported cases retain their own diagnostics.

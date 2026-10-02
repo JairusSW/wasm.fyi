@@ -6,7 +6,7 @@ import { viewCell, viewData } from './view-data';
 import { CB, CFG, FEATURE_CFG, MACH, WF } from './data/runtimes';
 import { MET, OTM, UNIT } from './data/snapshot';
 import type { Bench, Cfg, CfgId, MachineId, MetricKey, OtMetricKey, RatioCi, Status } from './data/types';
-import { fmtU, fx, n0, relative, type DeltaFormat } from './format';
+import { fmtU, fmtUGroup, fx, n0, relative, type DeltaFormat } from './format';
 
 export interface Scope {
 	machine: MachineId;
@@ -110,7 +110,9 @@ export function leader(s: Scope, label: string, group: PerfGroup, col: number, m
 	const list = CFG.map((c) => ({ c, x: ratio(s, group, c.id, col) }))
 		.filter((e): e is { c: Cfg; x: NonNullable<ReturnType<typeof ratio>> } => e.x != null && isVisible(s, e.c))
 		.sort((a, b) => a.x.r - b.x.r);
-	const places=list.slice(0,3).map(({c,x},i)=>({place:i+1,cfg:c,value:disp(s,group,c.id,col)!.t,ratio:x.r}));
+	const top=list.slice(0,3);
+	const topValues=fmtUGroup(top.map(({c})=>absOf(s,group,c.id,col)?.v ?? null),UNIT[group]);
+	const places=top.map(({c,x},i)=>({place:i+1,cfg:c,value:topValues[i] || disp(s,group,c.id,col)!.t,ratio:x.r}));
 	if (!list.length)
 		return { label, metric, places, clear: false as const, versus: 'No selected runtime has this measurement.' };
 	const a = list[0];
@@ -118,14 +120,16 @@ export function leader(s: Scope, label: string, group: PerfGroup, col: number, m
 	const clear = !!b && Number.isFinite(a.x.ci) && Number.isFinite(b.x.ci) && a.x.r + a.x.ci < b.x.r - b.x.ci;
 	const da = disp(s, group, a.c.id, col)!;
 	const db = b ? disp(s, group, b.c.id, col)! : { t: '' };
+	const firstText=topValues[0] || da.t;
+	const secondText=topValues[1] || db.t;
 	return {
 		label,
 		metric,
 		places,
 		clear,
 		cfg: a.c,
-		value: da.t,
-		versus: b ? `${cn(a.c)} ${da.t} and ${cn(b.c)} ${db.t} — 95% intervals overlap` : ''
+		value: firstText,
+		versus: b ? `${cn(a.c)} ${firstText} and ${cn(b.c)} ${secondText} — 95% intervals overlap` : ''
 	};
 }
 

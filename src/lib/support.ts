@@ -69,7 +69,7 @@ export function runtimeFeatureTrack(rid:string,f:FeatureRow,scope:Scope,channel:
   const counts=[...latest.values()].map(v=>({v,f:v.features.find(x=>x.id===f.id)!})).filter(x=>x.f.total>0);
   const expected=featureContracts(f.id).length;
   const complete=counts.filter(x=>x.f.total===expected && x.f.pass===expected);
-  const flagged=(id:string)=>['v8-wasmfx','wasmtime-component-async'].includes(id);
+  const flagged=(id:string)=>id==='wasmtime-component-async';
   const code:SupportCode=complete.some(x=>!flagged(x.v.id))?'y':complete.length?'f':counts.some(x=>x.f.pass>0)?'p':'?';
   const failed=counts.some(x=>x.f.failed>0);
   const detail=counts.map(({v,f})=>`${v.description.backend} · ${v.version}: ${f.pass}/${expected} passed, ${f.failed} failed, ${f.unsupported} unsupported\n${f.reasons.join('\n')}`).join('\n');

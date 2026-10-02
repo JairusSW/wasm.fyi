@@ -36,7 +36,6 @@
     "extended-const",
     "js-string-builtins",
     "threads",
-    "stack-switching",
     "wasi-p1",
     "wasi-p2",
     "component-model",
@@ -63,7 +62,6 @@
     "extended-const",
     "js-string-builtins",
     "threads",
-    "stack-switching",
     "wasi-p1",
     "wasi-p2",
     "component-model",
@@ -72,7 +70,7 @@
     "cm-async"
   ],
   "missingFeatures": [],
-  "workloadContracts": 232,
+  "workloadContracts": 223,
   "recipes": [
     {
       "source": "sources/core-num-integer-multiply-add.wat",
@@ -1372,66 +1370,6 @@
       "feature": "threads",
       "variant": "non-atomic-scalar-baseline",
       "baseline": true,
-      "scope": "execution"
-    },
-    {
-      "source": "sources/stack-switching-continuation-create-resume.wat",
-      "sourceSha256": "a4b1093c783143f995e9407d4ade1c2140fc4ae664e423a55d9bff6c779fb5c5",
-      "artifact": "artifacts/stack-switching-continuation-create-resume.wasm",
-      "sha256": "abbea03e0d5f11bf0fb19091f8dfa75166344bcdeec604b983dd9fb74915ec41",
-      "compiler": "wasm-tools 1.260.0",
-      "argv": [
-        [
-          "wasm-tools",
-          "parse",
-          "sources/stack-switching-continuation-create-resume.wat",
-          "-o",
-          "artifacts/stack-switching-continuation-create-resume.wasm"
-        ]
-      ],
-      "feature": "stack-switching",
-      "variant": "continuation-create-resume",
-      "baseline": false,
-      "scope": "execution"
-    },
-    {
-      "source": "sources/stack-switching-continuation-allocation-loop.wat",
-      "sourceSha256": "7ff07f857288d6fadbdf5369475be2e1290b4877d4ac24bc8c73be846d4d61c2",
-      "artifact": "artifacts/stack-switching-continuation-allocation-loop.wasm",
-      "sha256": "f16b66f357c329bcbdeddb39048f7c50a73213c7e8a2b380b1657edcebaa2ea5",
-      "compiler": "wasm-tools 1.260.0",
-      "argv": [
-        [
-          "wasm-tools",
-          "parse",
-          "sources/stack-switching-continuation-allocation-loop.wat",
-          "-o",
-          "artifacts/stack-switching-continuation-allocation-loop.wasm"
-        ]
-      ],
-      "feature": "stack-switching",
-      "variant": "continuation-allocation-loop",
-      "baseline": false,
-      "scope": "execution"
-    },
-    {
-      "source": "sources/stack-switching-continuation-loop-body.wat",
-      "sourceSha256": "1018dfdaaf877dee84fbd7726e1943797870b66eb79fbfa891a7b1e3a436777a",
-      "artifact": "artifacts/stack-switching-continuation-loop-body.wasm",
-      "sha256": "8336ed21f7f4bf49b13988ac165b7251f4c53606342553776fe07cc5efdc3e7f",
-      "compiler": "wasm-tools 1.260.0",
-      "argv": [
-        [
-          "wasm-tools",
-          "parse",
-          "sources/stack-switching-continuation-loop-body.wat",
-          "-o",
-          "artifacts/stack-switching-continuation-loop-body.wasm"
-        ]
-      ],
-      "feature": "stack-switching",
-      "variant": "continuation-loop-body",
-      "baseline": false,
       "scope": "execution"
     },
     {

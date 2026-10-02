@@ -25,7 +25,6 @@ export const FEATS: FeatureRow[] = [
   { g: 'Wasm 3.0', id: 'extended-const', name: 'Extended constant expressions', phase: 'Phase 5 · Wasm 3.0', b: ['114', '112', '17.4'], r: 'yyy?yyyny' },
   { g: 'Wasm 3.0', id: 'js-string-builtins', name: 'JS string builtins', phase: 'Phase 5 · Wasm 3.0', b: ['130', '134', 'n'], r: '---------' },
   { g: 'In progress', id: 'threads', name: 'Threads & atomics', phase: 'Phase 4', b: ['74', '79', '14.1'], r: 'fyf?nyynf', page: 'threads' },
-  { g: 'In progress', id: 'stack-switching', name: 'Stack switching', phase: 'Phase 3', b: ['f', 'n', 'n'], r: 'nnn?nnnnn' },
   { g: 'System interfaces', id: 'wasi-p1', name: 'WASI 0.1 (preview1)', phase: 'WASI 0.1', b: ['n', 'n', 'n'], r: 'yyy?yyypy' },
   { g: 'System interfaces', id: 'wasi-p2', name: 'WASI 0.2', phase: 'WASI 0.2', b: ['n', 'n', 'n'], r: 'ynn?npnnn' },
   { g: 'System interfaces', id: 'component-model', name: 'Component Model', phase: 'Phase 1', b: ['n', 'n', 'n'], r: 'ynn?npnnn' },

@@ -4,24 +4,25 @@ import {validateV8Description} from './lib/v8-preflight.mjs';
 
 const pin={version:'26.4.0',v8:'14.6.202.34-node.21'};
 function description(mode) {
-  if(mode.startsWith('production-default')) {
-    const wasmfx=mode==='production-default-wasmfx';
+  if(mode==='production-default') {
     return {build:'v'+pin.version,runtime_version:pin.v8,backend:'production-default-tiering',effective_configuration:{
-      tiering:'production-default',flags:JSON.stringify(wasmfx?['--experimental-wasm-wasmfx']:[])
+      tiering:'production-default',flags:JSON.stringify([])
     }};
   }
   const flags=['--allow-natives-syntax',mode==='liftoff-only'?'--liftoff-only':'--no-liftoff','--no-wasm-tier-up','--no-wasm-lazy-compilation','--no-wasm-native-module-cache'];
-  if(mode==='optimizing-wasmfx-only')flags.push('--experimental-wasm-wasmfx');
   return {build:'v'+pin.version,runtime_version:pin.v8,backend:mode,effective_configuration:{
     lazy_compilation:'disabled',tiering:mode,flags:JSON.stringify(flags),
     compiler_mode_probe:JSON.stringify({version:'v8-compiler-mode-probe-v1',collector_version:pin.v8,scope:'separate_calibration_module_export_before_first_call',module_sha256:'a'.repeat(64),liftoff:mode==='liftoff-only',optimizing:mode!=='liftoff-only'})
   }};
 }
-test('accepts separately verified eager tiers and the locked experimental adapter',()=>{
-  for(const mode of ['liftoff-only','optimizing-only','optimizing-wasmfx-only'])validateV8Description(description(mode),pin,mode);
+test('accepts separately verified legacy eager tiers',()=>{
+  for(const mode of ['liftoff-only','optimizing-only'])validateV8Description(description(mode),pin,mode);
 });
-test('accepts production-default V8 tiering, including the WasmFX feature flag',()=>{
-  for(const mode of ['production-default','production-default-wasmfx'])validateV8Description(description(mode),pin,mode);
+test('accepts production-default V8 tiering without experimental feature flags',()=>{
+  validateV8Description(description('production-default'),pin,'production-default');
+  const flagged=description('production-default');
+  flagged.effective_configuration.flags=JSON.stringify(['--experimental-wasm-wasmfx']);
+  assert.throws(()=>validateV8Description(flagged,pin,'production-default'));
 });
 test('rejects forcing one V8 tier in the production-default configuration',()=>{
   const d=description('production-default');

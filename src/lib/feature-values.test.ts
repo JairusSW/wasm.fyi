@@ -5,10 +5,10 @@ import {COMPAT} from './data/features';
 import {viewData,viewCell} from './view-data';
 const scope:Scope={machine:'m1',baseline:'A',hide:{},weighting:'corpus'};
 describe('feature views retain distinct evidence scopes',()=>{
- it('covers all 25 measured families while excluding scalar baselines',()=>{
+	 it('covers all 24 measured families while excluding scalar baselines',()=>{
    const families=COMPAT.flatMap(s=>s.fams);
-   expect(families).toHaveLength(25);
-   expect(families.reduce((sum,f)=>sum+featureContracts(f.id).length,0)).toBe(214);
+	   expect(families).toHaveLength(24);
+	   expect(families.reduce((sum,f)=>sum+featureContracts(f.id).length,0)).toBe(205);
    for(const f of families)for(const w of featureContracts(f.id))expect(w.baseline).toBe(false);
  });
  it('uses compilation for compile-only probes and invocation for bandwidth/allocation',()=>{

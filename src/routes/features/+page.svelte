@@ -150,7 +150,7 @@
                       {@const best=track.configurations.filter(c=>c.pass===track.pass).sort((a,b)=>a.failed-b.failed)[0]}
                       <FeatureResult passed={track.pass} total={track.expected} failed={best?.failed || 0} skipped={best?.skipped || 0} missing={best?.missing || 0} measured={!!track.configurations.length} flagged={track.text==='corpus passed · flag'}
                         label={`${r.f.name}, ${featCols[k].label}: ${track.pass} of ${track.expected} corpus tests passed. Open corpus results`}
-                        tooltip={JSON.stringify({title:`${featCols[k].label} · ${r.f.name}`,subtitle:`Corpus tests · published release ${track.version || 'not collected'}`,rows:track.configurations.map(c=>({label:c.backend+(['v8-wasmfx','wasmtime-component-async'].includes(c.id)?' ⚑':''),pass:c.pass,total:c.total,failed:c.failed,skipped:c.skipped,missing:c.missing})),hint:track.configurations.length?'Click to inspect individual tests':'No measurements for this track'})}
+                        tooltip={JSON.stringify({title:`${featCols[k].label} · ${r.f.name}`,subtitle:`Corpus tests · published release ${track.version || 'not collected'}`,rows:track.configurations.map(c=>({label:c.backend+(c.id==='wasmtime-component-async'?' ⚑':''),pass:c.pass,total:c.total,failed:c.failed,skipped:c.skipped,missing:c.missing})),hint:track.configurations.length?'Click to inspect individual tests':'No measurements for this track'})}
                         onselect={()=>evidence={feature:r.f.name,engine:featCols[k].label,track}} />
                     {/each}
                   {:else}<div class="mono small nowrap" style:color={x.color}><span class="micro">{x.glyph}</span> {x.text}</div>{/if}

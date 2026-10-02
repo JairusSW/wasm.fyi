@@ -24,7 +24,7 @@ The audit independently compiles three application fixtures using Go APIs and st
 
 ## Complete collection and history
 
-`WASMBENCH_SUITE=all` combines all 166 curated application contracts and 232 feature contracts. `scripts/full-run.mjs` builds every configured platform adapter, runs the scratch audit, then collects timing, memory and native-code evidence. Steps run sequentially on each host; Mac ARM64 and Hub AMD64 can run concurrently. Detached supervisors retain per-step logs, child PIDs and atomic `status.json` files. Hub uses a persistent SSH master and its measurement lock.
+`WASMBENCH_SUITE=all` combines all 166 curated application contracts and 223 feature contracts. `scripts/full-run.mjs` builds every configured platform adapter, runs the scratch audit, then collects timing, memory and native-code evidence. Steps run sequentially on each host; Mac ARM64 and Hub AMD64 can run concurrently. Detached supervisors retain per-step logs, child PIDs and atomic `status.json` files. Hub uses a persistent SSH master and its measurement lock.
 
 The queue requests 53 Wednesday targets, covering 52 weekly intervals from October 1, 2025 through September 30, 2026. Releases are selected as of each Wednesday, and collection timestamps remain retrospective. The existing official-conformance history runner follows current collection. It does not reconstruct performance history; that remains a separate required part of the full-year work. Missing qualified runners and unpublished releases are explicit gaps, not passing results. WAVM's upstream release inventory currently contains only nightly builds, excluded by the release-only policy.
 

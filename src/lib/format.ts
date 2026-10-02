@@ -17,22 +17,49 @@ export type DeltaFormat = 'factor' | 'percent';
 export const relative = (ratio: number, format: DeltaFormat = 'percent'): string =>
 	format === 'percent' ? pct(ratio - 1) : fx(ratio);
 
-/** Value in its natural unit, rescaled to stay readable (µs ↔ ms ↔ s, KB ↔ MB). */
+const compact = (value:number, digits:number) => {
+	const rounded=Number(value.toFixed(digits));
+	if(value!==0 && rounded===0)return '<'+(1/10**digits).toString();
+	return rounded.toString();
+};
+const timeUnits=['ns','µs','ms','s'] as const;
+type TimeUnit=typeof timeUnits[number];
+const timeValue=(v:number,u:string)=>u==='µs'?v/1000:v;
+const timeIndex=(ms:number)=>ms<0.001?0:ms<1?1:ms<1000?2:3;
+const scaledTime=(ms:number,index:number)=>ms*[1e6,1e3,1,1/1000][index];
+const timeText=(value:number,unit:TimeUnit)=>{
+	const a=Math.abs(value),digits=a<10?2:a<100?1:0;
+	return compact(value,digits)+' '+unit;
+};
+
+/** Value in its natural unit, rescaled to stay readable (ns ↔ µs ↔ ms ↔ s). */
 export const fmtU = (v: number, u: string): string => {
-	if (u === 'ms')
-		return v < 1
-			? (v * 1000).toFixed(v < 0.1 ? 1 : 0) + ' µs'
-			: v < 10
-				? v.toFixed(2) + ' ms'
-				: v < 1000
-					? v.toFixed(1) + ' ms'
-					: (v / 1000).toFixed(2) + ' s';
-	if (u === 'µs') return v < 1000 ? v.toFixed(v < 10 ? 2 : 1) + ' µs' : (v / 1000).toFixed(2) + ' ms';
+	if (u === 'ms' || u === 'µs') {
+		const ms=timeValue(v,u),index=timeIndex(Math.abs(ms));
+		return timeText(scaledTime(ms,index),timeUnits[index]);
+	}
+	if (u === 'ns') return timeText(v,'ns');
 	if (u === 'MB') return v.toFixed(1) + ' MB';
 	if (u === 'KB') return v >= 1024 ? (v / 1024).toFixed(2) + ' MB' : v.toFixed(0) + ' KB';
 	if (u === 'MiB') return v.toFixed(1) + ' MiB';
 	if (u === 'KiB') return v >= 1024 ? (v / 1024).toFixed(2) + ' MiB' : v.toFixed(0) + ' KiB';
 	return String(v);
+};
+
+/** Keep a row of comparable latencies in one unit when their range allows it. */
+export const fmtUGroup = (values:(number|null)[],u:string):string[] => {
+	if(u!=='ms'&&u!=='µs')return values.map(v=>v==null?'':fmtU(v,u));
+	const valid=values.filter((v):v is number=>v!=null&&Number.isFinite(v));
+	if(!valid.length)return values.map(()=>'');
+	const ms=valid.map(v=>timeValue(v,u));
+	const sorted=[...ms].sort((a,b)=>Math.abs(a)-Math.abs(b));
+	const median=Math.abs(sorted[sorted.length>>1]);
+	const preferred=timeIndex(median);
+	const min=Math.min(...ms.map(Math.abs)),max=Math.max(...ms.map(Math.abs));
+	const candidates=[preferred,preferred-1,preferred+1].filter(i=>i>=0&&i<timeUnits.length);
+	const shared=candidates.find(i=>scaledTime(min,i)>=1&&scaledTime(max,i)<10_000);
+	if(shared==null)return values.map(v=>v==null?'':fmtU(v,u));
+	return values.map(v=>v==null?'':timeText(scaledTime(timeValue(v,u),shared),timeUnits[shared]));
 };
 
 /** `v` as a percentage of `tot`, for positioning overlays on scaled SVGs. */

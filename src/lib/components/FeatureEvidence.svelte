@@ -25,7 +25,7 @@
     {/if}
     {#each track.configurations.filter(c=>c.id===(active || track.configurations[0]?.id)) as c (c.id)}
       <section>
-        <div class="backend"><strong>{c.backend}{#if ['v8-wasmfx','wasmtime-component-async'].includes(c.id)} <span class="micro fg3">⚑ experimental flag</span>{/if}</strong><span class="mono">{c.pass}/{c.total} passed</span></div>
+        <div class="backend"><strong>{c.backend}{#if c.id==='wasmtime-component-async'} <span class="micro fg3">⚑ experimental flag</span>{/if}</strong><span class="mono">{c.pass}/{c.total} passed</span></div>
         <div class="result-bar" aria-hidden="true"><span class="pass" style:width={`${c.pass/c.total*100}%`}></span><span class="fail" style:width={`${c.failed/c.total*100}%`}></span><span class="skip" style:width={`${c.skipped/c.total*100}%`}></span><span class="missing" style:width={`${c.missing/c.total*100}%`}></span></div>
         <div class="counts"><span class="passed">● {c.pass} passed</span><span class="failed">✕ {c.failed} failed</span><span>— {c.skipped} unsupported</span>{#if c.missing}<span>? {c.missing} uncollected</span>{/if}</div>
         <div class="micro fg3">Collected {c.collectedAt.slice(0,10)}{#if c.source} · <a href={c.source}>Build source</a>{/if}</div>

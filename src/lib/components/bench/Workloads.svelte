@@ -5,7 +5,7 @@
 	import { BENCH, MET, PHASE_NOTE } from '$lib/data/snapshot';
 	import { ST } from '$lib/data/status';
 	import type { Bench, Cfg, MetricKey } from '$lib/data/types';
-	import { fmtU, relative, n0, workloadName } from '$lib/format';
+	import { fmtU, fmtUGroup, relative, n0, workloadName } from '$lib/format';
 	import { heatRatio } from '$lib/heat';
 	import { benchHref } from '$lib/links';
 	import { benchVal, isVisible } from '$lib/model';
@@ -15,7 +15,7 @@
 
 	const cols = $derived(CFG.filter((c) => isVisible(ui.scope, c)));
 
-	const cellFor = (b: Bench, c: Cfg, cf: number, caseLabel?: string) => {
+	const cellFor = (b: Bench, c: Cfg, cf: number, caseLabel?: string, formatted?:string) => {
 		const s = ui.scope;
 		const m = ui.metric;
 		const u = MET[m].u;
@@ -28,12 +28,19 @@
 		const br = benchVal(s, b, s.baseline, m, cf);
 		const ratio = br.st === 'ok' ? r.v / br.v : null;
 		return {
-			text: fmtU(r.v, u),
+			text: formatted || fmtU(r.v, u),
 			sub: ratio && c.id !== s.baseline ? relative(ratio,ui.deltaFormat) : '',
 			bg: heatRatio(ratio),
 			color: 'var(--fg)',
 			open
 		};
+	};
+	const cellsFor = (b:Bench,cf=1,caseLabel?:string) => {
+		const s=ui.scope,m=ui.metric,u=MET[m].u;
+		const formatted=(u==='ms'||u==='µs')?fmtUGroup(cols.map(c=>{
+			const r=benchVal(s,b,c.id,m,cf);return r.st==='ok'?r.v:null;
+		}),u):null;
+		return cols.map((c,i)=>cellFor(b,c,cf,caseLabel,formatted?.[i]));
 	};
 
 	type Row =
@@ -93,7 +100,7 @@
 					cases: b.cases?.length ?? 0,
 					expanded,
 					tags: b.tags,
-					cells: cols.map((c) => cellFor(b, c, 1))
+					cells: cellsFor(b,1)
 				});
 				if (expanded && b.cases)
 					for (const [lab, f] of b.cases)
@@ -105,7 +112,7 @@
 							cases: 0,
 							expanded: false,
 							tags: [],
-							cells: cols.map((c) => cellFor(b, c, f, lab))
+							cells: cellsFor(b,f,lab)
 						});
 			}
 		}

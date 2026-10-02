@@ -1,1 +1,0 @@
-(module (type $f (func (param i32) (result i32))) (type $c (cont $f)) (func $task (type $f) local.get 0 i32.const 7 i32.add) (elem declare func $task) (func (export "benchmark") (param i32) (result i32) (resume $c (local.get 0) (cont.new $c (ref.func $task)))))

@@ -2,9 +2,9 @@
 	import { CFG } from '$lib/data/runtimes';
 	import { OV } from '$lib/data/snapshot';
 	import type { MetricKey, OvKey } from '$lib/data/types';
-	import { n0 } from '$lib/format';
+	import { fmtUGroup, n0 } from '$lib/format';
 	import { heatCount, heatRatio } from '$lib/heat';
-	import { TOTAL_WORKLOADS, sharedCount, cov, disp, isOff, isVisible, ratio } from '$lib/model';
+	import { TOTAL_WORKLOADS, sharedCount, cov, absOf, disp, isOff, isVisible, ratio } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 	import Carousel from '../Carousel.svelte';
 	import RtLabel from '../RtLabel.svelte';
@@ -38,6 +38,7 @@
 		return CFG.filter((c) => isVisible(s, c)).map((c) => {
 			const off = isOff(s, c.id);
 			const cv = cov(c.id,ui.scope);
+			const commonTimes=ui.group==='lat'?fmtUGroup(g.metrics.map((_,i)=>absOf(s,'lat',c.id,i)?.v ?? null),'ms'):null;
 			const cells = g.cols.map((_, i) => {
 				if (ui.group === 'cov') {
 					const v = cv[i];
@@ -51,7 +52,7 @@
 				const grp = ui.group as 'lat' | 'mem' | 'code';
 				const r = ratio(s, grp, c.id, i);
 				if (!r) return { text: disp(s,grp,c.id,i)?.t || (off?'unavailable':'not measured'), bg:'transparent',color:'var(--fg3)' };
-				return { text: disp(s, grp, c.id, i)!.t, bg: heatRatio(r.r), color: 'var(--fg)' };
+				return { text: commonTimes?.[i] || disp(s, grp, c.id, i)!.t, bg: heatRatio(r.r), color: 'var(--fg)' };
 			});
 			return {
 				c,
