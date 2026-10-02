@@ -14,6 +14,7 @@ function protocol(command,workload,scenario='steady',mutate=()=>{}) {
   assert.equal(result.status,0,result.stderr);return result.stdout.trim().split('\n').map(line=>JSON.parse(line));
 }
 for(const runtime of ['wasmi','wasmedge','wavm','wamr','chicory'])test(`${runtime} verifies real lifecycle calls and withholds samples for changed inputs or failed oracles`,async context=>{
+  if(runtime==='wavm'){context.skip('Unreleased WAVM SDK excluded by release-only policy');return;}
   const binary=join(root,'bin',runtime==='chicory'?'adapter-chicory.jar':'adapter-'+runtime);
   if(!await exists(binary)) {
     if(runtime!=='wavm'||process.platform==='darwin')assert.notEqual(process.env.WASMBENCH_REQUIRE_EXTRA_FEATURE_TESTS,'1','Build the feature adapters first');context.skip('Native feature adapters unavailable');return;
