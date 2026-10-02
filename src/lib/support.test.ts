@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FEATS } from './data/features';
+import { viewData } from './view-data';
 import { RTB } from './data/runtimes';
 import { compatCell, type Scope } from './model';
 import { runtimeSupportCell, supportOf, engineFeatureVersions, runtimeFeatureTrack } from './support';
@@ -40,8 +41,13 @@ describe('stable and development compatibility tracks',()=>{
   for(const machine of ['m1','m2'] as const)it(`never presents unreleased Wago as stable on ${machine}`,()=>{
     const scope:Scope={machine,baseline:'A',hide:{},weighting:'workload'};
     const f=FEATS.find(f=>f.id==='simd')!;
-    expect(engineFeatureVersions('wago',scope,'stable')).toEqual([]);
-    expect(runtimeFeatureTrack('wago',f,scope,'stable').text).toBe('not collected');
+    const released=engineFeatureVersions('wago',scope,'stable');
+    expect(released.every(v=>!v.includes('9f01d145'))).toBe(true);
+    const track=runtimeFeatureTrack('wago',f,scope,'stable');
+    if(!released.length)expect(track.text).toBe('not collected');
+    else for(const c of track.configurations){
+      expect(viewData.featureVersions[machine].some(v=>v.channel==='stable' && v.version===c.version && v.id===c.id)).toBe(true);
+    }
     expect(engineFeatureVersions('wago',scope,'development')[0]).toContain('9f01d145');
     expect(runtimeFeatureTrack('wago',f,scope,'development').text).toBe('corpus passed');
     expect(engineFeatureVersions('wasmtime',scope,'stable')).toContain('46.0.1');
@@ -62,7 +68,7 @@ describe('combined compatibility and corpus counts',()=>{
       expect(c.contracts).toHaveLength(c.total-c.missing);
       expect(c.contracts.filter(x=>x.status==='passed')).toHaveLength(c.pass);
     }
-    const missing=runtimeFeatureTrack('wago',feature,scope,'stable');
+    const missing=runtimeFeatureTrack('uncollected-engine',feature,scope,'stable');
     expect(missing.configurations).toEqual([]);
     expect(missing.pass).toBe(0);
   });

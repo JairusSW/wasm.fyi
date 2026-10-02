@@ -1,5 +1,6 @@
+import {cloneCopy as cp} from './copy.mjs';
 import assert from 'node:assert/strict';
-import { mkdir, cp, readFile, writeFile, readdir } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { exists, digest, site } from './wasmbench.mjs';
 import { validateData } from './validate-data.mjs';

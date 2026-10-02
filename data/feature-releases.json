@@ -216,6 +216,14 @@
       "configuration": "wasmer-singlepass",
       "version": "7.3.0",
       "source": "https://github.com/wasmerio/wasmer/releases/tag/v7.3.0"
+    },
+    "f065c763351b280697d6d989dc2b420582ff057ae8ddaef06b6c84ca2cea88d3": {
+      "configuration": "wago",
+      "version": "0.1.0-beta.11",
+      "source": "https://github.com/wago-org/wago/releases/tag/v0.1.0-beta.11",
+      "prerelease": true,
+      "revision": "9f01d145d54ac7ab458b6b2f6047db90a757410a",
+      "sourceSha256": "ebf04d34d9fda6d3cdb351e32bd44ea15e18f54abeb753af59bc04e2b7a6e821"
     }
   }
 }

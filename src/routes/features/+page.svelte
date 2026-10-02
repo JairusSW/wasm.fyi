@@ -10,7 +10,7 @@
 		import { fmtU, relative } from '$lib/format';
 	import { heatRatio } from '$lib/heat';
 	import { PROPOSAL_IDS } from '$lib/links';
-	import { featureContracts, isVisible } from '$lib/model';
+	import { featureContracts } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 	import { supportCell, engineFeatureVersions, runtimeFeatureTrack, WAGO_PLUGIN_SUPPORT } from '$lib/support';
 
@@ -27,7 +27,7 @@
   })})));
 
 	// ── Spec tests ─────────────────────────────────────────────────────────
-	const cols = $derived(FEATURE_CFG.filter((c) => isVisible(ui.scope, c) && engineFeatureVersions(c.rt,ui.scope,'stable').length>0));
+	const cols = $derived(FEATURE_CFG.filter((c) => !ui.scope.hide[c.id] && engineFeatureVersions(c.rt,ui.scope,'stable').length>0));
 
 	// ── Proposal performance ───────────────────────────────────────────────
 	const PERF_NOTE={exec:'Steady execution · shared successful execution contracts per family; compile-only probes excluded.',compile:'Compilation · shared successful contracts per family.',mem:'Steady process peak RSS · shared successful contracts; includes adapter process.'};
@@ -140,7 +140,7 @@
                     {#each x.tracks as track}
                       <button class="support-track mono" class:development={track.channel==='development'} style:background={track.bg} style:color={track.color}
                         aria-label={`${r.f.name}, ${featCols[k].label}, ${track.channel}: ${track.text}, ${track.pass} of ${track.expected} tests passed. Open corpus results`}
-                        data-tip-summary={JSON.stringify({title:`${featCols[k].label} · ${r.f.name}`,subtitle:`${track.channel==='stable'?'Stable release':'Development build'} · ${track.version || 'not collected'}`,rows:track.configurations.map(c=>({label:c.backend+(['v8-wasmfx','wasmtime-component-async'].includes(c.id)?' ⚑':''),pass:c.pass,total:c.total,failed:c.failed,skipped:c.skipped,missing:c.missing})),hint:track.configurations.length?'Click to inspect individual tests':'No measurements for this track'})}
+                        data-tip-summary={JSON.stringify({title:`${featCols[k].label} · ${r.f.name}`,subtitle:`${track.channel==='stable'?'Published release':'Development build'} · ${track.version || 'not collected'}`,rows:track.configurations.map(c=>({label:c.backend+(['v8-wasmfx','wasmtime-component-async'].includes(c.id)?' ⚑':''),pass:c.pass,total:c.total,failed:c.failed,skipped:c.skipped,missing:c.missing})),hint:track.configurations.length?'Click to inspect individual tests':'No measurements for this track'})}
                         onclick={()=>evidence={feature:r.f.name,engine:featCols[k].label,track}}>
                         <span class="track-label"></span><span>{track.glyph}</span>
                         <span>{track.configurations.length?`${track.pass}/${track.expected}`:'—'}</span>

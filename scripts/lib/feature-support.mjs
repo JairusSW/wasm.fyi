@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { featureIds } from '../../corpora/features/generator.mjs';
-import { digest } from './wasmbench.mjs';
+import { digest, config } from './wasmbench.mjs';
 
 export function runtimeIdentity(runtime) {
   return digest(JSON.stringify({command:runtime.command,files:runtime.file_sha256,hostFiles:runtime.host_file_sha256,nativePolicy:runtime.native_dependency_policy,nativeDependencies:runtime.elf_startup_dependencies,description:runtime.description}));
@@ -16,12 +16,17 @@ export function featureCandidates(reports,runtime,workload,sha) {
 // A newer targeted experiment can fill a cell from an earlier broad run only
 // when every pinned runtime input and the complete description agree. Evidence
 // references stay attached to each cell; versions never silently mix.
+export function featureHostKey(host,aliases={}) {
+  return JSON.stringify([aliases[host.hostname] || host.hostname,host.os,host.arch,host.cpu_description,host.logical_cpus,host.page_size,host.kernel]);
+}
+
 export async function featureSupport(directory, reports) {
   const hosts = new Map();
+  const aliases=(await config()).hostAliases || {};
   const releases=JSON.parse(await readFile(new URL('../../data/feature-releases.json',import.meta.url),'utf8'));
   for (const report of [...reports].sort((a,b) => b.created.localeCompare(a.created))) {
     if (!report.workloads.some(w => w.id.startsWith('features/'))) continue;
-    const hostKey=JSON.stringify([report.host.hostname,report.host.os,report.host.arch]);
+    const hostKey=featureHostKey(report.host,aliases);
     if(!hosts.has(hostKey))hosts.set(hostKey,{host:report.host,configurations:new Map(),versions:new Map()});
     const host=hosts.get(hostKey);
     let raw;

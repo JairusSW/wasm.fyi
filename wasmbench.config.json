@@ -197,5 +197,9 @@
         }
       }
     }
+  },
+  "hostAliases": {
+    "Jairus-Tanaka.local": "measurement-mac",
+    "jairus-tanaka.tail0dc14a.ts.net": "measurement-mac"
   }
 }

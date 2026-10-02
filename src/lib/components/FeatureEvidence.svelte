@@ -16,7 +16,7 @@
 <dialog bind:this={dialog} onclose={onclose} aria-label="Feature corpus results">
   {#if selection}
     {@const track=selection.track}
-    <header><div><h2>{selection.engine} · {selection.feature}</h2><div class="version">{track.channel==='stable'?'Stable release':'Development build'} · {track.version || 'not collected'}</div></div><button onclick={()=>dialog.close()} aria-label="Close corpus results">✕</button></header>
+    <header><div><h2>{selection.engine} · {selection.feature}</h2><div class="version">{track.channel==='stable'?'Published release':'Development build'} · {track.version || 'not collected'}</div></div><button onclick={()=>dialog.close()} aria-label="Close corpus results">✕</button></header>
     {#if !track.configurations.length}<p class="empty">No measured corpus results for this track on the selected host.</p>{/if}
     {#if track.configurations.length>1}
       <div class="backends" role="group" aria-label="Compiler backend">

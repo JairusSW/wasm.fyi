@@ -1,4 +1,5 @@
-import { cp, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import {cloneCopy as cp} from './lib/copy.mjs';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { site, installDirectory } from './lib/wasmbench.mjs';
 import { validateData } from './lib/validate-data.mjs';

@@ -1,7 +1,8 @@
+import {cloneCopy as cp} from './lib/copy.mjs';
 import { parseArgs } from 'node:util';
-import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
-import { datasetFiles } from './lib/snapshot-index.mjs';
+import { datasetFiles, retainReports } from './lib/snapshot-index.mjs';
 import { compact, command, config, digest, exists, installDirectory, json, locked, site } from './lib/wasmbench.mjs';
 import { validateData } from './lib/validate-data.mjs';
 import { stageHistoryBaseline } from './lib/history-baseline.mjs';
@@ -36,8 +37,7 @@ await locked(async () => {
       const previous = await validateData(destination);
       const incoming = await validateData(stagedData);
       const ids = new Set(incoming.reports.map(r => r.runId));
-      const reports = [...incoming.reports, ...previous.reports.filter(r => !ids.has(r.runId))]
-        .sort((a, b) => b.created.localeCompare(a.created)).slice(0, (await config()).retention || 12);
+      const reports = retainReports([...incoming.reports, ...previous.reports.filter(r => !ids.has(r.runId))], (await config()).retention || 12);
       for (const r of reports) if (!await exists(join(stagedData, r.evidence))) await cp(join(destination, r.evidence), join(stagedData, r.evidence));
       await writeIndex(stagedData, reports);
     }

@@ -46,7 +46,8 @@ const shortVersion=(version:string)=>version.startsWith('binary-sha256:')?'sha25
 
 for(const c of FEATURE_CFG) {
   const measured=viewData.hosts.m1.configurations[c.id] || viewData.hosts.m2.configurations[c.id];
-  if(measured && !/^[a-f0-9]{40}(?:\/|$)|nightly|snapshot|canary|0\.0\.0-prerelease/i.test(measured.version)){c.ver=shortVersion(measured.version);c.be=c.id==='F'?'Turboshaft':c.id==='H'?'Liftoff':c.id==='S'?'Turboshaft + WasmFX flag':c.id==='R'?measured.backend+' + async':measured.backend;}
+  const released=[...viewData.featureVersions.m1,...viewData.featureVersions.m2].find(v=>v.id===viewData.configurations[c.id] && v.channel==='stable' && v.description.runtime_version===measured?.version);
+  if(measured && (released || !/^[a-f0-9]{40}(?:\/|$)|nightly|snapshot|canary|0\.0\.0-prerelease/i.test(measured.version))){c.ver=shortVersion(released?.version || measured.version);c.be=c.id==='F'?'Turboshaft':c.id==='H'?'Liftoff':c.id==='S'?'Turboshaft + WasmFX flag':c.id==='R'?measured.backend+' + async':measured.backend;}
   if(c.id==='E'||c.id==='G'){c.interp=false;c.kind='JIT compiler';}
   if(c.id==='C')c.kind='LLVM JIT';
 }
