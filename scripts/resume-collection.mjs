@@ -3,6 +3,7 @@ import {readFile,writeFile,mkdir,rename,statfs} from 'node:fs/promises';
 import {join,resolve,dirname} from 'node:path';
 import {isDeepStrictEqual} from 'node:util';
 import {harness,command,digest,locked} from './lib/wasmbench.mjs';
+import {assertRecoveryCohort} from './lib/collection-recovery.mjs';
 const timing=resolve(process.argv[2]||'');
 if(!process.argv[2])throw Error('Usage: node scripts/resume-collection.mjs <sealed timing bundle>');
 const {root,run}=await harness();
@@ -39,8 +40,7 @@ try {
   }
   const identity=r=>({id:r.id,command:r.command,file_sha256:r.file_sha256,description:r.description});
   if(!isDeepStrictEqual(planned.runtime_configurations.map(identity),lock.runtime_configurations.map(identity)))throw Error('Adapter identity changed since the timing pass');
-  const cohort=ws=>ws.map(w=>({id:w.id,sha256:w.sha256})).sort((a,b)=>a.id.localeCompare(b.id));
-  if(!isDeepStrictEqual(cohort(planned.workloads),cohort(lock.workloads)))throw Error('Recovery corpus differs from timing');
+  assertRecoveryCohort(planned.workloads,lock.workloads);
   const output=join(folder,profile+'-'+process.pid);
   const args=['run',...shared,'--profile',profile,'--launches',String(profile==='code'?1:lock.options.launches),'--samples','1','--operations','1','--warmup','0','--out',output];
   if(profile==='code')args.push('--scenarios','compile');
