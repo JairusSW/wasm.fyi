@@ -9,6 +9,8 @@ export function latestRelease(releases,asOf=new Date().toISOString()) {
   if(!Number.isFinite(cutoff))throw Error('Invalid release cutoff');
   return releases.filter(releasedBuild).filter(r=>Number.isFinite(+new Date(r.published_at)) && +new Date(r.published_at)<=cutoff).sort((a,b)=>+new Date(b.published_at)-+new Date(a.published_at))[0] || null;
 }
+export const parseReleasePages=output=>output.trim().split('\n').filter(Boolean).flatMap(line=>JSON.parse(line));
+export const githubReleases=repository=>parseReleasePages(command('gh',['api','--paginate',`repos/${repository}/releases?per_page=100`,'--jq','. | tojson']).toString());
 export const releaseCache=()=>process.env.WASMBENCH_RELEASE_CACHE || join(homedir(),'.cache/wasm-fyi/releases');
 export async function releaseSource(repository,{tag,asOf,taggedLibrary=false}={}) {
   let candidates;
@@ -17,7 +19,7 @@ export async function releaseSource(repository,{tag,asOf,taggedLibrary=false}={}
     const info=JSON.parse(command('go',['list','-m','-json',`github.com/${repository}@latest`],{env:{...process.env,GOWORK:'off',GOFLAGS:''}}).toString());
     if(!/^v[0-9]+\.[0-9]+\.[0-9]+(?:[-+].*)?$/.test(info.Version) || /-[0-9]{14}-[a-f0-9]+$/.test(info.Version))throw Error('Plugin has no released module version');
     candidates=[{tag_name:info.Version,published_at:info.Time,draft:false,prerelease:info.Version.includes('-'),html_url:`https://github.com/${repository}/tree/${info.Version}`}];
-  }else candidates=JSON.parse(command('gh',['api','--paginate',`repos/${repository}/releases?per_page=100`,'--slurp']).toString()).flat();
+  }else candidates=githubReleases(repository);
   const release=tag?candidates.find(r=>r.tag_name===tag && releasedBuild(r)):latestRelease(candidates,asOf);
   if(!release)throw Error(`No published non-development release for ${repository}${tag?' at '+tag:''}`);
   const source=join(releaseCache(),repository.replace('/','-'),release.tag_name.replaceAll('/','-'));

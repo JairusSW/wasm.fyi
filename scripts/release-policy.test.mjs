@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {latestRelease,releasedBuild} from './lib/release-policy.mjs';
-import {goResults,countOutcomes} from './lib/conformance.mjs';
+import {latestRelease,releasedBuild,parseReleasePages} from './lib/release-policy.mjs';
+import {goResults,countOutcomes,wasiCaseTotals} from './lib/conformance.mjs';
 test('Wednesday source selection uses publication time, never main, drafts or nightlies',()=>{
   const r=(tag,date,extra={})=>({tag_name:tag,published_at:date,draft:false,prerelease:false,...extra});
   const rows=[r('nightly/2026-09-30','2026-09-30T00:00:00Z'),r('v2','2026-10-01T00:00:00Z'),r('v1','2026-09-29T00:00:00Z'),r('v3','2026-09-30T00:00:00Z',{draft:true})];
@@ -17,4 +17,17 @@ test('upstream Go runners count leaf tests, retain skips, and expose zero-test i
   const r=goResults(log);assert.equal(r.results.length,2);assert.equal(r.totals.passed,1);assert.equal(r.totals.skipped,1);
   assert.equal(goResults('{}').testsStarted,0);
   assert.equal(countOutcomes([{status:'runner-error'},{status:'failed'}]).passed,0);
+});
+
+test('WASI case totals are separate from the single Go suite test',()=>{
+  assert.deepEqual(wasiCaseTotals('TOTAL[wasip1]: passed=70 failed=2 skipped=0 (of 72)'),{passed:70,failed:2,unsupported:0,skipped:0,'runner-error':0,crashed:0});
+  assert.equal(wasiCaseTotals('TOTAL[wasip1]: passed=70 failed=2 skipped=0 (of 73)'),null);
+  assert.equal(wasiCaseTotals('no suite ran'),null);
+  assert.equal(wasiCaseTotals('TOTAL[wasip1]: passed=0 failed=0 skipped=0 (of 0)'),null);
+});
+
+test('release pagination works with older GitHub CLI without slurp',()=>{
+  assert.deepEqual(parseReleasePages('[{"tag_name":"v2"}]\n[{"tag_name":"v1"}]\n'),[{tag_name:'v2'},{tag_name:'v1'}]);
+  assert.deepEqual(parseReleasePages(''),[]);
+  assert.throws(()=>parseReleasePages('not json'));
 });

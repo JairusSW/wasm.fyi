@@ -93,7 +93,9 @@ if (action === 'doctor') {
     const selectedRuntimes = process.env.WASMBENCH_RUNTIMES || (process.env.WASMBENCH_SUITE?.includes('corpora/features/') ? [...settings.collection.runtimes,...(settings.collection.featureRuntimes || [])] : settings.collection.runtimes).join(',');
     const nativeTests = (selectedRuntimes.includes('wasmer-') ? 'WASMBENCH_REQUIRE_WASMER_TESTS=1 node --test scripts/wasmer-adapter.test.mjs;' : '') + (process.env.WASMBENCH_SUITE?.includes('corpora/features/') ? 'WASMBENCH_REQUIRE_EXTRA_FEATURE_TESTS=1 node --test scripts/extra-feature-adapters.test.mjs;' : '');
     const task = action === 'history' ? `${overrides} node scripts/history.mjs collect` : action === 'conformance' ? `${overrides} node scripts/conformance.mjs collect` : action === 'threads' ? `${overrides} node scripts/thread-workers.mjs; cp -r data/threads .wasmbench/threads` : `${overrides} node scripts/bench.mjs build; ${nativeTests} ${overrides} node scripts/bench.mjs doctor; ${overrides} node scripts/bench.mjs collect`;
-    process.stdout.write(ssh(`${nodePath} export GOFLAGS="-buildvcs=false"; set -eu; exec 9>"$HOME/${host.workspace}/measurement.lock"; flock -w 3600 9; cd ${quote(remote + '/site')}; ${task}`, 180 * 60 * 1000));
+    // Correctness suites record outcomes, not timings; they do not need the performance measurement lock.
+    const measurementLock = action === 'conformance' ? '' : `exec 9>"$HOME/${host.workspace}/measurement.lock"; flock -w 3600 9;`;
+    process.stdout.write(ssh(`${nodePath} export GOFLAGS="-buildvcs=false"; set -eu; ${measurementLock} cd ${quote(remote + '/site')}; ${task}`, 180 * 60 * 1000));
     completed = true;
   } finally {
     // Retain partial evidence too. A failed remote pass never updates site data.

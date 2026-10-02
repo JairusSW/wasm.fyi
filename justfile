@@ -218,3 +218,7 @@ conformance-publish *reports:
 
 conformance-collect-hub:
     node scripts/hub.mjs conformance
+
+# Run released WASI/Component Model correctness suites on Mac and Hub concurrently.
+wago-plugin-tests:
+    node scripts/wago-plugin-tests.mjs

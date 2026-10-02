@@ -3,7 +3,7 @@ import {join,resolve} from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {homedir,hostname,platform,arch} from 'node:os';
 import {command,digest,exists} from './wasmbench.mjs';
-import {releasedBuild,releaseSource,assertReleasedSource} from './release-policy.mjs';
+import {releasedBuild,releaseSource,assertReleasedSource,githubReleases} from './release-policy.mjs';
 
 export const suites={
   core:{repository:'WebAssembly/spec',revision:'9d36019973201a19f9c9ebb0f10828b2fe2374aa',directory:'test/core',label:'WebAssembly 3.0 official WAST'},
@@ -36,7 +36,7 @@ export function execute(binary,args,{cwd,env=process.env,timeout=120000}={}){
   return {command:[binary,...args],exitCode:run.status,signal:run.signal,processError:run.error?.message || null,stdout:run.stdout || '',stderr:run.stderr || '',status:run.error?'runner-error':run.signal?'crashed':run.status===0?'passed':'failed'};
 }
 export async function latestWasmtime(asOf){
-  const r=asOf? (await import('./release-policy.mjs')).latestRelease(JSON.parse(command('gh',['api','--paginate','repos/bytecodealliance/wasmtime/releases?per_page=100','--slurp']).toString()).flat(),asOf):JSON.parse(command('gh',['api','repos/bytecodealliance/wasmtime/releases/latest']).toString());
+  const r=asOf? (await import('./release-policy.mjs')).latestRelease(githubReleases('bytecodealliance/wasmtime'),asOf):JSON.parse(command('gh',['api','repos/bytecodealliance/wasmtime/releases/latest']).toString());
   if(!r)throw Error('No Wasmtime release available at snapshot date');
   if(!releasedBuild(r))throw Error('Wasmtime selected release is a development build');
   const target={ 'darwin-arm64':'aarch64-macos','linux-x64':'x86_64-linux','darwin-x64':'x86_64-macos'}[`${platform()}-${arch()}`];
@@ -80,6 +80,15 @@ export function goResults(log){
   }
   const rows=[...completed.values()].filter(t=>![...completed.keys()].some(name=>name.startsWith(t.name+'/')));
   return {results:rows,totals:countOutcomes(rows),testsStarted:run,output:outputs.join('')};
+}
+// The released Preview 1 runner reports individual cases in a single Go test.
+// Keep its case counts separate from Go leaf-test counts.
+export function wasiCaseTotals(output){
+  const matches=[...output.matchAll(/TOTAL\[wasip1\]: passed=(\d+) failed=(\d+) skipped=(\d+) \(of (\d+)\)/g)];
+  if(matches.length!==1)return null;
+  const [passed,failed,skipped,total]=matches[0].slice(1).map(Number);
+  if(passed+failed+skipped!==total || total===0)return null;
+  return {...countOutcomes([]),passed,failed,skipped};
 }
 export async function goConformance(pin,args,env={}){
   assertReleasedSource(pin.source,pin);
