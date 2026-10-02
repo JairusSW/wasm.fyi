@@ -13,17 +13,19 @@
 	import { PROPOSAL_IDS } from '$lib/links';
 	import { cellView, compatCell, featureContracts, featureOutcome, isOff, isVisible, kidCells, mf } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
-	import { supportCell, runtimeSupportCell } from '$lib/support';
+	import { supportCell, engineFeatureVersions, runtimeFeatureTrack, WAGO_PLUGIN_SUPPORT } from '$lib/support';
 
+	const selectedVersions=$state<Record<string,string>>({});
+  const channels=['stable','development'] as const;
 	const propLinks = PROPOSAL_IDS.map((id) => ({ id, label: PROPS[id].title }));
 
 	// ── Support matrix ─────────────────────────────────────────────────────
 	const featCols = [
 		...BROWSERS.map((b) => ({ label: b, sub: 'browser', rt: null as string | null })),
-		...FEATURE_ENGINES.map((id) => ({ label: RTB[id].name, sub: RTB[id].lang, rt: RTB[id].cfg ? id : null }))
+		...FEATURE_ENGINES.map((id) => ({ label: RTB[id].name, sub: RTB[id].lang, rt: id }))
 	];
 	const groups = $derived([...new Set(FEATS.map(f=>f.g))].map(g=>({g,rows:FEATS.filter(f=>f.g===g).map(f=>{
-    return {f,count:`${featureContracts(f.id).length} representative contracts`,cells:[...BROWSERS.map(()=>({...supportCell('?'),detail:''})), ...FEATURE_ENGINES.map(id=>runtimeSupportCell(id,f,ui.scope))]};
+    return {f,count:`${featureContracts(f.id).length} representative contracts`,cells:[...BROWSERS.map(()=>({...supportCell('?'),detail:'',tracks:null})), ...FEATURE_ENGINES.map(id=>({...supportCell('?'),detail:'',tracks:channels.map(channel=>runtimeFeatureTrack(id,f,ui.scope,channel,selectedVersions[`${ui.machine}|${id}|${channel}`]))}))]};
   })})));
 
 	// ── Spec tests ─────────────────────────────────────────────────────────
@@ -111,6 +113,19 @@
 								<span class="w5">{h.label}</span>
 							{/if}
 							<div class="micro fg3 w4">{h.sub}</div>
+              {#if h.rt}
+                {#each channels as channel}
+                  {@const versions=engineFeatureVersions(h.rt,ui.scope,channel)}
+                  <div class:development={channel==='development'} class="track-version micro">
+                    <span>{channel==='stable'?'Stable':'Dev'}</span>
+                    {#if versions.length>1}
+                      <select aria-label={`${h.label} ${channel} version`} value={selectedVersions[`${ui.machine}|${h.rt}|${channel}`] || versions[0]} onchange={(e)=>selectedVersions[`${ui.machine}|${h.rt}|${channel}`]=e.currentTarget.value}>
+                        {#each versions as version}<option value={version}>{version}</option>{/each}
+                      </select>
+                    {:else}<span title={versions[0]}>{versions[0]?.replace(/\/source-.*/, '').slice(0,48) || 'not collected'}</span>{/if}
+                  </div>
+                {/each}
+              {/if}
 						</th>
 					{/each}
 				</tr>
@@ -128,9 +143,18 @@
 								<div class="mono micro fg3">{r.f.phase} · {r.count}</div>
 							</td>
 							{#each r.cells as x, k (k)}
-								<td class="fcell" style:background={x.bg} data-tip={`${r.f.name} — ${featCols[k].label}\n${x.glyph} ${x.text}\n${r.f.phase}\n${x.detail}`}>
-									<div class="mono small nowrap" style:color={x.color}><span class="micro">{x.glyph}</span> {x.text}</div>
-								</td>
+								<td class="fcell">
+                  {#if x.tracks}
+                    {#each x.tracks as track}
+                      <div class="support-track mono small nowrap" class:development={track.channel==='development'} style:background={track.bg} style:color={track.color} data-tip={`${r.f.name} — ${featCols[k].label} · ${track.channel}\n${track.version}\n${track.detail}`}>
+                        <span class="micro">{track.channel==='stable'?'Stable':'Dev'} · {track.glyph}</span> {track.text}
+                      </div>
+                    {/each}
+                    {#if featCols[k].rt==='wago' && WAGO_PLUGIN_SUPPORT[r.f.id]}
+                      <div class="micro fg3" data-tip="Documented optional plugin availability; no sealed plugin measurement on either track.">Via plugin · unmeasured</div>
+                    {/if}
+                  {:else}<div class="mono small nowrap" style:color={x.color}><span class="micro">{x.glyph}</span> {x.text}</div>{/if}
+                </td>
 							{/each}
 						</tr>
 					{/each}
@@ -139,7 +163,7 @@
 		</table>
 	</div>
 	<div class="note">
-		Results apply to the recorded adapters and host. “Via plugin” indicates documented availability in an optional plugin configuration that has not been benchmarked here: Wago provides WASI through <a href="https://github.com/wago-org/wasi">wago-org/wasi</a> and Component Model execution through <a href="https://github.com/wago-org/component-model">wago-org/component-model</a>. Execution contracts verify exact outputs; structural and interface probes verify compilation only. Browser builds have not been collected. All tested configurations, including async components and the WasmFX flag, appear in Corpus tests and Performance. A passed cell requires one configuration to pass the complete family; diagnostics list each configuration separately. Adapter-unsupported contracts do not establish that an engine lacks a feature. Feature-only engines never enter application averages. These representative cases do not establish full specification conformance. <a href={siteHref('/wasmbench/feature-support.json')}>Full support evidence</a>.
+		Stable and dimmed development lines use separate pinned builds. Version selectors show collected versions only. Unreleased source builds never establish stable support; experimental flags on stable engines remain marked as flags. Results apply to the recorded adapters and host. “Via plugin” indicates documented availability in an optional plugin configuration that has not been benchmarked here: Wago provides WASI through <a href="https://github.com/wago-org/wasi">wago-org/wasi</a> and Component Model execution through <a href="https://github.com/wago-org/component-model">wago-org/component-model</a>. Execution contracts verify exact outputs; structural and interface probes verify compilation only. Browser builds have not been collected. All tested configurations, including async components and the WasmFX flag, appear in Corpus tests and Performance. A passed cell requires one configuration to pass the complete family; diagnostics list each configuration separately. Adapter-unsupported contracts do not establish that an engine lacks a feature. Feature-only engines never enter application averages. These representative cases do not establish full specification conformance. <a href={siteHref('/wasmbench/feature-support.json')}>Full support evidence</a>.
 
 	</div>
 {:else if ui.compatView === 'tests'}
@@ -440,4 +464,10 @@
 	.pcell {
 		padding: 6px 10px;
 	}
+
+  .development { opacity:0.58; }
+  .support-track { padding:5px 6px; }
+  .track-version { display:flex;gap:5px;align-items:center;margin-top:5px;max-width:260px;text-align:left; }
+  .track-version > span:last-child { overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+  .track-version select { max-width:200px;font:inherit;color:inherit;background:var(--bg);border:1px solid var(--border); }
 </style>

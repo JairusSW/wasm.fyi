@@ -11,6 +11,11 @@ interface Host {
 	snapshots: Record<'s1'|'s2',Record<string,ViewCell>>;
 }
 interface ViewData {
+  featureVersions:Record<MachineId,{
+    id:string;identity:string;channel:'stable'|'development';version:string;source:string;revision:string|null;collectedAt:string;
+    description:{runtime:string;runtime_version:string;backend:string};
+    features:{id:string;total:number;pass:number;failed:number;unsupported:number;compiledOnly:number;executed:number;reports:string[];reasons:string[]}[];
+  }[]>;
 	threads:Record<MachineId,{created:string;configuration:string;node:string;v8:string;policy:string;evidence:string;sha256:string;results:{compilerMode:string;sharing:string;workers:number;operationsPerWorker:number;launches:{launch:number;samples:{elapsedNs:number;operations:number;verified:boolean}[]}[]}[]}>;
 	applicationConfigurations:CfgId[]; schema: number; catalogue: Bench[]; hosts: Record<MachineId,Host>; reasons:string[];
 	configurations:Record<CfgId,string>;

@@ -229,3 +229,43 @@ test('feature cells do not combine changed engines, native dependencies or launc
   const policy=structuredClone(runtime);policy.native_dependency_policy='different closure';
   assert.notEqual(runtimeIdentity(runtime),runtimeIdentity(policy));
 });
+
+test('release tracks require exact release evidence and source provenance overrides version strings', async()=>{
+  const {releaseTrack,runtimeIdentity}=await import('./lib/feature-support.mjs');
+  const runtime={id:'wasmtime',description:{runtime_version:'46.0.1'}};
+  const releases={identities:{[runtimeIdentity(runtime)]:{version:'46.0.1',source:'https://example.test/release'}}};
+  assert.equal(releaseTrack(runtime,releases).channel,'stable');
+  assert.equal(releaseTrack({...runtime,command:['other-binary']},releases).channel,'development');
+  const main={...runtime,description:{...runtime.description,effective_configuration:{engine_source_revision:'a'.repeat(40),release_channel:'main'}}};
+  const pinned={identities:{[runtimeIdentity(main)]:{version:'46.0.1'}}};
+  assert.equal(releaseTrack(main,pinned).channel,'development');
+  assert.equal(releaseTrack(main,pinned).version,'a'.repeat(40));
+});
+
+test('feature evidence retains separate versions without filling across runtime identities',async()=>{
+  const {featureSupport}=await import('./lib/feature-support.mjs');
+  const directory=await mkdtemp(join(tmpdir(),'wasm-fyi-feature-versions-'));
+  try {
+    const workload={id:'features/gc/allocation/64',sha256:'a'.repeat(64),provenance:{scope:'execution'}};
+    const runtime=version=>({id:'r',description:{runtime_version:version}});
+    const report=(id,created,version)=>({id,created,host:{hostname:'test',os:'test',arch:'test'},runtimes:[runtime(version)],workloads:[workload],evidence:id+'.json'});
+    for(const [id,status] of [['stable','ok'],['main','failed']])await writeFile(join(directory,id+'.json'),JSON.stringify({trials:[{workload:workload.id,runtime_configuration:'r',scenario:'steady',status}]}));
+    const result=await featureSupport(directory,[report('main','2026-10-02','main-sha'),report('stable','2026-10-01','1.0.0')]);
+    const host=result.hosts[0];
+    assert.equal(host.versions.length,2);
+    assert.equal(host.configurations[0].features.find(f=>f.id==='gc').failed,1);
+    assert.equal(host.versions[1].features.find(f=>f.id==='gc').executed,1);
+  }finally{await rm(directory,{recursive:true,force:true});}
+});
+
+test('feature track passes require the oracle scenario declared by the contract',async()=>{
+  const {featureCasePassed}=await import('./lib/feature-support.mjs');
+  const compiled={status:'compile-only',scope:'execution',scenarios:['compile']};
+  assert.equal(featureCasePassed(compiled),false);
+  assert.equal(featureCasePassed({...compiled,scope:'compile-only'}),true);
+  assert.equal(featureCasePassed({...compiled,scope:'compile-and-instantiate'}),false);
+  assert.equal(featureCasePassed({...compiled,scope:'compile-and-instantiate',scenarios:['compile','instantiate']}),true);
+  assert.equal(featureCasePassed({...compiled,status:'executed',scenarios:['compile','first-call']}),false);
+  assert.equal(featureCasePassed({...compiled,status:'executed',scenarios:['compile','steady']}),true);
+  assert.equal(featureCasePassed({...compiled,status:'failed',scenarios:['compile','steady']}),false);
+});

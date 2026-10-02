@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { FEATS } from './data/features';
 import { RTB } from './data/runtimes';
 import { compatCell, type Scope } from './model';
-import { runtimeSupportCell, supportOf } from './support';
+import { runtimeSupportCell, supportOf, engineFeatureVersions, runtimeFeatureTrack } from './support';
 
 describe('optional plugin availability',()=>{
   for(const machine of ['m1','m2'] as const)it(`shows Wago interface plugins without inventing measured passes on ${machine}`,()=>{
@@ -33,5 +33,19 @@ describe('experimental feature configurations',()=>{
     const cell=runtimeSupportCell('v8',feature,scope);
     expect(cell.text).toBe('corpus passed · flag');
     expect(cell.detail).toContain('WasmFX flag');
+  });
+});
+
+describe('stable and development compatibility tracks',()=>{
+  for(const machine of ['m1','m2'] as const)it(`never presents unreleased Wago as stable on ${machine}`,()=>{
+    const scope:Scope={machine,baseline:'A',hide:{},weighting:'workload'};
+    const f=FEATS.find(f=>f.id==='simd')!;
+    expect(engineFeatureVersions('wago',scope,'stable')).toEqual([]);
+    expect(runtimeFeatureTrack('wago',f,scope,'stable').text).toBe('not collected');
+    expect(engineFeatureVersions('wago',scope,'development')[0]).toContain('9f01d145');
+    expect(runtimeFeatureTrack('wago',f,scope,'development').text).toBe('corpus passed');
+    expect(engineFeatureVersions('wasmtime',scope,'stable')).toContain('46.0.1');
+    expect(runtimeFeatureTrack('wasmtime',f,scope,'stable').text).toBe('corpus passed');
+    expect(runtimeFeatureTrack('wasmtime',f,scope,'development').text).toBe('not collected');
   });
 });

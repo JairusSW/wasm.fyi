@@ -1,6 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { featureCandidates } from './lib/feature-support.mjs';
+import { featureCandidates, featureSupport, featureCasePassed } from './lib/feature-support.mjs';
 import { validateV8Description } from './lib/v8-preflight.mjs';
 import { digest, site, config } from './lib/wasmbench.mjs';
 import { validateData } from './lib/validate-data.mjs';
@@ -82,6 +82,21 @@ for (const [machine, os] of [['m1','linux'],['m2','darwin']]) {
     }
   }
 }
+// Compact feature version evidence; no trial arrays enter the browser bundle.
+const support=await featureSupport(root,reports);
+output.featureVersions=Object.fromEntries(['m1','m2'].map(machine=>{
+  const os=machine==='m1'?'linux':'darwin';
+  const host=support.hosts.find(h=>h.host.os===os && h.host.hostname===reports.find(r=>r.host.os===os).host.hostname);
+  return [machine,(host?.versions || []).map(({features,...version})=>({...version,
+    description:{runtime:version.description.runtime,runtime_version:version.description.runtime_version,backend:version.description.backend},
+    features:features.map(({cases,...feature})=>{
+      const current=cases.filter(c=>catalogue.get(c.workload)?.artifactSha256===c.artifactSha256);
+      return {...feature,total:current.length,pass:current.filter(featureCasePassed).length,
+        executed:current.filter(c=>c.status==='executed').length,compiledOnly:current.filter(c=>c.status==='compile-only').length,
+        failed:current.filter(c=>c.status==='failed').length,unsupported:current.filter(c=>c.status==='unsupported').length,
+        reports:[...new Set(current.map(c=>c.report))],reasons:[...new Set(current.flatMap(c=>c.reasons))]};
+    })}))];
+}));
 for(const [machine,name] of [['m1','history-hub'],['m2','history']]) {
   const directory=join(site,'data',name);
   await validateData(directory);

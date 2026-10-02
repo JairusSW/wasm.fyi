@@ -18,17 +18,19 @@ export function featureCandidates(reports,runtime,workload,sha) {
 // references stay attached to each cell; versions never silently mix.
 export async function featureSupport(directory, reports) {
   const hosts = new Map();
+  const releases=JSON.parse(await readFile(new URL('../../data/feature-releases.json',import.meta.url),'utf8'));
   for (const report of [...reports].sort((a,b) => b.created.localeCompare(a.created))) {
     if (!report.workloads.some(w => w.id.startsWith('features/'))) continue;
     const hostKey=JSON.stringify([report.host.hostname,report.host.os,report.host.arch]);
-    if(!hosts.has(hostKey))hosts.set(hostKey,{host:report.host,configurations:new Map()});
+    if(!hosts.has(hostKey))hosts.set(hostKey,{host:report.host,configurations:new Map(),versions:new Map()});
     const host=hosts.get(hostKey);
     let raw;
     for(const runtime of report.runtimes) {
       const identity=runtimeIdentity(runtime);
-      if(!host.configurations.has(runtime.id))host.configurations.set(runtime.id,{id:runtime.id,identity,description:runtime.description,cases:new Map()});
-      const configuration=host.configurations.get(runtime.id);
-      if(configuration.identity!==identity)continue;
+      const key=runtime.id+'|'+identity;
+      if(!host.versions.has(key))host.versions.set(key,{id:runtime.id,identity,description:runtime.description,collectedAt:report.created,...releaseTrack(runtime,releases),cases:new Map()});
+      const configuration=host.versions.get(key);
+      if(!host.configurations.has(runtime.id))host.configurations.set(runtime.id,configuration);
       raw ??= JSON.parse(await readFile(join(directory,report.evidence),'utf8'));
       for(const workload of report.workloads) {
         if(!workload.id.startsWith('features/') || workload.provenance?.baseline || configuration.cases.has(workload.id))continue;
@@ -45,10 +47,30 @@ export async function featureSupport(directory, reports) {
     }
   }
   return {schema:1,policy:'Exact corpus oracles under pinned adapter configurations; excludes scalar baselines. Compile-only evidence is distinct from execution. Unsupported and failed cases retain reasons and have no substituted performance values. Cells only combine identical pinned runtime inputs/descriptions. This is not complete specification conformance.',expectedFeatures:featureIds,
-    hosts:[...hosts.values()].map(host=>({host:host.host,configurations:[...host.configurations.values()].map(configuration=>({id:configuration.id,identity:configuration.identity,description:configuration.description,
-      features:featureIds.map(feature=>{
-        const cases=[...configuration.cases.values()].filter(c=>c.workload.startsWith(`features/${feature}/`));
-        return {id:feature,coverage:cases.length?'tested':'not-tested',cases,executed:cases.filter(c=>c.status==='executed').length,
-          compiledOnly:cases.filter(c=>c.status==='compile-only').length,unsupported:cases.filter(c=>c.status==='unsupported').length,failed:cases.filter(c=>c.status==='failed').length};
-      })}))}))};
+    hosts:[...hosts.values()].map(host=>({host:host.host,configurations:[...host.configurations.values()].map(serializeConfiguration),versions:[...host.versions.values()].map(serializeConfiguration)}))};
+}
+function serializeConfiguration(configuration) {
+  const {cases:caseMap,...metadata}=configuration;
+  return {...metadata,features:featureIds.map(feature=>{
+    const cases=[...caseMap.values()].filter(c=>c.workload.startsWith(`features/${feature}/`));
+    return {id:feature,coverage:cases.length?'tested':'not-tested',cases,executed:cases.filter(c=>c.status==='executed').length,
+      compiledOnly:cases.filter(c=>c.status==='compile-only').length,unsupported:cases.filter(c=>c.status==='unsupported').length,failed:cases.filter(c=>c.status==='failed').length};
+  })};
+}
+// Source provenance takes precedence even when a development build reports a
+// release-looking version. Unregistered inputs cannot inherit a stable label.
+export function releaseTrack(runtime,releases={identities:{}}) {
+  const description=runtime.description || {},effective=description.effective_configuration || {};
+  const revision=effective.engine_source_revision;
+  const sourceBuild=revision || ['main','development','unreleased'].includes(effective.release_channel);
+  const development=sourceBuild || /^[a-f0-9]{40}(?:\/|$)/.test(description.runtime_version || '') || /prerelease|(?:^|[-.])(?:alpha|beta|dev|rc)(?:[-.0-9]|$)/i.test(description.runtime_version || '');
+  const stable=!sourceBuild && releases.identities[runtimeIdentity(runtime)];
+  return {channel:stable?'stable':'development',version:stable?.version || revision || (development?description.runtime_version:'unverified · '+(description.runtime_version || 'unidentified build')),
+    source:stable?.source || effective.engine_source_repository || '',revision:revision || null};
+}
+
+export function featureCasePassed(c) {
+  if(c.status==='failed'||c.status==='unsupported')return false;
+  const scenario=c.scope==='compile-only'?'compile':c.scope==='compile-and-instantiate'?'instantiate':'steady';
+  return c.scenarios.includes(scenario);
 }

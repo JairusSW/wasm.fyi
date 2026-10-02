@@ -1,5 +1,6 @@
+import { viewData } from './view-data';
 import { FEATURE_CFG, configVersion } from './data/runtimes';
-import { compatCell, type Scope } from './model';
+import { compatCell, featureContracts, type Scope } from './model';
 // Feature-support cell helpers shared by the Features matrix and proposal pages.
 import { SUPC } from './data/features';
 import type { FeatureRow, SupportCode } from './data/types';
@@ -49,4 +50,29 @@ export function runtimeSupportCell(rid:string,f:FeatureRow,scope:Scope) {
   if(!best)return {...supportCell('?'),text:'not collected',detail:'No sealed feature experiment for this engine on the selected host.'};
   if(code==='?' && best.result.fail+best.result.crash)return {...supportCell('?'),glyph:'✕',text:'rejected / failed',color:'var(--st-fail)',detail};
   return {...supportCell(code),text:code==='y'?'corpus passed':code==='f'?'corpus passed · flag':code==='p'?'partial corpus':'adapter unsupported',detail};
+}
+
+export function engineFeatureVersions(rid:string,scope:Scope,channel:'stable'|'development') {
+  const ids=FEATURE_CFG.filter(c=>c.rt===rid).map(c=>c.id);
+  return [...new Set(viewData.featureVersions[scope.machine].filter(v=>ids.some(id=>viewData.configurations[id]===v.id) && v.channel===channel).map(v=>v.version))];
+}
+export function runtimeFeatureTrack(rid:string,f:FeatureRow,scope:Scope,channel:'stable'|'development',version?:string) {
+  const selected=version || engineFeatureVersions(rid,scope,channel)[0];
+  const ids=FEATURE_CFG.filter(c=>c.rt===rid).map(c=>viewData.configurations[c.id]);
+  // One pinned identity supplies a complete family; older identities and other
+  // compiler modes cannot fill its missing contracts.
+  const candidates=viewData.featureVersions[scope.machine].filter(v=>ids.includes(v.id) && v.channel===channel && v.version===selected);
+  const latest=new Map<string,(typeof candidates)[number]>();
+  for(const v of candidates)if(!latest.has(v.id))latest.set(v.id,v);
+  const counts=[...latest.values()].map(v=>({v,f:v.features.find(x=>x.id===f.id)!})).filter(x=>x.f.total>0);
+  const expected=featureContracts(f.id).length;
+  const complete=counts.filter(x=>x.f.total===expected && x.f.pass===expected);
+  const flagged=(id:string)=>['v8-wasmfx','wasmtime-component-async'].includes(id);
+  const code:SupportCode=complete.some(x=>!flagged(x.v.id))?'y':complete.length?'f':counts.some(x=>x.f.pass>0)?'p':'?';
+  const failed=counts.some(x=>x.f.failed>0);
+  const detail=counts.map(({v,f})=>`${v.description.backend} · ${v.version}: ${f.pass}/${expected} passed, ${f.failed} failed, ${f.unsupported} unsupported\n${f.reasons.join('\n')}`).join('\n');
+  return {...supportCell(code),glyph:code==='?'&&failed?'✕':supportCell(code).glyph,
+    color:code==='?'&&failed?'var(--st-fail)':supportCell(code).color,
+    text:!counts.length?'not collected':code==='y'?'corpus passed':code==='f'?'corpus passed · flag':code==='p'?'partial corpus':failed?'rejected / failed':'adapter unsupported',detail,
+    version:selected || '',channel};
 }
