@@ -169,6 +169,10 @@ features-collect-hub:
 history-plan:
     node scripts/history.mjs plan
 
+# Queue the full corpus once per distinct Wednesday release and measurement recipe.
+history-performance-plan:
+    node scripts/performance-history.mjs plan
+
 # Collect released-engine official-suite history; unimplemented runners remain explicit gaps.
 history-collect:
     node scripts/history.mjs collect

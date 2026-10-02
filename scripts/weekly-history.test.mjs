@@ -3,6 +3,27 @@ import {wednesdays,snapshotKey} from './lib/weekly-history.mjs';
 import {engineSources} from './lib/engine-sources.mjs';
 import {historyLanes} from './lib/history-lanes.mjs';
 import {wasmerRelease,assertWasmerReceipt} from './lib/wasmer-release.mjs';
+import {performanceHistoryQueue,performanceCorpusIdentity} from './lib/performance-history.mjs';
+test('performance history reuses released identities without changing collection dates',()=>{
+ const base={engine:'wazero',status:'planned',repository:'tetratelabs/wazero',tag:'v1.12.0',publishedAt:'2026-09-01T00:00:00Z',configurations:['wazero']};
+ const plan={pins:[{...base,targetWeek:'2026-09-23T00:00:00Z'},{...base,targetWeek:'2026-09-30T00:00:00Z'},
+ {engine:'wago',status:'unavailable',targetWeek:'2025-10-01T00:00:00Z',reason:'No release'}]};
+ const context={host:'darwin/arm64',corpusSha256:'a'.repeat(64),recipeSha256:'b'.repeat(64),options:{launches:6}};
+ const queue=performanceHistoryQueue(plan,context);
+ assert.equal(queue.jobs.length,1);assert.equal(queue.jobs[0].targetWeeks.length,2);
+ assert.equal(queue.snapshots[2].status,'unavailable');assert(!('collectedAt' in queue.snapshots[0]));
+ for(const key of Object.keys(context))assert.notEqual(queue.jobs[0].id,performanceHistoryQueue(plan,{...context,[key]:key.endsWith('Sha256')?'c'.repeat(64):key==='options'?{launches:3}:'linux/x64'}).jobs[0].id);
+ assert.throws(()=>performanceHistoryQueue({pins:[plan.pins[0],plan.pins[0]]},context),/Duplicate engine/);
+ assert.throws(()=>performanceHistoryQueue({pins:[{...plan.pins[0],publishedAt:'2026-10-01T00:00:00Z'}]},context),/Invalid released/);
+ assert.throws(()=>performanceHistoryQueue({pins:[{...plan.pins[0],publishedAt:'invalid'}]},context),/Invalid released/);
+});
+test('history corpus identity includes oracles and ABI and ignores host-specific artifact paths',()=>{
+ const w={id:'applications/image-blur',sha256:'a'.repeat(64),artifact:'/mac/a.wasm',abi:'core',args:[192],reset:'stateless',oracle:{kind:'exact_u64',expected:['17']}};
+ const id=performanceCorpusIdentity([w]);
+ assert.equal(id,performanceCorpusIdentity([{...w,artifact:'/hub/a.wasm'}]));
+ for(const key of ['abi','args','reset','oracle'])assert.notEqual(id,performanceCorpusIdentity([{...w,[key]:'changed'}]));
+ assert.throws(()=>performanceCorpusIdentity([w,w]),/Duplicate history workload/);
+});
 test('Wasmer SDK selection requires the exact published source and binary receipt',()=>{
  const pin=wasmerRelease('7.4.2');
  const sha='a'.repeat(64);
