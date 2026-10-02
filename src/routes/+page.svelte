@@ -9,6 +9,7 @@
 	import { PROPOSAL_IDS, href } from '$lib/links';
 	import { TOTAL_WORKLOADS, sharedCount, disp, isOff, isVisible, ratio } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
+	import { shortCount, n0 } from '$lib/format';
 
 	const board = $derived.by(() => {
 		const s = ui.scope;
@@ -29,12 +30,12 @@
 	});
 	const nShared = $derived(`${sharedCount(ui.scope)} shared measured contracts`);
 
-	const tiles = [
-		[String(RTS.length), 'runtimes & engines tracked'],
-		[String(TOTAL_WORKLOADS), 'measured contracts'],
-		[String(viewData.statistics.timingSamples), 'recorded timing samples'],
-		[String(FEATS.length), 'feature families'],
-		['2', 'machines']
+	const tiles: [number, string][] = [
+		[RTS.length, 'runtimes & engines tracked'],
+		[TOTAL_WORKLOADS, 'measured contracts'],
+		[viewData.statistics.timingSamples, 'recorded timing samples'],
+		[FEATS.length, 'feature families'],
+		[2, 'machines']
 	];
 
 	const areas = [
@@ -123,7 +124,7 @@
 
 <section class="tiles-row">
 	{#each tiles as [v, l] (l)}
-		<div class="tile"><span class="mono tv">{v}</span><span class="fg3">{l}</span></div>
+		<div class="tile"><span class="mono tv" title={shortCount(v) === n0(v) ? undefined : n0(v)}>{shortCount(v)}</span><span class="fg3">{l}</span></div>
 	{/each}
 </section>
 

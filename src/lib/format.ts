@@ -4,6 +4,15 @@ export const n0 = (n: number): string => Math.round(n).toLocaleString('en-US');
 /** Repository provenance stays in the evidence key, outside the workload name. */
 export const workloadName = (id: string): string => id.replace(/^(wago|applications)\//, '');
 
+/** Compact count for headline figures: `9,412`, `48.2K`, `1.38M`. Below 10,000 keeps commas. */
+export const shortCount = (n: number): string => {
+	const a = Math.abs(n);
+	if (a < 10_000) return n0(n);
+	const [d, suffix] = a < 1e6 ? [1e3, 'K'] : a < 1e9 ? [1e6, 'M'] : [1e9, 'B'];
+	const v = n / d;
+	return (Math.abs(v) < 10 ? v.toFixed(2) : Math.abs(v) < 100 ? v.toFixed(1) : v.toFixed(0)).replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '') + suffix;
+};
+
 /** Ratio as a multiplier, e.g. `1.42×`. */
 export const fx = (r: number): string =>
 	(r >= 100 ? r.toFixed(0) : r >= 10 ? r.toFixed(1) : r.toFixed(2)) + '×';
