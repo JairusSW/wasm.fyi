@@ -3,29 +3,31 @@ import { join, resolve } from 'node:path';
 import { homedir, platform } from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { command, config, digest, exists, locked, site } from './lib/wasmbench.mjs';
+import {wasmerRelease} from './lib/wasmer-release.mjs';
 
 const action = process.argv[2] || 'local';
+const pin=wasmerRelease(process.env.WASMBENCH_WASMER_VERSION);
 if (action === 'hub') {
   const { hosts } = await config();
   const host = hosts.hub;
   if (!/^[a-zA-Z0-9_.@-]+$/.test(host.ssh) || !/^[a-zA-Z0-9_./-]+$/.test(host.workspace) || host.workspace.startsWith('/') || host.workspace.includes('..')) throw new Error('Invalid Hub toolchain host settings');
   const quote = value => "'" + String(value).replaceAll("'", "'\\''") + "'";
   const sockets = join(homedir(), '.cache/wasm-fyi/ssh'); await mkdir(sockets, { recursive: true });
-  const options = ['-o','BatchMode=yes','-o','ConnectTimeout=15','-o','ServerAliveInterval=15','-o','ServerAliveCountMax=3','-o','ControlMaster=auto','-o','ControlPersist=600','-o','ControlPath=' + join(sockets,digest(Buffer.from(site)).slice(0,12))];
+  const options = ['-o','BatchMode=yes','-o','ConnectTimeout=15','-o','ServerAliveInterval=15','-o','ServerAliveCountMax=3','-o','ControlMaster=auto','-o','ControlPersist=86400','-o','ControlPath=' + join(sockets,digest(Buffer.from(site)).slice(0,12))];
   const remote = host.workspace + '/wasmer-sdk-' + randomUUID();
   const ssh = (script, timeout=120_000) => command('ssh',[...options,host.ssh,'bash -lc ' + quote(script)],{timeout,stdio:'inherit'});
   ssh('set -eu; mkdir -p ' + [remote+'/scripts/lib',remote+'/.wasmbench'].map(quote).join(' '));
   const copy = (files,target) => command('rsync',['-a','-e',['ssh',...options.map(quote)].join(' '),...files,host.ssh+':'+remote+'/'+target],{stdio:'inherit',timeout:120_000});
   copy([join(site,'scripts/wasmer-sdk.mjs'),join(site,'scripts/llvm-toolchain.mjs')],'scripts/');
-  copy([join(site,'scripts/lib/wasmbench.mjs')],'scripts/lib/');
-  ssh(`export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$PATH"; set -eu; exec 9>"$HOME/${host.workspace}/measurement.lock"; flock -w 3600 9; cd ${quote(remote)}; node scripts/llvm-toolchain.mjs; node scripts/wasmer-sdk.mjs local`,150*60_000);
+  copy([join(site,'scripts/lib/wasmbench.mjs'),join(site,'scripts/lib/wasmer-release.mjs')],'scripts/lib/');
+  ssh(`export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$PATH"; export WASMBENCH_WASMER_VERSION=${quote(pin.version)}; set -eu; exec 9>"$HOME/${host.workspace}/measurement.lock"; flock -w 3600 9; cd ${quote(remote)}; node scripts/llvm-toolchain.mjs; node scripts/wasmer-sdk.mjs local`,150*60_000);
 } else if (action === 'local') await locked(async () => {
-  const root=join(homedir(),'.local/share/wasm-fyi/toolchains/wasmer-c-api-7.3.0');
+  const root=join(homedir(),`.local/share/wasm-fyi/toolchains/wasmer-c-api-${pin.version}`);
   const source=join(root,'source');
-  const revision='35c10644f7b0aad6fd9458624ceb8429fe7413c4';
+  const {revision}=pin;
   const llvm=resolve(process.env.WASMBENCH_LLVM_PREFIX || (platform()==='darwin'?'/opt/homebrew/opt/llvm@22':join(homedir(),'.local/share/wasm-fyi/toolchains/llvm-22')));
   const llvmVersion=command(join(llvm,'bin/llvm-config'),['--version']).toString().trim();
-  if(!llvmVersion.startsWith('22.1.'))throw new Error('Wasmer 7.3.0 LLVM requires an LLVM 22.1 prefix; set WASMBENCH_LLVM_PREFIX');
+  if(!llvmVersion.startsWith(pin.llvm+'.'))throw new Error(`Wasmer ${pin.version} LLVM requires an LLVM ${pin.llvm} prefix; set WASMBENCH_LLVM_PREFIX`);
   await mkdir(root,{recursive:true});
   let llvmBuildPrefix=llvm;
   let compatibility=null;
@@ -50,12 +52,14 @@ if (action === 'hub') {
       compatibility={reason:'Official LLVM archive references a missing build-host static zstd library; use host shared zstd',originalSystemLibraries:flags,wrapper,wrapperSha256:digest(Buffer.from(wrapper)),library,librarySha256:digest(await readFile(library)),rustflags:buildEnv.RUSTFLAGS};
     }
   }
-  if(!await exists(source))command('git',['clone','--depth','1','--branch','v7.3.0','https://github.com/wasmerio/wasmer.git',source],{stdio:'inherit'});
+  if(!await exists(source))command('git',['clone','--depth','1','--branch',pin.tag,'https://github.com/wasmerio/wasmer.git',source],{stdio:'inherit'});
   if(command('git',['rev-parse','HEAD'],{cwd:source}).toString().trim()!==revision)throw new Error('Wasmer source revision differs from the pinned release');
   command('git',['submodule','update','--init','--depth','1','lib/napi'],{cwd:source,stdio:'inherit'});
+  const napi=command('git',['rev-parse','HEAD:lib/napi'],{cwd:source}).toString().trim();
   const assertSource = () => {
+    if(command('git',['rev-parse','HEAD'],{cwd:source}).toString().trim()!==revision)throw new Error('Managed Wasmer source changed release revision');
     if(command('git',['status','--porcelain','--untracked-files=no'],{cwd:source}).toString().trim())throw new Error('Managed Wasmer source has tracked modifications');
-    if(command('git',['-C','lib/napi','rev-parse','HEAD'],{cwd:source}).toString().trim()!=='0b6cbe9c4a90d0f002c772ed4ce714107592a37c')throw new Error('Wasmer NAPI submodule differs from its pinned gitlink');
+    if(command('git',['-C','lib/napi','rev-parse','HEAD'],{cwd:source}).toString().trim()!==napi)throw new Error('Wasmer NAPI submodule differs from its pinned gitlink');
   };
   assertSource();
   // wasm_config_new constructs a Cranelift configuration before the caller can
@@ -69,7 +73,7 @@ if (action === 'hub') {
   const libraryName=platform()==='darwin'?'libwasmer.dylib':'libwasmer.so';
   const library=join(sdk,'lib',libraryName);await cp(join(root,'target/release',libraryName),library);
   await cp(join(source,'LICENSE'),join(sdk,'LICENSE'));
-  await writeFile(join(sdk,'build.json'),JSON.stringify({schema:1,version:'7.3.0',source:'https://github.com/wasmerio/wasmer',revision,
+  await writeFile(join(sdk,'build.json'),JSON.stringify({schema:1,version:pin.version,source:'https://github.com/wasmerio/wasmer',revision,
     submodules:command('git',['submodule','status','lib/napi'],{cwd:source}).toString().trim(),
     lockSha256:digest(await readFile(join(source,'Cargo.lock'))),features,argv:['cargo',...argv],
     rust:command('rustc',['--version']).toString().trim(),cargo:command('cargo',['--version']).toString().trim(),llvm:{prefix:llvm,buildPrefix:llvmBuildPrefix,version:llvmVersion,compatibility,

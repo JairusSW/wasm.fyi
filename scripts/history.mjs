@@ -4,6 +4,7 @@ import {spawnSync} from 'node:child_process';
 import {site,digest,exists,command} from './lib/wasmbench.mjs';
 import {wednesdays,weeklyPolicy} from './lib/weekly-history.mjs';
 import {engineSources,pinEngine} from './lib/engine-sources.mjs';
+import {historyLanes} from './lib/history-lanes.mjs';
 const action=process.argv[2] || 'plan';
 if(!['plan','collect'].includes(action))throw Error('Usage: history.mjs plan|collect');
 const directory=join(site,'.wasmbench/release-history');await mkdir(directory,{recursive:true});
@@ -19,19 +20,24 @@ await writeFile(join(directory,'plan.json'),JSON.stringify(plan,null,2)+'\n');
 await writeFile(join(durable,'plan.json'),JSON.stringify(plan,null,2)+'\n');
 if(action==='plan')console.log(JSON.stringify(plan,null,2));
 else {
-  const recipeSha256=digest(Buffer.concat(await Promise.all(['scripts/history.mjs','scripts/conformance.mjs','scripts/lib/conformance.mjs','scripts/lib/release-policy.mjs'].map(p=>readFile(join(site,p))))));
+  const recipeSha256=digest(Buffer.concat(await Promise.all(['scripts/history.mjs','scripts/lib/history-lanes.mjs','scripts/conformance.mjs','scripts/lib/conformance.mjs','scripts/lib/release-policy.mjs'].map(p=>readFile(join(site,p))))));
   const results=[];
   for(const targetWeek of dates){
+    const {lanes,gaps}=historyLanes(pins,targetWeek,process.platform);
+    const selectionSha256=digest(JSON.stringify({pins:pins.filter(p=>p.targetWeek===targetWeek),lanes,platform:process.platform,arch:process.arch}));
     const cached=previous.results.find(r=>r.targetWeek===targetWeek);
-    if(cached?.recipeSha256===recipeSha256 && cached.status==='collected' && cached.gaps.length===0 && await exists(join(cached.report,'report.json')) && digest(await readFile(join(cached.report,'report.json')))===cached.sha256){results.push(cached);continue;}
-    const lanes=['wasmtime-core','winch-core','wasmtime-component','wasmtime-wasi','wago-core','wago-component',...(process.platform==='linux'?['wago-wasi']:[])];
+    if(cached?.recipeSha256===recipeSha256 && cached.selectionSha256===selectionSha256 && cached.status==='collected' && await exists(join(cached.report,'report.json')) && digest(await readFile(join(cached.report,'report.json')))===cached.sha256){results.push(cached);continue;}
+    if(!lanes.length){
+      results.push({targetWeek,recipeSha256,selectionSha256,status:'unavailable',gaps});
+      await writeFile(join(directory,'results.json'),JSON.stringify({...plan,results},null,2)+'\n');
+      continue;
+    }
     const run=spawnSync(process.execPath,['scripts/conformance.mjs','collect'],{cwd:site,stdio:'inherit',env:{...process.env,WASMBENCH_RELEASE_AS_OF:targetWeek,WASMBENCH_CONFORMANCE_LANES:lanes.join(',')}});
     if(run.error)throw run.error;
     const report=(await readFile(join(site,'.wasmbench/latest-conformance-report.txt'),'utf8')).trim();
     const bytes=await readFile(join(report,'report.json')),evidence=JSON.parse(bytes);
     if(evidence.releaseAsOf!==targetWeek)throw Error('Historical release date does not match collected evidence');
-    const gaps=pins.filter(p=>p.targetWeek===targetWeek && !['wago','wasmtime'].includes(p.engine)).map(p=>({...p,status:'uncollected',reason:p.reason || 'A qualified official-suite release runner is not implemented for this engine.'}));
-    results.push({targetWeek,recipeSha256,collectedAt:evidence.created,report,sha256:digest(bytes),status:run.status===0?'collected':'runner-error',gaps});
+    results.push({targetWeek,recipeSha256,selectionSha256,collectedAt:evidence.created,report,sha256:digest(bytes),status:run.status===0?'collected':'runner-error',gaps});
     await writeFile(join(directory,'results.json'),JSON.stringify({...plan,results},null,2)+'\n');
     command(process.execPath,['scripts/publish-conformance.mjs',report],{stdio:'inherit'});
   }

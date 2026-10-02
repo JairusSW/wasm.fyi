@@ -9,6 +9,7 @@ import { patchHarness } from './lib/harness-patch.mjs';
 import { prepareFeatureTools } from './lib/feature-tools.mjs';
 import { releaseSource, assertReleasedSource } from './lib/release-policy.mjs';
 import { verifyV8 } from './lib/v8-preflight.mjs';
+import {wasmerRelease,assertWasmerReceipt} from './lib/wasmer-release.mjs';
 
 const action = process.argv[2];
 const { root, settings, run } = await harness();
@@ -24,9 +25,10 @@ if(['build','collect','corpus-check'].includes(action) && runtimes.split(',').in
 if(runtimes.split(',').includes('wavm') && ['build','collect','corpus-check'].includes(action))throw Error('The available WAVM SDK is an unreleased build and cannot be collected.');
 if(featureSuite && ['build','collect'].includes(action))await prepareFeatureTools(root,settings,runtimes.split(','));
 if (runtimes.split(',').some(id => ['wasmer-llvm','wasmer-singlepass'].includes(id))) {
-  const sdk=resolve(process.env.WASMBENCH_WASMER_SDK || join(homedir(),'.local/share/wasm-fyi/toolchains/wasmer-c-api-7.3.0/sdk'));
+  const pin=wasmerRelease(process.env.WASMBENCH_WASMER_VERSION);
+  const sdk=resolve(process.env.WASMBENCH_WASMER_SDK || join(homedir(),`.local/share/wasm-fyi/toolchains/wasmer-c-api-${pin.version}/sdk`));
   const manifest=JSON.parse(await readFile(join(sdk,'build.json')));
-  if(manifest.version!=='7.3.0' || manifest.revision!=='35c10644f7b0aad6fd9458624ceb8429fe7413c4' || digest(await readFile(join(sdk,'lib',manifest.library)))!==manifest.librarySha256)throw new Error('Selected Wasmer SDK differs from its pinned build manifest');
+  assertWasmerReceipt(manifest,pin,digest(await readFile(join(sdk,'lib',manifest.library))));
   process.env.WASMBENCH_WASMER_SDK=sdk;
 }
 const number = (name, fallback, minimum = 1) => {
