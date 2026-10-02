@@ -55,12 +55,12 @@ just setup
 just verify             # checks, tests, verified evidence, static site
 just update             # import configured reports and rebuild transactionally
 just bench-build
-just corpus-check       # 174 application contracts; correctness only
+just corpus-check       # 166 application contracts; correctness only
 just refresh            # collect fresh passes, retain snapshots and rebuild
 just deploy             # deploy the committed branch to GitHub Pages
 ```
 
-The existing pages now consume checksum-verified measurements for both hosts. The workload catalogue includes 174 application contracts across 27 use-case categories and 232 original feature contracts. Newly prepared application entries have no invented timings. Layout and styling are preserved; factual labels distinguish process lifetime RSS, extracted native images, compile-only checks and retrospective history. Missing measurements remain explicit.
+The existing pages now consume checksum-verified measurements for both hosts. The workload catalogue includes 166 application contracts across 27 use-case categories and 232 original feature contracts. Newly prepared application entries have no invented timings. Layout and styling are preserved; factual labels distinguish process lifetime RSS, extracted native images, compile-only checks and retrospective history. Missing measurements remain explicit.
 
 The [feature and history workflow](docs/features-and-history.md) covers 232 feature
 contracts across all 25 displayed families, 32 real worker tests, and eight weekly

@@ -30,9 +30,12 @@ for(const os of ['linux','darwin']) {
 const configurations = { A:'wasmtime', B:'wasmtime-winch', C:'wasmer-llvm', D:'wasmer-singlepass', E:'wazero', F:'v8-optimizing-only', G:'wago', H:'v8-liftoff-only', I:'wasmi', J:'wasmedge', K:'wasm3', L:'wavm', M:'spidermonkey', N:'jsc', O:'deno', P:'wamr', Q:'chicory', R:'wasmtime-component-async', S:'v8-wasmfx' };
 const scenarios = { compile:'compile', inst:'instantiate', first:'first-call', steady:'steady' };
 const memoryScenarios={rss:'steady',rssCompile:'compile',rssInst:'instantiate',rssFirst:'first-call'};
+const prepared=JSON.parse(await readFile(join(site,'corpora/catalog.json')));
+if(prepared.schema!==1)throw Error('Unknown prepared corpus schema');
+const preparedById=new Map(prepared.workloads.map(w=>[w.contractId,w]));
 const catalogue = new Map();
 for (const report of reports) for (const w of report.workloads) {
-  if (!/^(wago|features|applications)\//.test(w.id) || catalogue.has(w.id)) continue;
+  if (!/^(wago|features|applications)\//.test(w.id) || catalogue.has(w.id) || (!w.id.startsWith('features/') && preparedById.get(w.id)?.sha256!==w.sha256)) continue;
   const structure = report.artifactStructures?.find(a=>a.sha256===w.sha256);
   if(!structure || !Number.isSafeInteger(structure.bytes) || structure.bytes < 8)throw new Error('Missing measured artifact size: '+w.id);
   const baselineReport=reports.find(r=>r.runtimes.some(c=>c.id==='wasmtime') && r.workloads.some(item=>item.id===w.id && item.sha256===w.sha256));
@@ -40,7 +43,7 @@ for (const report of reports) for (const w of report.workloads) {
   catalogue.set(w.id, {
     id:w.id, artifactSha256:w.sha256, evidenceScope:w.provenance?.scope, baseline:!!w.provenance?.baseline, tags:[...(w.features || []),...(w.original_contract?.tags || [])],
     kb:structure.bytes/1024, ms:baseline?.status==='ok'?baseline.value/1e6:null,
-    group:workloadCategory(w),
+    group:preparedById.get(w.id)?.category || workloadCategory(w),
     purpose:w.original_contract?.desc || w.provenance?.description || `${w.provenance?.scope || w.abi} · ${w.work_unit} · ${w.units_per_invocation} units/invocation`,
     input:JSON.stringify(w.args || w.vectors || []), src:w.source || w.generator,
     unitsPerInvocation:w.units_per_invocation, workUnit:w.work_unit, abi:w.abi, reset:w.reset, oracle:w.oracle, imports:structure.imports
@@ -48,8 +51,6 @@ for (const report of reports) for (const w of report.workloads) {
 }
 // Prepared inventory adds discoverable workloads only; no measurement cells or
 // evidence report IDs are synthesized for these entries.
-const prepared=JSON.parse(await readFile(join(site,'corpora/catalog.json')));
-if(prepared.schema!==1)throw Error('Unknown prepared corpus schema');
 for(const w of prepared.workloads) {
   if(catalogue.has(w.contractId))continue;
   if(!/^[a-f0-9]{64}$/.test(w.sha256)||!Number.isSafeInteger(w.artifactBytes)||w.artifactBytes<8)throw Error('Invalid prepared artifact '+w.contractId);
@@ -126,13 +127,13 @@ for(const [machine,name] of [['m1','history-hub'],['m2','history']]) {
   }
   const baseline=snapshots.find(s=>s.id===weekly.baseline.report);
   if(!baseline)throw new Error('Missing fixed history baseline');
-  const history={points:weekly.results.map(w=>({date:w.targetWeek.slice(0,10),revision:w.revision,collectedAt:w.collectedAt,status:w.status})),workloads:baseline.workloads.map(w=>w.id),cells:{},versions:{}};
+  const history={points:weekly.results.map(w=>({date:w.targetWeek.slice(0,10),revision:w.revision,collectedAt:w.collectedAt,status:w.status})),workloads:baseline.workloads.filter(w=>catalogue.has(w.id)).map(w=>w.id),cells:{},versions:{}};
   output.history[machine]=history;
   for(const [slot,runtime] of Object.entries(configurations)) {
     const description=baseline.runtimes.find(c=>c.id===runtime)?.description;
     history.versions[slot]=weekly.results.map(w=>slot==='G'?w.revision:description?.runtime_version || 'not collected');
     for(const w of baseline.workloads) {
-      const canonical=catalogue.get(w.id);if(!canonical || canonical.artifactSha256!==w.sha256)throw new Error('Historical corpus differs from current contract: '+w.id);
+      const canonical=catalogue.get(w.id);if(!canonical)continue;if(canonical.artifactSha256!==w.sha256)throw new Error('Historical corpus differs from current contract: '+w.id);
       for(const [metric,scenario] of Object.entries({...scenarios,rss:'steady',code:'compile'})) {
         history.cells[`${w.id}|${slot}|${metric}`]=measuredHistory(weekly,snapshots,baseline.host,runtime,w.id,w.sha256,scenario).map((point,i)=>{
           const report=runtime==='wago'?snapshots.find(s=>s.runId===weekly.results[i].runId):baseline;

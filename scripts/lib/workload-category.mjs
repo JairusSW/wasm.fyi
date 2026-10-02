@@ -1,7 +1,7 @@
 // Classify the measured operation, independently of its source repository.
 export function workloadCategory(w) {
   if (w.id.startsWith('features/')) return `Features · ${w.provenance?.feature || w.features?.[0] || 'baseline'}`;
-  if (w.id.startsWith('applications/') && w.provenance?.category) return w.provenance.category;
+  if (w.provenance?.category) return w.provenance.category;
   const name = w.id.split('/')[1];
   const tags = new Set(w.original_contract?.tags || []);
   if (tags.has('bioinformatics') || ['lcs-substrings','needleman-wunsch-dna','smith-waterman-dna','fasttree-phylogeny','seqtk-fastq-to-fasta','polybench-nussinov'].includes(name)) return 'Bioinformatics';
@@ -38,4 +38,18 @@ export function workloadCategory(w) {
 export function compareWorkloads(a, b) {
   return Number(a.id.startsWith('features/')) - Number(b.id.startsWith('features/'))
     || a.group.localeCompare(b.group) || a.id.localeCompare(b.id, undefined, { numeric: true });
+}
+
+// Count identities, not input sizes or exports, when checking use-case coverage.
+export function algorithmCoverage(workloads) {
+  const groups=new Map(),algorithms=new Set();
+  for(const w of workloads) {
+    const algorithm=w.provenance?.algorithm;
+    if(typeof algorithm!=='string' || !algorithm || algorithms.has(algorithm))throw Error('Duplicate or missing algorithm identity: '+w.id);
+    algorithms.add(algorithm);
+    const category=workloadCategory(w);
+    const items=groups.get(category)||[];items.push(w);groups.set(category,items);
+  }
+  for(const [category,items] of groups)if(items.length<6||items.length>9)throw Error(`${category}: expected 6–9 distinct algorithms, got ${items.length}`);
+  return groups;
 }

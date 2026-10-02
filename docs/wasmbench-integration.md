@@ -3,7 +3,7 @@
 The visual layout is preserved; displayed data providers now consume verified reports and hosting links support the GitHub Pages project path. This document maps verified harness
 exports onto the existing data/model boundary; it does not implement that wiring.
 
-The inventory below records the initial exploratory import. Current two-host application, feature, worker and weekly-history collection is described in [features-and-history.md](features-and-history.md); [integration-audit.md](integration-audit.md) records the remaining view wiring. The current snapshot index is the authoritative report inventory. The [finalized application corpus](corpora.md) describes all 174 prepared contracts across 27 use-case categories and distinguishes them from measured results.
+The inventory below records the initial exploratory import. Current two-host application, feature, worker and weekly-history collection is described in [features-and-history.md](features-and-history.md); [integration-audit.md](integration-audit.md) records the remaining view wiring. The current snapshot index is the authoritative report inventory. The [finalized application corpus](corpora.md) describes all 166 prepared contracts across 27 use-case categories and distinguishes them from measured results.
 
 ## Gathered data
 
@@ -122,4 +122,4 @@ report while preserving the prior index. The original UI layout and styles are p
 
 ## Finalized application inventory
 
-See [Application corpus](corpora.md) for the 174 contracts across 27 use-case categories, original source kernels, correctness checks, adapter gaps, and manual overnight collection commands. Prepared workloads are listed without synthetic measurements.
+See [Application corpus](corpora.md) for the 166 contracts across 27 use-case categories, original source kernels, correctness checks, adapter gaps, and manual overnight collection commands. Prepared workloads are listed without synthetic measurements.

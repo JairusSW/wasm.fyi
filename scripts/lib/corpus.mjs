@@ -28,8 +28,17 @@ export async function prepareCorpus(settings, run, directory) {
   await mkdir(output, { recursive: true });
   const manifest = join(output, 'wago-suite.json');
   process.stdout.write(run('import-wago', '--source', source, '--ids', ids.join(','), '--out', manifest));
-  const workloads = parseCorpusJSON(await readFile(manifest, 'utf8'));
+  let workloads = parseCorpusJSON(await readFile(manifest, 'utf8'));
   if (!Array.isArray(workloads) || !workloads.length || new Set(workloads.map(w => w.id)).size !== workloads.length) throw new Error('Invalid imported corpus');
+  if(corpus.selection) {
+    const selection=JSON.parse(await readFile(resolve(site,corpus.selection),'utf8'));
+    if(selection.schema!==1 || !Array.isArray(selection.workloads))throw Error('Invalid algorithm selection');
+    const choices=new Map(selection.workloads.map(w=>[w.id,w]));
+    if(choices.size!==selection.workloads.length)throw Error('Duplicate selected contract');
+    const expected=selection.workloads.filter(w=>ids.includes(w.id.split('/')[1]));
+    workloads=workloads.filter(w=>choices.has(w.id)).map(w=>({...w,provenance:{...w.provenance,algorithm:choices.get(w.id).algorithm,category:choices.get(w.id).category}}));
+    if(expected.some(w=>!workloads.some(actual=>actual.id===w.id)))throw Error('Selected algorithm contract missing from upstream import');
+  }
   // Explicit Wago subsets remain bounded; opt applications in with their own IDs.
   const applicationIds = process.env.WASMBENCH_APPLICATION_IDS?.split(',').filter(Boolean);
   const applications = process.env.WASMBENCH_CORPUS_IDS && applicationIds === undefined ? [] : await applicationWorkloads(corpus.applications, applicationIds);

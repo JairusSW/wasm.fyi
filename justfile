@@ -227,7 +227,7 @@ wago-plugin-tests:
 applications-build:
     node scripts/application-corpus.mjs build
 
-# Check every application size in V8 and Wasmtime without collecting timings.
+# Check every application algorithm in V8 and Wasmtime without collecting timings.
 applications-check:
     node scripts/application-corpus.mjs check
 

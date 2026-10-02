@@ -2,20 +2,16 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { join, relative, resolve } from 'node:path';
 import { harness, site, digest } from './lib/wasmbench.mjs';
 import { prepareCorpus } from './lib/corpus.mjs';
-import { workloadCategory } from './lib/workload-category.mjs';
+import { workloadCategory, algorithmCoverage } from './lib/workload-category.mjs';
 
 if(process.env.WASMBENCH_CORPUS_IDS || process.env.WASMBENCH_APPLICATION_IDS || process.env.WASMBENCH_SUITE)throw Error('Corpus audit requires the complete configured inventory');
 const {settings,run}=await harness();
 const manifest=await prepareCorpus(settings,run);
 const ws=JSON.parse(await readFile(manifest));
-const groups=new Map();
-for(const w of ws) {
-  const category=workloadCategory(w);
-  const items=groups.get(category)||[];items.push(w);groups.set(category,items);
-}
+const groups=algorithmCoverage(ws);
 const source=resolve(site,settings.collection.wagoSource);
 const upstream=await readFile(join(source,'corpus/catalog.json'));
-const catalog={schema:1,policy:'Prepared corpus inventory, not measured performance. Unsupported contracts remain visible. Feature probes are separate and excluded from application averages.',
+const catalog={schema:1,policy:'Prepared corpus inventory, not measured performance. Unsupported contracts remain visible. One representative input per algorithm; every use-case category has 6–9 distinct algorithms. Feature probes are separate and excluded from application averages.',
   upstreamCatalogSha256:digest(upstream),upstreamBenchmarks:settings.corpus.ids.length,
   applicationContracts:ws.length,readyContracts:ws.filter(w=>!w.unsupported_reason).length,
   categories:[...groups].sort(([a],[b])=>a.localeCompare(b)).map(([category,items])=>({category,contracts:items.length,ready:items.filter(w=>!w.unsupported_reason).length})),
@@ -26,7 +22,7 @@ const catalog={schema:1,policy:'Prepared corpus inventory, not measured performa
     'Filesystem fixtures are deterministic sandbox inputs, not disk or network throughput. Browser DOM, network latency and UI integration require host-specific end-to-end suites.',
     'Video motion estimation and audio DSP are processing kernels; this corpus does not claim complete video-codec, speech recognition or font-shaping coverage.'
   ],
-  workloads:await Promise.all(ws.map(async w=>({id:w.id.replace(/^(wago|applications)\//,''),contractId:w.id,category:workloadCategory(w),sha256:w.sha256,artifactBytes:(await readFile(w.artifact)).length,
+  workloads:await Promise.all(ws.map(async w=>({id:w.id.replace(/^(wago|applications)\//,''),contractId:w.id,algorithm:w.provenance.algorithm,category:workloadCategory(w),sha256:w.sha256,artifactBytes:(await readFile(w.artifact)).length,
     kind:w.provenance?.kind || (w.original_contract?.command?'application':w.original_contract?.tags?.includes('semantic')?'library':'kernel'),
     description:w.provenance?.description || w.original_contract?.desc || w.work_unit,
     abi:w.abi,workUnit:w.work_unit,unitsPerInvocation:w.units_per_invocation,args:w.args,reset:w.reset,

@@ -24,18 +24,20 @@ if(build) {
   const manifest=[];
   for(const kernel of kernels) {
     const artifact=`artifacts/${kernel.id}.wasm`;
-    const flags=['--target=wasm32-unknown-unknown','-mcpu=mvp','-fno-builtin','-O3','-fno-vectorize','-fno-slp-vectorize','-nostdlib',`-DKIND=${kernel.kind}`,
+    const flags=['--target=wasm32-unknown-unknown','-mcpu=mvp','--no-wasm-opt','-mno-sign-ext','-mno-nontrapping-fptoint','-mno-bulk-memory','-fno-builtin','-ffp-contract=off','-O3','-fno-vectorize','-fno-slp-vectorize','-nostdlib',`-DKIND=${kernel.kind}`,
       '-Wl,--no-entry','-Wl,--export=benchmark','-Wl,--export-memory','-Wl,--max-memory=2359296','-Wl,--strip-all'];
     command(clang,[...flags,'sources/kernels.c','-o',artifact],{cwd:root});
     await chmod(join(root,artifact),0o644);
+    command('wasm-tools',['validate','--features=-all,floats',artifact],{cwd:root});
     const bytes=await readFile(join(root,artifact));
-    for(const size of kernel.sizes) {
+    {
+      const size=kernel.size;
       const input=Buffer.alloc(size*4);for(let i=0;i<size;i++)input.writeUInt32LE(sample(i),i*4);
-      manifest.push({schema:1,id:`applications/${kernel.id}/${size}`,family:'applications',artifact,sha256:digest(bytes),abi:'core',features:['mvp'],
+      manifest.push({schema:1,id:`applications/${kernel.id}`,family:'applications',artifact,sha256:digest(bytes),abi:'core',features:['mvp'],
         export:'benchmark',args:[size],work_unit:kernel.unit,units_per_invocation:kernel.units(size),reset:'stateless',
         oracle:{kind:'exact_u64',expected:[String(reference(kernel.kind,size))]},license:'MIT',source:'sources/kernels.c',
-        generator:'wasm-fyi-application-kernels-v1',dimension:['pixels','output_pixels','interior_pixels','blocks'].includes(kernel.unit)?'image_width':kernel.unit==='cells'?'grid_width':'items',size,
-        provenance:{category:kernel.category,kind:'kernel',description:kernel.description,scope:'execution',
+        generator:'wasm-fyi-application-kernels-v2',dimension:['pixels','output_pixels','interior_pixels','blocks'].includes(kernel.unit)?'image_width':kernel.unit==='cells'?'grid_width':'items',size,
+        provenance:{algorithm:kernel.id,category:kernel.category,kind:'kernel',description:kernel.description,scope:'execution',
           input:{generator:'index-mix32-v1',seed:'0x9e3779b9',size,sequenceSha256:digest(input),policy:'deterministic inputs regenerated inside every invocation; initialization and output checksum are included'},
           recipe:{source:'sources/kernels.c',sourceSha256:sourceSha,oracleSource:'scripts/lib/application-kernels.mjs',oracleSha256:oracleSha,compiler,compilerSha256,flags},
           oraclePolicy:'independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations'}});
@@ -44,12 +46,12 @@ if(build) {
   await writeFile(join(root,'manifest.json'),JSON.stringify(manifest,null,2)+'\n');
 }
 const manifest=JSON.parse(await readFile(join(root,'manifest.json')));
-if(manifest.length!==kernels.reduce((n,k)=>n+k.sizes.length,0))throw Error('Application corpus contract count changed');
+if(manifest.length!==kernels.length)throw Error('Application corpus contract count changed');
 const ids=new Set();
 for(const w of manifest) {
   if(ids.has(w.id))throw Error(`Duplicate ${w.id}`);ids.add(w.id);
-  const kernel=kernels.find(k=>w.id===`applications/${k.id}/${w.size}`);
-  if(!kernel || !kernel.sizes.includes(w.size) || w.args[0]!==w.size || w.units_per_invocation!==kernel.units(w.size))throw Error(`Invalid scaling contract ${w.id}`);
+  const kernel=kernels.find(k=>w.id===`applications/${k.id}`);
+  if(!kernel || kernel.size!==w.size || w.args[0]!==w.size || w.units_per_invocation!==kernel.units(w.size))throw Error(`Invalid representative-input contract ${w.id}`);
   if(w.provenance.recipe.sourceSha256!==sourceSha || w.provenance.recipe.oracleSha256!==oracleSha)throw Error(`Stale source/oracle: ${w.id}; rebuild`);
   const bytes=await readFile(resolve(root,w.artifact));
   if(digest(bytes)!==w.sha256)throw Error(`Artifact changed: ${w.id}`);
@@ -65,4 +67,4 @@ for(const w of manifest) {
   }
 }
 if(build){const finish=await installDirectory(root,destination);await finish(false);}
-console.log(`Verified ${manifest.length} contracts / ${kernels.length} application kernels, three sizes each; independent reference + repeated V8 calls${check&&!process.argv.includes('--v8-only')?' + Wasmtime':''}. No timings collected.`);
+console.log(`Verified ${manifest.length} contracts / ${kernels.length} application kernels, one representative input per algorithm; independent reference + repeated V8 calls${check&&!process.argv.includes('--v8-only')?' + Wasmtime':''}. No timings collected.`);

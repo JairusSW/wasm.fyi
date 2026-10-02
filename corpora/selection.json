@@ -1,0 +1,355 @@
+{
+  "schema": 1,
+  "workloads": [
+    {
+      "id": "wago/raytrace/render",
+      "algorithm": "ray-tracing",
+      "category": "3D & rendering"
+    },
+    {
+      "id": "wago/kissfft/complex-roundtrip",
+      "algorithm": "fft",
+      "category": "Audio"
+    },
+    {
+      "id": "wago/drwav/pcm-decode-seek",
+      "algorithm": "wav-decoding",
+      "category": "Audio"
+    },
+    {
+      "id": "wago/seqtk-fastq-to-fasta",
+      "algorithm": "seqtk-fastq-to-fasta",
+      "category": "Bioinformatics"
+    },
+    {
+      "id": "wago/lcs-substrings",
+      "algorithm": "lcs-substrings",
+      "category": "Bioinformatics"
+    },
+    {
+      "id": "wago/needleman-wunsch-dna",
+      "algorithm": "needleman-wunsch-dna",
+      "category": "Bioinformatics"
+    },
+    {
+      "id": "wago/smith-waterman-dna",
+      "algorithm": "smith-waterman-dna",
+      "category": "Bioinformatics"
+    },
+    {
+      "id": "wago/fasttree-phylogeny",
+      "algorithm": "fasttree-phylogeny",
+      "category": "Bioinformatics"
+    },
+    {
+      "id": "wago/polybench-nussinov/polybench_run",
+      "algorithm": "rna-nussinov",
+      "category": "Bioinformatics"
+    },
+    {
+      "id": "wago/tiny/add",
+      "algorithm": "core-call",
+      "category": "Calls & memory"
+    },
+    {
+      "id": "wago/fib_rec/fib",
+      "algorithm": "recursive-fibonacci",
+      "category": "Calls & memory"
+    },
+    {
+      "id": "wago/memory/sum",
+      "algorithm": "linear-memory-sum",
+      "category": "Calls & memory"
+    },
+    {
+      "id": "wago/memory_tree/run",
+      "algorithm": "binary-tree-traversal",
+      "category": "Calls & memory"
+    },
+    {
+      "id": "wago/dispatch/apply",
+      "algorithm": "indirect-dispatch",
+      "category": "Calls & memory"
+    },
+    {
+      "id": "wago/many_funcs/run",
+      "algorithm": "many-function-callchain",
+      "category": "Calls & memory"
+    },
+    {
+      "id": "wago/linked_list/sum",
+      "algorithm": "linked-list-traversal",
+      "category": "Calls & memory"
+    },
+    {
+      "id": "wago/clang-cpp-kernels",
+      "algorithm": "clang-compilation",
+      "category": "Compilers & development tools"
+    },
+    {
+      "id": "wago/swift-format-source",
+      "algorithm": "swift-formatting",
+      "category": "Compilers & development tools"
+    },
+    {
+      "id": "wago/esbuild-minify",
+      "algorithm": "javascript-minification",
+      "category": "Compilers & development tools"
+    },
+    {
+      "id": "wago/brotli-compress",
+      "algorithm": "brotli",
+      "category": "Compression"
+    },
+    {
+      "id": "wago/xzdec-decompress",
+      "algorithm": "lzma",
+      "category": "Compression"
+    },
+    {
+      "id": "wago/lz4/compress",
+      "algorithm": "lz4",
+      "category": "Compression"
+    },
+    {
+      "id": "wago/zlib/inflate",
+      "algorithm": "deflate",
+      "category": "Compression"
+    },
+    {
+      "id": "wago/zstd/decompress",
+      "algorithm": "zstd",
+      "category": "Compression"
+    },
+    {
+      "id": "wago/sqlite3-query",
+      "algorithm": "sqlite-sql-query",
+      "category": "Databases & analytics"
+    },
+    {
+      "id": "wago/tree-list",
+      "algorithm": "directory-tree-walk",
+      "category": "Files & directories"
+    },
+    {
+      "id": "wago/qoi/encode",
+      "algorithm": "qoi-image-encoding",
+      "category": "Graphics & images"
+    },
+    {
+      "id": "wago/nanosvg/parse-structure",
+      "algorithm": "svg-parsing",
+      "category": "Graphics & images"
+    },
+    {
+      "id": "wago/polybench-deriche/polybench_run",
+      "algorithm": "deriche-recursive-image-filter",
+      "category": "Graphics & images"
+    },
+    {
+      "id": "wago/yosys-counter",
+      "algorithm": "yosys-counter",
+      "category": "Hardware design"
+    },
+    {
+      "id": "wago/icemulti-image",
+      "algorithm": "icemulti-image",
+      "category": "Hardware design"
+    },
+    {
+      "id": "wago/icepack-pack",
+      "algorithm": "icepack-pack",
+      "category": "Hardware design"
+    },
+    {
+      "id": "wago/ecppll-clock",
+      "algorithm": "ecppll-clock",
+      "category": "Hardware design"
+    },
+    {
+      "id": "wago/sha256/hashN",
+      "algorithm": "sha256",
+      "category": "Hashing & cryptography"
+    },
+    {
+      "id": "wago/blake3/hash",
+      "algorithm": "blake3",
+      "category": "Hashing & cryptography"
+    },
+    {
+      "id": "wago/xxhash/xxh64-boundaries",
+      "algorithm": "xxhash64",
+      "category": "Hashing & cryptography"
+    },
+    {
+      "id": "wago/monocypher/aead-blake2b",
+      "algorithm": "xchacha20-poly1305",
+      "category": "Hashing & cryptography"
+    },
+    {
+      "id": "wago/age-keygen-public",
+      "algorithm": "x25519-key-derivation",
+      "category": "Hashing & cryptography"
+    },
+    {
+      "id": "wago/coreutils-sort",
+      "algorithm": "coreutils-sorting",
+      "category": "Integer & graph algorithms"
+    },
+    {
+      "id": "wago/fannkuch/run",
+      "algorithm": "fannkuch-permutation-flips",
+      "category": "Integer & graph algorithms"
+    },
+    {
+      "id": "wago/coremark/2k-performance",
+      "algorithm": "coremark-mixed-integer",
+      "category": "Integer & graph algorithms"
+    },
+    {
+      "id": "wago/polybench-floyd-warshall/polybench_run",
+      "algorithm": "floyd-warshall",
+      "category": "Integer & graph algorithms"
+    },
+    {
+      "id": "wago/json2csv-people",
+      "algorithm": "json-to-csv",
+      "category": "JSON & serialization"
+    },
+    {
+      "id": "wago/jq-json-transform",
+      "algorithm": "jq-query-transform",
+      "category": "JSON & serialization"
+    },
+    {
+      "id": "wago/json-as-simd/serializeN",
+      "algorithm": "json-serialization",
+      "category": "JSON & serialization"
+    },
+    {
+      "id": "wago/yyjson/parse-edit-write",
+      "algorithm": "json-parse-edit-write",
+      "category": "JSON & serialization"
+    },
+    {
+      "id": "wago/ruby-buckets",
+      "algorithm": "ruby-interpreter",
+      "category": "Language runtimes"
+    },
+    {
+      "id": "wago/lua-cli-buckets",
+      "algorithm": "lua-interpreter",
+      "category": "Language runtimes"
+    },
+    {
+      "id": "wago/quickjs-script",
+      "algorithm": "javascript-interpreter",
+      "category": "Language runtimes"
+    },
+    {
+      "id": "wago/polybench-gemm/polybench_run",
+      "algorithm": "matrix-multiplication",
+      "category": "Linear algebra"
+    },
+    {
+      "id": "wago/polybench-cholesky/polybench_run",
+      "algorithm": "cholesky-factorization",
+      "category": "Linear algebra"
+    },
+    {
+      "id": "wago/polybench-gramschmidt/polybench_run",
+      "algorithm": "gram-schmidt-qr",
+      "category": "Linear algebra"
+    },
+    {
+      "id": "wago/polybench-lu/polybench_run",
+      "algorithm": "lu-factorization",
+      "category": "Linear algebra"
+    },
+    {
+      "id": "wago/polybench-durbin/polybench_run",
+      "algorithm": "levinson-durbin",
+      "category": "Linear algebra"
+    },
+    {
+      "id": "wago/polybench-trisolv/polybench_run",
+      "algorithm": "triangular-forward-substitution",
+      "category": "Linear algebra"
+    },
+    {
+      "id": "wago/nbody/step",
+      "algorithm": "n-body-simulation",
+      "category": "Numerical arithmetic"
+    },
+    {
+      "id": "wago/libtommath/modular-arithmetic",
+      "algorithm": "big-integer-modular-arithmetic",
+      "category": "Numerical arithmetic"
+    },
+    {
+      "id": "wago/ripgrep-source",
+      "algorithm": "regex-source-search",
+      "category": "Search & indexing"
+    },
+    {
+      "id": "wago/polybench-correlation/polybench_run",
+      "algorithm": "pearson-correlation",
+      "category": "Statistics"
+    },
+    {
+      "id": "wago/polybench-adi/polybench_run",
+      "algorithm": "alternating-direction-implicit",
+      "category": "Stencils"
+    },
+    {
+      "id": "wago/polybench-fdtd-2d/polybench_run",
+      "algorithm": "finite-difference-time-domain",
+      "category": "Stencils"
+    },
+    {
+      "id": "wago/polybench-jacobi-2d/polybench_run",
+      "algorithm": "two-dimensional-jacobi",
+      "category": "Stencils"
+    },
+    {
+      "id": "wago/polybench-seidel-2d/polybench_run",
+      "algorithm": "gauss-seidel",
+      "category": "Stencils"
+    },
+    {
+      "id": "wago/sed-records",
+      "algorithm": "sed-stream-editing",
+      "category": "Text & parsing"
+    },
+    {
+      "id": "wago/coreutils-base64",
+      "algorithm": "base64-encoding",
+      "category": "Text & parsing"
+    },
+    {
+      "id": "wago/coreutils-wc",
+      "algorithm": "word-count",
+      "category": "Text & parsing"
+    },
+    {
+      "id": "wago/utf-as-simd/validateN",
+      "algorithm": "utf8-validation",
+      "category": "Text & parsing"
+    },
+    {
+      "id": "wago/utf8proc/normalize-casefold",
+      "algorithm": "unicode-normalization-casefold",
+      "category": "Text & parsing"
+    },
+    {
+      "id": "wago/fastfloat/decimal-parse",
+      "algorithm": "decimal-floating-point-parsing",
+      "category": "Text & parsing"
+    },
+    {
+      "id": "wago/pcre2/compile-match",
+      "algorithm": "regex-compilation-matching",
+      "category": "Text & parsing"
+    }
+  ]
+}
