@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "created": "2026-10-02T07:56:30.436Z",
+  "created": "2026-10-02T20:13:33.286Z",
   "policy": "Wednesday 00:00 UTC targets. Each engine uses the latest published non-development release available at that instant; no main, dirty or nightly builds. Published prereleases retain their prerelease label. Measurements run retrospectively on the recorded host and fixed corpus; collectedAt is never backdated. Repeated release identities can reuse verified measurements; missing releases and runners remain explicit gaps.",
   "weeks": [
     "2025-10-01T00:00:00.000Z",
@@ -2990,8 +2990,7 @@
       "targetWeek": "2025-10-01T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3007,8 +3006,7 @@
       "targetWeek": "2025-10-08T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3024,8 +3022,7 @@
       "targetWeek": "2025-10-15T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3041,8 +3038,7 @@
       "targetWeek": "2025-10-22T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3058,8 +3054,7 @@
       "targetWeek": "2025-10-29T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3075,8 +3070,7 @@
       "targetWeek": "2025-11-05T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3092,8 +3086,7 @@
       "targetWeek": "2025-11-12T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3109,8 +3102,7 @@
       "targetWeek": "2025-11-19T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3126,8 +3118,7 @@
       "targetWeek": "2025-11-26T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3143,8 +3134,7 @@
       "targetWeek": "2025-12-03T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3160,8 +3150,7 @@
       "targetWeek": "2025-12-10T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3177,8 +3166,7 @@
       "targetWeek": "2025-12-17T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3194,8 +3182,7 @@
       "targetWeek": "2025-12-24T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3211,8 +3198,7 @@
       "targetWeek": "2025-12-31T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3228,8 +3214,7 @@
       "targetWeek": "2026-01-07T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3245,8 +3230,7 @@
       "targetWeek": "2026-01-14T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3262,8 +3246,7 @@
       "targetWeek": "2026-01-21T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3279,8 +3262,7 @@
       "targetWeek": "2026-01-28T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3296,8 +3278,7 @@
       "targetWeek": "2026-02-04T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3313,8 +3294,7 @@
       "targetWeek": "2026-02-11T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3330,8 +3310,7 @@
       "targetWeek": "2026-02-18T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3347,8 +3326,7 @@
       "targetWeek": "2026-02-25T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3364,8 +3342,7 @@
       "targetWeek": "2026-03-04T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3381,8 +3358,7 @@
       "targetWeek": "2026-03-11T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3398,8 +3374,7 @@
       "targetWeek": "2026-03-18T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3415,8 +3390,7 @@
       "targetWeek": "2026-03-25T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3432,8 +3406,7 @@
       "targetWeek": "2026-04-01T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3449,8 +3422,7 @@
       "targetWeek": "2026-04-08T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3466,8 +3438,7 @@
       "targetWeek": "2026-04-15T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3483,8 +3454,7 @@
       "targetWeek": "2026-04-22T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3500,8 +3470,7 @@
       "targetWeek": "2026-04-29T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3517,8 +3486,7 @@
       "targetWeek": "2026-05-06T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3534,8 +3502,7 @@
       "targetWeek": "2026-05-13T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3551,8 +3518,7 @@
       "targetWeek": "2026-05-20T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3568,8 +3534,7 @@
       "targetWeek": "2026-05-27T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3585,8 +3550,7 @@
       "targetWeek": "2026-06-03T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3602,8 +3566,7 @@
       "targetWeek": "2026-06-10T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3619,8 +3582,7 @@
       "targetWeek": "2026-06-17T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3636,8 +3598,7 @@
       "targetWeek": "2026-06-24T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3653,8 +3614,7 @@
       "targetWeek": "2026-07-01T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3670,8 +3630,7 @@
       "targetWeek": "2026-07-08T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3687,8 +3646,7 @@
       "targetWeek": "2026-07-15T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3704,8 +3662,7 @@
       "targetWeek": "2026-07-22T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3721,8 +3678,7 @@
       "targetWeek": "2026-07-29T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3738,8 +3694,7 @@
       "targetWeek": "2026-08-05T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3755,8 +3710,7 @@
       "targetWeek": "2026-08-12T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3772,8 +3726,7 @@
       "targetWeek": "2026-08-19T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3789,8 +3742,7 @@
       "targetWeek": "2026-08-26T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3806,8 +3758,7 @@
       "targetWeek": "2026-09-02T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3823,8 +3774,7 @@
       "targetWeek": "2026-09-09T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3840,8 +3790,7 @@
       "targetWeek": "2026-09-16T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3857,8 +3806,7 @@
       "targetWeek": "2026-09-23T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",
@@ -3874,8 +3822,7 @@
       "targetWeek": "2026-09-30T00:00:00.000Z",
       "repository": "nodejs/node",
       "configurations": [
-        "v8-optimizing-only",
-        "v8-liftoff-only",
+        "v8",
         "v8-wasmfx"
       ],
       "status": "planned",

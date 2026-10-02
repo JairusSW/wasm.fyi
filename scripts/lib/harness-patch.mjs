@@ -17,11 +17,14 @@ function patchBase(root) {
       if (applies(['--reverse', '--check'])) continue;
       if (name === 'harness-capabilities.patch') {
         const check=(file,args)=>spawnSync('git',['apply',...args,join(site,'patches',file)],{cwd:root,stdio:'ignore'}).status===0;
-        if(check('harness-capabilities-legacy.patch',['--reverse','--check']) && check('harness-v8-wasmfx-lock.patch',['--check'])) {
-          command('git',['apply',join(site,'patches/harness-v8-wasmfx-lock.patch')],{cwd:root,stdio:'inherit'});
-          if(!applies(['--reverse','--check']))throw new Error('Upgraded V8 patch does not match its recorded complete state');
-          continue;
+        // Older Wago snapshots may already have the legacy capability layer.
+        // Unwind only the exact eager-WasmFX tier override, leaving the
+        // experimental feature flag and production-default V8 tiering intact.
+        if(check('harness-v8-wasmfx-lock.patch',['--reverse','--check'])) {
+          command('git',['apply','--reverse',join(site,'patches/harness-v8-wasmfx-lock.patch')],{cwd:root,stdio:'inherit'});
+          if(applies(['--reverse','--check']))continue;
         }
+        if(check('harness-capabilities-legacy.patch',['--reverse','--check']))continue;
       }
       if (name === 'harness-wasmer.patch') {
         // Upgrade only exact previous complete states, preserving unrelated
@@ -54,7 +57,7 @@ function patchBase(root) {
 }
 
 export function patchHarness(root) {
-  const names=['harness-wazero-compile-freshness.patch','harness-v8-compile-freshness.patch','harness-finder-metadata.patch'];
+  const names=['harness-wazero-compile-freshness.patch','harness-finder-metadata.patch'];
   const check=(name,args)=>spawnSync('git',['apply',...args,join(site,'patches',name)],{cwd:root,stdio:'ignore'}).status===0;
   const peeled=[];
   for(const name of [...names].reverse())if(check(name,['--reverse','--check'])) {

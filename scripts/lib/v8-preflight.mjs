@@ -3,22 +3,34 @@ import { join } from 'node:path';
 
 // Reject a stale optimizing pipeline before collecting or publishing timings.
 export function verifyV8(root, pin, runtimes) {
-  if (!runtimes.some(id => id.startsWith('v8-'))) return;
-  for (const mode of ['optimizing-only', 'liftoff-only', 'optimizing-wasmfx-only']) {
-    if (!runtimes.includes(mode==='optimizing-wasmfx-only'?'v8-wasmfx':`v8-${mode}`)) continue;
-    const flags = ['--allow-natives-syntax', mode === 'liftoff-only' ? '--liftoff-only' : '--no-liftoff', '--no-wasm-tier-up', '--no-wasm-lazy-compilation','--no-wasm-native-module-cache'];
-    if(mode==='optimizing-wasmfx-only')flags.push('--experimental-wasm-wasmfx');
-    const result = spawnSync(process.execPath, [...flags, join(root, 'adapters/v8/adapter.mjs'), `--compiler-mode=${mode}`], {
+  if (!runtimes.some(id => id === 'v8' || id === 'v8-wasmfx')) return;
+  for (const [id,mode] of [['v8','production-default'],['v8-wasmfx','production-default-wasmfx']]) {
+    if (!runtimes.includes(id)) continue;
+    const flags = mode==='production-default-wasmfx'?['--experimental-wasm-wasmfx']:[];
+    const result = spawnSync(process.execPath, [...flags, join(root, 'adapters/v8/adapter.mjs')], {
       input: JSON.stringify({version:1,id:'tier-preflight',method:'describe'})+'\n', encoding:'utf8', timeout:30_000
     });
     if (result.status !== 0) throw new Error(`V8 ${mode} preflight failed: ${result.stderr || result.error}`);
     const description=JSON.parse(result.stdout.trim()).description;
     validateV8Description(description, pin, mode);
-    console.log(`Verified V8 ${pin.v8}: eager ${mode}, tier-up disabled`);
+    console.log(`Verified V8 ${pin.v8}: ${mode}`);
   }
 }
 
 export function validateV8Description(description, pin, mode, {allowLegacyCache=false}={}) {
+  if(mode==='production-default'||mode==='production-default-wasmfx') {
+    const configuration=description?.effective_configuration;
+    const recordedFlags=JSON.parse(configuration?.flags || 'null');
+    const wasmfx=mode==='production-default-wasmfx';
+    const forbidden=['--allow-natives-syntax','--liftoff-only','--no-liftoff','--no-wasm-tier-up','--no-wasm-lazy-compilation'];
+    const validFlags=Array.isArray(recordedFlags) && recordedFlags.every(flag=>!forbidden.includes(flag)) &&
+      (wasmfx?recordedFlags.includes('--experimental-wasm-wasmfx'):!recordedFlags.includes('--experimental-wasm-wasmfx'));
+    if(description?.build!==`v${pin.version}` || description?.runtime_version!==pin.v8 || description?.backend!=='production-default-tiering' ||
+      configuration?.tiering!=='production-default' || !validFlags || configuration?.compiler_mode_probe) {
+      throw new Error(`V8 differs from pinned Node ${pin.version}/V8 ${pin.v8} or does not use production-default tiering`);
+    }
+    return;
+  }
   const flags=['--allow-natives-syntax', mode==='liftoff-only'?'--liftoff-only':'--no-liftoff','--no-wasm-tier-up','--no-wasm-lazy-compilation','--no-wasm-native-module-cache'];
   if(mode==='optimizing-wasmfx-only')flags.push('--experimental-wasm-wasmfx');
   const configuration=description?.effective_configuration;

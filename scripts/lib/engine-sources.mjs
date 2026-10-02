@@ -5,7 +5,7 @@ export const engineSources={
   wazero:{repository:'tetratelabs/wazero',configurations:['wazero']},
   wasmtime:{repository:'bytecodealliance/wasmtime',configurations:['wasmtime','wasmtime-winch','wasmtime-component-async']},
   wasmer:{repository:'wasmerio/wasmer',configurations:['wasmer-llvm','wasmer-singlepass']},
-  v8:{repository:'nodejs/node',provider:'node',configurations:['v8-optimizing-only','v8-liftoff-only','v8-wasmfx']},
+  v8:{repository:'nodejs/node',provider:'node',configurations:['v8','v8-wasmfx']},
   wasmi:{repository:'wasmi-labs/wasmi',configurations:['wasmi']},
   wasmedge:{repository:'WasmEdge/WasmEdge',configurations:['wasmedge']},
   wamr:{repository:'bytecodealliance/wasm-micro-runtime',configurations:['wamr']},

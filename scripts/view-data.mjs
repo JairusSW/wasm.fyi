@@ -25,9 +25,12 @@ for(const report of reports)for(const runtime of report.runtimes) {
 }
 for(const os of ['linux','darwin']) {
   const experimental=reports.find(r=>r.host.os===os && r.runtimes.some(c=>c.id==='v8-wasmfx'))?.runtimes.find(c=>c.id==='v8-wasmfx');
-  if(experimental)validateV8Description(experimental.description,settings.node,'optimizing-wasmfx-only',{allowLegacyCache:true});
+  if(experimental) {
+    try { validateV8Description(experimental.description,settings.node,'production-default-wasmfx'); }
+    catch { validateV8Description(experimental.description,settings.node,'optimizing-wasmfx-only',{allowLegacyCache:true}); }
+  }
 }
-const configurations = { A:'wasmtime', B:'wasmtime-winch', C:'wasmer-llvm', D:'wasmer-singlepass', E:'wazero', F:'v8-optimizing-only', G:'wago', H:'v8-liftoff-only', I:'wasmi', J:'wasmedge', K:'wasm3', L:'wavm', M:'spidermonkey', N:'jsc', O:'deno', P:'wamr', Q:'chicory', R:'wasmtime-component-async', S:'v8-wasmfx' };
+const configurations = { A:'wasmtime', B:'wasmtime-winch', C:'wasmer-llvm', D:'wasmer-singlepass', E:'wazero', F:'v8', G:'wago', H:'v8-liftoff-only', I:'wasmi', J:'wasmedge', K:'wasm3', L:'wavm', M:'spidermonkey', N:'jsc', O:'deno', P:'wamr', Q:'chicory', R:'wasmtime-component-async', S:'v8-wasmfx' };
 const scenarios = { compile:'compile', inst:'instantiate', first:'first-call', steady:'steady' };
 const memoryScenarios={rss:'steady',rssCompile:'compile',rssInst:'instantiate',rssFirst:'first-call'};
 const prepared=JSON.parse(await readFile(join(site,'corpora/catalog.json')));
@@ -64,7 +67,7 @@ for(const w of prepared.workloads) {
 const reasons=new Map();
 function reasonId(reason) { if(!reasons.has(reason)){reasons.set(reason,reasons.size);output.reasons.push(reason);}return reasons.get(reason); }
 const status = { ok:'ok', unsupported:'unsupported', failed:'failed', 'not-measured':'nm', 'not-collected':'nm' };
-const output = { schema:1, configurations, applicationConfigurations:Object.keys(configurations).filter(slot=>settings.collection.runtimes.includes(configurations[slot])), catalogue:[...catalogue.values()].sort(compareWorkloads), hosts:{}, reports:{}, reasons:[],history:{},threads:{},statistics:{timingSamples:reports.reduce((n,r)=>n+r.summaries.reduce((n,s)=>n+(s.recorded_samples || 0),0),0)} };
+const output = { schema:1, configurations, applicationConfigurations:[], catalogue:[...catalogue.values()].sort(compareWorkloads), hosts:{}, reports:{}, reasons:[],history:{},threads:{},statistics:{timingSamples:reports.reduce((n,r)=>n+r.summaries.reduce((n,s)=>n+(s.recorded_samples || 0),0),0)} };
 for (const report of reports) output.reports[report.id] = { runId:report.runId, created:report.created, evidence:report.evidence, sha256:report.evidenceSha256, options:report.options,memorySource:report.memorySource,codeSource:report.codeSource,configurations:report.runtimes.map(c=>c.id),host:report.host.os };
 for (const [machine, os] of [['m1','linux'],['m2','darwin']]) {
   const selected = reports.filter(r=>r.host.os===os);
@@ -104,6 +107,17 @@ for (const [machine, os] of [['m1','linux'],['m2','darwin']]) {
     }
   }
 }
+// A configured-but-not-yet-measured application engine stays visible in the
+// workload matrix, while leaderboards share only configurations recorded on
+// both hosts. This keeps a newly selected production mode from blanking all
+// other measured comparisons while its first report is being collected.
+const latestApplicationRuntimeIds=Object.fromEntries(['linux','darwin'].map(os=>{
+  const latest=reports.find(r=>r.host.os===os && r.workloads.some(w=>w.id.startsWith('applications/')) &&
+    r.summaries.some(s=>s.profile==='timing' && s.scenario==='steady'));
+  return [os,new Set(latest?.runtimes.map(runtime=>runtime.id) || [])];
+}));
+output.applicationConfigurations=Object.keys(configurations).filter(slot=>settings.collection.runtimes.includes(configurations[slot]) &&
+  latestApplicationRuntimeIds.linux.has(configurations[slot]) && latestApplicationRuntimeIds.darwin.has(configurations[slot]));
 // Compact feature version evidence; no trial arrays enter the browser bundle.
 const support=await featureSupport(root,reports);
 output.featureVersions=Object.fromEntries(['m1','m2'].map(machine=>{

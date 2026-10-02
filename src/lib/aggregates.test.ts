@@ -48,7 +48,7 @@ describe('recorded aggregate cohort',()=>{
 		expect(result?.ratioInterval).toBeUndefined();
 	});
   it('keeps feature-only configurations outside application and history comparison cohorts',()=>{
-    expect(viewData.applicationConfigurations).toEqual(['A','B','C','D','E','F','G','H']);
+    expect(viewData.applicationConfigurations).toEqual(['A','B','C','D','E','G']);
     expect(Object.keys(viewData.configurations).length).toBeGreaterThan(viewData.applicationConfigurations.length);
     const result=aggregate(scope,'lat','A',3)!;
     expect(result).not.toBeNull();

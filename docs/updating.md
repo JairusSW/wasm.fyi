@@ -91,7 +91,7 @@ a supported configuration/scenario; no timing headline can come from that pass.
 For a bounded local validation or a different host configuration:
 
 ```sh
-WASMBENCH_RUNTIMES=wazero,v8-optimizing-only,v8-liftoff-only WASMBENCH_LAUNCHES=3 \
+WASMBENCH_RUNTIMES=wazero,v8 WASMBENCH_LAUNCHES=3 \
 WASMBENCH_SAMPLES=3 WASMBENCH_OPERATIONS=10 just refresh-local
 ```
 
@@ -269,8 +269,8 @@ The manual refresh includes the original feature corpus, released-engine proposa
 
 ### V8 compiler tiers
 
-Headline V8 results use separate `v8-optimizing-only` (Turboshaft) and
-`v8-liftoff-only` configurations. Both disable tier-up and lazy compilation.
+Headline V8 results use Node's production-default tiering. Optional forced-tier
+experiments stay out of the main benchmark comparison.
 The optimizing mode uses `--no-liftoff`; the baseline uses `--liftoff-only`.
 Both include `--allow-natives-syntax` for a separate calibration module whose
 export is inspected before its first call. Calibration does not inspect every

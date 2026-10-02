@@ -63,7 +63,9 @@ describe('combined compatibility and corpus counts',()=>{
     const feature=FEATS.find(f=>f.id==='simd')!;
     const track=runtimeFeatureTrack('v8',feature,scope,'stable');
     expect(track.pass).toBe(track.expected);
-    expect(track.configurations.length).toBeGreaterThan(1);
+    expect(track.configurations.length).toBeGreaterThan(0);
+    expect(track.configurations.every(c=>['v8','v8-wasmfx'].includes(c.id))).toBe(true);
+    expect(track.configurations.some(c=>c.backend.includes('production-default'))).toBe(true);
     for(const c of track.configurations){
       expect(c.pass+c.failed+c.skipped+c.missing).toBe(c.total);
       expect(c.contracts).toHaveLength(c.total-c.missing);

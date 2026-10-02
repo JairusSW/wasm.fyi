@@ -55,7 +55,7 @@ export function runtimeSupportCell(rid:string,f:FeatureRow,scope:Scope) {
 }
 
 export function engineFeatureVersions(rid:string,scope:Scope,channel:'stable'|'development') {
-  const ids=FEATURE_CFG.filter(c=>c.rt===rid).map(c=>c.id);
+  const ids=FEATURE_CFG.filter(c=>c.rt===rid && !['v8-wasmfx','wasmtime-component-async'].includes(viewData.configurations[c.id])).map(c=>c.id);
   return [...new Set(viewData.featureVersions[scope.machine].filter(v=>ids.some(id=>viewData.configurations[id]===v.id) && v.channel===channel).map(v=>v.version))];
 }
 export function runtimeFeatureTrack(rid:string,f:FeatureRow,scope:Scope,channel:'stable'|'development',version?:string) {

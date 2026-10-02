@@ -46,8 +46,11 @@ describe('existing workload views consume measured evidence',()=>{
 		expect(ALLB.some(b=>b.id==='sqlite-speedtest1')).toBe(false);
 	});
 	it('lists every benchmarked engine configuration on the Benchmarks page',()=>{
-		expect(CFG.map(config=>config.id)).toEqual(Object.keys(viewData.configurations));
-		expect(viewData.applicationConfigurations).toEqual(['A','B','C','D','E','F','G','H']);
+		expect(CFG.map(config=>config.id)).toEqual(Object.keys(viewData.configurations).filter(id=>id!=='H'));
+		expect(CFG.find(config=>config.id==='F')?.be).toBe('production-default');
+		expect(CFG.some(config=>config.id==='H')).toBe(false);
+		expect(viewData.configurations.F).toBe('v8');
+		expect(viewData.applicationConfigurations).toEqual(['A','B','C','D','E','G']);
 		for(const id of ['I','J','K','M','N','O','P','Q','R','S'] as const)
 			expect(viewData.hosts.m1.configurations[id]||viewData.hosts.m2.configurations[id]).toBeDefined();
 	});
