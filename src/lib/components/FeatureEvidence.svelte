@@ -48,7 +48,7 @@
 </dialog>
 
 <style>
-  dialog { margin:auto;width:min(650px,calc(100vw - 32px));max-height:85dvh;overflow:auto;background:var(--bg);color:var(--fg);border:1px solid var(--line2);padding:18px;box-shadow:var(--shadow-float); }
+  dialog { box-sizing:border-box;margin:auto;width:min(650px,calc(100vw - 32px));max-height:85dvh;overflow:auto;background:var(--bg);color:var(--fg);border:1px solid var(--line2);padding:18px;box-shadow:var(--shadow-float); }
   dialog::backdrop { background:rgb(0 0 0 / .55); }
   header,.backend { display:flex;justify-content:space-between;gap:16px;align-items:baseline; }
   h2 { margin:0;font-size:16px; }
