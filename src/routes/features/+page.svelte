@@ -12,7 +12,7 @@
 	import { PROPOSAL_IDS } from '$lib/links';
 	import { featureContracts } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
-	import { supportCell, engineFeatureVersions, runtimeFeatureTrack, WAGO_PLUGIN_SUPPORT } from '$lib/support';
+	import { supportCell, engineFeatureVersions, runtimeFeatureTrack, WAGO_PLUGIN_SUPPORT, pluginTests, pluginSupportEvidence } from '$lib/support';
 
 	let evidence=$state<{feature:string;engine:string;track:FeatureTrack}|null>(null);
   const channels=['stable'] as const;
@@ -135,8 +135,13 @@
 								<div class="mono micro fg3">{r.count}</div>
 							</td>
 							{#each r.cells as x, k (k)}
+                  {@const supportedPlugin=featCols[k].rt==='wago'?pluginSupportEvidence(r.f.id,ui.scope.machine):undefined}
 								<td class="fcell">
-                  {#if x.tracks}
+                  {#if supportedPlugin}
+                    <a class="support-track mono" href={siteHref(supportedPlugin.evidence)} style:background={supportCell('y').bg} style:color={supportCell('y').color}
+                      aria-label={`${r.f.name}, Wago: supported via plugin. Open suite evidence`}
+                      data-tip-summary={JSON.stringify({title:`Wago · ${r.f.name}`,subtitle:`Supported via plugin ${supportedPlugin.version}`,rows:[{label:supportedPlugin.label,pass:supportedPlugin.passed,total:supportedPlugin.total,failed:supportedPlugin.failed,skipped:supportedPlugin.skipped,missing:0}],hint:'Plugin suite results; performance remains unmeasured. Click for the sealed report.'})}><span>●</span><span>supported</span></a>
+                  {:else if x.tracks}
                     {#each x.tracks as track}
                       <button class="support-track mono" class:development={track.channel==='development'} style:background={track.bg} style:color={track.color}
                         aria-label={`${r.f.name}, ${featCols[k].label}, ${track.channel}: ${track.text}, ${track.pass} of ${track.expected} tests passed. Open corpus results`}
@@ -146,11 +151,17 @@
                         <span>{track.configurations.length?`${track.pass}/${track.expected}`:'—'}</span>
                       </button>
                     {/each}
-                    {#if featCols[k].rt==='wago' && WAGO_PLUGIN_SUPPORT[r.f.id]}
-                      <div class="micro fg3 nowrap" data-tip="Documented optional plugin availability; no sealed plugin measurement on either track.">Plugin · unmeasured</div>
-                    {/if}
                   {:else}<div class="mono small nowrap" style:color={x.color}><span class="micro">{x.glyph}</span> {x.text}</div>{/if}
-                </td>
+                                    {#if featCols[k].rt==='wago' && WAGO_PLUGIN_SUPPORT[r.f.id]}
+                      {@const plugin=pluginTests[ui.scope.machine][r.f.id]}
+                      {#if plugin}
+                        <a class="micro fg3 nowrap link" href={siteHref(plugin.evidence)}
+                          data-tip-summary={JSON.stringify({title:`${r.f.name} · ${plugin.label}`,subtitle:`Wago ${plugin.engine} · plugin ${plugin.version}`,rows:[{label:plugin.label,pass:plugin.passed,total:plugin.total,failed:plugin.failed,skipped:plugin.skipped,missing:0}],hint:'Separate correctness suite; performance remains unmeasured. Click for the sealed report.'})}>{plugin.label} · {plugin.passed}/{plugin.total}</a>
+                      {:else}
+                        <div class="micro fg3 nowrap" data-tip="Supported through the published Wago plugin. Performance remains unmeasured.">via plugin</div>
+                      {/if}
+                    {/if}
+</td>
 							{/each}
 						</tr>
 					{/each}
@@ -159,7 +170,7 @@
 		</table>
 	</div>
 	<div class="note">
-    Released engines only. Counts show passed / total corpus tests for one configuration; click for backend and individual test results. ⚑ requires an experimental flag. Browser builds and plugin configurations are unmeasured. <a href={siteHref('/wasmbench/feature-support.json')}>Full evidence</a>.
+    Released engines only. Counts show passed / total corpus tests for one configuration; click for backend and individual test results. ⚑ requires an experimental flag. Browser builds and plugin performance are unmeasured. Wago plugin features are marked supported. Plugin suite links show separate correctness results. <a href={siteHref('/wasmbench/feature-support.json')}>Full evidence</a>.
     <details><summary>Measurement scope</summary><p>Unreleased builds are excluded. The latest measured release is shown for each engine. Compilation and execution contracts use their declared oracles. Adapter-unsupported results do not establish that an engine lacks a feature; these representative tests do not establish complete specification conformance. Wago provides optional WASI and Component Model plugins, listed separately from measured results. Feature workloads never enter application averages.</p></details>
 	</div>
 {:else}

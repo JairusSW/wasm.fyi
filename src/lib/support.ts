@@ -23,6 +23,7 @@ export const browserCell = (v: string) =>
 
 /** Support follows recorded configurations, with explicit experimental flags. */
 export const supportOf = (rid:string,f:FeatureRow,scope:Scope):SupportCode => {
+  if(rid==='wago' && pluginSupportEvidence(f.id,scope.machine))return 'y';
   const counts=FEATURE_CFG.filter(c=>c.rt===rid).map(c=>({config:c,result:compatCell(f.id,c.id,scope)})).filter(x=>x.result.run);
   if(!counts.length)return '?';
   const complete=counts.filter(({result:c})=>c.total>0 && c.pass===c.total);
@@ -43,6 +44,7 @@ export const WAGO_PLUGIN_SUPPORT:Record<string,{plugin:string;source:string}> = 
 export function runtimeSupportCell(rid:string,f:FeatureRow,scope:Scope) {
   const code=supportOf(rid,f,scope);
   const plugin=rid==='wago'?WAGO_PLUGIN_SUPPORT[f.id]:undefined;
+  if(plugin && pluginSupportEvidence(f.id,scope.machine))return {...supportCell('y'),text:'supported via plugin',detail:`Supported through ${plugin.plugin}. Published plugin correctness suite collected; performance remains unmeasured. ${plugin.source}`};
   if(plugin && code==='?')return {...supportCell('p'),text:'via plugin',detail:`Available through ${plugin.plugin}. Plugin configuration has not been benchmarked here. ${plugin.source}`};
   const configurations=FEATURE_CFG.filter(c=>c.rt===rid).map(c=>({c,result:compatCell(f.id,c.id,scope)})).filter(x=>x.result.run);
   const best=[...configurations].sort((a,b)=>b.result.pass-a.result.pass || a.result.fail-b.result.fail)[0];
@@ -80,3 +82,13 @@ export function runtimeFeatureTrack(rid:string,f:FeatureRow,scope:Scope,channel:
 }
 
 export type FeatureTrack = ReturnType<typeof runtimeFeatureTrack>;
+
+/** Official/plugin suite evidence remains separate from performance contracts. */
+import pluginInput from './data/plugin-tests.json';
+export interface PluginTestEvidence {label:string;passed:number;failed:number;skipped:number;total:number;created:string;version:string;engine:string;evidence:string}
+export const pluginTests=pluginInput as Record<'m1'|'m2',Partial<Record<string,PluginTestEvidence>>>;
+
+export function pluginSupportEvidence(feature:string,machine:'m1'|'m2') {
+  if(!WAGO_PLUGIN_SUPPORT[feature])return undefined;
+  return pluginTests[machine][feature] || (feature.startsWith('cm-')?pluginTests[machine]['component-model']:undefined);
+}

@@ -22,3 +22,4 @@ src/lib/data/measurements.json
 /static/sitemap.xml
 /static/robots.txt
 /static/data/llm/
+src/lib/data/plugin-tests.json

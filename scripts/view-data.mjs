@@ -172,3 +172,18 @@ for(const history of Object.values(output.history))for(const [key,cells] of Obje
 }
 await writeFile(join(site,'src/lib/data/measurements.json'),JSON.stringify(output)+'\n');
 console.log(`Generated measured view catalogue: ${output.catalogue.length} contracts, ${Object.keys(output.hosts).length} hosts.`);
+
+// Project only checksum-verified plugin suite summaries; never add their
+// case counts to the performance corpus or synthesize performance samples.
+const {pluginEvidence}=await import('./lib/plugin-evidence.mjs');
+const pluginIndex=JSON.parse(await readFile(join(site,'data/conformance/index.json')));
+const pluginReports=[];
+for(const entry of pluginIndex.reports){
+  if(!/^[a-f0-9]{64}\.json$/.test(entry.file))throw Error('Unsafe plugin evidence path');
+  const bytes=await readFile(join(site,'data/conformance',entry.file));
+  if(digest(bytes)!==entry.sha256)throw Error('Changed plugin suite evidence');
+  pluginReports.push({...JSON.parse(bytes),sha256:entry.sha256});
+}
+const pluginViews={};
+for(const [machine,os] of [['m1','linux'],['m2','darwin']])pluginViews[machine]=pluginEvidence(pluginReports,reports.find(r=>r.host.os===os).host,settings.hostAliases);
+await writeFile(join(site,'src/lib/data/plugin-tests.json'),JSON.stringify(pluginViews)+'\n');

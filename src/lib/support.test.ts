@@ -6,15 +6,15 @@ import { compatCell, type Scope } from './model';
 import { runtimeSupportCell, supportOf, engineFeatureVersions, runtimeFeatureTrack } from './support';
 
 describe('optional plugin availability',()=>{
-  for(const machine of ['m1','m2'] as const)it(`shows Wago interface plugins without inventing measured passes on ${machine}`,()=>{
+  for(const machine of ['m1','m2'] as const)it(`shows supported Wago plugins without inventing performance corpus passes on ${machine}`,()=>{
     const scope:Scope={machine,baseline:'A',hide:{},weighting:'workload'};
     for(const id of ['wasi-p1','wasi-p2','component-model','cm-abi','cm-res','cm-async']) {
       const feature=FEATS.find(f=>f.id===id)!;
-      expect(supportOf('wago',feature,scope)).toBe('?');
+      expect(supportOf('wago',feature,scope)).toBe('y');
       expect(compatCell(id,'G',scope).pass).toBe(0);
       const cell=runtimeSupportCell('wago',feature,scope);
-      expect(cell.text).toBe('via plugin');
-      expect(cell.detail).toContain('has not been benchmarked');
+      expect(cell.text).toBe('supported via plugin');
+      expect(cell.detail).toContain('performance remains unmeasured');
       expect(cell.detail).toContain('https://github.com/wago-org/');
       expect(runtimeSupportCell('wasmer',feature,scope).text).not.toBe('via plugin');
     }
