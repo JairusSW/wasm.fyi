@@ -41,7 +41,7 @@ const action = process.argv[2];
 if (action === 'doctor') {
   command('gtar', ['--version']); command('xz', ['--version']);
   process.stdout.write(ssh(nodePath+'set -eu; uname -a; for tool in node go cargo rsync git flock tar xz; do command -v "$tool"; done; node --version; go version; cargo --version', 30_000));
-} else if (['collect', 'history', 'threads'].includes(action)) {
+} else if (['collect', 'history', 'threads', 'conformance'].includes(action)) {
   command('gtar', ['--version']);
   command('xz', ['--version']);
   // Copy source files into isolated, immutable-per-experiment directories. Neither
@@ -71,7 +71,7 @@ if (action === 'doctor') {
   }
   process.stdout.write(ssh(`mkdir -p ${quote(remote + '/site/adapters/features')}`));
   rsync([join(site,'adapters/features/') ,remotePath(remote + '/site/adapters/features/')]);
-  rsync([join(site, 'scripts/history.mjs'), join(site, 'scripts/thread-workers.mjs'), join(site, 'scripts/import-wasmbench.mjs'), remotePath(remote + '/site/scripts/')]);
+  rsync([join(site,'scripts/conformance.mjs'),join(site,'scripts/publish-conformance.mjs'),join(site, 'scripts/history.mjs'), join(site, 'scripts/thread-workers.mjs'), join(site, 'scripts/import-wasmbench.mjs'), remotePath(remote + '/site/scripts/')]);
   rsync([join(site, 'scripts/lib/validate-data.mjs'), join(site, 'scripts/lib/snapshot-index.mjs'), join(site, 'scripts/lib/verify-seal.mjs'), join(site, 'scripts/lib/measurement-policy.mjs'), remotePath(remote + '/site/scripts/lib/')]);
   rsync([join(site, 'patches/legacy-wago-api.patch'), remotePath(remote + '/site/patches/')]);
   rsync([join(site, 'scripts/bench.mjs'), remotePath(remote + '/site/scripts/')]);
@@ -79,28 +79,20 @@ if (action === 'doctor') {
   rsync([join(site, 'scripts/extra-feature-adapters.test.mjs'), remotePath(remote + '/site/scripts/')]);
   rsync([join(site, 'scripts/pack-evidence.mjs'), remotePath(remote + '/site/scripts/')]);
   rsync([join(site, 'scripts/lib/evidence-archive.mjs'), remotePath(remote + '/site/scripts/lib/')]);
-  rsync([join(site, 'scripts/lib/wasmbench.mjs'), join(site, 'scripts/lib/corpus.mjs'), join(site, 'scripts/lib/harness-patch.mjs'), join(site, 'scripts/lib/feature-configurations.mjs'), join(site,'scripts/lib/feature-tools.mjs'), join(site, 'scripts/lib/v8-preflight.mjs'), remotePath(remote + '/site/scripts/lib/')]);
+  rsync([join(site,'scripts/lib/release-policy.mjs'),join(site,'scripts/lib/conformance.mjs'),join(site,'scripts/lib/weekly-history.mjs'),join(site,'scripts/lib/engine-sources.mjs'),join(site, 'scripts/lib/wasmbench.mjs'), join(site, 'scripts/lib/corpus.mjs'), join(site, 'scripts/lib/harness-patch.mjs'), join(site, 'scripts/lib/feature-configurations.mjs'), join(site,'scripts/lib/feature-tools.mjs'), join(site, 'scripts/lib/v8-preflight.mjs'), remotePath(remote + '/site/scripts/lib/')]);
   rsync(['harness-capabilities.patch','harness-capabilities-legacy.patch','harness-wasmer.patch','harness-wasmer-legacy.patch','harness-wasmer-reset-scope.patch','harness-wasmer-scoped.patch','harness-wasmer-applications.patch','harness-code-profile-policy.patch','harness-v8-wasmfx-lock.patch','harness-feature-engines.patch'].map(name=>join(site,'patches',name)).concat(remotePath(remote+'/site/patches/')));
   rsync(['-r', join(site, 'corpora'), remotePath(remote + '/site/')]);
-  if (action === 'history') {
-    const revision = command('git',['rev-parse','HEAD'],{cwd:wago}).toString().trim();
-    if (!/^[a-f0-9]{40}$/.test(revision)) throw new Error('Invalid historical source revision');
-    const historySource = host.historySource || '/home/hub/Code/Wago/wago';
-    process.stdout.write(ssh(`set -eu; git clone --no-checkout --no-hardlinks ${quote(historySource)} ${quote(remote + '/history-source')}; git -C ${quote(remote + '/history-source')} checkout --detach ${quote(revision)}`, 10*60*1000));
-    // Preserve a verified fixed-engine baseline independently of daily retention.
-    rsync(['-r', join(site,'data/wasmbench'), remotePath(remote + '/site/data/')]);
-  }
   const remoteConfig = join(local, 'wasmbench.config.json');
   await writeFile(remoteConfig, JSON.stringify({ ...settings, root: '../harness', collection: { ...settings.collection, wagoSource: '../wago' } }, null, 2) + '\n');
   rsync([remoteConfig, remotePath(remote + '/site/')]);
   }
-  const overrides = ['WASMBENCH_RUNTIMES', 'WASMBENCH_SUITE', 'WASMBENCH_LAUNCHES', 'WASMBENCH_SAMPLES', 'WASMBENCH_OPERATIONS', 'WASMBENCH_WARMUP', 'WASMBENCH_CORPUS_IDS', 'WASMBENCH_VALIDATION_PROFILE', 'WASMBENCH_RECORD_FAILURES', 'WASMBENCH_HISTORY_ANCHOR', 'WASMBENCH_HISTORY_WEEKS']
+  const overrides = ['WASMBENCH_RUNTIMES', 'WASMBENCH_SUITE', 'WASMBENCH_LAUNCHES', 'WASMBENCH_SAMPLES', 'WASMBENCH_OPERATIONS', 'WASMBENCH_WARMUP', 'WASMBENCH_CORPUS_IDS', 'WASMBENCH_VALIDATION_PROFILE', 'WASMBENCH_RECORD_FAILURES', 'WASMBENCH_HISTORY_ANCHOR', 'WASMBENCH_HISTORY_WEEKS','WASMBENCH_CONFORMANCE_LANES','WASMBENCH_RELEASE_AS_OF','WAGO_SPEC_INTERPRETER']
     .filter(key => process.env[key]).map(key => `${key}=${quote(process.env[key])}`).join(' ');
   let completed = false;
   try {
     const selectedRuntimes = process.env.WASMBENCH_RUNTIMES || (process.env.WASMBENCH_SUITE?.includes('corpora/features/') ? [...settings.collection.runtimes,...(settings.collection.featureRuntimes || [])] : settings.collection.runtimes).join(',');
     const nativeTests = (selectedRuntimes.includes('wasmer-') ? 'WASMBENCH_REQUIRE_WASMER_TESTS=1 node --test scripts/wasmer-adapter.test.mjs;' : '') + (process.env.WASMBENCH_SUITE?.includes('corpora/features/') ? 'WASMBENCH_REQUIRE_EXTRA_FEATURE_TESTS=1 node --test scripts/extra-feature-adapters.test.mjs;' : '');
-    const task = action === 'history' ? `WAGO_SOURCE=${quote('../history-source')} WASMBENCH_CORPUS_SOURCE=${quote('../wago')} ${overrides} node scripts/history.mjs collect; cp .wasmbench/history/results.json .wasmbench/history-results.json; cp data/history/weekly.json .wasmbench/history-weekly.json` : action === 'threads' ? `${overrides} node scripts/thread-workers.mjs; cp -r data/threads .wasmbench/threads` : `${overrides} node scripts/bench.mjs build; ${nativeTests} ${overrides} node scripts/bench.mjs doctor; ${overrides} node scripts/bench.mjs collect`;
+    const task = action === 'history' ? `${overrides} node scripts/history.mjs collect` : action === 'conformance' ? `${overrides} node scripts/conformance.mjs collect` : action === 'threads' ? `${overrides} node scripts/thread-workers.mjs; cp -r data/threads .wasmbench/threads` : `${overrides} node scripts/bench.mjs build; ${nativeTests} ${overrides} node scripts/bench.mjs doctor; ${overrides} node scripts/bench.mjs collect`;
     process.stdout.write(ssh(`${nodePath} export GOFLAGS="-buildvcs=false"; set -eu; exec 9>"$HOME/${host.workspace}/measurement.lock"; flock -w 3600 9; cd ${quote(remote + '/site')}; ${task}`, 180 * 60 * 1000));
     completed = true;
   } finally {
@@ -119,22 +111,11 @@ if (action === 'doctor') {
     const { cp } = await import('node:fs/promises');
     await cp(join(local,'threads'),join(site,'data/threads'),{recursive:true});
     console.log('Retrieved independently verified Hub worker evidence');
-  } else if (action === 'history') {
-    const results = JSON.parse(await readFile(join(local,'history-results.json'),'utf8'));
-    const paths=results.results.map(result=>join(local,'experiments',result.report.split('/').at(-2),'report'));
-    command(process.execPath,['scripts/import-wasmbench.mjs','--output',join(site,'data/history-hub'),'--rebuild',...paths],{stdio:'inherit'});
-    const weekly=JSON.parse(await readFile(join(local,'history-weekly.json'),'utf8'));
-    // The copied fixed baseline lives in the checked-in main snapshot store.
-    const { validateData } = await import('./lib/validate-data.mjs');
-    const { writeIndex } = await import('./lib/snapshot-index.mjs');
-    const { cp } = await import('node:fs/promises');
-    const baseline=(await validateData(join(site,'data/wasmbench'))).reports.find(r=>r.id===weekly.baseline.report);
-    if (!baseline) throw new Error('Missing pinned Hub historical baseline');
-    await cp(join(site,'data/wasmbench',baseline.evidence),join(site,'data/history-hub',baseline.evidence));
-    const index=await validateData(join(site,'data/history-hub'));
-    await writeIndex(join(site,'data/history-hub'),[...index.reports,baseline]);
-    await writeFile(join(site,'data/history-hub/weekly.json'),JSON.stringify(weekly,null,2)+'\n');
-    console.log('Retrieved eight sealed Hub historical reports');
+  } else if (['history','conformance'].includes(action)) {
+    const {readdir}=await import('node:fs/promises');
+    const directories=(await readdir(join(local,'conformance'))).map(p=>join(local,'conformance',p));
+    command(process.execPath,['scripts/publish-conformance.mjs',...directories],{stdio:'inherit'});
+    console.log('Retrieved sealed Hub release conformance evidence');
   } else {
   const remoteReport = (await readFile(join(local, 'latest-report.txt'), 'utf8')).trim();
   const leaf = remoteReport.split('/').at(-2);
@@ -148,4 +129,4 @@ if (action === 'doctor') {
   await writeFile(join(site, '.wasmbench/latest-hub-report.txt'), report + '\n');
   console.log(`Hub evidence retained at ${local}; remote archive retained at ~/${remote}`);
   }
-} else throw new Error('Usage: node scripts/hub.mjs doctor|collect|history|threads [EXPERIMENT_TO_RESUME]');
+} else throw new Error('Usage: node scripts/hub.mjs doctor|collect|history|threads|conformance [EXPERIMENT_TO_RESUME]');

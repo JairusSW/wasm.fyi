@@ -21,7 +21,7 @@ check:
 test:
     pnpm test
     pnpm test:ai
-    node --test scripts/workflow.test.mjs scripts/feature-adapter.test.mjs scripts/wasmer-adapter.test.mjs scripts/v8-preflight.test.mjs scripts/extra-feature-adapters.test.mjs
+    node --test scripts/release-policy.test.mjs scripts/weekly-history.test.mjs scripts/workflow.test.mjs scripts/feature-adapter.test.mjs scripts/wasmer-adapter.test.mjs scripts/v8-preflight.test.mjs scripts/extra-feature-adapters.test.mjs
 
 # Validate gathered snapshots and their raw evidence.
 integration-audit:
@@ -102,11 +102,11 @@ automate:
 automation-status:
     node scripts/automation.mjs status
 
-# Enable daily collection after registering an online wasm-bench runner.
+# Enable manual collection after registering an online wasm-bench runner.
 automation-enable:
     node scripts/automation.mjs enable
 
-# Disable daily collection without changing ordinary site deployments.
+# Disable manual collection without changing ordinary site deployments.
 automation-disable:
     node scripts/automation.mjs disable
 
@@ -165,15 +165,15 @@ features-collect: features-adapters
 features-collect-hub:
     WASMBENCH_SUITE="corpora/features/manifest.json" WASMBENCH_VALIDATION_PROFILE=all WASMBENCH_WARMUP=0 WASMBENCH_RECORD_FAILURES=1 node scripts/hub.mjs collect
 
-# Resolve the eight weekly Wago revisions without measuring.
+# Resolve all fourteen engines to releases published by each Wednesday.
 history-plan:
     node scripts/history.mjs plan
 
-# Measure the eight historical revisions against a fixed current corpus.
+# Collect released-engine official-suite history; unimplemented runners remain explicit gaps.
 history-collect:
     node scripts/history.mjs collect
 
-# Backfill the same historical revisions on Hub, then retrieve verified reports.
+# Backfill released-engine history on Hub, then retrieve verified reports.
 history-collect-hub:
     node scripts/hub.mjs history
 
@@ -203,3 +203,18 @@ features-adapter-test: features-adapters
 # Preserve sealed source evidence while sharing storage for identical archived files.
 evidence-deduplicate:
     node scripts/deduplicate-evidence.mjs
+
+# Inspect the pinned official core, WASI and Component Model suites.
+conformance-plan:
+    node scripts/conformance.mjs plan
+
+# Run official suites against isolated published engine releases.
+conformance-collect:
+    node scripts/conformance.mjs collect
+
+# Publish sealed official-suite reports, including failed and skipped tests.
+conformance-publish *reports:
+    node scripts/publish-conformance.mjs "$@"
+
+conformance-collect-hub:
+    node scripts/hub.mjs conformance

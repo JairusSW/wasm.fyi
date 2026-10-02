@@ -142,10 +142,9 @@ The default project URL is `https://jairussw.github.io/wasm.fyi/`. Custom-domain
 is separate from this workflow; a different base path is supplied automatically
 when Pages is configured for a custom domain.
 
-## Daily fresh-data automation
+## Manual fresh-data automation
 
-`.github/workflows/update-benchmarks.yml` is scheduled daily at **03:17 UTC**, and
-can be dispatched manually. It runs only when `WASMBENCH_AUTOMATION_ENABLED=true`.
+`.github/workflows/update-benchmarks.yml` is dispatched manually. There is no cron schedule. It runs only when `WASMBENCH_AUTOMATION_ENABLED=true`.
 It requires a registered self-hosted runner with the `wasm-bench` label and the
 configured harness/source checkouts. The selected runner is this Apple Silicon Mac, coordinating Hub over SSH.
 
@@ -214,7 +213,7 @@ Workflow syntax, scheduling and permissions follow the
 
 ## Corpus selection and source builds
 
-The default daily corpus selects **65 executable Wago benchmarks**, expanded by
+The default application corpus selects **65 executable Wago benchmarks**, expanded by
 `import-wago` into **72 exact workload contracts**. It includes all 30 PolyBench/C
 kernels, 12 hand-written/compute benchmarks, six AssemblyScript variants and 17
 semantic library benchmarks: hashing, compression, image/audio processing, JSON,
@@ -237,14 +236,14 @@ exact build argv, and emits a separate `source/wago/...` suite. The original Wag
 checkout, catalog and artifacts stay intact. The generated manifest path is saved
 in `.wasmbench/latest-source-suite.txt`; use its absolute path as `WASMBENCH_SUITE`
 with `just refresh-local` to measure rebuilt variants. Source-suite overrides are
-local; the daily dual-host workflow imports the configured Wago catalog on each
+local; the manual dual-host workflow imports the configured Wago catalog on each
 host from the same copied source snapshot.
 
 Wago also has source recipes under `corpus/build/` for Rust compute kernels,
 AssemblyScript and PolyBench/C. PolyBench's recipe pins its upstream Git commit
 and uses WASI SDK Clang. Run additional builds in an isolated checkout, record
 compiler/source/flags and new artifact digests, and admit them only with exact
-oracles. Rebuilding is an explicit corpus change; daily measurements reuse pinned
+oracles. Rebuilding is an explicit corpus change; manual measurements reuse pinned
 artifacts so toolchain changes do not silently change the comparison.
 
 The ARM64 Winch policy explicitly disables SIMD because its native lowering is
@@ -266,7 +265,7 @@ batch is unsuitable for the broader algorithms. Every fresh pass still runs its
 own sacrificial correctness preflight. Unsupported outcomes get no timing credit;
 incorrect results, crashes and unexpected errors stop the update.
 
-The daily refresh now includes the original feature corpus, explicit proposal configurations, and real shared-memory worker measurements. Thursday's additional schedule rebuilds eight retrospective weekly Wago revisions. See [feature and history workflow](features-and-history.md) for commands, JSON endpoints, collection scopes, failure handling and historical interpretation. Snapshot inventory schema 2 keeps full evidence in separate hashed files; summary and evidence digests must both be checked by consumers.
+The manual refresh includes the original feature corpus, released-engine proposal configurations, real worker measurements and official conformance suites. Wednesday release history is planned separately; incomplete historical runners remain explicit gaps. See [feature and history workflow](features-and-history.md) for commands, JSON endpoints, collection scopes, failure handling and historical interpretation. Snapshot inventory schema 2 keeps full evidence in separate hashed files; summary and evidence digests must both be checked by consumers.
 
 ### V8 compiler tiers
 
@@ -314,12 +313,12 @@ shells before building; `just features-adapter-test` verifies real lifecycle
 calls, fresh-instance resets, changed artifact digests, incorrect scalar
 oracles and incorrect memory oracles. `just features-collect` and
 `just features-collect-hub` run every size and variant through separate timing,
-RSS and code passes. The daily refresh includes these configurations automatically.
+RSS and code passes. The manual refresh includes these configurations automatically.
 
 `just evidence-deduplicate` shares storage for byte-identical large files in
 completed sealed experiments. It preserves every evidence path and checksum;
 keep these archives immutable because identical files can share an inode. The
-daily refresh runs this step before importing reports.
+manual refresh runs this step before importing reports.
 
 Pinned tools are WasmEdge 0.17.1, wasm3 0.5.0, WAMR 2.4.5, Chicory 1.7.5,
 SpiderMonkey 143.0 and Deno 2.9.7. Wasmi is pinned by the harness Cargo lock.

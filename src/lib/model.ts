@@ -36,7 +36,10 @@ export const cn = (c: Cfg) => `${c.rt} ${c.be}`;
 
 export const mf = (m: MachineId, id: CfgId) => MACH[m].f[id] ?? 1;
 export const isOff = (s: Scope, id: CfgId) => !!MACH[s.machine].off[id];
-export const isVisible = (s: Scope, c: Cfg) => !s.hide[c.id];
+export const isVisible = (s: Scope, c: Cfg) => {
+  const version=viewData.hosts[s.machine].configurations[c.id]?.version || '';
+  return !s.hide[c.id] && !/^[a-f0-9]{40}(?:\/|$)|nightly|snapshot|canary|0\.0\.0-prerelease/i.test(version);
+};
 export const visibleCfgs = (s: Scope) => CFG.filter((c) => isVisible(s, c));
 
 export const cov = (cid: CfgId, scope?:Scope) => {

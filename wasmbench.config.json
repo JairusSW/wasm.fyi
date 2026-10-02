@@ -47,7 +47,6 @@
     "phaseBarriers": false,
     "featureRuntimesByPlatform": {
       "darwin": [
-        "wavm",
         "jsc"
       ]
     }

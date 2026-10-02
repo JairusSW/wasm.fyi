@@ -18,9 +18,19 @@ just verify
 just deploy
 ```
 
-`just refresh` collects the selected Wago application corpus and every feature workload on both hosts, runs the worker tests, verifies the sealed evidence, and builds the site. The daily Actions schedule publishes the result directly to GitHub Pages. Thursday's second schedule also reconstructs the eight preceding weekly Wago revisions on both hosts. An immediate dispatch with `history=true` does the same backfill. The registered Mac coordinates `hub@hub`; both jobs use the shared Hub measurement lock and wait up to an hour behind other measurements. Existing host checkouts are preserved.
+`just refresh` runs on demand; there is no daily or weekly cron. It collects applications, feature performance and official conformance evidence on the Mac and `hub@hub`, validates the evidence, and builds the site for GitHub Pages. Engine builds must come from published releases. Nightly, main and dirty engine builds are excluded. Released prereleases retain their prerelease identity.
 
-Dispatch with `history_only=true` to refresh and deploy history against the already published application baseline without repeating the daily collection. Fresh source-only history workspaces build their independent analyzer before measuring historical engines.
+`just history-plan` resolves an initial eight Wednesday snapshots, then catches up every missed Wednesday from the oldest retained snapshot. The cutoff is Wednesday 00:00 UTC: choose the latest release published at or before that instant, never a nearby main commit. Publication timestamps select releases; tag commits establish source identity. Node uses the newest published version in the highest released major; it retains the locked Turboshaft and Liftoff modes. Node and Firefox upstream indexes expose day precision, which is recorded. JavaScriptCore standalone release provenance and WAVM non-nightly releases remain explicit gaps.
+
+`just history-collect` currently collects released Wasmtime and Wago **conformance** history. It records all fourteen engines in the plan, with explicit uncollected runner gaps, and exits nonzero when coverage is incomplete. It does not reconstruct performance history for those engines. Old source-revision history remains archived and is not relabeled as Wednesday release evidence. Actual collection dates are never backdated.
+
+## Official conformance suites
+
+`just conformance-plan`, `just conformance-collect`, `just conformance-collect-hub`, and `just conformance-publish` use checksum-sealed reports. Official WebAssembly 3.0 `.wast` scripts run through the released Wasmtime CLI's native WAST interpreter in Cranelift and Winch modes. Component Model WAST includes async, linking, resources, validation and values. The unmodified official WASI test runner checks its fixture output, exit, environment and preopen oracles. Released Wago plugins run their shipped official Component Model and Wasmtime regression fixtures against the released Wago engine.
+
+Each report pins the suite commit, file inventory, engine release, binary or source hashes, flags, tool dependencies and raw outcomes. Counts distinguish whole WAST files, WASI cases and Go leaf subtests. Failed assertions, parser errors, timeouts, expected-failure skips and runner errors remain explicit. Official conformance never enters execution performance averages. The public index is `wasmbench/conformance/index.json`.
+
+The default collection covers qualified Wasmtime lanes and Wago Component Model. `WASMBENCH_CONFORMANCE_LANES` can select `wago-core` with the pinned official reference interpreter in `WAGO_SPEC_INTERPRETER`; `wago-wasi` requires Linux because the released plugin's suite runner is Linux-only. A successful process with zero tests is a runner error. Other engine official-suite runners are uncollected, not claimed unsupported or passing.
 
 ## Original corpus
 
@@ -63,7 +73,7 @@ Daily evidence installation also refreshes the fixed current comparison baseline
 
 ## Stable and development compatibility
 
-The Features Compatibility matrix combines support and corpus test results. Compact S (stable) and dimmed D (development) rows show passed/total counts for one backend. Hover for a visual breakdown by backend; click for individual contracts, evidence links, and expandable diagnostics. Select a collected version in the column header when several versions are available. Missing release measurements remain “not collected”; documented plugin availability is listed separately from measured results. Experimental flags are marked even on a released engine.
+The Features Compatibility matrix shows one latest **measured released** identity per engine. Development identities are hidden; older data is not renamed to the current upstream release. Hover for a backend breakdown and click for individual contracts, evidence and diagnostics. Missing released measurements remain “not collected”. Experimental flags are marked on released engines.
 
 `data/feature-releases.json` records release provenance for exact runtime identities, including executable/dependency hashes and the complete adapter description. Register a new stable identity only after verifying its pinned release origin; a semver string alone is insufficient. Source builds with `engine_source_revision` or a main/development channel remain development builds regardless of their reported version. Unknown identities are labeled unverified.
 

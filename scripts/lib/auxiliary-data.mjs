@@ -25,6 +25,23 @@ export function validateThreadEvidence(data) {
 }
 
 export async function stageAuxiliary(destination) {
+  const releasePlan=join(site,'data/release-history/plan.json');
+  if(await exists(releasePlan)){
+    const plan=JSON.parse(await readFile(releasePlan));assert.equal(plan.schema,2);
+    assert(plan.weeks.every(w=>new Date(w).getUTCDay()===3),'Release snapshots must be Wednesdays');
+    assert(plan.pins.length===plan.weeks.length*14,'Incomplete release plan inventory');
+    await mkdir(join(destination,'release-history'),{recursive:true});await cp(releasePlan,join(destination,'release-history/plan.json'));
+  }
+  const conformance=join(site,'data/conformance');
+  if(await exists(join(conformance,'index.json'))){
+    const index=JSON.parse(await readFile(join(conformance,'index.json')));
+    assert.equal(index.schema,1);
+    for(const report of index.reports){
+      assert(/^[a-f0-9]{64}\.json$/.test(report.file),'Unsafe conformance evidence path');
+      assert.equal(digest(await readFile(join(conformance,report.file))),report.sha256,'Changed conformance evidence');
+    }
+    await cp(conformance,join(destination,'conformance'),{recursive:true});
+  }
   const preflightSource=join(site,'data/wasmer-preflight');
   if(await exists(preflightSource)) {
     const target=join(destination,'preflight/wasmer');await mkdir(target,{recursive:true});

@@ -7,6 +7,7 @@ import { prepareCorpus } from './lib/corpus.mjs';
 import { featureConfigurations } from './lib/feature-configurations.mjs';
 import { patchHarness } from './lib/harness-patch.mjs';
 import { prepareFeatureTools } from './lib/feature-tools.mjs';
+import { releaseSource, assertReleasedSource } from './lib/release-policy.mjs';
 import { verifyV8 } from './lib/v8-preflight.mjs';
 
 const action = process.argv[2];
@@ -14,6 +15,13 @@ const { root, settings, run } = await harness();
 const collection = settings.collection;
 const featureSuite = process.env.WASMBENCH_SUITE?.includes('corpora/features/');
 const runtimes = process.env.WASMBENCH_RUNTIMES || (process.env.WASMBENCH_SUITE?.includes('corpora/features/') ? featureConfigurations(settings) : collection.runtimes).join(',');
+if(['build','collect','corpus-check'].includes(action) && runtimes.split(',').includes('wago')) {
+  process.env.WASMBENCH_CORPUS_SOURCE ||= process.env.WAGO_SOURCE || collection.wagoSource;
+  const release=await releaseSource('wago-org/wago',{asOf:process.env.WASMBENCH_RELEASE_AS_OF});
+  assertReleasedSource(release.source,release);
+  process.env.WAGO_SOURCE=release.source;
+}
+if(runtimes.split(',').includes('wavm') && ['build','collect','corpus-check'].includes(action))throw Error('The available WAVM SDK is an unreleased build and cannot be collected.');
 if(featureSuite && ['build','collect'].includes(action))await prepareFeatureTools(root,settings,runtimes.split(','));
 if (runtimes.split(',').some(id => ['wasmer-llvm','wasmer-singlepass'].includes(id))) {
   const sdk=resolve(process.env.WASMBENCH_WASMER_SDK || join(homedir(),'.local/share/wasm-fyi/toolchains/wasmer-c-api-7.3.0/sdk'));
@@ -51,6 +59,9 @@ else if (action === 'build') {
   if (runtimes.split(',').includes('wago')) args.push('--wago-source', resolve(site, process.env.WAGO_SOURCE || collection.wagoSource));
   invoke(...args);
 } else if (action === 'collect') {
+  // Always rebuild the Wago adapter after selecting a release. A previously
+  // compiled binary cannot inherit the new source identity.
+  if(runtimes.split(',').includes('wago')) {patchHarness(root);invoke('build','--runtimes','wago','--wago-source',process.env.WAGO_SOURCE);}
   verifyV8(root, settings.node, runtimes.split(','));
   const id = new Date().toISOString().replace(/[:.]/g, '-') + '-' + randomUUID().slice(0, 8);
   const directory = join(site, '.wasmbench/experiments', id);

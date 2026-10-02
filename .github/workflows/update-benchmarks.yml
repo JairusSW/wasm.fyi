@@ -1,16 +1,9 @@
 name: Refresh benchmarks and deploy
 on:
-  schedule:
-    - cron: '17 3 * * *'
-    - cron: '17 6 * * 4'
   workflow_dispatch:
     inputs:
-      history:
-        description: 'Also rebuild the eight retrospective weekly points on both hosts'
-        type: boolean
-        default: false
       history_only:
-        description: 'Refresh weekly history using the published application baseline'
+        description: 'Released conformance history (incomplete coverage fails)'
         type: boolean
         default: false
       launches:
@@ -38,7 +31,7 @@ jobs:
   refresh:
     if: vars.WASMBENCH_AUTOMATION_ENABLED == 'true'
     runs-on: [self-hosted, wasm-bench]
-    timeout-minutes: 240
+    timeout-minutes: 1440
     permissions:
       contents: write
       pages: write
@@ -76,8 +69,8 @@ jobs:
         run: just refresh
         env:
           BASE_PATH: ${{ steps.pages.outputs.base_path }}
-      - name: Refresh eight weekly Wago revisions on both hosts
-        if: github.event.schedule == '17 6 * * 4' || inputs.history || inputs.history_only
+      - name: Collect qualified Wednesday release suites and report coverage gaps
+        if: inputs.history_only
         run: |
           just history-collect
           just history-collect-hub
@@ -102,7 +95,10 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: wasmbench-experiment-${{ github.run_id }}
-          path: .wasmbench/experiments
+          path: |
+            .wasmbench/experiments
+            .wasmbench/conformance
+            .wasmbench/release-history
           if-no-files-found: ignore
           retention-days: 14
   deploy:

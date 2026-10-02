@@ -15,8 +15,7 @@
 	import { supportCell, engineFeatureVersions, runtimeFeatureTrack, WAGO_PLUGIN_SUPPORT } from '$lib/support';
 
 	let evidence=$state<{feature:string;engine:string;track:FeatureTrack}|null>(null);
-	const selectedVersions=$state<Record<string,string>>({});
-  const channels=['stable','development'] as const;
+  const channels=['stable'] as const;
 	const propLinks = PROPOSAL_IDS.map((id) => ({ id, label: PROPS[id].title }));
 
 	// ── Support matrix ─────────────────────────────────────────────────────
@@ -24,11 +23,11 @@
 		...FEATURE_ENGINES.map((id) => ({ label: RTB[id].name, sub: RTB[id].lang, rt: id }))
 	];
 	const groups = $derived([...new Set(FEATS.map(f=>f.g))].map(g=>({g,rows:FEATS.filter(f=>f.g===g).map(f=>{
-    return {f,count:`${featureContracts(f.id).length} tests`,cells:[...FEATURE_ENGINES.map(id=>({...supportCell('?'),detail:'',tracks:channels.map(channel=>runtimeFeatureTrack(id,f,ui.scope,channel,selectedVersions[`${ui.machine}|${id}|${channel}`]))}))]};
+    return {f,count:`${featureContracts(f.id).length} tests`,cells:[...FEATURE_ENGINES.map(id=>({...supportCell('?'),detail:'',tracks:channels.map(channel=>runtimeFeatureTrack(id,f,ui.scope,channel,undefined))}))]};
   })})));
 
 	// ── Spec tests ─────────────────────────────────────────────────────────
-	const cols = $derived(FEATURE_CFG.filter((c) => isVisible(ui.scope, c)));
+	const cols = $derived(FEATURE_CFG.filter((c) => isVisible(ui.scope, c) && engineFeatureVersions(c.rt,ui.scope,'stable').length>0));
 
 	// ── Proposal performance ───────────────────────────────────────────────
 	const PERF_NOTE={exec:'Steady execution · shared successful execution contracts per family; compile-only probes excluded.',compile:'Compilation · shared successful contracts per family.',mem:'Steady process peak RSS · shared successful contracts; includes adapter process.'};
@@ -54,7 +53,7 @@
 <div class="head">
 	<span class="mono small fg3 path">wasm.fyi/features</span>
 	<h1>Features</h1>
-	<span class="s12 fg3 lim">Measured feature support and corpus results, by release and backend.</span>
+	<span class="s12 fg3 lim">Released engine compatibility and verified corpus results. <a class="link" href={siteHref('/wasmbench/conformance/index.json')}>Official suite evidence</a>.</span>
 </div>
 <div class="row">
 	<Seg
@@ -92,7 +91,7 @@
 	<div class="legend">
 		<span class="lg"><span class="box" style:background="oklch(0.72 0.14 150 / 0.18)"></span>● passed</span>
 		<span class="lg"><span class="box" style:background="oklch(0.77 0.14 60 / 0.16)"></span>⚑ flag · ◐ partial</span>
-		<span>S stable · D development · — unmeasured</span>
+		<span>passed / total tests · — unmeasured</span>
 		<span class="fg3">Proposal pages:</span>
 		{@render proposalLinks()}
 	</div>
@@ -113,13 +112,9 @@
               {#if h.rt}
                 {#each channels as channel}
                   {@const versions=engineFeatureVersions(h.rt,ui.scope,channel)}
-                  <div class:development={channel==='development'} class="track-version micro">
-                    <span>{channel==='stable'?'Stable':'Dev'}</span>
-                    {#if versions.length>1}
-                      <select aria-label={`${h.label} ${channel} version`} value={selectedVersions[`${ui.machine}|${h.rt}|${channel}`] || versions[0]} onchange={(e)=>selectedVersions[`${ui.machine}|${h.rt}|${channel}`]=e.currentTarget.value}>
-                        {#each versions as version}<option value={version}>{version}</option>{/each}
-                      </select>
-                    {:else}<span title={versions[0]}>{versions[0]?.replace(/\/source-.*/, '').replace(/^([a-f0-9]{12})[a-f0-9]{28}$/, '$1').replace(/^Node (.*?) \/ V8 .*/, 'Node $1') || '—'}</span>{/if}
+                  <div class="track-version micro">
+                    <span>Release</span>
+                    <span title={versions[0]}>{versions[0]?.replace(/\/source-.*/, '').replace(/^([a-f0-9]{12})[a-f0-9]{28}$/, '$1').replace(/^Node (.*?) \/ V8 .*/, 'Node $1') || '—'}</span>
                   </div>
                 {/each}
               {/if}
@@ -147,7 +142,7 @@
                         aria-label={`${r.f.name}, ${featCols[k].label}, ${track.channel}: ${track.text}, ${track.pass} of ${track.expected} tests passed. Open corpus results`}
                         data-tip-summary={JSON.stringify({title:`${featCols[k].label} · ${r.f.name}`,subtitle:`${track.channel==='stable'?'Stable release':'Development build'} · ${track.version || 'not collected'}`,rows:track.configurations.map(c=>({label:c.backend+(['v8-wasmfx','wasmtime-component-async'].includes(c.id)?' ⚑':''),pass:c.pass,total:c.total,failed:c.failed,skipped:c.skipped,missing:c.missing})),hint:track.configurations.length?'Click to inspect individual tests':'No measurements for this track'})}
                         onclick={()=>evidence={feature:r.f.name,engine:featCols[k].label,track}}>
-                        <span class="track-label">{track.channel==='stable'?'S':'D'}</span><span>{track.glyph}</span>
+                        <span class="track-label"></span><span>{track.glyph}</span>
                         <span>{track.configurations.length?`${track.pass}/${track.expected}`:'—'}</span>
                       </button>
                     {/each}
@@ -164,8 +159,8 @@
 		</table>
 	</div>
 	<div class="note">
-    S = stable · D = development (dimmed). Counts show passed / total corpus tests for one configuration; click for backend and individual test results. ⚑ requires an experimental flag. Browser builds and plugin configurations are unmeasured. <a href={siteHref('/wasmbench/feature-support.json')}>Full evidence</a>.
-    <details><summary>Measurement scope</summary><p>Stable and development builds stay separate. Version selectors show collected builds only. Compilation and execution contracts use their declared oracles. Adapter-unsupported results do not establish that an engine lacks a feature; these representative tests do not establish complete specification conformance. Wago provides optional WASI and Component Model plugins, listed separately from measured results. Feature workloads never enter application averages.</p></details>
+    Released engines only. Counts show passed / total corpus tests for one configuration; click for backend and individual test results. ⚑ requires an experimental flag. Browser builds and plugin configurations are unmeasured. <a href={siteHref('/wasmbench/feature-support.json')}>Full evidence</a>.
+    <details><summary>Measurement scope</summary><p>Unreleased builds are excluded. The latest measured release is shown for each engine. Compilation and execution contracts use their declared oracles. Adapter-unsupported results do not establish that an engine lacks a feature; these representative tests do not establish complete specification conformance. Wago provides optional WASI and Component Model plugins, listed separately from measured results. Feature workloads never enter application averages.</p></details>
 	</div>
 {:else}
 	<div class="s12 fg3">{PERF_NOTE[ui.perfMetric]}</div>
@@ -300,8 +295,7 @@
   .development { opacity:0.58; }
   .support-track { display:flex;align-items:center;gap:7px;width:100%;padding:1px 4px;font-size:11px;line-height:16px;white-space:nowrap; }
   .support-track:hover,.support-track:focus-visible { outline:1px solid var(--line2); }
-  .track-label { width:9px;color:var(--fg3);font-size:9px; }
+  .track-label { display:none; }
   .track-version { display:flex;gap:5px;align-items:center;margin-top:5px;max-width:140px;text-align:left; }
   .track-version > span:last-child { overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
-  .track-version select { max-width:115px;font:inherit;color:inherit;background:var(--bg);border:1px solid var(--border); }
 </style>
