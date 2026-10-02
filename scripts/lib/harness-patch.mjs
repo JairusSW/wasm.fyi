@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { command, site } from './wasmbench.mjs';
 
-export function patchHarness(root) {
+function patchBase(root) {
   // The final feature layer overlaps earlier native-adapter hunks. Temporarily
   // peel only its exact recorded state to verify those layers, then restore it
   // even when a preceding check fails. Unrelated edits are never reset.
@@ -51,4 +51,22 @@ export function patchHarness(root) {
     command('git',['apply',feature],{cwd:root});
   }
   if(!featureCheck(['--reverse','--check']))throw new Error('Feature engine patch does not match its complete recorded state');
+}
+
+export function patchHarness(root) {
+  const names=['harness-wazero-compile-freshness.patch','harness-v8-compile-freshness.patch'];
+  const check=(name,args)=>spawnSync('git',['apply',...args,join(site,'patches',name)],{cwd:root,stdio:'ignore'}).status===0;
+  const peeled=[];
+  for(const name of [...names].reverse())if(check(name,['--reverse','--check'])) {
+    command('git',['apply','--reverse',join(site,'patches',name)],{cwd:root});peeled.push(name);
+  }
+  let success=false;
+  try {patchBase(root);success=true;}
+  finally {
+    for(const name of names)if(success || peeled.includes(name)) {
+      if(check(name,['--reverse','--check']))continue;
+      if(!check(name,['--check']))throw Error(name+' does not match');
+      command('git',['apply',join(site,'patches',name)],{cwd:root});
+    }
+  }
 }

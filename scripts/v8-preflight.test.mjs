@@ -4,7 +4,7 @@ import {validateV8Description} from './lib/v8-preflight.mjs';
 
 const pin={version:'26.4.0',v8:'14.6.202.34-node.21'};
 function description(mode) {
-  const flags=['--allow-natives-syntax',mode==='liftoff-only'?'--liftoff-only':'--no-liftoff','--no-wasm-tier-up','--no-wasm-lazy-compilation'];
+  const flags=['--allow-natives-syntax',mode==='liftoff-only'?'--liftoff-only':'--no-liftoff','--no-wasm-tier-up','--no-wasm-lazy-compilation','--no-wasm-native-module-cache'];
   if(mode==='optimizing-wasmfx-only')flags.push('--experimental-wasm-wasmfx');
   return {build:'v'+pin.version,runtime_version:pin.v8,backend:mode,effective_configuration:{
     lazy_compilation:'disabled',tiering:mode,flags:JSON.stringify(flags),
@@ -27,4 +27,10 @@ test('rejects a stale optimizing pipeline, production tiering, missing locks and
     const d=description('optimizing-only');change(d);
     assert.throws(()=>validateV8Description(d,pin,'optimizing-only'));
   }
+});
+
+test('collection rejects cached modules; old execution evidence can be validated explicitly',()=>{
+ const d=description('optimizing-only');d.effective_configuration.flags=JSON.stringify(JSON.parse(d.effective_configuration.flags).filter(f=>f!=='--no-wasm-native-module-cache'));
+ assert.throws(()=>validateV8Description(d,pin,'optimizing-only'));
+ validateV8Description(d,pin,'optimizing-only',{allowLegacyCache:true});
 });

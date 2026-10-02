@@ -1,0 +1,36 @@
+--- a/adapters/v8/compiler-mode.mjs
++++ b/adapters/v8/compiler-mode.mjs
+@@ -1,9 +1,9 @@
+ import {createHash} from 'node:crypto';
+ 
+ export const compilerModeFlags = Object.freeze({
+-  'liftoff-only': Object.freeze(['--allow-natives-syntax','--liftoff-only','--no-wasm-tier-up','--no-wasm-lazy-compilation']),
+-  'optimizing-wasmfx-only': Object.freeze(['--allow-natives-syntax','--no-liftoff','--no-wasm-tier-up','--no-wasm-lazy-compilation','--experimental-wasm-wasmfx']),
+-  'optimizing-only': Object.freeze(['--allow-natives-syntax','--no-liftoff','--no-wasm-tier-up','--no-wasm-lazy-compilation']),
++  'liftoff-only': Object.freeze(['--allow-natives-syntax','--liftoff-only','--no-wasm-tier-up','--no-wasm-lazy-compilation','--no-wasm-native-module-cache']),
++  'optimizing-wasmfx-only': Object.freeze(['--allow-natives-syntax','--no-liftoff','--no-wasm-tier-up','--no-wasm-lazy-compilation','--no-wasm-native-module-cache','--experimental-wasm-wasmfx']),
++  'optimizing-only': Object.freeze(['--allow-natives-syntax','--no-liftoff','--no-wasm-tier-up','--no-wasm-lazy-compilation','--no-wasm-native-module-cache']),
+ });
+ 
+ // No imports/start function; this distinct calibration module is not a workload
+--- a/experiment/runner.go
++++ b/experiment/runner.go
+@@ -60,15 +60,15 @@
+ 			mode := ""
+ 			if id == "v8-wasmfx" {
+ 				mode = "optimizing-wasmfx-only"
+-				r.Command = append(r.Command, "--allow-natives-syntax", "--no-liftoff", "--no-wasm-tier-up", "--no-wasm-lazy-compilation", "--experimental-wasm-wasmfx")
++				r.Command = append(r.Command, "--allow-natives-syntax", "--no-liftoff", "--no-wasm-tier-up", "--no-wasm-lazy-compilation", "--no-wasm-native-module-cache", "--experimental-wasm-wasmfx")
+ 			}
+ 			if id == "v8-liftoff-only" {
+ 				mode = "liftoff-only"
+-				r.Command = append(r.Command, "--allow-natives-syntax", "--liftoff-only", "--no-wasm-tier-up", "--no-wasm-lazy-compilation")
++				r.Command = append(r.Command, "--allow-natives-syntax", "--liftoff-only", "--no-wasm-tier-up", "--no-wasm-lazy-compilation", "--no-wasm-native-module-cache")
+ 			}
+ 			if id == "v8-optimizing-only" {
+ 				mode = "optimizing-only"
+-				r.Command = append(r.Command, "--allow-natives-syntax", "--no-liftoff", "--no-wasm-tier-up", "--no-wasm-lazy-compilation")
++				r.Command = append(r.Command, "--allow-natives-syntax", "--no-liftoff", "--no-wasm-tier-up", "--no-wasm-lazy-compilation", "--no-wasm-native-module-cache")
+ 			}
+ 			r.Command = append(r.Command, filepath.Join(root, "adapters", "v8", "adapter.mjs"))
+ 			if mode != "" {

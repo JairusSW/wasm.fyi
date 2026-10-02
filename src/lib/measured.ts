@@ -86,6 +86,14 @@ function outcome(snapshot: MeasuredSnapshot, runtime: string, workload: string, 
 export function measuredTiming(snapshot: MeasuredSnapshot, runtime: string, workload: string, artifactSha256: string, scenario: string): MeasuredCell {
 	const missing = contract(snapshot, runtime, workload, artifactSha256) ?? outcome(snapshot, runtime, workload, scenario);
 	if (missing) return missing;
+	if (scenario === 'compile' && (runtime === 'wazero' || runtime.startsWith('v8-'))) {
+		const description = snapshot.runtimes.find(item => item.id === runtime)!.description;
+		const configuration = description.effective_configuration as Record<string, unknown> | undefined;
+		const audited = runtime === 'wazero'
+			? typeof configuration?.compile_policy === 'string' && configuration.compile_policy.startsWith('fresh uncached module per operation;')
+			: typeof configuration?.flags === 'string' && (JSON.parse(configuration.flags) as string[]).includes('--no-wasm-native-module-cache');
+		if (!audited) return {status: 'not-measured', reason: 'This report predates the uncached compile policy; recollection is required.', evidence: reference(snapshot)};
+	}
 	const summary = snapshot.summaries.find(item => item.runtime === runtime && item.workload === workload && item.scenario === scenario && item.profile === 'timing')!;
 	if (!finite(summary.median_ns_per_operation) || summary.latency_status === 'failed_cell' || summary.sample_count <= 0 || summary.independent_launches <= 0) throw new Error('Successful timing lacks valid measured samples');
 	return { status: 'ok', value: summary.median_ns_per_operation, unit: 'ns/invocation', interval: interval(summary.ci95_low, summary.ci95_high), evidence: reference(snapshot) };

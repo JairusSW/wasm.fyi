@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { digest } from './wasmbench.mjs';
 const day=86400000,week=7*day;
 export function wednesdays(now=new Date(),count=8,previous=[]) {
-  assert(Number.isSafeInteger(count)&&count>=1&&count<=52,'History weeks must be 1..52');
+  assert(Number.isSafeInteger(count)&&count>=1&&count<=53,'History weeks must be 1..53');
   const end=new Date(now);assert(Number.isFinite(+end),'Invalid history anchor');
   end.setUTCHours(0,0,0,0);end.setUTCDate(end.getUTCDate()-(end.getUTCDay()+4)%7);
   const valid=previous.map(p=>new Date(p.targetWeek)).filter(d=>Number.isFinite(+d)&&d.getUTCDay()===3&&+d<=+end);

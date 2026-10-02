@@ -2,7 +2,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { applicationWorkloads } from './application-manifest.mjs';
-import { site } from './wasmbench.mjs';
+import { site, digest } from './wasmbench.mjs';
 
 // Protocol values are already decimal strings, but retained upstream contracts
 // can contain raw 64-bit JSON integers. Preserve their token before reserializing.
@@ -18,7 +18,7 @@ export function parseCorpusJSON(text) {
 
 export async function prepareCorpus(settings, run, directory) {
   const selected = process.env.WASMBENCH_SUITE || settings.collection.suite;
-  if (selected !== 'wago') return selected.endsWith('.json') ? resolve(site, selected) : selected;
+  if (selected !== 'wago' && selected !== 'all') return selected.endsWith('.json') ? resolve(site, selected) : selected;
   const corpus = settings.corpus;
   if (corpus?.source !== 'wago' || !Array.isArray(corpus.ids) || !corpus.ids.length) throw new Error('Configure the Wago corpus selection');
   const ids = process.env.WASMBENCH_CORPUS_IDS ? process.env.WASMBENCH_CORPUS_IDS.split(',') : corpus.ids;
@@ -43,6 +43,17 @@ export async function prepareCorpus(settings, run, directory) {
   const applicationIds = process.env.WASMBENCH_APPLICATION_IDS?.split(',').filter(Boolean);
   const applications = process.env.WASMBENCH_CORPUS_IDS && applicationIds === undefined ? [] : await applicationWorkloads(corpus.applications, applicationIds);
   workloads.push(...applications);
+  if(selected==='all') {
+    const featuresRoot=resolve(site,'corpora/features');
+    const features=parseCorpusJSON(await readFile(join(featuresRoot,'manifest.json'),'utf8'));
+    for(const w of features) {
+      const artifact=resolve(featuresRoot,w.artifact);
+      if(!artifact.startsWith(featuresRoot+'/'))throw Error('Unsafe feature artifact');
+      if(digest(await readFile(artifact))!==w.sha256)throw Error('Feature artifact digest mismatch: '+w.id);
+      workloads.push({...w,artifact});
+    }
+  }
+
   if(new Set(workloads.map(w=>w.id)).size!==workloads.length)throw Error('Duplicate combined corpus IDs');
   await writeFile(manifest, JSON.stringify(workloads, null, 2) + '\n');
   const summary = { source: 'wago + wasm.fyi application kernels', selectedBenchmarks: ids, applicationContracts: applications.length, workloadContracts: workloads.length,

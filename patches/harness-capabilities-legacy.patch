@@ -295,8 +295,7 @@
  				script := "adapters/v8/adapter.mjs"
  				if rt == "v8-tier-observed" || rt == "v8-tier-traced" {
  					script = "adapters/v8/tier-adapter.mjs"
-@@ -703,7 +708,7 @@
- 		archiveTools := f.Bool("archive-tools", true, "preserve exact runner, adapters and analyzer in the run bundle")
+@@ -704,6 +709,6 @@
  		requirePartition := f.Bool("require-isolated-cpu-partition", false, "require empty isolated cgroup-parent and disjoint controller CPUs at run boundaries")
  		hostPolicyPath := f.String("host-policy", "", "observed host baseline JSON; immutable once locked")
 -		validationProfile := f.String("validation-profile", "default", "independent admission: default, wasm1, wasm2, wasm3 (existing locks preserve their policy)")

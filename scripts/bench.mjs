@@ -13,8 +13,8 @@ import { verifyV8 } from './lib/v8-preflight.mjs';
 const action = process.argv[2];
 const { root, settings, run } = await harness();
 const collection = settings.collection;
-const featureSuite = process.env.WASMBENCH_SUITE?.includes('corpora/features/');
-const runtimes = process.env.WASMBENCH_RUNTIMES || (process.env.WASMBENCH_SUITE?.includes('corpora/features/') ? featureConfigurations(settings) : collection.runtimes).join(',');
+const featureSuite = process.env.WASMBENCH_SUITE?.includes('corpora/features/') || process.env.WASMBENCH_SUITE==='all';
+const runtimes = process.env.WASMBENCH_RUNTIMES || (featureSuite ? featureConfigurations(settings) : collection.runtimes).join(',');
 if(['build','collect','corpus-check'].includes(action) && runtimes.split(',').includes('wago')) {
   process.env.WASMBENCH_CORPUS_SOURCE ||= process.env.WAGO_SOURCE || collection.wagoSource;
   const release=await releaseSource('wago-org/wago',{asOf:process.env.WASMBENCH_RELEASE_AS_OF});
@@ -68,16 +68,16 @@ else if (action === 'build') {
   await mkdir(directory, { recursive: true });
   const timing = join(directory, `timing-${id}`);
   const suite = await prepareCorpus(settings, run, directory);
-  const shared = ['--suite', suite, '--runtimes', runtimes, '--timeout', collection.timeout, ...(process.env.WASMBENCH_VALIDATION_PROFILE ? ['--validation-profile', process.env.WASMBENCH_VALIDATION_PROFILE] : [])];
-  pass('run', ...shared, '--profile', 'timing', '--launches', String(number('WASMBENCH_LAUNCHES', featureSuite ? 3 : collection.launches)),
-    '--samples', String(number('WASMBENCH_SAMPLES', featureSuite ? 3 : collection.samples)), '--operations', String(number('WASMBENCH_OPERATIONS', collection.operations)),
+  const shared = ['--archive-tools=true','--suite', suite, '--runtimes', runtimes, '--timeout', collection.timeout, ...(process.env.WASMBENCH_VALIDATION_PROFILE ? ['--validation-profile', process.env.WASMBENCH_VALIDATION_PROFILE] : [])];
+  pass('run', ...shared, '--profile', 'timing', '--launches', String(number('WASMBENCH_LAUNCHES', process.env.WASMBENCH_SUITE==='all'?collection.launches:featureSuite ? 3 : collection.launches)),
+    '--samples', String(number('WASMBENCH_SAMPLES', process.env.WASMBENCH_SUITE==='all'?collection.samples:featureSuite ? 3 : collection.samples)), '--operations', String(number('WASMBENCH_OPERATIONS', collection.operations)),
     '--warmup', String(number('WASMBENCH_WARMUP', collection.warmup, 0)), '--out', timing);
   invoke('verify', '--run', timing);
   const report = join(directory, 'report');
   const reportArgs = ['report', '--run', timing, '--out', report];
   if (collection.memory) {
     const memory = join(directory, `memory-${id}`);
-    const args = ['run', ...shared, '--profile', 'memory', '--launches', String(number('WASMBENCH_LAUNCHES', featureSuite ? 3 : collection.launches)),
+    const args = ['run', ...shared, '--profile', 'memory', '--launches', String(number('WASMBENCH_LAUNCHES', process.env.WASMBENCH_SUITE==='all'?collection.launches:featureSuite ? 3 : collection.launches)),
       '--samples', '1', '--operations', '1', '--warmup', '0', '--out', memory];
     if (collection.phaseBarriers) args.push('--phase-barriers');
     pass(...args);

@@ -18,7 +18,7 @@ await mkdir(join(site, '.wasmbench'), { recursive: true });
 const sockets = join(homedir(), '.cache/wasm-fyi/ssh');
 await mkdir(sockets, { recursive: true });
 const socket = join(sockets, digest(Buffer.from(site)).slice(0, 12));
-const options = ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=15', '-o', 'ServerAliveInterval=15', '-o', 'ServerAliveCountMax=3', '-o', 'ControlMaster=auto', '-o', 'ControlPersist=600', '-o', `ControlPath=${socket}`];
+const options = ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=15', '-o', 'ServerAliveInterval=15', '-o', 'ServerAliveCountMax=3', '-o', 'ControlMaster=auto', '-o', 'ControlPersist=86400', '-o', `ControlPath=${socket}`];
 const ssh = (script, timeout = 120_000) => command('ssh', [...options, host.ssh, 'bash -lc ' + quote(script)], { timeout });
 const remotePath = path => `${host.ssh}:${path}`;
 const rsync = (args, compress = true) => command('rsync', ['-a', ...(compress ? ['-z'] : []), '-e', ['ssh', ...options.map(quote)].join(' '), ...args], { stdio: 'inherit', timeout: 30 * 60 * 1000 });
@@ -41,7 +41,7 @@ const action = process.argv[2];
 if (action === 'doctor') {
   command('gtar', ['--version']); command('xz', ['--version']);
   process.stdout.write(ssh(nodePath+'set -eu; uname -a; for tool in node go cargo rsync git flock tar xz; do command -v "$tool"; done; node --version; go version; cargo --version', 30_000));
-} else if (['collect', 'history', 'threads', 'conformance'].includes(action)) {
+} else if (['stage', 'collect', 'history', 'threads', 'conformance'].includes(action)) {
   command('gtar', ['--version']);
   command('xz', ['--version']);
   // Copy source files into isolated, immutable-per-experiment directories. Neither
@@ -71,20 +71,27 @@ if (action === 'doctor') {
   }
   process.stdout.write(ssh(`mkdir -p ${quote(remote + '/site/adapters/features')}`));
   rsync([join(site,'adapters/features/') ,remotePath(remote + '/site/adapters/features/')]);
+  process.stdout.write(ssh(`mkdir -p ${quote(remote + '/site/adapters/audit')}`));
+  rsync([join(site,'adapters/audit/'),remotePath(remote + '/site/adapters/audit/')]);
   rsync([join(site,'scripts/conformance.mjs'),join(site,'scripts/publish-conformance.mjs'),join(site, 'scripts/history.mjs'), join(site, 'scripts/thread-workers.mjs'), join(site, 'scripts/import-wasmbench.mjs'), remotePath(remote + '/site/scripts/')]);
   rsync([join(site, 'scripts/lib/validate-data.mjs'), join(site, 'scripts/lib/snapshot-index.mjs'), join(site, 'scripts/lib/verify-seal.mjs'), join(site, 'scripts/lib/measurement-policy.mjs'), remotePath(remote + '/site/scripts/lib/')]);
   rsync([join(site, 'patches/legacy-wago-api.patch'), remotePath(remote + '/site/patches/')]);
-  rsync([join(site, 'scripts/bench.mjs'), remotePath(remote + '/site/scripts/')]);
+  rsync([join(site, 'scripts/bench.mjs'), join(site,'scripts/full-run.mjs'),join(site,'scripts/compile-latency-audit.mjs'), remotePath(remote + '/site/scripts/')]);
   rsync([join(site, 'scripts/wasmer-adapter.test.mjs'), remotePath(remote + '/site/scripts/')]);
   rsync([join(site, 'scripts/extra-feature-adapters.test.mjs'), remotePath(remote + '/site/scripts/')]);
   rsync([join(site, 'scripts/pack-evidence.mjs'), remotePath(remote + '/site/scripts/')]);
   rsync([join(site, 'scripts/lib/evidence-archive.mjs'), remotePath(remote + '/site/scripts/lib/')]);
   rsync([join(site,'scripts/lib/release-policy.mjs'),join(site,'scripts/lib/conformance.mjs'),join(site,'scripts/lib/weekly-history.mjs'),join(site,'scripts/lib/engine-sources.mjs'),join(site, 'scripts/lib/wasmbench.mjs'), join(site, 'scripts/lib/corpus.mjs'), join(site, 'scripts/lib/application-manifest.mjs'), join(site, 'scripts/lib/application-kernels.mjs'), join(site, 'scripts/lib/harness-patch.mjs'), join(site, 'scripts/lib/feature-configurations.mjs'), join(site,'scripts/lib/feature-tools.mjs'), join(site, 'scripts/lib/v8-preflight.mjs'), remotePath(remote + '/site/scripts/lib/')]);
-  rsync(['harness-capabilities.patch','harness-capabilities-legacy.patch','harness-wasmer.patch','harness-wasmer-legacy.patch','harness-wasmer-reset-scope.patch','harness-wasmer-scoped.patch','harness-wasmer-applications.patch','harness-code-profile-policy.patch','harness-v8-wasmfx-lock.patch','harness-feature-engines.patch'].map(name=>join(site,'patches',name)).concat(remotePath(remote+'/site/patches/')));
+  rsync(['harness-capabilities.patch','harness-capabilities-legacy.patch','harness-wasmer.patch','harness-wasmer-legacy.patch','harness-wasmer-reset-scope.patch','harness-wasmer-scoped.patch','harness-wasmer-applications.patch','harness-code-profile-policy.patch','harness-v8-wasmfx-lock.patch','harness-feature-engines.patch','harness-wazero-compile-freshness.patch','harness-v8-compile-freshness.patch'].map(name=>join(site,'patches',name)).concat(remotePath(remote+'/site/patches/')));
   rsync(['-r', join(site, 'corpora'), remotePath(remote + '/site/')]);
   const remoteConfig = join(local, 'wasmbench.config.json');
   await writeFile(remoteConfig, JSON.stringify({ ...settings, root: '../harness', collection: { ...settings.collection, wagoSource: '../wago' } }, null, 2) + '\n');
   rsync([remoteConfig, remotePath(remote + '/site/')]);
+  }
+  if(action==='stage') {
+    const receipt={id,remote,local,ssh:host.ssh,stagedAt:new Date().toISOString()};
+    await writeFile(join(site,'.wasmbench/latest-hub-stage.json'),JSON.stringify(receipt)+'\n');
+    console.log(JSON.stringify(receipt));process.exit(0);
   }
   const overrides = ['WASMBENCH_RUNTIMES', 'WASMBENCH_SUITE', 'WASMBENCH_LAUNCHES', 'WASMBENCH_SAMPLES', 'WASMBENCH_OPERATIONS', 'WASMBENCH_WARMUP', 'WASMBENCH_CORPUS_IDS', 'WASMBENCH_APPLICATION_IDS', 'WASMBENCH_VALIDATION_PROFILE', 'WASMBENCH_RECORD_FAILURES', 'WASMBENCH_HISTORY_ANCHOR', 'WASMBENCH_HISTORY_WEEKS','WASMBENCH_CONFORMANCE_LANES','WASMBENCH_RELEASE_AS_OF','WAGO_SPEC_INTERPRETER']
     .filter(key => process.env[key]).map(key => `${key}=${quote(process.env[key])}`).join(' ');

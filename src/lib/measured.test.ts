@@ -22,6 +22,20 @@ describe('measured view boundary', () => {
 		expect(measuredTiming(feature, 'wasmtime', item.id, '0'.repeat(64), 'steady').status).toBe('not-collected');
 	});
 
+	it('withholds unaudited compile cache hits while preserving execution evidence', () => {
+		for (const runtime of ['wazero', 'v8-optimizing-only']) {
+			const copy = structuredClone(feature);
+			const config = copy.runtimes.find(r => r.id === runtime)!;
+			config.description.effective_configuration = {};
+			expect(measuredTiming(copy, runtime, item.id, item.sha256, 'compile').status).toBe('not-measured');
+			expect(measuredTiming(copy, runtime, item.id, item.sha256, 'steady').status).toBe('ok');
+			config.description.effective_configuration = runtime === 'wazero'
+				? {compile_policy: 'fresh uncached module per operation; verification outside timer'}
+				: {flags: JSON.stringify(['--no-wasm-native-module-cache'])};
+			expect(measuredTiming(copy, runtime, item.id, item.sha256, 'compile').status).toBe('ok');
+		}
+	});
+
 	it('withholds mixed successful and failed launches rather than averaging them', () => {
 		const copy = structuredClone(feature);
 		const summary = copy.summaries.find(summary => summary.runtime === 'wasmtime' && summary.workload === item.id && summary.scenario === 'steady')!;

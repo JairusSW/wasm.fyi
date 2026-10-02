@@ -1,0 +1,65 @@
+--- a/adapters/wazero/main.go
++++ b/adapters/wazero/main.go
+@@ -324,7 +324,15 @@
+ 	if !slices.Contains([]string{"engine-init", "compile", "instantiate", "first-call", "steady", "trajectory", "teardown"}, r.Scenario) {
+ 		return nil, fmt.Errorf("unsupported scenario")
+ 	}
+-	if r.Scenario != "engine-init" {
++	if r.Scenario == "compile" {
++		// setup retains a compiled module and seeds wazero's per-runtime code
++		// cache. Keep only an empty runtime for a genuine compile API window.
++		a.close()
++		a.engine = a.newEngine()
++		if err := a.registerHostImports(); err != nil {
++			return nil, err
++		}
++	} else if r.Scenario != "engine-init" {
+ 		if err := a.setup(); err != nil {
+ 			return nil, err
+ 		}
+@@ -507,7 +515,7 @@
+ 				if info, ok := debug.ReadBuildInfo(); ok {
+ 					build = info.String()
+ 				}
+-				resp.Description = &protocol.Description{Runtime: "wazero", Version: "1.12.0", Backend: backend, Embedding: "Go API", Build: build, Configuration: map[string]string{"compilation_cache": "disabled", "context_termination": "enabled", "start_functions": "explicit_disabled", "backend": backend}, Capabilities: map[string]bool{"can_compile_separately": true, "can_instantiate_separately": true, "can_disable_code_cache": true, "can_measure_host_allocations": true, "can_export_native_code": false, "can_observe_tiers": false, "can_snapshot": false}, Scenarios: []string{"engine-init", "compile", "instantiate", "first-call", "steady", "trajectory", "teardown"}, ABIs: []string{"core"}, Features: []string{"mvp", "bulk-memory", "simd", "reference-types", "multi-value"}}
++				resp.Description = &protocol.Description{Runtime: "wazero", Version: "1.12.0", Backend: backend, Embedding: "Go API", Build: build, Configuration: map[string]string{"compilation_cache": "disabled", "compile_policy": "fresh uncached module per operation; empty runtime prepared outside timer; verification, module close and instance close outside timer; no untimed retained module", "context_termination": "enabled", "start_functions": "explicit_disabled", "backend": backend}, Capabilities: map[string]bool{"can_compile_separately": true, "can_instantiate_separately": true, "can_disable_code_cache": true, "can_measure_host_allocations": true, "can_export_native_code": false, "can_observe_tiers": false, "can_snapshot": false}, Scenarios: []string{"engine-init", "compile", "instantiate", "first-call", "steady", "trajectory", "teardown"}, ABIs: []string{"core"}, Features: []string{"mvp", "bulk-memory", "simd", "reference-types", "multi-value"}}
+ 				resp.Description.Scenarios = append(resp.Description.Scenarios, "app-init")
+ 				resp.Description.Scenarios = append(resp.Description.Scenarios, protocol.HarnessCalibrationScenario)
+ 				resp.Description.Configuration["harness_calibration_policy"] = protocol.HarnessCalibrationPolicy
+--- /dev/null
++++ b/adapters/wazero/compile_freshness_test.go
+@@ -0,0 +1,34 @@
++package main
++
++import (
++	"github.com/wasmbench/wasmbench/corpus"
++	"github.com/wasmbench/wasmbench/protocol"
++	"testing"
++)
++
++func TestCompileDoesNotRetainUntimedModule(t *testing.T) {
++	workloads, err := corpus.Generate(t.TempDir(), "core")
++	if err != nil {
++		t.Fatal(err)
++	}
++	a := &adapter{}
++	defer a.close()
++	w := workloads[0]
++	if err = a.prepare(&protocol.Preparation{Artifact: w.Artifact, ArtifactSHA256: w.SHA256, Workload: w, Profile: "timing"}); err != nil {
++		t.Fatal(err)
++	}
++	// A previous execution in this process must not seed the compile timer's cache.
++	if err = a.setup(); err != nil {
++		t.Fatal(err)
++	}
++	samples, err := a.run(&protocol.RunRequest{Scenario: "compile", Samples: 3, Operations: 2})
++	if err != nil {
++		t.Fatal(err)
++	}
++	if len(samples) != 3 {
++		t.Fatalf("samples=%d", len(samples))
++	}
++	if a.compiled != nil || a.instance != nil || a.fn != nil {
++		t.Fatal("compile retains an untimed module or instance, allowing cached compilation")
++	}
++}

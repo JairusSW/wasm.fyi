@@ -21,11 +21,11 @@ reports.sort((a,b)=>b.created.localeCompare(a.created));
 const settings=await config();
 for(const report of reports)for(const runtime of report.runtimes) {
   const modes={'v8-optimizing-only':'optimizing-only','v8-liftoff-only':'liftoff-only'};
-  if(modes[runtime.id])validateV8Description(runtime.description,settings.node,modes[runtime.id]);
+  if(modes[runtime.id])validateV8Description(runtime.description,settings.node,modes[runtime.id],{allowLegacyCache:true});
 }
 for(const os of ['linux','darwin']) {
   const experimental=reports.find(r=>r.host.os===os && r.runtimes.some(c=>c.id==='v8-wasmfx'))?.runtimes.find(c=>c.id==='v8-wasmfx');
-  if(experimental)validateV8Description(experimental.description,settings.node,'optimizing-wasmfx-only');
+  if(experimental)validateV8Description(experimental.description,settings.node,'optimizing-wasmfx-only',{allowLegacyCache:true});
 }
 const configurations = { A:'wasmtime', B:'wasmtime-winch', C:'wasmer-llvm', D:'wasmer-singlepass', E:'wazero', F:'v8-optimizing-only', G:'wago', H:'v8-liftoff-only', I:'wasmi', J:'wasmedge', K:'wasm3', L:'wavm', M:'spidermonkey', N:'jsc', O:'deno', P:'wamr', Q:'chicory', R:'wasmtime-component-async', S:'v8-wasmfx' };
 const scenarios = { compile:'compile', inst:'instantiate', first:'first-call', steady:'steady' };

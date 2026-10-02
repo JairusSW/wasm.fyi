@@ -16,3 +16,7 @@ test('all fourteen engines have explicit release sources and configurations',()=
   assert.equal(Object.keys(engineSources).length,14);
   for(const source of Object.values(engineSources)){assert(source.repository.includes('/'));assert(!source.branch);assert(source.configurations.length);}
 });
+test('a full year includes both Wednesday endpoints, 52 weekly intervals',()=>{
+ const dates=wednesdays(new Date('2026-10-02T00:00:00Z'),53);
+ assert.equal(dates.length,53);assert.equal(dates[0],'2025-10-01T00:00:00.000Z');assert.equal(dates.at(-1),'2026-09-30T00:00:00.000Z');
+});
