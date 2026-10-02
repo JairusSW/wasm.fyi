@@ -106,7 +106,7 @@ await locked(async()=>{
         const profiles=['timing',...(opts.memory?['memory']:[]),...(opts.code?['code']:[])];
         for(const profile of profiles) {
           const output=join(attempt,profile+'-'+randomUUID().slice(0,8));
-          const args=['run',...shared,'--profile',profile,'--launches',String(profile==='code'?1:opts.launches),
+          const args=['run',...shared,'--profile',profile,'--launches',String(profile==='timing'?opts.launches:1),
             '--samples',String(profile==='timing'?opts.samples:1),'--operations',String(profile==='timing'?opts.operations:1),
             '--warmup',String(profile==='timing'?opts.warmup:0),'--out',output];
           if(profile==='code')args.push('--scenarios','compile');

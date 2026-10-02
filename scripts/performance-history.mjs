@@ -9,7 +9,11 @@ if((process.argv[2] || 'plan')!=='plan')throw Error('Usage: performance-history.
 if(process.env.WASMBENCH_CORPUS_IDS || process.env.WASMBENCH_APPLICATION_IDS)throw Error('Performance history requires the complete corpus');
 const {root,settings,run}=await harness();
 const directory=join(site,'.wasmbench/performance-history');await mkdir(directory,{recursive:true});
-const plan=JSON.parse(await readFile(join(site,'data/release-history/plan.json')));
+const releasePlan=JSON.parse(await readFile(join(site,'data/release-history/plan.json')));
+const weeks=Number(process.env.WASMBENCH_PERFORMANCE_HISTORY_WEEKS || 8);
+if(!Number.isSafeInteger(weeks)||weeks<1||weeks>53)throw Error('Performance history weeks must be 1..53');
+const selectedWeeks=releasePlan.weeks.slice(-weeks);
+const plan={...releasePlan,weeks:selectedWeeks,pins:releasePlan.pins.filter(pin=>selectedWeeks.includes(pin.targetWeek))};
 for(const targetWeek of plan.weeks)for(const engine of Object.keys(engineSources)) {
   if(plan.pins.filter(p=>p.targetWeek===targetWeek&&p.engine===engine).length!==1)throw Error('Release plan is missing a unique engine/Wednesday: '+engine+'/'+targetWeek);
 }
