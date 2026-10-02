@@ -31,7 +31,10 @@ for(const localPid of localOwners.filter(Boolean)) {
   catch(error){if(error.code!=='ESRCH')throw error;}
 }
 await locked(async()=>{
-  command(process.execPath,['scripts/performance-history.mjs','plan'],{env,stdio:'inherit'});
+  // Reuse the complete corpus that planning already imported. Re-importing to
+  // the same manifest path fails with O_EXCL in the Wasm bench controller.
+  const suite=join(directory,'corpus','wago-suite.json');
+  command(process.execPath,['scripts/performance-history.mjs','plan'],{env:{...env,WASMBENCH_HISTORY_SUITE:suite},stdio:'inherit'});
   const queue=JSON.parse(await readFile(join(directory,'queue.json')));
   if(queue.host!==process.platform+'/'+process.arch)throw Error('Historical queue belongs to another architecture');
   const workloads=parseCorpusJSON(await readFile(queue.suite,'utf8'));
