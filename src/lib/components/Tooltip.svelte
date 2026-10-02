@@ -6,6 +6,8 @@
 	let el: HTMLDivElement;
 	let text = $state('');
 	let shown = $state(false);
+  type Summary={title:string;subtitle:string;rows:{label:string;pass:number;total:number;failed:number;skipped:number;missing:number}[];hint:string};
+  let summary=$state<Summary|null>(null);
 
 	onMount(() => {
 		let cur: Element | null = null;
@@ -20,13 +22,15 @@
 		};
 		const show = (target: Element, x: number, y: number) => {
 			const tip = target.getAttribute('data-tip');
-			if (!tip) return;
+      const structured=target.getAttribute('data-tip-summary');
+			if (!tip && !structured) return;
 			cur = target;
             // Focus/scroll events can fire synchronously while Svelte removes
             // a view. Apply state after that render; discard superseded hovers.
             queueMicrotask(() => {
                 if (cur !== target) return;
-                text = tip;
+                text = tip || '';
+                try { summary=structured?JSON.parse(structured):null; }catch{summary=null;}
                 shown = true;
                 requestAnimationFrame(() => place(x, y));
             });
@@ -35,7 +39,7 @@
 			cur = null;
             queueMicrotask(() => { if (!cur) shown = false; });
 		};
-		const closest = (e: Event) => (e.target instanceof Element ? e.target.closest('[data-tip]') : null);
+		const closest = (e: Event) => (e.target instanceof Element ? e.target.closest('[data-tip], [data-tip-summary]') : null);
 		const over = (e: MouseEvent) => {
 			const t = closest(e);
 			if (t && t !== cur) show(t, e.clientX, e.clientY);
@@ -68,7 +72,21 @@
 	});
 </script>
 
-<div bind:this={el} class="tip" role="tooltip" hidden={!shown}>{text}</div>
+<div bind:this={el} class="tip" role="tooltip" hidden={!shown}>
+  {#if summary}
+    <strong class="tip-title">{summary.title}</strong><div class="tip-sub">{summary.subtitle}</div>
+    {#each summary.rows as row}
+      <div class="tip-row"><span>{row.label}</span><strong class="mono">{row.pass}/{row.total}</strong></div>
+      <div class="tip-bar"><span style:width={`${row.pass/row.total*100}%`} style:background="var(--st-pass)"></span><span style:width={`${row.failed/row.total*100}%`} style:background="var(--st-fail)"></span><span style:width={`${row.skipped/row.total*100}%`} style:background="var(--st-skip)"></span></div>
+      <div class="tip-counts"><span>● {row.pass} passed</span>{#if row.failed}<span>✕ {row.failed} failed</span>{/if}{#if row.skipped}<span>— {row.skipped} unsupported</span>{/if}{#if row.missing}<span>? {row.missing} uncollected</span>{/if}</div>
+    {/each}
+    <div class="tip-hint">{summary.hint}</div>
+  {:else}
+    {@const lines=text.split('\n')}
+    <strong class="tip-title">{lines[0]}</strong>
+    {#each lines.slice(1).filter(Boolean) as line}<div class="tip-sub">{line}</div>{/each}
+  {/if}
+</div>
 
 <style>
 	.tip {
@@ -84,6 +102,12 @@
 		border: 1px solid var(--line2);
 		box-shadow: var(--shadow-float);
 	}
+  .tip-title { display:block;font-size:12px; }
+  .tip-sub { font-size:11px;color:var(--fg3);overflow-wrap:anywhere;margin-top:4px; }
+  .tip-row { display:flex;justify-content:space-between;gap:20px;margin-top:10px;font-size:11px; }
+  .tip-bar { display:flex;height:5px;background:var(--line2);margin:5px 0; }
+  .tip-counts { display:flex;gap:10px;flex-wrap:wrap;font-size:10px;color:var(--fg2); }
+  .tip-hint { border-top:1px solid var(--line);padding-top:6px;margin-top:10px;font-size:10px;color:var(--fg3); }
 	.tip[hidden] {
 		display: none;
 	}

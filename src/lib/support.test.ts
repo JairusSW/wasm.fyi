@@ -49,3 +49,21 @@ describe('stable and development compatibility tracks',()=>{
     expect(runtimeFeatureTrack('wasmtime',f,scope,'development').text).toBe('not collected');
   });
 });
+
+describe('combined compatibility and corpus counts',()=>{
+  for(const machine of ['m1','m2'] as const)it(`keeps backend evidence separate and counts only one complete configuration on ${machine}`,()=>{
+    const scope:Scope={machine,baseline:'A',hide:{},weighting:'workload'};
+    const feature=FEATS.find(f=>f.id==='simd')!;
+    const track=runtimeFeatureTrack('v8',feature,scope,'stable');
+    expect(track.pass).toBe(track.expected);
+    expect(track.configurations.length).toBeGreaterThan(1);
+    for(const c of track.configurations){
+      expect(c.pass+c.failed+c.skipped+c.missing).toBe(c.total);
+      expect(c.contracts).toHaveLength(c.total-c.missing);
+      expect(c.contracts.filter(x=>x.status==='passed')).toHaveLength(c.pass);
+    }
+    const missing=runtimeFeatureTrack('wago',feature,scope,'stable');
+    expect(missing.configurations).toEqual([]);
+    expect(missing.pass).toBe(0);
+  });
+});

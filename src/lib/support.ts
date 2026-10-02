@@ -71,8 +71,12 @@ export function runtimeFeatureTrack(rid:string,f:FeatureRow,scope:Scope,channel:
   const code:SupportCode=complete.some(x=>!flagged(x.v.id))?'y':complete.length?'f':counts.some(x=>x.f.pass>0)?'p':'?';
   const failed=counts.some(x=>x.f.failed>0);
   const detail=counts.map(({v,f})=>`${v.description.backend} · ${v.version}: ${f.pass}/${expected} passed, ${f.failed} failed, ${f.unsupported} unsupported\n${f.reasons.join('\n')}`).join('\n');
+  const best=complete.find(x=>!flagged(x.v.id)) || complete[0] || [...counts].sort((a,b)=>b.f.pass-a.f.pass || a.f.failed-b.f.failed)[0];
   return {...supportCell(code),glyph:code==='?'&&failed?'✕':supportCell(code).glyph,
     color:code==='?'&&failed?'var(--st-fail)':supportCell(code).color,
     text:!counts.length?'not collected':code==='y'?'corpus passed':code==='f'?'corpus passed · flag':code==='p'?'partial corpus':failed?'rejected / failed':'adapter unsupported',detail,
-    version:selected || '',channel};
+    version:selected || '',channel,expected,pass:best?.f.pass || 0,
+    configurations:counts.map(({v,f})=>({id:v.id,backend:v.description.backend,version:v.version,collectedAt:v.collectedAt,source:v.source,pass:f.pass,total:expected,failed:f.failed,skipped:f.total-f.pass-f.failed,missing:expected-f.total,contracts:f.contracts}))};
 }
+
+export type FeatureTrack = ReturnType<typeof runtimeFeatureTrack>;

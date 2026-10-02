@@ -94,6 +94,7 @@ output.featureVersions=Object.fromEntries(['m1','m2'].map(machine=>{
       return {...feature,total:current.length,pass:current.filter(featureCasePassed).length,
         executed:current.filter(c=>c.status==='executed').length,compiledOnly:current.filter(c=>c.status==='compile-only').length,
         failed:current.filter(c=>c.status==='failed').length,unsupported:current.filter(c=>c.status==='unsupported').length,
+        contracts:current.map(c=>({workload:c.workload,status:featureCasePassed(c)?'passed':c.status==='failed'?'failed':'unsupported',scope:c.scope,report:c.report,reasons:c.reasons})),
         reports:[...new Set(current.map(c=>c.report))],reasons:[...new Set(current.flatMap(c=>c.reasons))]};
     })}))];
 }));

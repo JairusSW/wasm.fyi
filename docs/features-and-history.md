@@ -63,7 +63,7 @@ Daily evidence installation also refreshes the fixed current comparison baseline
 
 ## Stable and development compatibility
 
-The Features support matrix shows a stable line and a dimmed development line for each engine. Select a collected version in the column header when several versions are available. Missing release measurements remain “not collected”; documented plugin availability is listed separately from measured results. Experimental flags are marked even on a released engine.
+The Features Compatibility matrix combines support and corpus test results. Compact S (stable) and dimmed D (development) rows show passed/total counts for one backend. Hover for a visual breakdown by backend; click for individual contracts, evidence links, and expandable diagnostics. Select a collected version in the column header when several versions are available. Missing release measurements remain “not collected”; documented plugin availability is listed separately from measured results. Experimental flags are marked even on a released engine.
 
 `data/feature-releases.json` records release provenance for exact runtime identities, including executable/dependency hashes and the complete adapter description. Register a new stable identity only after verifying its pinned release origin; a semver string alone is insufficient. Source builds with `engine_source_revision` or a main/development channel remain development builds regardless of their reported version. Unknown identities are labeled unverified.
 
