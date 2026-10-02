@@ -1,0 +1,47 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"github.com/tetratelabs/wazero"
+	"github.com/tetratelabs/wazero/api"
+	"os"
+	"sort"
+	"time"
+)
+
+func main() {
+	ctx := context.Background()
+	for _, path := range os.Args[1:] {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			panic(err)
+		}
+		samples := []int64{}
+		for i := 0; i < 15; i++ {
+			runtime := wazero.NewRuntimeWithConfig(ctx, wazero.NewRuntimeConfigCompiler().WithCoreFeatures(api.CoreFeaturesV2).WithCloseOnContextDone(true))
+			start := time.Now()
+			module, err := runtime.CompileModule(ctx, data)
+			elapsed := time.Since(start).Nanoseconds()
+			if err != nil {
+				panic(err)
+			}
+			samples = append(samples, elapsed)
+			if err := module.Close(ctx); err != nil {
+				panic(err)
+			}
+			if err := runtime.Close(ctx); err != nil {
+				panic(err)
+			}
+		}
+		ordered := append([]int64{}, samples...)
+		sort.Slice(ordered, func(i, j int) bool { return ordered[i] < ordered[j] })
+		result := map[string]any{"artifact": path, "bytes": len(data), "wazero_fresh_runtime_ns": ordered[len(ordered)/2], "wazero_fresh_samples_ns": samples}
+		encoded, err := json.Marshal(result)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(string(encoded))
+	}
+}

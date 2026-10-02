@@ -28,7 +28,7 @@ async function recipeFiles(directory) {
     if(['target','node_modules','.git','.wasmbench'].includes(entry.name))continue;
     const path=join(directory,entry.name);
     if(entry.isDirectory())files.push(...await recipeFiles(path));
-    else if(/\.(?:go|rs|c|cc|cpp|h|mjs|js|java|toml|lock|mod|sum|patch|json)$/.test(path))files.push(path);
+    else if(/\.(?:go|rs|c|cc|cpp|h|mjs|js|java|toml|lock|mod|sum|patch|json|go\.txt)$/.test(path))files.push(path);
   }
   return files;
 }

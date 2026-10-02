@@ -1,0 +1,38 @@
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"github.com/wago-org/wago"
+	"os"
+	"sort"
+	"time"
+)
+
+func main() {
+	for _, path := range os.Args[1:] {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			panic(err)
+		}
+		samples := []int64{}
+		for i := 0; i < 15; i++ {
+			start := time.Now()
+			module, err := wago.Compile(nil, data)
+			elapsed := time.Since(start).Nanoseconds()
+			if err != nil {
+				panic(err)
+			}
+			samples = append(samples, elapsed)
+			module.Close()
+		}
+		ordered := append([]int64{}, samples...)
+		sort.Slice(ordered, func(i, j int) bool { return ordered[i] < ordered[j] })
+		result := map[string]any{"artifact": path, "bytes": len(data), "wago_fresh_compile_ns": ordered[len(ordered)/2], "wago_samples_ns": samples}
+		encoded, err := json.Marshal(result)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(string(encoded))
+	}
+}

@@ -4,6 +4,18 @@ import {engineSources} from './lib/engine-sources.mjs';
 import {historyLanes} from './lib/history-lanes.mjs';
 import {wasmerRelease,assertWasmerReceipt} from './lib/wasmer-release.mjs';
 import {performanceHistoryQueue,performanceCorpusIdentity} from './lib/performance-history.mjs';
+import {engineVersion,assertHistoricalRuntime} from './lib/historical-binding.mjs';
+test('historical runtime evidence rejects current-SDK fallback and cached wazero compilation',()=>{
+ const binding={engine:'wazero',version:'1.9.0',configuration:'wazero'};
+ const runtime={id:'wazero',description:{runtime_version:'1.9.0',effective_configuration:{compile_policy:'fresh uncached module per operation; verification outside timer'}}};
+ assert.doesNotThrow(()=>assertHistoricalRuntime(runtime,binding));
+ assert.throws(()=>assertHistoricalRuntime({...runtime,description:{...runtime.description,runtime_version:'1.12.0'}},binding),/version differs/);
+ assert.throws(()=>assertHistoricalRuntime({...runtime,description:{...runtime.description,effective_configuration:{compile_policy:'cached'}}},binding),/fresh compile/);
+ const wago={engine:'wago',configuration:'wago',source:{revision:'a'.repeat(40)}};
+ assert.doesNotThrow(()=>assertHistoricalRuntime({id:'wago',description:{runtime_version:'a'.repeat(40)+'/source-'+ 'b'.repeat(64)}},wago));
+ assert.throws(()=>assertHistoricalRuntime({id:'wago',description:{runtime_version:'c'.repeat(40)+'/source-'+ 'b'.repeat(64)}},wago),/source differs/);
+ assert.equal(engineVersion({tag:'v0.1.0-beta.11'}),'0.1.0-beta.11');assert.throws(()=>engineVersion({tag:'main'}),/explicit SDK version/);
+});
 test('performance history reuses released identities without changing collection dates',()=>{
  const base={engine:'wazero',status:'planned',repository:'tetratelabs/wazero',tag:'v1.12.0',publishedAt:'2026-09-01T00:00:00Z',configurations:['wazero']};
  const plan={pins:[{...base,targetWeek:'2026-09-23T00:00:00Z'},{...base,targetWeek:'2026-09-30T00:00:00Z'},
@@ -16,6 +28,8 @@ test('performance history reuses released identities without changing collection
  assert.throws(()=>performanceHistoryQueue({pins:[plan.pins[0],plan.pins[0]]},context),/Duplicate engine/);
  assert.throws(()=>performanceHistoryQueue({pins:[{...plan.pins[0],publishedAt:'2026-10-01T00:00:00Z'}]},context),/Invalid released/);
  assert.throws(()=>performanceHistoryQueue({pins:[{...plan.pins[0],publishedAt:'invalid'}]},context),/Invalid released/);
+ const newer={...base,tag:'v1.13.0',publishedAt:'2026-09-29T00:00:00Z',targetWeek:'2026-09-30T00:00:00Z'};
+ assert.equal(performanceHistoryQueue({pins:[plan.pins[0],newer]},context).jobs[0].release.tag,'v1.13.0');
 });
 test('history corpus identity includes oracles and ABI and ignores host-specific artifact paths',()=>{
  const w={id:'applications/image-blur',sha256:'a'.repeat(64),artifact:'/mac/a.wasm',abi:'core',args:[192],reset:'stateless',oracle:{kind:'exact_u64',expected:['17']}};

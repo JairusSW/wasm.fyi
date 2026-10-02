@@ -173,6 +173,10 @@ history-plan:
 history-performance-plan:
     node scripts/performance-history.mjs plan
 
+# Collect release-specific historical evidence under the host measurement lock.
+history-performance-collect:
+    node scripts/performance-history-collect.mjs
+
 # Collect released-engine official-suite history; unimplemented runners remain explicit gaps.
 history-collect:
     node scripts/history.mjs collect

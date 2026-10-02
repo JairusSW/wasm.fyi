@@ -22,7 +22,8 @@ export function performanceHistoryQueue(plan,{host,corpusSha256,recipeSha256,opt
     job.targetWeeks.push(pin.targetWeek);jobs.set(jobId,job);
     snapshots.push({...pin,jobId,status:'pending'});
   }
-  return {schema:1,host,corpusSha256,recipeSha256,options,jobs:[...jobs.values()],snapshots};
+  const ordered=[...jobs.values()].sort((a,b)=>b.targetWeeks.at(-1).localeCompare(a.targetWeeks.at(-1)));
+  return {schema:1,host,corpusSha256,recipeSha256,options,jobs:ordered,snapshots};
 }
 
 // Include the full oracle/ABI/reset metadata, not just artifact bytes. Sorting
