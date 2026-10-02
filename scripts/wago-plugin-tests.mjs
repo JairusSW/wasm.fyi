@@ -2,7 +2,7 @@ import {spawn} from 'node:child_process';
 import {site,command} from './lib/wasmbench.mjs';
 
 // Independent hosts run concurrently. Official Preview 1 fixtures use the
-// released plugin's Linux runner; portable Preview 1/2 tests run on both hosts.
+// released plugin's Linux runner; official Component Model cases run on both hosts.
 function collect(script,lanes){
   return new Promise((resolve,reject)=>{
     let output='';
@@ -15,8 +15,8 @@ function collect(script,lanes){
   });
 }
 const results=await Promise.allSettled([
-  collect('scripts/conformance.mjs','wago-wasi-library,wago-component'),
-  collect('scripts/hub.mjs','wago-wasi-library,wago-wasi,wago-component')
+  collect('scripts/conformance.mjs','wago-component'),
+  collect('scripts/hub.mjs','wago-wasi,wago-component')
 ]);
 // Collection seals failed assertions too. Publish the Mac archive after both
 // workers finish; Hub imports its independently verified transport archive.

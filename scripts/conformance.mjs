@@ -37,7 +37,7 @@ else if(action==='collect'){
         }
         if(lane==='wago-wasi' && process.platform!=='linux')throw Error('Released WASI plugin official-suite runner requires Linux; run this lane on Hub.');
         if(lane==='wago-wasi')env.WAGO_WASITEST_DIR=await checkoutSuite(suites.wasi);
-        const tests=lane==='wago-wasi'?['-run','^TestWASISuite$','./p1']:lane==='wago-wasi-library'?['-run','^Test','./p1','./p2']:['-run','^(TestOfficialComponentModel.*Conformance|TestComponentModelConformanceCorpusIsComplete|TestWasmtimeWast.*Conformance)$','.'];
+        const tests=lane==='wago-wasi'?['-run','^TestWASISuite$','./p1']:lane==='wago-wasi-library'?['-run','^Test','./p1','./p2']:['-run','^(TestOfficialComponentModel.*Conformance|TestComponentModelConformanceCorpusIsComplete)$','.'];
         for(const pin of [engine,...(component?[component]:[])])assertReleasedSource(pin.source,pin);
         result=await goConformance(plugin,['-modfile='+mod,...tests],env);
         for(const pin of [engine,...(component?[component]:[])])assertReleasedSource(pin.source,pin);
@@ -50,7 +50,7 @@ else if(action==='collect'){
         }
         if(lane==='wago-wasi')result.suite={...suites.wasi,inventory:await inventory(join(env.WAGO_WASITEST_DIR,'tests'),'.wasm')};
         else if(lane==='wago-component'){
-          const manifests=[];for(const path of ['testdata/conformance/manifest.json','testdata/conformance/wasmtime/manifest.json']){
+          const manifests=[];for(const path of ['testdata/conformance/manifest.json']){
             if(await exists(join(plugin.source,path))){const bytes=await readFile(join(plugin.source,path));const manifest=JSON.parse(bytes);manifests.push({path,sha256:digest(bytes),revision:manifest.revision,files:manifest.files.map(f=>({source:f.source,cases:f.cases.length,actions:f.cases.reduce((n,c)=>n+(c.actions?.length || 0),0)}))});}
           }
           result.suite={...suites.component,manifests};

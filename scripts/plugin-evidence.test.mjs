@@ -17,3 +17,18 @@ test('plugin cells retain package scope and exclude other hosts and runner error
   const hub={hostname:'hub',os:'linux',arch:'x64'};
   assert.equal(pluginEvidence([{...report,host:hub}],{...hub,arch:'amd64'})['wasi-p2'].passed,1);
 });
+
+test('official Component Model totals exclude plugin tests and Wasmtime regressions',()=>{
+  const host={hostname:'hub',os:'linux',arch:'amd64'};
+  const lane={id:'wago-component',status:'failed',plugin:{tag:'v1'},engine:{tag:'v2'},totals:{passed:100,failed:1,skipped:0},suite:{revision:'abc',manifests:[{path:'testdata/conformance/manifest.json',revision:'abc'}]},results:[
+    {name:'TestOfficialComponentModelSynchronousConformance/a',status:'passed'},
+    {name:'TestOfficialComponentModelAsyncConformance/b',status:'skipped'},
+    {name:'TestWasmtimeWastAsyncConformance/c',status:'passed'},
+    {name:'TestComponentModelConformanceCorpusIsComplete',status:'passed'}
+  ]};
+  const report={host,created:'2026-10-01',sha256:'a'.repeat(64),lanes:[lane]};
+  const evidence=pluginEvidence([report],host)['component-model'];
+  assert.equal(evidence.label,'Official suite');assert.equal(evidence.official,true);assert.equal(evidence.total,2);assert.equal(evidence.passed,1);
+  lane.suite.manifests[0].revision='changed';
+  assert.deepEqual(pluginEvidence([report],host),{});
+});
