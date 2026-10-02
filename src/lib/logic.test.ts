@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { ALLB } from './data/snapshot';
 import { fmtU, fx, pct, relative } from './format';
 import { heatCount, heatRatio } from './heat';
-import { benchVal, compatCell, kidCells, leader, ratio, seriesFmt, type Scope } from './model';
+import { benchVal, compatCell, isVisible, kidCells, leader, ratio, seriesFmt, type Scope } from './model';
 
 const scope: Scope = { machine: 'm1', baseline: 'A', weighting: 'corpus', hide: {} };
 
@@ -50,6 +50,10 @@ describe('heat scale', () => {
 });
 
 describe('model', () => {
+	it('shows Wago with its sealed source identity while hiding hash-pinned development builds', () => {
+		expect(isVisible(scope, { id: 'G', rt: 'wago' } as any)).toBe(true);
+		expect(isVisible(scope, { id: 'G', rt: 'v8' } as any)).toBe(false);
+	});
 	it('baseline ratio is 1', () => {
 		expect(ratio(scope, 'lat', 'A', 3)!.r).toBe(1);
 	});

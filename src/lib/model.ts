@@ -38,7 +38,11 @@ export const mf = (m: MachineId, id: CfgId) => MACH[m].f[id] ?? 1;
 export const isOff = (s: Scope, id: CfgId) => !!MACH[s.machine].off[id];
 export const isVisible = (s: Scope, c: Cfg) => {
   const version=viewData.hosts[s.machine].configurations[c.id]?.version || '';
-  return !s.hide[c.id] && !/^[a-f0-9]{40}(?:\/|$)|nightly|snapshot|canary|0\.0\.0-prerelease/i.test(version);
+  // Wago reports identify the sealed runtime by its source revision and source
+  // digest rather than a semantic version. Keep that measured configuration in
+  // the matrix; hash-pinned development builds from other engines stay hidden.
+  const hashPinnedDevelopment=c.rt!=='wago' && /^[a-f0-9]{40}(?:\/|$)/i.test(version);
+  return !s.hide[c.id] && !hashPinnedDevelopment && !/nightly|snapshot|canary|0\.0\.0-prerelease/i.test(version);
 };
 export const visibleCfgs = (s: Scope) => CFG.filter((c) => isVisible(s, c));
 
