@@ -6,7 +6,7 @@
 	let el: HTMLDivElement;
 	let text = $state('');
 	let shown = $state(false);
-  type Summary={title:string;subtitle:string;rows:{label:string;pass:number;total:number;failed:number;skipped:number;missing:number}[];hint:string};
+  type Summary={title:string;subtitle:string;rows:{label:string;pass:number;total:number;failed:number;skipped:number;missing:number;skippedLabel?:string}[];hint:string};
   let summary=$state<Summary|null>(null);
 
 	onMount(() => {
@@ -55,6 +55,8 @@
 				show(t, r.left, r.bottom);
 			}
 		};
+		const key = (e: KeyboardEvent) => { if (e.key === 'Escape') hide(); };
+		document.addEventListener('keydown', key);
 		document.addEventListener('mouseover', over);
 		document.addEventListener('mousemove', move);
 		document.addEventListener('focusin', focus);
@@ -62,6 +64,7 @@
 		document.addEventListener('scroll', hide, true);
 		document.addEventListener('click', hide, true);
 		return () => {
+			document.removeEventListener('keydown', key);
 			document.removeEventListener('mouseover', over);
 			document.removeEventListener('mousemove', move);
 			document.removeEventListener('focusin', focus);
@@ -77,8 +80,8 @@
     <strong class="tip-title">{summary.title}</strong><div class="tip-sub">{summary.subtitle}</div>
     {#each summary.rows as row}
       <div class="tip-row"><span>{row.label}</span><strong class="mono">{row.pass}/{row.total}</strong></div>
-      <div class="tip-bar"><span style:width={`${row.pass/row.total*100}%`} style:background="var(--st-pass)"></span><span style:width={`${row.failed/row.total*100}%`} style:background="var(--st-fail)"></span><span style:width={`${row.skipped/row.total*100}%`} style:background="var(--st-skip)"></span></div>
-      <div class="tip-counts"><span>● {row.pass} passed</span>{#if row.failed}<span>✕ {row.failed} failed</span>{/if}{#if row.skipped}<span>— {row.skipped} unsupported</span>{/if}{#if row.missing}<span>? {row.missing} uncollected</span>{/if}</div>
+      <div class="tip-bar"><span style:width={`${(row.total?row.pass/row.total*100:0)}%`} style:background="var(--st-pass)"></span><span style:width={`${(row.total?row.failed/row.total*100:0)}%`} style:background="var(--st-fail)"></span><span style:width={`${(row.total?row.skipped/row.total*100:0)}%`} style:background="var(--st-skip)"></span></div>
+      <div class="tip-counts"><span>● {row.pass} passed</span>{#if row.failed}<span>✕ {row.failed} failed</span>{/if}{#if row.skipped}<span>— {row.skipped} {row.skippedLabel || 'unsupported'}</span>{/if}{#if row.missing}<span>? {row.missing} uncollected</span>{/if}</div>
     {/each}
     <div class="tip-hint">{summary.hint}</div>
   {:else}

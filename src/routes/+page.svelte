@@ -33,7 +33,7 @@
 		[String(RTS.length), 'runtimes & engines tracked'],
 		[String(TOTAL_WORKLOADS), 'measured contracts'],
 		[String(viewData.statistics.timingSamples), 'recorded timing samples'],
-		['25', 'feature families'],
+		[String(FEATS.length), 'feature families'],
 		['2', 'machines']
 	];
 
@@ -60,7 +60,7 @@
 		},
 		{
 			t: 'Features',
-			d: 'Feature status for every proposal across browsers and runtimes, plus spec test results and proposal performance.',
+			d: 'Released engine compatibility, official suite results and feature performance.',
 			href: '/features',
 			links: [
 				['SIMD', '/simd'],

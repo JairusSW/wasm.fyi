@@ -23,8 +23,8 @@
 	</div>
 	<div class="col">
 		<span class="eyebrow">Project</span>
-		<span class="fg2">Methodology</span>
-		<span class="fg2">Contribute</span>
+		<a href="https://github.com/JairusSW/wasm.fyi/blob/main/docs/wasmbench-integration.md">Methodology</a>
+		<a href="https://github.com/JairusSW/wasm.fyi/blob/main/README.md">Contribute</a>
 		<a href="https://github.com/JairusSW/wasm.fyi">GitHub</a>
 		<a href={siteHref('/llms.txt')}>LLM reference</a>
 		<a href={siteHref('/data/llm/index.json')}>Machine-readable data</a>

@@ -88,10 +88,11 @@
 
 <svelte:window {onkeydown} />
 
+<a class="skip-link" href="#main-content">Skip to content</a>
 <div class="frame">
 	<Header />
 	{#if showScope}<ScopeBar />{/if}
-	<main>
+	<main id="main-content" tabindex="-1">
 		{@render children()}
 	</main>
 	<Footer />
@@ -100,6 +101,8 @@
 <Tooltip />
 
 <style>
+  .skip-link { position:fixed;top:8px;left:20px;z-index:10000;padding:8px 12px;background:var(--bg);color:var(--fg);border:1px solid var(--line2);transform:translateY(-200%); }
+  .skip-link:focus { transform:translateY(0); }
 	.frame {
 		min-height: 100vh;
 	}
