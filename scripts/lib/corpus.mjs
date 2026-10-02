@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { applicationWorkloads } from './application-manifest.mjs';
 import { site } from './wasmbench.mjs';
 
 export async function prepareCorpus(settings, run, directory) {
@@ -17,11 +18,17 @@ export async function prepareCorpus(settings, run, directory) {
   process.stdout.write(run('import-wago', '--source', source, '--ids', ids.join(','), '--out', manifest));
   const workloads = JSON.parse(await readFile(manifest, 'utf8'));
   if (!Array.isArray(workloads) || !workloads.length || new Set(workloads.map(w => w.id)).size !== workloads.length) throw new Error('Invalid imported corpus');
-  const summary = { source: 'wago', selectedBenchmarks: ids, workloadContracts: workloads.length,
+  // Explicit Wago subsets remain bounded; opt applications in with their own IDs.
+  const applicationIds = process.env.WASMBENCH_APPLICATION_IDS?.split(',').filter(Boolean);
+  const applications = process.env.WASMBENCH_CORPUS_IDS && applicationIds === undefined ? [] : await applicationWorkloads(corpus.applications, applicationIds);
+  workloads.push(...applications);
+  if(new Set(workloads.map(w=>w.id)).size!==workloads.length)throw Error('Duplicate combined corpus IDs');
+  await writeFile(manifest, JSON.stringify(workloads, null, 2) + '\n');
+  const summary = { source: 'wago + wasm.fyi application kernels', selectedBenchmarks: ids, applicationContracts: applications.length, workloadContracts: workloads.length,
     executable: workloads.filter(w => !w.unsupported_reason).length,
     unsupported: workloads.filter(w => w.unsupported_reason).map(w => ({ id: w.id, reason: w.unsupported_reason })),
     workloads: workloads.map(w => ({ id: w.id, sha256: w.sha256, abi: w.abi, license: w.license, source: w.source, provenance: w.provenance })) };
   await writeFile(join(output, 'corpus-summary.json'), JSON.stringify(summary, null, 2) + '\n');
-  console.log(`Corpus: ${ids.length} Wago benchmarks, ${workloads.length} contracts; ${summary.unsupported.length} explicitly unsupported contracts.`);
+  console.log(`Corpus: ${ids.length} upstream benchmarks + ${applications.length} application kernel contracts, ${workloads.length} contracts; ${summary.unsupported.length} explicitly unsupported contracts.`);
   return manifest;
 }

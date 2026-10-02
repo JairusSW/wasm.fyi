@@ -1,0 +1,2774 @@
+[
+  {
+    "schema": 1,
+    "id": "applications/image-blur/64",
+    "family": "applications",
+    "artifact": "artifacts/image-blur.wasm",
+    "sha256": "b49d654a0daec8598a85e0028c88edc7cd2bed6e45a429fdd110a7184b109fcc",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "pixels",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "245841314"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "image_width",
+    "size": 64,
+    "provenance": {
+      "category": "Image editing",
+      "kind": "kernel",
+      "description": "3×3 Gaussian blur with clamped image borders",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 64,
+        "sequenceSha256": "c630f73d514b29d71e0bfc965e0641dfa5552252366d58f172d2cc18b4293dec",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=1",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/image-blur/192",
+    "family": "applications",
+    "artifact": "artifacts/image-blur.wasm",
+    "sha256": "b49d654a0daec8598a85e0028c88edc7cd2bed6e45a429fdd110a7184b109fcc",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      192
+    ],
+    "work_unit": "pixels",
+    "units_per_invocation": 36864,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "3893430917"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "image_width",
+    "size": 192,
+    "provenance": {
+      "category": "Image editing",
+      "kind": "kernel",
+      "description": "3×3 Gaussian blur with clamped image borders",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 192,
+        "sequenceSha256": "6d74dce0f96e3c958d0a371636cd675e03ab9be31a4f521f1a91cb1873f3eea7",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=1",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/image-blur/512",
+    "family": "applications",
+    "artifact": "artifacts/image-blur.wasm",
+    "sha256": "b49d654a0daec8598a85e0028c88edc7cd2bed6e45a429fdd110a7184b109fcc",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      512
+    ],
+    "work_unit": "pixels",
+    "units_per_invocation": 262144,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "3557917737"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "image_width",
+    "size": 512,
+    "provenance": {
+      "category": "Image editing",
+      "kind": "kernel",
+      "description": "3×3 Gaussian blur with clamped image borders",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 512,
+        "sequenceSha256": "225c68a8aff592ec4c84c184c1104cb0c9b687665651d0314f7ad1390025adb5",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=1",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/image-resize/64",
+    "family": "applications",
+    "artifact": "artifacts/image-resize.wasm",
+    "sha256": "0450f6bba4ef8cdc483185dc180b4c77177c718a9e139df586ffeb3e605fbd52",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "output_pixels",
+    "units_per_invocation": 1024,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "3388570566"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "image_width",
+    "size": 64,
+    "provenance": {
+      "category": "Image editing",
+      "kind": "kernel",
+      "description": "Bilinear image downsampling at pixel centers",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 64,
+        "sequenceSha256": "c630f73d514b29d71e0bfc965e0641dfa5552252366d58f172d2cc18b4293dec",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=2",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/image-resize/192",
+    "family": "applications",
+    "artifact": "artifacts/image-resize.wasm",
+    "sha256": "0450f6bba4ef8cdc483185dc180b4c77177c718a9e139df586ffeb3e605fbd52",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      192
+    ],
+    "work_unit": "output_pixels",
+    "units_per_invocation": 9216,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "4194833873"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "image_width",
+    "size": 192,
+    "provenance": {
+      "category": "Image editing",
+      "kind": "kernel",
+      "description": "Bilinear image downsampling at pixel centers",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 192,
+        "sequenceSha256": "6d74dce0f96e3c958d0a371636cd675e03ab9be31a4f521f1a91cb1873f3eea7",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=2",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/image-resize/512",
+    "family": "applications",
+    "artifact": "artifacts/image-resize.wasm",
+    "sha256": "0450f6bba4ef8cdc483185dc180b4c77177c718a9e139df586ffeb3e605fbd52",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      512
+    ],
+    "work_unit": "output_pixels",
+    "units_per_invocation": 65536,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "355679980"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "image_width",
+    "size": 512,
+    "provenance": {
+      "category": "Image editing",
+      "kind": "kernel",
+      "description": "Bilinear image downsampling at pixel centers",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 512,
+        "sequenceSha256": "225c68a8aff592ec4c84c184c1104cb0c9b687665651d0314f7ad1390025adb5",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=2",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/image-composite/64",
+    "family": "applications",
+    "artifact": "artifacts/image-composite.wasm",
+    "sha256": "a09cd9d7a236e945548ba9e998b20b5d198c20fe5a944e70c03cb9bc1a844135",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "pixels",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "3565032797"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "image_width",
+    "size": 64,
+    "provenance": {
+      "category": "Image editing",
+      "kind": "kernel",
+      "description": "Alpha compositing and clamped color adjustment",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 64,
+        "sequenceSha256": "c630f73d514b29d71e0bfc965e0641dfa5552252366d58f172d2cc18b4293dec",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=3",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/image-composite/192",
+    "family": "applications",
+    "artifact": "artifacts/image-composite.wasm",
+    "sha256": "a09cd9d7a236e945548ba9e998b20b5d198c20fe5a944e70c03cb9bc1a844135",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      192
+    ],
+    "work_unit": "pixels",
+    "units_per_invocation": 36864,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "70197008"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "image_width",
+    "size": 192,
+    "provenance": {
+      "category": "Image editing",
+      "kind": "kernel",
+      "description": "Alpha compositing and clamped color adjustment",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 192,
+        "sequenceSha256": "6d74dce0f96e3c958d0a371636cd675e03ab9be31a4f521f1a91cb1873f3eea7",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=3",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/image-composite/512",
+    "family": "applications",
+    "artifact": "artifacts/image-composite.wasm",
+    "sha256": "a09cd9d7a236e945548ba9e998b20b5d198c20fe5a944e70c03cb9bc1a844135",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      512
+    ],
+    "work_unit": "pixels",
+    "units_per_invocation": 262144,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "651827250"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "image_width",
+    "size": 512,
+    "provenance": {
+      "category": "Image editing",
+      "kind": "kernel",
+      "description": "Alpha compositing and clamped color adjustment",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 512,
+        "sequenceSha256": "225c68a8aff592ec4c84c184c1104cb0c9b687665651d0314f7ad1390025adb5",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=3",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/vision-sobel/64",
+    "family": "applications",
+    "artifact": "artifacts/vision-sobel.wasm",
+    "sha256": "872495a20b0944a8cc58db2ba8607eecee21b65e3158d60ec70bf70e11be6622",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "interior_pixels",
+    "units_per_invocation": 3844,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "2118501847"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "image_width",
+    "size": 64,
+    "provenance": {
+      "category": "Computer vision",
+      "kind": "kernel",
+      "description": "Sobel horizontal/vertical edges and gradient magnitude",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 64,
+        "sequenceSha256": "c630f73d514b29d71e0bfc965e0641dfa5552252366d58f172d2cc18b4293dec",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=4",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/vision-sobel/192",
+    "family": "applications",
+    "artifact": "artifacts/vision-sobel.wasm",
+    "sha256": "872495a20b0944a8cc58db2ba8607eecee21b65e3158d60ec70bf70e11be6622",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      192
+    ],
+    "work_unit": "interior_pixels",
+    "units_per_invocation": 36100,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "2897459629"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "image_width",
+    "size": 192,
+    "provenance": {
+      "category": "Computer vision",
+      "kind": "kernel",
+      "description": "Sobel horizontal/vertical edges and gradient magnitude",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 192,
+        "sequenceSha256": "6d74dce0f96e3c958d0a371636cd675e03ab9be31a4f521f1a91cb1873f3eea7",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=4",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/vision-sobel/512",
+    "family": "applications",
+    "artifact": "artifacts/vision-sobel.wasm",
+    "sha256": "872495a20b0944a8cc58db2ba8607eecee21b65e3158d60ec70bf70e11be6622",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      512
+    ],
+    "work_unit": "interior_pixels",
+    "units_per_invocation": 260100,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "979237271"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "image_width",
+    "size": 512,
+    "provenance": {
+      "category": "Computer vision",
+      "kind": "kernel",
+      "description": "Sobel horizontal/vertical edges and gradient magnitude",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 512,
+        "sequenceSha256": "225c68a8aff592ec4c84c184c1104cb0c9b687665651d0314f7ad1390025adb5",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=4",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/video-motion/64",
+    "family": "applications",
+    "artifact": "artifacts/video-motion.wasm",
+    "sha256": "59d4a48af3fd25d06a7dc04e2d6990b1924552103f336981681e64c927e24694",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "blocks",
+    "units_per_invocation": 49,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "1725941339"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "image_width",
+    "size": 64,
+    "provenance": {
+      "category": "Video processing",
+      "kind": "kernel",
+      "description": "8×8 block motion estimation over a 5×5 displacement search",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 64,
+        "sequenceSha256": "c630f73d514b29d71e0bfc965e0641dfa5552252366d58f172d2cc18b4293dec",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=5",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/video-motion/192",
+    "family": "applications",
+    "artifact": "artifacts/video-motion.wasm",
+    "sha256": "59d4a48af3fd25d06a7dc04e2d6990b1924552103f336981681e64c927e24694",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      192
+    ],
+    "work_unit": "blocks",
+    "units_per_invocation": 529,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "3546805851"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "image_width",
+    "size": 192,
+    "provenance": {
+      "category": "Video processing",
+      "kind": "kernel",
+      "description": "8×8 block motion estimation over a 5×5 displacement search",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 192,
+        "sequenceSha256": "6d74dce0f96e3c958d0a371636cd675e03ab9be31a4f521f1a91cb1873f3eea7",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=5",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/video-motion/512",
+    "family": "applications",
+    "artifact": "artifacts/video-motion.wasm",
+    "sha256": "59d4a48af3fd25d06a7dc04e2d6990b1924552103f336981681e64c927e24694",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      512
+    ],
+    "work_unit": "blocks",
+    "units_per_invocation": 3969,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "4169879131"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "image_width",
+    "size": 512,
+    "provenance": {
+      "category": "Video processing",
+      "kind": "kernel",
+      "description": "8×8 block motion estimation over a 5×5 displacement search",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 512,
+        "sequenceSha256": "225c68a8aff592ec4c84c184c1104cb0c9b687665651d0314f7ad1390025adb5",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=5",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/mesh-skinning/256",
+    "family": "applications",
+    "artifact": "artifacts/mesh-skinning.wasm",
+    "sha256": "9ab3cba94b98e065d8f2dc1c13d3b9063c8890472f05a0c84f4d5abbec4984ec",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      256
+    ],
+    "work_unit": "vertices",
+    "units_per_invocation": 256,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "620069039"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "items",
+    "size": 256,
+    "provenance": {
+      "category": "3D & rendering",
+      "kind": "kernel",
+      "description": "Fixed-point skeletal skinning with four bone influences and 3×4 matrices",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 256,
+        "sequenceSha256": "4035fde8c63912117e7b36f8094c5adf7f95d50d6ee977483aa834c0592663de",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=6",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/mesh-skinning/4096",
+    "family": "applications",
+    "artifact": "artifacts/mesh-skinning.wasm",
+    "sha256": "9ab3cba94b98e065d8f2dc1c13d3b9063c8890472f05a0c84f4d5abbec4984ec",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "vertices",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "3549135095"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "items",
+    "size": 4096,
+    "provenance": {
+      "category": "3D & rendering",
+      "kind": "kernel",
+      "description": "Fixed-point skeletal skinning with four bone influences and 3×4 matrices",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 4096,
+        "sequenceSha256": "f713522182cb5eff73ecfc19dfa0f4bb2bc478d0f93db3dc2a6966e3d0e43162",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=6",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/mesh-skinning/32768",
+    "family": "applications",
+    "artifact": "artifacts/mesh-skinning.wasm",
+    "sha256": "9ab3cba94b98e065d8f2dc1c13d3b9063c8890472f05a0c84f4d5abbec4984ec",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      32768
+    ],
+    "work_unit": "vertices",
+    "units_per_invocation": 32768,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "439776934"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "items",
+    "size": 32768,
+    "provenance": {
+      "category": "3D & rendering",
+      "kind": "kernel",
+      "description": "Fixed-point skeletal skinning with four bone influences and 3×4 matrices",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 32768,
+        "sequenceSha256": "6d8352730fddadff1cda8a462d4c2df48ef72db13a6700dda94f02ae963e7ca7",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=6",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/triangle-raster/64",
+    "family": "applications",
+    "artifact": "artifacts/triangle-raster.wasm",
+    "sha256": "0b4b2b1809110326226c141cfb63012a5b5bb7305c9f6f2d9e043d36b9feb8d9",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "triangles",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "2214706596"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "items",
+    "size": 64,
+    "provenance": {
+      "category": "3D & rendering",
+      "kind": "kernel",
+      "description": "CPU triangle coverage rasterization into a 128×128 depth buffer",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 64,
+        "sequenceSha256": "c630f73d514b29d71e0bfc965e0641dfa5552252366d58f172d2cc18b4293dec",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=7",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/triangle-raster/512",
+    "family": "applications",
+    "artifact": "artifacts/triangle-raster.wasm",
+    "sha256": "0b4b2b1809110326226c141cfb63012a5b5bb7305c9f6f2d9e043d36b9feb8d9",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      512
+    ],
+    "work_unit": "triangles",
+    "units_per_invocation": 512,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "1135284062"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "items",
+    "size": 512,
+    "provenance": {
+      "category": "3D & rendering",
+      "kind": "kernel",
+      "description": "CPU triangle coverage rasterization into a 128×128 depth buffer",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 512,
+        "sequenceSha256": "225c68a8aff592ec4c84c184c1104cb0c9b687665651d0314f7ad1390025adb5",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=7",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/triangle-raster/4096",
+    "family": "applications",
+    "artifact": "artifacts/triangle-raster.wasm",
+    "sha256": "0b4b2b1809110326226c141cfb63012a5b5bb7305c9f6f2d9e043d36b9feb8d9",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "triangles",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "4025138072"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "items",
+    "size": 4096,
+    "provenance": {
+      "category": "3D & rendering",
+      "kind": "kernel",
+      "description": "CPU triangle coverage rasterization into a 128×128 depth buffer",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 4096,
+        "sequenceSha256": "f713522182cb5eff73ecfc19dfa0f4bb2bc478d0f93db3dc2a6966e3d0e43162",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=7",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/particle-physics/256",
+    "family": "applications",
+    "artifact": "artifacts/particle-physics.wasm",
+    "sha256": "92e082f74e611acd0c6b38320a0d5f628290ff91ea1f140244ebd1621b4f82d8",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      256
+    ],
+    "work_unit": "particle_steps",
+    "units_per_invocation": 16384,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "2894926760"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "items",
+    "size": 256,
+    "provenance": {
+      "category": "Games & physics",
+      "kind": "kernel",
+      "description": "64 simulation steps of particle integration, gravity and reflecting wall collisions",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 256,
+        "sequenceSha256": "4035fde8c63912117e7b36f8094c5adf7f95d50d6ee977483aa834c0592663de",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=8",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/particle-physics/4096",
+    "family": "applications",
+    "artifact": "artifacts/particle-physics.wasm",
+    "sha256": "92e082f74e611acd0c6b38320a0d5f628290ff91ea1f140244ebd1621b4f82d8",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "particle_steps",
+    "units_per_invocation": 262144,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "1090096643"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "items",
+    "size": 4096,
+    "provenance": {
+      "category": "Games & physics",
+      "kind": "kernel",
+      "description": "64 simulation steps of particle integration, gravity and reflecting wall collisions",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 4096,
+        "sequenceSha256": "f713522182cb5eff73ecfc19dfa0f4bb2bc478d0f93db3dc2a6966e3d0e43162",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=8",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/particle-physics/32768",
+    "family": "applications",
+    "artifact": "artifacts/particle-physics.wasm",
+    "sha256": "92e082f74e611acd0c6b38320a0d5f628290ff91ea1f140244ebd1621b4f82d8",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      32768
+    ],
+    "work_unit": "particle_steps",
+    "units_per_invocation": 2097152,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "110655445"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "items",
+    "size": 32768,
+    "provenance": {
+      "category": "Games & physics",
+      "kind": "kernel",
+      "description": "64 simulation steps of particle integration, gravity and reflecting wall collisions",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 32768,
+        "sequenceSha256": "6d8352730fddadff1cda8a462d4c2df48ef72db13a6700dda94f02ae963e7ca7",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=8",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/ml-inference/1",
+    "family": "applications",
+    "artifact": "artifacts/ml-inference.wasm",
+    "sha256": "8a3931c312d9cf3d7a330d34a60f46d9c9f92a54dc8b1d3a0647689e5ad12390",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "multiply_accumulates",
+    "units_per_invocation": 2048,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "2475599656"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "items",
+    "size": 1,
+    "provenance": {
+      "category": "Machine learning",
+      "kind": "kernel",
+      "description": "Int8 dense inference: 64 input channels, 32 outputs, ReLU activation",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 1,
+        "sequenceSha256": "489e803fb0dd3632bb835ca60fbe78bb54af5f0d5425bc0a90a0e491cdee0105",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=9",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/ml-inference/16",
+    "family": "applications",
+    "artifact": "artifacts/ml-inference.wasm",
+    "sha256": "8a3931c312d9cf3d7a330d34a60f46d9c9f92a54dc8b1d3a0647689e5ad12390",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      16
+    ],
+    "work_unit": "multiply_accumulates",
+    "units_per_invocation": 32768,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "2121291528"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "items",
+    "size": 16,
+    "provenance": {
+      "category": "Machine learning",
+      "kind": "kernel",
+      "description": "Int8 dense inference: 64 input channels, 32 outputs, ReLU activation",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 16,
+        "sequenceSha256": "0f9f8b4653a25bad52a1843a1a0fcfbe17a1ddd6b292060854ee27a84e3064b5",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=9",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/ml-inference/128",
+    "family": "applications",
+    "artifact": "artifacts/ml-inference.wasm",
+    "sha256": "8a3931c312d9cf3d7a330d34a60f46d9c9f92a54dc8b1d3a0647689e5ad12390",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      128
+    ],
+    "work_unit": "multiply_accumulates",
+    "units_per_invocation": 262144,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "564279646"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "items",
+    "size": 128,
+    "provenance": {
+      "category": "Machine learning",
+      "kind": "kernel",
+      "description": "Int8 dense inference: 64 input channels, 32 outputs, ReLU activation",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 128,
+        "sequenceSha256": "c379c4aa2748d50ff9fe27b44bd528756e3e9e247e4b24810cc6ca9028783dc9",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=9",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/audio-fir/256",
+    "family": "applications",
+    "artifact": "artifacts/audio-fir.wasm",
+    "sha256": "4530e0a540573530867b13bb5dcd9506995671a0f40ad88d536257041f9f42b2",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      256
+    ],
+    "work_unit": "samples",
+    "units_per_invocation": 256,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "2494390578"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "items",
+    "size": 256,
+    "provenance": {
+      "category": "Audio",
+      "kind": "kernel",
+      "description": "32-tap fixed-point FIR audio filtering",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 256,
+        "sequenceSha256": "4035fde8c63912117e7b36f8094c5adf7f95d50d6ee977483aa834c0592663de",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=10",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/audio-fir/4096",
+    "family": "applications",
+    "artifact": "artifacts/audio-fir.wasm",
+    "sha256": "4530e0a540573530867b13bb5dcd9506995671a0f40ad88d536257041f9f42b2",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "samples",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "1949460860"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "items",
+    "size": 4096,
+    "provenance": {
+      "category": "Audio",
+      "kind": "kernel",
+      "description": "32-tap fixed-point FIR audio filtering",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 4096,
+        "sequenceSha256": "f713522182cb5eff73ecfc19dfa0f4bb2bc478d0f93db3dc2a6966e3d0e43162",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=10",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/audio-fir/32768",
+    "family": "applications",
+    "artifact": "artifacts/audio-fir.wasm",
+    "sha256": "4530e0a540573530867b13bb5dcd9506995671a0f40ad88d536257041f9f42b2",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      32768
+    ],
+    "work_unit": "samples",
+    "units_per_invocation": 32768,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "136561521"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "items",
+    "size": 32768,
+    "provenance": {
+      "category": "Audio",
+      "kind": "kernel",
+      "description": "32-tap fixed-point FIR audio filtering",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 32768,
+        "sequenceSha256": "6d8352730fddadff1cda8a462d4c2df48ef72db13a6700dda94f02ae963e7ca7",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=10",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/columnar-query/1024",
+    "family": "applications",
+    "artifact": "artifacts/columnar-query.wasm",
+    "sha256": "c374803fbfeb67f0ca66f315f3bcceaf83cc83f46069cf25d9d39b930ffd8d3e",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      1024
+    ],
+    "work_unit": "rows",
+    "units_per_invocation": 1024,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "2560340346"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "items",
+    "size": 1024,
+    "provenance": {
+      "category": "Databases & analytics",
+      "kind": "kernel",
+      "description": "Columnar range filter with grouped SUM and COUNT over 256 keys",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 1024,
+        "sequenceSha256": "267b461b28a16169444c13fbfff1d9979599d30f4962cd70969f9faf58b649d0",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=11",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/columnar-query/16384",
+    "family": "applications",
+    "artifact": "artifacts/columnar-query.wasm",
+    "sha256": "c374803fbfeb67f0ca66f315f3bcceaf83cc83f46069cf25d9d39b930ffd8d3e",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      16384
+    ],
+    "work_unit": "rows",
+    "units_per_invocation": 16384,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "292501697"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "items",
+    "size": 16384,
+    "provenance": {
+      "category": "Databases & analytics",
+      "kind": "kernel",
+      "description": "Columnar range filter with grouped SUM and COUNT over 256 keys",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 16384,
+        "sequenceSha256": "9eb8a0dfff597ec4b4f86f88f611799319cffbf3980e2c778dbc308a403b7b3b",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=11",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/columnar-query/131072",
+    "family": "applications",
+    "artifact": "artifacts/columnar-query.wasm",
+    "sha256": "c374803fbfeb67f0ca66f315f3bcceaf83cc83f46069cf25d9d39b930ffd8d3e",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      131072
+    ],
+    "work_unit": "rows",
+    "units_per_invocation": 131072,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "2702396168"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "items",
+    "size": 131072,
+    "provenance": {
+      "category": "Databases & analytics",
+      "kind": "kernel",
+      "description": "Columnar range filter with grouped SUM and COUNT over 256 keys",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 131072,
+        "sequenceSha256": "9b641213bfb6e2f5744b17875feb6298badb0eb1f6566de7704801f600a029d9",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=11",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/map-point-segment/1024",
+    "family": "applications",
+    "artifact": "artifacts/map-point-segment.wasm",
+    "sha256": "7715c40717776f9beeeb5c4b2cef4f5a302ba670930e1b464397916b8cd21523",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      1024
+    ],
+    "work_unit": "points",
+    "units_per_invocation": 1024,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "2626389670"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "items",
+    "size": 1024,
+    "provenance": {
+      "category": "Geospatial",
+      "kind": "kernel",
+      "description": "Map geometry classification by exact squared distance to a finite line segment",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 1024,
+        "sequenceSha256": "267b461b28a16169444c13fbfff1d9979599d30f4962cd70969f9faf58b649d0",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=12",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/map-point-segment/16384",
+    "family": "applications",
+    "artifact": "artifacts/map-point-segment.wasm",
+    "sha256": "7715c40717776f9beeeb5c4b2cef4f5a302ba670930e1b464397916b8cd21523",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      16384
+    ],
+    "work_unit": "points",
+    "units_per_invocation": 16384,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "961886331"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "items",
+    "size": 16384,
+    "provenance": {
+      "category": "Geospatial",
+      "kind": "kernel",
+      "description": "Map geometry classification by exact squared distance to a finite line segment",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 16384,
+        "sequenceSha256": "9eb8a0dfff597ec4b4f86f88f611799319cffbf3980e2c778dbc308a403b7b3b",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=12",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/map-point-segment/131072",
+    "family": "applications",
+    "artifact": "artifacts/map-point-segment.wasm",
+    "sha256": "7715c40717776f9beeeb5c4b2cef4f5a302ba670930e1b464397916b8cd21523",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      131072
+    ],
+    "work_unit": "points",
+    "units_per_invocation": 131072,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "4047355392"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "items",
+    "size": 131072,
+    "provenance": {
+      "category": "Geospatial",
+      "kind": "kernel",
+      "description": "Map geometry classification by exact squared distance to a finite line segment",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 131072,
+        "sequenceSha256": "9b641213bfb6e2f5744b17875feb6298badb0eb1f6566de7704801f600a029d9",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=12",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/document-layout/1024",
+    "family": "applications",
+    "artifact": "artifacts/document-layout.wasm",
+    "sha256": "2b0c608f9bcd1ec56c8e3d350e477b32f6cb0828e61234b57a9ef436d802858c",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      1024
+    ],
+    "work_unit": "words",
+    "units_per_invocation": 1024,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "3958091761"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "items",
+    "size": 1024,
+    "provenance": {
+      "category": "Documents & layout",
+      "kind": "kernel",
+      "description": "Proportional glyph advances and greedy word line breaking into 640-unit lines",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 1024,
+        "sequenceSha256": "267b461b28a16169444c13fbfff1d9979599d30f4962cd70969f9faf58b649d0",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=13",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/document-layout/16384",
+    "family": "applications",
+    "artifact": "artifacts/document-layout.wasm",
+    "sha256": "2b0c608f9bcd1ec56c8e3d350e477b32f6cb0828e61234b57a9ef436d802858c",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      16384
+    ],
+    "work_unit": "words",
+    "units_per_invocation": 16384,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "3467107960"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "items",
+    "size": 16384,
+    "provenance": {
+      "category": "Documents & layout",
+      "kind": "kernel",
+      "description": "Proportional glyph advances and greedy word line breaking into 640-unit lines",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 16384,
+        "sequenceSha256": "9eb8a0dfff597ec4b4f86f88f611799319cffbf3980e2c778dbc308a403b7b3b",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=13",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/document-layout/131072",
+    "family": "applications",
+    "artifact": "artifacts/document-layout.wasm",
+    "sha256": "2b0c608f9bcd1ec56c8e3d350e477b32f6cb0828e61234b57a9ef436d802858c",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      131072
+    ],
+    "work_unit": "words",
+    "units_per_invocation": 131072,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "2862395749"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "items",
+    "size": 131072,
+    "provenance": {
+      "category": "Documents & layout",
+      "kind": "kernel",
+      "description": "Proportional glyph advances and greedy word line breaking into 640-unit lines",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 131072,
+        "sequenceSha256": "9b641213bfb6e2f5744b17875feb6298badb0eb1f6566de7704801f600a029d9",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=13",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/grid-pathfinding/32",
+    "family": "applications",
+    "artifact": "artifacts/grid-pathfinding.wasm",
+    "sha256": "33907c5f0c46a9a7202c6a34270bacc3c8946cf6534e296a7337d3086ccdb67f",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      32
+    ],
+    "work_unit": "cells",
+    "units_per_invocation": 1024,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "3963843977"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "grid_width",
+    "size": 32,
+    "provenance": {
+      "category": "Games & physics",
+      "kind": "kernel",
+      "description": "Four-neighbor breadth-first shortest paths over a seeded obstacle grid",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 32,
+        "sequenceSha256": "7306f8790a8cb9e9761ea1263cfb8e65a660c6075becf63e4e3c6d036d28faf6",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=14",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/grid-pathfinding/96",
+    "family": "applications",
+    "artifact": "artifacts/grid-pathfinding.wasm",
+    "sha256": "33907c5f0c46a9a7202c6a34270bacc3c8946cf6534e296a7337d3086ccdb67f",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      96
+    ],
+    "work_unit": "cells",
+    "units_per_invocation": 9216,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "188870306"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "grid_width",
+    "size": 96,
+    "provenance": {
+      "category": "Games & physics",
+      "kind": "kernel",
+      "description": "Four-neighbor breadth-first shortest paths over a seeded obstacle grid",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 96,
+        "sequenceSha256": "bca14e42cd9c044b3855c3594b782f6f19252aa8807ec3b86cbb9610b34cc281",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=14",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "applications/grid-pathfinding/256",
+    "family": "applications",
+    "artifact": "artifacts/grid-pathfinding.wasm",
+    "sha256": "33907c5f0c46a9a7202c6a34270bacc3c8946cf6534e296a7337d3086ccdb67f",
+    "abi": "core",
+    "features": [
+      "mvp"
+    ],
+    "export": "benchmark",
+    "args": [
+      256
+    ],
+    "work_unit": "cells",
+    "units_per_invocation": 65536,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        "3463698068"
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/kernels.c",
+    "generator": "wasm-fyi-application-kernels-v1",
+    "dimension": "grid_width",
+    "size": 256,
+    "provenance": {
+      "category": "Games & physics",
+      "kind": "kernel",
+      "description": "Four-neighbor breadth-first shortest paths over a seeded obstacle grid",
+      "scope": "execution",
+      "input": {
+        "generator": "index-mix32-v1",
+        "seed": "0x9e3779b9",
+        "size": 256,
+        "sequenceSha256": "4035fde8c63912117e7b36f8094c5adf7f95d50d6ee977483aa834c0592663de",
+        "policy": "deterministic inputs regenerated inside every invocation; initialization and output checksum are included"
+      },
+      "recipe": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "3ae37154ac6f2b6c6f52bdc99643219a7fcc97a8fc93e2815da31cc9269655c4",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "63fc5c3960da5e3b8122694e0693d19d2a64d1ecc8a8a3fd445d54b9f5019212",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "-fno-builtin",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=14",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "oraclePolicy": "independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations"
+    }
+  }
+]

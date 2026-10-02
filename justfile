@@ -21,7 +21,7 @@ check:
 test:
     pnpm test
     pnpm test:ai
-    node --test scripts/plugin-evidence.test.mjs scripts/retention.test.mjs scripts/release-policy.test.mjs scripts/weekly-history.test.mjs scripts/workflow.test.mjs scripts/feature-adapter.test.mjs scripts/wasmer-adapter.test.mjs scripts/v8-preflight.test.mjs scripts/extra-feature-adapters.test.mjs
+    node --test scripts/plugin-evidence.test.mjs scripts/retention.test.mjs scripts/release-policy.test.mjs scripts/weekly-history.test.mjs scripts/workflow.test.mjs scripts/application-corpus.test.mjs scripts/feature-adapter.test.mjs scripts/wasmer-adapter.test.mjs scripts/v8-preflight.test.mjs scripts/extra-feature-adapters.test.mjs
 
 # Validate gathered snapshots and their raw evidence.
 integration-audit:
@@ -222,3 +222,15 @@ conformance-collect-hub:
 # Run released WASI/Component Model correctness suites on Mac and Hub concurrently.
 wago-plugin-tests:
     node scripts/wago-plugin-tests.mjs
+
+# Rebuild the original application kernels with pinned LLVM and reference checks.
+applications-build:
+    node scripts/application-corpus.mjs build
+
+# Check every application size in V8 and Wasmtime without collecting timings.
+applications-check:
+    node scripts/application-corpus.mjs check
+
+# Audit the complete application inventory, contracts and use-case coverage.
+corpus-audit:
+    node scripts/corpus-audit.mjs

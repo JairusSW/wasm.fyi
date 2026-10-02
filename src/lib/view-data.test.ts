@@ -8,12 +8,12 @@ const scope:Scope={machine:'m1',baseline:'A',hide:{},weighting:'corpus'};
 describe('existing workload views consume measured evidence',()=>{
 	it('groups applications by operation and places every feature group last',()=>{
 		const applications=ALLB.filter(w=>!w.id.startsWith('features/'));
-		expect(applications).toHaveLength(72);
+		expect(applications).toHaveLength(174);
 		expect(new Set(applications.map(w=>w.group)).size).toBeGreaterThan(5);
 		expect(BENCH.some(g=>g.g.includes('Wago'))).toBe(false);
 		for(const catalogue of [viewData.catalogue,ALLB]) {
 			const firstFeature=catalogue.findIndex(w=>w.id.startsWith('features/'));
-			expect(firstFeature).toBe(72);
+			expect(firstFeature).toBe(applications.length);
 			expect(catalogue.slice(firstFeature).every(w=>w.id.startsWith('features/'))).toBe(true);
 		}
 		for(const [id,group] of [
@@ -22,12 +22,18 @@ describe('existing workload views consume measured evidence',()=>{
 			['wago/polybench-gemm/polybench_run','Linear algebra'],
 			['wago/polybench-jacobi-2d/polybench_run','Stencils'],
 			['wago/drwav/pcm-decode-seek','Audio'],
-			['wago/raytrace/render','Graphics & images'],
+			['wago/raytrace/render','3D & rendering'],
 			['wago/utf-as/convertN','Text & parsing']
 		])expect(applications.find(w=>w.id===id)?.group).toBe(group);
 	});
+	it('prepared image, 3D and inference workloads have no invented metrics',()=>{
+    for(const id of ['applications/image-blur/512','applications/mesh-skinning/32768','applications/ml-inference/128']) {
+      expect(ALLB.find(w=>w.id===id)?.ms).toBeNull();
+      for(const machine of ['m1','m2'] as const)expect(viewCell(machine,'s1',id,'A','steady')).toEqual({st:'nm',report:''});
+    }
+  });
 	it('uses exact workload identifiers and independent artifact digests',()=>{
-		expect(ALLB).toHaveLength(304);
+		expect(ALLB).toHaveLength(406);
 		expect(new Set(ALLB.map(b=>b.id)).size).toBe(ALLB.length);
 		for(const b of ALLB)expect(b.artifactSha256).toMatch(/^[a-f0-9]{64}$/);
 		expect(ALLB.some(b=>b.id==='sqlite-speedtest1')).toBe(false);

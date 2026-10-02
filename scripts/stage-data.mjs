@@ -14,6 +14,7 @@ const staged = await mkdtemp(join(resolve(destination, '..'), '.static-data-'));
 try {
   for (const name of datasetFiles(index)) await cp(join(source, name), join(staged, name));
   await writeFile(join(staged, 'feature-support.json'), JSON.stringify(await featureSupport(source, index.reports)) + '\n');
+  await cp(join(site,'corpora/catalog.json'),join(staged,'corpus-catalog.json'));
   await stageAuxiliary(staged);
   const finish = await installDirectory(staged, destination);
   await finish(false);

@@ -86,7 +86,7 @@ if (action === 'doctor') {
   await writeFile(remoteConfig, JSON.stringify({ ...settings, root: '../harness', collection: { ...settings.collection, wagoSource: '../wago' } }, null, 2) + '\n');
   rsync([remoteConfig, remotePath(remote + '/site/')]);
   }
-  const overrides = ['WASMBENCH_RUNTIMES', 'WASMBENCH_SUITE', 'WASMBENCH_LAUNCHES', 'WASMBENCH_SAMPLES', 'WASMBENCH_OPERATIONS', 'WASMBENCH_WARMUP', 'WASMBENCH_CORPUS_IDS', 'WASMBENCH_VALIDATION_PROFILE', 'WASMBENCH_RECORD_FAILURES', 'WASMBENCH_HISTORY_ANCHOR', 'WASMBENCH_HISTORY_WEEKS','WASMBENCH_CONFORMANCE_LANES','WASMBENCH_RELEASE_AS_OF','WAGO_SPEC_INTERPRETER']
+  const overrides = ['WASMBENCH_RUNTIMES', 'WASMBENCH_SUITE', 'WASMBENCH_LAUNCHES', 'WASMBENCH_SAMPLES', 'WASMBENCH_OPERATIONS', 'WASMBENCH_WARMUP', 'WASMBENCH_CORPUS_IDS', 'WASMBENCH_APPLICATION_IDS', 'WASMBENCH_VALIDATION_PROFILE', 'WASMBENCH_RECORD_FAILURES', 'WASMBENCH_HISTORY_ANCHOR', 'WASMBENCH_HISTORY_WEEKS','WASMBENCH_CONFORMANCE_LANES','WASMBENCH_RELEASE_AS_OF','WAGO_SPEC_INTERPRETER']
     .filter(key => process.env[key]).map(key => `${key}=${quote(process.env[key])}`).join(' ');
   let completed = false;
   try {

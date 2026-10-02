@@ -32,7 +32,7 @@ const scenarios = { compile:'compile', inst:'instantiate', first:'first-call', s
 const memoryScenarios={rss:'steady',rssCompile:'compile',rssInst:'instantiate',rssFirst:'first-call'};
 const catalogue = new Map();
 for (const report of reports) for (const w of report.workloads) {
-  if (!/^(wago|features)\//.test(w.id) || catalogue.has(w.id)) continue;
+  if (!/^(wago|features|applications)\//.test(w.id) || catalogue.has(w.id)) continue;
   const structure = report.artifactStructures?.find(a=>a.sha256===w.sha256);
   if(!structure || !Number.isSafeInteger(structure.bytes) || structure.bytes < 8)throw new Error('Missing measured artifact size: '+w.id);
   const baselineReport=reports.find(r=>r.runtimes.some(c=>c.id==='wasmtime') && r.workloads.some(item=>item.id===w.id && item.sha256===w.sha256));
@@ -41,9 +41,23 @@ for (const report of reports) for (const w of report.workloads) {
     id:w.id, artifactSha256:w.sha256, evidenceScope:w.provenance?.scope, baseline:!!w.provenance?.baseline, tags:[...(w.features || []),...(w.original_contract?.tags || [])],
     kb:structure.bytes/1024, ms:baseline?.status==='ok'?baseline.value/1e6:null,
     group:workloadCategory(w),
-    purpose:w.original_contract?.desc || `${w.provenance?.scope || w.abi} · ${w.work_unit} · ${w.units_per_invocation} units/invocation`,
+    purpose:w.original_contract?.desc || w.provenance?.description || `${w.provenance?.scope || w.abi} · ${w.work_unit} · ${w.units_per_invocation} units/invocation`,
     input:JSON.stringify(w.args || w.vectors || []), src:w.source || w.generator,
     unitsPerInvocation:w.units_per_invocation, workUnit:w.work_unit, abi:w.abi, reset:w.reset, oracle:w.oracle, imports:structure.imports
+  });
+}
+// Prepared inventory adds discoverable workloads only; no measurement cells or
+// evidence report IDs are synthesized for these entries.
+const prepared=JSON.parse(await readFile(join(site,'corpora/catalog.json')));
+if(prepared.schema!==1)throw Error('Unknown prepared corpus schema');
+for(const w of prepared.workloads) {
+  if(catalogue.has(w.contractId))continue;
+  if(!/^[a-f0-9]{64}$/.test(w.sha256)||!Number.isSafeInteger(w.artifactBytes)||w.artifactBytes<8)throw Error('Invalid prepared artifact '+w.contractId);
+  catalogue.set(w.contractId,{
+    id:w.contractId,artifactSha256:w.sha256,evidenceScope:'execution',baseline:false,tags:[],kb:w.artifactBytes/1024,ms:null,
+    group:w.category,purpose:`${w.description} · ${w.status==='adapter-needed'?'adapter needed: '+w.reason:'prepared corpus; awaiting measurements'}`,
+    input:JSON.stringify(w.args||[]),src:typeof w.source==='string'?w.source:w.source?.repository||w.source?.source||'corpora/catalog.json',
+    unitsPerInvocation:w.unitsPerInvocation,workUnit:w.workUnit,abi:w.abi,reset:w.reset,oracle:w.oracle
   });
 }
 const reasons=new Map();

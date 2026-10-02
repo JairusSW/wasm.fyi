@@ -2,7 +2,7 @@
 export const n0 = (n: number): string => Math.round(n).toLocaleString('en-US');
 
 /** Repository provenance stays in the evidence key, outside the workload name. */
-export const workloadName = (id: string): string => id.replace(/^wago\//, '');
+export const workloadName = (id: string): string => id.replace(/^(wago|applications)\//, '');
 
 /** Ratio as a multiplier, e.g. `1.42×`. */
 export const fx = (r: number): string =>
