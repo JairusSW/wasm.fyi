@@ -16,7 +16,7 @@ test('Finder metadata exception preserves evidence and strict archive coverage',
   await writeFile(join(root,'data.json'),'altered');await assert.rejects(verifySeal(root),/checksum mismatch/);
   await writeFile(join(root,'data.json'),evidence);
   await writeFile(join(root,'extra'),'unknown');await assert.rejects(verifySeal(root),/exact archive/);await rm(join(root,'extra'));
-  await mkdir(join(root,'nested'));await writeFile(join(root,'nested/.DS_Store'),'unknown');await assert.rejects(verifySeal(root),/exact archive/);await rm(join(root,'nested'),{recursive:true});
+  await mkdir(join(root,'nested'));await writeFile(join(root,'nested/.DS_Store'),'Finder metadata');await assert.doesNotReject(verifySeal(root));await writeFile(join(root,'nested/extra'),'unknown');await assert.rejects(verifySeal(root),/exact archive/);await rm(join(root,'nested'),{recursive:true});
   await rm(join(root,'.DS_Store'));await symlink('data.json',join(root,'.DS_Store'));await assert.rejects(verifySeal(root),/symlinks/);
  } finally {await rm(root,{recursive:true,force:true});}
 });

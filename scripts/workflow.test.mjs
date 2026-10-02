@@ -171,6 +171,12 @@ test('feature support excludes scalar baselines and distinguishes failures and c
     assert.deepEqual(gc.cases[0].reasons,['incorrect oracle']);
     assert.equal(features.find(f=>f.id==='cm-async').compiledOnly,1);
     assert.equal(features.find(f=>f.id==='simd').coverage,'not-tested');
+    await writeFile(join(directory,'packed-trials.json'),JSON.stringify({schema:'interned-columns-v1',trialColumns:['id','runtime_configuration','workload','scenario','profile','block','status','reason','started','duration_ns','samples','log','isolation'],sampleColumns:['index','warmup','elapsed_ns','operations','sample_type','verified','result'],strings:['r',workloads[0].id,'first-call','timing','preflight_failed','packed diagnostic','individual_operation','logs/t1.log','{"mode":"uncontrolled"}'],trials:[
+      ['t1',0,1,2,3,0,4,5,'2026-10-01T00:00:00Z',4,[[0,false,123,1,6,true,{value:9}]],7,8]
+    ]}));
+    await writeFile(join(directory,'packed.json'),JSON.stringify({trialsEvidence:'packed-trials.json'}));
+    const packed=await featureSupport(directory,[{id:'p',created:'2026-10-02',host:{hostname:'packed',os:'test',arch:'test'},runtimes:[{id:'r'}],workloads,evidence:'packed.json',evidenceSha256:'e'}]);
+    assert.deepEqual(packed.hosts[0].configurations[0].features.find(f=>f.id==='gc').cases[0].reasons,['packed diagnostic']);
   } finally {await rm(directory,{recursive:true,force:true});}
 });
 

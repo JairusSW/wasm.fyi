@@ -71,15 +71,15 @@ else if (action === 'build') {
   const timing = join(directory, `timing-${id}`);
   const suite = await prepareCorpus(settings, run, directory);
   const shared = ['--archive-tools=true','--suite', suite, '--runtimes', runtimes, '--timeout', collection.timeout, ...(process.env.WASMBENCH_VALIDATION_PROFILE ? ['--validation-profile', process.env.WASMBENCH_VALIDATION_PROFILE] : [])];
-  pass('run', ...shared, '--profile', 'timing', '--launches', String(number('WASMBENCH_LAUNCHES', process.env.WASMBENCH_SUITE==='all'?collection.launches:featureSuite ? 3 : collection.launches)),
-    '--samples', String(number('WASMBENCH_SAMPLES', process.env.WASMBENCH_SUITE==='all'?collection.samples:featureSuite ? 3 : collection.samples)), '--operations', String(number('WASMBENCH_OPERATIONS', collection.operations)),
+  pass('run', ...shared, '--profile', 'timing', '--launches', String(number('WASMBENCH_LAUNCHES', collection.launches)),
+    '--samples', String(number('WASMBENCH_SAMPLES', collection.samples)), '--operations', String(number('WASMBENCH_OPERATIONS', collection.operations)),
     '--warmup', String(number('WASMBENCH_WARMUP', collection.warmup, 0)), '--out', timing);
   invoke('verify', '--run', timing);
   const report = join(directory, 'report');
   const reportArgs = ['report', '--run', timing, '--out', report];
   if (collection.memory) {
     const memory = join(directory, `memory-${id}`);
-    const args = ['run', ...shared, '--profile', 'memory', '--launches', String(number('WASMBENCH_LAUNCHES', process.env.WASMBENCH_SUITE==='all'?collection.launches:featureSuite ? 3 : collection.launches)),
+    const args = ['run', ...shared, '--profile', 'memory', '--launches', '1',
       '--samples', '1', '--operations', '1', '--warmup', '0', '--out', memory];
     if (collection.phaseBarriers) args.push('--phase-barriers');
     pass(...args);

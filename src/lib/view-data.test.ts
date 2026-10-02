@@ -32,10 +32,10 @@ describe('existing workload views consume measured evidence',()=>{
 			['wago/utf-as-simd/validateN','Text & parsing']
 		])expect(applications.find(w=>w.id===id)?.group).toBe(group);
 	});
-	it('prepared image, 3D and inference workloads have no invented metrics',()=>{
+	it('prepared image, 3D and inference workloads show only measured metrics',()=>{
     for(const id of ['applications/image-blur','applications/mesh-skinning','applications/ml-inference']) {
-      expect(ALLB.find(w=>w.id===id)?.ms).toBeNull();
-      for(const machine of ['m1','m2'] as const)expect(viewCell(machine,'s1',id,'A','steady')).toEqual({st:'nm',report:''});
+      expect(ALLB.find(w=>w.id===id)?.ms).toBeGreaterThan(0);
+      for(const machine of ['m1','m2'] as const){const cell=viewCell(machine,'s1',id,'A','steady');expect(cell.st).toBe('ok');expect(cell.report).toMatch(/^[a-f0-9]{64}$/);}
     }
   });
 	it('uses exact workload identifiers and independent artifact digests',()=>{

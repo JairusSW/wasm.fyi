@@ -29,24 +29,31 @@ export async function featureSupport(directory, reports) {
     const hostKey=featureHostKey(report.host,aliases);
     if(!hosts.has(hostKey))hosts.set(hostKey,{host:report.host,configurations:new Map(),versions:new Map()});
     const host=hosts.get(hostKey);
-    let raw;
+    const raw=JSON.parse(await readFile(join(directory,report.evidence),'utf8'));
+    const trialPayload = raw.trialsEvidence ? JSON.parse(await readFile(join(directory,raw.trialsEvidence),'utf8')) : raw;
+    const trials = trialPayload.schema === 'interned-columns-v1'
+      ? trialPayload.trials.map(t => ({runtime_configuration:trialPayload.strings[t[1]], workload:trialPayload.strings[t[2]],
+        scenario:trialPayload.strings[t[3]], status:trialPayload.strings[t[6]], reason:t[7] == null ? null : trialPayload.strings[t[7]]}))
+      : raw.trialSchema === 'columns-v1'
+        ? raw.trials.map(([id, runtime_configuration, workload, scenario, profile, block, status, reason]) =>
+          ({id, runtime_configuration, workload, scenario, profile, block, status, reason}))
+      : raw.trials;
     for(const runtime of report.runtimes) {
       const identity=runtimeIdentity(runtime);
       const key=runtime.id+'|'+identity;
       if(!host.versions.has(key))host.versions.set(key,{id:runtime.id,identity,description:runtime.description,collectedAt:report.created,...releaseTrack(runtime,releases),cases:new Map()});
       const configuration=host.versions.get(key);
       if(!host.configurations.has(runtime.id))host.configurations.set(runtime.id,configuration);
-      raw ??= JSON.parse(await readFile(join(directory,report.evidence),'utf8'));
       for(const workload of report.workloads) {
         if(!workload.id.startsWith('features/') || workload.provenance?.baseline || configuration.cases.has(workload.id))continue;
-        const trials=raw.trials.filter(t=>t.workload===workload.id && t.runtime_configuration===runtime.id);
-        const errors=trials.filter(t=>!['ok','unsupported'].includes(t.status));
-        const executed=trials.some(t=>t.status==='ok' && ['first-call','steady'].includes(t.scenario));
-        const compiled=trials.some(t=>t.status==='ok' && t.scenario==='compile');
+        const cases=trials.filter(t=>t.workload===workload.id && t.runtime_configuration===runtime.id);
+        const errors=cases.filter(t=>!['ok','unsupported'].includes(t.status));
+        const executed=cases.some(t=>t.status==='ok' && ['first-call','steady'].includes(t.scenario));
+        const compiled=cases.some(t=>t.status==='ok' && t.scenario==='compile');
         const status=errors.length?'failed':executed?'executed':compiled?'compile-only':'unsupported';
         configuration.cases.set(workload.id,{workload:workload.id,artifactSha256:workload.sha256,scope:workload.provenance?.scope,status,
-          scenarios:[...new Set(trials.filter(t=>t.status==='ok').map(t=>t.scenario))],
-          reasons:[...new Set(trials.filter(t=>t.status!=='ok').map(t=>t.reason).filter(Boolean))],
+          scenarios:[...new Set(cases.filter(t=>t.status==='ok').map(t=>t.scenario))],
+          reasons:[...new Set(cases.filter(t=>t.status!=='ok').map(t=>t.reason).filter(Boolean))],
           report:report.id,collectedAt:report.created,evidence:report.evidence,evidenceSha256:report.evidenceSha256});
       }
     }

@@ -61,8 +61,22 @@ try {
       latencyPolicy: data.headline_latency_policy, artifactStructures: data.artifact_structures || [],
       artifactAdmission: data.bundle.artifact_admission || [], codeRecords: data.code_records || [],
       codeSource: data.code_source || null, memoryTimelines: data.paired_memory_timelines || data.memory_timelines || [],
-      throughput: data.throughput || [], evidence: `${id}.json`, trials: data.bundle.trials
+      evidence: `${id}.json`, trialsEvidence: `${id}.trials.json`, throughputEvidence: `${id}.throughput.json`
     });
+    const trialStrings = new Map();
+    const intern = value => {
+      if (value == null) return null;
+      const key = typeof value === 'string' ? value : JSON.stringify(value);
+      if (!trialStrings.has(key)) trialStrings.set(key, trialStrings.size);
+      return trialStrings.get(key);
+    };
+    const projected = reports.at(-1);
+    const trials = data.bundle.trials.map(t => [t.id, intern(t.runtime_configuration), intern(t.workload),
+      intern(t.scenario), intern(t.profile), t.block, intern(t.status), intern(t.reason), t.started, t.duration_ns,
+      t.samples?.map(s => [s.index, s.warmup, s.elapsed_ns, s.operations, intern(s.sample_type), s.verified, s.result ?? null]) ?? null,
+      intern(t.log), intern(t.isolation)]);
+    projected.__trialPayload = {schema:'interned-columns-v1',trialColumns:['id','runtime_configuration','workload','scenario','profile','block','status','reason','started','duration_ns','samples','log','isolation'],sampleColumns:['index','warmup','elapsed_ns','operations','sample_type','verified','result'],strings:[...trialStrings.keys()],trials};
+    projected.__throughputPayload = data.throughput || [];
     console.log(`Verified ${manifest.id}: ${manifest.lock.runtime_configurations.length} configurations, ${manifest.lock.workloads.length} workloads`);
     // The projection is now in memory. Bound disk usage to one rebuilt report;
     // original sealed inputs remain available for inspection and retries.
@@ -72,9 +86,15 @@ try {
   for (const report of reports) {
     // Raw evidence is machine-readable; compact encoding keeps broad corpora
     // within GitHub file and Pages artifact limits without dropping samples.
+    const trials = JSON.stringify(report.__trialPayload) + '\n';
+    const throughput = JSON.stringify(report.__throughputPayload) + '\n';
+    report.trialsSha256 = digest(trials); report.throughputSha256 = digest(throughput);
+    delete report.__trialPayload; delete report.__throughputPayload;
     const bytes = JSON.stringify(report) + '\n';
     if (Buffer.byteLength(bytes) > 95 * 1024 * 1024) throw new Error('Evidence exceeds the GitHub single-file publication budget; reduce collection samples or split the configured corpus before publishing.');
     await writeFile(join(staging, report.evidence), bytes);
+    await writeFile(join(staging, report.trialsEvidence), trials);
+    await writeFile(join(staging, report.throughputEvidence), throughput);
     index.push({ ...compact(report), evidenceSha256: digest(bytes) });
   }
   await writeIndex(staging, index);

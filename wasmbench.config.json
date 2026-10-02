@@ -38,7 +38,7 @@
     ],
     "wagoSource": "../../Wago/wago",
     "launches": 6,
-    "samples": 5,
+    "samples": 3,
     "operations": 1,
     "warmup": 3,
     "memory": true,

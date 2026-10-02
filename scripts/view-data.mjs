@@ -78,11 +78,18 @@ for (const [machine, os] of [['m1','linux'],['m2','darwin']]) {
     if (config) view.configurations[slot]={ runtime, version:runtime==='deno' && config.description.build?.startsWith('Deno ')?`${config.description.build.slice(5)} / V8 ${config.description.runtime_version}`:config.description.runtime_version, backend:config.description.backend };
     for (const workload of output.catalogue) {
       // A newer failed/unsupported result wins. Never backfill it with a success.
-      const candidates=workload.id.startsWith('features/')?featureCandidates(selected,runtime,workload.id,workload.artifactSha256):selected.filter(r=>r.runtimes.some(c=>c.id===runtime) && r.workloads.some(w=>w.id===workload.id && w.sha256===workload.artifactSha256));
-      for (const [i,snapshot] of ['s1','s2'].entries()) {
-        const report=candidates[i];
-        if (!report) continue;
-        for (const metric of [...Object.keys(scenarios),...Object.keys(memoryScenarios),'code']) {
+      const cohort=workload.id.startsWith('features/')?featureCandidates(selected,runtime,workload.id,workload.artifactSha256):selected.filter(r=>r.runtimes.some(c=>c.id===runtime) && r.workloads.some(w=>w.id===workload.id && w.sha256===workload.artifactSha256));
+      for (const metric of [...Object.keys(scenarios),...Object.keys(memoryScenarios),'code']) {
+        // Partial sealed passes advance only metrics they actually measured.
+        // A timing-only snapshot must not erase the last measured RSS or code image.
+        const candidates=cohort.filter(report=>memoryScenarios[metric]
+          ? report.memory.some(m=>m.runtime===runtime && m.workload===workload.id && m.scenario===memoryScenarios[metric] && m.metric==='process.peak_rss')
+          : metric==='code'
+            ? report.codeRecords.some(c=>c.runtime===runtime && c.workload===workload.id)
+            : report.summaries.some(s=>s.runtime===runtime && s.workload===workload.id && s.scenario===scenarios[metric] && s.profile==='timing'));
+        for (const [i,snapshot] of ['s1','s2'].entries()) {
+          const report=candidates[i];
+          if (!report) continue;
           const cell=memoryScenarios[metric]?measuredMemory(report,runtime,workload.id,workload.artifactSha256,memoryScenarios[metric],'process.peak_rss'):
             metric==='code'?measuredCodeImage(report,runtime,workload.id,workload.artifactSha256):
             measuredTiming(report,runtime,workload.id,workload.artifactSha256,scenarios[metric]);

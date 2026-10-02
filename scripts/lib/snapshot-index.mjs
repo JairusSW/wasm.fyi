@@ -15,7 +15,7 @@ export async function writeIndex(directory, reports) {
 }
 
 export function datasetFiles(index) {
-  return ['index.json', ...index.reports.flatMap(r => [r.evidence, ...(index.schema === 2 ? [`${r.id}.summary.json`] : [])])];
+  return ['index.json', ...index.reports.flatMap(r => [r.evidence, ...(r.trialsEvidence ? [r.trialsEvidence] : []), ...(r.throughputEvidence ? [r.throughputEvidence] : []), ...(index.schema === 2 ? [`${r.id}.summary.json`] : [])])];
 }
 
 // A targeted refresh must preserve the latest evidence for every host,

@@ -9,7 +9,7 @@ async function store(name: string) {
 	return { index, snapshots };
 }
 const { index, snapshots } = await store('wasmbench');
-const feature = snapshots.find(snapshot => snapshot.host.os === 'linux' && snapshot.workloads.some(workload => workload.id.startsWith('features/')) && snapshot.runtimes.some(runtime => runtime.id === 'wasmtime-component-async'))!;
+const feature = snapshots.find(snapshot => snapshot.host.os === 'linux' && snapshot.workloads.some(workload => workload.id.startsWith('features/')) && snapshot.runtimes.some(runtime => runtime.id === 'wasmtime-component-async') && snapshot.memory.length > 0 && snapshot.codeRecords.length > 0)!;
 const item = feature.workloads.find(workload => workload.id === 'features/core-num/integer-multiply-add/1')!;
 
 describe('measured view boundary', () => {
@@ -65,6 +65,13 @@ describe('measured view boundary', () => {
 		const record = copy.codeRecords.find(record => record.runtime === 'wasmtime' && record.workload === item.id)!;
 		copy.codeRecords.push({ ...record, image_bytes: record.image_bytes! + 1 });
 		expect(measuredCodeImage(copy, 'wasmtime', item.id, item.sha256).status).toBe('not-measured');
+	});
+
+	it('keeps timing-only snapshots from inventing memory or native-code results',()=>{
+		const latest=snapshots.find(snapshot=>snapshot.host.os==='linux'&&snapshot.created>'2026-10-02T08:00:00Z')!;
+		expect(latest.memory).toHaveLength(0);expect(latest.codeRecords).toHaveLength(0);
+		expect(measuredMemory(latest,'wasmtime',item.id,item.sha256,'steady','process.peak_rss').status).toBe('not-measured');
+		expect(measuredCodeImage(latest,'wasmtime',item.id,item.sha256).status).toBe('not-measured');
 	});
 
 	it('checks deployed projection bytes, metadata and hosted base paths', async () => {

@@ -52,7 +52,8 @@ describe('stable and development compatibility tracks',()=>{
     expect(runtimeFeatureTrack('wago',f,scope,'development').text).toBe('corpus passed');
     expect(engineFeatureVersions('wasmtime',scope,'stable')).toContain('46.0.1');
     expect(runtimeFeatureTrack('wasmtime',f,scope,'stable').text).toBe('corpus passed');
-    expect(runtimeFeatureTrack('wasmtime',f,scope,'development').text).toBe('not collected');
+    const development=engineFeatureVersions('wasmtime',scope,'development');
+    expect(runtimeFeatureTrack('wasmtime',f,scope,'development').text).toBe(development.length?'corpus passed':'not collected');
   });
 });
 

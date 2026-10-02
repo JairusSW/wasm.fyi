@@ -79,7 +79,20 @@ export async function validateData(directory) {
     validateReport(evidence);
     const { evidenceSha256, ...indexed } = report;
     assert.deepEqual(indexed, compact(evidence), 'Index disagrees with its evidence');
-    assert(Array.isArray(evidence.trials), 'Missing raw trial evidence');
+    if (evidence.trialsEvidence) {
+      assert(/^[a-f0-9]{64}\.trials\.json$/.test(evidence.trialsEvidence) && sha.test(evidence.trialsSha256), 'Invalid trial evidence reference');
+      const trialBytes = await readFile(resolve(directory, evidence.trialsEvidence));
+      assert.equal(digest(trialBytes), evidence.trialsSha256, 'Trial evidence digest mismatch');
+      const trials = JSON.parse(trialBytes);
+      assert.equal(trials.schema, 'interned-columns-v1', 'Unsupported trial evidence encoding');
+      assert(Array.isArray(trials.strings) && Array.isArray(trials.trials), 'Invalid encoded trial evidence');
+    } else assert(Array.isArray(evidence.trials), 'Missing raw trial evidence');
+    if (evidence.throughputEvidence) {
+      assert(/^[a-f0-9]{64}\.throughput\.json$/.test(evidence.throughputEvidence) && sha.test(evidence.throughputSha256), 'Invalid throughput evidence reference');
+      const throughputBytes = await readFile(resolve(directory, evidence.throughputEvidence));
+      assert.equal(digest(throughputBytes), evidence.throughputSha256, 'Throughput evidence digest mismatch');
+      assert(Array.isArray(JSON.parse(throughputBytes)), 'Invalid throughput evidence');
+    }
   }
   return index;
 }
