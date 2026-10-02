@@ -6,7 +6,13 @@ import { tmpdir } from 'node:os';
 import { site, digest, command } from './lib/wasmbench.mjs';
 import { applicationWorkloads } from './lib/application-manifest.mjs';
 import { workloadCategory, compareWorkloads } from './lib/workload-category.mjs';
-import { prepareCorpus } from './lib/corpus.mjs';
+import { prepareCorpus, parseCorpusJSON } from './lib/corpus.mjs';
+
+test('combined manifests retain raw 64-bit upstream metadata without rounding',()=>{
+  const data=parseCorpusJSON('{"original_contract":{"command":{"want":[4731344651406016513,18446744073709551615]}},"oracle":{"expected":["18446744073709551615"]},"size":64}');
+  assert.deepEqual(data.original_contract.command.want,['4731344651406016513','18446744073709551615']);
+  assert.equal(data.oracle.expected[0],'18446744073709551615');assert.equal(data.size,64);
+});
 
 test('every committed application size matches independent reference and reused-state execution',()=>{
   command(process.execPath,['scripts/application-corpus.mjs','check','--v8-only']);

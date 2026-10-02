@@ -4,6 +4,18 @@ import { randomUUID } from 'node:crypto';
 import { applicationWorkloads } from './application-manifest.mjs';
 import { site } from './wasmbench.mjs';
 
+// Protocol values are already decimal strings, but retained upstream contracts
+// can contain raw 64-bit JSON integers. Preserve their token before reserializing.
+export function parseCorpusJSON(text) {
+  return JSON.parse(text, (_key,value,context)=>{
+    if(typeof value==='number' && Number.isInteger(value) && !Number.isSafeInteger(value)) {
+      if(!context?.source)throw Error('Exact corpus parsing requires JSON source-context support');
+      return context.source;
+    }
+    return value;
+  });
+}
+
 export async function prepareCorpus(settings, run, directory) {
   const selected = process.env.WASMBENCH_SUITE || settings.collection.suite;
   if (selected !== 'wago') return selected.endsWith('.json') ? resolve(site, selected) : selected;
@@ -16,7 +28,7 @@ export async function prepareCorpus(settings, run, directory) {
   await mkdir(output, { recursive: true });
   const manifest = join(output, 'wago-suite.json');
   process.stdout.write(run('import-wago', '--source', source, '--ids', ids.join(','), '--out', manifest));
-  const workloads = JSON.parse(await readFile(manifest, 'utf8'));
+  const workloads = parseCorpusJSON(await readFile(manifest, 'utf8'));
   if (!Array.isArray(workloads) || !workloads.length || new Set(workloads.map(w => w.id)).size !== workloads.length) throw new Error('Invalid imported corpus');
   // Explicit Wago subsets remain bounded; opt applications in with their own IDs.
   const applicationIds = process.env.WASMBENCH_APPLICATION_IDS?.split(',').filter(Boolean);
