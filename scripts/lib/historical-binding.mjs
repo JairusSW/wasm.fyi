@@ -13,7 +13,10 @@ export function engineVersion(pin) {
 export async function copyHistoricalHarness(base,root) {
   if(await exists(root))throw Error('Historical build directory already exists: '+root);
   await mkdir(dirname(root),{recursive:true});
-  command('git',['clone','--no-hardlinks','--no-checkout','--local',base,root],{stdio:'inherit'});
+  // Historical hosts may keep this isolated harness in a shallow partial
+  // clone whose promisor remote is unavailable. A build needs its checked-out
+  // source tree and pinned SDKs, not a duplicate Git object database.
+  await mkdir(root,{recursive:false});
   const files=command('git',['ls-files','-z','--cached','--others','--exclude-standard'],{cwd:base}).toString().split('\0').filter(Boolean);
   for(const path of files) {
     if(path.startsWith('/') || path.split('/').includes('..'))throw Error('Unsafe harness input: '+path);
