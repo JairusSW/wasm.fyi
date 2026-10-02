@@ -138,9 +138,14 @@
                   {@const supportedPlugin=featCols[k].rt==='wago'?pluginSupportEvidence(r.f.id,ui.scope.machine):undefined}
 								<td class="fcell">
                   {#if supportedPlugin}
-                    <a class="support-track mono" href={siteHref(supportedPlugin.official?supportedPlugin.evidence:'/wasmbench/conformance/index.json')} style:background={supportCell('y').bg} style:color={supportCell('y').color}
-                      aria-label={`${r.f.name}, Wago: supported via plugin. Open suite evidence`}
-                      data-tip-summary={JSON.stringify({title:`Wago · ${r.f.name}`,subtitle:`Supported via plugin ${supportedPlugin.version}`,rows:supportedPlugin.official?[{label:supportedPlugin.label,pass:supportedPlugin.passed,total:supportedPlugin.total,failed:supportedPlugin.failed,skipped:supportedPlugin.skipped,missing:0}]:[],hint:supportedPlugin.official?'Official upstream suite; performance remains unmeasured. Click for the sealed report.':'Official suite not collected for this feature on this host. Performance remains unmeasured.'})}><span>●</span><span>supported</span></a>
+                    <a class="support-track suite-track mono" href={siteHref(supportedPlugin.official?supportedPlugin.evidence:'/wasmbench/conformance/index.json')}
+                      aria-label={`${r.f.name}, Wago: ${supportedPlugin.official?`${supportedPlugin.passed} of ${supportedPlugin.total} official cases passed, ${supportedPlugin.failed} failed, ${supportedPlugin.skipped} skipped`:'official suite unmeasured'}. Open suite evidence`}
+                      data-tip-summary={JSON.stringify({title:`Wago · ${r.f.name}`,subtitle:`Released plugin ${supportedPlugin.version}`,rows:supportedPlugin.official?[{label:supportedPlugin.label,pass:supportedPlugin.passed,total:supportedPlugin.total,failed:supportedPlugin.failed,skipped:supportedPlugin.skipped,missing:0}]:[],hint:supportedPlugin.official?`${supportedPlugin.scope || 'Official upstream suite'}; skips count toward the total. Performance remains unmeasured.`:'Official suite not collected for this feature on this host. Performance remains unmeasured.'})}>
+                      <span>{supportedPlugin.official?`${supportedPlugin.passed}/${supportedPlugin.total}`:'—'}</span>
+                      {#if supportedPlugin.official && supportedPlugin.total}
+                        <span class="suite-bar" aria-hidden="true"><span class="pass" style:width={`${100*supportedPlugin.passed/supportedPlugin.total}%`}></span><span class="fail" style:width={`${100*supportedPlugin.failed/supportedPlugin.total}%`}></span><span class="skip" style:width={`${100*supportedPlugin.skipped/supportedPlugin.total}%`}></span></span>
+                      {/if}
+                    </a>
                   {:else if x.tracks}
                     {#each x.tracks as track}
                       <button class="support-track mono" class:development={track.channel==='development'} style:background={track.bg} style:color={track.color}
@@ -156,7 +161,7 @@
                       {@const plugin=pluginTests[ui.scope.machine][r.f.id] || (r.f.id.startsWith('cm-')?supportedPlugin:undefined)}
                       {#if plugin?.official}
                         <a class="micro fg3 nowrap link" href={siteHref(plugin.evidence)}
-                          data-tip-summary={JSON.stringify({title:`${r.f.name} · ${plugin.label}`,subtitle:`Wago ${plugin.engine} · plugin ${plugin.version}`,rows:[{label:plugin.label,pass:plugin.passed,total:plugin.total,failed:plugin.failed,skipped:plugin.skipped,missing:0}],hint:'Separate correctness suite; performance remains unmeasured. Click for the sealed report.'})}>{r.f.id.startsWith('cm-')?'Official suite ↗':`${plugin.label} · ${plugin.passed}/${plugin.total}`}</a>
+                          data-tip-summary={JSON.stringify({title:`${r.f.name} · ${plugin.label}`,subtitle:`Wago ${plugin.engine} · plugin ${plugin.version}`,rows:[{label:plugin.label,pass:plugin.passed,total:plugin.total,failed:plugin.failed,skipped:plugin.skipped,missing:0}],hint:'Separate correctness suite; performance remains unmeasured. Click for the sealed report.'})}>{plugin.label} ↗</a>
                       {:else}
                         <div class="micro fg3 nowrap" data-tip="Supported through the published Wago plugin. Official suite not collected for this feature on this host.">Official · unmeasured</div>
                       {/if}
@@ -170,7 +175,7 @@
 		</table>
 	</div>
 	<div class="note">
-    Released engines only. Counts show passed / total corpus tests for one configuration; click for backend and individual test results. ⚑ requires an experimental flag. Browser builds and plugin performance are unmeasured. Wago plugin features are marked supported. Official suite links show separate correctness results. <a href={siteHref('/wasmbench/feature-support.json')}>Full evidence</a>.
+    Released engines only. Counts show passed / total corpus tests for one configuration; click for backend and individual test results. ⚑ requires an experimental flag. Browser builds and plugin performance are unmeasured. Wago plugin cells show official cases passed / total, including failed and skipped cases. Official suite links show separate correctness results. <a href={siteHref('/wasmbench/feature-support.json')}>Full evidence</a>.
     <details><summary>Measurement scope</summary><p>Unreleased builds are excluded. The latest measured release is shown for each engine. Compilation and execution contracts use their declared oracles. Adapter-unsupported results do not establish that an engine lacks a feature; these representative tests do not establish complete specification conformance. Wago provides optional WASI and Component Model plugins, listed separately from measured results. Feature workloads never enter application averages.</p></details>
 	</div>
 {:else}
@@ -305,6 +310,10 @@
 
   .development { opacity:0.58; }
   .support-track { display:flex;align-items:center;gap:7px;width:100%;padding:1px 4px;font-size:11px;line-height:16px;white-space:nowrap; }
+
+  .suite-track { flex-direction:column;align-items:stretch;gap:3px;color:var(--fg); }
+  .suite-bar { display:flex;height:3px;width:100%;background:var(--line);overflow:hidden; }
+  .suite-bar .pass { background:var(--st-pass); }.suite-bar .fail { background:var(--st-fail); }.suite-bar .skip { background:var(--st-skip); }
   .support-track:hover,.support-track:focus-visible { outline:1px solid var(--line2); }
   .track-label { display:none; }
   .track-version { display:flex;gap:5px;align-items:center;margin-top:5px;max-width:140px;text-align:left; }

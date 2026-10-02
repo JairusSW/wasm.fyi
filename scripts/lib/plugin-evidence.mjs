@@ -22,7 +22,15 @@ export function pluginEvidence(reports,host,aliases={}) {
   if(component){
     const cases=component.lane.results.filter(r=>/^TestOfficialComponentModel(?:Synchronous|Async)Conformance\//.test(r.name));
     const pinned=component.lane.suite?.manifests?.find(m=>m.path==='testdata/conformance/manifest.json');
-    if(cases.length && pinned?.revision===component.lane.suite.revision)output['component-model']=entry(component,{passed:cases.filter(r=>r.status==='passed').length,failed:cases.filter(r=>r.status==='failed').length,skipped:cases.filter(r=>r.status==='skipped').length},'Official suite',true);
+    if(cases.length && pinned?.revision===component.lane.suite.revision){
+      const groups={
+        'component-model':{scope:'Entire official Component Model suite',cases},
+        'cm-abi':{scope:'Official values/* and validation/abi.wast cases',cases:cases.filter(r=>/Conformance\/(values\/|validation\/abi\.wast\/)/.test(r.name))},
+        'cm-res':{scope:'Official resources/* and validation/resources.wast cases',cases:cases.filter(r=>/Conformance\/(resources\/|validation\/resources\.wast\/)/.test(r.name))},
+        'cm-async':{scope:'Official async/* cases',cases:cases.filter(r=>r.name.startsWith('TestOfficialComponentModelAsyncConformance/async/'))}
+      };
+      for(const [feature,group] of Object.entries(groups))if(group.cases.length)output[feature]={...entry(component,{passed:group.cases.filter(r=>r.status==='passed').length,failed:group.cases.filter(r=>r.status==='failed').length,skipped:group.cases.filter(r=>r.status==='skipped').length},'Official suite',true),scope:group.scope};
+    }
   }
   return output;
 }
