@@ -45,11 +45,14 @@ function fracs(values: number[]): number[] {
 	return values.map((v) => Math.max(0.015, v / hi));
 }
 
+/** Every metric the measured view can hold (matches the packed view's metric table). */
+const METRICS = ['compile', 'inst', 'first', 'steady', 'rss', 'rssCompile', 'rssInst', 'rssFirst', 'code'];
+
 /** Workloads with at least one successful measurement; catalogued but untimed contracts don't count. */
 function measuredWorkloads(): number {
 	const cfgs = Object.keys(viewData.configurations) as Cfg['id'][];
 	const hosts = Object.keys(viewData.hosts) as Scope['machine'][];
-	return viewData.catalogue.filter((w) => hosts.some((m) => (['s1', 's2'] as const).some((sn) => cfgs.some((c) => viewData.metrics.some((k) => viewCell(m, sn, w.id, c, k).st === 'ok'))))).length;
+	return viewData.catalogue.filter((w) => hosts.some((m) => (['s1', 's2'] as const).some((sn) => cfgs.some((c) => METRICS.some((k) => viewCell(m, sn, w.id, c, k).st === 'ok'))))).length;
 }
 
 /** Engines with feature-test evidence on any host. */
