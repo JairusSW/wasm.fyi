@@ -1,0 +1,2 @@
+# Retain upstream source and license bytes exactly as sealed in sources.json.
+corpora/upstream/wago/** -whitespace

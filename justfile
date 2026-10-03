@@ -21,7 +21,7 @@ check:
 test:
     pnpm test
     pnpm test:ai
-    node --test scripts/plugin-evidence.test.mjs scripts/retention.test.mjs scripts/release-policy.test.mjs scripts/weekly-history.test.mjs scripts/workflow.test.mjs scripts/application-corpus.test.mjs scripts/feature-adapter.test.mjs scripts/wasmer-adapter.test.mjs scripts/v8-preflight.test.mjs scripts/lib/feature-configurations.test.mjs scripts/extra-feature-adapters.test.mjs scripts/command-input.test.mjs scripts/verify-seal.test.mjs scripts/collection-recovery.test.mjs
+    node --test scripts/plugin-evidence.test.mjs scripts/retention.test.mjs scripts/release-policy.test.mjs scripts/weekly-history.test.mjs scripts/workflow.test.mjs scripts/application-corpus.test.mjs scripts/corpus-v8.test.mjs scripts/upstream-sources.test.mjs scripts/feature-adapter.test.mjs scripts/wasmer-adapter.test.mjs scripts/v8-preflight.test.mjs scripts/lib/feature-configurations.test.mjs scripts/extra-feature-adapters.test.mjs scripts/command-input.test.mjs scripts/verify-seal.test.mjs scripts/collection-recovery.test.mjs
 
 # Validate gathered snapshots and their raw evidence.
 integration-audit:
@@ -141,8 +141,14 @@ corpus-prepare:
 corpus-check:
     node scripts/bench.mjs corpus-check
 
-# Compile Wago WAT sources into an isolated corpus with compiler/input/output digests.
-corpus-build:
+# Build every application, library, kernel and feature artifact from source.
+corpus-build: corpus-build-all
+
+corpus-build-all:
+    node scripts/corpus-build-all.mjs
+
+# Rebuild only the retained WAT subset.
+corpus-wat-build:
     node scripts/corpus-source.mjs
 
 # Build from source and verify each rebuilt contract across selected runtimes.
@@ -246,3 +252,15 @@ applications-check:
 # Audit the complete application inventory, contracts and use-case coverage.
 corpus-audit:
     node scripts/corpus-audit.mjs
+
+# Check the full configured corpus in pinned V8; components remain explicit gaps.
+corpus-v8-check:
+    node scripts/corpus-v8.mjs
+
+# Check self-contained application/feature fixtures without upstream checkouts.
+corpus-v8-local-check:
+    node scripts/corpus-v8.mjs --local
+
+# Refresh retained upstream source/build/fixture files from the configured checkout.
+corpus-sources-refresh:
+    node scripts/upstream-sources.mjs

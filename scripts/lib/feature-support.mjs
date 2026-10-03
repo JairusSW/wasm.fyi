@@ -86,3 +86,9 @@ export function featureCasePassed(c) {
   const scenario=c.scope==='compile-only'?'compile':c.scope==='compile-and-instantiate'?'instantiate':'steady';
   return c.scenarios.includes(scenario);
 }
+
+// Historical evidence remains archived, but cannot prove a changed probe.
+export function matchesCurrentFeature(workload, manifest) {
+  const current=manifest.get(workload.id);
+  return !!current && current.sha256 === workload.sha256;
+}

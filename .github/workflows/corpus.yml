@@ -1,0 +1,98 @@
+name: Verify corpus sources and V8 oracles
+on:
+  pull_request:
+    paths: ['corpora/**', 'scripts/**', 'wasmbench.config.json', '.github/workflows/corpus.yml']
+  push:
+    branches-ignore: [main]
+    paths: ['corpora/**', 'scripts/**', 'wasmbench.config.json', '.github/workflows/corpus.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '26.4.0'
+      - uses: actions/cache@v5
+        with:
+          path: ~/.local/share/wasm-fyi/toolchains
+          key: corpus-linux-x64-llvm-22.1.8-wasm-tools-1.260.0
+      - name: Install pinned compilers
+        run: |
+          rustup toolchain install 1.98.1 --profile minimal --target wasm32-unknown-unknown,wasm32-wasip1
+          node scripts/llvm-toolchain.mjs
+          cargo install wasm-tools --version 1.260.0 --locked --root "$HOME/.local/share/wasm-fyi/toolchains/wasm-tools-1.260.0"
+      - name: Verify committed inputs and execution
+        run: |
+          node --test scripts/workflow.test.mjs scripts/corpus-source-manifest.test.mjs scripts/application-corpus.test.mjs scripts/corpus-v8.test.mjs scripts/upstream-sources.test.mjs scripts/feature-adapter.test.mjs
+          node scripts/corpus-v8.mjs --local
+      - name: Recompile editable sources and verify again
+        env:
+          WASMBENCH_CLANG: /home/runner/.local/share/wasm-fyi/toolchains/llvm-22/bin/clang
+          WASMBENCH_WASM_TOOLS: /home/runner/.local/share/wasm-fyi/toolchains/wasm-tools-1.260.0/bin/wasm-tools
+        run: |
+          corpus_tool_bin=$(dirname "$WASMBENCH_WASM_TOOLS")
+          export PATH="$corpus_tool_bin:$PATH"
+          node scripts/application-corpus.mjs build
+          node scripts/feature-corpus.mjs build
+          git diff --exit-code -- corpora/applications/artifacts corpora/features/artifacts corpora/features/sources
+          node scripts/corpus-v8.mjs --local
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: corpus-v8-correctness
+          path: .wasmbench/corpus-v8-check.json
+
+  all-sources:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      RUSTUP_TOOLCHAIN: 1.98.1
+      WASMBENCH_CLANG: /home/runner/.local/share/wasm-fyi/toolchains/llvm-22/bin/clang
+      WASMBENCH_WASM_TOOLS: /home/runner/.local/share/wasm-fyi/toolchains/wasm-tools-1.260.0/bin/wasm-tools
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '26.4.0'
+      - uses: actions/cache@v5
+        with:
+          path: |
+            ~/.local/share/wasm-fyi/toolchains
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: corpus-all-sources-linux-x64-rust-1.98.1-llvm-22.1.8-wasm-tools-1.260.0
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.5'
+          cache: false
+      - name: Install build prerequisites
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install --no-install-recommends -y cmake ninja-build wabt make curl unzip
+          rustup toolchain install 1.98.1 --profile minimal --target wasm32-unknown-unknown,wasm32-wasip1
+          node scripts/llvm-toolchain.mjs
+          cargo install wasm-tools --version 1.260.0 --locked --root "$HOME/.local/share/wasm-fyi/toolchains/wasm-tools-1.260.0"
+          curl --fail --location --retry 3 https://github.com/bytecodealliance/wasmtime/releases/download/v46.0.1/wasmtime-v46.0.1-x86_64-linux.tar.xz -o /tmp/wasmtime.tar.xz
+          echo '9ae0b17ea298bcc52277a8208d6ab7fae8e1a89579672f9d82f9d86c116edb62  /tmp/wasmtime.tar.xz' | sha256sum -c -
+          tar -xJf /tmp/wasmtime.tar.xz -C /tmp
+          sudo install /tmp/wasmtime-v46.0.1-x86_64-linux/wasmtime /usr/local/bin/wasmtime
+      - name: Build every corpus from source and check execution
+        run: |
+          corpus_tool_bin=$(dirname "$WASMBENCH_WASM_TOOLS")
+          export PATH="$corpus_tool_bin:$PATH"
+          node scripts/corpus-build-all.mjs
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: all-corpus-source-verification
+          path: |
+            .wasmbench/upstream/*.json
+            .wasmbench/source-builds/*/report.json
+            .wasmbench/source-builds/*/inputs.json
+            .wasmbench/corpus-v8-check.json
+            .wasmbench/corpus-components-check.json

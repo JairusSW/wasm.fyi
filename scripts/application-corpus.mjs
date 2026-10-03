@@ -12,10 +12,11 @@ const source=await readFile(join(root,'sources/kernels.c'));
 const oracle=await readFile(join(site,'scripts/lib/application-kernels.mjs'));
 const sourceSha=digest(source),oracleSha=digest(oracle);
 if(build) {
-  const clang=process.env.WASMBENCH_CLANG || '/opt/homebrew/opt/llvm/bin/clang';
+  const clang=process.env.WASMBENCH_CLANG || (process.platform==='darwin'?'/opt/homebrew/opt/llvm/bin/clang':'clang');
   const compiler=command(clang,['--version']).toString().trim();
   if(!/^.*clang version 22\.1\.8\b/m.test(compiler))throw Error('Application corpus requires LLVM Clang 22.1.8 (set WASMBENCH_CLANG)');
-  const compilerSha256=digest(await readFile(clang));
+  const compilerPath=clang.includes('/')?resolve(clang):command('which',[clang]).toString().trim();
+  const compilerSha256=digest(await readFile(compilerPath));
   await mkdir(join(site,'.wasmbench'),{recursive:true});
   root=await mkdtemp(join(site,'.wasmbench/applications-build-'));
   await mkdir(join(root,'sources'));await mkdir(join(root,'artifacts'));

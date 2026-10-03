@@ -30,7 +30,7 @@ export const featureIds = ['core-num', 'core-mem', 'core-ctl', 'core-tab', 'core
 
 export function fixtures() {
   const out = [];
-  const add = (feature, name, wat, expected, options = {}) => out.push({ feature, name, wat, expected,
+  const add = (feature, name, wat, expected, options = {}) => out.push({ feature, name, wat:feature.startsWith('wasi-')?wat.replace(/[ \t]+$/gm,''):wat, expected,
     sizes: [1, 64, 4096], scope: 'execution', reset: 'stateless', ...options });
   const loop = (feature, name, expression, value, declarations = '', locals = '', before = '', options = {}) =>
     add(feature, name, scalarLoop(expression, declarations, locals, before), n => sum(n, value), options);
@@ -44,7 +44,7 @@ export function fixtures() {
   });
   loop('core-num', 'f32-round-convert', `(i32.trunc_f32_u (f32.nearest (f32.div (f32.convert_i32_u ${i}) (f32.const 3))))`, x => Math.round(x / 3));
   loop('core-num', 'f64-sqrt-convert', `(i32.trunc_f64_u (f64.sqrt (f64.mul (f64.convert_i32_u ${i}) (f64.convert_i32_u ${i}))))`, x => x);
-  loop('core-num', 'signed-zero-nan-bits', `(i32.eq (i32.reinterpret_f32 (f32.copysign (f32.const 0) (f32.neg (f32.convert_i32_u (i32.add ${i} (i32.const 1)))))) (i32.const -2147483648))`, () => 1);
+  loop('core-num', 'signed-zero-bits', `(i32.eq (i32.reinterpret_f32 (f32.copysign (f32.const 0) (f32.neg (f32.convert_i32_u (i32.add ${i} (i32.const 1)))))) (i32.const -2147483648))`, () => 1);
   loop('core-mem', 'load-store-sequential', `(block (result i32) (i32.store ${address} ${i}) (i32.load ${address}))`, x => x, mem);
   loop('core-mem', 'load-store-unaligned', `(block (result i32) (i32.store align=1 (i32.add ${address} (i32.const 1)) ${i}) (i32.load align=1 (i32.add ${address} (i32.const 1))))`, x => x, mem);
   loop('core-mem', 'narrow-load-sign-extension', `(block (result i32) (i32.store8 ${address} (i32.sub (i32.and ${i} (i32.const 127)) (i32.const 128))) (i32.add (i32.load8_s ${address}) (i32.const 128)))`, x => x & 127, mem);
@@ -54,7 +54,7 @@ export function fixtures() {
   loop('core-ctl', 'direct-call', `(call $f ${i})`, x => x * 3 + 1, '(func $f (param i32) (result i32) local.get 0 i32.const 3 i32.mul i32.const 1 i32.add)');
   const indirect = '(type $t (func (param i32) (result i32))) (table 2 funcref) (elem (i32.const 0) $f $g) (func $f (type $t) local.get 0 i32.const 1 i32.add) (func $g (type $t) local.get 0 i32.const 3 i32.add)';
   loop('core-tab', 'indirect-call', `(call_indirect (type $t) ${i} (i32.and ${i} (i32.const 1)))`, x => x + (x & 1 ? 3 : 1), indirect);
-  loop('core-tab', 'table-null-check', `(i32.eqz (ref.is_null (table.get (i32.and ${i} (i32.const 1)))))`, () => 1, indirect);
+  loop('reference-types', 'table-null-check', `(i32.eqz (ref.is_null (table.get (i32.and ${i} (i32.const 1)))))`, () => 1, indirect);
   for (const count of [1, 32, 256]) {
     const functions = Array.from({ length: count }, (_, k) => `(func $f${k} (param i32) (result i32) local.get 0 i32.const ${k} i32.add)`).join('\n');
     add('core-val', `function-type-scaling-${count}`, `(module ${functions} (func (export "benchmark") (param i32) (result i32) local.get 0 call $f${count - 1}))`, n => n + count - 1,
@@ -136,14 +136,34 @@ export function fixtures() {
   loop('threads', 'atomic-fence', `(block (result i32) (atomic.fence) ${i})`, x => x, shared, '', '', { hostProfile: 'threads-defined-v1' });
   baseline('threads', 'non-atomic', x => x);
   for (const size of [1, 64, 4096]) {
-    for (const operation of ['fd-write', 'stdin-read', 'clock-monotonic', 'random-get', 'arguments']) {
-      const stdout = operation === 'random-get' ? 'ok' : operation === 'fd-write' || operation === 'stdin-read' ? 'x'.repeat(size) : 'x';
+    for (const operation of ['fd-write', 'stdin-read', 'clock-monotonic', 'random-get', 'arguments', 'file-seek-read', 'scatter-write', 'stdin-eof']) {
+      const payload = Array.from({length:size}, (_,i)=>String.fromCharCode(65+(i*17)%26)).join('');
+      const stdout = operation === 'random-get' ? 'ok' : operation === 'fd-write' || operation === 'stdin-read' || operation === 'file-seek-read' || operation === 'scatter-write' || operation === 'stdin-eof' ? payload : 'x';
       const imports = ['(import "wasi_snapshot_preview1" "fd_write" (func $write (param i32 i32 i32 i32) (result i32)))'];
       let action = '';
       const check = expression => `(if ${expression} (then unreachable))`;
-      if (operation === 'stdin-read') {
+      if (operation === 'stdin-read' || operation === 'stdin-eof' || operation === 'file-seek-read') {
         imports.push('(import "wasi_snapshot_preview1" "fd_read" (func $read (param i32 i32 i32 i32) (result i32)))');
-        action = check('(call $read (i32.const 0) (i32.const 0) (i32.const 1) (i32.const 8))') + check(`(i32.ne (i32.load (i32.const 8)) (i32.const ${size}))`);
+        action = `(loop $clear
+            (i32.store8 (i32.add (i32.const 4096) (local.get $received)) (i32.const 0))
+            (local.set $received (i32.add (local.get $received) (i32.const 1)))
+            (br_if $clear (i32.lt_u (local.get $received) (i32.const ${size}))))
+          (local.set $received (i32.const 0))
+          (loop $reads
+            (i32.store (i32.const 0) (i32.add (i32.const 4096) (local.get $received)))
+            (i32.store (i32.const 4) (i32.sub (i32.const ${size}) (local.get $received)))
+            ${check('(call $read (i32.const 0) (i32.const 0) (i32.const 1) (i32.const 8))')}
+            ${check('(i32.eqz (i32.load (i32.const 8)))')}
+            ${check(`(i32.gt_u (i32.load (i32.const 8)) (i32.sub (i32.const ${size}) (local.get $received)))`)}
+            (local.set $received (i32.add (local.get $received) (i32.load (i32.const 8))))
+            (br_if $reads (i32.lt_u (local.get $received) (i32.const ${size}))))`;
+        if(operation==='stdin-eof')action += check('(call $read (i32.const 0) (i32.const 0) (i32.const 1) (i32.const 8))') + check('(i32.ne (i32.load (i32.const 8)) (i32.const 0))');
+        if(operation==='file-seek-read') {
+          imports.push('(import "wasi_snapshot_preview1" "path_open" (func $open (param i32 i32 i32 i32 i32 i64 i64 i32 i32) (result i32)))', '(import "wasi_snapshot_preview1" "fd_seek" (func $seek (param i32 i64 i32 i32) (result i32)))', '(import "wasi_snapshot_preview1" "fd_close" (func $close (param i32) (result i32)))');
+          action=check('(call $open (i32.const 3) (i32.const 0) (i32.const 512) (i32.const 9) (i32.const 0) (i64.const 6) (i64.const 0) (i32.const 0) (i32.const 24))') +
+            check('(call $seek (i32.load (i32.const 24)) (i64.const 3) (i32.const 0) (i32.const 16))') + check('(i64.ne (i64.load (i32.const 16)) (i64.const 3))') +
+            action.replace('(call $read (i32.const 0)', '(call $read (i32.load (i32.const 24))') + check('(call $close (i32.load (i32.const 24)))');
+        }
       }
       if (operation === 'clock-monotonic') {
         imports.push('(import "wasi_snapshot_preview1" "clock_time_get" (func $clock (param i32 i64 i32) (result i32)))');
@@ -155,9 +175,23 @@ export function fixtures() {
       }
       if (operation === 'arguments') {
         imports.push('(import "wasi_snapshot_preview1" "args_sizes_get" (func $args_size (param i32 i32) (result i32))) (import "wasi_snapshot_preview1" "args_get" (func $args (param i32 i32) (result i32)))');
-        action = check('(call $args_size (i32.const 16) (i32.const 20))') + check('(i32.ne (i32.load (i32.const 16)) (i32.const 2))') + check(`(i32.ne (i32.load (i32.const 20)) (i32.const ${size + 15}))`) + check('(call $args (i32.const 128) (i32.const 8192))');
+        action = check('(call $args_size (i32.const 16) (i32.const 20))') + check('(i32.ne (i32.load (i32.const 16)) (i32.const 2))') + check(`(i32.ne (i32.load (i32.const 20)) (i32.const ${size + 15}))`) + check('(call $args (i32.const 128) (i32.const 8192))') +
+          `(loop $argbytes ${check('(i32.ne (i32.load8_u (if (result i32) (i32.lt_u (local.get $i) (i32.const 14)) (then (i32.add (i32.load (i32.const 128)) (local.get $i))) (else (i32.add (i32.load (i32.const 132)) (i32.sub (local.get $i) (i32.const 14)))))) (i32.load8_u (i32.add (i32.const 256) (local.get $i))))')}
+            (local.set $i (i32.add (local.get $i) (i32.const 1))) (br_if $argbytes (i32.lt_u (local.get $i) (i32.const ${size+15}))))`;
       }
-      const wat = `(module ${imports.join(' ')} (memory (export "memory") 2 256) (global $heap (mut i32) (i32.const 16384)) (func (export "cabi_realloc") (param $old i32) (param $oldsize i32) (param $align i32) (param $size i32) (result i32) (local $p i32) (if (local.get $old) (then unreachable)) (local.set $p (i32.and (i32.add (global.get $heap) (i32.sub (local.get $align) (i32.const 1))) (i32.sub (i32.const 0) (local.get $align)))) (global.set $heap (i32.add (local.get $p) (local.get $size))) (if (i32.gt_u (global.get $heap) (i32.mul (memory.size) (i32.const 65536))) (then (if (i32.eq (memory.grow (i32.const 2)) (i32.const -1)) (then unreachable)))) (local.get $p)) (data (i32.const 4096) "${stdout}") (func (export "_start") (local $i i32) (local $previous i64) (i32.store (i32.const 0) (i32.const 4096)) (i32.store (i32.const 4) (i32.const ${stdout.length})) ${action} ${check('(call $write (i32.const 1) (i32.const 0) (i32.const 1) (i32.const 8))')}))`;
+      const writeAction = `(loop $writes
+        ${operation==='scatter-write'?`
+          (i32.store (i32.const 32) (i32.add (i32.const 4096) (if (result i32) (i32.lt_u (local.get $sent) (i32.const ${Math.floor(size/2)})) (then (local.get $sent)) (else (i32.const ${Math.floor(size/2)})))))
+          (i32.store (i32.const 36) (if (result i32) (i32.lt_u (local.get $sent) (i32.const ${Math.floor(size/2)})) (then (i32.sub (i32.const ${Math.floor(size/2)}) (local.get $sent))) (else (i32.const 0))))
+          (i32.store (i32.const 40) (i32.add (i32.const 4096) (if (result i32) (i32.gt_u (local.get $sent) (i32.const ${Math.floor(size/2)})) (then (local.get $sent)) (else (i32.const ${Math.floor(size/2)})))))
+          (i32.store (i32.const 44) (i32.sub (i32.const ${size}) (if (result i32) (i32.gt_u (local.get $sent) (i32.const ${Math.floor(size/2)})) (then (local.get $sent)) (else (i32.const ${Math.floor(size/2)})))))`:
+          `(i32.store (i32.const 0) (i32.add (i32.const 4096) (local.get $sent))) (i32.store (i32.const 4) (i32.sub (i32.const ${stdout.length}) (local.get $sent)))`}
+        ${check(`(call $write (i32.const 1) (i32.const ${operation==='scatter-write'?32:0}) (i32.const ${operation==='scatter-write'?2:1}) (i32.const 8))`)}
+        ${check('(i32.eqz (i32.load (i32.const 8)))')}
+        ${check(`(i32.gt_u (i32.load (i32.const 8)) (i32.sub (i32.const ${stdout.length}) (local.get $sent)))`)}
+        (local.set $sent (i32.add (local.get $sent) (i32.load (i32.const 8))))
+        (br_if $writes (i32.lt_u (local.get $sent) (i32.const ${stdout.length}))))`;
+      const wat = `(module ${imports.join(' ')} (memory (export "memory") 2 256) (global $heap (mut i32) (i32.const 16384)) (func (export "cabi_realloc") (param $old i32) (param $oldsize i32) (param $align i32) (param $size i32) (result i32) (local $p i32) (if (local.get $old) (then unreachable)) (local.set $p (i32.and (i32.add (global.get $heap) (i32.sub (local.get $align) (i32.const 1))) (i32.sub (i32.const 0) (local.get $align)))) (global.set $heap (i32.add (local.get $p) (local.get $size))) (if (i32.gt_u (global.get $heap) (i32.mul (memory.size) (i32.const 65536))) (then (if (i32.eq (memory.grow (i32.const 2)) (i32.const -1)) (then unreachable)))) (local.get $p)) (data (i32.const 512) "probe.txt") (data (i32.const 4096) "${stdout}") ${operation==='arguments'?`(data (i32.const 256) "feature-probe\\00${'x'.repeat(size)}\\00")`: ''} (func (export "_start") (local $i i32) (local $previous i64) (local $sent i32) (local $received i32) (i32.store (i32.const 0) (i32.const 4096)) (i32.store (i32.const 4) (i32.const ${stdout.length})) ${action} ${writeAction}))`;
       for (const feature of ['wasi-p1', 'wasi-p2']) {
         add(feature, `${operation}-${size}`, wat, () => 0, { sizes: [size], abi: feature === 'wasi-p1' ? 'wasi-command' : 'component',
           export: '_start', args: () => [], reset: 'fresh_instance_per_sample',
@@ -166,7 +200,8 @@ export function fixtures() {
           workUnit: operation === 'clock-monotonic' ? 'host_call' : 'byte',
           oracle: () => ({ kind: 'exact_command', expected: [] }),
           command: () => ({ argv: operation === 'arguments' ? ['feature-probe', 'x'.repeat(size)] : ['feature-probe'],
-            ...(operation === 'stdin-read' ? { stdin: Buffer.from(stdout).toString('base64') } : {}),
+            ...(operation === 'stdin-read' || operation === 'stdin-eof' ? { stdin: Buffer.from(stdout).toString('base64') } : {}),
+            ...(operation==='file-seek-read'?{files:{'probe.txt':{data:Buffer.from('abc'+payload).toString('base64'),sha256:streamDigest('abc'+payload)}}}:{}),
             exit_code: 0, stdout_sha256: streamDigest(stdout), stderr_sha256: streamDigest(''), output_limit_bytes: 1 << 20 }) });
       }
     }

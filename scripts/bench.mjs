@@ -2,7 +2,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { resolve, join } from 'node:path';
 import { homedir } from 'node:os';
-import { digest, harness, site } from './lib/wasmbench.mjs';
+import { command, digest, harness, site } from './lib/wasmbench.mjs';
 import { prepareCorpus } from './lib/corpus.mjs';
 import { featureConfigurations } from './lib/feature-configurations.mjs';
 import { patchHarness } from './lib/harness-patch.mjs';
@@ -37,6 +37,11 @@ const number = (name, fallback, minimum = 1) => {
   if (!Number.isSafeInteger(value) || value < minimum) throw new Error(`Invalid ${name}`);
   return value;
 };
+const verifyCorpusV8 = suite => {
+  const selected=process.env.WASMBENCH_SUITE || collection.suite;
+  if(['wago','all','corpora/features/manifest.json'].includes(selected))
+    process.stdout.write(command(process.execPath,[join(site,'scripts/corpus-v8.mjs'),suite]));
+};
 const invoke = (...args) => process.stdout.write(run(...args));
 const pass = (...args) => {
   try { invoke(...args); } catch (error) {
@@ -51,6 +56,7 @@ const pass = (...args) => {
 if (action === 'corpus') await prepareCorpus(settings, run);
 else if (action === 'corpus-check') {
   const suite = await prepareCorpus(settings, run);
+  verifyCorpusV8(suite);
   const id = 'corpus-check-' + new Date().toISOString().replace(/[:.]/g, '-') + '-' + randomUUID().slice(0, 8);
   invoke('check', '--suite', suite, '--runtimes', runtimes, '--scenarios', 'first-call,steady', '--launches', '1', '--samples', '1', '--operations', '1', '--warmup', '0', '--timeout', collection.timeout, '--out', join(site, '.wasmbench/experiments', id));
 }
@@ -70,6 +76,7 @@ else if (action === 'build') {
   await mkdir(directory, { recursive: true });
   const timing = join(directory, `timing-${id}`);
   const suite = await prepareCorpus(settings, run, directory);
+  verifyCorpusV8(suite);
   const shared = ['--archive-tools=true','--suite', suite, '--runtimes', runtimes, '--timeout', collection.timeout, ...(process.env.WASMBENCH_VALIDATION_PROFILE ? ['--validation-profile', process.env.WASMBENCH_VALIDATION_PROFILE] : [])];
   pass('run', ...shared, '--profile', 'timing', '--launches', String(number('WASMBENCH_LAUNCHES', collection.launches)),
     '--samples', String(number('WASMBENCH_SAMPLES', collection.samples)), '--operations', String(number('WASMBENCH_OPERATIONS', collection.operations)),

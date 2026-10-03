@@ -1,11 +1,10 @@
 import { mkdir, readFile, writeFile, cp } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { command, digest, exists, harness, site } from './lib/wasmbench.mjs';
 import { prepareCorpus } from './lib/corpus.mjs';
 
 const { settings, run } = await harness();
-const source = resolve(site, process.env.WAGO_SOURCE || settings.collection.wagoSource);
 const id = 'wat-' + new Date().toISOString().replace(/[:.]/g, '-') + '-' + randomUUID().slice(0, 8);
 const directory = join(site, '.wasmbench/source-builds', id);
 const imported = await prepareCorpus(settings, run, join(directory, 'upstream'));
@@ -18,7 +17,7 @@ const recipes = [];
 const artifacts = new Map();
 for (const workload of workloads) {
   const name = workload.id.split('/')[1];
-  const wat = join(source, 'corpus/sources/wat', name + '.wat');
+  const wat = join(site, 'corpora/upstream/wago/corpus/sources/wat', name + '.wat');
   if (!await exists(wat)) continue;
   if (!artifacts.has(name)) {
     const input = join(directory, 'sources', name + '.wat');

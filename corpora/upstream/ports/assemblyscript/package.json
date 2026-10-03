@@ -1,0 +1,10 @@
+{
+  "name": "wasm-fyi-corpus-assemblyscript-toolchain",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "assemblyscript": "0.28.18",
+    "xjb-as": "0.1.0",
+    "as-simd": "0.0.2"
+  }
+}

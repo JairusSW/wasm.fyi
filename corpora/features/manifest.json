@@ -826,9 +826,9 @@
   },
   {
     "schema": 1,
-    "id": "features/core-num/signed-zero-nan-bits/1",
+    "id": "features/core-num/signed-zero-bits/1",
     "family": "features",
-    "artifact": "artifacts/core-num-signed-zero-nan-bits.wasm",
+    "artifact": "artifacts/core-num-signed-zero-bits.wasm",
     "sha256": "327bdf46f5d0ba23328f8fdcef5ff9fb6233e6312ebdb327e006b3bd695e21d9",
     "abi": "core",
     "features": [
@@ -848,7 +848,7 @@
       ]
     },
     "license": "MIT",
-    "source": "sources/core-num-signed-zero-nan-bits.wat",
+    "source": "sources/core-num-signed-zero-bits.wat",
     "generator": "wasm-fyi-feature-corpus-v1",
     "dimension": "operations",
     "size": 1,
@@ -857,22 +857,22 @@
       "baseline": false,
       "scope": "execution",
       "recipe": {
-        "source": "sources/core-num-signed-zero-nan-bits.wat",
+        "source": "sources/core-num-signed-zero-bits.wat",
         "sourceSha256": "95bad3b60026dd4ae88ce26749b01366e38d328ff2322e7ceafddd971b1f1b0f",
-        "artifact": "artifacts/core-num-signed-zero-nan-bits.wasm",
+        "artifact": "artifacts/core-num-signed-zero-bits.wasm",
         "sha256": "327bdf46f5d0ba23328f8fdcef5ff9fb6233e6312ebdb327e006b3bd695e21d9",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
             "wasm-tools",
             "parse",
-            "sources/core-num-signed-zero-nan-bits.wat",
+            "sources/core-num-signed-zero-bits.wat",
             "-o",
-            "artifacts/core-num-signed-zero-nan-bits.wasm"
+            "artifacts/core-num-signed-zero-bits.wasm"
           ]
         ],
         "feature": "core-num",
-        "variant": "signed-zero-nan-bits",
+        "variant": "signed-zero-bits",
         "baseline": false,
         "scope": "execution"
       },
@@ -881,9 +881,9 @@
   },
   {
     "schema": 1,
-    "id": "features/core-num/signed-zero-nan-bits/64",
+    "id": "features/core-num/signed-zero-bits/64",
     "family": "features",
-    "artifact": "artifacts/core-num-signed-zero-nan-bits.wasm",
+    "artifact": "artifacts/core-num-signed-zero-bits.wasm",
     "sha256": "327bdf46f5d0ba23328f8fdcef5ff9fb6233e6312ebdb327e006b3bd695e21d9",
     "abi": "core",
     "features": [
@@ -903,7 +903,7 @@
       ]
     },
     "license": "MIT",
-    "source": "sources/core-num-signed-zero-nan-bits.wat",
+    "source": "sources/core-num-signed-zero-bits.wat",
     "generator": "wasm-fyi-feature-corpus-v1",
     "dimension": "operations",
     "size": 64,
@@ -912,22 +912,22 @@
       "baseline": false,
       "scope": "execution",
       "recipe": {
-        "source": "sources/core-num-signed-zero-nan-bits.wat",
+        "source": "sources/core-num-signed-zero-bits.wat",
         "sourceSha256": "95bad3b60026dd4ae88ce26749b01366e38d328ff2322e7ceafddd971b1f1b0f",
-        "artifact": "artifacts/core-num-signed-zero-nan-bits.wasm",
+        "artifact": "artifacts/core-num-signed-zero-bits.wasm",
         "sha256": "327bdf46f5d0ba23328f8fdcef5ff9fb6233e6312ebdb327e006b3bd695e21d9",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
             "wasm-tools",
             "parse",
-            "sources/core-num-signed-zero-nan-bits.wat",
+            "sources/core-num-signed-zero-bits.wat",
             "-o",
-            "artifacts/core-num-signed-zero-nan-bits.wasm"
+            "artifacts/core-num-signed-zero-bits.wasm"
           ]
         ],
         "feature": "core-num",
-        "variant": "signed-zero-nan-bits",
+        "variant": "signed-zero-bits",
         "baseline": false,
         "scope": "execution"
       },
@@ -936,9 +936,9 @@
   },
   {
     "schema": 1,
-    "id": "features/core-num/signed-zero-nan-bits/4096",
+    "id": "features/core-num/signed-zero-bits/4096",
     "family": "features",
-    "artifact": "artifacts/core-num-signed-zero-nan-bits.wasm",
+    "artifact": "artifacts/core-num-signed-zero-bits.wasm",
     "sha256": "327bdf46f5d0ba23328f8fdcef5ff9fb6233e6312ebdb327e006b3bd695e21d9",
     "abi": "core",
     "features": [
@@ -958,7 +958,7 @@
       ]
     },
     "license": "MIT",
-    "source": "sources/core-num-signed-zero-nan-bits.wat",
+    "source": "sources/core-num-signed-zero-bits.wat",
     "generator": "wasm-fyi-feature-corpus-v1",
     "dimension": "operations",
     "size": 4096,
@@ -967,22 +967,22 @@
       "baseline": false,
       "scope": "execution",
       "recipe": {
-        "source": "sources/core-num-signed-zero-nan-bits.wat",
+        "source": "sources/core-num-signed-zero-bits.wat",
         "sourceSha256": "95bad3b60026dd4ae88ce26749b01366e38d328ff2322e7ceafddd971b1f1b0f",
-        "artifact": "artifacts/core-num-signed-zero-nan-bits.wasm",
+        "artifact": "artifacts/core-num-signed-zero-bits.wasm",
         "sha256": "327bdf46f5d0ba23328f8fdcef5ff9fb6233e6312ebdb327e006b3bd695e21d9",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
             "wasm-tools",
             "parse",
-            "sources/core-num-signed-zero-nan-bits.wat",
+            "sources/core-num-signed-zero-bits.wat",
             "-o",
-            "artifacts/core-num-signed-zero-nan-bits.wasm"
+            "artifacts/core-num-signed-zero-bits.wasm"
           ]
         ],
         "feature": "core-num",
-        "variant": "signed-zero-nan-bits",
+        "variant": "signed-zero-bits",
         "baseline": false,
         "scope": "execution"
       },
@@ -2146,13 +2146,13 @@
   },
   {
     "schema": 1,
-    "id": "features/core-tab/table-null-check/1",
+    "id": "features/reference-types/table-null-check/1",
     "family": "features",
-    "artifact": "artifacts/core-tab-table-null-check.wasm",
+    "artifact": "artifacts/reference-types-table-null-check.wasm",
     "sha256": "2e68a8fa8fa81aede5e839db51271014d5723899f2ba633560da35af6b20dda2",
     "abi": "core",
     "features": [
-      "core-tab"
+      "reference-types"
     ],
     "export": "benchmark",
     "args": [
@@ -2168,30 +2168,30 @@
       ]
     },
     "license": "MIT",
-    "source": "sources/core-tab-table-null-check.wat",
+    "source": "sources/reference-types-table-null-check.wat",
     "generator": "wasm-fyi-feature-corpus-v1",
     "dimension": "operations",
     "size": 1,
     "provenance": {
-      "feature": "core-tab",
+      "feature": "reference-types",
       "baseline": false,
       "scope": "execution",
       "recipe": {
-        "source": "sources/core-tab-table-null-check.wat",
+        "source": "sources/reference-types-table-null-check.wat",
         "sourceSha256": "dec17e49d466061568acfdaadab27c574d585f79e46966483082d09ab9ee6836",
-        "artifact": "artifacts/core-tab-table-null-check.wasm",
+        "artifact": "artifacts/reference-types-table-null-check.wasm",
         "sha256": "2e68a8fa8fa81aede5e839db51271014d5723899f2ba633560da35af6b20dda2",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
             "wasm-tools",
             "parse",
-            "sources/core-tab-table-null-check.wat",
+            "sources/reference-types-table-null-check.wat",
             "-o",
-            "artifacts/core-tab-table-null-check.wasm"
+            "artifacts/reference-types-table-null-check.wasm"
           ]
         ],
-        "feature": "core-tab",
+        "feature": "reference-types",
         "variant": "table-null-check",
         "baseline": false,
         "scope": "execution"
@@ -2201,13 +2201,13 @@
   },
   {
     "schema": 1,
-    "id": "features/core-tab/table-null-check/64",
+    "id": "features/reference-types/table-null-check/64",
     "family": "features",
-    "artifact": "artifacts/core-tab-table-null-check.wasm",
+    "artifact": "artifacts/reference-types-table-null-check.wasm",
     "sha256": "2e68a8fa8fa81aede5e839db51271014d5723899f2ba633560da35af6b20dda2",
     "abi": "core",
     "features": [
-      "core-tab"
+      "reference-types"
     ],
     "export": "benchmark",
     "args": [
@@ -2223,30 +2223,30 @@
       ]
     },
     "license": "MIT",
-    "source": "sources/core-tab-table-null-check.wat",
+    "source": "sources/reference-types-table-null-check.wat",
     "generator": "wasm-fyi-feature-corpus-v1",
     "dimension": "operations",
     "size": 64,
     "provenance": {
-      "feature": "core-tab",
+      "feature": "reference-types",
       "baseline": false,
       "scope": "execution",
       "recipe": {
-        "source": "sources/core-tab-table-null-check.wat",
+        "source": "sources/reference-types-table-null-check.wat",
         "sourceSha256": "dec17e49d466061568acfdaadab27c574d585f79e46966483082d09ab9ee6836",
-        "artifact": "artifacts/core-tab-table-null-check.wasm",
+        "artifact": "artifacts/reference-types-table-null-check.wasm",
         "sha256": "2e68a8fa8fa81aede5e839db51271014d5723899f2ba633560da35af6b20dda2",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
             "wasm-tools",
             "parse",
-            "sources/core-tab-table-null-check.wat",
+            "sources/reference-types-table-null-check.wat",
             "-o",
-            "artifacts/core-tab-table-null-check.wasm"
+            "artifacts/reference-types-table-null-check.wasm"
           ]
         ],
-        "feature": "core-tab",
+        "feature": "reference-types",
         "variant": "table-null-check",
         "baseline": false,
         "scope": "execution"
@@ -2256,13 +2256,13 @@
   },
   {
     "schema": 1,
-    "id": "features/core-tab/table-null-check/4096",
+    "id": "features/reference-types/table-null-check/4096",
     "family": "features",
-    "artifact": "artifacts/core-tab-table-null-check.wasm",
+    "artifact": "artifacts/reference-types-table-null-check.wasm",
     "sha256": "2e68a8fa8fa81aede5e839db51271014d5723899f2ba633560da35af6b20dda2",
     "abi": "core",
     "features": [
-      "core-tab"
+      "reference-types"
     ],
     "export": "benchmark",
     "args": [
@@ -2278,30 +2278,30 @@
       ]
     },
     "license": "MIT",
-    "source": "sources/core-tab-table-null-check.wat",
+    "source": "sources/reference-types-table-null-check.wat",
     "generator": "wasm-fyi-feature-corpus-v1",
     "dimension": "operations",
     "size": 4096,
     "provenance": {
-      "feature": "core-tab",
+      "feature": "reference-types",
       "baseline": false,
       "scope": "execution",
       "recipe": {
-        "source": "sources/core-tab-table-null-check.wat",
+        "source": "sources/reference-types-table-null-check.wat",
         "sourceSha256": "dec17e49d466061568acfdaadab27c574d585f79e46966483082d09ab9ee6836",
-        "artifact": "artifacts/core-tab-table-null-check.wasm",
+        "artifact": "artifacts/reference-types-table-null-check.wasm",
         "sha256": "2e68a8fa8fa81aede5e839db51271014d5723899f2ba633560da35af6b20dda2",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
             "wasm-tools",
             "parse",
-            "sources/core-tab-table-null-check.wat",
+            "sources/reference-types-table-null-check.wat",
             "-o",
-            "artifacts/core-tab-table-null-check.wasm"
+            "artifacts/reference-types-table-null-check.wasm"
           ]
         ],
-        "feature": "core-tab",
+        "feature": "reference-types",
         "variant": "table-null-check",
         "baseline": false,
         "scope": "execution"
@@ -9983,7 +9983,7 @@
     "id": "features/wasi-p1/fd-write-1/1",
     "family": "features",
     "artifact": "artifacts/wasi-p1-fd-write-1.wasm",
-    "sha256": "740da67fe8dd03a79b31ec385caae06aacc5e5615b503bf68b4e5301744bbfa5",
+    "sha256": "e704c8c712e045b34a3c8c1ec7c5af6d84f24fa0f70114d05aa9c1600dcc43b2",
     "abi": "wasi-command",
     "features": [
       "wasi-p1"
@@ -10008,7 +10008,7 @@
         "feature-probe"
       ],
       "exit_code": 0,
-      "stdout_sha256": "2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881",
+      "stdout_sha256": "559aead08264d5795d3909718cdd05abd49572e84fe55590eef31a88a08fdffd",
       "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "output_limit_bytes": 1048576
     },
@@ -10018,9 +10018,9 @@
       "scope": "host-interface",
       "recipe": {
         "source": "sources/wasi-p1-fd-write-1.wat",
-        "sourceSha256": "80e1cbf51269d2268e6e942b29d0784f915217b60b6eaa4d955bc2eea077f9d7",
+        "sourceSha256": "815238a0b11188a9c1e7e5818f8d8a8d84b7edb2c76ad91d19532814e9b8e35e",
         "artifact": "artifacts/wasi-p1-fd-write-1.wasm",
-        "sha256": "740da67fe8dd03a79b31ec385caae06aacc5e5615b503bf68b4e5301744bbfa5",
+        "sha256": "e704c8c712e045b34a3c8c1ec7c5af6d84f24fa0f70114d05aa9c1600dcc43b2",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -10044,7 +10044,7 @@
     "id": "features/wasi-p2/fd-write-1/1",
     "family": "features",
     "artifact": "artifacts/wasi-p2-fd-write-1.wasm",
-    "sha256": "c098d8cc44d7adf659360d8f58ac2a4b403715f0f0d349da4da16fc8d51aa6e4",
+    "sha256": "1b3a899b9c57f0f334767e42258ab449e6b2a8d9c41f9250537647f8159934e7",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -10069,7 +10069,7 @@
         "feature-probe"
       ],
       "exit_code": 0,
-      "stdout_sha256": "2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881",
+      "stdout_sha256": "559aead08264d5795d3909718cdd05abd49572e84fe55590eef31a88a08fdffd",
       "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "output_limit_bytes": 1048576
     },
@@ -10079,9 +10079,9 @@
       "scope": "host-interface",
       "recipe": {
         "source": "sources/wasi-p2-fd-write-1.wat",
-        "sourceSha256": "80e1cbf51269d2268e6e942b29d0784f915217b60b6eaa4d955bc2eea077f9d7",
+        "sourceSha256": "815238a0b11188a9c1e7e5818f8d8a8d84b7edb2c76ad91d19532814e9b8e35e",
         "artifact": "artifacts/wasi-p2-fd-write-1.wasm",
-        "sha256": "c098d8cc44d7adf659360d8f58ac2a4b403715f0f0d349da4da16fc8d51aa6e4",
+        "sha256": "1b3a899b9c57f0f334767e42258ab449e6b2a8d9c41f9250537647f8159934e7",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -10109,7 +10109,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -10121,7 +10125,7 @@
     "id": "features/wasi-p1/stdin-read-1/1",
     "family": "features",
     "artifact": "artifacts/wasi-p1-stdin-read-1.wasm",
-    "sha256": "c6595e1fc90b903e03e5fdf093565d0e6a244147251d1ea84dfbe12fac5f31ec",
+    "sha256": "1efcd8a0bec7abc65e8874bb7ad2ce31fa14b7661550c621e954112705068d4b",
     "abi": "wasi-command",
     "features": [
       "wasi-p1"
@@ -10145,9 +10149,9 @@
       "argv": [
         "feature-probe"
       ],
-      "stdin": "eA==",
+      "stdin": "QQ==",
       "exit_code": 0,
-      "stdout_sha256": "2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881",
+      "stdout_sha256": "559aead08264d5795d3909718cdd05abd49572e84fe55590eef31a88a08fdffd",
       "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "output_limit_bytes": 1048576
     },
@@ -10157,9 +10161,9 @@
       "scope": "host-interface",
       "recipe": {
         "source": "sources/wasi-p1-stdin-read-1.wat",
-        "sourceSha256": "c3df7bd335284ed7769ecf3d6c8bee983cd741d3d5a03d89bbd9a47164f37cd0",
+        "sourceSha256": "69112553a69b4d8bea3f90a097fec71cf4faf1726228719efe42a5aa59dc2081",
         "artifact": "artifacts/wasi-p1-stdin-read-1.wasm",
-        "sha256": "c6595e1fc90b903e03e5fdf093565d0e6a244147251d1ea84dfbe12fac5f31ec",
+        "sha256": "1efcd8a0bec7abc65e8874bb7ad2ce31fa14b7661550c621e954112705068d4b",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -10183,7 +10187,7 @@
     "id": "features/wasi-p2/stdin-read-1/1",
     "family": "features",
     "artifact": "artifacts/wasi-p2-stdin-read-1.wasm",
-    "sha256": "0c5db75113b8ec8f9df6005a95229bb20e31d8b4228f15ed6afad599edb4300b",
+    "sha256": "0b089cdd65726ebdc6994a9e7dc295b34ca154f62f37ecc4250115e5b9104ca2",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -10207,9 +10211,9 @@
       "argv": [
         "feature-probe"
       ],
-      "stdin": "eA==",
+      "stdin": "QQ==",
       "exit_code": 0,
-      "stdout_sha256": "2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881",
+      "stdout_sha256": "559aead08264d5795d3909718cdd05abd49572e84fe55590eef31a88a08fdffd",
       "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "output_limit_bytes": 1048576
     },
@@ -10219,9 +10223,9 @@
       "scope": "host-interface",
       "recipe": {
         "source": "sources/wasi-p2-stdin-read-1.wat",
-        "sourceSha256": "c3df7bd335284ed7769ecf3d6c8bee983cd741d3d5a03d89bbd9a47164f37cd0",
+        "sourceSha256": "69112553a69b4d8bea3f90a097fec71cf4faf1726228719efe42a5aa59dc2081",
         "artifact": "artifacts/wasi-p2-stdin-read-1.wasm",
-        "sha256": "0c5db75113b8ec8f9df6005a95229bb20e31d8b4228f15ed6afad599edb4300b",
+        "sha256": "0b089cdd65726ebdc6994a9e7dc295b34ca154f62f37ecc4250115e5b9104ca2",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -10249,7 +10253,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -10261,7 +10269,7 @@
     "id": "features/wasi-p1/clock-monotonic-1/1",
     "family": "features",
     "artifact": "artifacts/wasi-p1-clock-monotonic-1.wasm",
-    "sha256": "e185debaab87e36afb3b3b8092b43cc66eb24f06cc2e25b3d9ec2b832b364008",
+    "sha256": "c26345181b5ea67024081f4769d7eb75abf3d78db664c1fc91368b37a8ce6881",
     "abi": "wasi-command",
     "features": [
       "wasi-p1"
@@ -10296,9 +10304,9 @@
       "scope": "host-interface",
       "recipe": {
         "source": "sources/wasi-p1-clock-monotonic-1.wat",
-        "sourceSha256": "b8e91fbff09b666c2569d249494a3eda6e1906b3bb1a6568a2e79a49078e8f83",
+        "sourceSha256": "12388e48379ef290fc506bf48321606f63fb399e985dbf49bd24af361a0b17e3",
         "artifact": "artifacts/wasi-p1-clock-monotonic-1.wasm",
-        "sha256": "e185debaab87e36afb3b3b8092b43cc66eb24f06cc2e25b3d9ec2b832b364008",
+        "sha256": "c26345181b5ea67024081f4769d7eb75abf3d78db664c1fc91368b37a8ce6881",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -10322,7 +10330,7 @@
     "id": "features/wasi-p2/clock-monotonic-1/1",
     "family": "features",
     "artifact": "artifacts/wasi-p2-clock-monotonic-1.wasm",
-    "sha256": "8de8e38054115fb9258307c4b32c93e301f32071ea2afa34864b4075580e7cf6",
+    "sha256": "eca78f8c5c8fc2202d9abcfacf9b75b9b6578e4e66454785d72bd607a4245785",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -10357,9 +10365,9 @@
       "scope": "host-interface",
       "recipe": {
         "source": "sources/wasi-p2-clock-monotonic-1.wat",
-        "sourceSha256": "b8e91fbff09b666c2569d249494a3eda6e1906b3bb1a6568a2e79a49078e8f83",
+        "sourceSha256": "12388e48379ef290fc506bf48321606f63fb399e985dbf49bd24af361a0b17e3",
         "artifact": "artifacts/wasi-p2-clock-monotonic-1.wasm",
-        "sha256": "8de8e38054115fb9258307c4b32c93e301f32071ea2afa34864b4075580e7cf6",
+        "sha256": "eca78f8c5c8fc2202d9abcfacf9b75b9b6578e4e66454785d72bd607a4245785",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -10387,7 +10395,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -10399,7 +10411,7 @@
     "id": "features/wasi-p1/random-get-1/1",
     "family": "features",
     "artifact": "artifacts/wasi-p1-random-get-1.wasm",
-    "sha256": "e27d7f1732ee5ea5c89773a04514e431df1f5c6ff49f61817668454bf7337dea",
+    "sha256": "da43eb406f55484e2a61bfa134a67c2eb31d31b2be03434c37b09381025fe0a1",
     "abi": "wasi-command",
     "features": [
       "wasi-p1"
@@ -10434,9 +10446,9 @@
       "scope": "host-interface-result-code",
       "recipe": {
         "source": "sources/wasi-p1-random-get-1.wat",
-        "sourceSha256": "1535211638a1be395cafa062665c9862ca019f31c727e01b1e52c13fee7183b6",
+        "sourceSha256": "220326dec900d0d2b71e6a47c71a49cf656e290d604f3686786dea7e2113475e",
         "artifact": "artifacts/wasi-p1-random-get-1.wasm",
-        "sha256": "e27d7f1732ee5ea5c89773a04514e431df1f5c6ff49f61817668454bf7337dea",
+        "sha256": "da43eb406f55484e2a61bfa134a67c2eb31d31b2be03434c37b09381025fe0a1",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -10460,7 +10472,7 @@
     "id": "features/wasi-p2/random-get-1/1",
     "family": "features",
     "artifact": "artifacts/wasi-p2-random-get-1.wasm",
-    "sha256": "ba4696216d751574c826c2329b4f91cea314712667087b259d685248e808d43d",
+    "sha256": "efc1f064fcb9440b52b447dcb5f8b804b31309a945fc454a4392b729029100fa",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -10495,9 +10507,9 @@
       "scope": "host-interface-result-code",
       "recipe": {
         "source": "sources/wasi-p2-random-get-1.wat",
-        "sourceSha256": "1535211638a1be395cafa062665c9862ca019f31c727e01b1e52c13fee7183b6",
+        "sourceSha256": "220326dec900d0d2b71e6a47c71a49cf656e290d604f3686786dea7e2113475e",
         "artifact": "artifacts/wasi-p2-random-get-1.wasm",
-        "sha256": "ba4696216d751574c826c2329b4f91cea314712667087b259d685248e808d43d",
+        "sha256": "efc1f064fcb9440b52b447dcb5f8b804b31309a945fc454a4392b729029100fa",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -10525,7 +10537,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -10537,7 +10553,7 @@
     "id": "features/wasi-p1/arguments-1/1",
     "family": "features",
     "artifact": "artifacts/wasi-p1-arguments-1.wasm",
-    "sha256": "e21ea7f35b434649c8b7e1f869891273be8e5a64f8939d391d4a89d5c6e9847c",
+    "sha256": "37049d524b22a26c3824ea53cf1a0a322217ff856056af3b3d8892178229ec19",
     "abi": "wasi-command",
     "features": [
       "wasi-p1"
@@ -10573,9 +10589,9 @@
       "scope": "host-interface",
       "recipe": {
         "source": "sources/wasi-p1-arguments-1.wat",
-        "sourceSha256": "13f1e809901a33b1a578fe6358ea8b81c6ccdee7ada9aa04fe7ac6b137dbca07",
+        "sourceSha256": "f484c519511017625086fef39222620523dc8a682eaea232ec3f7721dbeebc57",
         "artifact": "artifacts/wasi-p1-arguments-1.wasm",
-        "sha256": "e21ea7f35b434649c8b7e1f869891273be8e5a64f8939d391d4a89d5c6e9847c",
+        "sha256": "37049d524b22a26c3824ea53cf1a0a322217ff856056af3b3d8892178229ec19",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -10599,7 +10615,7 @@
     "id": "features/wasi-p2/arguments-1/1",
     "family": "features",
     "artifact": "artifacts/wasi-p2-arguments-1.wasm",
-    "sha256": "0e2cd0a0db25fcd2e061cd353805f10918236373bc573bdba408b2c32d7eb5c6",
+    "sha256": "01bac5173ee1e7c53e28028a2ac487778788e60f9bcd9de3f42e78f9c907eb36",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -10635,9 +10651,9 @@
       "scope": "host-interface",
       "recipe": {
         "source": "sources/wasi-p2-arguments-1.wat",
-        "sourceSha256": "13f1e809901a33b1a578fe6358ea8b81c6ccdee7ada9aa04fe7ac6b137dbca07",
+        "sourceSha256": "f484c519511017625086fef39222620523dc8a682eaea232ec3f7721dbeebc57",
         "artifact": "artifacts/wasi-p2-arguments-1.wasm",
-        "sha256": "0e2cd0a0db25fcd2e061cd353805f10918236373bc573bdba408b2c32d7eb5c6",
+        "sha256": "01bac5173ee1e7c53e28028a2ac487778788e60f9bcd9de3f42e78f9c907eb36",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -10665,7 +10681,451 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
+          "license": "Apache-2.0 WITH LLVM-exception"
+        }
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/wasi-p1/file-seek-read-1/1",
+    "family": "features",
+    "artifact": "artifacts/wasi-p1-file-seek-read-1.wasm",
+    "sha256": "71f9c72d51c04f837c32fc356d3c9b1c4024fad28de7d52c8c7fb74b73beea2e",
+    "abi": "wasi-command",
+    "features": [
+      "wasi-p1"
+    ],
+    "export": "_start",
+    "args": [],
+    "work_unit": "byte",
+    "units_per_invocation": 1,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "MIT",
+    "source": "sources/wasi-p1-file-seek-read-1.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "host_profile": "wasi-preview1-readonly-v1",
+    "command": {
+      "argv": [
+        "feature-probe"
+      ],
+      "files": {
+        "probe.txt": {
+          "data": "YWJjQQ==",
+          "sha256": "9554576c42a3a218895efa0226bb60a4709826b6f6c2071e0359b1d19994a815"
+        }
+      },
+      "exit_code": 0,
+      "stdout_sha256": "559aead08264d5795d3909718cdd05abd49572e84fe55590eef31a88a08fdffd",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output_limit_bytes": 1048576
+    },
+    "provenance": {
+      "feature": "wasi-p1",
+      "baseline": false,
+      "scope": "host-interface",
+      "recipe": {
+        "source": "sources/wasi-p1-file-seek-read-1.wat",
+        "sourceSha256": "e3caba5c7cb1224f6a9fda3f89a0b83a6001996195a43838ed3e6d008fd85ec2",
+        "artifact": "artifacts/wasi-p1-file-seek-read-1.wasm",
+        "sha256": "71f9c72d51c04f837c32fc356d3c9b1c4024fad28de7d52c8c7fb74b73beea2e",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/wasi-p1-file-seek-read-1.wat",
+            "-o",
+            "artifacts/wasi-p1-file-seek-read-1.wasm"
+          ]
+        ],
+        "feature": "wasi-p1",
+        "variant": "file-seek-read-1",
+        "baseline": false,
+        "scope": "host-interface"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/wasi-p2/file-seek-read-1/1",
+    "family": "features",
+    "artifact": "artifacts/wasi-p2-file-seek-read-1.wasm",
+    "sha256": "3933f94ce701d4c80f96a74075116a6eaa9b156639d9ffd65effbaf899db9f9f",
+    "abi": "component",
+    "features": [
+      "wasi-p2"
+    ],
+    "export": "_start",
+    "args": [],
+    "work_unit": "byte",
+    "units_per_invocation": 1,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "MIT AND Apache-2.0 WITH LLVM-exception",
+    "source": "sources/wasi-p2-file-seek-read-1.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "host_profile": "wasi-preview2-readonly-v1",
+    "command": {
+      "argv": [
+        "feature-probe"
+      ],
+      "files": {
+        "probe.txt": {
+          "data": "YWJjQQ==",
+          "sha256": "9554576c42a3a218895efa0226bb60a4709826b6f6c2071e0359b1d19994a815"
+        }
+      },
+      "exit_code": 0,
+      "stdout_sha256": "559aead08264d5795d3909718cdd05abd49572e84fe55590eef31a88a08fdffd",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output_limit_bytes": 1048576
+    },
+    "provenance": {
+      "feature": "wasi-p2",
+      "baseline": false,
+      "scope": "host-interface",
+      "recipe": {
+        "source": "sources/wasi-p2-file-seek-read-1.wat",
+        "sourceSha256": "e3caba5c7cb1224f6a9fda3f89a0b83a6001996195a43838ed3e6d008fd85ec2",
+        "artifact": "artifacts/wasi-p2-file-seek-read-1.wasm",
+        "sha256": "3933f94ce701d4c80f96a74075116a6eaa9b156639d9ffd65effbaf899db9f9f",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/wasi-p2-file-seek-read-1.wat",
+            "-o",
+            "artifacts/wasi-p2-file-seek-read-1.core.wasm"
+          ],
+          [
+            "wasm-tools",
+            "component",
+            "new",
+            "artifacts/wasi-p2-file-seek-read-1.core.wasm",
+            "--adapt",
+            "wasi_snapshot_preview1=<pinned-command-adapter>",
+            "-o",
+            "artifacts/wasi-p2-file-seek-read-1.wasm"
+          ]
+        ],
+        "feature": "wasi-p2",
+        "variant": "file-seek-read-1",
+        "baseline": false,
+        "scope": "host-interface",
+        "adapter": {
+          "repository": "bytecodealliance/wasmtime",
+          "version": "46.0.1",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
+          "license": "Apache-2.0 WITH LLVM-exception"
+        }
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/wasi-p1/scatter-write-1/1",
+    "family": "features",
+    "artifact": "artifacts/wasi-p1-scatter-write-1.wasm",
+    "sha256": "3265c0c4fb7bffbb0e3eb9cef0ceac682f5759c2dabe72c132ecc3f8a99ac846",
+    "abi": "wasi-command",
+    "features": [
+      "wasi-p1"
+    ],
+    "export": "_start",
+    "args": [],
+    "work_unit": "byte",
+    "units_per_invocation": 1,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "MIT",
+    "source": "sources/wasi-p1-scatter-write-1.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "host_profile": "wasi-preview1-readonly-v1",
+    "command": {
+      "argv": [
+        "feature-probe"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "559aead08264d5795d3909718cdd05abd49572e84fe55590eef31a88a08fdffd",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output_limit_bytes": 1048576
+    },
+    "provenance": {
+      "feature": "wasi-p1",
+      "baseline": false,
+      "scope": "host-interface",
+      "recipe": {
+        "source": "sources/wasi-p1-scatter-write-1.wat",
+        "sourceSha256": "f6d83e0b2c22dde893a280a43c9b4ec47ee5059b66b542116be374cdf79c1097",
+        "artifact": "artifacts/wasi-p1-scatter-write-1.wasm",
+        "sha256": "3265c0c4fb7bffbb0e3eb9cef0ceac682f5759c2dabe72c132ecc3f8a99ac846",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/wasi-p1-scatter-write-1.wat",
+            "-o",
+            "artifacts/wasi-p1-scatter-write-1.wasm"
+          ]
+        ],
+        "feature": "wasi-p1",
+        "variant": "scatter-write-1",
+        "baseline": false,
+        "scope": "host-interface"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/wasi-p2/scatter-write-1/1",
+    "family": "features",
+    "artifact": "artifacts/wasi-p2-scatter-write-1.wasm",
+    "sha256": "4615320718609f0b224bff17d10899c8237a6b1920446c8eaf8ae66263f8948d",
+    "abi": "component",
+    "features": [
+      "wasi-p2"
+    ],
+    "export": "_start",
+    "args": [],
+    "work_unit": "byte",
+    "units_per_invocation": 1,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "MIT AND Apache-2.0 WITH LLVM-exception",
+    "source": "sources/wasi-p2-scatter-write-1.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "host_profile": "wasi-preview2-readonly-v1",
+    "command": {
+      "argv": [
+        "feature-probe"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "559aead08264d5795d3909718cdd05abd49572e84fe55590eef31a88a08fdffd",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output_limit_bytes": 1048576
+    },
+    "provenance": {
+      "feature": "wasi-p2",
+      "baseline": false,
+      "scope": "host-interface",
+      "recipe": {
+        "source": "sources/wasi-p2-scatter-write-1.wat",
+        "sourceSha256": "f6d83e0b2c22dde893a280a43c9b4ec47ee5059b66b542116be374cdf79c1097",
+        "artifact": "artifacts/wasi-p2-scatter-write-1.wasm",
+        "sha256": "4615320718609f0b224bff17d10899c8237a6b1920446c8eaf8ae66263f8948d",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/wasi-p2-scatter-write-1.wat",
+            "-o",
+            "artifacts/wasi-p2-scatter-write-1.core.wasm"
+          ],
+          [
+            "wasm-tools",
+            "component",
+            "new",
+            "artifacts/wasi-p2-scatter-write-1.core.wasm",
+            "--adapt",
+            "wasi_snapshot_preview1=<pinned-command-adapter>",
+            "-o",
+            "artifacts/wasi-p2-scatter-write-1.wasm"
+          ]
+        ],
+        "feature": "wasi-p2",
+        "variant": "scatter-write-1",
+        "baseline": false,
+        "scope": "host-interface",
+        "adapter": {
+          "repository": "bytecodealliance/wasmtime",
+          "version": "46.0.1",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
+          "license": "Apache-2.0 WITH LLVM-exception"
+        }
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/wasi-p1/stdin-eof-1/1",
+    "family": "features",
+    "artifact": "artifacts/wasi-p1-stdin-eof-1.wasm",
+    "sha256": "60e14ad2b4ec26939b998d9ef27ac01b05ddb0aaa9345f7b99a5173f5d6351f9",
+    "abi": "wasi-command",
+    "features": [
+      "wasi-p1"
+    ],
+    "export": "_start",
+    "args": [],
+    "work_unit": "byte",
+    "units_per_invocation": 1,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "MIT",
+    "source": "sources/wasi-p1-stdin-eof-1.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "host_profile": "wasi-preview1-readonly-v1",
+    "command": {
+      "argv": [
+        "feature-probe"
+      ],
+      "stdin": "QQ==",
+      "exit_code": 0,
+      "stdout_sha256": "559aead08264d5795d3909718cdd05abd49572e84fe55590eef31a88a08fdffd",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output_limit_bytes": 1048576
+    },
+    "provenance": {
+      "feature": "wasi-p1",
+      "baseline": false,
+      "scope": "host-interface",
+      "recipe": {
+        "source": "sources/wasi-p1-stdin-eof-1.wat",
+        "sourceSha256": "1a331138e229e47046dc8a3ea9f190269d9dd7d80fc15442c0b3cce9139fcd1e",
+        "artifact": "artifacts/wasi-p1-stdin-eof-1.wasm",
+        "sha256": "60e14ad2b4ec26939b998d9ef27ac01b05ddb0aaa9345f7b99a5173f5d6351f9",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/wasi-p1-stdin-eof-1.wat",
+            "-o",
+            "artifacts/wasi-p1-stdin-eof-1.wasm"
+          ]
+        ],
+        "feature": "wasi-p1",
+        "variant": "stdin-eof-1",
+        "baseline": false,
+        "scope": "host-interface"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/wasi-p2/stdin-eof-1/1",
+    "family": "features",
+    "artifact": "artifacts/wasi-p2-stdin-eof-1.wasm",
+    "sha256": "3f607264c3197aed421b491f0800c8830cd8150b7e1eca42fbafc0f78509439e",
+    "abi": "component",
+    "features": [
+      "wasi-p2"
+    ],
+    "export": "_start",
+    "args": [],
+    "work_unit": "byte",
+    "units_per_invocation": 1,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "MIT AND Apache-2.0 WITH LLVM-exception",
+    "source": "sources/wasi-p2-stdin-eof-1.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "host_profile": "wasi-preview2-readonly-v1",
+    "command": {
+      "argv": [
+        "feature-probe"
+      ],
+      "stdin": "QQ==",
+      "exit_code": 0,
+      "stdout_sha256": "559aead08264d5795d3909718cdd05abd49572e84fe55590eef31a88a08fdffd",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output_limit_bytes": 1048576
+    },
+    "provenance": {
+      "feature": "wasi-p2",
+      "baseline": false,
+      "scope": "host-interface",
+      "recipe": {
+        "source": "sources/wasi-p2-stdin-eof-1.wat",
+        "sourceSha256": "1a331138e229e47046dc8a3ea9f190269d9dd7d80fc15442c0b3cce9139fcd1e",
+        "artifact": "artifacts/wasi-p2-stdin-eof-1.wasm",
+        "sha256": "3f607264c3197aed421b491f0800c8830cd8150b7e1eca42fbafc0f78509439e",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/wasi-p2-stdin-eof-1.wat",
+            "-o",
+            "artifacts/wasi-p2-stdin-eof-1.core.wasm"
+          ],
+          [
+            "wasm-tools",
+            "component",
+            "new",
+            "artifacts/wasi-p2-stdin-eof-1.core.wasm",
+            "--adapt",
+            "wasi_snapshot_preview1=<pinned-command-adapter>",
+            "-o",
+            "artifacts/wasi-p2-stdin-eof-1.wasm"
+          ]
+        ],
+        "feature": "wasi-p2",
+        "variant": "stdin-eof-1",
+        "baseline": false,
+        "scope": "host-interface",
+        "adapter": {
+          "repository": "bytecodealliance/wasmtime",
+          "version": "46.0.1",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -10677,7 +11137,7 @@
     "id": "features/wasi-p1/fd-write-64/64",
     "family": "features",
     "artifact": "artifacts/wasi-p1-fd-write-64.wasm",
-    "sha256": "ba14b2479b1b79d355c40eb52988c95c5fe35c3da7daee1512153305d8e3d2c9",
+    "sha256": "b59548c663583ae4f6f069936eb8d84fad935b3160f46abc66f5dc80211902d5",
     "abi": "wasi-command",
     "features": [
       "wasi-p1"
@@ -10702,7 +11162,7 @@
         "feature-probe"
       ],
       "exit_code": 0,
-      "stdout_sha256": "7ce100971f64e7001e8fe5a51973ecdfe1ced42befe7ee8d5fd6219506b5393c",
+      "stdout_sha256": "75d40da337275068443f59b30ac7ca00a923e03d763e613e584d2e9fc9ee50f0",
       "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "output_limit_bytes": 1048576
     },
@@ -10712,9 +11172,9 @@
       "scope": "host-interface",
       "recipe": {
         "source": "sources/wasi-p1-fd-write-64.wat",
-        "sourceSha256": "7e4d7d20f8c1e2df9a58cef26deeda4bf837de9d9ad915a1ef6e45d0979cd480",
+        "sourceSha256": "7e2b64567bf1af4fc6b49414a19cfe633f9bf8b2aad292f23ea8ce9257afe996",
         "artifact": "artifacts/wasi-p1-fd-write-64.wasm",
-        "sha256": "ba14b2479b1b79d355c40eb52988c95c5fe35c3da7daee1512153305d8e3d2c9",
+        "sha256": "b59548c663583ae4f6f069936eb8d84fad935b3160f46abc66f5dc80211902d5",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -10738,7 +11198,7 @@
     "id": "features/wasi-p2/fd-write-64/64",
     "family": "features",
     "artifact": "artifacts/wasi-p2-fd-write-64.wasm",
-    "sha256": "74226e4f9036cb624253b01398e360b9a421395e7c77e907929619bcaef4b229",
+    "sha256": "3a1c8b308ccd10954e7594b32e4bb14dd70eccfc88e4bf95542849ac19baaf75",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -10763,7 +11223,7 @@
         "feature-probe"
       ],
       "exit_code": 0,
-      "stdout_sha256": "7ce100971f64e7001e8fe5a51973ecdfe1ced42befe7ee8d5fd6219506b5393c",
+      "stdout_sha256": "75d40da337275068443f59b30ac7ca00a923e03d763e613e584d2e9fc9ee50f0",
       "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "output_limit_bytes": 1048576
     },
@@ -10773,9 +11233,9 @@
       "scope": "host-interface",
       "recipe": {
         "source": "sources/wasi-p2-fd-write-64.wat",
-        "sourceSha256": "7e4d7d20f8c1e2df9a58cef26deeda4bf837de9d9ad915a1ef6e45d0979cd480",
+        "sourceSha256": "7e2b64567bf1af4fc6b49414a19cfe633f9bf8b2aad292f23ea8ce9257afe996",
         "artifact": "artifacts/wasi-p2-fd-write-64.wasm",
-        "sha256": "74226e4f9036cb624253b01398e360b9a421395e7c77e907929619bcaef4b229",
+        "sha256": "3a1c8b308ccd10954e7594b32e4bb14dd70eccfc88e4bf95542849ac19baaf75",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -10803,7 +11263,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -10815,7 +11279,7 @@
     "id": "features/wasi-p1/stdin-read-64/64",
     "family": "features",
     "artifact": "artifacts/wasi-p1-stdin-read-64.wasm",
-    "sha256": "b4feef261ae3ae57f98713e132fb92de16f2f251642e83149eb49e69da4a10a3",
+    "sha256": "d78a9e923374c5d5105b6232fe7f08bec64675b3913895ebabadeff50f95b89e",
     "abi": "wasi-command",
     "features": [
       "wasi-p1"
@@ -10839,9 +11303,9 @@
       "argv": [
         "feature-probe"
       ],
-      "stdin": "eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eA==",
+      "stdin": "QVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRg==",
       "exit_code": 0,
-      "stdout_sha256": "7ce100971f64e7001e8fe5a51973ecdfe1ced42befe7ee8d5fd6219506b5393c",
+      "stdout_sha256": "75d40da337275068443f59b30ac7ca00a923e03d763e613e584d2e9fc9ee50f0",
       "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "output_limit_bytes": 1048576
     },
@@ -10851,9 +11315,9 @@
       "scope": "host-interface",
       "recipe": {
         "source": "sources/wasi-p1-stdin-read-64.wat",
-        "sourceSha256": "bad6e19965b2bd7432f924a6b666e32cc172fa395499dd437593a3cb42a6d9e8",
+        "sourceSha256": "3bffa80f7ad7ca90d5a3d17fbc90f8db75dfba5ce780d6463516d41e56f9f70c",
         "artifact": "artifacts/wasi-p1-stdin-read-64.wasm",
-        "sha256": "b4feef261ae3ae57f98713e132fb92de16f2f251642e83149eb49e69da4a10a3",
+        "sha256": "d78a9e923374c5d5105b6232fe7f08bec64675b3913895ebabadeff50f95b89e",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -10877,7 +11341,7 @@
     "id": "features/wasi-p2/stdin-read-64/64",
     "family": "features",
     "artifact": "artifacts/wasi-p2-stdin-read-64.wasm",
-    "sha256": "571ce80938dd3fb598694551f57cbc9e4ca6ec5fd67adea4bb96bbffe9fc7971",
+    "sha256": "e40fe1fb3f7ebf507efe6213ca6cea4bd56247b23607ddc282cd9920eae13725",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -10901,9 +11365,9 @@
       "argv": [
         "feature-probe"
       ],
-      "stdin": "eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eA==",
+      "stdin": "QVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRg==",
       "exit_code": 0,
-      "stdout_sha256": "7ce100971f64e7001e8fe5a51973ecdfe1ced42befe7ee8d5fd6219506b5393c",
+      "stdout_sha256": "75d40da337275068443f59b30ac7ca00a923e03d763e613e584d2e9fc9ee50f0",
       "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "output_limit_bytes": 1048576
     },
@@ -10913,9 +11377,9 @@
       "scope": "host-interface",
       "recipe": {
         "source": "sources/wasi-p2-stdin-read-64.wat",
-        "sourceSha256": "bad6e19965b2bd7432f924a6b666e32cc172fa395499dd437593a3cb42a6d9e8",
+        "sourceSha256": "3bffa80f7ad7ca90d5a3d17fbc90f8db75dfba5ce780d6463516d41e56f9f70c",
         "artifact": "artifacts/wasi-p2-stdin-read-64.wasm",
-        "sha256": "571ce80938dd3fb598694551f57cbc9e4ca6ec5fd67adea4bb96bbffe9fc7971",
+        "sha256": "e40fe1fb3f7ebf507efe6213ca6cea4bd56247b23607ddc282cd9920eae13725",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -10943,7 +11407,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -10955,7 +11423,7 @@
     "id": "features/wasi-p1/clock-monotonic-64/64",
     "family": "features",
     "artifact": "artifacts/wasi-p1-clock-monotonic-64.wasm",
-    "sha256": "9e2f0afd9ea70085e5960a21a7491aa1e61d54df305d2c98c5b0a8f7fe891ef7",
+    "sha256": "7c7b68931a973472aceabd24011aaab527c71f9f9e1478bc1046a1b8fe5c0f97",
     "abi": "wasi-command",
     "features": [
       "wasi-p1"
@@ -10990,9 +11458,9 @@
       "scope": "host-interface",
       "recipe": {
         "source": "sources/wasi-p1-clock-monotonic-64.wat",
-        "sourceSha256": "058c45672d25be71752eada4416c7661e1094237f2f0987773798241df143fa0",
+        "sourceSha256": "641978265ccbfd6085cb445a717254931201b2b0158ac136fc6a4ad48bce4866",
         "artifact": "artifacts/wasi-p1-clock-monotonic-64.wasm",
-        "sha256": "9e2f0afd9ea70085e5960a21a7491aa1e61d54df305d2c98c5b0a8f7fe891ef7",
+        "sha256": "7c7b68931a973472aceabd24011aaab527c71f9f9e1478bc1046a1b8fe5c0f97",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -11016,7 +11484,7 @@
     "id": "features/wasi-p2/clock-monotonic-64/64",
     "family": "features",
     "artifact": "artifacts/wasi-p2-clock-monotonic-64.wasm",
-    "sha256": "158c35f3bdc6c0d1bb2acf8f787095ebdd2bf6da932b737bd24c933dc6a664b9",
+    "sha256": "1dd16b7aebe91f182d03870a3683318bd3148d24888eede78b7633bb90ad2aa4",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -11051,9 +11519,9 @@
       "scope": "host-interface",
       "recipe": {
         "source": "sources/wasi-p2-clock-monotonic-64.wat",
-        "sourceSha256": "058c45672d25be71752eada4416c7661e1094237f2f0987773798241df143fa0",
+        "sourceSha256": "641978265ccbfd6085cb445a717254931201b2b0158ac136fc6a4ad48bce4866",
         "artifact": "artifacts/wasi-p2-clock-monotonic-64.wasm",
-        "sha256": "158c35f3bdc6c0d1bb2acf8f787095ebdd2bf6da932b737bd24c933dc6a664b9",
+        "sha256": "1dd16b7aebe91f182d03870a3683318bd3148d24888eede78b7633bb90ad2aa4",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -11081,7 +11549,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -11093,7 +11565,7 @@
     "id": "features/wasi-p1/random-get-64/64",
     "family": "features",
     "artifact": "artifacts/wasi-p1-random-get-64.wasm",
-    "sha256": "444fca9c651a788b1dc996f785205399d46bb490ab7d4815d0cba8ed48068cfb",
+    "sha256": "30a4f3147d258ddbc387c94c096a63484de5362ad5ae3f2878f7f2b5d3d75a63",
     "abi": "wasi-command",
     "features": [
       "wasi-p1"
@@ -11128,9 +11600,9 @@
       "scope": "host-interface-result-code",
       "recipe": {
         "source": "sources/wasi-p1-random-get-64.wat",
-        "sourceSha256": "079248acc3f57bce448ddcd37e267787d62749349f8c617e7c5729590d79aa60",
+        "sourceSha256": "2834ca948f44f2011558bec3b96662379c4b2e46aa06a5f1e5b92961327e1847",
         "artifact": "artifacts/wasi-p1-random-get-64.wasm",
-        "sha256": "444fca9c651a788b1dc996f785205399d46bb490ab7d4815d0cba8ed48068cfb",
+        "sha256": "30a4f3147d258ddbc387c94c096a63484de5362ad5ae3f2878f7f2b5d3d75a63",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -11154,7 +11626,7 @@
     "id": "features/wasi-p2/random-get-64/64",
     "family": "features",
     "artifact": "artifacts/wasi-p2-random-get-64.wasm",
-    "sha256": "6d388d8a86c62acf42ddd04c084a63bee7881a1b5b95fa9c68895fd10b4344ef",
+    "sha256": "b213f00266db649d629313ea625be4108405b9642bd3c65128da35db1aa661f4",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -11189,9 +11661,9 @@
       "scope": "host-interface-result-code",
       "recipe": {
         "source": "sources/wasi-p2-random-get-64.wat",
-        "sourceSha256": "079248acc3f57bce448ddcd37e267787d62749349f8c617e7c5729590d79aa60",
+        "sourceSha256": "2834ca948f44f2011558bec3b96662379c4b2e46aa06a5f1e5b92961327e1847",
         "artifact": "artifacts/wasi-p2-random-get-64.wasm",
-        "sha256": "6d388d8a86c62acf42ddd04c084a63bee7881a1b5b95fa9c68895fd10b4344ef",
+        "sha256": "b213f00266db649d629313ea625be4108405b9642bd3c65128da35db1aa661f4",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -11219,7 +11691,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -11231,7 +11707,7 @@
     "id": "features/wasi-p1/arguments-64/64",
     "family": "features",
     "artifact": "artifacts/wasi-p1-arguments-64.wasm",
-    "sha256": "368318bcb2b391289c52aa9f44af1eba0d102cdce7f5fd3058710587aff4f569",
+    "sha256": "34afc220a4f617dc67bc1eb424f357fcde258b6ab5f15821dc88fa8c43305133",
     "abi": "wasi-command",
     "features": [
       "wasi-p1"
@@ -11267,9 +11743,9 @@
       "scope": "host-interface",
       "recipe": {
         "source": "sources/wasi-p1-arguments-64.wat",
-        "sourceSha256": "e6ea49ad4b9bcff7258e5bd2e3e5407a63077cfcd2c3806809025aa76e3af140",
+        "sourceSha256": "fa81886f31556c43a2162428e0561d01d6b0b595f7244a8069ab7df04adc392b",
         "artifact": "artifacts/wasi-p1-arguments-64.wasm",
-        "sha256": "368318bcb2b391289c52aa9f44af1eba0d102cdce7f5fd3058710587aff4f569",
+        "sha256": "34afc220a4f617dc67bc1eb424f357fcde258b6ab5f15821dc88fa8c43305133",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -11293,7 +11769,7 @@
     "id": "features/wasi-p2/arguments-64/64",
     "family": "features",
     "artifact": "artifacts/wasi-p2-arguments-64.wasm",
-    "sha256": "76cf1328ca6d60f62768bf1291b223c88a71596cca233916a5e7bc8605b5fb04",
+    "sha256": "7c660afe3efd275d858c10dd912b7034a8cc6f51e0ae24506165cf509bc488f2",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -11329,9 +11805,9 @@
       "scope": "host-interface",
       "recipe": {
         "source": "sources/wasi-p2-arguments-64.wat",
-        "sourceSha256": "e6ea49ad4b9bcff7258e5bd2e3e5407a63077cfcd2c3806809025aa76e3af140",
+        "sourceSha256": "fa81886f31556c43a2162428e0561d01d6b0b595f7244a8069ab7df04adc392b",
         "artifact": "artifacts/wasi-p2-arguments-64.wasm",
-        "sha256": "76cf1328ca6d60f62768bf1291b223c88a71596cca233916a5e7bc8605b5fb04",
+        "sha256": "7c660afe3efd275d858c10dd912b7034a8cc6f51e0ae24506165cf509bc488f2",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -11359,7 +11835,451 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
+          "license": "Apache-2.0 WITH LLVM-exception"
+        }
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/wasi-p1/file-seek-read-64/64",
+    "family": "features",
+    "artifact": "artifacts/wasi-p1-file-seek-read-64.wasm",
+    "sha256": "b98a0c4073f72306099b06dca3f8801dd9feab1187a16c3cb82a6aadc0307d63",
+    "abi": "wasi-command",
+    "features": [
+      "wasi-p1"
+    ],
+    "export": "_start",
+    "args": [],
+    "work_unit": "byte",
+    "units_per_invocation": 64,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "MIT",
+    "source": "sources/wasi-p1-file-seek-read-64.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "host_profile": "wasi-preview1-readonly-v1",
+    "command": {
+      "argv": [
+        "feature-probe"
+      ],
+      "files": {
+        "probe.txt": {
+          "data": "YWJjQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRg==",
+          "sha256": "701a92810d72a82f1976349c2204d3b62c033569d18ecc0d5685fedb5647a1b2"
+        }
+      },
+      "exit_code": 0,
+      "stdout_sha256": "75d40da337275068443f59b30ac7ca00a923e03d763e613e584d2e9fc9ee50f0",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output_limit_bytes": 1048576
+    },
+    "provenance": {
+      "feature": "wasi-p1",
+      "baseline": false,
+      "scope": "host-interface",
+      "recipe": {
+        "source": "sources/wasi-p1-file-seek-read-64.wat",
+        "sourceSha256": "b185cdc22bde148fbe5e3be29c5fa8b4f59c06ee177246c78be3b8b58d01fbc7",
+        "artifact": "artifacts/wasi-p1-file-seek-read-64.wasm",
+        "sha256": "b98a0c4073f72306099b06dca3f8801dd9feab1187a16c3cb82a6aadc0307d63",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/wasi-p1-file-seek-read-64.wat",
+            "-o",
+            "artifacts/wasi-p1-file-seek-read-64.wasm"
+          ]
+        ],
+        "feature": "wasi-p1",
+        "variant": "file-seek-read-64",
+        "baseline": false,
+        "scope": "host-interface"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/wasi-p2/file-seek-read-64/64",
+    "family": "features",
+    "artifact": "artifacts/wasi-p2-file-seek-read-64.wasm",
+    "sha256": "97d2aa8c05f788c70a58f079a1229d65f3221a9c636b3a4d2994e6336d0ed72e",
+    "abi": "component",
+    "features": [
+      "wasi-p2"
+    ],
+    "export": "_start",
+    "args": [],
+    "work_unit": "byte",
+    "units_per_invocation": 64,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "MIT AND Apache-2.0 WITH LLVM-exception",
+    "source": "sources/wasi-p2-file-seek-read-64.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "host_profile": "wasi-preview2-readonly-v1",
+    "command": {
+      "argv": [
+        "feature-probe"
+      ],
+      "files": {
+        "probe.txt": {
+          "data": "YWJjQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRg==",
+          "sha256": "701a92810d72a82f1976349c2204d3b62c033569d18ecc0d5685fedb5647a1b2"
+        }
+      },
+      "exit_code": 0,
+      "stdout_sha256": "75d40da337275068443f59b30ac7ca00a923e03d763e613e584d2e9fc9ee50f0",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output_limit_bytes": 1048576
+    },
+    "provenance": {
+      "feature": "wasi-p2",
+      "baseline": false,
+      "scope": "host-interface",
+      "recipe": {
+        "source": "sources/wasi-p2-file-seek-read-64.wat",
+        "sourceSha256": "b185cdc22bde148fbe5e3be29c5fa8b4f59c06ee177246c78be3b8b58d01fbc7",
+        "artifact": "artifacts/wasi-p2-file-seek-read-64.wasm",
+        "sha256": "97d2aa8c05f788c70a58f079a1229d65f3221a9c636b3a4d2994e6336d0ed72e",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/wasi-p2-file-seek-read-64.wat",
+            "-o",
+            "artifacts/wasi-p2-file-seek-read-64.core.wasm"
+          ],
+          [
+            "wasm-tools",
+            "component",
+            "new",
+            "artifacts/wasi-p2-file-seek-read-64.core.wasm",
+            "--adapt",
+            "wasi_snapshot_preview1=<pinned-command-adapter>",
+            "-o",
+            "artifacts/wasi-p2-file-seek-read-64.wasm"
+          ]
+        ],
+        "feature": "wasi-p2",
+        "variant": "file-seek-read-64",
+        "baseline": false,
+        "scope": "host-interface",
+        "adapter": {
+          "repository": "bytecodealliance/wasmtime",
+          "version": "46.0.1",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
+          "license": "Apache-2.0 WITH LLVM-exception"
+        }
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/wasi-p1/scatter-write-64/64",
+    "family": "features",
+    "artifact": "artifacts/wasi-p1-scatter-write-64.wasm",
+    "sha256": "d7d35ea36b5641b4731c9e9883f0e9a9962be0a13ddc6426616d739473960834",
+    "abi": "wasi-command",
+    "features": [
+      "wasi-p1"
+    ],
+    "export": "_start",
+    "args": [],
+    "work_unit": "byte",
+    "units_per_invocation": 64,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "MIT",
+    "source": "sources/wasi-p1-scatter-write-64.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "host_profile": "wasi-preview1-readonly-v1",
+    "command": {
+      "argv": [
+        "feature-probe"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "75d40da337275068443f59b30ac7ca00a923e03d763e613e584d2e9fc9ee50f0",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output_limit_bytes": 1048576
+    },
+    "provenance": {
+      "feature": "wasi-p1",
+      "baseline": false,
+      "scope": "host-interface",
+      "recipe": {
+        "source": "sources/wasi-p1-scatter-write-64.wat",
+        "sourceSha256": "8698b3c7b50821a7d6a0d19f570b3d4206b2de6d096e45f0483a407a5cb8ea13",
+        "artifact": "artifacts/wasi-p1-scatter-write-64.wasm",
+        "sha256": "d7d35ea36b5641b4731c9e9883f0e9a9962be0a13ddc6426616d739473960834",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/wasi-p1-scatter-write-64.wat",
+            "-o",
+            "artifacts/wasi-p1-scatter-write-64.wasm"
+          ]
+        ],
+        "feature": "wasi-p1",
+        "variant": "scatter-write-64",
+        "baseline": false,
+        "scope": "host-interface"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/wasi-p2/scatter-write-64/64",
+    "family": "features",
+    "artifact": "artifacts/wasi-p2-scatter-write-64.wasm",
+    "sha256": "3407ede3d87a2f6bf73d9e0dfbb141df06dec6d4b9572c21b24a3fa8663129a7",
+    "abi": "component",
+    "features": [
+      "wasi-p2"
+    ],
+    "export": "_start",
+    "args": [],
+    "work_unit": "byte",
+    "units_per_invocation": 64,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "MIT AND Apache-2.0 WITH LLVM-exception",
+    "source": "sources/wasi-p2-scatter-write-64.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "host_profile": "wasi-preview2-readonly-v1",
+    "command": {
+      "argv": [
+        "feature-probe"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "75d40da337275068443f59b30ac7ca00a923e03d763e613e584d2e9fc9ee50f0",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output_limit_bytes": 1048576
+    },
+    "provenance": {
+      "feature": "wasi-p2",
+      "baseline": false,
+      "scope": "host-interface",
+      "recipe": {
+        "source": "sources/wasi-p2-scatter-write-64.wat",
+        "sourceSha256": "8698b3c7b50821a7d6a0d19f570b3d4206b2de6d096e45f0483a407a5cb8ea13",
+        "artifact": "artifacts/wasi-p2-scatter-write-64.wasm",
+        "sha256": "3407ede3d87a2f6bf73d9e0dfbb141df06dec6d4b9572c21b24a3fa8663129a7",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/wasi-p2-scatter-write-64.wat",
+            "-o",
+            "artifacts/wasi-p2-scatter-write-64.core.wasm"
+          ],
+          [
+            "wasm-tools",
+            "component",
+            "new",
+            "artifacts/wasi-p2-scatter-write-64.core.wasm",
+            "--adapt",
+            "wasi_snapshot_preview1=<pinned-command-adapter>",
+            "-o",
+            "artifacts/wasi-p2-scatter-write-64.wasm"
+          ]
+        ],
+        "feature": "wasi-p2",
+        "variant": "scatter-write-64",
+        "baseline": false,
+        "scope": "host-interface",
+        "adapter": {
+          "repository": "bytecodealliance/wasmtime",
+          "version": "46.0.1",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
+          "license": "Apache-2.0 WITH LLVM-exception"
+        }
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/wasi-p1/stdin-eof-64/64",
+    "family": "features",
+    "artifact": "artifacts/wasi-p1-stdin-eof-64.wasm",
+    "sha256": "6b73e38b3d27362a940182d0953b24c4327e2d607f8b73905e40cb2377d2aba3",
+    "abi": "wasi-command",
+    "features": [
+      "wasi-p1"
+    ],
+    "export": "_start",
+    "args": [],
+    "work_unit": "byte",
+    "units_per_invocation": 64,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "MIT",
+    "source": "sources/wasi-p1-stdin-eof-64.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "host_profile": "wasi-preview1-readonly-v1",
+    "command": {
+      "argv": [
+        "feature-probe"
+      ],
+      "stdin": "QVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRg==",
+      "exit_code": 0,
+      "stdout_sha256": "75d40da337275068443f59b30ac7ca00a923e03d763e613e584d2e9fc9ee50f0",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output_limit_bytes": 1048576
+    },
+    "provenance": {
+      "feature": "wasi-p1",
+      "baseline": false,
+      "scope": "host-interface",
+      "recipe": {
+        "source": "sources/wasi-p1-stdin-eof-64.wat",
+        "sourceSha256": "630896af7d009874c7c881450512744a7573aa2909283898eacbc71e431ee5c4",
+        "artifact": "artifacts/wasi-p1-stdin-eof-64.wasm",
+        "sha256": "6b73e38b3d27362a940182d0953b24c4327e2d607f8b73905e40cb2377d2aba3",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/wasi-p1-stdin-eof-64.wat",
+            "-o",
+            "artifacts/wasi-p1-stdin-eof-64.wasm"
+          ]
+        ],
+        "feature": "wasi-p1",
+        "variant": "stdin-eof-64",
+        "baseline": false,
+        "scope": "host-interface"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/wasi-p2/stdin-eof-64/64",
+    "family": "features",
+    "artifact": "artifacts/wasi-p2-stdin-eof-64.wasm",
+    "sha256": "6df653f5c0c872ef896a63638afc3868b3c1f644731648b3c68de2c0c7de7eb4",
+    "abi": "component",
+    "features": [
+      "wasi-p2"
+    ],
+    "export": "_start",
+    "args": [],
+    "work_unit": "byte",
+    "units_per_invocation": 64,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "MIT AND Apache-2.0 WITH LLVM-exception",
+    "source": "sources/wasi-p2-stdin-eof-64.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "host_profile": "wasi-preview2-readonly-v1",
+    "command": {
+      "argv": [
+        "feature-probe"
+      ],
+      "stdin": "QVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRg==",
+      "exit_code": 0,
+      "stdout_sha256": "75d40da337275068443f59b30ac7ca00a923e03d763e613e584d2e9fc9ee50f0",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output_limit_bytes": 1048576
+    },
+    "provenance": {
+      "feature": "wasi-p2",
+      "baseline": false,
+      "scope": "host-interface",
+      "recipe": {
+        "source": "sources/wasi-p2-stdin-eof-64.wat",
+        "sourceSha256": "630896af7d009874c7c881450512744a7573aa2909283898eacbc71e431ee5c4",
+        "artifact": "artifacts/wasi-p2-stdin-eof-64.wasm",
+        "sha256": "6df653f5c0c872ef896a63638afc3868b3c1f644731648b3c68de2c0c7de7eb4",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/wasi-p2-stdin-eof-64.wat",
+            "-o",
+            "artifacts/wasi-p2-stdin-eof-64.core.wasm"
+          ],
+          [
+            "wasm-tools",
+            "component",
+            "new",
+            "artifacts/wasi-p2-stdin-eof-64.core.wasm",
+            "--adapt",
+            "wasi_snapshot_preview1=<pinned-command-adapter>",
+            "-o",
+            "artifacts/wasi-p2-stdin-eof-64.wasm"
+          ]
+        ],
+        "feature": "wasi-p2",
+        "variant": "stdin-eof-64",
+        "baseline": false,
+        "scope": "host-interface",
+        "adapter": {
+          "repository": "bytecodealliance/wasmtime",
+          "version": "46.0.1",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -11371,7 +12291,7 @@
     "id": "features/wasi-p1/fd-write-4096/4096",
     "family": "features",
     "artifact": "artifacts/wasi-p1-fd-write-4096.wasm",
-    "sha256": "bfc309732fbf6e67539c159b37d44b29407db1b32b49819000d5a1ecdff6c541",
+    "sha256": "7b870b167641483a7836a38b521af52154c6ce26b8a49b0578097325cc478b92",
     "abi": "wasi-command",
     "features": [
       "wasi-p1"
@@ -11396,7 +12316,7 @@
         "feature-probe"
       ],
       "exit_code": 0,
-      "stdout_sha256": "a2e659dacb4691e887ac0139f8893d04764ee197d70fb73d3190d56113d18e3e",
+      "stdout_sha256": "6a7c936ffc546660add83a70c4e78343f6b67124dcda4d63d34dd70ca50be575",
       "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "output_limit_bytes": 1048576
     },
@@ -11406,9 +12326,9 @@
       "scope": "host-interface",
       "recipe": {
         "source": "sources/wasi-p1-fd-write-4096.wat",
-        "sourceSha256": "0b2ae56ebae1ea5449239b80858878c3ec074d6089b4aa4dd2c94c42e0149932",
+        "sourceSha256": "5a24573dccc21840bcba6c26b2b2b803e0a602d472d357a64498859a51ce71bb",
         "artifact": "artifacts/wasi-p1-fd-write-4096.wasm",
-        "sha256": "bfc309732fbf6e67539c159b37d44b29407db1b32b49819000d5a1ecdff6c541",
+        "sha256": "7b870b167641483a7836a38b521af52154c6ce26b8a49b0578097325cc478b92",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -11432,7 +12352,7 @@
     "id": "features/wasi-p2/fd-write-4096/4096",
     "family": "features",
     "artifact": "artifacts/wasi-p2-fd-write-4096.wasm",
-    "sha256": "40cf75823bdc0d60d13cf6dfef54f48ab87f4adf9401f1a5119800d765f918b8",
+    "sha256": "fc221afc67b6d6a2d205e44bcb37242e9bcd184b37f87e732f1a076e1dd78a08",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -11457,7 +12377,7 @@
         "feature-probe"
       ],
       "exit_code": 0,
-      "stdout_sha256": "a2e659dacb4691e887ac0139f8893d04764ee197d70fb73d3190d56113d18e3e",
+      "stdout_sha256": "6a7c936ffc546660add83a70c4e78343f6b67124dcda4d63d34dd70ca50be575",
       "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "output_limit_bytes": 1048576
     },
@@ -11467,9 +12387,9 @@
       "scope": "host-interface",
       "recipe": {
         "source": "sources/wasi-p2-fd-write-4096.wat",
-        "sourceSha256": "0b2ae56ebae1ea5449239b80858878c3ec074d6089b4aa4dd2c94c42e0149932",
+        "sourceSha256": "5a24573dccc21840bcba6c26b2b2b803e0a602d472d357a64498859a51ce71bb",
         "artifact": "artifacts/wasi-p2-fd-write-4096.wasm",
-        "sha256": "40cf75823bdc0d60d13cf6dfef54f48ab87f4adf9401f1a5119800d765f918b8",
+        "sha256": "fc221afc67b6d6a2d205e44bcb37242e9bcd184b37f87e732f1a076e1dd78a08",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -11497,7 +12417,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -11509,7 +12433,7 @@
     "id": "features/wasi-p1/stdin-read-4096/4096",
     "family": "features",
     "artifact": "artifacts/wasi-p1-stdin-read-4096.wasm",
-    "sha256": "9deb06f7f0db094fe8f310b9b2819954190db598d9486ee32c13c9eed22618c6",
+    "sha256": "ac75217b3242ea95628c86ae0b18a22f861466e69ab16a87c3810744f2defff2",
     "abi": "wasi-command",
     "features": [
       "wasi-p1"
@@ -11533,9 +12457,9 @@
       "argv": [
         "feature-probe"
       ],
-      "stdin": "eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eA==",
+      "stdin": "QVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTg==",
       "exit_code": 0,
-      "stdout_sha256": "a2e659dacb4691e887ac0139f8893d04764ee197d70fb73d3190d56113d18e3e",
+      "stdout_sha256": "6a7c936ffc546660add83a70c4e78343f6b67124dcda4d63d34dd70ca50be575",
       "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "output_limit_bytes": 1048576
     },
@@ -11545,9 +12469,9 @@
       "scope": "host-interface",
       "recipe": {
         "source": "sources/wasi-p1-stdin-read-4096.wat",
-        "sourceSha256": "5c27c6229fd1b00b7ad562d4219ff99a5b2fff4243dc83241db7c3c07a4356da",
+        "sourceSha256": "64525bee51f024b7432f1c75c836fc96188b9ded39f3c6702d1863fc16535112",
         "artifact": "artifacts/wasi-p1-stdin-read-4096.wasm",
-        "sha256": "9deb06f7f0db094fe8f310b9b2819954190db598d9486ee32c13c9eed22618c6",
+        "sha256": "ac75217b3242ea95628c86ae0b18a22f861466e69ab16a87c3810744f2defff2",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -11571,7 +12495,7 @@
     "id": "features/wasi-p2/stdin-read-4096/4096",
     "family": "features",
     "artifact": "artifacts/wasi-p2-stdin-read-4096.wasm",
-    "sha256": "c6f3ee9e657c9c1af556be7f996b22951632aeefa8dfa40c28a302fbf54308a7",
+    "sha256": "431eac37a043e93279a7b446a1354fcb18394419e23706031a28464a8c04b4fa",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -11595,9 +12519,9 @@
       "argv": [
         "feature-probe"
       ],
-      "stdin": "eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eA==",
+      "stdin": "QVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTg==",
       "exit_code": 0,
-      "stdout_sha256": "a2e659dacb4691e887ac0139f8893d04764ee197d70fb73d3190d56113d18e3e",
+      "stdout_sha256": "6a7c936ffc546660add83a70c4e78343f6b67124dcda4d63d34dd70ca50be575",
       "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "output_limit_bytes": 1048576
     },
@@ -11607,9 +12531,9 @@
       "scope": "host-interface",
       "recipe": {
         "source": "sources/wasi-p2-stdin-read-4096.wat",
-        "sourceSha256": "5c27c6229fd1b00b7ad562d4219ff99a5b2fff4243dc83241db7c3c07a4356da",
+        "sourceSha256": "64525bee51f024b7432f1c75c836fc96188b9ded39f3c6702d1863fc16535112",
         "artifact": "artifacts/wasi-p2-stdin-read-4096.wasm",
-        "sha256": "c6f3ee9e657c9c1af556be7f996b22951632aeefa8dfa40c28a302fbf54308a7",
+        "sha256": "431eac37a043e93279a7b446a1354fcb18394419e23706031a28464a8c04b4fa",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -11637,7 +12561,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -11649,7 +12577,7 @@
     "id": "features/wasi-p1/clock-monotonic-4096/4096",
     "family": "features",
     "artifact": "artifacts/wasi-p1-clock-monotonic-4096.wasm",
-    "sha256": "50366d142c771763a8bcc1e5670660cd73b4e373ac004016fa723cc8a1a099a7",
+    "sha256": "0c815d4d5ba68ae7ec040c9e613fa2891fc5a505fc390d6c94245d539cb5dd6c",
     "abi": "wasi-command",
     "features": [
       "wasi-p1"
@@ -11684,9 +12612,9 @@
       "scope": "host-interface",
       "recipe": {
         "source": "sources/wasi-p1-clock-monotonic-4096.wat",
-        "sourceSha256": "166a5824b2d6bdbef93b49424793124e7f335aa33561b0ddac9239cb31efb981",
+        "sourceSha256": "11f54240af9c54c248ea937d413d3aaccf8bc1926e560f94739394c9a4c57e8f",
         "artifact": "artifacts/wasi-p1-clock-monotonic-4096.wasm",
-        "sha256": "50366d142c771763a8bcc1e5670660cd73b4e373ac004016fa723cc8a1a099a7",
+        "sha256": "0c815d4d5ba68ae7ec040c9e613fa2891fc5a505fc390d6c94245d539cb5dd6c",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -11710,7 +12638,7 @@
     "id": "features/wasi-p2/clock-monotonic-4096/4096",
     "family": "features",
     "artifact": "artifacts/wasi-p2-clock-monotonic-4096.wasm",
-    "sha256": "bb8ea02f341388fa3c5b5933875da72beb44c1e2dce90be3de96656720ebd0fc",
+    "sha256": "911491c60cd72fddbe4b58d5334e7d8339b760bbf86ba6f1e79ee8e8bdbf570b",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -11745,9 +12673,9 @@
       "scope": "host-interface",
       "recipe": {
         "source": "sources/wasi-p2-clock-monotonic-4096.wat",
-        "sourceSha256": "166a5824b2d6bdbef93b49424793124e7f335aa33561b0ddac9239cb31efb981",
+        "sourceSha256": "11f54240af9c54c248ea937d413d3aaccf8bc1926e560f94739394c9a4c57e8f",
         "artifact": "artifacts/wasi-p2-clock-monotonic-4096.wasm",
-        "sha256": "bb8ea02f341388fa3c5b5933875da72beb44c1e2dce90be3de96656720ebd0fc",
+        "sha256": "911491c60cd72fddbe4b58d5334e7d8339b760bbf86ba6f1e79ee8e8bdbf570b",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -11775,7 +12703,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -11787,7 +12719,7 @@
     "id": "features/wasi-p1/random-get-4096/4096",
     "family": "features",
     "artifact": "artifacts/wasi-p1-random-get-4096.wasm",
-    "sha256": "50db6df7826651be0fa67690a701354dbc188b883f839af4f5bb4dcda4f676fc",
+    "sha256": "0198eda4809c93f4f3b8bcedceb825005425ff3a2b600929a24ca102a5256a24",
     "abi": "wasi-command",
     "features": [
       "wasi-p1"
@@ -11822,9 +12754,9 @@
       "scope": "host-interface-result-code",
       "recipe": {
         "source": "sources/wasi-p1-random-get-4096.wat",
-        "sourceSha256": "a23678c80c6ebadca9964a6434a90d8748233f7cf82e9ca54eb8d4b99d83dd02",
+        "sourceSha256": "0e17404e18ca12ee0323692c0c836ca08d59d7bed8483659a0a13f69c9c3a10f",
         "artifact": "artifacts/wasi-p1-random-get-4096.wasm",
-        "sha256": "50db6df7826651be0fa67690a701354dbc188b883f839af4f5bb4dcda4f676fc",
+        "sha256": "0198eda4809c93f4f3b8bcedceb825005425ff3a2b600929a24ca102a5256a24",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -11848,7 +12780,7 @@
     "id": "features/wasi-p2/random-get-4096/4096",
     "family": "features",
     "artifact": "artifacts/wasi-p2-random-get-4096.wasm",
-    "sha256": "f9c9c13f5b239fbbd343fdbd891d994d8dd9b7c596356689dc3049d6da64d52c",
+    "sha256": "3116fb3b842a2493f9f2c85090480f33019415c8411549d6f5b227cad840a46e",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -11883,9 +12815,9 @@
       "scope": "host-interface-result-code",
       "recipe": {
         "source": "sources/wasi-p2-random-get-4096.wat",
-        "sourceSha256": "a23678c80c6ebadca9964a6434a90d8748233f7cf82e9ca54eb8d4b99d83dd02",
+        "sourceSha256": "0e17404e18ca12ee0323692c0c836ca08d59d7bed8483659a0a13f69c9c3a10f",
         "artifact": "artifacts/wasi-p2-random-get-4096.wasm",
-        "sha256": "f9c9c13f5b239fbbd343fdbd891d994d8dd9b7c596356689dc3049d6da64d52c",
+        "sha256": "3116fb3b842a2493f9f2c85090480f33019415c8411549d6f5b227cad840a46e",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -11913,7 +12845,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -11925,7 +12861,7 @@
     "id": "features/wasi-p1/arguments-4096/4096",
     "family": "features",
     "artifact": "artifacts/wasi-p1-arguments-4096.wasm",
-    "sha256": "1176b060aaade2962f1a942b67c517e2ae85498772671365e89d82a64f3acafb",
+    "sha256": "0929af8e21a82704628b55fa2e15ce78a38dfbd05ef42e5ba44a11de887a2ccb",
     "abi": "wasi-command",
     "features": [
       "wasi-p1"
@@ -11961,9 +12897,9 @@
       "scope": "host-interface",
       "recipe": {
         "source": "sources/wasi-p1-arguments-4096.wat",
-        "sourceSha256": "45606f15cbb54fd7267245662086ce3f38eb21d510e693b6bb65d5f8d52363a5",
+        "sourceSha256": "cf8d465801d4195a341e58fddc59b133232276f41c56f4c8f057a570a691b337",
         "artifact": "artifacts/wasi-p1-arguments-4096.wasm",
-        "sha256": "1176b060aaade2962f1a942b67c517e2ae85498772671365e89d82a64f3acafb",
+        "sha256": "0929af8e21a82704628b55fa2e15ce78a38dfbd05ef42e5ba44a11de887a2ccb",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -11987,7 +12923,7 @@
     "id": "features/wasi-p2/arguments-4096/4096",
     "family": "features",
     "artifact": "artifacts/wasi-p2-arguments-4096.wasm",
-    "sha256": "855761853a4f71384c8029084c4913eb4e31e2356fa29eaa98d30dd6891eb266",
+    "sha256": "f0b3ece7605b810c72761e274b8449f5185e3292ab73518517ae6d393bd0d63c",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -12023,9 +12959,9 @@
       "scope": "host-interface",
       "recipe": {
         "source": "sources/wasi-p2-arguments-4096.wat",
-        "sourceSha256": "45606f15cbb54fd7267245662086ce3f38eb21d510e693b6bb65d5f8d52363a5",
+        "sourceSha256": "cf8d465801d4195a341e58fddc59b133232276f41c56f4c8f057a570a691b337",
         "artifact": "artifacts/wasi-p2-arguments-4096.wasm",
-        "sha256": "855761853a4f71384c8029084c4913eb4e31e2356fa29eaa98d30dd6891eb266",
+        "sha256": "f0b3ece7605b810c72761e274b8449f5185e3292ab73518517ae6d393bd0d63c",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -12053,7 +12989,451 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
+          "license": "Apache-2.0 WITH LLVM-exception"
+        }
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/wasi-p1/file-seek-read-4096/4096",
+    "family": "features",
+    "artifact": "artifacts/wasi-p1-file-seek-read-4096.wasm",
+    "sha256": "997401086f708fb082ff88b0169ebb4fd0efd6fe124ae984208776447b8e9314",
+    "abi": "wasi-command",
+    "features": [
+      "wasi-p1"
+    ],
+    "export": "_start",
+    "args": [],
+    "work_unit": "byte",
+    "units_per_invocation": 4096,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "MIT",
+    "source": "sources/wasi-p1-file-seek-read-4096.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "host_profile": "wasi-preview1-readonly-v1",
+    "command": {
+      "argv": [
+        "feature-probe"
+      ],
+      "files": {
+        "probe.txt": {
+          "data": "YWJjQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTg==",
+          "sha256": "724a07dc25642f7562b87a2ce94b560fc9cb2e615f46bf0dbf53c51385e8b672"
+        }
+      },
+      "exit_code": 0,
+      "stdout_sha256": "6a7c936ffc546660add83a70c4e78343f6b67124dcda4d63d34dd70ca50be575",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output_limit_bytes": 1048576
+    },
+    "provenance": {
+      "feature": "wasi-p1",
+      "baseline": false,
+      "scope": "host-interface",
+      "recipe": {
+        "source": "sources/wasi-p1-file-seek-read-4096.wat",
+        "sourceSha256": "1f3093324481e2eb9557fbf98edadaa2889fb7c04499702698b551c1cf5ccf69",
+        "artifact": "artifacts/wasi-p1-file-seek-read-4096.wasm",
+        "sha256": "997401086f708fb082ff88b0169ebb4fd0efd6fe124ae984208776447b8e9314",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/wasi-p1-file-seek-read-4096.wat",
+            "-o",
+            "artifacts/wasi-p1-file-seek-read-4096.wasm"
+          ]
+        ],
+        "feature": "wasi-p1",
+        "variant": "file-seek-read-4096",
+        "baseline": false,
+        "scope": "host-interface"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/wasi-p2/file-seek-read-4096/4096",
+    "family": "features",
+    "artifact": "artifacts/wasi-p2-file-seek-read-4096.wasm",
+    "sha256": "f30878787074a4e8595bea718bdcdfebedbe1574a977ead71d06a6d55ddc6cde",
+    "abi": "component",
+    "features": [
+      "wasi-p2"
+    ],
+    "export": "_start",
+    "args": [],
+    "work_unit": "byte",
+    "units_per_invocation": 4096,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "MIT AND Apache-2.0 WITH LLVM-exception",
+    "source": "sources/wasi-p2-file-seek-read-4096.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "host_profile": "wasi-preview2-readonly-v1",
+    "command": {
+      "argv": [
+        "feature-probe"
+      ],
+      "files": {
+        "probe.txt": {
+          "data": "YWJjQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTg==",
+          "sha256": "724a07dc25642f7562b87a2ce94b560fc9cb2e615f46bf0dbf53c51385e8b672"
+        }
+      },
+      "exit_code": 0,
+      "stdout_sha256": "6a7c936ffc546660add83a70c4e78343f6b67124dcda4d63d34dd70ca50be575",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output_limit_bytes": 1048576
+    },
+    "provenance": {
+      "feature": "wasi-p2",
+      "baseline": false,
+      "scope": "host-interface",
+      "recipe": {
+        "source": "sources/wasi-p2-file-seek-read-4096.wat",
+        "sourceSha256": "1f3093324481e2eb9557fbf98edadaa2889fb7c04499702698b551c1cf5ccf69",
+        "artifact": "artifacts/wasi-p2-file-seek-read-4096.wasm",
+        "sha256": "f30878787074a4e8595bea718bdcdfebedbe1574a977ead71d06a6d55ddc6cde",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/wasi-p2-file-seek-read-4096.wat",
+            "-o",
+            "artifacts/wasi-p2-file-seek-read-4096.core.wasm"
+          ],
+          [
+            "wasm-tools",
+            "component",
+            "new",
+            "artifacts/wasi-p2-file-seek-read-4096.core.wasm",
+            "--adapt",
+            "wasi_snapshot_preview1=<pinned-command-adapter>",
+            "-o",
+            "artifacts/wasi-p2-file-seek-read-4096.wasm"
+          ]
+        ],
+        "feature": "wasi-p2",
+        "variant": "file-seek-read-4096",
+        "baseline": false,
+        "scope": "host-interface",
+        "adapter": {
+          "repository": "bytecodealliance/wasmtime",
+          "version": "46.0.1",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
+          "license": "Apache-2.0 WITH LLVM-exception"
+        }
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/wasi-p1/scatter-write-4096/4096",
+    "family": "features",
+    "artifact": "artifacts/wasi-p1-scatter-write-4096.wasm",
+    "sha256": "025e9630c00b03744f9b715bc6afe66f5ad321a35884338aae7514b8a187c0ef",
+    "abi": "wasi-command",
+    "features": [
+      "wasi-p1"
+    ],
+    "export": "_start",
+    "args": [],
+    "work_unit": "byte",
+    "units_per_invocation": 4096,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "MIT",
+    "source": "sources/wasi-p1-scatter-write-4096.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "host_profile": "wasi-preview1-readonly-v1",
+    "command": {
+      "argv": [
+        "feature-probe"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "6a7c936ffc546660add83a70c4e78343f6b67124dcda4d63d34dd70ca50be575",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output_limit_bytes": 1048576
+    },
+    "provenance": {
+      "feature": "wasi-p1",
+      "baseline": false,
+      "scope": "host-interface",
+      "recipe": {
+        "source": "sources/wasi-p1-scatter-write-4096.wat",
+        "sourceSha256": "a849c18d72a2790d0fee8cd1d1614cb1f787ea08455e6cf3ee380a2cdad09b07",
+        "artifact": "artifacts/wasi-p1-scatter-write-4096.wasm",
+        "sha256": "025e9630c00b03744f9b715bc6afe66f5ad321a35884338aae7514b8a187c0ef",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/wasi-p1-scatter-write-4096.wat",
+            "-o",
+            "artifacts/wasi-p1-scatter-write-4096.wasm"
+          ]
+        ],
+        "feature": "wasi-p1",
+        "variant": "scatter-write-4096",
+        "baseline": false,
+        "scope": "host-interface"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/wasi-p2/scatter-write-4096/4096",
+    "family": "features",
+    "artifact": "artifacts/wasi-p2-scatter-write-4096.wasm",
+    "sha256": "b99a03712ba674d16eb2151ac71c29ba18dab5baa0361448080a3d472a4e2172",
+    "abi": "component",
+    "features": [
+      "wasi-p2"
+    ],
+    "export": "_start",
+    "args": [],
+    "work_unit": "byte",
+    "units_per_invocation": 4096,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "MIT AND Apache-2.0 WITH LLVM-exception",
+    "source": "sources/wasi-p2-scatter-write-4096.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "host_profile": "wasi-preview2-readonly-v1",
+    "command": {
+      "argv": [
+        "feature-probe"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "6a7c936ffc546660add83a70c4e78343f6b67124dcda4d63d34dd70ca50be575",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output_limit_bytes": 1048576
+    },
+    "provenance": {
+      "feature": "wasi-p2",
+      "baseline": false,
+      "scope": "host-interface",
+      "recipe": {
+        "source": "sources/wasi-p2-scatter-write-4096.wat",
+        "sourceSha256": "a849c18d72a2790d0fee8cd1d1614cb1f787ea08455e6cf3ee380a2cdad09b07",
+        "artifact": "artifacts/wasi-p2-scatter-write-4096.wasm",
+        "sha256": "b99a03712ba674d16eb2151ac71c29ba18dab5baa0361448080a3d472a4e2172",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/wasi-p2-scatter-write-4096.wat",
+            "-o",
+            "artifacts/wasi-p2-scatter-write-4096.core.wasm"
+          ],
+          [
+            "wasm-tools",
+            "component",
+            "new",
+            "artifacts/wasi-p2-scatter-write-4096.core.wasm",
+            "--adapt",
+            "wasi_snapshot_preview1=<pinned-command-adapter>",
+            "-o",
+            "artifacts/wasi-p2-scatter-write-4096.wasm"
+          ]
+        ],
+        "feature": "wasi-p2",
+        "variant": "scatter-write-4096",
+        "baseline": false,
+        "scope": "host-interface",
+        "adapter": {
+          "repository": "bytecodealliance/wasmtime",
+          "version": "46.0.1",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
+          "license": "Apache-2.0 WITH LLVM-exception"
+        }
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/wasi-p1/stdin-eof-4096/4096",
+    "family": "features",
+    "artifact": "artifacts/wasi-p1-stdin-eof-4096.wasm",
+    "sha256": "5216fafe0ba72ab982e2d68ce89dd49bb3cc42e21c73f1837c9a91a40e85f6c3",
+    "abi": "wasi-command",
+    "features": [
+      "wasi-p1"
+    ],
+    "export": "_start",
+    "args": [],
+    "work_unit": "byte",
+    "units_per_invocation": 4096,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "MIT",
+    "source": "sources/wasi-p1-stdin-eof-4096.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "host_profile": "wasi-preview1-readonly-v1",
+    "command": {
+      "argv": [
+        "feature-probe"
+      ],
+      "stdin": "QVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTg==",
+      "exit_code": 0,
+      "stdout_sha256": "6a7c936ffc546660add83a70c4e78343f6b67124dcda4d63d34dd70ca50be575",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output_limit_bytes": 1048576
+    },
+    "provenance": {
+      "feature": "wasi-p1",
+      "baseline": false,
+      "scope": "host-interface",
+      "recipe": {
+        "source": "sources/wasi-p1-stdin-eof-4096.wat",
+        "sourceSha256": "3071797bf04e4417ecb4a9fdaefb24dec55f9e3265f737dac0ee800ec1205bdd",
+        "artifact": "artifacts/wasi-p1-stdin-eof-4096.wasm",
+        "sha256": "5216fafe0ba72ab982e2d68ce89dd49bb3cc42e21c73f1837c9a91a40e85f6c3",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/wasi-p1-stdin-eof-4096.wat",
+            "-o",
+            "artifacts/wasi-p1-stdin-eof-4096.wasm"
+          ]
+        ],
+        "feature": "wasi-p1",
+        "variant": "stdin-eof-4096",
+        "baseline": false,
+        "scope": "host-interface"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/wasi-p2/stdin-eof-4096/4096",
+    "family": "features",
+    "artifact": "artifacts/wasi-p2-stdin-eof-4096.wasm",
+    "sha256": "73b10aa5624e6f96db72948c43878fc6edf6fe3a5c83f8aeb0d3dd5a12c4b46e",
+    "abi": "component",
+    "features": [
+      "wasi-p2"
+    ],
+    "export": "_start",
+    "args": [],
+    "work_unit": "byte",
+    "units_per_invocation": 4096,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "MIT AND Apache-2.0 WITH LLVM-exception",
+    "source": "sources/wasi-p2-stdin-eof-4096.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "host_profile": "wasi-preview2-readonly-v1",
+    "command": {
+      "argv": [
+        "feature-probe"
+      ],
+      "stdin": "QVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTkVWTURVTENUS0JTSkFSSVpRSFlQR1hPRldORVZNRFVMQ1RLQlNKQVJJWlFIWVBHWE9GV05FVk1EVUxDVEtCU0pBUklaUUhZUEdYT0ZXTg==",
+      "exit_code": 0,
+      "stdout_sha256": "6a7c936ffc546660add83a70c4e78343f6b67124dcda4d63d34dd70ca50be575",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output_limit_bytes": 1048576
+    },
+    "provenance": {
+      "feature": "wasi-p2",
+      "baseline": false,
+      "scope": "host-interface",
+      "recipe": {
+        "source": "sources/wasi-p2-stdin-eof-4096.wat",
+        "sourceSha256": "3071797bf04e4417ecb4a9fdaefb24dec55f9e3265f737dac0ee800ec1205bdd",
+        "artifact": "artifacts/wasi-p2-stdin-eof-4096.wasm",
+        "sha256": "73b10aa5624e6f96db72948c43878fc6edf6fe3a5c83f8aeb0d3dd5a12c4b46e",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/wasi-p2-stdin-eof-4096.wat",
+            "-o",
+            "artifacts/wasi-p2-stdin-eof-4096.core.wasm"
+          ],
+          [
+            "wasm-tools",
+            "component",
+            "new",
+            "artifacts/wasi-p2-stdin-eof-4096.core.wasm",
+            "--adapt",
+            "wasi_snapshot_preview1=<pinned-command-adapter>",
+            "-o",
+            "artifacts/wasi-p2-stdin-eof-4096.wasm"
+          ]
+        ],
+        "feature": "wasi-p2",
+        "variant": "stdin-eof-4096",
+        "baseline": false,
+        "scope": "host-interface",
+        "adapter": {
+          "repository": "bytecodealliance/wasmtime",
+          "version": "46.0.1",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },

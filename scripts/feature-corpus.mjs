@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fixtures, featureIds } from '../corpora/features/generator.mjs';
+import { sourceAdapter } from './feature-adapter-source.mjs';
 import { featureCompiler } from './lib/feature-toolchain.mjs';
 import { prepareFeatureTools } from './lib/feature-tools.mjs';
 import { featureConfigurations } from './lib/feature-configurations.mjs';
@@ -13,18 +14,8 @@ if (action === 'build') {
   const compilerBinary = await featureCompiler();
   const compiler = command(compilerBinary, ['--version']).toString().trim();
   if (!compiler.startsWith('wasm-tools 1.260.0')) throw new Error('Rebuild requires wasm-tools 1.260.0');
-  const adapterPath = join(site, '.wasmbench/toolchains/wasi_snapshot_preview1.command.wasm');
-  const adapterSha = '6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2';
-  try { await readFile(adapterPath); } catch (error) {
-    if (error.code !== 'ENOENT') throw error;
-    const response = await fetch('https://github.com/bytecodealliance/wasmtime/releases/download/v46.0.1/wasi_snapshot_preview1.command.wasm');
-    if (!response.ok) throw new Error('Pinned command adapter download failed');
-    const bytes = Buffer.from(await response.arrayBuffer());
-    if (digest(bytes) !== adapterSha) throw new Error('Downloaded command adapter digest mismatch');
-    await mkdir(join(site,'.wasmbench/toolchains'),{recursive:true});
-    await writeFile(adapterPath,bytes);
-  }
-  if (digest(await readFile(adapterPath)) !== adapterSha) throw new Error('Pinned Wasmtime 46.0.1 command adapter is missing or changed');
+  const adapter = await sourceAdapter();
+  const adapterPath = adapter.path, adapterSha = adapter.sha256;
   const workloads = [], recipes = [], failures = [];
   await mkdir(join(root, 'sources'), { recursive: true });
   await mkdir(join(root, 'artifacts'), { recursive: true });
@@ -46,7 +37,7 @@ if (action === 'build') {
     const recipe = { source, sourceSha256: digest(await readFile(join(root, source))), artifact, sha256, compiler,
       argv: fixture.wasiAdapter ? [['wasm-tools', 'parse', source, '-o', artifact.replace('.wasm', '.core.wasm')], ['wasm-tools', 'component', 'new', artifact.replace('.wasm', '.core.wasm'), '--adapt', 'wasi_snapshot_preview1=<pinned-command-adapter>', '-o', artifact]] : [['wasm-tools', 'parse', source, '-o', artifact]], feature: fixture.feature, variant: fixture.name,
       baseline: fixture.baseline || false, scope: fixture.scope,
-      ...(fixture.wasiAdapter ? { adapter: { repository: 'bytecodealliance/wasmtime', version: '46.0.1', sha256: adapterSha, license: 'Apache-2.0 WITH LLVM-exception' } } : {}) };
+      ...(fixture.wasiAdapter ? { adapter: { repository: 'bytecodealliance/wasmtime', version: '46.0.1', revision: adapter.revision, rust: adapter.rust, recipe: 'scripts/feature-adapter-source.mjs', recipeSha256: adapter.recipeSha256, sha256: adapterSha, license: 'Apache-2.0 WITH LLVM-exception' } } : {}) };
     recipes.push(recipe);
     for (const size of fixture.sizes) {
       workloads.push({ schema: 1, id: `features/${fixture.feature}/${fixture.name}/${size}`, family: 'features',

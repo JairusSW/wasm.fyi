@@ -275,3 +275,13 @@ test('feature track passes require the oracle scenario declared by the contract'
   assert.equal(featureCasePassed({...compiled,status:'executed',scenarios:['compile','steady']}),true);
   assert.equal(featureCasePassed({...compiled,status:'failed',scenarios:['compile','steady']}),false);
 });
+
+
+test('changed feature probes cannot inherit archived successes',async()=>{
+  const {matchesCurrentFeature}=await import('./lib/feature-support.mjs');
+  const id='features/wasi-p1/stdin-read/64',sha256='a'.repeat(64);
+  const current=new Map([[id,{id,sha256}]]);
+  assert(matchesCurrentFeature({id,sha256},current));
+  assert(!matchesCurrentFeature({id,sha256:'b'.repeat(64)},current));
+  assert(!matchesCurrentFeature({id:'features/wasi-p1/retired-probe/64',sha256},current));
+});

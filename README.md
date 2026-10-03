@@ -78,3 +78,5 @@ See [machine-readable access](docs/llm-access.md) for the data contract, provena
 URL/base-path behavior, and validation commands.
 
 The [application corpus](docs/corpora.md) covers 27 workload categories with pinned application/library artifacts and original kernels at multiple sizes. Use `just applications-check` and `just corpus-audit` before manual overnight collection.
+
+Corpus sources, rebuild commands, portability policies and V8 correctness checks are documented in [corpora/README.md](corpora/README.md).

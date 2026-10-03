@@ -17,31 +17,6 @@
       "category": "Audio"
     },
     {
-      "id": "wago/seqtk-fastq-to-fasta",
-      "algorithm": "seqtk-fastq-to-fasta",
-      "category": "Bioinformatics"
-    },
-    {
-      "id": "wago/lcs-substrings",
-      "algorithm": "lcs-substrings",
-      "category": "Bioinformatics"
-    },
-    {
-      "id": "wago/needleman-wunsch-dna",
-      "algorithm": "needleman-wunsch-dna",
-      "category": "Bioinformatics"
-    },
-    {
-      "id": "wago/smith-waterman-dna",
-      "algorithm": "smith-waterman-dna",
-      "category": "Bioinformatics"
-    },
-    {
-      "id": "wago/fasttree-phylogeny",
-      "algorithm": "fasttree-phylogeny",
-      "category": "Bioinformatics"
-    },
-    {
       "id": "wago/polybench-nussinov/polybench_run",
       "algorithm": "rna-nussinov",
       "category": "Bioinformatics"
@@ -315,11 +290,6 @@
       "id": "wago/polybench-seidel-2d/polybench_run",
       "algorithm": "gauss-seidel",
       "category": "Stencils"
-    },
-    {
-      "id": "wago/sed-records",
-      "algorithm": "sed-stream-editing",
-      "category": "Text & parsing"
     },
     {
       "id": "wago/coreutils-base64",

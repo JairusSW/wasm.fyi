@@ -1,0 +1,28 @@
+diff --git a/llvm/lib/Support/CrashRecoveryContext.cpp b/llvm/lib/Support/CrashRecoveryContext.cpp
+index 07f09d71e..5507a15be 100644
+--- a/llvm/lib/Support/CrashRecoveryContext.cpp
++++ b/llvm/lib/Support/CrashRecoveryContext.cpp
+@@ -298,7 +298,9 @@ static void uninstallExceptionOrSignalHandlers() {
+ static const int Signals[] =
+     { SIGABRT, SIGBUS, SIGFPE, SIGILL, SIGSEGV, SIGTRAP };
+ static const unsigned NumSignals = array_lengthof(Signals);
++#ifndef BINJI_HACK
+ static struct sigaction PrevActions[NumSignals];
++#endif
+ 
+ static void CrashRecoverySignalHandler(int Signal) {
+   // Lookup the current thread local recovery object.
+diff --git a/llvm/lib/Support/Unix/Signals.inc b/llvm/lib/Support/Unix/Signals.inc
+index b6cfb77c6..f235aa1f7 100644
+--- a/llvm/lib/Support/Unix/Signals.inc
++++ b/llvm/lib/Support/Unix/Signals.inc
+@@ -227,7 +227,9 @@ static const int KillSigs[] = {
+ 
+ static std::atomic<unsigned> NumRegisteredSignals = ATOMIC_VAR_INIT(0);
+ static struct {
++#ifndef BINJI_HACK
+   struct sigaction SA;
++#endif
+   int SigNo;
+ } RegisteredSignalInfo[array_lengthof(IntSigs) + array_lengthof(KillSigs)];
+ 
