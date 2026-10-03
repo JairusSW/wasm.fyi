@@ -6,14 +6,14 @@ import { resolve } from 'node:path';
 import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
 import { FEATS, PROPS } from '$lib/data/features';
-import { CFG, FEATURE_CFG, FEATURE_ENGINES } from '$lib/data/runtimes';
+import { CFG, FEATURE_CFG } from '$lib/data/runtimes';
 import { ALLB } from '$lib/data/snapshot';
 import type { Cfg, ProposalId } from '$lib/data/types';
 import { fmtU, shortCount, workloadName } from '$lib/format';
 import { PROPOSAL_IDS } from '$lib/links';
-import { absOf, benchVal, compatCell, disp, featureContracts, isVisible, ratio, TOTAL_WORKLOADS, type Scope } from '$lib/model';
+import { absOf, benchVal, compatCell, disp, featureContracts, isVisible, ratio, type Scope } from '$lib/model';
 import { OG_HEIGHT, OG_WIDTH, hasOwnImage, workloadSlug } from '$lib/og';
-import { viewData } from '$lib/view-data';
+import { viewCell, viewData } from '$lib/view-data';
 
 // Dark theme tokens from app.css (runtime colors converted from oklch).
 const C = { bg: '#0d0e10', bg2: '#131518', line: '#23272c', fg: '#e4e6e9', fg2: '#a6acb4', fg3: '#7d848d' };
@@ -39,12 +39,23 @@ interface Card {
 
 // ── Card content ─────────────────────────────────────────────────────────
 
-/** Proportional bar lengths; a log scale only when the spread exceeds 10×. */
+/** Bar lengths proportional to value, from zero (each bar is also labeled). */
 function fracs(values: number[]): number[] {
-	const lo = Math.min(...values);
 	const hi = Math.max(...values);
-	if (hi / lo <= 10) return values.map((v) => Math.max(0.04, v / hi));
-	return values.map((v) => 0.08 + (0.92 * Math.log(v / lo)) / Math.log(hi / lo));
+	return values.map((v) => Math.max(0.015, v / hi));
+}
+
+/** Workloads with at least one successful measurement; catalogued but untimed contracts don't count. */
+function measuredWorkloads(): number {
+	const cfgs = Object.keys(viewData.configurations) as Cfg['id'][];
+	const hosts = Object.keys(viewData.hosts) as Scope['machine'][];
+	return viewData.catalogue.filter((w) => hosts.some((m) => (['s1', 's2'] as const).some((sn) => cfgs.some((c) => viewData.metrics.some((k) => viewCell(m, sn, w.id, c, k).st === 'ok'))))).length;
+}
+
+/** Engines with feature-test evidence on any host. */
+function enginesWithEvidence(): number {
+	const hosts = Object.keys(viewData.hosts) as Scope['machine'][];
+	return new Set(FEATURE_CFG.filter((c) => hosts.some((m) => FEATS.some((f) => compatCell(f.id, c.id, { ...scope, machine: m }).run))).map((c) => c.rt)).size;
 }
 
 /** Best-first list → each runtime once (its best configuration), top ROWS. */
@@ -102,9 +113,9 @@ function cardFor(slug: string): Card {
 		case 'benchmarks':
 			return { title: 'Benchmarks', panel: leaders(0, 'Fastest compilation') };
 		case 'history':
-			return { title: 'History', panel: { kind: 'stats', items: [[String(viewData.history.m1.points.length), 'weeks'], [String(TOTAL_WORKLOADS), 'workloads'], [shortCount(viewData.statistics.timingSamples), 'samples'], [String(Object.keys(viewData.reports).length), 'reports']] } };
+			return { title: 'History', panel: { kind: 'stats', items: [[String(viewData.history.m1.points.length), 'weeks'], [String(measuredWorkloads()), 'workloads run'], [shortCount(viewData.statistics.timingSamples), 'samples'], [String(Object.keys(viewData.reports).length), 'reports']] } };
 		case 'features':
-			return { title: 'Features', panel: { kind: 'stats', items: [[String(FEATS.length), 'features'], [String(FEATURE_ENGINES.length), 'engines'], [shortCount(featureTests), 'tests'], [String(Object.keys(viewData.hosts).length), 'machines']] } };
+			return { title: 'Features', panel: { kind: 'stats', items: [[String(FEATS.length), 'features'], [String(enginesWithEvidence()), 'engines tested'], [shortCount(featureTests), 'tests'], [String(Object.keys(viewData.hosts).length), 'machines']] } };
 		case 'compare':
 			return { title: 'Startup vs throughput', subtitle: 'When does a fast runtime that starts slowly win?' };
 		default:
