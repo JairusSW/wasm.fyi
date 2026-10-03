@@ -1,6 +1,6 @@
 <h1 align="center"><pre>╦ ╦╔═╗╔═╗╔╦╗  ╔═╗╦ ╦╦
-║║║╠═╣╚═╗║║║  ╠╣ ╚╦╝║
-╚╩╝╩ ╩╚═╝╩ ╩• ╚   ╩ ╩</pre></h1>
+║║║╠═╣╚═╗║║║══╠╣ ╚╦╝║
+╚╩╝╩ ╩╚═╝╩ ╩  ╚   ╩ ╩</pre></h1>
 
 <p align="center">
   webassembly runtimes, measured and explained
