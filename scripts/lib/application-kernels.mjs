@@ -101,6 +101,12 @@ export const kernels = [
 
   ["stencil-lattice-boltzmann","Stencils","D2Q9 lattice-Boltzmann fluid collision/streaming with BGK relaxation",32,"population_steps",n=>10*n*n*9],
   ["stencil-wave-equation","Stencils","Second-order two-dimensional wave-equation time stepping on a periodic grid",64,"cell_steps",n=>8*n*n],
+  ['bio-lcs', 'Bioinformatics', 'Longest common subsequence length of two deterministic DNA strings', 256, 'alignment_cells', n=>n*n],
+  ['bio-global-alignment', 'Bioinformatics', 'Needleman-Wunsch global DNA alignment score with linear gap penalty', 256, 'alignment_cells', n=>n*n],
+  ['bio-local-alignment', 'Bioinformatics', 'Smith-Waterman best local DNA alignment score with linear gap penalty', 256, 'alignment_cells', n=>n*n],
+  ['bio-kmer-count', 'Bioinformatics', 'Complete histogram of overlapping DNA 5-mers', 32768, 'kmers', n=>n-4],
+  ['bio-reverse-complement', 'Bioinformatics', 'Reverse complement of a deterministic DNA sequence', 32768, 'bases', n=>n],
+  ['text-substitution', 'Text & parsing', 'Literal non-overlapping error and warning substitutions over a deterministic record stream', 4096, 'records', n=>n],
 ].map(([id,category,description,size,unit,units],i)=>({id,category,description,size,unit,units,kind:i+1}));
 export function sample(i) {
   let x=(i+0x9e3779b9)>>>0; x^=x>>>16; x=Math.imul(x,0x85ebca6b); x^=x>>>13; return x>>>0;
@@ -299,3 +305,25 @@ extraReferences.push(
 n=>{const velocities=[[0,0],[1,0],[0,1],[-1,0],[0,-1],[1,1],[-1,1],[-1,-1],[1,-1]],weights=[4/9,1/9,1/9,1/9,1/9,1/36,1/36,1/36,1/36];let grid=Array.from({length:n*n},(_,p)=>Array.from({length:9},(_,d)=>1+(sample(9*p+d)&31)));for(let step=0;step<10;step++){const next=Array.from({length:n*n},()=>Array(9));for(let y=0;y<n;y++)for(let x=0;x<n;x++){const f=grid[y*n+x];let density=0,ux=0,uy=0;for(let d=0;d<9;d++){density+=f[d];ux+=f[d]*velocities[d][0];uy+=f[d]*velocities[d][1];}ux/=density;uy/=density;velocities.forEach(([cx,cy],d)=>{const cu=cx*ux+cy*uy,eq=weights[d]*density*(1+3*cu+4.5*cu*cu-1.5*(ux*ux+uy*uy));next[((y+n+cy)%n)*n+(x+n+cx)%n][d]=(f[d]+eq)*0.5;});}grid=next;}return finish(grid.flat().map(v=>Math.floor(v*1024)));},
 n=>{let previous=Array.from({length:n*n},(_,i)=>(sample(i)&31)-16),current=[...previous];for(let step=0;step<8;step++){const next=current.map((v,p)=>{const x=p%n,y=Math.floor(p/n),lap=current[y*n+(x+n-1)%n]+current[y*n+(x+1)%n]+current[((y+n-1)%n)*n+x]+current[((y+1)%n)*n+x]-4*v;return 2*v-previous[p]+Math.trunc(lap/4);});previous=current;current=next;}return finish(current);}
 );
+
+// Full matrices are intentionally independent of the C two-row implementation.
+extraReferences.push(
+  n=>dnaAlignment(n, 'lcs'),
+  n=>dnaAlignment(n, 'global'),
+  n=>dnaAlignment(n, 'local'),
+  n=>{const counts=Array(1024).fill(0);for(let i=0;i+5<=n;i++){let code=0;for(let k=0;k<5;k++)code=code*4+(sample(i+k)&3);counts[code]++;}return finish(counts);},
+  n=>finish(Array.from({length:n},(_,i)=>3-(sample(n-1-i)&3))),
+  n=>{const lines=Array.from({length:n},(_,i)=>['error warning error','warning ok','ok error'][sample(i)%3]+'\n').join('');return finish([...lines.replaceAll('error','ERROR').replaceAll('warning','WARN')].map(c=>c.charCodeAt(0)));}
+);
+function dnaAlignment(n, mode) {
+  const left=Array.from({length:n},(_,i)=>sample(i)&3),right=Array.from({length:n},(_,i)=>sample(i+17)&3);
+  const matrix=Array.from({length:n+1},()=>Array(n+1).fill(0));let best=0;
+  if(mode==='global')for(let i=0;i<=n;i++){matrix[i][0]=-2*i;matrix[0][i]=-2*i;}
+  for(let i=1;i<=n;i++)for(let j=1;j<=n;j++) {
+    const equal=left[i-1]===right[j-1];
+    matrix[i][j]=mode==='lcs'?Math.max(matrix[i-1][j],matrix[i][j-1],matrix[i-1][j-1]+Number(equal)):
+      Math.max(matrix[i-1][j]-2,matrix[i][j-1]-2,matrix[i-1][j-1]+(equal?2:-1),mode==='local'?0:-Infinity);
+    best=Math.max(best,matrix[i][j]);
+  }
+  return finish([mode==='local'?best:matrix[n][n]]);
+}

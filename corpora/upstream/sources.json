@@ -1,0 +1,1310 @@
+{
+  "schema": 1,
+  "repository": "https://github.com/wago-org/wago",
+  "revision": "9f01d145d54ac7ab458b6b2f6047db90a757410a",
+  "upstreamCatalogSha256": "e02b20f2ccf9db3bc4649270c8d8eeff2b29bdb6acb6ecb47fab2697cd811a9f",
+  "policy": "Selected wrappers, original WAT/Rust/AssemblyScript sources, fixtures, licenses and pinned upstream build/fetch recipes. Dependencies are fetched at the revisions in the recipes. Fetch-only release binaries are explicitly listed; these recipes do not constitute a rebuild from source.",
+  "benchmarks": [
+    {
+      "id": "ruby-buckets",
+      "artifact": "workloads/applications/ruby/ruby.wasm",
+      "source": {
+        "repository": "https://github.com/vmware-labs/webassembly-language-runtimes/releases/tag/ruby%2F3.2.2%2B20230714-11be424",
+        "revision": "ruby/3.2.2+20230714-11be424",
+        "revision_date": "2023-07-14",
+        "license": "Apache-2.0 AND (BSD-2-Clause OR Ruby)",
+        "toolchain": "WLR slim WASI release",
+        "toolchain_version": "3.2.2"
+      },
+      "license": "Apache-2.0 AND (BSD-2-Clause OR Ruby)",
+      "recipe": null,
+      "workflow": "release-artifact-only"
+    },
+    {
+      "id": "clang-cpp-kernels",
+      "artifact": "workloads/applications/clang/clang.wasm",
+      "source": {
+        "repository": "https://github.com/binji/wasm-clang",
+        "revision": "648c4a89997a351eef75cdaec3ef5b89d4937dec",
+        "revision_date": "2023-12-07",
+        "license": "Apache-2.0 WITH LLVM-exception",
+        "toolchain": "WABT import rename",
+        "toolchain_version": "Clang 8.0.1"
+      },
+      "license": "Apache-2.0 WITH LLVM-exception",
+      "recipe": "corpus/workloads/applications/clang/build.sh",
+      "workflow": "fetch-or-transform"
+    },
+    {
+      "id": "lua-cli-buckets",
+      "artifact": "workloads/applications/lua/lua.wasm",
+      "source": {
+        "repository": "https://github.com/nalgeon/lua-wasi",
+        "revision": "@antonz/lua-wasi 5.4.6",
+        "revision_date": "2024-01-03",
+        "license": "MIT",
+        "toolchain": "wasienv plus WABT import rename",
+        "toolchain_version": "Lua 5.4.6"
+      },
+      "license": "MIT",
+      "recipe": "corpus/workloads/applications/lua/build.sh",
+      "workflow": "fetch-or-transform"
+    },
+    {
+      "id": "coreutils-sort",
+      "artifact": "workloads/applications/coreutils/coreutils.wasm",
+      "source": {
+        "repository": "https://github.com/uutils/coreutils/releases/tag/0.10.0",
+        "revision": "0.10.0",
+        "revision_date": "2026-08-05",
+        "license": "MIT",
+        "toolchain": "upstream wasm32-wasip1 release",
+        "toolchain_version": "0.10.0"
+      },
+      "license": "MIT",
+      "recipe": null,
+      "workflow": "release-artifact-only"
+    },
+    {
+      "id": "coreutils-base64",
+      "artifact": "workloads/applications/coreutils/coreutils.wasm",
+      "source": {
+        "repository": "https://github.com/uutils/coreutils/releases/tag/0.10.0",
+        "revision": "0.10.0",
+        "revision_date": "2026-08-05",
+        "license": "MIT",
+        "toolchain": "upstream wasm32-wasip1 release",
+        "toolchain_version": "0.10.0"
+      },
+      "license": "MIT",
+      "recipe": null,
+      "workflow": "release-artifact-only"
+    },
+    {
+      "id": "coreutils-wc",
+      "artifact": "workloads/applications/coreutils/coreutils.wasm",
+      "source": {
+        "repository": "https://github.com/uutils/coreutils/releases/tag/0.10.0",
+        "revision": "0.10.0",
+        "revision_date": "2026-08-05",
+        "license": "MIT",
+        "toolchain": "upstream wasm32-wasip1 release",
+        "toolchain_version": "0.10.0"
+      },
+      "license": "MIT",
+      "recipe": null,
+      "workflow": "release-artifact-only"
+    },
+    {
+      "id": "ripgrep-source",
+      "artifact": "workloads/applications/ripgrep/rg.wasm",
+      "source": {
+        "repository": "https://github.com/holzschu/a-Shell-commands/releases/tag/0.1",
+        "revision": "rg asset 2025-03-15",
+        "revision_date": "2025-03-15",
+        "license": "MIT OR Unlicense",
+        "toolchain": "a-Shell release binary",
+        "toolchain_version": "ripgrep 14.1.1"
+      },
+      "license": "MIT OR Unlicense",
+      "recipe": null,
+      "workflow": "release-artifact-only"
+    },
+    {
+      "id": "yosys-counter",
+      "artifact": "workloads/applications/yosys/yosys.wasm",
+      "source": {
+        "repository": "https://pypi.org/project/yowasp-yosys/0.32.0.0.post560/",
+        "revision": "0.32.0.0.post560",
+        "revision_date": "2023-08-08",
+        "license": "ISC",
+        "toolchain": "YoWASP wheel",
+        "toolchain_version": "0.32.0.0.post560"
+      },
+      "license": "ISC",
+      "recipe": null,
+      "workflow": "release-artifact-only"
+    },
+    {
+      "id": "icemulti-image",
+      "artifact": "workloads/applications/icemulti/icemulti.wasm",
+      "source": {
+        "repository": "https://pypi.org/project/yowasp-nextpnr-ice40/0.5.0.0.post399/",
+        "revision": "0.5.0.0.post399",
+        "revision_date": "2023-02-07",
+        "license": "ISC",
+        "toolchain": "YoWASP wheel",
+        "toolchain_version": "0.5.0.0.post399"
+      },
+      "license": "ISC",
+      "recipe": null,
+      "workflow": "release-artifact-only"
+    },
+    {
+      "id": "icepack-pack",
+      "artifact": "workloads/applications/icepack/icepack.wasm",
+      "source": {
+        "repository": "https://pypi.org/project/yowasp-nextpnr-ice40/0.5.0.0.post399/",
+        "revision": "0.5.0.0.post399",
+        "revision_date": "2023-02-07",
+        "license": "ISC",
+        "toolchain": "YoWASP wheel",
+        "toolchain_version": "0.5.0.0.post399"
+      },
+      "license": "ISC",
+      "recipe": null,
+      "workflow": "release-artifact-only"
+    },
+    {
+      "id": "ecppll-clock",
+      "artifact": "workloads/applications/ecppll/ecppll.wasm",
+      "source": {
+        "repository": "https://pypi.org/project/yowasp-nextpnr-ecp5/0.5.0.0.post399/",
+        "revision": "0.5.0.0.post399",
+        "revision_date": "2023-02-07",
+        "license": "ISC",
+        "toolchain": "YoWASP wheel",
+        "toolchain_version": "0.5.0.0.post399"
+      },
+      "license": "ISC",
+      "recipe": null,
+      "workflow": "release-artifact-only"
+    },
+    {
+      "id": "json2csv-people",
+      "artifact": "workloads/applications/json2csv/json2csv.wasm",
+      "source": {
+        "repository": "https://github.com/holzschu/a-Shell-commands/releases/tag/0.1",
+        "revision": "asset-68082085",
+        "revision_date": "2022-06-10",
+        "license": "MIT",
+        "toolchain": "upstream a-Shell release artifact",
+        "toolchain_version": "0.1"
+      },
+      "license": "MIT",
+      "recipe": null,
+      "workflow": "release-artifact-only"
+    },
+    {
+      "id": "tree-list",
+      "artifact": "workloads/applications/tree/tree.wasm",
+      "source": {
+        "repository": "https://github.com/Old-Man-Programmer/tree.git",
+        "revision": "d501b58ff9cbfd64272c8cbcad0bda36a3fada06",
+        "revision_date": "2024-11-25",
+        "license": "GPL-2.0-or-later",
+        "toolchain": "wasi-sdk",
+        "toolchain_version": "34.0"
+      },
+      "license": "GPL-2.0-or-later",
+      "recipe": "corpus/workloads/applications/tree/build.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "brotli-compress",
+      "artifact": "workloads/applications/brotli/brotli.wasm",
+      "source": {
+        "repository": "https://github.com/google/brotli.git",
+        "revision": "028fb5a23661f123017c060daa546b55cf4bde29",
+        "revision_date": "2025-10-27",
+        "license": "MIT",
+        "toolchain": "wasi-sdk",
+        "toolchain_version": "34.0"
+      },
+      "license": "MIT",
+      "recipe": "corpus/workloads/applications/brotli/build.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "jq-json-transform",
+      "artifact": "workloads/applications/jq/jq.wasm",
+      "source": {
+        "repository": "https://github.com/jqlang/jq.git",
+        "revision": "34f7186b86743a083a589741b6cea95293524108",
+        "revision_date": "2026-06-20",
+        "license": "MIT AND BSD-2-Clause",
+        "toolchain": "wasi-sdk",
+        "toolchain_version": "34.0"
+      },
+      "license": "MIT AND BSD-2-Clause",
+      "recipe": "corpus/workloads/applications/jq/build.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "age-keygen-public",
+      "artifact": "workloads/applications/age/age-keygen.wasm",
+      "source": {
+        "repository": "https://github.com/FiloSottile/age.git",
+        "revision": "b74dce4cdbe35b5e5f66c06d9612b72f89028758",
+        "revision_date": "2026-08-29",
+        "license": "BSD-3-Clause",
+        "toolchain": "go",
+        "toolchain_version": "1.27.0"
+      },
+      "license": "BSD-3-Clause",
+      "recipe": "corpus/workloads/applications/age/build.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "xzdec-decompress",
+      "artifact": "workloads/applications/xzdec/xzdec.wasm",
+      "source": {
+        "repository": "https://github.com/tukaani-project/xz.git",
+        "revision": "d3e650e63c110e830fd5391e7f8b45df0b91d3da",
+        "revision_date": "2026-09-09",
+        "license": "0BSD",
+        "toolchain": "wasi-sdk",
+        "toolchain_version": "34.0"
+      },
+      "license": "0BSD",
+      "recipe": "corpus/workloads/applications/xzdec/build.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "sqlite3-query",
+      "artifact": "workloads/applications/sqlite3/sqlite3.wasm",
+      "source": {
+        "repository": "https://www.sqlite.org/2026/sqlite-amalgamation-3530400.zip",
+        "revision": "3.53.4",
+        "revision_date": "2026-07-24",
+        "license": "Public-Domain",
+        "toolchain": "wasi-sdk",
+        "toolchain_version": "34.0"
+      },
+      "license": "Public-Domain",
+      "recipe": "corpus/workloads/applications/sqlite3/build.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "quickjs-script",
+      "artifact": "workloads/applications/quickjs/qjs.wasm",
+      "source": {
+        "repository": "https://github.com/saghul/wasi-lab.git",
+        "revision": "05d2c175afeed626187f792c9dd1a8142e11f95a",
+        "revision_date": "2019-10-25",
+        "license": "MIT",
+        "toolchain": "wasi-sdk",
+        "toolchain_version": "34.0"
+      },
+      "license": "MIT",
+      "recipe": "corpus/workloads/applications/quickjs/build.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "swift-format-source",
+      "artifact": "workloads/applications/swift-format/swift-format.wasm",
+      "source": {
+        "repository": "https://github.com/kkebo/swift-format.git",
+        "revision": "92097d54ac3be47738fe77e38c918e9aabce0302",
+        "revision_date": "2026-07-01",
+        "license": "Apache-2.0 WITH Swift-exception",
+        "toolchain": "upstream WASI release artifact",
+        "toolchain_version": "603.0.0-wasm32-wasi"
+      },
+      "license": "Apache-2.0 WITH Swift-exception",
+      "recipe": "corpus/workloads/applications/swift-format/fetch.sh",
+      "workflow": "fetch-or-transform"
+    },
+    {
+      "id": "esbuild-minify",
+      "artifact": "workloads/applications/esbuild/esbuild.wasm",
+      "source": {
+        "repository": "https://github.com/evanw/esbuild.git",
+        "revision": "f6058f8364fe7ab91ca57a83e02577ed74c9cae4",
+        "revision_date": "2026-08-09",
+        "license": "MIT",
+        "toolchain": "go",
+        "toolchain_version": "1.26.5"
+      },
+      "license": "MIT",
+      "recipe": "corpus/workloads/applications/esbuild/build.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "tiny",
+      "artifact": "workloads/synthetic/tiny.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/build/wat.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "fib_rec",
+      "artifact": "workloads/synthetic/fib_rec.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/build/wat.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "memory",
+      "artifact": "workloads/synthetic/memory.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/build/wat.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "memory_tree",
+      "artifact": "workloads/synthetic/memory_tree.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/build/wat.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "dispatch",
+      "artifact": "workloads/synthetic/dispatch.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/build/wat.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "many_funcs",
+      "artifact": "workloads/synthetic/many_funcs.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/build/wat.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "linked_list",
+      "artifact": "workloads/compute/linked_list.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/build/wat.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "nbody",
+      "artifact": "workloads/compute/nbody.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/build/rust.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "fannkuch",
+      "artifact": "workloads/compute/fannkuch.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/build/rust.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "sha256",
+      "artifact": "workloads/compute/sha256.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/build/rust.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "raytrace",
+      "artifact": "workloads/compute/raytrace.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/build/rust.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "json-as-simd",
+      "artifact": "workloads/assemblyscript/json-as-simd.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/build/assemblyscript.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "utf-as-simd",
+      "artifact": "workloads/assemblyscript/utf-as-simd.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/build/assemblyscript.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "coremark",
+      "artifact": "workloads/semantic/coremark/coremark.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/workloads/semantic/coremark/build.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "blake3",
+      "artifact": "workloads/semantic/blake3/blake3.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/workloads/semantic/blake3/build.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "qoi",
+      "artifact": "workloads/semantic/qoi/qoi.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/workloads/semantic/qoi/build.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "lz4",
+      "artifact": "workloads/semantic/lz4/lz4.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/workloads/semantic/lz4/build.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "zlib",
+      "artifact": "workloads/semantic/zlib/zlib.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/workloads/semantic/zlib/build.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "zstd",
+      "artifact": "workloads/semantic/zstd/zstd.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/workloads/semantic/zstd/build.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "yyjson",
+      "artifact": "workloads/semantic/yyjson/yyjson.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/workloads/semantic/yyjson/build.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "utf8proc",
+      "artifact": "workloads/semantic/utf8proc/utf8proc.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/workloads/semantic/utf8proc/build.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "xxhash",
+      "artifact": "workloads/semantic/xxhash/xxhash.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/workloads/semantic/xxhash/build.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "libtommath",
+      "artifact": "workloads/semantic/libtommath/libtommath.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/workloads/semantic/libtommath/build.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "nanosvg",
+      "artifact": "workloads/semantic/nanosvg/nanosvg.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/workloads/semantic/nanosvg/build.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "kissfft",
+      "artifact": "workloads/semantic/kissfft/kissfft.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/workloads/semantic/kissfft/build.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "monocypher",
+      "artifact": "workloads/semantic/monocypher/monocypher.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/workloads/semantic/monocypher/build.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "drwav",
+      "artifact": "workloads/semantic/drwav/drwav.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/workloads/semantic/drwav/build.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "fastfloat",
+      "artifact": "workloads/semantic/fastfloat/fastfloat.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/workloads/semantic/fastfloat/build.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "pcre2",
+      "artifact": "workloads/semantic/pcre2/pcre2.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/workloads/semantic/pcre2/build.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "polybench-adi",
+      "artifact": "workloads/polybench/adi.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/build/polybench.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "polybench-cholesky",
+      "artifact": "workloads/polybench/cholesky.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/build/polybench.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "polybench-correlation",
+      "artifact": "workloads/polybench/correlation.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/build/polybench.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "polybench-deriche",
+      "artifact": "workloads/polybench/deriche.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/build/polybench.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "polybench-durbin",
+      "artifact": "workloads/polybench/durbin.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/build/polybench.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "polybench-fdtd-2d",
+      "artifact": "workloads/polybench/fdtd-2d.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/build/polybench.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "polybench-floyd-warshall",
+      "artifact": "workloads/polybench/floyd-warshall.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/build/polybench.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "polybench-gemm",
+      "artifact": "workloads/polybench/gemm.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/build/polybench.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "polybench-gramschmidt",
+      "artifact": "workloads/polybench/gramschmidt.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/build/polybench.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "polybench-jacobi-2d",
+      "artifact": "workloads/polybench/jacobi-2d.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/build/polybench.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "polybench-lu",
+      "artifact": "workloads/polybench/lu.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/build/polybench.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "polybench-nussinov",
+      "artifact": "workloads/polybench/nussinov.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/build/polybench.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "polybench-seidel-2d",
+      "artifact": "workloads/polybench/seidel-2d.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/build/polybench.sh",
+      "workflow": "source-build"
+    },
+    {
+      "id": "polybench-trisolv",
+      "artifact": "workloads/polybench/trisolv.wasm",
+      "source": null,
+      "license": "see retained provenance",
+      "recipe": "corpus/build/polybench.sh",
+      "workflow": "source-build"
+    }
+  ],
+  "files": [
+    {
+      "path": "corpus/build/assemblyscript.sh",
+      "sha256": "13054b5dfbc5f5490bf47ffb94101f73458696429464a80b72174fdadaf87fec"
+    },
+    {
+      "path": "corpus/build/polybench.sh",
+      "sha256": "884317a9d781370119c0719c38ad17715ec9c7bae4625978bc2c8296208d515d"
+    },
+    {
+      "path": "corpus/build/rust.sh",
+      "sha256": "cf84d29669d31a3ea0f9d0b3886bcbd9b641670b3a4f8a6e9af0c2e4ef95183c"
+    },
+    {
+      "path": "corpus/build/wat.sh",
+      "sha256": "b1375e5515bb325f5fca303516771ee5cfa9d5d7af891d4fa824612d0148e95b"
+    },
+    {
+      "path": "corpus/sources/adapters/bench-hooks.wat",
+      "sha256": "bfb987ef970d2986d1b0fb2964059334232381dff29a600c8dc597d288941061"
+    },
+    {
+      "path": "corpus/sources/adapters/embench-main.c",
+      "sha256": "037c72170930a8af98a61d78bfb4d792aff09e1f573066d71d81a7bc78880d26"
+    },
+    {
+      "path": "corpus/sources/adapters/polybench-checksum.c",
+      "sha256": "8c087c870e0c58e60bc10a8f36a180b839fef868e00dc9f751ed61bd04d84948"
+    },
+    {
+      "path": "corpus/sources/assemblyscript/blake-as-simd.ts",
+      "sha256": "0fab24213e25794c7048e3d2d206fb51e9cf59456599b614e87209178d978133"
+    },
+    {
+      "path": "corpus/sources/assemblyscript/json-as-simd.ts",
+      "sha256": "0932bd5fd6ae28c5660cd2121eae0cefe702fb9625cc327ded3f6b2d4b42a18c"
+    },
+    {
+      "path": "corpus/sources/assemblyscript/utf-as-simd.ts",
+      "sha256": "1468ca69fdeddec6a9fa1f7228b4a8bfa87e35a7af901319db015cce2feaf065"
+    },
+    {
+      "path": "corpus/sources/rust/fannkuch.rs",
+      "sha256": "bb7f56c943c1d1fbe540d987afe6f75ddfd78bc007e851bc025d058ff490c7dd"
+    },
+    {
+      "path": "corpus/sources/rust/matmul.rs",
+      "sha256": "fa54f55c91be2af8b07a6e646246aa0732f2011764b2a3f2e6bffe1aa99fb6cd"
+    },
+    {
+      "path": "corpus/sources/rust/nbody.rs",
+      "sha256": "362923dcd193bcd6a4856363b52a9110d9c7df36d1f2d3f0b4bb726e94d1d1a4"
+    },
+    {
+      "path": "corpus/sources/rust/raytrace.rs",
+      "sha256": "88aabb05a341fc51b93bec9bf07b73b12c758bdfcad5c9e95e4d1ae367862a74"
+    },
+    {
+      "path": "corpus/sources/rust/sha256.rs",
+      "sha256": "f6169c8877acaf5963c884ccefef4199dd20fe215dd17d4b30c6b17ac18d0ea2"
+    },
+    {
+      "path": "corpus/sources/wat/dispatch.wat",
+      "sha256": "3da40abd7427d2d227060f483302e5cbf700efb306f2df66c6085b9112e87d78"
+    },
+    {
+      "path": "corpus/sources/wat/fib_rec.wat",
+      "sha256": "ddfadee2692209b44ab6863a85f2990f76468d95a549d1fe8be7a0a745f034fd"
+    },
+    {
+      "path": "corpus/sources/wat/linked_list.wat",
+      "sha256": "032159f926f9b0fe15002ed2356f134a83a24b058e5c2ed8f2e6e19cce7920b7"
+    },
+    {
+      "path": "corpus/sources/wat/many_funcs.wat",
+      "sha256": "1411832f8591d249b19ee9a56ce3d115125d802113f8610de40bcea2242a59d6"
+    },
+    {
+      "path": "corpus/sources/wat/memory_tree.wat",
+      "sha256": "e2fab76ab08181023cdb6337c10434781a2725298e70bd22b7d4c9b935f8a94c"
+    },
+    {
+      "path": "corpus/sources/wat/memory.wat",
+      "sha256": "ef16a7ff050da7dcac013352883db2edd7e63b14d7d88c3420d6dc590333a0b6"
+    },
+    {
+      "path": "corpus/sources/wat/tiny.wat",
+      "sha256": "12414df292cf4efe5855aee9e767b845baa17f2e300ca790964ec175c5f77d94"
+    },
+    {
+      "path": "corpus/workloads/applications/age/build.sh",
+      "sha256": "b82a3e15b38e305bbb480beb7fa750b45ab730afd699f9af4a7bf59bc8318e5a"
+    },
+    {
+      "path": "corpus/workloads/applications/age/inputs/source.js.age",
+      "sha256": "563394d1942bf60c2c53621c49d2cd44daa8a95b41404be387ebc7e0a5442040"
+    },
+    {
+      "path": "corpus/workloads/applications/age/inputs/test-identity.txt",
+      "sha256": "f3ceb70e4a35c314f8db06030660aecdb75b65cba4f144ac46b63eb43fe4abd5"
+    },
+    {
+      "path": "corpus/workloads/applications/age/keygen-inputs/test-identity.txt",
+      "sha256": "f3ceb70e4a35c314f8db06030660aecdb75b65cba4f144ac46b63eb43fe4abd5"
+    },
+    {
+      "path": "corpus/workloads/applications/age/LICENSE",
+      "sha256": "c5d65279d02955c0fc2294ae417c3add650d228f4f5c82bd6d531fc26c89cd96"
+    },
+    {
+      "path": "corpus/workloads/applications/age/licenses/edwards25519-LICENSE",
+      "sha256": "2d36597f7117c38b006835ae7f537487207d8ec407aa9d9980794b2030cbc067"
+    },
+    {
+      "path": "corpus/workloads/applications/age/licenses/go-LICENSE",
+      "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+    },
+    {
+      "path": "corpus/workloads/applications/age/licenses/hpke-LICENSE",
+      "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+    },
+    {
+      "path": "corpus/workloads/applications/age/licenses/nistec-LICENSE",
+      "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+    },
+    {
+      "path": "corpus/workloads/applications/age/licenses/x-crypto-LICENSE",
+      "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+    },
+    {
+      "path": "corpus/workloads/applications/age/licenses/x-crypto-PATENTS",
+      "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc"
+    },
+    {
+      "path": "corpus/workloads/applications/age/licenses/x-sys-LICENSE",
+      "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+    },
+    {
+      "path": "corpus/workloads/applications/age/licenses/x-sys-PATENTS",
+      "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc"
+    },
+    {
+      "path": "corpus/workloads/applications/age/licenses/x-term-LICENSE",
+      "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+    },
+    {
+      "path": "corpus/workloads/applications/age/licenses/x-term-PATENTS",
+      "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc"
+    },
+    {
+      "path": "corpus/workloads/applications/age/README.md",
+      "sha256": "bb742534dba605d73be0424ef6925ce02aa1ea451b087e667d31063514f902d1"
+    },
+    {
+      "path": "corpus/workloads/applications/brotli/build.sh",
+      "sha256": "4114509fbf6e7b42d2582f241cfccca1d09d1a596bba5e8d6160d31d3443f487"
+    },
+    {
+      "path": "corpus/workloads/applications/brotli/decode-inputs/source.js.br",
+      "sha256": "eeedce27753bdc24a2f3be4651794373a45db0c5dd7c15b6e0cf5d11eeb7549c"
+    },
+    {
+      "path": "corpus/workloads/applications/brotli/encode-inputs/source.js",
+      "sha256": "15f4817d6bb6e105ef12c8b6d2383c32d1646a16824365d96935445f436afc89"
+    },
+    {
+      "path": "corpus/workloads/applications/brotli/LICENSE",
+      "sha256": "3d180008e36922a4e8daec11c34c7af264fed5962d07924aea928c38e8663c94"
+    },
+    {
+      "path": "corpus/workloads/applications/brotli/README.md",
+      "sha256": "788518d8b29a9d2b17a4939a4a4b1e36199ebd23dbf85499291e88a1ffddc806"
+    },
+    {
+      "path": "corpus/workloads/applications/brotli/wasi_compat.h",
+      "sha256": "f83db9609f75610c604178723a02e16ddfbd2afbdaf13cf3822a2bd253890326"
+    },
+    {
+      "path": "corpus/workloads/applications/clang/build.sh",
+      "sha256": "43d67f26f6016d416d9dfa3c3bf3fc1b90bd32133493efcd50d5b577b7696617"
+    },
+    {
+      "path": "corpus/workloads/applications/clang/inputs/kernels.c",
+      "sha256": "825111006a2458ae38cc23cb3083b67071ef9b78bcf824a7b7f0d204d1282d6d"
+    },
+    {
+      "path": "corpus/workloads/applications/clang/inputs/kernels.cpp",
+      "sha256": "fbe6a92a4ec0928dcbcd3db5474b597f35a9a4714e83a8005aff9b4ec4169c97"
+    },
+    {
+      "path": "corpus/workloads/applications/clang/LICENSE",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "path": "corpus/workloads/applications/clang/LICENSE.llvm",
+      "sha256": "ebcd9bbf783a73d05c53ba4d586b8d5813dcdf3bbec50265860ccc885e606f47"
+    },
+    {
+      "path": "corpus/workloads/applications/clang/README.md",
+      "sha256": "4ab57cac1497651e3570c18a131c3c3597fbb77d7739bbc9f037552b7f5ee0b5"
+    },
+    {
+      "path": "corpus/workloads/applications/coreutils/inputs/records.txt",
+      "sha256": "2d43a426486e8da09652655f188806ece6ce45006af911a36d000d4720770fa9"
+    },
+    {
+      "path": "corpus/workloads/applications/coreutils/LICENSE",
+      "sha256": "29953405eaa3dcc41c37d1621d55b6a47eee93e05613e439e73295029740b10c"
+    },
+    {
+      "path": "corpus/workloads/applications/coreutils/README.md",
+      "sha256": "e4f2b1e8bd696775e992f3c8a6d3e7165bef432a71a4dc547742568f4bfe39a9"
+    },
+    {
+      "path": "corpus/workloads/applications/ecppll/LICENSE",
+      "sha256": "a1ed851d9837b57017303c570ea3078ad4758d15b10cffd687762494d57e8382"
+    },
+    {
+      "path": "corpus/workloads/applications/esbuild/build.sh",
+      "sha256": "2c124671cc6307984a293e9b033e18e6c2064263ae52f47092ef6d30a0e1a652"
+    },
+    {
+      "path": "corpus/workloads/applications/esbuild/inputs/source.js",
+      "sha256": "15f4817d6bb6e105ef12c8b6d2383c32d1646a16824365d96935445f436afc89"
+    },
+    {
+      "path": "corpus/workloads/applications/esbuild/LICENSE.md",
+      "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+    },
+    {
+      "path": "corpus/workloads/applications/icemulti/LICENSE",
+      "sha256": "a1ed851d9837b57017303c570ea3078ad4758d15b10cffd687762494d57e8382"
+    },
+    {
+      "path": "corpus/workloads/applications/icepack/LICENSE",
+      "sha256": "a1ed851d9837b57017303c570ea3078ad4758d15b10cffd687762494d57e8382"
+    },
+    {
+      "path": "corpus/workloads/applications/icepack/pack-inputs/example.asc",
+      "sha256": "52c9fda937ce54c49915ad8b0fcb9093c659e97ae1b24f0239fcf6de7f77c0d3"
+    },
+    {
+      "path": "corpus/workloads/applications/icepack/unpack-inputs/example.bin",
+      "sha256": "d7d042ed25fffa14ebc0fca55ec393817bfee94ad817940310babb6560a777e3"
+    },
+    {
+      "path": "corpus/workloads/applications/jq/build.sh",
+      "sha256": "36e59217332eced0432949d0b8608ea85816a6d43f5c146cd224dc3387c47533"
+    },
+    {
+      "path": "corpus/workloads/applications/jq/COPYING",
+      "sha256": "ad2b4a266b2268939c1446979759706077421cf906a203aa188c6f396e8cfd74"
+    },
+    {
+      "path": "corpus/workloads/applications/jq/ONIGURUMA-COPYING",
+      "sha256": "70ba5469ea0bab6e18a32d7009068f996503168d27be57747e08da34337ff26f"
+    },
+    {
+      "path": "corpus/workloads/applications/jq/README.md",
+      "sha256": "a1f079b76aa7e848271929302928ae1106803bbb13b1660a130666cd1cf7b185"
+    },
+    {
+      "path": "corpus/workloads/applications/json2csv/inputs/people.ndjson",
+      "sha256": "f30fab50db5af1c8403d093243cba9a96cfe080663d113485b0a1e80c428763a"
+    },
+    {
+      "path": "corpus/workloads/applications/json2csv/LICENSE",
+      "sha256": "89807acf2309bd285f033404ee78581602f3cd9b819a16ac2f0e5f60ff4a473e"
+    },
+    {
+      "path": "corpus/workloads/applications/json2csv/README.md",
+      "sha256": "7e9aed8d3b77ffca4db6c439e4efb8e3b61e6d84ec9b74c05b434326dd5fccbb"
+    },
+    {
+      "path": "corpus/workloads/applications/lua/build.sh",
+      "sha256": "9838313a39a282f065cbc0b1b44729e19a14071fd6a2ca3b890988759f59d2f6"
+    },
+    {
+      "path": "corpus/workloads/applications/lua/inputs/program.lua",
+      "sha256": "3807a5f816795e9be766394e54b9f07e35717a19d9af91e10611c69e5e8e3c28"
+    },
+    {
+      "path": "corpus/workloads/applications/lua/LICENSE.lua.html",
+      "sha256": "8f1bff27c5b0585ab679dbe4e37e75a1014af0f79732f42a79f86728321a0c6d"
+    },
+    {
+      "path": "corpus/workloads/applications/lua/LICENSE.wrapper",
+      "sha256": "9f5320c66bbd0e8b1fad809fea51f043e0465fb62ce3d77af2f38dbcfd8724ee"
+    },
+    {
+      "path": "corpus/workloads/applications/lua/README.md",
+      "sha256": "f5f0e3fb435857073bc921791250f2c44d73e1d126136fe9a8157fc0fe623c2f"
+    },
+    {
+      "path": "corpus/workloads/applications/quickjs/build.sh",
+      "sha256": "d6c0f1d0d062b727310c33c713c3f91188d2545686c6d722e99b733f75fa9f26"
+    },
+    {
+      "path": "corpus/workloads/applications/quickjs/inputs/program.js",
+      "sha256": "cbf10aad91aced62c70121301fdcb3562929b08a6d9f2d3e0bfc28d90dea810f"
+    },
+    {
+      "path": "corpus/workloads/applications/quickjs/LICENSE.txt",
+      "sha256": "d45f523c215f87fe75b20c4f9d8a066b0b2c53bd007d01e7b87382f109660ae1"
+    },
+    {
+      "path": "corpus/workloads/applications/ripgrep/README.md",
+      "sha256": "9e87811cffa8aab7cf41bd4168803d7adaaebe23b0bf061d8dfb864d41b5e7d6"
+    },
+    {
+      "path": "corpus/workloads/applications/ruby/BSDL",
+      "sha256": "36a9a6e7347214bbba599a412617204e65bff065dcbe5c46f5cb454c80de9eb0"
+    },
+    {
+      "path": "corpus/workloads/applications/ruby/inputs/program.rb",
+      "sha256": "3a3ae9520f56cab00ed012b018a330d8a6f53f08c556a7baf9ea2da401e79fd9"
+    },
+    {
+      "path": "corpus/workloads/applications/ruby/LICENSE",
+      "sha256": "967586d538a28955ec2541910cf63c5ac345fcdea94bfb1f1705a1f6eb36bcbb"
+    },
+    {
+      "path": "corpus/workloads/applications/ruby/LICENSE.wlr",
+      "sha256": "a7e361ef8f8946dbb02df66d10999fbf96a4d118618941199cfadc19efc668b5"
+    },
+    {
+      "path": "corpus/workloads/applications/ruby/NOTICE.wlr",
+      "sha256": "1652f4be5875f776798c7326d772adab7f31d40364bfb88c4f211f6703536613"
+    },
+    {
+      "path": "corpus/workloads/applications/ruby/README.md",
+      "sha256": "7457431713674b6f9c9f53666e84c3b1b1c70b323ceb976877a3eca3888ba688"
+    },
+    {
+      "path": "corpus/workloads/applications/sqlite3/build.sh",
+      "sha256": "ff6ed7ce024efe4619e74f8de741ddb5f7125d43b8b8f20d49e2fe28bff6d635"
+    },
+    {
+      "path": "corpus/workloads/applications/sqlite3/README.md",
+      "sha256": "bc325a7a67fcacea61280c8ab63806f13aacca9c55919d7fffeba17f2654cfc2"
+    },
+    {
+      "path": "corpus/workloads/applications/sqlite3/system_stub.c",
+      "sha256": "d6bfb5a088f554d067ace89219014859e9314bc63637c6f498a07c8109cf3c59"
+    },
+    {
+      "path": "corpus/workloads/applications/swift-format/fetch.sh",
+      "sha256": "b1f596e885f3e5d3e7635d3a8bc50f8706d1de4a782ea617adfaa46c5f79221c"
+    },
+    {
+      "path": "corpus/workloads/applications/swift-format/inputs/source.swift",
+      "sha256": "aa42bbc4d55e53cc38902fbcaf6b8da46d1e9ca52202d487bbd6c0e17c461d74"
+    },
+    {
+      "path": "corpus/workloads/applications/swift-format/LICENSE.txt",
+      "sha256": "770af8291f708538d8ff885a0bbc4e045cd700531741c4f99528d435c14d7f55"
+    },
+    {
+      "path": "corpus/workloads/applications/tree/build.sh",
+      "sha256": "dd03f8f83585a14152d1a0b3b8a834ee4f62a758ac46a5793b943d74adc87694"
+    },
+    {
+      "path": "corpus/workloads/applications/tree/compat/grp.h",
+      "sha256": "12823a85999a562def5149826d3cb3125410179d09ccaef6eb6fa785ffcfccee"
+    },
+    {
+      "path": "corpus/workloads/applications/tree/compat/pwd.h",
+      "sha256": "169d3c4e9f99a1995361c8bccfbe4ec4c211189303d6559db263a39783cedf99"
+    },
+    {
+      "path": "corpus/workloads/applications/tree/inputs/README.md",
+      "sha256": "3915e09920ad9ecd655f08d8f82115e0f47119e5fd12cc66e01a8ccda688befc"
+    },
+    {
+      "path": "corpus/workloads/applications/tree/inputs/src/main.c",
+      "sha256": "2ad75d95660563887d8d3f1d0ae1dcf18c2379cbd83a5c72f5ab276351ee6949"
+    },
+    {
+      "path": "corpus/workloads/applications/tree/inputs/src/util.c",
+      "sha256": "c900429992cb5e0aec6c5afb07278bc21c1480178c97f7496fcec1622401e0d0"
+    },
+    {
+      "path": "corpus/workloads/applications/tree/inputs/test/main.c",
+      "sha256": "0de8b249a5ea6d580f90393b5b774d25f102a54653202057f313b337a3392751"
+    },
+    {
+      "path": "corpus/workloads/applications/tree/LICENSE",
+      "sha256": "204d8eff92f95aac4df6c8122bc1505f468f3a901e5a4cc08940e0ede1938994"
+    },
+    {
+      "path": "corpus/workloads/applications/tree/README.md",
+      "sha256": "799bb309f807447ebfcaa52bb1078fe87e3fdecf42cff0a2fca1b94119e28916"
+    },
+    {
+      "path": "corpus/workloads/applications/xzdec/build.sh",
+      "sha256": "471c887ae013791f2377706812dd01bb452c4d632a662187fd74fdcc8672b39e"
+    },
+    {
+      "path": "corpus/workloads/applications/xzdec/COPYING",
+      "sha256": "1d2d9338d5c0620e34ade2153730eff686d07f02a42f889a33d659a30c41eac1"
+    },
+    {
+      "path": "corpus/workloads/applications/xzdec/COPYING.0BSD",
+      "sha256": "0b01625d853911cd0e2e088dcfb743261034a091bb379246cb25a14cc4c74bf1"
+    },
+    {
+      "path": "corpus/workloads/applications/xzdec/inputs/source.js.xz",
+      "sha256": "64f999ed9f0448036cd2d4842f87f5cee4edf3800e50ba085c4bb76ae711bcf1"
+    },
+    {
+      "path": "corpus/workloads/applications/xzdec/README.md",
+      "sha256": "d6dccfd82505062918db5e0ede7f54a3f3c9029836d6a7f8964ef8397b91f270"
+    },
+    {
+      "path": "corpus/workloads/applications/yosys/inputs/top.v",
+      "sha256": "4a7476fb4229eb0d0e11940614597bb3ba25b96f9d44b28c835e060d3603af16"
+    },
+    {
+      "path": "corpus/workloads/applications/yosys/LICENSE",
+      "sha256": "dfc801f3db426280b60a2808c56b944e48f66025a2fcdd60826ae43084351800"
+    },
+    {
+      "path": "corpus/workloads/applications/yosys/README.md",
+      "sha256": "ec0dbe0809d80978656820f01a79095fc6764a122e00c07aaa8b08e9e6914f54"
+    },
+    {
+      "path": "corpus/workloads/semantic/blake3/build.sh",
+      "sha256": "c6b17b8060a69f5c5fd5eb70d4d5ce1c6e22103dcd15ed10acbf68a3cb29a6e3"
+    },
+    {
+      "path": "corpus/workloads/semantic/blake3/LICENSE",
+      "sha256": "a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499"
+    },
+    {
+      "path": "corpus/workloads/semantic/blake3/LICENSE_A2",
+      "sha256": "00fcc7a934ddbc9ece2a7cc063ac788e284b703b1d705ccbba72d462aa97921e"
+    },
+    {
+      "path": "corpus/workloads/semantic/blake3/LICENSE_A2LLVM",
+      "sha256": "a5695f57ea0c221e0e8b7d784ff774c35e88c3d3270353646a925880bb3492cc"
+    },
+    {
+      "path": "corpus/workloads/semantic/blake3/wago_blake3.c",
+      "sha256": "5eeed03808623388baf3a34648bceb12a62bf9904dc0a94238e86ac47172e40f"
+    },
+    {
+      "path": "corpus/workloads/semantic/coremark/build.sh",
+      "sha256": "5be42e19ab16b8b335416c8fdb47f7f5e1d9ffff7bfd5bec65d401be051a335c"
+    },
+    {
+      "path": "corpus/workloads/semantic/coremark/core_portme.c",
+      "sha256": "47f74fb314400a03d538efc60558688a8f422afcf8f8cc5eb9b80d5730ba811b"
+    },
+    {
+      "path": "corpus/workloads/semantic/coremark/core_portme.h",
+      "sha256": "5143dbf4d87013ac02bf4d29387f97bbe37a8df857170529ac8a7a162fb47d83"
+    },
+    {
+      "path": "corpus/workloads/semantic/coremark/LICENSE",
+      "sha256": "9577b9c846f61fd69a0d8ac965998c6450c7d8969f71f0bb4a931b91aebad28a"
+    },
+    {
+      "path": "corpus/workloads/semantic/drwav/build.sh",
+      "sha256": "99ae94e565640641e58830b865fd585522d4e77cdededa8de14d62368939992f"
+    },
+    {
+      "path": "corpus/workloads/semantic/drwav/LICENSE",
+      "sha256": "4af8fb61da2cb1f815106d1e41f10836ed0b8f3dd830bfb3a8c02c2621bd76ad"
+    },
+    {
+      "path": "corpus/workloads/semantic/drwav/wago_drwav.c",
+      "sha256": "96eb305dd0593278febd287f2f11005a55d919e2959298d632d9010647369e08"
+    },
+    {
+      "path": "corpus/workloads/semantic/fastfloat/build.sh",
+      "sha256": "3d68ef652e754aabe098392da28aa0121e572a2e88c9eae2e1aa145cdbdb3586"
+    },
+    {
+      "path": "corpus/workloads/semantic/fastfloat/LICENSE",
+      "sha256": "e562f3f974ced7e69dd1db77b820b36bcf8f30377f1aa105723fba449c53c4e6"
+    },
+    {
+      "path": "corpus/workloads/semantic/fastfloat/wago_fastfloat.cpp",
+      "sha256": "898c1692b3197bf40aaf80e361a6f4d99e778ddd89facf8a03b72be72260284b"
+    },
+    {
+      "path": "corpus/workloads/semantic/kissfft/build.sh",
+      "sha256": "d3c739a184a74789cd61bec0a6651b8199baf069d3960d6bed88d8987d911364"
+    },
+    {
+      "path": "corpus/workloads/semantic/kissfft/LICENSE",
+      "sha256": "65ec49c342fc95e8c48c6316410a6220ef59fe9f4d111d3eba02a30a17bb8a80"
+    },
+    {
+      "path": "corpus/workloads/semantic/kissfft/wago_kissfft.c",
+      "sha256": "550c57f7d17669e6020dc8b4c829eedaa3b4b75272b768dd6619d264375c924e"
+    },
+    {
+      "path": "corpus/workloads/semantic/libtommath/build.sh",
+      "sha256": "26e6cfc76dbef5874edc8113fa615e3481aaef81e947b2f6b7dc7120c0a6b699"
+    },
+    {
+      "path": "corpus/workloads/semantic/libtommath/LICENSE",
+      "sha256": "2fa64b163659f41965c9815882a8296d3d03ff546b76153e11445f9bdecf955a"
+    },
+    {
+      "path": "corpus/workloads/semantic/libtommath/wago_libtommath.c",
+      "sha256": "e94faed3b4c936a815777dfe4f3134a26ed455150d6180478acb53c01f9ca0ca"
+    },
+    {
+      "path": "corpus/workloads/semantic/lz4/build.sh",
+      "sha256": "a02650006521b233997d19622754babe224a71c362048ed04f500c97513232b0"
+    },
+    {
+      "path": "corpus/workloads/semantic/lz4/LICENSE",
+      "sha256": "8b58c446121a109ccf32edc094bba3010a3d85e4ee3702950db55e4d3e87736c"
+    },
+    {
+      "path": "corpus/workloads/semantic/lz4/wago_lz4.c",
+      "sha256": "3d08dbd4be04cd2afd2364bc215b82c6d48823b75c6f49cf610154668c4c2585"
+    },
+    {
+      "path": "corpus/workloads/semantic/monocypher/build.sh",
+      "sha256": "4d4da046c401b6eb056006f1106b6f750a6f35a6349dd9245f8cff7feaaf558b"
+    },
+    {
+      "path": "corpus/workloads/semantic/monocypher/LICENSE",
+      "sha256": "62764d31ca5b8f89a116f545c41a09f7c41d6447ee3607182806a3188829ad95"
+    },
+    {
+      "path": "corpus/workloads/semantic/monocypher/wago_monocypher.c",
+      "sha256": "22be5a871514bfafab3859013a2ae78c2a6495e9c861c6bfc6587e9983502915"
+    },
+    {
+      "path": "corpus/workloads/semantic/nanosvg/build.sh",
+      "sha256": "20a861c4dddc92e926b0bb0f2b215545d5ed82f8d561a75b5925624197d263ec"
+    },
+    {
+      "path": "corpus/workloads/semantic/nanosvg/LICENSE",
+      "sha256": "e52403ac2dc5fdffbd268b0471c8ca37635838febcf0e2fda9aecd2a887119c0"
+    },
+    {
+      "path": "corpus/workloads/semantic/nanosvg/wago_nanosvg.c",
+      "sha256": "a67de150041d19442d7427d27cb6e5960b3f48df92ced503e59f3ffc15ae18cb"
+    },
+    {
+      "path": "corpus/workloads/semantic/pcre2/build.sh",
+      "sha256": "97996be7a56c1e5b4bffbe239a68dd02bbabfb07c766e2f5ed7be75464ebc356"
+    },
+    {
+      "path": "corpus/workloads/semantic/pcre2/LICENSE",
+      "sha256": "197d8a73ffee0d6b09adba2f9c677b5f5aede24edf89258a68e48248d010d811"
+    },
+    {
+      "path": "corpus/workloads/semantic/pcre2/wago_pcre2.c",
+      "sha256": "471cf01c1a7a728d2f7e942c2efc9172703bc9de36117f1e64c263e99d8bd421"
+    },
+    {
+      "path": "corpus/workloads/semantic/qoi/build.sh",
+      "sha256": "510270d14f2f498e13d458a7e927cc87a3bead10b9a018a96ae90f0f480bf3eb"
+    },
+    {
+      "path": "corpus/workloads/semantic/qoi/LICENSE",
+      "sha256": "0caf25d92ae0e7e12107e144a86782ccaad37ddaa3ee51e86e193c7db9ed1487"
+    },
+    {
+      "path": "corpus/workloads/semantic/qoi/wago_qoi.c",
+      "sha256": "468ee1112e46dfb00830a1c6989831c9c677e0e22dc4894663a1f8e2efd2dfc3"
+    },
+    {
+      "path": "corpus/workloads/semantic/shared/wago_freestanding.c",
+      "sha256": "9bf63fb1d8121e1ecc89069098417026eb7b8fbf45fe944daab514ffec9e91e5"
+    },
+    {
+      "path": "corpus/workloads/semantic/shared/wago_freestanding.h",
+      "sha256": "b477cbba40e0e1ad30e915bd9cdbf9d6be8f5943fb9eeea79703f625f0d600e0"
+    },
+    {
+      "path": "corpus/workloads/semantic/utf8proc/build.sh",
+      "sha256": "bcc41982d4c290ae97d0fe52d8175fac76bc1e30ea5b370f253a44679ed31c79"
+    },
+    {
+      "path": "corpus/workloads/semantic/utf8proc/LICENSE",
+      "sha256": "3640785502ff9a144c0961544864a1e62a515e3c1755d1f9b77dadd80679e364"
+    },
+    {
+      "path": "corpus/workloads/semantic/utf8proc/wago_utf8proc.c",
+      "sha256": "328b9bd910ca462f56ea9bb92ee95ad23534428178c8d9c4a32885a93ecfb735"
+    },
+    {
+      "path": "corpus/workloads/semantic/xxhash/build.sh",
+      "sha256": "f5963a513a524a2c10fdeacb64d825354ac0db0a594544119bc99bc60b3aaedc"
+    },
+    {
+      "path": "corpus/workloads/semantic/xxhash/LICENSE",
+      "sha256": "6ffedbc0f7878612d2b23589f1ff2ab15633e1df7963a5d9fc750ec5500c7e7a"
+    },
+    {
+      "path": "corpus/workloads/semantic/xxhash/wago_xxhash.c",
+      "sha256": "04b02f0da639e15a50e0dbc6b398b51dba2ca999bceec5ef254e1af7d46c6697"
+    },
+    {
+      "path": "corpus/workloads/semantic/yyjson/build.sh",
+      "sha256": "4ce8923c217fafcadb86aceb2029f684e5b84e07fab2a155de86b6870f368029"
+    },
+    {
+      "path": "corpus/workloads/semantic/yyjson/LICENSE",
+      "sha256": "45e384d3d52c73cba3a64d6e6c25d47cd738cd8a55c30629e3201046eda62947"
+    },
+    {
+      "path": "corpus/workloads/semantic/yyjson/wago_yyjson.c",
+      "sha256": "d13bce6fc1693d615b343af1fbf20d5d7b470564ca386c3ccfe712e2088b055f"
+    },
+    {
+      "path": "corpus/workloads/semantic/zlib/build.sh",
+      "sha256": "f21fa58c4ad8dbe80f18abd014144efd74317f6089cbf9c6585ac04d104a8e95"
+    },
+    {
+      "path": "corpus/workloads/semantic/zlib/LICENSE",
+      "sha256": "e32ff4e00d9d94930537635291da39e7e612703334bf6fde8c7f1686fe8a45a2"
+    },
+    {
+      "path": "corpus/workloads/semantic/zlib/wago_zlib.c",
+      "sha256": "299d896a4058997bb233390b4e786e286201c5d7a9fbccba3d24d3cffda5b0a3"
+    },
+    {
+      "path": "corpus/workloads/semantic/zstd/build.sh",
+      "sha256": "a87565c8dc2b2b07fe0342dddf94df65b0322e99575d0d334d66fc4cebbcc77c"
+    },
+    {
+      "path": "corpus/workloads/semantic/zstd/LICENSE",
+      "sha256": "7055266497633c9025b777c78eb7235af13922117480ed5c674677adc381c9d8"
+    },
+    {
+      "path": "corpus/workloads/semantic/zstd/wago_zstd.c",
+      "sha256": "d3b508c23266f64d9c92d6a766e64766f8676253bb567d26a12515e17a4045cc"
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    }
+  ]
+}

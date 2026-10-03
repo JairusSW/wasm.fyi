@@ -367,6 +367,40 @@ u32 benchmark(u32 n) {
 
 #elif KIND == 96 /* stencil-wave-equation */
   static int next[4096];for(u32 i=0;i<n*n;i++)a[i]=b[i]=(u32)((int)(sample(i)&31u)-16);for(u32 step=0;step<8;step++){for(u32 y=0;y<n;y++)for(u32 x=0;x<n;x++){u32 p=y*n+x;int current=(int)b[p],laplacian=(int)b[y*n+(x+n-1)%n]+(int)b[y*n+(x+1)%n]+(int)b[((y+n-1)%n)*n+x]+(int)b[((y+1)%n)*n+x]-4*current;next[p]=2*current-(int)a[p]+laplacian/4;}for(u32 i=0;i<n*n;i++){a[i]=b[i];b[i]=(u32)next[i];}}for(u32 i=0;i<n*n;i++)EMIT(b[i]);
+#elif KIND >= 97 && KIND <= 99 /* DNA sequence alignment */
+  int previous[257],current[257],best=0;
+  for(u32 j=0;j<=n;j++)previous[j]=KIND==98?-2*(int)j:0;
+  for(u32 i=1;i<=n;i++){
+    current[0]=KIND==98?-2*(int)i:0;
+    for(u32 j=1;j<=n;j++){
+      int equal=(sample(i-1)&3u)==(sample(j-1+17)&3u);
+      int diagonal=previous[j-1]+(KIND==97?equal:equal?2:-1);
+      int up=previous[j]-(KIND==97?0:2),left=current[j-1]-(KIND==97?0:2);
+      int score=diagonal>up?diagonal:up;if(left>score)score=left;
+      if(KIND==99&&score<0)score=0;
+      current[j]=score;if(score>best)best=score;
+    }
+    for(u32 j=0;j<=n;j++)previous[j]=current[j];
+  }
+  EMIT(KIND==99?best:previous[n]);
+#elif KIND == 100 /* DNA overlapping 5-mer histogram */
+  for(u32 i=0;i<1024;i++)a[i]=0;
+  u32 code=0;for(u32 i=0;i<n;i++){code=((code<<2)|(sample(i)&3u))&1023u;if(i>=4)a[code]++;}
+  for(u32 i=0;i<1024;i++)EMIT(a[i]);
+#elif KIND == 101 /* DNA reverse complement */
+  for(u32 i=n;i>0;i--)EMIT(3-(sample(i-1)&3u));
+#elif KIND == 102 /* Literal record substitutions */
+  const char *records[3]={"error warning error\n","warning ok\n","ok error\n"};
+  for(u32 row=0;row<n;row++){
+    const char *p=records[sample(row)%3];
+    while(*p){
+      if(p[0]=='e'&&p[1]=='r'&&p[2]=='r'&&p[3]=='o'&&p[4]=='r'){
+        const char *q="ERROR";while(*q)EMIT((u32)*q++);p+=5;
+      }else if(p[0]=='w'&&p[1]=='a'&&p[2]=='r'&&p[3]=='n'&&p[4]=='i'&&p[5]=='n'&&p[6]=='g'){
+        const char *q="WARN";while(*q)EMIT((u32)*q++);p+=7;
+      }else EMIT((u32)*p++);
+    }
+  }
 #else
 #error Unknown corpus kernel kind
 #endif

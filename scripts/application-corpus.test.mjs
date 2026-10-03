@@ -49,7 +49,7 @@ test('explicit upstream subsets do not accidentally start the full application s
     assert.equal(subset.length,1);
     delete process.env.WASMBENCH_CORPUS_IDS;
     const full=JSON.parse(await readFile(await prepareCorpus(settings,run,join(root,'full'))));
-    assert.equal(full.length,97);
+    assert.equal(full.length,103);
     assert(full.filter(w=>w.id.startsWith('applications/')).every(w=>w.artifact.startsWith(site)));
   } finally {
     if(saved===undefined)delete process.env.WASMBENCH_CORPUS_IDS;else process.env.WASMBENCH_CORPUS_IDS=saved;

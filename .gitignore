@@ -23,3 +23,7 @@ src/lib/data/measurements.json
 /static/robots.txt
 /static/data/llm/
 src/lib/data/plugin-tests.json
+
+# Dependency checkouts and rebuilt outputs from retained upstream sources.
+/corpora/upstream/wago/.tmp/
+/corpora/upstream/wago/corpus/workloads/**/*.wasm

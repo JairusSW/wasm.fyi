@@ -14,7 +14,7 @@ test('checked-in feature artifacts and provenance cover every declared family',a
   const displayed=[...new Set([...ui.matchAll(/\bid: '([^']+)'/g)].map(match=>match[1]))];
   assert.deepEqual([...featureIds].sort(),displayed.sort(),'Feature corpus no longer matches displayed families');
   assert.deepEqual(build.missingFeatures,[]);assert.equal(build.recipes.length,fixtures().length);
-  assert.equal(manifest.length,223);
+  assert.equal(manifest.length,fixtures().reduce((n,f)=>n+f.sizes.length,0));
   for(const feature of featureIds)assert(manifest.some(w=>w.features.includes(feature)&&!w.provenance.baseline),`Missing actual ${feature} workload`);
   const generated = new Map(fixtures().map(f=>[`${f.feature}-${f.name}`,f]));
   for(const recipe of build.recipes) {

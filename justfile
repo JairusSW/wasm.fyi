@@ -21,7 +21,7 @@ check:
 test:
     pnpm test
     pnpm test:ai
-    node --test scripts/plugin-evidence.test.mjs scripts/retention.test.mjs scripts/release-policy.test.mjs scripts/weekly-history.test.mjs scripts/workflow.test.mjs scripts/application-corpus.test.mjs scripts/feature-adapter.test.mjs scripts/wasmer-adapter.test.mjs scripts/v8-preflight.test.mjs scripts/lib/feature-configurations.test.mjs scripts/extra-feature-adapters.test.mjs scripts/command-input.test.mjs scripts/verify-seal.test.mjs scripts/collection-recovery.test.mjs
+    node --test scripts/plugin-evidence.test.mjs scripts/retention.test.mjs scripts/release-policy.test.mjs scripts/weekly-history.test.mjs scripts/workflow.test.mjs scripts/application-corpus.test.mjs scripts/corpus-v8.test.mjs scripts/upstream-sources.test.mjs scripts/feature-adapter.test.mjs scripts/wasmer-adapter.test.mjs scripts/v8-preflight.test.mjs scripts/lib/feature-configurations.test.mjs scripts/extra-feature-adapters.test.mjs scripts/command-input.test.mjs scripts/verify-seal.test.mjs scripts/collection-recovery.test.mjs
 
 # Validate gathered snapshots and their raw evidence.
 integration-audit:
@@ -246,3 +246,15 @@ applications-check:
 # Audit the complete application inventory, contracts and use-case coverage.
 corpus-audit:
     node scripts/corpus-audit.mjs
+
+# Check the full configured corpus in pinned V8; components remain explicit gaps.
+corpus-v8-check:
+    node scripts/corpus-v8.mjs
+
+# Check self-contained application/feature fixtures without upstream checkouts.
+corpus-v8-local-check:
+    node scripts/corpus-v8.mjs --local
+
+# Refresh retained upstream source/build/fixture files from the configured checkout.
+corpus-sources-refresh:
+    node scripts/upstream-sources.mjs

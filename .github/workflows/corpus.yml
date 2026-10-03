@@ -1,0 +1,47 @@
+name: Verify corpus sources and V8 oracles
+on:
+  pull_request:
+    paths: ['corpora/**', 'scripts/**', 'wasmbench.config.json', '.github/workflows/corpus.yml']
+  push:
+    branches-ignore: [main]
+    paths: ['corpora/**', 'scripts/**', 'wasmbench.config.json', '.github/workflows/corpus.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '26.4.0'
+      - uses: actions/cache@v5
+        with:
+          path: ~/.local/share/wasm-fyi/toolchains
+          key: corpus-linux-x64-llvm-22.1.8-wasm-tools-1.260.0
+      - name: Install pinned compilers
+        run: |
+          node scripts/llvm-toolchain.mjs
+          cargo install wasm-tools --version 1.260.0 --locked --root "$HOME/.local/share/wasm-fyi/toolchains/wasm-tools-1.260.0"
+      - name: Verify committed inputs and execution
+        run: |
+          node --test scripts/application-corpus.test.mjs scripts/corpus-v8.test.mjs scripts/upstream-sources.test.mjs scripts/feature-adapter.test.mjs
+          node scripts/corpus-v8.mjs --local
+      - name: Recompile editable sources and verify again
+        env:
+          WASMBENCH_CLANG: /home/runner/.local/share/wasm-fyi/toolchains/llvm-22/bin/clang
+          WASMBENCH_WASM_TOOLS: /home/runner/.local/share/wasm-fyi/toolchains/wasm-tools-1.260.0/bin/wasm-tools
+        run: |
+          corpus_tool_bin=$(dirname "$WASMBENCH_WASM_TOOLS")
+          export PATH="$corpus_tool_bin:$PATH"
+          node scripts/application-corpus.mjs build
+          node scripts/feature-corpus.mjs build
+          git diff --exit-code -- corpora/applications/artifacts corpora/features/artifacts corpora/features/sources
+          node scripts/corpus-v8.mjs --local
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: corpus-v8-correctness
+          path: .wasmbench/corpus-v8-check.json

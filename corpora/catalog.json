@@ -2,7 +2,7 @@
   "schema": 1,
   "policy": "Prepared corpus inventory, not measured performance. Unsupported contracts remain visible. One representative input per algorithm; every use-case category has 6–9 distinct algorithms. Feature probes are separate and excluded from application averages.",
   "upstreamCatalogSha256": "e02b20f2ccf9db3bc4649270c8d8eeff2b29bdb6acb6ecb47fab2697cd811a9f",
-  "upstreamBenchmarks": 70,
+  "upstreamBenchmarks": 64,
   "applicationContracts": 166,
   "readyContracts": 166,
   "categories": [
@@ -150,470 +150,6 @@
     "Video motion estimation and audio DSP are processing kernels; this corpus does not claim complete video-codec, speech recognition or font-shaping coverage."
   ],
   "workloads": [
-    {
-      "id": "sed-records",
-      "contractId": "wago/sed-records",
-      "algorithm": "sed-stream-editing",
-      "category": "Text & parsing",
-      "sha256": "f219fd9bb74d730d1df83242109ed3e17b05f52dec4fa06a1ed88d2ac0cd06be",
-      "artifactBytes": 184939,
-      "kind": "application",
-      "description": "GNU sed 4.8 performs two substitutions over a pinned record stream",
-      "abi": "emscripten",
-      "workUnit": "command",
-      "unitsPerInvocation": 1,
-      "args": [],
-      "reset": "fresh_instance_per_sample",
-      "originalContract": {
-        "suite": "Biowasm",
-        "desc": "GNU sed 4.8 performs two substitutions over a pinned record stream",
-        "id": "sed-records",
-        "artifact": "workloads/applications/sed/sed.wasm",
-        "artifact_sha256": "f219fd9bb74d730d1df83242109ed3e17b05f52dec4fa06a1ed88d2ac0cd06be",
-        "tags": [
-          "application",
-          "text",
-          "sed",
-          "c",
-          "emscripten"
-        ],
-        "source": {
-          "repository": "https://github.com/biowasm/biowasm/tree/main/tools/sed",
-          "revision": "v4.8",
-          "revision_date": "2020-01-14",
-          "license": "GPL-3.0-or-later AND MIT",
-          "toolchain": "Biowasm Emscripten release",
-          "toolchain_version": "GNU sed 4.8"
-        },
-        "stages": [
-          "Decode",
-          "Validate",
-          "Compile",
-          "CompileFull",
-          "CommandExec"
-        ],
-        "command": {
-          "runtime": "emscripten",
-          "reference_runtime": "v8",
-          "platforms": [
-            "linux/amd64",
-            "linux/arm64",
-            "darwin/amd64",
-            "darwin/arm64"
-          ],
-          "export": "main",
-          "args": [
-            "-e",
-            "s/error/ERROR/g; s/warning/WARN/g"
-          ],
-          "stdin": "records.txt",
-          "preopen": "workloads/applications/sed/inputs",
-          "inputs": {
-            "records.txt": "f667a5b07e86bb4c5d09def1d5331b363f7f4ccd9a4d52255aadb08a93aaafd7"
-          },
-          "stdout_sha256": "a2c763a7c5947ca809df136a89a212ca0de22198c8285501fe711cea3156ef2e"
-        }
-      },
-      "oracle": {
-        "kind": "exact_command",
-        "expected": []
-      },
-      "license": "GPL-3.0-or-later AND MIT",
-      "source": {
-        "repository": "https://github.com/biowasm/biowasm/tree/main/tools/sed",
-        "revision": "v4.8",
-        "revision_date": "2020-01-14",
-        "license": "GPL-3.0-or-later AND MIT",
-        "toolchain": "Biowasm Emscripten release",
-        "toolchain_version": "GNU sed 4.8"
-      },
-      "status": "prepared",
-      "reason": null
-    },
-    {
-      "id": "seqtk-fastq-to-fasta",
-      "contractId": "wago/seqtk-fastq-to-fasta",
-      "algorithm": "seqtk-fastq-to-fasta",
-      "category": "Bioinformatics",
-      "sha256": "d0a899c3a17ad8245c6cc99cdad7c4bb30f189dab82609d233dad225384f9678",
-      "artifactBytes": 148484,
-      "kind": "application",
-      "description": "seqtk 1.4 converts a pinned FASTQ stream to FASTA",
-      "abi": "emscripten",
-      "workUnit": "command",
-      "unitsPerInvocation": 1,
-      "args": [],
-      "reset": "fresh_instance_per_sample",
-      "originalContract": {
-        "suite": "Biowasm",
-        "desc": "seqtk 1.4 converts a pinned FASTQ stream to FASTA",
-        "id": "seqtk-fastq-to-fasta",
-        "artifact": "workloads/applications/seqtk/seqtk.wasm",
-        "artifact_sha256": "d0a899c3a17ad8245c6cc99cdad7c4bb30f189dab82609d233dad225384f9678",
-        "tags": [
-          "application",
-          "bioinformatics",
-          "sequence",
-          "c",
-          "emscripten"
-        ],
-        "source": {
-          "repository": "https://github.com/biowasm/biowasm/tree/main/tools/seqtk",
-          "revision": "v1.4",
-          "revision_date": "2024-09-15",
-          "license": "MIT",
-          "toolchain": "Biowasm Emscripten release",
-          "toolchain_version": "seqtk 1.4"
-        },
-        "stages": [
-          "Decode",
-          "Validate",
-          "Compile",
-          "CompileFull",
-          "CommandExec"
-        ],
-        "command": {
-          "runtime": "emscripten",
-          "reference_runtime": "v8",
-          "platforms": [
-            "linux/amd64",
-            "linux/arm64",
-            "darwin/amd64",
-            "darwin/arm64"
-          ],
-          "export": "main",
-          "args": [
-            "seq",
-            "-A",
-            "-"
-          ],
-          "stdin": "reads.fastq",
-          "preopen": "workloads/applications/seqtk/inputs",
-          "inputs": {
-            "reads.fastq": "4bf02f6bc7419e83d8367244ae7e3a460c372d72b6b465a483d4e6ae9bef524d"
-          },
-          "stdout_sha256": "7e6e8898889ea9ea26296ab7b39e0d2c10c6de19de8c4b6c88dbb6947b6223ac"
-        }
-      },
-      "oracle": {
-        "kind": "exact_command",
-        "expected": []
-      },
-      "license": "MIT",
-      "source": {
-        "repository": "https://github.com/biowasm/biowasm/tree/main/tools/seqtk",
-        "revision": "v1.4",
-        "revision_date": "2024-09-15",
-        "license": "MIT",
-        "toolchain": "Biowasm Emscripten release",
-        "toolchain_version": "seqtk 1.4"
-      },
-      "status": "prepared",
-      "reason": null
-    },
-    {
-      "id": "lcs-substrings",
-      "contractId": "wago/lcs-substrings",
-      "algorithm": "lcs-substrings",
-      "category": "Bioinformatics",
-      "sha256": "11cb9d2ba8b02d2465988f44c2ae221f1bf43e6d4e745b71927d2263f7b10f6b",
-      "artifactBytes": 24549,
-      "kind": "application",
-      "description": "lcs enumerates repeated substrings of a pinned sequence",
-      "abi": "emscripten",
-      "workUnit": "command",
-      "unitsPerInvocation": 1,
-      "args": [],
-      "reset": "fresh_instance_per_sample",
-      "originalContract": {
-        "suite": "Biowasm seq-align",
-        "desc": "lcs enumerates repeated substrings of a pinned sequence",
-        "id": "lcs-substrings",
-        "artifact": "workloads/applications/seq-align/lcs.wasm",
-        "artifact_sha256": "11cb9d2ba8b02d2465988f44c2ae221f1bf43e6d4e745b71927d2263f7b10f6b",
-        "tags": [
-          "application",
-          "bioinformatics",
-          "sequence",
-          "c",
-          "emscripten"
-        ],
-        "source": {
-          "repository": "https://github.com/biowasm/biowasm/tree/main/tools/seq-align",
-          "revision": "dc41988",
-          "revision_date": "2017-10-18",
-          "license": "Public Domain",
-          "toolchain": "Biowasm Emscripten release",
-          "toolchain_version": "seq-align dc41988"
-        },
-        "stages": [
-          "Decode",
-          "Validate",
-          "Compile",
-          "CompileFull",
-          "CommandExec"
-        ],
-        "command": {
-          "runtime": "emscripten",
-          "reference_runtime": "v8",
-          "platforms": [
-            "linux/amd64",
-            "linux/arm64",
-            "darwin/amd64",
-            "darwin/arm64"
-          ],
-          "export": "main",
-          "args": [
-            "ACGTTGCA"
-          ],
-          "stdout_sha256": "de84eeff25bc787e35ddf73c9de4f48301ef0071c2cbf38922be70c22d8682d8"
-        }
-      },
-      "oracle": {
-        "kind": "exact_command",
-        "expected": []
-      },
-      "license": "Public Domain",
-      "source": {
-        "repository": "https://github.com/biowasm/biowasm/tree/main/tools/seq-align",
-        "revision": "dc41988",
-        "revision_date": "2017-10-18",
-        "license": "Public Domain",
-        "toolchain": "Biowasm Emscripten release",
-        "toolchain_version": "seq-align dc41988"
-      },
-      "status": "prepared",
-      "reason": null
-    },
-    {
-      "id": "needleman-wunsch-dna",
-      "contractId": "wago/needleman-wunsch-dna",
-      "algorithm": "needleman-wunsch-dna",
-      "category": "Bioinformatics",
-      "sha256": "0145e57676d9e2514c5683de4eee351590d57071b68ff6cb7a2ffee4c9d2ab02",
-      "artifactBytes": 125804,
-      "kind": "application",
-      "description": "needleman_wunsch globally aligns two pinned DNA sequences",
-      "abi": "emscripten",
-      "workUnit": "command",
-      "unitsPerInvocation": 1,
-      "args": [],
-      "reset": "fresh_instance_per_sample",
-      "originalContract": {
-        "suite": "Biowasm seq-align",
-        "desc": "needleman_wunsch globally aligns two pinned DNA sequences",
-        "id": "needleman-wunsch-dna",
-        "artifact": "workloads/applications/seq-align/needleman_wunsch.wasm",
-        "artifact_sha256": "0145e57676d9e2514c5683de4eee351590d57071b68ff6cb7a2ffee4c9d2ab02",
-        "tags": [
-          "application",
-          "bioinformatics",
-          "sequence",
-          "c",
-          "emscripten"
-        ],
-        "source": {
-          "repository": "https://github.com/biowasm/biowasm/tree/main/tools/seq-align",
-          "revision": "dc41988",
-          "revision_date": "2017-10-18",
-          "license": "Public Domain",
-          "toolchain": "Biowasm Emscripten release",
-          "toolchain_version": "seq-align dc41988"
-        },
-        "stages": [
-          "Decode",
-          "Validate",
-          "Compile",
-          "CompileFull",
-          "CommandExec"
-        ],
-        "command": {
-          "runtime": "emscripten",
-          "reference_runtime": "v8",
-          "platforms": [
-            "linux/amd64",
-            "linux/arm64",
-            "darwin/amd64",
-            "darwin/arm64"
-          ],
-          "export": "main",
-          "args": [
-            "ACGTTGCA",
-            "ACGTCGCA"
-          ],
-          "stdout_sha256": "1e3fdaf624fe5dbc63c13ea6df1f1df5ceb13258925b5ae7b5e876d9e78f7f4d"
-        }
-      },
-      "oracle": {
-        "kind": "exact_command",
-        "expected": []
-      },
-      "license": "Public Domain",
-      "source": {
-        "repository": "https://github.com/biowasm/biowasm/tree/main/tools/seq-align",
-        "revision": "dc41988",
-        "revision_date": "2017-10-18",
-        "license": "Public Domain",
-        "toolchain": "Biowasm Emscripten release",
-        "toolchain_version": "seq-align dc41988"
-      },
-      "status": "prepared",
-      "reason": null
-    },
-    {
-      "id": "smith-waterman-dna",
-      "contractId": "wago/smith-waterman-dna",
-      "algorithm": "smith-waterman-dna",
-      "category": "Bioinformatics",
-      "sha256": "f033fe248a561e06f5cafebbe9cab86b1d31928a96f144730d10f74b073f11d7",
-      "artifactBytes": 128101,
-      "kind": "application",
-      "description": "smith_waterman locally aligns two pinned DNA sequences and reports suboptimal hits",
-      "abi": "emscripten",
-      "workUnit": "command",
-      "unitsPerInvocation": 1,
-      "args": [],
-      "reset": "fresh_instance_per_sample",
-      "originalContract": {
-        "suite": "Biowasm seq-align",
-        "desc": "smith_waterman locally aligns two pinned DNA sequences and reports suboptimal hits",
-        "id": "smith-waterman-dna",
-        "artifact": "workloads/applications/seq-align/smith_waterman.wasm",
-        "artifact_sha256": "f033fe248a561e06f5cafebbe9cab86b1d31928a96f144730d10f74b073f11d7",
-        "tags": [
-          "application",
-          "bioinformatics",
-          "sequence",
-          "c",
-          "emscripten"
-        ],
-        "source": {
-          "repository": "https://github.com/biowasm/biowasm/tree/main/tools/seq-align",
-          "revision": "dc41988",
-          "revision_date": "2017-10-18",
-          "license": "Public Domain",
-          "toolchain": "Biowasm Emscripten release",
-          "toolchain_version": "seq-align dc41988"
-        },
-        "stages": [
-          "Decode",
-          "Validate",
-          "Compile",
-          "CompileFull",
-          "CommandExec"
-        ],
-        "command": {
-          "runtime": "emscripten",
-          "reference_runtime": "v8",
-          "platforms": [
-            "linux/amd64",
-            "linux/arm64",
-            "darwin/amd64",
-            "darwin/arm64"
-          ],
-          "export": "main",
-          "args": [
-            "ACGTTGCA",
-            "ACGTCGCA"
-          ],
-          "stdout_sha256": "1f3b6d8f053160f6232ce784988485d84c5c4cacafd87ae8680e713b3bcb75f6"
-        }
-      },
-      "oracle": {
-        "kind": "exact_command",
-        "expected": []
-      },
-      "license": "Public Domain",
-      "source": {
-        "repository": "https://github.com/biowasm/biowasm/tree/main/tools/seq-align",
-        "revision": "dc41988",
-        "revision_date": "2017-10-18",
-        "license": "Public Domain",
-        "toolchain": "Biowasm Emscripten release",
-        "toolchain_version": "seq-align dc41988"
-      },
-      "status": "prepared",
-      "reason": null
-    },
-    {
-      "id": "fasttree-phylogeny",
-      "contractId": "wago/fasttree-phylogeny",
-      "algorithm": "fasttree-phylogeny",
-      "category": "Bioinformatics",
-      "sha256": "780ce84c3a0ce8442fe259a5de0fe5db07f663430f2a8d1bc23187161de23387",
-      "artifactBytes": 254477,
-      "kind": "application",
-      "description": "FastTree 2.1.11 infers a nucleotide phylogeny from a pinned multiple-sequence alignment",
-      "abi": "emscripten",
-      "workUnit": "command",
-      "unitsPerInvocation": 1,
-      "args": [],
-      "reset": "fresh_instance_per_sample",
-      "originalContract": {
-        "suite": "Biowasm",
-        "desc": "FastTree 2.1.11 infers a nucleotide phylogeny from a pinned multiple-sequence alignment",
-        "id": "fasttree-phylogeny",
-        "artifact": "workloads/applications/fasttree/fasttree.wasm",
-        "artifact_sha256": "780ce84c3a0ce8442fe259a5de0fe5db07f663430f2a8d1bc23187161de23387",
-        "tags": [
-          "application",
-          "bioinformatics",
-          "phylogeny",
-          "c",
-          "emscripten"
-        ],
-        "source": {
-          "repository": "https://github.com/biowasm/biowasm/tree/main/tools/fasttree",
-          "revision": "2.1.11",
-          "revision_date": "2021-03-03",
-          "license": "GPL-3.0 AND MIT",
-          "toolchain": "Biowasm Emscripten release",
-          "toolchain_version": "FastTree 2.1.11"
-        },
-        "stages": [
-          "Decode",
-          "Validate",
-          "Compile",
-          "CompileFull",
-          "CommandExec"
-        ],
-        "command": {
-          "runtime": "emscripten",
-          "reference_runtime": "v8",
-          "platforms": [
-            "linux/amd64",
-            "linux/arm64",
-            "darwin/amd64",
-            "darwin/arm64"
-          ],
-          "export": "main",
-          "args": [
-            "-nt"
-          ],
-          "stdin": "alignment.fasta",
-          "preopen": "workloads/applications/fasttree/inputs",
-          "inputs": {
-            "alignment.fasta": "9e639db88af2ca312270c8869472d09b8b51c3f94eef1fe93d5dbc176828e83f"
-          },
-          "stdout_sha256": "ff79d3415c1bd8bbf930305f08289a324057d3505d209ee2ab1b85cb190cf98c"
-        }
-      },
-      "oracle": {
-        "kind": "exact_command",
-        "expected": []
-      },
-      "license": "GPL-3.0 AND MIT",
-      "source": {
-        "repository": "https://github.com/biowasm/biowasm/tree/main/tools/fasttree",
-        "revision": "2.1.11",
-        "revision_date": "2021-03-03",
-        "license": "GPL-3.0 AND MIT",
-        "toolchain": "Biowasm Emscripten release",
-        "toolchain_version": "FastTree 2.1.11"
-      },
-      "status": "prepared",
-      "reason": null
-    },
     {
       "id": "ruby-buckets",
       "contractId": "wago/ruby-buckets",
@@ -4809,9 +4345,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -4864,9 +4400,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -4919,9 +4455,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -4974,9 +4510,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -5029,9 +4565,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -5084,9 +4620,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -5139,9 +4675,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -5194,9 +4730,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -5249,9 +4785,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -5304,9 +4840,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -5359,9 +4895,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -5414,9 +4950,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -5469,9 +5005,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -5524,9 +5060,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -5579,9 +5115,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -5634,9 +5170,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -5689,9 +5225,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -5744,9 +5280,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -5799,9 +5335,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -5854,9 +5390,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -5909,9 +5445,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -5964,9 +5500,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -6019,9 +5555,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -6074,9 +5610,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -6129,9 +5665,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -6184,9 +5720,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -6239,9 +5775,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -6294,9 +5830,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -6349,9 +5885,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -6404,9 +5940,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -6459,9 +5995,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -6514,9 +6050,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -6569,9 +6105,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -6624,9 +6160,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -6679,9 +6215,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -6734,9 +6270,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -6789,9 +6325,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -6844,9 +6380,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -6899,9 +6435,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -6954,9 +6490,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -7009,9 +6545,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -7064,9 +6600,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -7119,9 +6655,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -7174,9 +6710,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -7229,9 +6765,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -7284,9 +6820,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -7339,9 +6875,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -7394,9 +6930,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -7449,9 +6985,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -7504,9 +7040,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -7559,9 +7095,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -7614,9 +7150,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -7669,9 +7205,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -7724,9 +7260,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -7779,9 +7315,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -7834,9 +7370,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -7889,9 +7425,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -7944,9 +7480,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -7999,9 +7535,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -8054,9 +7590,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -8109,9 +7645,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -8164,9 +7700,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -8219,9 +7755,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -8274,9 +7810,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -8329,9 +7865,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -8384,9 +7920,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -8439,9 +7975,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -8494,9 +8030,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -8549,9 +8085,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -8604,9 +8140,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -8659,9 +8195,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -8714,9 +8250,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -8769,9 +8305,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -8824,9 +8360,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -8879,9 +8415,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -8934,9 +8470,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -8989,9 +8525,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -9044,9 +8580,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -9099,9 +8635,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -9154,9 +8690,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -9209,9 +8745,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -9264,9 +8800,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -9319,9 +8855,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -9374,9 +8910,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -9429,9 +8965,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -9484,9 +9020,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -9539,9 +9075,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -9594,9 +9130,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -9649,9 +9185,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -9704,9 +9240,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -9759,9 +9295,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -9814,9 +9350,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -9869,9 +9405,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -9924,9 +9460,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -9979,9 +9515,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -10034,9 +9570,9 @@
       "license": "MIT",
       "source": {
         "source": "sources/kernels.c",
-        "sourceSha256": "c0be49c70d75dcfeede93275f4e83befdbd580b04bcedb0db78d55f8448864bd",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
         "oracleSource": "scripts/lib/application-kernels.mjs",
-        "oracleSha256": "8d7f4f801a12d5929842ec68bf3bc94b78e120339274beeacc222a24c4934871",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
         "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
         "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
         "flags": [
@@ -10053,6 +9589,336 @@
           "-fno-slp-vectorize",
           "-nostdlib",
           "-DKIND=96",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "status": "prepared",
+      "reason": null
+    },
+    {
+      "id": "bio-lcs",
+      "contractId": "applications/bio-lcs",
+      "algorithm": "bio-lcs",
+      "category": "Bioinformatics",
+      "sha256": "c4e8a86bbcb8bced26b0fb94351197e21c62af26127756579a8b81b3c62e3274",
+      "artifactBytes": 683,
+      "kind": "kernel",
+      "description": "Longest common subsequence length of two deterministic DNA strings",
+      "abi": "core",
+      "workUnit": "alignment_cells",
+      "unitsPerInvocation": 65536,
+      "args": [
+        256
+      ],
+      "reset": "stateless",
+      "originalContract": null,
+      "oracle": {
+        "kind": "exact_u64",
+        "expected": [
+          "1779132702"
+        ]
+      },
+      "license": "MIT",
+      "source": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "--no-wasm-opt",
+          "-mno-sign-ext",
+          "-mno-nontrapping-fptoint",
+          "-mno-bulk-memory",
+          "-fno-builtin",
+          "-ffp-contract=off",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=97",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "status": "prepared",
+      "reason": null
+    },
+    {
+      "id": "bio-global-alignment",
+      "contractId": "applications/bio-global-alignment",
+      "algorithm": "bio-global-alignment",
+      "category": "Bioinformatics",
+      "sha256": "59a542d8d04134c86c6a5e1fc8a3079ba98562eec4dce3f6ed2fed1938325a63",
+      "artifactBytes": 738,
+      "kind": "kernel",
+      "description": "Needleman-Wunsch global DNA alignment score with linear gap penalty",
+      "abi": "core",
+      "workUnit": "alignment_cells",
+      "unitsPerInvocation": 65536,
+      "args": [
+        256
+      ],
+      "reset": "stateless",
+      "originalContract": null,
+      "oracle": {
+        "kind": "exact_u64",
+        "expected": [
+          "2668243341"
+        ]
+      },
+      "license": "MIT",
+      "source": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "--no-wasm-opt",
+          "-mno-sign-ext",
+          "-mno-nontrapping-fptoint",
+          "-mno-bulk-memory",
+          "-fno-builtin",
+          "-ffp-contract=off",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=98",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "status": "prepared",
+      "reason": null
+    },
+    {
+      "id": "bio-local-alignment",
+      "contractId": "applications/bio-local-alignment",
+      "algorithm": "bio-local-alignment",
+      "category": "Bioinformatics",
+      "sha256": "26972b8ac8a5ce12324e3170f0be70d0df075dba7f7f4d6b498080b3f49a4380",
+      "artifactBytes": 721,
+      "kind": "kernel",
+      "description": "Smith-Waterman best local DNA alignment score with linear gap penalty",
+      "abi": "core",
+      "workUnit": "alignment_cells",
+      "unitsPerInvocation": 65536,
+      "args": [
+        256
+      ],
+      "reset": "stateless",
+      "originalContract": null,
+      "oracle": {
+        "kind": "exact_u64",
+        "expected": [
+          "1527365249"
+        ]
+      },
+      "license": "MIT",
+      "source": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "--no-wasm-opt",
+          "-mno-sign-ext",
+          "-mno-nontrapping-fptoint",
+          "-mno-bulk-memory",
+          "-fno-builtin",
+          "-ffp-contract=off",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=99",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "status": "prepared",
+      "reason": null
+    },
+    {
+      "id": "bio-kmer-count",
+      "contractId": "applications/bio-kmer-count",
+      "algorithm": "bio-kmer-count",
+      "category": "Bioinformatics",
+      "sha256": "fff4894661e750a00a1e4114334e757d897aea75bff5dbfa7e10a1e1d54b541f",
+      "artifactBytes": 354,
+      "kind": "kernel",
+      "description": "Complete histogram of overlapping DNA 5-mers",
+      "abi": "core",
+      "workUnit": "kmers",
+      "unitsPerInvocation": 32764,
+      "args": [
+        32768
+      ],
+      "reset": "stateless",
+      "originalContract": null,
+      "oracle": {
+        "kind": "exact_u64",
+        "expected": [
+          "670916107"
+        ]
+      },
+      "license": "MIT",
+      "source": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "--no-wasm-opt",
+          "-mno-sign-ext",
+          "-mno-nontrapping-fptoint",
+          "-mno-bulk-memory",
+          "-fno-builtin",
+          "-ffp-contract=off",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=100",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "status": "prepared",
+      "reason": null
+    },
+    {
+      "id": "bio-reverse-complement",
+      "contractId": "applications/bio-reverse-complement",
+      "algorithm": "bio-reverse-complement",
+      "category": "Bioinformatics",
+      "sha256": "a113241d259f4b1aaa2042372f33a4af0ecadbeda3e38f320bf11cb73b0e9807",
+      "artifactBytes": 296,
+      "kind": "kernel",
+      "description": "Reverse complement of a deterministic DNA sequence",
+      "abi": "core",
+      "workUnit": "bases",
+      "unitsPerInvocation": 32768,
+      "args": [
+        32768
+      ],
+      "reset": "stateless",
+      "originalContract": null,
+      "oracle": {
+        "kind": "exact_u64",
+        "expected": [
+          "2482558909"
+        ]
+      },
+      "license": "MIT",
+      "source": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "--no-wasm-opt",
+          "-mno-sign-ext",
+          "-mno-nontrapping-fptoint",
+          "-mno-bulk-memory",
+          "-fno-builtin",
+          "-ffp-contract=off",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=101",
+          "-Wl,--no-entry",
+          "-Wl,--export=benchmark",
+          "-Wl,--export-memory",
+          "-Wl,--max-memory=2359296",
+          "-Wl,--strip-all"
+        ]
+      },
+      "status": "prepared",
+      "reason": null
+    },
+    {
+      "id": "text-substitution",
+      "contractId": "applications/text-substitution",
+      "algorithm": "text-substitution",
+      "category": "Text & parsing",
+      "sha256": "5d772351ffa8e186dd9c7321e0f4026d1ed5fb98ab843e28604c8a03cdabea93",
+      "artifactBytes": 542,
+      "kind": "kernel",
+      "description": "Literal non-overlapping error and warning substitutions over a deterministic record stream",
+      "abi": "core",
+      "workUnit": "records",
+      "unitsPerInvocation": 4096,
+      "args": [
+        4096
+      ],
+      "reset": "stateless",
+      "originalContract": null,
+      "oracle": {
+        "kind": "exact_u64",
+        "expected": [
+          "425963705"
+        ]
+      },
+      "license": "MIT",
+      "source": {
+        "source": "sources/kernels.c",
+        "sourceSha256": "316341802e96c60cc9439d97058ca166a87d85b9058bddae0faf6881e77df6b8",
+        "oracleSource": "scripts/lib/application-kernels.mjs",
+        "oracleSha256": "0bd8462abe61f418d3c680c1b0b086c7d087ebedec011d74f00c1814dd53f233",
+        "compiler": "Homebrew clang version 22.1.8\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /opt/homebrew/Cellar/llvm/22.1.8/bin\nConfiguration file: /opt/homebrew/Cellar/llvm/22.1.8/etc/clang/arm64-apple-darwin25.cfg",
+        "compilerSha256": "305697d3868243dca6e4aabf4f628df7de135d701eb4fd78f6a5d7528fef4395",
+        "flags": [
+          "--target=wasm32-unknown-unknown",
+          "-mcpu=mvp",
+          "--no-wasm-opt",
+          "-mno-sign-ext",
+          "-mno-nontrapping-fptoint",
+          "-mno-bulk-memory",
+          "-fno-builtin",
+          "-ffp-contract=off",
+          "-O3",
+          "-fno-vectorize",
+          "-fno-slp-vectorize",
+          "-nostdlib",
+          "-DKIND=102",
           "-Wl,--no-entry",
           "-Wl,--export=benchmark",
           "-Wl,--export-memory",
