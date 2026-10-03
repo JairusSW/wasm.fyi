@@ -2,6 +2,7 @@
 	import '../app.css';
 	import { base } from '$app/paths';
 	import { SITE_ORIGIN, SITE_DESCRIPTION } from '$lib/site';
+	import { OG_HEIGHT, OG_WIDTH, ogFor } from '$lib/og';
 	import { browser } from '$app/environment';
 	import { afterNavigate, beforeNavigate } from '$app/navigation';
 	import { goto, replaceState } from '$lib/navigation';
@@ -17,6 +18,11 @@
 	import { onMount } from 'svelte';
 
 	let { children } = $props();
+
+	// Share-card text and image for this page (see src/lib/og.ts).
+	const og = $derived(ogFor(page.route.id, page.params, page.data));
+	// `base` is relative during SSR; resolve it against the page URL for an absolute path.
+	const ogImage = $derived(SITE_ORIGIN + new URL(base + '/og/' + og.slug + '.png', page.url).pathname);
 
 	const SCOPED = ['/benchmarks', '/bench/[...id]', '/history', '/features', '/[proposal=proposal]'];
 	const showScope = $derived(SCOPED.includes(page.route.id ?? ''));
@@ -80,6 +86,20 @@
 <svelte:head>
 	<meta name="description" content={SITE_DESCRIPTION} />
 	<link rel="canonical" href={SITE_ORIGIN + page.url.pathname} />
+	<meta property="og:type" content="website" />
+	<meta property="og:site_name" content="wasm.fyi" />
+	<meta property="og:url" content={SITE_ORIGIN + page.url.pathname} />
+	<meta property="og:title" content={og.title} />
+	<meta property="og:description" content={og.description} />
+	<meta property="og:image" content={ogImage} />
+	<meta property="og:image:type" content="image/png" />
+	<meta property="og:image:width" content={String(OG_WIDTH)} />
+	<meta property="og:image:height" content={String(OG_HEIGHT)} />
+	<meta property="og:image:alt" content={og.title} />
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:title" content={og.title} />
+	<meta name="twitter:description" content={og.description} />
+	<meta name="twitter:image" content={ogImage} />
 	<link rel="alternate" type="text/plain" title="LLM reference" href={base + '/llms.txt'} />
 	<link rel="alternate" type="text/plain" title="Expanded LLM reference" href={base + '/llms-full.txt'} />
 	<link rel="alternate" type="application/json" title="Machine-readable data" href={base + '/data/llm/index.json'} />
