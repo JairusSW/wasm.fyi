@@ -27,8 +27,18 @@ export async function prepareCorpus(settings, run, directory) {
   const output = directory || join(site, '.wasmbench/corpora', new Date().toISOString().replace(/[:.]/g, '-') + '-' + randomUUID().slice(0, 8));
   await mkdir(output, { recursive: true });
   const manifest = join(output, 'wago-suite.json');
-  process.stdout.write(run('import-wago', '--source', source, '--ids', ids.join(','), '--out', manifest));
-  let workloads = parseCorpusJSON(await readFile(manifest, 'utf8'));
+  let workloads;
+  if(corpus.buildManifest) {
+    let retained;
+    try{retained=parseCorpusJSON(await readFile(resolve(site,corpus.buildManifest),'utf8'));}
+    catch(error){if(error.code==='ENOENT')throw Error('Run just corpus-build-all to compile the complete corpus from source before collection');throw error;}
+    if(!Array.isArray(retained)||retained.length!==corpus.ids.length||new Set(retained.map(w=>w.id.split('/')[1])).size!==corpus.ids.length||corpus.ids.some(id=>!retained.some(w=>w.id.split('/')[1]===id)))throw Error('Incomplete source-built upstream corpus');
+    workloads=retained.filter(w=>ids.includes(w.id.split('/')[1]));
+    for(const w of workloads)if(digest(await readFile(w.artifact))!==w.sha256)throw Error('Source-built artifact digest mismatch: '+w.id);
+  } else {
+    process.stdout.write(run('import-wago', '--source', source, '--ids', ids.join(','), '--out', manifest));
+    workloads=parseCorpusJSON(await readFile(manifest,'utf8'));
+  }
   if (!Array.isArray(workloads) || !workloads.length || new Set(workloads.map(w => w.id)).size !== workloads.length) throw new Error('Invalid imported corpus');
   if(corpus.selection) {
     const selection=JSON.parse(await readFile(resolve(site,corpus.selection),'utf8'));

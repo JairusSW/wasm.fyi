@@ -1,6 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises';
-import { join, relative, resolve } from 'node:path';
-import { harness, site, digest } from './lib/wasmbench.mjs';
+import { join, relative } from 'node:path';
+import { harness, site } from './lib/wasmbench.mjs';
 import { prepareCorpus } from './lib/corpus.mjs';
 import { workloadCategory, algorithmCoverage } from './lib/workload-category.mjs';
 
@@ -9,16 +9,21 @@ const {settings,run}=await harness();
 const manifest=await prepareCorpus(settings,run);
 const ws=JSON.parse(await readFile(manifest));
 const groups=algorithmCoverage(ws);
-const source=resolve(site,settings.collection.wagoSource);
-const upstream=await readFile(join(source,'corpus/catalog.json'));
+const upstreamLock=JSON.parse(await readFile(join(site,'corpora/upstream/sources.json')));
+function workloadSource(w) {
+  const build=w.provenance?.rebuild;
+  if(!build)return w.original_contract?.source || w.provenance?.recipe || w.source;
+  const inputs=build.sources.map(input=>({...input,...(input.repository?{repository:input.repository.replace(/;$/, '')}:{})}));
+  return {...inputs[0],repository:inputs[0].repository || inputs[0].url,buildRecipe:build.recipe,inputs};
+}
 const catalog={schema:1,policy:'Prepared corpus inventory, not measured performance. Unsupported contracts remain visible. One representative input per algorithm; every use-case category has 6–9 distinct algorithms. Feature probes are separate and excluded from application averages.',
-  upstreamCatalogSha256:digest(upstream),upstreamBenchmarks:settings.corpus.ids.length,
+  upstreamCatalogSha256:upstreamLock.upstreamCatalogSha256,upstreamBenchmarks:settings.corpus.ids.length,
   applicationContracts:ws.length,readyContracts:ws.filter(w=>!w.unsupported_reason).length,
   categories:[...groups].sort(([a],[b])=>a.localeCompare(b)).map(([category,items])=>({category,contracts:items.length,ready:items.filter(w=>!w.unsupported_reason).length})),
   boundaries:[
     'CPU kernels represent the specified operations, not whole applications or user-visible frame rates.',
     'Graphics workloads measure CPU geometry, image processing and software rendering; WebGL/WebGPU drivers and GPU throughput are outside engine comparison.',
-    'Command workloads require declared WASI/Emscripten host contracts; missing adapters are explicit, not inferred from feature compatibility.',
+    'Command workloads require declared WASI host contracts; missing adapters are explicit, not inferred from feature compatibility.',
     'Filesystem fixtures are deterministic sandbox inputs, not disk or network throughput. Browser DOM, network latency and UI integration require host-specific end-to-end suites.',
     'Video motion estimation and audio DSP are processing kernels; this corpus does not claim complete video-codec, speech recognition or font-shaping coverage.'
   ],
@@ -26,7 +31,7 @@ const catalog={schema:1,policy:'Prepared corpus inventory, not measured performa
     kind:w.provenance?.kind || (w.original_contract?.command?'application':w.original_contract?.tags?.includes('semantic')?'library':'kernel'),
     description:w.provenance?.description || w.original_contract?.desc || w.work_unit,
     abi:w.abi,workUnit:w.work_unit,unitsPerInvocation:w.units_per_invocation,args:w.args,reset:w.reset,
-    originalContract:w.original_contract || null,oracle:w.oracle,license:w.license,source:w.original_contract?.source || w.provenance?.recipe || w.source,
+    originalContract:w.original_contract || null,oracle:w.oracle,license:w.license,source:workloadSource(w),
     status:w.unsupported_reason?'adapter-needed':'prepared',reason:w.unsupported_reason || null}))) };
 if(process.argv.includes('--check')) {
   const stored=JSON.parse(await readFile(join(site,'corpora/catalog.json')));

@@ -14,3 +14,21 @@ test('retained upstream sources and recipes match the selected inventory and dig
   }
   for(const b of lock.benchmarks)if(b.recipe)assert(lock.files.some(f=>f.path===b.recipe),b.id);
 });
+
+test('every selected upstream contract has an active source build and standalone fixtures',async()=>{
+  const lock=JSON.parse(await readFile(join(site,'corpora/upstream/sources.json')));
+  const contracts=JSON.parse(await readFile(join(site,'corpora/upstream/contracts.json')));
+  assert.equal(contracts.length,lock.benchmarks.length);
+  assert.deepEqual(contracts.map(w=>w.id.split('/')[1]).sort(),lock.benchmarks.map(b=>b.id).sort());
+  for(const b of lock.benchmarks) {
+    assert.equal(b.workflow,'source-build',b.id);
+    assert.equal(b.sourceBuild,'scripts/corpus-rebuild.mjs',b.id);
+  }
+  for(const w of contracts) {
+    assert(!w.artifact.startsWith('/')&&!w.artifact.includes('..'));
+    for(const file of Object.values(w.command?.files || {})) {
+      assert(file.path.startsWith('corpora/upstream/wago/corpus/'));
+      assert.equal(digest(await readFile(join(site,file.path))),file.sha256,w.id);
+    }
+  }
+});

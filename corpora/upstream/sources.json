@@ -3,7 +3,7 @@
   "repository": "https://github.com/wago-org/wago",
   "revision": "9f01d145d54ac7ab458b6b2f6047db90a757410a",
   "upstreamCatalogSha256": "e02b20f2ccf9db3bc4649270c8d8eeff2b29bdb6acb6ecb47fab2697cd811a9f",
-  "policy": "Selected wrappers, original WAT/Rust/AssemblyScript sources, fixtures, licenses and pinned upstream build/fetch recipes. Dependencies are fetched at the revisions in the recipes. Fetch-only release binaries are explicitly listed; these recipes do not constitute a rebuild from source.",
+  "policy": "Retained upstream wrappers, original WAT/Rust/AssemblyScript sources, fixtures and licenses. The historical recipes remain as provenance; scripts/corpus-rebuild.mjs fetches pinned source revisions and compiles every selected benchmark in an empty staging tree, then checks the retained independent contracts.",
   "benchmarks": [
     {
       "id": "ruby-buckets",
@@ -18,7 +18,9 @@
       },
       "license": "Apache-2.0 AND (BSD-2-Clause OR Ruby)",
       "recipe": null,
-      "workflow": "release-artifact-only"
+      "historicalWorkflow": "release-artifact-only",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
+      "workflow": "source-build"
     },
     {
       "id": "clang-cpp-kernels",
@@ -33,7 +35,9 @@
       },
       "license": "Apache-2.0 WITH LLVM-exception",
       "recipe": "corpus/workloads/applications/clang/build.sh",
-      "workflow": "fetch-or-transform"
+      "historicalWorkflow": "fetch-or-transform",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
+      "workflow": "source-build"
     },
     {
       "id": "lua-cli-buckets",
@@ -48,7 +52,9 @@
       },
       "license": "MIT",
       "recipe": "corpus/workloads/applications/lua/build.sh",
-      "workflow": "fetch-or-transform"
+      "historicalWorkflow": "fetch-or-transform",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
+      "workflow": "source-build"
     },
     {
       "id": "coreutils-sort",
@@ -63,7 +69,9 @@
       },
       "license": "MIT",
       "recipe": null,
-      "workflow": "release-artifact-only"
+      "historicalWorkflow": "release-artifact-only",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
+      "workflow": "source-build"
     },
     {
       "id": "coreutils-base64",
@@ -78,7 +86,9 @@
       },
       "license": "MIT",
       "recipe": null,
-      "workflow": "release-artifact-only"
+      "historicalWorkflow": "release-artifact-only",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
+      "workflow": "source-build"
     },
     {
       "id": "coreutils-wc",
@@ -93,7 +103,9 @@
       },
       "license": "MIT",
       "recipe": null,
-      "workflow": "release-artifact-only"
+      "historicalWorkflow": "release-artifact-only",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
+      "workflow": "source-build"
     },
     {
       "id": "ripgrep-source",
@@ -108,7 +120,9 @@
       },
       "license": "MIT OR Unlicense",
       "recipe": null,
-      "workflow": "release-artifact-only"
+      "historicalWorkflow": "release-artifact-only",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
+      "workflow": "source-build"
     },
     {
       "id": "yosys-counter",
@@ -123,7 +137,9 @@
       },
       "license": "ISC",
       "recipe": null,
-      "workflow": "release-artifact-only"
+      "historicalWorkflow": "release-artifact-only",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
+      "workflow": "source-build"
     },
     {
       "id": "icemulti-image",
@@ -138,7 +154,9 @@
       },
       "license": "ISC",
       "recipe": null,
-      "workflow": "release-artifact-only"
+      "historicalWorkflow": "release-artifact-only",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
+      "workflow": "source-build"
     },
     {
       "id": "icepack-pack",
@@ -153,7 +171,9 @@
       },
       "license": "ISC",
       "recipe": null,
-      "workflow": "release-artifact-only"
+      "historicalWorkflow": "release-artifact-only",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
+      "workflow": "source-build"
     },
     {
       "id": "ecppll-clock",
@@ -168,7 +188,9 @@
       },
       "license": "ISC",
       "recipe": null,
-      "workflow": "release-artifact-only"
+      "historicalWorkflow": "release-artifact-only",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
+      "workflow": "source-build"
     },
     {
       "id": "json2csv-people",
@@ -183,7 +205,9 @@
       },
       "license": "MIT",
       "recipe": null,
-      "workflow": "release-artifact-only"
+      "historicalWorkflow": "release-artifact-only",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
+      "workflow": "source-build"
     },
     {
       "id": "tree-list",
@@ -198,6 +222,8 @@
       },
       "license": "GPL-2.0-or-later",
       "recipe": "corpus/workloads/applications/tree/build.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -213,6 +239,8 @@
       },
       "license": "MIT",
       "recipe": "corpus/workloads/applications/brotli/build.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -228,6 +256,8 @@
       },
       "license": "MIT AND BSD-2-Clause",
       "recipe": "corpus/workloads/applications/jq/build.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -243,6 +273,8 @@
       },
       "license": "BSD-3-Clause",
       "recipe": "corpus/workloads/applications/age/build.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -258,6 +290,8 @@
       },
       "license": "0BSD",
       "recipe": "corpus/workloads/applications/xzdec/build.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -273,6 +307,8 @@
       },
       "license": "Public-Domain",
       "recipe": "corpus/workloads/applications/sqlite3/build.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -288,6 +324,8 @@
       },
       "license": "MIT",
       "recipe": "corpus/workloads/applications/quickjs/build.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -303,7 +341,9 @@
       },
       "license": "Apache-2.0 WITH Swift-exception",
       "recipe": "corpus/workloads/applications/swift-format/fetch.sh",
-      "workflow": "fetch-or-transform"
+      "historicalWorkflow": "fetch-or-transform",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
+      "workflow": "source-build"
     },
     {
       "id": "esbuild-minify",
@@ -318,6 +358,8 @@
       },
       "license": "MIT",
       "recipe": "corpus/workloads/applications/esbuild/build.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -326,6 +368,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/build/wat.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -334,6 +378,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/build/wat.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -342,6 +388,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/build/wat.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -350,6 +398,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/build/wat.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -358,6 +408,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/build/wat.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -366,6 +418,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/build/wat.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -374,6 +428,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/build/wat.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -382,6 +438,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/build/rust.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -390,6 +448,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/build/rust.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -398,6 +458,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/build/rust.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -406,6 +468,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/build/rust.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -414,6 +478,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/build/assemblyscript.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -422,6 +488,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/build/assemblyscript.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -430,6 +498,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/workloads/semantic/coremark/build.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -438,6 +508,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/workloads/semantic/blake3/build.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -446,6 +518,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/workloads/semantic/qoi/build.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -454,6 +528,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/workloads/semantic/lz4/build.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -462,6 +538,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/workloads/semantic/zlib/build.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -470,6 +548,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/workloads/semantic/zstd/build.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -478,6 +558,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/workloads/semantic/yyjson/build.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -486,6 +568,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/workloads/semantic/utf8proc/build.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -494,6 +578,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/workloads/semantic/xxhash/build.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -502,6 +588,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/workloads/semantic/libtommath/build.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -510,6 +598,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/workloads/semantic/nanosvg/build.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -518,6 +608,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/workloads/semantic/kissfft/build.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -526,6 +618,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/workloads/semantic/monocypher/build.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -534,6 +628,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/workloads/semantic/drwav/build.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -542,6 +638,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/workloads/semantic/fastfloat/build.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -550,6 +648,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/workloads/semantic/pcre2/build.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -558,6 +658,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/build/polybench.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -566,6 +668,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/build/polybench.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -574,6 +678,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/build/polybench.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -582,6 +688,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/build/polybench.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -590,6 +698,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/build/polybench.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -598,6 +708,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/build/polybench.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -606,6 +718,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/build/polybench.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -614,6 +728,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/build/polybench.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -622,6 +738,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/build/polybench.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -630,6 +748,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/build/polybench.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -638,6 +758,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/build/polybench.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -646,6 +768,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/build/polybench.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -654,6 +778,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/build/polybench.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     },
     {
@@ -662,6 +788,8 @@
       "source": null,
       "license": "see retained provenance",
       "recipe": "corpus/build/polybench.sh",
+      "historicalWorkflow": "source-build",
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
       "workflow": "source-build"
     }
   ],
@@ -911,6 +1039,10 @@
       "sha256": "d7d042ed25fffa14ebc0fca55ec393817bfee94ad817940310babb6560a777e3"
     },
     {
+      "path": "corpus/workloads/applications/javascript-source/inputs/source.js",
+      "sha256": "ebc5d1b1cf40ddf6fcc2cee0d8bcb01090a1e935c79ac27c8a6f4aeabf78c0ce"
+    },
+    {
       "path": "corpus/workloads/applications/jq/build.sh",
       "sha256": "36e59217332eced0432949d0b8608ea85816a6d43f5c146cd224dc3387c47533"
     },
@@ -925,6 +1057,10 @@
     {
       "path": "corpus/workloads/applications/jq/README.md",
       "sha256": "a1f079b76aa7e848271929302928ae1106803bbb13b1660a130666cd1cf7b185"
+    },
+    {
+      "path": "corpus/workloads/applications/js-runtime/inputs/program.js",
+      "sha256": "5f2ea9684e195fc3f7bcbc8be4ad8b4c2540e6b10a560365176d3ce07c2ac92d"
     },
     {
       "path": "corpus/workloads/applications/json2csv/inputs/people.ndjson",

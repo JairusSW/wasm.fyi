@@ -22,7 +22,7 @@ interface ViewData {
 	statistics:{timingSamples:number};
 	history:Record<MachineId,{
 		points:{date:string;revision:string;collectedAt?:string;status:string}[];
-		workloads:string[];versions:Record<CfgId,string[]>;
+		workloads:string[];artifactSha256:Record<string,string>;versions:Record<CfgId,string[]>;
 		cells:Record<string,(ViewCell & {role:'retrospective-revision'|'fixed-comparison-baseline'})[]>;
 	}>;
 	reports: Record<string,{runId:string;created:string;evidence:string;sha256:string;options:Record<string,unknown>;memorySource?:{id:string;note:string};codeSource?:{id:string;note:string};configurations:string[];host:string}>;

@@ -9,6 +9,10 @@ const catalog=JSON.parse(await readFile(join(source,'corpus/catalog.json')));
 const selected=catalog.benchmarks.filter(b=>settings.corpus.ids.includes(b.id));
 const directories=new Set(['corpus/sources','corpus/build','corpus/workloads/semantic/shared']);
 for(const b of selected)if(b.artifact.startsWith('workloads/semantic/')||b.artifact.startsWith('workloads/applications/'))directories.add('corpus/'+dirname(b.artifact));
+for(const b of selected)if(b.command?.preopen) {
+  const part='corpus/'+b.command.preopen;
+  if(![...directories].some(parent=>part===parent||part.startsWith(parent+'/')))directories.add(part);
+}
 const files=[];
 async function copyTree(part) {
   for(const entry of await readdir(join(source,part),{withFileTypes:true})) {
@@ -25,7 +29,7 @@ await copyFile(join(source,'LICENSE'),join(root,'LICENSE'));
 files.push({path:'LICENSE',sha256:digest(await readFile(join(root,'LICENSE')))});
 const lock={schema:1,repository:'https://github.com/wago-org/wago',revision:command('git',['rev-parse','HEAD'],{cwd:source}).toString().trim(),
   upstreamCatalogSha256:digest(await readFile(join(source,'corpus/catalog.json'))),
-  policy:'Selected wrappers, original WAT/Rust/AssemblyScript sources, fixtures, licenses and pinned upstream build/fetch recipes. Dependencies are fetched at the revisions in the recipes. Fetch-only release binaries are explicitly listed; these recipes do not constitute a rebuild from source.',
+  policy:'Retained upstream wrappers, original WAT/Rust/AssemblyScript sources, fixtures and licenses. The historical recipes remain as provenance; scripts/corpus-rebuild.mjs fetches pinned source revisions and compiles every selected benchmark in an empty staging tree, then checks the retained independent contracts.',
   benchmarks:selected.map(b=>({id:b.id,artifact:b.artifact,source:b.source || null,license:b.source?.license || 'see retained provenance',recipe:b.artifact.startsWith('workloads/semantic/')||b.artifact.startsWith('workloads/applications/')?'corpus/'+dirname(b.artifact)+'/build.sh':b.artifact.includes('/polybench/')?'corpus/build/polybench.sh':b.artifact.includes('/assemblyscript/')?'corpus/build/assemblyscript.sh':b.artifact.includes('/synthetic/')||b.id==='linked_list'?'corpus/build/wat.sh':'corpus/build/rust.sh'})),
   files:files.sort((a,b)=>a.path.localeCompare(b.path))};
 const commandBuilds=new Set(['tree-list','brotli-compress','jq-json-transform','age-keygen-public','xzdec-decompress','sqlite3-query','quickjs-script','esbuild-minify']);
@@ -34,7 +38,9 @@ for(const b of lock.benchmarks) {
     const fetch=b.recipe.replace(/build.sh$/,'fetch.sh');
     b.recipe=files.some(f=>f.path===fetch)?fetch:null;
   }
-  b.workflow=!b.recipe?'release-artifact-only':b.artifact.startsWith('workloads/applications/')&&!commandBuilds.has(b.id)?'fetch-or-transform':'source-build';
+  b.historicalWorkflow=!b.recipe?'release-artifact-only':b.artifact.startsWith('workloads/applications/')&&!commandBuilds.has(b.id)?'fetch-or-transform':'source-build';
+  b.sourceBuild='scripts/corpus-rebuild.mjs';
+  b.workflow='source-build';
 }
 await writeFile(join(site,'corpora/upstream/sources.json'),JSON.stringify(lock,null,2)+'\n');
 console.log(`Retained ${files.length} source/build/fixture/license files for ${selected.length} selected upstream benchmarks at ${relative(site,root)}`);

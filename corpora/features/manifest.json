@@ -10044,7 +10044,7 @@
     "id": "features/wasi-p2/fd-write-1/1",
     "family": "features",
     "artifact": "artifacts/wasi-p2-fd-write-1.wasm",
-    "sha256": "8d0ec868826207ca62d312082861eb9086c86a79092ab74b6d782f96e113e2e9",
+    "sha256": "1b3a899b9c57f0f334767e42258ab449e6b2a8d9c41f9250537647f8159934e7",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -10081,7 +10081,7 @@
         "source": "sources/wasi-p2-fd-write-1.wat",
         "sourceSha256": "815238a0b11188a9c1e7e5818f8d8a8d84b7edb2c76ad91d19532814e9b8e35e",
         "artifact": "artifacts/wasi-p2-fd-write-1.wasm",
-        "sha256": "8d0ec868826207ca62d312082861eb9086c86a79092ab74b6d782f96e113e2e9",
+        "sha256": "1b3a899b9c57f0f334767e42258ab449e6b2a8d9c41f9250537647f8159934e7",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -10109,7 +10109,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -10183,7 +10187,7 @@
     "id": "features/wasi-p2/stdin-read-1/1",
     "family": "features",
     "artifact": "artifacts/wasi-p2-stdin-read-1.wasm",
-    "sha256": "73718147e323f81b0acb554e68e4749d8c301e9a3147cfcd0e59fa8ca9d4453f",
+    "sha256": "0b089cdd65726ebdc6994a9e7dc295b34ca154f62f37ecc4250115e5b9104ca2",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -10221,7 +10225,7 @@
         "source": "sources/wasi-p2-stdin-read-1.wat",
         "sourceSha256": "69112553a69b4d8bea3f90a097fec71cf4faf1726228719efe42a5aa59dc2081",
         "artifact": "artifacts/wasi-p2-stdin-read-1.wasm",
-        "sha256": "73718147e323f81b0acb554e68e4749d8c301e9a3147cfcd0e59fa8ca9d4453f",
+        "sha256": "0b089cdd65726ebdc6994a9e7dc295b34ca154f62f37ecc4250115e5b9104ca2",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -10249,7 +10253,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -10322,7 +10330,7 @@
     "id": "features/wasi-p2/clock-monotonic-1/1",
     "family": "features",
     "artifact": "artifacts/wasi-p2-clock-monotonic-1.wasm",
-    "sha256": "c253ffa6c0c24d337baa5128dc6d45d931263ffc13e98dfff0fb0047adfffbfa",
+    "sha256": "eca78f8c5c8fc2202d9abcfacf9b75b9b6578e4e66454785d72bd607a4245785",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -10359,7 +10367,7 @@
         "source": "sources/wasi-p2-clock-monotonic-1.wat",
         "sourceSha256": "12388e48379ef290fc506bf48321606f63fb399e985dbf49bd24af361a0b17e3",
         "artifact": "artifacts/wasi-p2-clock-monotonic-1.wasm",
-        "sha256": "c253ffa6c0c24d337baa5128dc6d45d931263ffc13e98dfff0fb0047adfffbfa",
+        "sha256": "eca78f8c5c8fc2202d9abcfacf9b75b9b6578e4e66454785d72bd607a4245785",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -10387,7 +10395,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -10460,7 +10472,7 @@
     "id": "features/wasi-p2/random-get-1/1",
     "family": "features",
     "artifact": "artifacts/wasi-p2-random-get-1.wasm",
-    "sha256": "0d759028539ecb799665f060e867cbe7db899e5a816e6eb68de37ff6b3f02c7f",
+    "sha256": "efc1f064fcb9440b52b447dcb5f8b804b31309a945fc454a4392b729029100fa",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -10497,7 +10509,7 @@
         "source": "sources/wasi-p2-random-get-1.wat",
         "sourceSha256": "220326dec900d0d2b71e6a47c71a49cf656e290d604f3686786dea7e2113475e",
         "artifact": "artifacts/wasi-p2-random-get-1.wasm",
-        "sha256": "0d759028539ecb799665f060e867cbe7db899e5a816e6eb68de37ff6b3f02c7f",
+        "sha256": "efc1f064fcb9440b52b447dcb5f8b804b31309a945fc454a4392b729029100fa",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -10525,7 +10537,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -10599,7 +10615,7 @@
     "id": "features/wasi-p2/arguments-1/1",
     "family": "features",
     "artifact": "artifacts/wasi-p2-arguments-1.wasm",
-    "sha256": "e79d3b939b09179ad7ca158f77fd56affc0d6aff2644e18d293a3b593b2087fd",
+    "sha256": "01bac5173ee1e7c53e28028a2ac487778788e60f9bcd9de3f42e78f9c907eb36",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -10637,7 +10653,7 @@
         "source": "sources/wasi-p2-arguments-1.wat",
         "sourceSha256": "f484c519511017625086fef39222620523dc8a682eaea232ec3f7721dbeebc57",
         "artifact": "artifacts/wasi-p2-arguments-1.wasm",
-        "sha256": "e79d3b939b09179ad7ca158f77fd56affc0d6aff2644e18d293a3b593b2087fd",
+        "sha256": "01bac5173ee1e7c53e28028a2ac487778788e60f9bcd9de3f42e78f9c907eb36",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -10665,7 +10681,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -10744,7 +10764,7 @@
     "id": "features/wasi-p2/file-seek-read-1/1",
     "family": "features",
     "artifact": "artifacts/wasi-p2-file-seek-read-1.wasm",
-    "sha256": "134e0d45cb0900112ba94440aceb63478b5d128319a378f9cca14ec085db88ae",
+    "sha256": "3933f94ce701d4c80f96a74075116a6eaa9b156639d9ffd65effbaf899db9f9f",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -10787,7 +10807,7 @@
         "source": "sources/wasi-p2-file-seek-read-1.wat",
         "sourceSha256": "e3caba5c7cb1224f6a9fda3f89a0b83a6001996195a43838ed3e6d008fd85ec2",
         "artifact": "artifacts/wasi-p2-file-seek-read-1.wasm",
-        "sha256": "134e0d45cb0900112ba94440aceb63478b5d128319a378f9cca14ec085db88ae",
+        "sha256": "3933f94ce701d4c80f96a74075116a6eaa9b156639d9ffd65effbaf899db9f9f",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -10815,7 +10835,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -10888,7 +10912,7 @@
     "id": "features/wasi-p2/scatter-write-1/1",
     "family": "features",
     "artifact": "artifacts/wasi-p2-scatter-write-1.wasm",
-    "sha256": "e71d6c052e46cc49aed55b5735cc094d9481cf409edbf68db637c47b6c9bd196",
+    "sha256": "4615320718609f0b224bff17d10899c8237a6b1920446c8eaf8ae66263f8948d",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -10925,7 +10949,7 @@
         "source": "sources/wasi-p2-scatter-write-1.wat",
         "sourceSha256": "f6d83e0b2c22dde893a280a43c9b4ec47ee5059b66b542116be374cdf79c1097",
         "artifact": "artifacts/wasi-p2-scatter-write-1.wasm",
-        "sha256": "e71d6c052e46cc49aed55b5735cc094d9481cf409edbf68db637c47b6c9bd196",
+        "sha256": "4615320718609f0b224bff17d10899c8237a6b1920446c8eaf8ae66263f8948d",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -10953,7 +10977,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -11027,7 +11055,7 @@
     "id": "features/wasi-p2/stdin-eof-1/1",
     "family": "features",
     "artifact": "artifacts/wasi-p2-stdin-eof-1.wasm",
-    "sha256": "fa47e6cd942d425d5891943a5f1d72c686b6fab70ec4f2ccdc699e37c0e8efb3",
+    "sha256": "3f607264c3197aed421b491f0800c8830cd8150b7e1eca42fbafc0f78509439e",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -11065,7 +11093,7 @@
         "source": "sources/wasi-p2-stdin-eof-1.wat",
         "sourceSha256": "1a331138e229e47046dc8a3ea9f190269d9dd7d80fc15442c0b3cce9139fcd1e",
         "artifact": "artifacts/wasi-p2-stdin-eof-1.wasm",
-        "sha256": "fa47e6cd942d425d5891943a5f1d72c686b6fab70ec4f2ccdc699e37c0e8efb3",
+        "sha256": "3f607264c3197aed421b491f0800c8830cd8150b7e1eca42fbafc0f78509439e",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -11093,7 +11121,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -11166,7 +11198,7 @@
     "id": "features/wasi-p2/fd-write-64/64",
     "family": "features",
     "artifact": "artifacts/wasi-p2-fd-write-64.wasm",
-    "sha256": "3b15b96213d8bd24610231e3b5b546d69b0fba45e11021c0de725a20b177a0f7",
+    "sha256": "3a1c8b308ccd10954e7594b32e4bb14dd70eccfc88e4bf95542849ac19baaf75",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -11203,7 +11235,7 @@
         "source": "sources/wasi-p2-fd-write-64.wat",
         "sourceSha256": "7e2b64567bf1af4fc6b49414a19cfe633f9bf8b2aad292f23ea8ce9257afe996",
         "artifact": "artifacts/wasi-p2-fd-write-64.wasm",
-        "sha256": "3b15b96213d8bd24610231e3b5b546d69b0fba45e11021c0de725a20b177a0f7",
+        "sha256": "3a1c8b308ccd10954e7594b32e4bb14dd70eccfc88e4bf95542849ac19baaf75",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -11231,7 +11263,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -11305,7 +11341,7 @@
     "id": "features/wasi-p2/stdin-read-64/64",
     "family": "features",
     "artifact": "artifacts/wasi-p2-stdin-read-64.wasm",
-    "sha256": "0eb8be669ab7f9ffed61baeeac0660000a565884271504d3ec6b4577b90c0a1f",
+    "sha256": "e40fe1fb3f7ebf507efe6213ca6cea4bd56247b23607ddc282cd9920eae13725",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -11343,7 +11379,7 @@
         "source": "sources/wasi-p2-stdin-read-64.wat",
         "sourceSha256": "3bffa80f7ad7ca90d5a3d17fbc90f8db75dfba5ce780d6463516d41e56f9f70c",
         "artifact": "artifacts/wasi-p2-stdin-read-64.wasm",
-        "sha256": "0eb8be669ab7f9ffed61baeeac0660000a565884271504d3ec6b4577b90c0a1f",
+        "sha256": "e40fe1fb3f7ebf507efe6213ca6cea4bd56247b23607ddc282cd9920eae13725",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -11371,7 +11407,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -11444,7 +11484,7 @@
     "id": "features/wasi-p2/clock-monotonic-64/64",
     "family": "features",
     "artifact": "artifacts/wasi-p2-clock-monotonic-64.wasm",
-    "sha256": "e47bda0921e7220e12d914613d813f0359a9f30185914720c4d6b4eca85e779a",
+    "sha256": "1dd16b7aebe91f182d03870a3683318bd3148d24888eede78b7633bb90ad2aa4",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -11481,7 +11521,7 @@
         "source": "sources/wasi-p2-clock-monotonic-64.wat",
         "sourceSha256": "641978265ccbfd6085cb445a717254931201b2b0158ac136fc6a4ad48bce4866",
         "artifact": "artifacts/wasi-p2-clock-monotonic-64.wasm",
-        "sha256": "e47bda0921e7220e12d914613d813f0359a9f30185914720c4d6b4eca85e779a",
+        "sha256": "1dd16b7aebe91f182d03870a3683318bd3148d24888eede78b7633bb90ad2aa4",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -11509,7 +11549,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -11582,7 +11626,7 @@
     "id": "features/wasi-p2/random-get-64/64",
     "family": "features",
     "artifact": "artifacts/wasi-p2-random-get-64.wasm",
-    "sha256": "57570b136767d2c1b5ba01dc923e554223d0adf44708b0cdc2fff6225a22ea70",
+    "sha256": "b213f00266db649d629313ea625be4108405b9642bd3c65128da35db1aa661f4",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -11619,7 +11663,7 @@
         "source": "sources/wasi-p2-random-get-64.wat",
         "sourceSha256": "2834ca948f44f2011558bec3b96662379c4b2e46aa06a5f1e5b92961327e1847",
         "artifact": "artifacts/wasi-p2-random-get-64.wasm",
-        "sha256": "57570b136767d2c1b5ba01dc923e554223d0adf44708b0cdc2fff6225a22ea70",
+        "sha256": "b213f00266db649d629313ea625be4108405b9642bd3c65128da35db1aa661f4",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -11647,7 +11691,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -11721,7 +11769,7 @@
     "id": "features/wasi-p2/arguments-64/64",
     "family": "features",
     "artifact": "artifacts/wasi-p2-arguments-64.wasm",
-    "sha256": "0ce6aea59f98ba4c38119b489bb7028decd9d7f4533300d0e546fa6628788c7b",
+    "sha256": "7c660afe3efd275d858c10dd912b7034a8cc6f51e0ae24506165cf509bc488f2",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -11759,7 +11807,7 @@
         "source": "sources/wasi-p2-arguments-64.wat",
         "sourceSha256": "fa81886f31556c43a2162428e0561d01d6b0b595f7244a8069ab7df04adc392b",
         "artifact": "artifacts/wasi-p2-arguments-64.wasm",
-        "sha256": "0ce6aea59f98ba4c38119b489bb7028decd9d7f4533300d0e546fa6628788c7b",
+        "sha256": "7c660afe3efd275d858c10dd912b7034a8cc6f51e0ae24506165cf509bc488f2",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -11787,7 +11835,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -11866,7 +11918,7 @@
     "id": "features/wasi-p2/file-seek-read-64/64",
     "family": "features",
     "artifact": "artifacts/wasi-p2-file-seek-read-64.wasm",
-    "sha256": "736c34496787839c27e8177e1b036ed0fca366977a9b58c892567b444c74a196",
+    "sha256": "97d2aa8c05f788c70a58f079a1229d65f3221a9c636b3a4d2994e6336d0ed72e",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -11909,7 +11961,7 @@
         "source": "sources/wasi-p2-file-seek-read-64.wat",
         "sourceSha256": "b185cdc22bde148fbe5e3be29c5fa8b4f59c06ee177246c78be3b8b58d01fbc7",
         "artifact": "artifacts/wasi-p2-file-seek-read-64.wasm",
-        "sha256": "736c34496787839c27e8177e1b036ed0fca366977a9b58c892567b444c74a196",
+        "sha256": "97d2aa8c05f788c70a58f079a1229d65f3221a9c636b3a4d2994e6336d0ed72e",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -11937,7 +11989,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -12010,7 +12066,7 @@
     "id": "features/wasi-p2/scatter-write-64/64",
     "family": "features",
     "artifact": "artifacts/wasi-p2-scatter-write-64.wasm",
-    "sha256": "63b2cf8e42b0afe48367cde5430492e4f25a44fb53c7f3bef0c6c3bb5287ac3c",
+    "sha256": "3407ede3d87a2f6bf73d9e0dfbb141df06dec6d4b9572c21b24a3fa8663129a7",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -12047,7 +12103,7 @@
         "source": "sources/wasi-p2-scatter-write-64.wat",
         "sourceSha256": "8698b3c7b50821a7d6a0d19f570b3d4206b2de6d096e45f0483a407a5cb8ea13",
         "artifact": "artifacts/wasi-p2-scatter-write-64.wasm",
-        "sha256": "63b2cf8e42b0afe48367cde5430492e4f25a44fb53c7f3bef0c6c3bb5287ac3c",
+        "sha256": "3407ede3d87a2f6bf73d9e0dfbb141df06dec6d4b9572c21b24a3fa8663129a7",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -12075,7 +12131,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -12149,7 +12209,7 @@
     "id": "features/wasi-p2/stdin-eof-64/64",
     "family": "features",
     "artifact": "artifacts/wasi-p2-stdin-eof-64.wasm",
-    "sha256": "19ccde4e6b96545360f62b934ee07fdaefcf84b74a422a9ce3399306df37bc71",
+    "sha256": "6df653f5c0c872ef896a63638afc3868b3c1f644731648b3c68de2c0c7de7eb4",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -12187,7 +12247,7 @@
         "source": "sources/wasi-p2-stdin-eof-64.wat",
         "sourceSha256": "630896af7d009874c7c881450512744a7573aa2909283898eacbc71e431ee5c4",
         "artifact": "artifacts/wasi-p2-stdin-eof-64.wasm",
-        "sha256": "19ccde4e6b96545360f62b934ee07fdaefcf84b74a422a9ce3399306df37bc71",
+        "sha256": "6df653f5c0c872ef896a63638afc3868b3c1f644731648b3c68de2c0c7de7eb4",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -12215,7 +12275,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -12288,7 +12352,7 @@
     "id": "features/wasi-p2/fd-write-4096/4096",
     "family": "features",
     "artifact": "artifacts/wasi-p2-fd-write-4096.wasm",
-    "sha256": "53f50e1c56268f378e5f029d3cf532e5a4cdc914b8b2a618c5ab089bc26c9102",
+    "sha256": "fc221afc67b6d6a2d205e44bcb37242e9bcd184b37f87e732f1a076e1dd78a08",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -12325,7 +12389,7 @@
         "source": "sources/wasi-p2-fd-write-4096.wat",
         "sourceSha256": "5a24573dccc21840bcba6c26b2b2b803e0a602d472d357a64498859a51ce71bb",
         "artifact": "artifacts/wasi-p2-fd-write-4096.wasm",
-        "sha256": "53f50e1c56268f378e5f029d3cf532e5a4cdc914b8b2a618c5ab089bc26c9102",
+        "sha256": "fc221afc67b6d6a2d205e44bcb37242e9bcd184b37f87e732f1a076e1dd78a08",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -12353,7 +12417,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -12427,7 +12495,7 @@
     "id": "features/wasi-p2/stdin-read-4096/4096",
     "family": "features",
     "artifact": "artifacts/wasi-p2-stdin-read-4096.wasm",
-    "sha256": "3e14cc58ffcdbd472c334ccf1e2d2444b88f51ae26250686b975739d719b72fc",
+    "sha256": "431eac37a043e93279a7b446a1354fcb18394419e23706031a28464a8c04b4fa",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -12465,7 +12533,7 @@
         "source": "sources/wasi-p2-stdin-read-4096.wat",
         "sourceSha256": "64525bee51f024b7432f1c75c836fc96188b9ded39f3c6702d1863fc16535112",
         "artifact": "artifacts/wasi-p2-stdin-read-4096.wasm",
-        "sha256": "3e14cc58ffcdbd472c334ccf1e2d2444b88f51ae26250686b975739d719b72fc",
+        "sha256": "431eac37a043e93279a7b446a1354fcb18394419e23706031a28464a8c04b4fa",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -12493,7 +12561,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -12566,7 +12638,7 @@
     "id": "features/wasi-p2/clock-monotonic-4096/4096",
     "family": "features",
     "artifact": "artifacts/wasi-p2-clock-monotonic-4096.wasm",
-    "sha256": "79e794df6155ca9b8d9194cfad8f6a4a460e3bbb326b0f7c3ae40a5550bb57cd",
+    "sha256": "911491c60cd72fddbe4b58d5334e7d8339b760bbf86ba6f1e79ee8e8bdbf570b",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -12603,7 +12675,7 @@
         "source": "sources/wasi-p2-clock-monotonic-4096.wat",
         "sourceSha256": "11f54240af9c54c248ea937d413d3aaccf8bc1926e560f94739394c9a4c57e8f",
         "artifact": "artifacts/wasi-p2-clock-monotonic-4096.wasm",
-        "sha256": "79e794df6155ca9b8d9194cfad8f6a4a460e3bbb326b0f7c3ae40a5550bb57cd",
+        "sha256": "911491c60cd72fddbe4b58d5334e7d8339b760bbf86ba6f1e79ee8e8bdbf570b",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -12631,7 +12703,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -12704,7 +12780,7 @@
     "id": "features/wasi-p2/random-get-4096/4096",
     "family": "features",
     "artifact": "artifacts/wasi-p2-random-get-4096.wasm",
-    "sha256": "265feb17cb80f7ac55b47565ba559285ea6845b9a42b544ec614dc35619230f9",
+    "sha256": "3116fb3b842a2493f9f2c85090480f33019415c8411549d6f5b227cad840a46e",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -12741,7 +12817,7 @@
         "source": "sources/wasi-p2-random-get-4096.wat",
         "sourceSha256": "0e17404e18ca12ee0323692c0c836ca08d59d7bed8483659a0a13f69c9c3a10f",
         "artifact": "artifacts/wasi-p2-random-get-4096.wasm",
-        "sha256": "265feb17cb80f7ac55b47565ba559285ea6845b9a42b544ec614dc35619230f9",
+        "sha256": "3116fb3b842a2493f9f2c85090480f33019415c8411549d6f5b227cad840a46e",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -12769,7 +12845,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -12843,7 +12923,7 @@
     "id": "features/wasi-p2/arguments-4096/4096",
     "family": "features",
     "artifact": "artifacts/wasi-p2-arguments-4096.wasm",
-    "sha256": "c0d23c509156746b6b92a5897f3e2154384ec055adf9cf3ebba62fd42f623e6d",
+    "sha256": "f0b3ece7605b810c72761e274b8449f5185e3292ab73518517ae6d393bd0d63c",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -12881,7 +12961,7 @@
         "source": "sources/wasi-p2-arguments-4096.wat",
         "sourceSha256": "cf8d465801d4195a341e58fddc59b133232276f41c56f4c8f057a570a691b337",
         "artifact": "artifacts/wasi-p2-arguments-4096.wasm",
-        "sha256": "c0d23c509156746b6b92a5897f3e2154384ec055adf9cf3ebba62fd42f623e6d",
+        "sha256": "f0b3ece7605b810c72761e274b8449f5185e3292ab73518517ae6d393bd0d63c",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -12909,7 +12989,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -12988,7 +13072,7 @@
     "id": "features/wasi-p2/file-seek-read-4096/4096",
     "family": "features",
     "artifact": "artifacts/wasi-p2-file-seek-read-4096.wasm",
-    "sha256": "66df85efab0255e9989ded42fe75d9370b25a90c2bced56dcfccbe3907ea4599",
+    "sha256": "f30878787074a4e8595bea718bdcdfebedbe1574a977ead71d06a6d55ddc6cde",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -13031,7 +13115,7 @@
         "source": "sources/wasi-p2-file-seek-read-4096.wat",
         "sourceSha256": "1f3093324481e2eb9557fbf98edadaa2889fb7c04499702698b551c1cf5ccf69",
         "artifact": "artifacts/wasi-p2-file-seek-read-4096.wasm",
-        "sha256": "66df85efab0255e9989ded42fe75d9370b25a90c2bced56dcfccbe3907ea4599",
+        "sha256": "f30878787074a4e8595bea718bdcdfebedbe1574a977ead71d06a6d55ddc6cde",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -13059,7 +13143,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -13132,7 +13220,7 @@
     "id": "features/wasi-p2/scatter-write-4096/4096",
     "family": "features",
     "artifact": "artifacts/wasi-p2-scatter-write-4096.wasm",
-    "sha256": "1426346578dd17d2d426495f7a3877c53e044a4049a89bae2935282ab8038329",
+    "sha256": "b99a03712ba674d16eb2151ac71c29ba18dab5baa0361448080a3d472a4e2172",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -13169,7 +13257,7 @@
         "source": "sources/wasi-p2-scatter-write-4096.wat",
         "sourceSha256": "a849c18d72a2790d0fee8cd1d1614cb1f787ea08455e6cf3ee380a2cdad09b07",
         "artifact": "artifacts/wasi-p2-scatter-write-4096.wasm",
-        "sha256": "1426346578dd17d2d426495f7a3877c53e044a4049a89bae2935282ab8038329",
+        "sha256": "b99a03712ba674d16eb2151ac71c29ba18dab5baa0361448080a3d472a4e2172",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -13197,7 +13285,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },
@@ -13271,7 +13363,7 @@
     "id": "features/wasi-p2/stdin-eof-4096/4096",
     "family": "features",
     "artifact": "artifacts/wasi-p2-stdin-eof-4096.wasm",
-    "sha256": "27b901bf7137dfb11d4ad3e22e7d9cd35397162b9a0b7aa3ddf69dad029b5335",
+    "sha256": "73b10aa5624e6f96db72948c43878fc6edf6fe3a5c83f8aeb0d3dd5a12c4b46e",
     "abi": "component",
     "features": [
       "wasi-p2"
@@ -13309,7 +13401,7 @@
         "source": "sources/wasi-p2-stdin-eof-4096.wat",
         "sourceSha256": "3071797bf04e4417ecb4a9fdaefb24dec55f9e3265f737dac0ee800ec1205bdd",
         "artifact": "artifacts/wasi-p2-stdin-eof-4096.wasm",
-        "sha256": "27b901bf7137dfb11d4ad3e22e7d9cd35397162b9a0b7aa3ddf69dad029b5335",
+        "sha256": "73b10aa5624e6f96db72948c43878fc6edf6fe3a5c83f8aeb0d3dd5a12c4b46e",
         "compiler": "wasm-tools 1.260.0",
         "argv": [
           [
@@ -13337,7 +13429,11 @@
         "adapter": {
           "repository": "bytecodealliance/wasmtime",
           "version": "46.0.1",
-          "sha256": "6a13fa0ed7af65de3468fd6172abcfe6bb74e0b7f3bd0ef06e72f51ee32bc2a2",
+          "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+          "rust": "1.98.1",
+          "recipe": "scripts/feature-adapter-source.mjs",
+          "recipeSha256": "6fcb936c86fb80b97e4248ab184b5860a967e3fa7c180b1f8a4534801ccce62b",
+          "sha256": "3d8e5be5a162ef5e004b52587e5ecaba4e8b92691f53f97e4bea957ef2c5efe8",
           "license": "Apache-2.0 WITH LLVM-exception"
         }
       },

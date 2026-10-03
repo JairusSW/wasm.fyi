@@ -141,8 +141,14 @@ corpus-prepare:
 corpus-check:
     node scripts/bench.mjs corpus-check
 
-# Compile Wago WAT sources into an isolated corpus with compiler/input/output digests.
-corpus-build:
+# Build every application, library, kernel and feature artifact from source.
+corpus-build: corpus-build-all
+
+corpus-build-all:
+    node scripts/corpus-build-all.mjs
+
+# Rebuild only the retained WAT subset.
+corpus-wat-build:
     node scripts/corpus-source.mjs
 
 # Build from source and verify each rebuilt contract across selected runtimes.

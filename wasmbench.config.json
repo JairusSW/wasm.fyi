@@ -126,7 +126,8 @@
       "pcre2"
     ],
     "applications": "corpora/applications/manifest.json",
-    "selection": "corpora/selection.json"
+    "selection": "corpora/selection.json",
+    "buildManifest": ".wasmbench/upstream/manifest.json"
   },
   "node": {
     "version": "26.4.0",

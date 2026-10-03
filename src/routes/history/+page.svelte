@@ -336,7 +336,7 @@ import { historyCell, historyChange, historySegments } from '$lib/history-values
 			</button>
 		{/each}
 	</div>
-	<div class="note">Revision markers identify retrospectively measured Wago source. Comparison engines use a fixed baseline, not reconstructed historical releases.</div>
+	<div class="note">Revision markers identify retrospectively measured Wago source. Comparison engines use a fixed baseline, not reconstructed historical releases. The corpus is frozen; current source rebuilds do not change these measurements.</div>
 </div>
 
 <div class="panel report">

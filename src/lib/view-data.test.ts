@@ -5,6 +5,8 @@ import { benchVal, type Scope } from './model';
 import { viewCell, viewData } from './view-data';
 import { CFG } from './data/runtimes';
 
+import preparedFeatures from '../../corpora/features/manifest.json';
+import preparedApplications from '../../corpora/catalog.json';
 const scope:Scope={machine:'m1',baseline:'A',hide:{},weighting:'corpus'};
 describe('existing workload views consume measured evidence',()=>{
 	it('groups applications by operation and places every feature group last',()=>{
@@ -40,7 +42,9 @@ describe('existing workload views consume measured evidence',()=>{
     }
   });
 	it('uses exact workload identifiers and independent artifact digests',()=>{
-		expect(ALLB).toHaveLength(389);
+		expect(ALLB).toHaveLength(preparedApplications.workloads.length+preparedFeatures.length);
+        const prepared=new Map([...preparedApplications.workloads.map(w=>[w.contractId,w.sha256] as const),...preparedFeatures.map(w=>[w.id,w.sha256] as const)]);
+        for(const w of ALLB)expect(w.artifactSha256).toBe(prepared.get(w.id));
 		expect(new Set(ALLB.map(b=>b.id)).size).toBe(ALLB.length);
 		for(const b of ALLB)expect(b.artifactSha256).toMatch(/^[a-f0-9]{64}$/);
 		expect(ALLB.some(b=>b.id==='sqlite-speedtest1')).toBe(false);
@@ -66,9 +70,29 @@ describe('existing workload views consume measured evidence',()=>{
 		expect(benchVal({...scope,machine},b,'C','steady')).toEqual({st:'ok',v:cell.v});
 	});
 	it('preserves explicit unsupported and unavailable cells without old-success fallback',()=>{
-		const b=ALLB.find(b=>b.id==='wago/json-as-simd/serializeN')!;
+		const b=ALLB.find(b=>b.id==='features/simd/i32x4-add-multiply/64')!;
 		expect(benchVal(scope,b,'D','steady')).toEqual({st:'unsupported'});
 		expect(benchVal({...scope,snapshot:'s2'},b,'D','steady')).toEqual({st:viewCell('m1','s2',b.id,'D','steady').st});
 		expect(benchVal(scope,{...b,id:'uncollected/input'},'A','steady')).toEqual({st:'nm'});
 	});
+});
+
+
+it('history retains frozen artifact identities when the current corpus is rebuilt',async()=>{
+  const root=new URL('../../data/history/',import.meta.url);
+  const weekly=JSON.parse(await readFile(new URL('weekly.json',root),'utf8'));
+  const index=JSON.parse(await readFile(new URL('index.json',root),'utf8'));
+  const entry=index.reports.find((r:{id:string})=>r.id===weekly.baseline.report);
+  const baseline=JSON.parse(await readFile(new URL(entry.projection,root),'utf8'));
+  for(const id of viewData.history.m2.workloads)
+    expect(viewData.history.m2.artifactSha256[id]).toBe(baseline.workloads.find((w:{id:string})=>w.id===id).sha256);
+  const id='wago/nbody/step';
+  expect(viewData.history.m2.artifactSha256[id]).not.toBe(ALLB.find(w=>w.id===id)?.artifactSha256);
+});
+
+
+it('rebuilt source workloads await fresh measurements',()=>{
+  const b=ALLB.find(b=>b.id==='wago/json-as-simd/serializeN')!;
+  expect(benchVal(scope,b,'D','steady')).toEqual({st:'nm'});
+  expect(b.ms).toBeNull();
 });

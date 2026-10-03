@@ -1,6 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { featureCandidates, featureSupport, featureCasePassed } from './lib/feature-support.mjs';
+import { featureCandidates, featureSupport, featureCasePassed, matchesCurrentFeature } from './lib/feature-support.mjs';
 import { validateV8Description } from './lib/v8-preflight.mjs';
 import { digest, site, config } from './lib/wasmbench.mjs';
 import { validateData } from './lib/validate-data.mjs';
@@ -31,9 +31,12 @@ const memoryScenarios={rss:'steady',rssCompile:'compile',rssInst:'instantiate',r
 const prepared=JSON.parse(await readFile(join(site,'corpora/catalog.json')));
 if(prepared.schema!==1)throw Error('Unknown prepared corpus schema');
 const preparedById=new Map(prepared.workloads.map(w=>[w.contractId,w]));
+const featuresRoot=join(site,'corpora/features');
+const preparedFeatures=JSON.parse(await readFile(join(featuresRoot,'manifest.json')));
+const featuresById=new Map(preparedFeatures.map(w=>[w.id,w]));
 const catalogue = new Map();
 for (const report of reports) for (const w of report.workloads) {
-  if (!/^(wago|features|applications)\//.test(w.id) || w.id.startsWith('features/stack-switching/') || catalogue.has(w.id) || (!w.id.startsWith('features/') && preparedById.get(w.id)?.sha256!==w.sha256)) continue;
+  if (!/^(wago|features|applications)\//.test(w.id) || w.id.startsWith('features/stack-switching/') || catalogue.has(w.id) || (w.id.startsWith('features/') ? !matchesCurrentFeature(w,featuresById) : preparedById.get(w.id)?.sha256!==w.sha256)) continue;
   const structure = report.artifactStructures?.find(a=>a.sha256===w.sha256);
   if(!structure || !Number.isSafeInteger(structure.bytes) || structure.bytes < 8)throw new Error('Missing measured artifact size: '+w.id);
   const baselineReport=reports.find(r=>r.runtimes.some(c=>c.id==='wasmtime') && r.workloads.some(item=>item.id===w.id && item.sha256===w.sha256));
@@ -57,6 +60,19 @@ for(const w of prepared.workloads) {
     group:w.category,purpose:`${w.description} · ${w.status==='adapter-needed'?'adapter needed: '+w.reason:'prepared corpus; awaiting measurements'}`,
     input:JSON.stringify(w.args||[]),src:typeof w.source==='string'?w.source:w.source?.repository||w.source?.source||'corpora/catalog.json',
     unitsPerInvocation:w.unitsPerInvocation,workUnit:w.workUnit,abi:w.abi,reset:w.reset,oracle:w.oracle
+  });
+}
+// Changed feature probes are discoverable without inheriting old results.
+for(const w of preparedFeatures) {
+  if(catalogue.has(w.id))continue;
+  const bytes=await readFile(join(featuresRoot,w.artifact));
+  if(digest(bytes)!==w.sha256)throw Error('Changed prepared feature '+w.id);
+  catalogue.set(w.id,{
+    id:w.id,artifactSha256:w.sha256,evidenceScope:w.provenance.scope,baseline:!!w.provenance.baseline,
+    tags:w.features,kb:bytes.length/1024,ms:null,group:workloadCategory(w),
+    purpose:`${w.provenance.scope} · prepared feature probe; awaiting measurements`,
+    input:JSON.stringify(w.args || []),src:`corpora/features/${w.source}`,
+    unitsPerInvocation:w.units_per_invocation,workUnit:w.work_unit,abi:w.abi,reset:w.reset,oracle:w.oracle
   });
 }
 const reasons=new Map();
@@ -143,13 +159,14 @@ for(const [machine,name] of [['m1','history-hub'],['m2','history']]) {
   }
   const baseline=snapshots.find(s=>s.id===weekly.baseline.report);
   if(!baseline)throw new Error('Missing fixed history baseline');
-  const history={points:weekly.results.map(w=>({date:w.targetWeek.slice(0,10),revision:w.revision,collectedAt:w.collectedAt,status:w.status})),workloads:baseline.workloads.filter(w=>catalogue.has(w.id)).map(w=>w.id),cells:{},versions:{}};
+  const history={points:weekly.results.map(w=>({date:w.targetWeek.slice(0,10),revision:w.revision,collectedAt:w.collectedAt,status:w.status})),workloads:baseline.workloads.filter(w=>catalogue.has(w.id)).map(w=>w.id),artifactSha256:Object.fromEntries(baseline.workloads.filter(w=>catalogue.has(w.id)).map(w=>[w.id,w.sha256])),cells:{},versions:{}};
   output.history[machine]=history;
   for(const [slot,runtime] of Object.entries(configurations)) {
     const description=baseline.runtimes.find(c=>c.id===runtime)?.description;
     history.versions[slot]=weekly.results.map(w=>slot==='G'?w.revision:description?.runtime_version || 'not collected');
     for(const w of baseline.workloads) {
-      const canonical=catalogue.get(w.id);if(!canonical)continue;if(canonical.artifactSha256!==w.sha256)throw new Error('Historical corpus differs from current contract: '+w.id);
+      // History owns its frozen artifact identity, independently of new source builds.
+      if(!catalogue.has(w.id))continue;
       for(const [metric,scenario] of Object.entries({...scenarios,rss:'steady',code:'compile'})) {
         history.cells[`${w.id}|${slot}|${metric}`]=measuredHistory(weekly,snapshots,baseline.host,runtime,w.id,w.sha256,scenario).map((point,i)=>{
           const report=runtime==='wago'?snapshots.find(s=>s.runId===weekly.results[i].runId):baseline;

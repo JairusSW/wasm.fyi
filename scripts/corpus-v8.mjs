@@ -27,8 +27,10 @@ for(const w of manifest) {
 }
 // Optionally check the exact prepared upstream selection as well.
 if(process.argv[2]!=='--local') {
-  const h=await harness();
-  const path=process.argv[2]?resolve(process.argv[2]):await prepareCorpus(h.settings,h.run);
+  let path;
+  if(process.argv[2]==='--from-source')path=resolve(site,settings.corpus.buildManifest);
+  else if(process.argv[2])path=resolve(process.argv[2]);
+  else {const h=await harness();path=await prepareCorpus(h.settings,h.run);}
   const imported=JSON.parse(await readFile(path));
   workloads.push(...imported.filter(w=>!workloads.some(existing=>existing.id===w.id)).map(w=>({...w,artifact:resolve(dirname(path),w.artifact)})));
 }
