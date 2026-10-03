@@ -3,11 +3,13 @@
 	import { goto } from '$lib/navigation';
 	import { page } from '$app/state';
 	import { ui } from '$lib/state.svelte';
+	import { studio } from '$lib/studio/store.svelte';
 
 	const NAV = [
 		['/benchmarks', 'Benchmarks', ['/benchmarks', '/bench/[...id]', '/compare']],
 		['/history', 'History', ['/history']],
-		['/features', 'Features', ['/features', '/[proposal=proposal]']]
+		['/features', 'Features', ['/features', '/[proposal=proposal]']],
+		['/studio', 'Studio', ['/studio']]
 	] as const;
 
 	const active = (routes: readonly string[]) => routes.includes(page.route.id ?? '');
@@ -47,6 +49,9 @@
 			aria-label="Search workloads"
 		/>
 		<span class="synthetic mono">MEASURED DATA</span>
+		<button class="btn-small custom" aria-pressed={studio.editing} onclick={() => (studio.editing = !studio.editing)} data-tip={'Rearrange, resize and add blocks to this page (E)\nCommand palette: ⌘K'}>
+			{studio.editing ? 'Done' : 'Customize'}
+		</button>
 		<a class="btn-small github" href="https://github.com/JairusSW/wasm.fyi" aria-label="wasm.fyi on GitHub">
 			<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="currentColor"
 				><path
@@ -106,6 +111,10 @@
 		width: 200px;
 		max-width: 100%;
 		font-size: 12px;
+	}
+	.custom[aria-pressed='true'] {
+		border-color: var(--focus);
+		color: var(--fg);
 	}
 	.github {
 		display: inline-flex;

@@ -112,7 +112,8 @@ const FIELDS = {
 	kernel: { codec: str('kernel', 'arithmetic/1'), routes: ['/[proposal=proposal]'] },
 	xWork: { codec: str('work', 'wago/tiny/add', ['wago/tiny/add', 'wago/zlib/inflate']), routes: ['/compare'] },
 	xReuse: { codec: str('reuse', 'single', ['single', 'shared', 'cached'] as const), routes: ['/compare'] },
-	xLog: { codec: num('n', 2, 0, 6), routes: ['/compare'] }
+	xLog: { codec: num('n', 2, 0, 6), routes: ['/compare'] },
+	dash: { codec: str('d', 'main'), routes: ['/studio'] }
 } satisfies Record<string, { codec: Codec<any>; routes: '*' | string[] }>;
 
 type Fields = typeof FIELDS;
@@ -165,6 +166,9 @@ class UiState {
 	xWork = $state('wago/tiny/add');
 	xReuse = $state<'single' | 'shared' | 'cached'>('single');
 	xLog = $state(2);
+
+	// studio
+	dash = $state('main');
 
 	scope: Scope = $derived({ machine: this.machine, baseline: this.baseline, weighting: this.weighting, hide: this.hide, snapshot:this.snap });
 

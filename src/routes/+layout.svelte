@@ -15,6 +15,11 @@
 	import { PROPOSAL_IDS } from '$lib/links';
 	import { ui } from '$lib/state.svelte';
 	import { onMount } from 'svelte';
+	import CommandPalette from '$lib/studio/CommandPalette.svelte';
+	import Library from '$lib/studio/Library.svelte';
+	import Settings from '$lib/studio/Settings.svelte';
+	import Toolbar from '$lib/studio/Toolbar.svelte';
+	import { studio } from '$lib/studio/store.svelte';
 
 	let { children } = $props();
 
@@ -60,8 +65,25 @@
 
 	function onkeydown(e: KeyboardEvent) {
 		const tag = (e.target as HTMLElement | null)?.tagName;
-		const typing = tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA';
-		if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
+		const typing = tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' || (e.target as HTMLElement | null)?.isContentEditable;
+		const mod = e.metaKey || e.ctrlKey;
+		// Studio shortcuts: ⌘K palette, E edit mode, ⌘Z / ⇧⌘Z layout undo/redo while editing.
+		if (mod && e.key.toLowerCase() === 'k') {
+			e.preventDefault();
+			studio.palette = !studio.palette;
+			return;
+		}
+		if (mod && e.key.toLowerCase() === 'z' && studio.editing && !typing) {
+			e.preventDefault();
+			if (e.shiftKey) studio.redo(studio.current);
+			else studio.undo(studio.current);
+			return;
+		}
+		if (typing || mod || e.altKey) return;
+		if (e.key === 'e' && !studio.palette && !studio.library) {
+			studio.editing = !studio.editing;
+			return;
+		}
 		if (e.key === '/') {
 			const el = document.getElementById('gsearch');
 			if (el) {
@@ -91,6 +113,7 @@
 <a class="skip-link" href="#main-content">Skip to content</a>
 <div class="frame">
 	<Header />
+	<Toolbar />
 	{#if showScope}<ScopeBar />{/if}
 	<main id="main-content" tabindex="-1">
 		{@render children()}
@@ -98,6 +121,9 @@
 	<Footer />
 </div>
 <Drawer />
+<Settings />
+<Library />
+<CommandPalette />
 <Tooltip />
 
 <style>

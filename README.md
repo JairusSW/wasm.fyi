@@ -78,3 +78,19 @@ See [machine-readable access](docs/llm-access.md) for the data contract, provena
 URL/base-path behavior, and validation commands.
 
 The [application corpus](docs/corpora.md) covers 27 workload categories with pinned application/library artifacts and original kernels at multiple sizes. Use `just applications-check` and `just corpus-audit` before manual overnight collection.
+
+## Studio: modular, customizable pages
+
+Every page is a layout of **blocks** on a 12-column grid (`src/lib/studio/`). Outside edit mode a page looks exactly as designed; press **Customize** in the header (or **E**) to edit it.
+
+- **Rearrange and resize:** drag a block by its ⠿ handle; drag its right edge to snap its width to grid columns. With the handle focused, arrow keys move it, `[` `]` resize it, Enter opens settings, D duplicates, H hides and Delete removes. ⌘Z / ⇧⌘Z undo and redo.
+- **Add blocks** from the library: page sections (hero, leaders, matrix, workloads…), notes (a safe Markdown subset), headings, spacers, and **charts**.
+- **Charts** are built from the measured view: ranked bars, grouped columns, heatmaps, strip plots, scatter, history lines, tables and single stats. Pick a metric or write a **derived metric** such as `compile + inst + first + 999 * steady` (a small, safe expression language in `expr.ts`; no `eval`). Missing inputs stay missing; aggregates use a shared workload set and say so when they can't. Charts export as CSV, SVG, PNG or a chart definition.
+- **Presets** rearrange a whole page for a question (startup, throughput, memory…).
+- **Dashboards** at `/studio` are free-form pages you create, rename and fill.
+- **Share** copies a link that carries the layout in the URL fragment (deflate + base64url); recipients preview it and can keep or discard it. Layouts can also be exported/imported as JSON.
+- **⌘K** opens a command palette: go to pages, dashboards and workloads, add charts, apply presets, switch machine or theme.
+
+Customizations are stored in `localStorage` (`wasmfyi:studio:v1`) as overrides on top of the default layouts in `registry.ts`, so the shipped design can evolve without breaking saved layouts; unknown blocks are dropped and configs repaired on load (`sanitize`).
+
+To add a block: create a component taking `BlockProps`, then register it in `BLOCKS` (`registry.ts`) with defaults, a default width and an optional settings schema — the settings panel is generated from it.
