@@ -12,9 +12,11 @@ export type BlockConfig = Record<string, unknown>;
 export interface BlockProps<C extends BlockConfig = BlockConfig> {
 	config: C;
 	ctx: StudioCtx;
-	/** Patch this block's config (records an undo step). */
-	update: (patch: Partial<C>) => void;
+	/** Patch this block's config. Records an undo step unless `record` is false. */
+	update: (patch: Partial<C>, record?: boolean) => void;
 	editing: boolean;
+	/** Height chosen by the user (px), if the block was made shorter. */
+	height?: number;
 }
 
 export type FieldOption = [value: string, label: string];
@@ -59,7 +61,10 @@ export interface BlockInstance {
 	type: string;
 	span: number;
 	config: BlockConfig;
-	hidden?: boolean;
+	/** Max height in px; taller content fades out with a “Show all” control. */
+	height?: number;
+	/** Collapsed to its title bar. */
+	collapsed?: boolean;
 }
 
 export interface Layout {

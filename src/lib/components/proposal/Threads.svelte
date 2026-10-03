@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { ordered } from '$lib/order.svelte';
 	import { siteHref } from '$lib/links';
 	import { CFG } from '$lib/data/runtimes';
 	import { viewData } from '$lib/view-data';
@@ -17,7 +18,7 @@
 	const TX = (k: number) => tpl + (k * (TW - tpl - tpr)) / 3;
 	const TY = (v: number) => tpt + (1 - v / 8) * (TH - tpt - tpb);
 
-  const vis=$derived(CFG.filter(c=>isVisible(ui.scope,c)));
+  const vis=$derived(ordered(CFG.filter(c=>isVisible(ui.scope,c))));
   const record=$derived(viewData.threads[ui.machine]);
   const median=(xs:number[])=>{const s=[...xs].sort((a,b)=>a-b);return s[s.length>>1];};
   const throughput=(mode:string,sharing:string,workers:number)=>{

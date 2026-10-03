@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { ordered } from '$lib/order.svelte';
  import { configVersion } from '$lib/data/runtimes';
 	import { siteHref } from '$lib/links';
 	import { goto } from '$lib/navigation';
@@ -37,7 +38,7 @@ import { historySegments } from '$lib/history-values';
 	const rows = $derived.by(() => {
 		const s = ui.scope;
 		const { fv, chg, col } = seriesFmt(ui.otMetric,ui.deltaFormat);
-		return CFG.filter((c) => isVisible(s, c)).map((c) => {
+		return ordered(CFG.filter((c) => isVisible(s, c))).map((c) => {
 			const vals = otSeries(s, c.id, ui.otMetric);
 			if (!vals) return { c, na: true as const, now: isOff(s, c.id) ? 'unavailable' : 'n/a' };
 			const finite=vals.filter(Number.isFinite);

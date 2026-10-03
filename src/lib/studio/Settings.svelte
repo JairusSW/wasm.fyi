@@ -84,7 +84,10 @@
 						{/each}
 					</div>
 				</div>
-				<label class="toggle"><input type="checkbox" checked={!block.hidden} onchange={() => studio.toggleHidden(page, block.id)} /> Visible on the page</label>
+				<label class="toggle"><input type="checkbox" checked={!!block.collapsed} onchange={(e) => studio.setCollapsed(page, block.id, e.currentTarget.checked)} /> Collapsed to its title</label>
+				{#if block.height}
+					<div class="inline small fg2">Height limited to {block.height}px <button class="mini" onclick={() => studio.setHeight(page, block.id, null)}>Full height</button></div>
+				{/if}
 			</div>
 
 			{#each sections as sec (sec)}

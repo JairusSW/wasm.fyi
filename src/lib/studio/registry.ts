@@ -3,9 +3,8 @@
 // site as designed; customizations are stored per page on top of them.
 import type { Component } from 'svelte';
 import { CFG } from '$lib/data/runtimes';
-import { FEATS } from '$lib/data/features';
 import { OTM, OTM_KEYS } from '$lib/data/snapshot';
-import { EXPR_VARS, CHART_DEFAULTS, METRIC_VARS, UNITS, WORKLOAD_GROUPS, type ChartConfig } from './charts/query';
+import { EXPR_VARS, CHART_DEFAULTS, KINDS, METRIC_VARS, UNITS, WORKLOAD_GROUPS, type ChartConfig } from './charts/query';
 import { check, FUNCTIONS } from './expr';
 import type { BlockConfig, BlockDef, BlockProps, Field, Layout, Template } from './types';
 
@@ -24,7 +23,6 @@ import OverTime from './blocks/bench/OverTime.svelte';
 import Workloads from './blocks/bench/Workloads.svelte';
 import Note from './blocks/content/Note.svelte';
 import SectionHeading from './blocks/content/SectionHeading.svelte';
-import Spacer from './blocks/content/Spacer.svelte';
 import History from './blocks/pages/History.svelte';
 import Features from './blocks/pages/Features.svelte';
 import Compare from './blocks/pages/Compare.svelte';
@@ -38,147 +36,46 @@ const exprVal = (v: unknown) => {
 	return r.ok ? null : r.error;
 };
 
-const METRIC_OPTIONS: [string, string][] = [...METRIC_VARS.map((m) => [m.key, m.label] as [string, string]), ['expr', 'Custom expression…']];
-const KINDS_BY_SOURCE: Record<ChartConfig['source'], [string, string][]> = {
-	results: [
-		['bar', 'Ranked bars'],
-		['columns', 'Grouped columns'],
-		['heatmap', 'Heatmap'],
-		['strip', 'Spread (strip plot)'],
-		['scatter', 'Scatter'],
-		['table', 'Table'],
-		['stat', 'Single stat']
-	],
-	history: [
-		['line', 'Line'],
-		['table', 'Latest values']
-	],
-	features: [
-		['bar', 'Ranked bars'],
-		['heatmap', 'Heatmap'],
-		['table', 'Table']
-	]
-};
-const results = (c: ChartConfig) => c.source === 'results';
-
-export const EXPR_HELP = `Variables: ${EXPR_VARS.join(', ')} (latency in ms, memory in MiB, code in KiB, kb = artifact size, units = work units per invocation). Functions: ${Object.keys(FUNCTIONS).join(', ')}. A missing input makes the result missing, never zero.`;
-
-const chartFields: Field<ChartConfig>[] = [
-	{ key: 'title', label: 'Title', type: 'text', section: 'Chart' },
-	{ key: 'subtitle', label: 'Subtitle', type: 'text', placeholder: 'Generated from the settings', section: 'Chart' },
-	{
-		key: 'source',
-		label: 'Data',
-		type: 'select',
-		section: 'Chart',
-		options: [
-			['results', 'Benchmark results (latest snapshot)'],
-			['history', 'History (weekly series)'],
-			['features', 'Feature corpus results']
-		]
-	},
-	{ key: 'kind', label: 'Chart type', type: 'select', section: 'Chart', options: (c) => KINDS_BY_SOURCE[c.source] },
-	{ key: 'metric', label: 'Metric', type: 'select', section: 'Measure', options: METRIC_OPTIONS, when: results },
-	{ key: 'expr', label: 'Expression', type: 'expr', section: 'Measure', help: EXPR_HELP, when: (c) => results(c) && c.metric === 'expr', validate: exprVal },
-	{ key: 'unit', label: 'Expression unit', type: 'select', section: 'Measure', options: UNITS, when: (c) => results(c) && c.metric === 'expr' },
-	{ key: 'xMetric', label: 'X axis metric', type: 'select', section: 'Measure', options: METRIC_OPTIONS, when: (c) => results(c) && c.kind === 'scatter' },
-	{ key: 'xExpr', label: 'X expression', type: 'expr', section: 'Measure', help: EXPR_HELP, when: (c) => results(c) && c.kind === 'scatter' && c.xMetric === 'expr', validate: exprVal },
-	{ key: 'xUnit', label: 'X unit', type: 'select', section: 'Measure', options: UNITS, when: (c) => results(c) && c.kind === 'scatter' && c.xMetric === 'expr' },
-	{
-		key: 'historyKey',
-		label: 'History metric',
-		type: 'select',
-		section: 'Measure',
-		options: OTM_KEYS.map((k) => [k, OTM[k].l]),
-		when: (c) => c.source === 'history'
-	},
-	{
-		key: 'family',
-		label: 'Feature family',
-		type: 'select',
-		section: 'Measure',
-		options: [['', 'All families'], ...FEATS.map((f) => [f.id, f.name] as [string, string])],
-		when: (c) => c.source === 'features'
-	},
-	{
-		key: 'per',
-		label: 'Granularity',
-		type: 'select',
-		section: 'Measure',
-		options: [
-			['config', 'One value per runtime (aggregate)'],
-			['workload', 'Per workload']
-		],
-		when: (c) => results(c) && ['scatter', 'heatmap', 'table', 'columns'].includes(c.kind)
-	},
-	{
-		key: 'agg',
-		label: 'Aggregate',
-		type: 'select',
-		section: 'Measure',
-		options: [
-			['geomean', 'Geometric mean'],
-			['median', 'Median'],
-			['mean', 'Mean'],
-			['min', 'Minimum'],
-			['max', 'Maximum'],
-			['sum', 'Sum']
-		],
-		when: (c) => results(c) && (['bar', 'stat'].includes(c.kind) || c.per === 'config')
-	},
-	{
-		key: 'cohort',
-		label: 'Workload set',
-		type: 'select',
-		section: 'Measure',
-		options: [
-			['shared', 'Shared: measured on every runtime'],
-			['each', 'Each runtime’s own measured workloads']
-		],
-		when: results,
-		help: 'Shared cohorts keep comparisons fair; per-runtime sets can mix different workloads.'
-	},
-	{
-		key: 'normalize',
-		label: 'Normalize',
-		type: 'select',
-		section: 'Measure',
-		options: [
-			['none', 'Absolute values'],
-			['baseline', 'Ratio to baseline runtime'],
-			['best', 'Ratio to fastest per workload']
-		],
-		when: (c) => results(c) && c.kind !== 'scatter'
-	},
-	{ key: 'configs', label: 'Runtimes', type: 'configs', section: 'Filter', help: 'None selected follows the scope bar.' },
-	{
-		key: 'groups',
-		label: 'Workload groups',
-		type: 'chips',
-		section: 'Filter',
-		options: WORKLOAD_GROUPS.map((g) => [g, g]),
-		when: results,
-		help: 'None selected includes every group.'
-	},
-	{ key: 'search', label: 'Workload filter', type: 'text', section: 'Filter', placeholder: 'id or tag contains…', when: results },
-	{ key: 'features', label: 'Include feature probes', type: 'toggle', section: 'Filter', when: results },
-	{
-		key: 'sort',
-		label: 'Sort',
-		type: 'select',
-		section: 'Display',
-		options: [
-			['asc', 'Ascending'],
-			['desc', 'Descending'],
-			['none', 'Fixed order']
-		],
-		when: (c) => ['bar', 'stat', 'table'].includes(c.kind)
-	},
-	{ key: 'limit', label: 'Limit (0 = all)', type: 'number', min: 0, max: 200, section: 'Display', when: (c) => results(c) && ['bar', 'columns', 'heatmap', 'table'].includes(c.kind) },
-	{ key: 'log', label: 'Log scale', type: 'toggle', section: 'Display', when: (c) => ['bar', 'columns', 'scatter', 'line'].includes(c.kind) },
-	{ key: 'labels', label: 'Value labels', type: 'toggle', section: 'Display', when: (c) => ['bar', 'scatter'].includes(c.kind) },
-	{ key: 'height', label: 'Height', type: 'range', min: 140, max: 640, step: 20, section: 'Display', when: (c) => ['columns', 'scatter', 'line', 'heatmap'].includes(c.kind) }
+const METRIC_OPTIONS: [string, string][] = [
+	...METRIC_VARS.map((m) => [m.key, m.label] as [string, string]),
+	['expr', 'Custom formula…']
 ];
+const notLine = (c: ChartConfig) => c.kind !== 'line';
+
+export const EXPR_HELP = `Use ${METRIC_VARS.map((m) => m.key).join(', ')}, kb (artifact size) and units (work per call), with + − × ÷ ^ and ${Object.keys(FUNCTIONS).join(', ')}. Missing inputs stay missing.`;
+
+/** The essentials only: what to show, for which runtimes, how to compare. */
+const chartFields: Field<ChartConfig>[] = [
+	{ key: 'title', label: 'Title', type: 'text' },
+	{ key: 'kind', label: 'Chart', type: 'select', options: KINDS.map(([k, label, q]) => [k, `${label} — ${q}`]) },
+	{
+		key: 'metric',
+		label: 'Measure',
+		type: 'select',
+		options: (c) => [...METRIC_OPTIONS, ...(c.kind === 'bar' || c.kind === 'heatmap' ? ([['features', 'Feature tests passed']] as [string, string][]) : [])],
+		when: notLine
+	},
+	{ key: 'expr', label: 'Formula', type: 'expr', help: EXPR_HELP, when: (c) => notLine(c) && c.metric === 'expr', validate: exprVal },
+	{ key: 'unit', label: 'Formula unit', type: 'select', options: UNITS, when: (c) => notLine(c) && (c.metric === 'expr' || (c.kind === 'scatter' && c.xMetric === 'expr')) },
+	{ key: 'xMetric', label: 'Against (x axis)', type: 'select', options: METRIC_OPTIONS, when: (c) => c.kind === 'scatter' },
+	{ key: 'xExpr', label: 'X formula', type: 'expr', help: EXPR_HELP, when: (c) => c.kind === 'scatter' && c.xMetric === 'expr', validate: exprVal },
+	{ key: 'historyKey', label: 'Measure', type: 'select', options: OTM_KEYS.map((k) => [k, OTM[k].l]), when: (c) => c.kind === 'line' },
+	{
+		key: 'compare',
+		label: 'Show as',
+		type: 'select',
+		options: [
+			['absolute', 'Measured values'],
+			['baseline', 'Relative to the baseline runtime'],
+			['best', 'Relative to the fastest per workload']
+		],
+		when: (c) => (c.kind === 'bar' || c.kind === 'heatmap') && c.metric !== 'features'
+	},
+	{ key: 'configs', label: 'Runtimes', type: 'configs', help: 'None selected follows the scope bar.' },
+	{ key: 'groups', label: 'Workloads', type: 'chips', options: WORKLOAD_GROUPS.map((g) => [g, g]), help: 'None selected includes every group.', when: (c) => notLine(c) && c.metric !== 'features' },
+	{ key: 'log', label: 'Log scale', type: 'toggle', when: (c) => c.kind !== 'heatmap' }
+];
+
 const text = (key: string, label: string, type: 'text' | 'textarea' = 'text') => ({ key, label, type }) as Field;
 
 export const BLOCKS: Record<string, BlockDef<any>> = {
@@ -219,17 +116,6 @@ export const BLOCKS: Record<string, BlockDef<any>> = {
 		span: 12,
 		fields: [text('eyebrow', 'Eyebrow'), text('title', 'Title'), text('text', 'Text', 'textarea'), { key: 'rule', label: 'Top rule', type: 'toggle' }],
 		title: (c) => String(c.title || 'Section heading')
-	},
-	spacer: {
-		type: 'spacer',
-		label: 'Spacer',
-		description: 'Empty space or a thin rule.',
-		category: 'Content',
-		component: comp(Spacer),
-		defaults: () => ({ size: 24, line: false }),
-		span: 12,
-		minSpan: 1,
-		fields: [{ key: 'size', label: 'Height', type: 'range', min: 4, max: 160, step: 4 }, { key: 'line', label: 'Draw a rule', type: 'toggle' }]
 	},
 	hero: {
 		type: 'hero',
@@ -472,89 +358,43 @@ export const BLOCKS: Record<string, BlockDef<any>> = {
 
 const chart = (patch: Partial<ChartConfig>): ChartConfig => ({ ...structuredClone(CHART_DEFAULTS), ...patch });
 
-/** Pre-configured charts shown in the library. */
+/** A few charts that answer the questions people actually ask. */
 export const TEMPLATES: Template[] = [
 	{
 		id: 'tpl-startup-vs-throughput',
 		type: 'chart',
 		label: 'Startup vs throughput',
-		description: 'Scatter of startup cost (compile + instantiate + first call) against steady execution.',
-		config: chart({ title: 'Startup vs throughput', kind: 'scatter', metric: 'steady', xMetric: 'expr', xExpr: 'compile + inst + first', xUnit: 'ms', log: true })
+		description: 'Cold-start cost against steady speed — the core runtime trade-off.',
+		config: chart({ title: 'Startup vs throughput', kind: 'scatter', metric: 'steady', xMetric: 'expr', xExpr: 'compile + inst + first', log: true })
 	},
 	{
 		id: 'tpl-cost-1000',
 		type: 'chart',
 		label: 'Cost of 1,000 calls',
-		description: 'Derived metric: one cold start plus 999 steady calls, ranked.',
-		config: chart({ title: 'Estimated cost of 1,000 calls', kind: 'bar', metric: 'expr', expr: 'compile + inst + first + 999 * steady', unit: 'ms', log: true })
-	},
-	{
-		id: 'tpl-spread',
-		type: 'chart',
-		label: 'Execution spread',
-		description: 'Every workload as a dot: how far each runtime is from the fastest.',
-		span: 12,
-		config: chart({ title: 'Steady execution spread', kind: 'strip', metric: 'steady', normalize: 'best' })
+		description: 'One cold start plus 999 calls: which runtime is cheapest overall.',
+		config: chart({ title: 'Cost of 1,000 calls', kind: 'bar', metric: 'expr', expr: 'compile + inst + first + 999 * steady', unit: 'ms', log: true })
 	},
 	{
 		id: 'tpl-heatmap',
 		type: 'chart',
-		label: 'Workload heatmap',
-		description: 'Workloads × runtimes, shaded by distance from the row’s fastest.',
+		label: 'Wins and losses by workload',
+		description: 'Every workload × runtime, shaded by distance from the fastest.',
 		span: 12,
-		config: chart({ title: 'Steady execution by workload', kind: 'heatmap', per: 'workload', metric: 'steady', limit: 20, height: 360 })
+		config: chart({ title: 'Steady execution by workload', kind: 'heatmap', metric: 'steady' })
 	},
 	{
 		id: 'tpl-memory',
 		type: 'chart',
 		label: 'Memory ranking',
-		description: 'Peak RSS during the steady run, geometric mean.',
+		description: 'Peak memory while running, lowest first.',
 		config: chart({ title: 'Peak memory', kind: 'bar', metric: 'rss' })
-	},
-	{
-		id: 'tpl-compile-columns',
-		type: 'chart',
-		label: 'Compile time by workload',
-		description: 'Grouped columns for the workloads with the widest spread.',
-		span: 12,
-		config: chart({ title: 'Compilation by workload', kind: 'columns', per: 'workload', metric: 'compile', limit: 10, log: true, height: 300 })
 	},
 	{
 		id: 'tpl-history',
 		type: 'chart',
-		label: 'Execution history',
-		description: 'Weekly execution series per runtime.',
-		config: chart({ title: 'Execution over time', source: 'history', kind: 'line', historyKey: 'exec', log: true })
-	},
-	{
-		id: 'tpl-features',
-		type: 'chart',
-		label: 'Feature pass rate',
-		description: 'Share of feature-corpus contracts each runtime passes.',
-		config: chart({ title: 'Feature corpus pass rate', source: 'features', kind: 'bar', sort: 'desc' })
-	},
-	{
-		id: 'tpl-feature-heatmap',
-		type: 'chart',
-		label: 'Feature heatmap',
-		description: 'Feature families × runtimes, pass rate per cell.',
-		span: 12,
-		config: chart({ title: 'Feature families', source: 'features', kind: 'heatmap', height: 420 })
-	},
-	{
-		id: 'tpl-fastest',
-		type: 'chart',
-		label: 'Fastest runtime (stat)',
-		description: 'A single headline number with the runner-up.',
-		span: 4,
-		config: chart({ title: 'Fastest steady execution', kind: 'stat', metric: 'steady' })
-	},
-	{
-		id: 'tpl-throughput',
-		type: 'chart',
-		label: 'Work units per second',
-		description: 'Derived throughput: units per invocation ÷ steady time.',
-		config: chart({ title: 'Throughput', kind: 'bar', metric: 'expr', expr: 'units / (steady / 1000)', unit: '', sort: 'desc', log: true })
+		label: 'Execution over time',
+		description: 'Weekly execution time per runtime.',
+		config: chart({ title: 'Execution over time', kind: 'line', historyKey: 'exec', log: true })
 	}
 ];
 
@@ -571,12 +411,11 @@ export const DEFAULT_LAYOUTS: Record<string, Spec[]> = {
 	bench: [b('benchDetail')],
 	compare: [b('compare')],
 	dashboard: [
-		b('heading', { eyebrow: 'Studio', title: 'My dashboard', text: 'Drag blocks to rearrange, resize from the right edge, and open a block’s settings to change what it shows.', rule: false }),
+		b('heading', { eyebrow: 'Studio', title: 'My dashboard', text: 'Hover any block and drag ✥ to move it. Customize to resize, collapse or change what a chart shows.', rule: false }),
 		b('chart', TEMPLATES[0].config, 6),
 		b('chart', TEMPLATES[1].config, 6),
 		b('chart', TEMPLATES[2].config, 12),
-		b('chart', TEMPLATES[6].config, 6),
-		b('chart', TEMPLATES[7].config, 6)
+		b('chart', TEMPLATES[4].config, 12)
 	]
 };
 
@@ -615,8 +454,17 @@ export function sanitize(input: unknown): Layout | null {
 				const v = config[k];
 				if (Array.isArray(d) ? !Array.isArray(v) : typeof v !== typeof d) config[k] = d;
 			}
+			if (x.type === 'chart' && !KINDS.some(([k]) => k === config.kind)) config.kind = 'bar';
 			if (Array.isArray(config.configs)) config.configs = (config.configs as unknown[]).filter((id) => CFG.some((c) => c.id === id));
-			return { id, type: x.type, span, config, hidden: !!x.hidden };
+			const height = Number(x.height);
+			return {
+				id,
+				type: x.type,
+				span,
+				config,
+				...(Number.isFinite(height) && height >= 40 ? { height: Math.min(4000, Math.round(height)) } : {}),
+				...(x.collapsed ? { collapsed: true } : {})
+			};
 		});
 	return { v: 1, blocks };
 }

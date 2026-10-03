@@ -2,97 +2,75 @@
 // rest of the site. Missing results stay missing: they are counted and listed,
 // never coerced to zero or to a slow value.
 import { CFG } from '$lib/data/runtimes';
-import { ALLB, MET, OTM, SNAPS } from '$lib/data/snapshot';
+import { ALLB, OTM, SNAPS } from '$lib/data/snapshot';
+import { FEATS } from '$lib/data/features';
 import type { Bench, Cfg, CfgId, MetricKey, OtMetricKey } from '$lib/data/types';
 import { fmtU, shortCount } from '$lib/format';
 import { compatCell, featureContracts, isVisible, otSeries, type Scope } from '$lib/model';
-import { FEATS } from '$lib/data/features';
+import { ordered } from '$lib/order.svelte';
 import { viewCell } from '$lib/view-data';
 import { check, evaluate, variables, type Node } from '../expr';
 
-export type ChartKind = 'bar' | 'columns' | 'heatmap' | 'strip' | 'scatter' | 'line' | 'table' | 'stat';
-export type Source = 'results' | 'history' | 'features';
-export type Agg = 'geomean' | 'median' | 'mean' | 'min' | 'max' | 'sum';
+/** Four chart types, each answering one kind of question. */
+export type ChartKind = 'bar' | 'scatter' | 'heatmap' | 'line';
+export const KINDS: [ChartKind, string, string][] = [
+	['bar', 'Ranking', 'Which runtime is lowest on one metric?'],
+	['scatter', 'Trade-off', 'How do two metrics relate?'],
+	['heatmap', 'By workload', 'Where does each runtime win or lose?'],
+	['line', 'History', 'How has it changed week to week?']
+];
 
 export interface ChartConfig {
 	[key: string]: unknown;
 	title: string;
-	subtitle: string;
-	source: Source;
 	kind: ChartKind;
-	/** A metric key, or `expr` to use `expr`. */
+	/** A metric key, `expr` for a derived metric, or `features` for the feature pass rate. */
 	metric: string;
 	expr: string;
 	unit: string;
+	/** Scatter x axis. */
 	xMetric: string;
 	xExpr: string;
-	xUnit: string;
-	per: 'config' | 'workload';
-	agg: Agg;
-	cohort: 'shared' | 'each';
-	normalize: 'none' | 'baseline' | 'best';
+	historyKey: OtMetricKey;
+	compare: 'absolute' | 'baseline' | 'best';
 	/** Empty = follow the scope bar. */
 	configs: string[];
 	groups: string[];
-	search: string;
-	features: boolean;
-	historyKey: OtMetricKey;
-	family: string;
 	log: boolean;
-	sort: 'asc' | 'desc' | 'none';
-	limit: number;
-	height: number;
-	labels: boolean;
 }
 
 export const CHART_DEFAULTS: ChartConfig = {
-	title: 'Custom chart',
-	subtitle: '',
-	source: 'results',
+	title: 'New chart',
 	kind: 'bar',
 	metric: 'steady',
 	expr: 'compile + inst + first + 999 * steady',
 	unit: 'ms',
 	xMetric: 'compile',
-	xExpr: 'compile + inst',
-	xUnit: 'ms',
-	per: 'config',
-	agg: 'geomean',
-	cohort: 'shared',
-	normalize: 'none',
+	xExpr: 'compile + inst + first',
+	historyKey: 'exec',
+	compare: 'absolute',
 	configs: [],
 	groups: [],
-	search: '',
-	features: false,
-	historyKey: 'exec',
-	family: '',
-	log: false,
-	sort: 'asc',
-	limit: 0,
-	height: 260,
-	labels: true
+	log: false
 };
 
-/** Raw per-cell metrics available to expressions and as direct series. */
+/** Raw per-cell metrics available as series and in expressions. */
 export const METRIC_VARS: { key: string; label: string; unit: string }[] = [
 	{ key: 'compile', label: 'Compilation', unit: 'ms' },
 	{ key: 'inst', label: 'Instantiation', unit: 'ms' },
 	{ key: 'first', label: 'First call', unit: 'ms' },
 	{ key: 'steady', label: 'Steady execution', unit: 'ms' },
-	{ key: 'rss', label: 'Peak RSS (steady run)', unit: 'MiB' },
-	{ key: 'rssCompile', label: 'Peak RSS (compile run)', unit: 'MiB' },
-	{ key: 'rssInst', label: 'Peak RSS (instantiate run)', unit: 'MiB' },
-	{ key: 'code', label: 'Native code image', unit: 'KiB' }
+	{ key: 'rss', label: 'Peak memory (RSS)', unit: 'MiB' },
+	{ key: 'code', label: 'Native code size', unit: 'KiB' }
 ];
 /** Workload properties usable in expressions. */
 export const WORKLOAD_VARS = ['kb', 'units'] as const;
-export const EXPR_VARS = [...METRIC_VARS.map((m) => m.key), ...WORKLOAD_VARS];
+export const EXPR_VARS = [...METRIC_VARS.map((m) => m.key), 'rssCompile', 'rssInst', ...WORKLOAD_VARS];
 export const UNITS: [string, string][] = [
-	['ms', 'time (ms)'],
-	['MiB', 'memory (MiB)'],
-	['KiB', 'size (KiB)'],
-	['x', 'ratio (×)'],
-	['', 'plain number']
+	['ms', 'Time (ms)'],
+	['MiB', 'Memory (MiB)'],
+	['KiB', 'Size (KiB)'],
+	['', 'Number']
 ];
 
 export const fmtValue = (v: number, unit: string) =>
@@ -103,10 +81,10 @@ export const fmtValue = (v: number, unit: string) =>
 			: unit === '%'
 				? (v * 100).toFixed(1) + '%'
 				: Math.abs(v) >= 1e4
-					? shortCount(v) + (unit ? ' ' + unit : '')
+					? shortCount(v)
 					: Math.abs(v) < 1e-3 && v !== 0
 						? v.toExponential(2)
-					: +v.toPrecision(4) + (unit ? ' ' + unit : '');
+						: String(+v.toPrecision(4));
 
 export interface MetricSpec {
 	label: string;
@@ -125,12 +103,12 @@ export function metricSpec(metric: string, expr: string, unit: string): MetricSp
 	return parsed.ok ? { label: expr, unit, node: parsed.node } : { label: expr, unit, error: parsed.error };
 }
 
-/** One workload × config value for a metric spec. */
+/** One workload × config value. */
 function cellValue(s: Scope, b: Bench, cid: CfgId, spec: MetricSpec): { v: number | null; st: string } {
 	const snapshot = s.snapshot || 's1';
 	if (spec.key) {
 		const c = viewCell(s.machine, snapshot, b.id, cid, spec.key);
-		return { v: c.st === 'ok' && c.v != null && Number.isFinite(c.v) ? c.v : null, st: c.st };
+		return { v: c.st === 'ok' && c.v != null && Number.isFinite(c.v) && c.v > 0 ? c.v : null, st: c.st };
 	}
 	if (!spec.node) return { v: null, st: 'nm' };
 	const env: Record<string, number | null> = { kb: b.kb, units: b.unitsPerInvocation ?? null };
@@ -142,64 +120,37 @@ function cellValue(s: Scope, b: Bench, cid: CfgId, spec: MetricSpec): { v: numbe
 		if (env[name] == null && st === 'ok') st = c.st === 'ok' ? 'nm' : c.st;
 	}
 	const v = evaluate(spec.node, env);
-	return { v, st: v == null ? (st === 'ok' ? 'nm' : st) : 'ok' };
+	return v != null && v > 0 ? { v, st: 'ok' } : { v: null, st: st === 'ok' ? 'nm' : st };
 }
 
-const AGG: Record<Agg, (xs: number[]) => number> = {
-	geomean: (xs) => Math.exp(xs.reduce((a, x) => a + Math.log(x), 0) / xs.length),
-	median: (xs) => {
-		const s = [...xs].sort((a, b) => a - b);
-		return s.length % 2 ? s[s.length >> 1] : (s[(s.length >> 1) - 1] + s[s.length >> 1]) / 2;
-	},
-	mean: (xs) => xs.reduce((a, x) => a + x, 0) / xs.length,
-	min: (xs) => Math.min(...xs),
-	max: (xs) => Math.max(...xs),
-	sum: (xs) => xs.reduce((a, x) => a + x, 0)
-};
-export const AGG_LABEL: Record<Agg, string> = {
-	geomean: 'Geometric mean',
-	median: 'Median',
-	mean: 'Mean',
-	min: 'Minimum',
-	max: 'Maximum',
-	sum: 'Sum'
-};
+const geomean = (xs: number[]) => Math.exp(xs.reduce((a, x) => a + Math.log(x), 0) / xs.length);
 
 export function chartConfigs(s: Scope, c: ChartConfig): Cfg[] {
-	const pick = c.configs.length ? CFG.filter((x) => c.configs.includes(x.id)) : CFG;
-	return pick.filter((x) => (c.configs.length ? true : isVisible(s, x)));
+	return ordered(c.configs.length ? CFG.filter((x) => c.configs.includes(x.id)) : CFG.filter((x) => isVisible(s, x)));
 }
 
+/** Application workloads in the chosen groups. Feature probes have their own metric. */
 export function chartWorkloads(c: ChartConfig): Bench[] {
-	const q = c.search.trim().toLowerCase();
-	return ALLB.filter(
-		(b) =>
-			(c.features || !b.id.startsWith('features/')) &&
-			(!c.groups.length || c.groups.includes(b.group)) &&
-			(!q || b.id.toLowerCase().includes(q) || b.tags.some((t) => t.toLowerCase().includes(q)))
-	);
+	return ALLB.filter((b) => !b.id.startsWith('features/') && (!c.groups.length || c.groups.includes(b.group)));
 }
 
-export const WORKLOAD_GROUPS = [...new Set(ALLB.map((b) => b.group))];
+export const WORKLOAD_GROUPS = [...new Set(ALLB.filter((b) => !b.id.startsWith('features/')).map((b) => b.group))];
 
 export interface Row {
 	cfg: Cfg;
 	value: number | null;
-	/** Raw (un-normalized) value, for labels. */
-	raw: number | null;
 	n: number;
-	missing: number;
 }
 export interface Matrix {
-	workloads: Bench[];
+	rows: { id: string; label: string }[];
 	cfgs: Cfg[];
-	/** values[w][c], normalized; null = missing */
+	/** values[row][cfg]; null = missing */
 	values: (number | null)[][];
-	raw: (number | null)[][];
 	status: string[][];
+	/** Rows are workloads, so cells can open the result drawer. */
+	workloads?: boolean;
 }
 export interface Dataset {
-	source: Source;
 	kind: ChartKind;
 	unit: string;
 	label: string;
@@ -207,166 +158,128 @@ export interface Dataset {
 	xLabel?: string;
 	rows: Row[];
 	matrix?: Matrix;
-	points?: { cfg: Cfg; w?: Bench; x: number; y: number }[];
+	points?: { cfg: Cfg; x: number; y: number }[];
 	lines?: { cfg: Cfg; values: (number | null)[] }[];
 	dates?: string[];
 	error?: string;
-	notes: string[];
-	cohort: number;
+	note: string;
 }
 
-function buildMatrix(s: Scope, c: ChartConfig, spec: MetricSpec, cfgs: Cfg[]): Matrix {
+const fail = (c: ChartConfig, error: string): Dataset => ({ kind: c.kind, unit: '', label: '', rows: [], note: '', error });
+
+/** Per-workload matrix of raw values for one metric. */
+function matrixOf(s: Scope, c: ChartConfig, spec: MetricSpec, cfgs: Cfg[]) {
 	const workloads = chartWorkloads(c);
 	const cells = workloads.map((b) => cfgs.map((cfg) => cellValue(s, b, cfg.id, spec)));
-	const raw = cells.map((row) => row.map((x) => (x.v != null && x.v > 0 ? x.v : x.v === 0 ? 0 : null)));
-	const status = cells.map((row) => row.map((x) => x.st));
-	const base = cfgs.findIndex((x) => x.id === s.baseline);
-	const values = raw.map((row) => {
-		if (c.normalize === 'none') return row;
-		const d = c.normalize === 'baseline' ? (base >= 0 ? row[base] : null) : Math.min(...(row.filter((v) => v != null && v > 0) as number[]));
-		return row.map((v) => (v == null || d == null || !Number.isFinite(d) || d <= 0 ? null : v / d));
-	});
-	return { workloads, cfgs, values, raw, status };
+	return { workloads, values: cells.map((r) => r.map((x) => x.v)), status: cells.map((r) => r.map((x) => x.st)) };
 }
 
 /**
- * Per-config aggregate. The shared cohort is the workloads measured on every
- * runtime that has any data here; runtimes with no data show as not measured.
- * When even that cohort is empty, each runtime falls back to its own workloads
- * and the dataset says so.
+ * Geometric mean per runtime over a shared set: the workloads measured on every
+ * runtime that has any data. Runtimes with no data show as not measured. If no
+ * workload is shared, each runtime uses its own and the note says so.
  */
-function aggregateRows(m: Matrix, c: ChartConfig): { rows: Row[]; cohort: number; fellBack: boolean } {
-	const ok = (w: number, i: number) => m.values[w][i] != null && (c.agg !== 'geomean' || m.values[w][i]! > 0);
-	const participates = m.cfgs.map((_, i) => m.workloads.some((_, w) => ok(w, i)));
-	const shared = m.workloads.map((_, w) => participates.some(Boolean) && m.cfgs.every((_, i) => !participates[i] || ok(w, i)));
+function aggregate(values: (number | null)[][], ncfg: number) {
+	const has = Array.from({ length: ncfg }, (_, i) => values.some((r) => r[i] != null));
+	const shared = values.map((r) => has.some(Boolean) && r.every((v, i) => !has[i] || v != null));
 	const cohort = shared.filter(Boolean).length;
-	const fellBack = c.cohort === 'shared' && cohort === 0;
-	const useShared = c.cohort === 'shared' && !fellBack;
-	const rows = m.cfgs.map((cfg, i) => {
-		const idx = m.workloads.map((_, w) => w).filter((w) => ok(w, i) && (!useShared || shared[w]));
-		const vals = idx.map((w) => m.values[w][i]!);
-		const raws = idx.map((w) => m.raw[w][i]!).filter((v) => v > 0 || c.agg !== 'geomean');
-		const missing = m.workloads.length - m.workloads.filter((_, w) => ok(w, i)).length;
-		return { cfg, value: vals.length ? AGG[c.agg](vals) : null, raw: raws.length ? AGG[c.agg](raws) : null, n: vals.length, missing };
+	const out = Array.from({ length: ncfg }, (_, i) => {
+		const vals = values.filter((r, w) => r[i] != null && (cohort === 0 || shared[w])).map((r) => r[i]!);
+		return { value: vals.length ? geomean(vals) : null, n: vals.length };
 	});
-	return { rows, cohort, fellBack };
+	return { out, cohort, fellBack: cohort === 0 && has.some(Boolean) };
 }
 
-/** Keeps only cells where both matrices have a value, so two metrics share one cohort. */
-function jointMask(a: Matrix, b: Matrix): [Matrix, Matrix] {
-	const keep = (w: number, i: number) => a.raw[w][i] != null && b.raw[w][i] != null && a.raw[w][i]! > 0 && b.raw[w][i]! > 0;
-	const mask = (m: Matrix): Matrix => ({
-		...m,
-		values: m.values.map((r, w) => r.map((v, i) => (keep(w, i) ? v : null))),
-		raw: m.raw.map((r, w) => r.map((v, i) => (keep(w, i) ? v : null)))
-	});
-	return [mask(a), mask(b)];
-}
-
-export function sortRows(rows: Row[], sort: ChartConfig['sort']) {
-	if (sort === 'none') return rows;
-	return [...rows].sort((a, b) => {
-		if (a.value == null) return 1;
-		if (b.value == null) return -1;
-		return sort === 'asc' ? a.value - b.value : b.value - a.value;
-	});
+function cohortNote(total: number, cohort: number, fellBack: boolean) {
+	return fellBack
+		? 'No workload is measured on every runtime, so each uses its own workloads — pick fewer runtimes for a fair comparison.'
+		: `Geometric mean over ${cohort} of ${total} workloads measured on every runtime with data.`;
 }
 
 export function buildDataset(s: Scope, c: ChartConfig): Dataset {
 	const cfgs = chartConfigs(s, c);
-	const notes: string[] = [];
-	const empty = (error: string): Dataset => ({ source: c.source, kind: c.kind, unit: '', label: '', rows: [], notes, cohort: 0, error });
-	if (!cfgs.length) return empty('No runtimes selected. Pick runtimes in the chart settings or the scope bar.');
+	if (!cfgs.length) return fail(c, 'No runtimes selected.');
 
-	if (c.source === 'history') {
-		const M = OTM[c.historyKey];
-		const lines = cfgs.map((cfg) => ({ cfg, values: (otSeries(s, cfg.id, c.historyKey) ?? []).map((v) => (Number.isFinite(v) ? v : null)) }));
-		const live = lines.filter((l) => l.values.some((v) => v != null));
-		if (!live.length) return empty('No recorded history for these runtimes on this host.');
-		const last = (l: (typeof lines)[number]) => [...l.values].reverse().find((v) => v != null) ?? null;
-		const rows = live.map((l) => ({ cfg: l.cfg, value: last(l), raw: last(l), n: l.values.filter((v) => v != null).length, missing: l.values.filter((v) => v == null).length }));
+	// ── History ────────────────────────────────────────────────────────────
+	if (c.kind === 'line') {
+		const M = OTM[c.historyKey] ?? OTM.exec;
+		const lines = cfgs
+			.map((cfg) => ({ cfg, values: (otSeries(s, cfg.id, c.historyKey) ?? []).map((v) => (Number.isFinite(v) ? v : null)) }))
+			.filter((l) => l.values.some((v) => v != null));
+		if (!lines.length) return fail(c, 'No recorded history for these runtimes on this host.');
+		return { kind: 'line', unit: M.g === 'cov' ? '' : M.u, label: M.l, rows: [], lines, dates: SNAPS.map((p) => p.date), note: 'Weekly series; gaps are weeks that were not collected.' };
+	}
+
+	// ── Feature pass rate ──────────────────────────────────────────────────
+	if (c.metric === 'features') {
+		const fams = FEATS.filter((f) => featureContracts(f.id).length);
+		const values = fams.map((f) =>
+			cfgs.map((cfg) => {
+				const r = compatCell(f.id, cfg.id, s);
+				return r.run && r.total ? r.pass / r.total : null;
+			})
+		);
+		const rows = cfgs
+			.map((cfg, i) => {
+				const v = values.map((r) => r[i]).filter((x): x is number => x != null);
+				return { cfg, value: v.length ? v.reduce((a, b) => a + b, 0) / v.length : null, n: v.length };
+			})
+			.sort((a, b) => (b.value ?? -1) - (a.value ?? -1));
 		return {
-			source: 'history',
-			kind: c.kind === 'table' ? 'table' : 'line',
-			unit: M.g === 'cov' ? '' : M.u,
-			label: M.l,
+			kind: c.kind === 'heatmap' ? 'heatmap' : 'bar',
+			unit: '%',
+			label: 'Feature tests passed',
 			rows,
-			lines: live,
-			dates: SNAPS.map((p) => p.date),
-			notes: ['Weekly retrospective series; gaps are uncollected weeks, not zero.'],
-			cohort: SNAPS.length
+			matrix: { rows: fams.map((f) => ({ id: f.id, label: f.name })), cfgs, values, status: values.map((r) => r.map((v) => (v == null ? 'nm' : 'ok'))) },
+			note: 'Share of feature-corpus tests passed, averaged across feature families with evidence.'
 		};
 	}
 
-	if (c.source === 'features') {
-		const fams = c.family ? FEATS.filter((f) => f.id === c.family) : FEATS.filter((f) => featureContracts(f.id).length);
-		const workloads = fams.map((f) => ({ id: f.id, tags: [], kb: 0, ms: null, group: f.name }) as unknown as Bench);
-		const raw = fams.map((f) => cfgs.map((cfg) => {
-			const r = compatCell(f.id, cfg.id, s);
-			return r.run && r.total ? r.pass / r.total : null;
-		}));
-		const status = raw.map((row) => row.map((v) => (v == null ? 'nm' : 'ok')));
-		const matrix: Matrix = { workloads, cfgs, values: raw, raw, status };
-		const rows = cfgs.map((cfg, i) => {
-			const vals = raw.map((r) => r[i]).filter((v): v is number => v != null);
-			const mean = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
-			return { cfg, value: mean, raw: mean, n: vals.length, missing: fams.length - vals.length };
-		});
-		notes.push(c.family ? 'Share of corpus contracts passed.' : 'Mean share of corpus contracts passed across feature families with collected evidence.');
-		return { source: 'features', kind: c.kind === 'heatmap' || c.kind === 'table' ? c.kind : 'bar', unit: '%', label: 'Contracts passed', rows: c.kind === 'bar' ? sortRows(rows, c.sort === 'asc' ? 'desc' : c.sort) : rows, matrix, notes, cohort: fams.length };
-	}
-
+	// ── Measured results ───────────────────────────────────────────────────
 	const spec = metricSpec(c.metric, c.expr, c.unit);
-	if (spec.error) return empty('Expression error: ' + spec.error);
-	const unit = c.normalize === 'none' ? spec.unit : 'x';
-	const matrix = buildMatrix(s, c, spec, cfgs);
-	if (!matrix.workloads.length) return empty('No workloads match the filters.');
-	const { rows, cohort, fellBack } = aggregateRows(matrix, c);
-	const noData = rows.filter((r) => r.n === 0).length;
-	if (c.normalize === 'baseline') notes.push(`Normalized to the baseline (${cfgs.find((x) => x.id === s.baseline)?.rt ?? s.baseline}) per workload.`);
-	if (c.normalize === 'best') notes.push('Normalized to the fastest runtime per workload.');
-	if (c.kind === 'strip') {
-		/* Each workload is normalized on its own; cohort notes do not apply. */
-	} else if (fellBack) notes.push('No workload is measured on every runtime with data, so each runtime uses its own measured workloads — values are not directly comparable. Pick fewer runtimes for a fair shared set.');
-	else if (c.cohort === 'shared') notes.push(`Shared set: ${cohort} of ${matrix.workloads.length} workloads measured on every runtime with data.`);
-	else notes.push('Each runtime aggregates its own measured workloads; counts differ.');
-	if (noData) notes.push(`${noData} runtime${noData > 1 ? 's have' : ' has'} no measurement for this metric.`);
-
-	const ds: Dataset = { source: 'results', kind: c.kind, unit, label: spec.label, rows: sortRows(rows, c.sort), matrix, notes, cohort };
+	if (spec.error) return fail(c, spec.error);
+	const m = matrixOf(s, c, spec, cfgs);
+	if (!m.workloads.length) return fail(c, 'No workloads in the chosen groups.');
 
 	if (c.kind === 'scatter') {
-		const xs = metricSpec(c.xMetric, c.xExpr, c.xUnit);
-		if (xs.error) return empty('X expression error: ' + xs.error);
-		const [xm, yRaw] = jointMask(buildMatrix(s, { ...c, normalize: 'none' }, xs, cfgs), buildMatrix(s, { ...c, normalize: 'none' }, spec, cfgs));
-		ds.xUnit = xs.unit;
-		ds.xLabel = xs.label;
-		ds.unit = spec.unit;
-		if (c.per === 'workload') {
-			ds.points = [];
-			yRaw.workloads.forEach((w, wi) =>
-				cfgs.forEach((cfg, ci) => {
-					const x = xm.raw[wi][ci];
-					const y = yRaw.raw[wi][ci];
-					if (x != null && y != null && x > 0 && y > 0) ds.points!.push({ cfg, w, x, y });
-				})
-			);
-		} else {
-			const xr = aggregateRows(xm, { ...c, normalize: 'none' }).rows;
-			const yr = aggregateRows(yRaw, { ...c, normalize: 'none' }).rows;
-			ds.points = cfgs.flatMap((cfg, i) => (xr[i].value != null && yr[i].value != null ? [{ cfg, x: xr[i].value!, y: yr[i].value! }] : []));
-		}
-		if (!ds.points.length) return empty('No runtime has both metrics measured for these workloads.');
+		const xs = metricSpec(c.xMetric, c.xExpr, c.unit);
+		if (xs.error) return fail(c, xs.error);
+		const mx = matrixOf(s, c, xs, cfgs);
+		// One cohort for both axes: keep cells where both metrics exist.
+		const both = (src: (number | null)[][], other: (number | null)[][]) => src.map((r, w) => r.map((v, i) => (v != null && other[w][i] != null ? v : null)));
+		const ax = aggregate(both(mx.values, m.values), cfgs.length);
+		const ay = aggregate(both(m.values, mx.values), cfgs.length);
+		const points = cfgs.flatMap((cfg, i) => (ax.out[i].value != null && ay.out[i].value != null ? [{ cfg, x: ax.out[i].value!, y: ay.out[i].value! }] : []));
+		if (!points.length) return fail(c, 'No runtime has both metrics measured.');
+		return { kind: 'scatter', unit: spec.unit, label: spec.label, xUnit: xs.unit, xLabel: xs.label, rows: [], points, note: cohortNote(m.workloads.length, ay.cohort, ay.fellBack) };
 	}
-	if ((c.kind === 'columns' || c.kind === 'heatmap' || c.kind === 'table') && c.per === 'workload' && c.limit > 0) {
-		// Keep the workloads with the widest spread first, so a limit keeps the interesting ones.
-		const order = matrix.workloads.map((_, w) => w).sort((a, b) => spread(matrix.values[b]) - spread(matrix.values[a]));
-		const keep = new Set(order.slice(0, c.limit));
-		const pick = <T,>(xs: T[]) => xs.filter((_, w) => keep.has(w));
-		ds.matrix = { ...matrix, workloads: pick(matrix.workloads), values: pick(matrix.values), raw: pick(matrix.raw), status: pick(matrix.status) };
-		notes.push(`Showing the ${c.limit} workloads with the widest spread.`);
+
+	// Comparison divides each workload by the baseline or by the fastest runtime.
+	const base = cfgs.findIndex((x) => x.id === s.baseline);
+	const rel = m.values.map((r) => {
+		if (c.compare === 'absolute') return r;
+		const d = c.compare === 'baseline' ? (base >= 0 ? r[base] : null) : Math.min(...(r.filter((v) => v != null) as number[]));
+		return r.map((v) => (v == null || d == null || !Number.isFinite(d) ? null : v / d));
+	});
+	const unit = c.compare === 'absolute' ? spec.unit : 'x';
+	const label = spec.label + (c.compare === 'baseline' ? ' vs baseline' : c.compare === 'best' ? ' vs fastest' : '');
+
+	if (c.kind === 'heatmap') {
+		// Most informative rows first: the widest spread across runtimes.
+		const order = m.workloads.map((_, w) => w).sort((a, b) => spread(m.values[b]) - spread(m.values[a]));
+		return {
+			kind: 'heatmap',
+			unit,
+			label,
+			rows: [],
+			matrix: { rows: order.map((w) => ({ id: m.workloads[w].id, label: m.workloads[w].id.replace(/^wago\//, '') })), cfgs, values: order.map((w) => rel[w]), status: order.map((w) => m.status[w]), workloads: true },
+			note: 'Shaded by distance from each row’s fastest runtime; rows with the widest spread first.'
+		};
 	}
-	if (c.kind === 'bar' && c.limit > 0) ds.rows = ds.rows.slice(0, c.limit);
-	return ds;
+
+	const a = aggregate(rel, cfgs.length);
+	const rows = cfgs.map((cfg, i) => ({ cfg, value: a.out[i].value, n: a.out[i].n })).sort((x, y) => (x.value ?? Infinity) - (y.value ?? Infinity));
+	return { kind: 'bar', unit, label, rows, note: cohortNote(m.workloads.length, a.cohort, a.fellBack) };
 }
 
 function spread(row: (number | null)[]) {
@@ -380,21 +293,22 @@ export function toCsv(ds: Dataset): string {
 		const s = v == null ? '' : String(v);
 		return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
 	};
+	const name = (c: Cfg) => `${c.rt} ${c.be}`;
 	const lines: unknown[][] = [];
 	if (ds.lines && ds.dates) {
-		lines.push(['date', ...ds.lines.map((l) => `${l.cfg.rt} ${l.cfg.be}`)]);
+		lines.push(['date', ...ds.lines.map((l) => name(l.cfg))]);
 		ds.dates.forEach((d, i) => lines.push([d, ...ds.lines!.map((l) => l.values[i])]));
 	} else if (ds.points) {
-		lines.push(['runtime', 'backend', 'workload', ds.xLabel ?? 'x', ds.label]);
-		ds.points.forEach((p) => lines.push([p.cfg.rt, p.cfg.be, p.w?.id ?? '', p.x, p.y]));
-	} else if (ds.matrix && (ds.kind === 'heatmap' || ds.kind === 'columns' || ds.kind === 'table' || ds.kind === 'strip')) {
-		lines.push(['workload', ...ds.matrix.cfgs.map((c) => `${c.rt} ${c.be}`)]);
-		ds.matrix.workloads.forEach((w, i) => lines.push([w.id, ...ds.matrix!.values[i]]));
+		lines.push(['runtime', ds.xLabel ?? 'x', ds.label]);
+		ds.points.forEach((p) => lines.push([name(p.cfg), p.x, p.y]));
+	} else if (ds.kind === 'heatmap' && ds.matrix) {
+		lines.push(['row', ...ds.matrix.cfgs.map(name)]);
+		ds.matrix.rows.forEach((r, i) => lines.push([r.id, ...ds.matrix!.values[i]]));
 	} else {
-		lines.push(['runtime', 'backend', 'value', 'workloads', 'missing']);
-		ds.rows.forEach((r) => lines.push([r.cfg.rt, r.cfg.be, r.value, r.n, r.missing]));
+		lines.push(['runtime', 'value', 'workloads']);
+		ds.rows.forEach((r) => lines.push([name(r.cfg), r.value, r.n]));
 	}
 	return lines.map((l) => l.map(esc).join(',')).join('\n') + '\n';
 }
 
-export const isPerfMetric = (m: string): m is MetricKey => m in MET;
+export const isPerfMetric = (m: string): m is MetricKey => METRIC_VARS.some((x) => x.key === m);

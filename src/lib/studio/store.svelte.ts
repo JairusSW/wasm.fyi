@@ -27,7 +27,13 @@ class StudioStore {
 	palette = $state(false);
 	/** A shared layout being previewed (not yet saved). */
 	preview = $state<{ page: string; layout: Layout } | null>(null);
-	toast = $state('');
+	toast = $state<{ text: string; undo?: string } | null>(null);
+	/** A block just placed from the library that the pointer is still holding. */
+	pendingDrag = $state<{ page: string; id: string; x: number; y: number } | null>(null);
+	/** Shortcut help overlay. */
+	help = $state(false);
+	/** Timestamp of the last saved change, for the "Saved" indicator. */
+	savedAt = $state(0);
 	hydrated = $state(false);
 	/** Bumped whenever undo/redo stacks change, so derived UI updates. */
 	rev = $state(0);
@@ -53,10 +59,11 @@ class StudioStore {
 		return !!this.#future[page]?.length;
 	}
 
-	notify(msg: string) {
-		this.toast = msg;
+	/** Shows a toast; pass a page to offer an Undo button for its last change. */
+	notify(msg: string, undo?: string) {
+		this.toast = { text: msg, undo };
 		clearTimeout(this.#toastTimer);
-		this.#toastTimer = setTimeout(() => (this.toast = ''), 2400);
+		this.#toastTimer = setTimeout(() => (this.toast = null), undo ? 5000 : 2600);
 	}
 
 	/** Replace a page layout. `record` adds an undo step. */
@@ -127,7 +134,7 @@ class StudioStore {
 		const b = this.layout(page).blocks.find((x) => x.id === id);
 		this.#edit(page, (bs) => bs.filter((x) => x.id !== id));
 		if (this.selected === id) this.selected = null;
-		if (b) this.notify(`Removed ${BLOCKS[b.type]?.label ?? 'block'} · press ⌘Z to undo`);
+		if (b) this.notify(`Removed ${BLOCKS[b.type]?.label ?? 'block'}`, page);
 	}
 
 	duplicate(page: string, id: string) {
@@ -157,11 +164,21 @@ class StudioStore {
 		}, record);
 	}
 
-	toggleHidden(page: string, id: string) {
+	/** Max height in px, or null for the natural height. */
+	setHeight(page: string, id: string, height: number | null, record = true) {
 		this.#edit(page, (bs) => {
 			const b = bs.find((x) => x.id === id);
-			if (b) b.hidden = !b.hidden;
-		});
+			if (!b) return;
+			if (height == null) delete b.height;
+			else b.height = Math.max(40, Math.round(height));
+		}, record);
+	}
+
+	setCollapsed(page: string, id: string, collapsed: boolean, record = true) {
+		this.#edit(page, (bs) => {
+			const b = bs.find((x) => x.id === id);
+			if (b) b.collapsed = collapsed || undefined;
+		}, record);
 	}
 
 	/** Copy a block onto another page (e.g. a chart into a dashboard). */
@@ -201,13 +218,13 @@ class StudioStore {
 		this.rev++;
 		delete this.overrides[page];
 		this.persist();
-		this.notify('Layout reset to default · ⌘Z to undo');
+		this.notify('Layout reset to default', page);
 	}
 
 	/** Apply a whole layout (template, import) as one undo step. */
 	apply(page: string, layout: Layout, message?: string) {
 		this.commit(page, layout);
-		if (message) this.notify(message);
+		if (message) this.notify(message, page);
 	}
 
 	exportJSON(page: string) {
@@ -296,6 +313,7 @@ class StudioStore {
 		if (!browser) return;
 		try {
 			localStorage.setItem(KEY, JSON.stringify({ v: 1, layouts: $state.snapshot(this.overrides), dashboards: $state.snapshot(this.dashboards) }));
+			this.savedAt = Date.now();
 		} catch {
 			this.notify('Could not save layout (storage unavailable)');
 		}

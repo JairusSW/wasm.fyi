@@ -345,3 +345,54 @@ table.mx tr.sec td {
 	border: 1px solid var(--line2);
 	box-shadow: var(--shadow-float);
 }
+
+/* Column drag-to-reorder (see src/lib/reorder.ts) */
+.reorderable [data-col] {
+	cursor: grab;
+	touch-action: pan-y;
+}
+.reorderable th[data-col] {
+	position: relative;
+}
+.reorderable th[data-col]::before {
+	content: '✥';
+	position: absolute;
+	top: 3px;
+	left: 4px;
+	font-size: 10px;
+	line-height: 1;
+	color: var(--fg3);
+	opacity: 0;
+	transition: opacity 0.12s;
+	pointer-events: none;
+}
+.reorderable th[data-col]:hover::before {
+	opacity: 1;
+}
+.col-dragging {
+	opacity: 0.4;
+}
+.col-drag-active,
+.col-drag-active * {
+	cursor: grabbing !important;
+	user-select: none;
+}
+.col-drop-marker {
+	position: fixed;
+	width: 2px;
+	background: var(--focus);
+	z-index: 9000;
+	pointer-events: none;
+	box-shadow: 0 0 0 1px var(--bg);
+}
+.col-drag-pill {
+	position: fixed;
+	z-index: 9001;
+	pointer-events: none;
+	background: var(--fg);
+	color: var(--bg);
+	font-size: 12px;
+	padding: 3px 9px;
+	white-space: nowrap;
+	box-shadow: var(--shadow-float);
+}

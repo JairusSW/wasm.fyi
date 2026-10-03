@@ -9,8 +9,8 @@
 	import { workloadName } from '$lib/format';
 	import { ui } from '$lib/state.svelte';
 	import { BLOCKS, TEMPLATES } from './registry';
-	import { PRESETS } from './presets';
 	import { studio } from './store.svelte';
+	import { columns } from '$lib/order.svelte';
 
 	interface Cmd {
 		id: string;
@@ -56,7 +56,6 @@
 		{ id: 'redo', group: 'Layout', label: 'Redo layout change', hint: '⇧⌘Z', run: () => studio.redo(page) },
 		{ id: 'share', group: 'Layout', label: 'Copy share link for this layout', run: async () => { await navigator.clipboard.writeText(await studio.shareUrl(page)); studio.notify('Share link copied'); } },
 		...(studio.isCustom(page) ? [{ id: 'reset', group: 'Layout', label: 'Reset this page to its default layout', run: () => studio.reset(page) }] : []),
-		...PRESETS.filter((p) => !p.pages || p.pages.includes(page)).map((p) => ({ id: 'preset-' + p.id, group: 'Presets', label: 'Apply preset: ' + p.label, hint: p.description, run: () => studio.apply(page, p.build(page), `Applied “${p.label}” · ⌘Z to undo`) })),
 		...TEMPLATES.map((t) => ({ id: t.id, group: 'Add chart', label: 'Add chart: ' + t.label, hint: t.description, run: addBlock(t.type, t.config, t.span) })),
 		...Object.values(BLOCKS)
 			.filter((d) => !d.requires || studio.ctx[d.requires])
@@ -73,7 +72,8 @@
 		{ id: 'theme', group: 'View', label: ui.theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme', run: theme },
 		...(Object.keys(MACH) as MachineId[]).filter((m) => m !== ui.machine).map((m) => ({ id: 'm-' + m, group: 'View', label: 'Switch machine: ' + MACH[m].l.split('—')[0].trim(), run: () => (ui.machine = m) })),
 		{ id: 'snap', group: 'View', label: ui.snap === 's1' ? 'Show previous snapshot' : 'Show latest snapshot', run: () => (ui.snap = ui.snap === 's1' ? 's2' : 's1') },
-		{ id: 'all-rt', group: 'View', label: 'Show all runtimes', run: () => (ui.hide = {}) }
+		{ id: 'all-rt', group: 'View', label: 'Show all runtimes', run: () => (ui.hide = {}) },
+		...(columns.customized ? [{ id: 'cols', group: 'View', label: 'Reset column order', run: () => columns.reset() }] : [])
 	]);
 
 	/** Subsequence match with a bonus for word starts and contiguous runs. */

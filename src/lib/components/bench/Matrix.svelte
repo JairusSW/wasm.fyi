@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { arrange, columns, ordered } from '$lib/order.svelte';
+	import { reorder } from '$lib/reorder';
 	import { CFG } from '$lib/data/runtimes';
 	import { OV } from '$lib/data/snapshot';
 	import type { MetricKey, OvKey } from '$lib/data/types';
@@ -16,6 +18,10 @@
 	const gi = $derived(KEYS.indexOf(ui.group));
 	const step = (d: number) => (ui.group = KEYS[(gi + d + KEYS.length) % KEYS.length]);
 	const g = $derived(OV[ui.group]);
+	const colKey = $derived('matrix-' + ui.group);
+	const allCols = $derived(g.cols.map((_, i) => String(i)));
+	/** Column indices in the user's order for this view. */
+	const colIdx = $derived(arrange(allCols, (x) => x, columns.cols[colKey] ?? []).map(Number));
 
 	const SHARED_NOTE: Record<OvKey, string> = {
 		lat: 'Successful shared contracts from one locked report.',
@@ -35,7 +41,7 @@
 
 	const rows = $derived.by(() => {
 		const s = ui.scope;
-		return CFG.filter((c) => isVisible(s, c)).map((c) => {
+		return ordered(CFG.filter((c) => isVisible(s, c))).map((c) => {
 			const off = isOff(s, c.id);
 			const cv = cov(c.id,ui.scope);
 			const commonTimes=ui.group==='lat'?fmtUGroup(g.metrics.map((_,i)=>absOf(s,'lat',c.id,i)?.v ?? null),'ms'):null;
@@ -82,11 +88,11 @@
 	<div class="tbl-wrap">
 		<table class="mx" style:min-width="720px">
 			<thead>
-				<tr>
+				<tr use:reorder={{ onmove: (id, t, after) => columns.moveCol(colKey, allCols, id, t, after), onstep: (id, d) => columns.stepCol(colKey, allCols, id, colIdx.map(String), d) }}>
 					<th class="stick th-label">Runtime</th>
-					{#each g.cols as label, i (label)}
-						<th class="colh">
-							<button onclick={() => onmetric(g.metrics[i])} data-tip="Open the per-benchmark {label} matrix">{label}</button>
+					{#each colIdx as i (g.cols[i])}
+						<th class="colh" data-col={String(i)} data-col-label={g.cols[i]}>
+							<button onclick={() => onmetric(g.metrics[i])} data-tip="Open the per-benchmark {g.cols[i]} matrix · drag to reorder">{g.cols[i]}</button>
 						</th>
 					{/each}
 					<th class="colh">Correct</th>
@@ -96,7 +102,8 @@
 				{#each rows as r (r.c.id)}
 					<tr>
 						<td class="stick rtcell"><RtLabel c={r.c} profile mono bold /></td>
-						{#each r.cells as x, i (i)}
+						{#each colIdx as i (i)}
+							{@const x = r.cells[i]}
 							<td class="p0">
 								<button
 									class="cellbtn mono val"

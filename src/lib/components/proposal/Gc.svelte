@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { columns, ordered } from '$lib/order.svelte';
+	import { reorder } from '$lib/reorder';
 	import { CFG } from '$lib/data/runtimes';
 	import { featureValue, familyValue } from '$lib/feature-values';
  import { featureContracts } from '$lib/model';
@@ -10,7 +12,7 @@
 
 	const GC_W=featureContracts('gc').map(w=>[w.id,w.purpose || '',1] as [string,string,number]);
   const GC_D=$derived(Object.fromEntries(CFG.map(c=>[c.id,{thr:familyValue(ui.scope,'gc',c.id),ratio:familyValue(ui.scope,'gc',c.id,'rss'),st:'not measured',col:'not collected'}])));
-  const vis = $derived(CFG.filter((c) => isVisible(ui.scope, c)));
+  const vis = $derived(ordered(CFG.filter((c) => isVisible(ui.scope, c))));
 	const thrMax = $derived(Math.max(...vis.map((c) => GC_D[c.id].thr || 0), 1));
 	const ratioMax = $derived(Math.max(...vis.map((c) => GC_D[c.id].ratio || 0), 1));
 	const stColor = (st?: string) => (st?.startsWith('fails') ? 'var(--st-fail)' : 'var(--fg3)');
@@ -39,9 +41,9 @@
 <div class="tbl-wrap">
 	<table class="t" style:min-width="720px">
 		<thead>
-			<tr>
+			<tr use:reorder={{ onmove: (id, t, after) => columns.moveCfg(id, t, after), onstep: (id, d) => columns.stepCfg(id, vis.map((c) => c.id), d) }}>
 				<th>Workload</th>
-				{#each vis as c (c.id)}<th class="r"><RtLabel {c} /></th>{/each}
+				{#each vis as c (c.id)}<th class="r" data-col={c.id} data-col-label="{c.rt} {c.be}" tabindex="0"><RtLabel {c} /></th>{/each}
 			</tr>
 		</thead>
 		<tbody>

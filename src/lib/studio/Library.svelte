@@ -1,109 +1,152 @@
 <script lang="ts">
 	import { tick } from 'svelte';
-	import { BLOCKS, CATEGORIES, TEMPLATES } from './registry';
-	import { PRESETS } from './presets';
+	import { BLOCKS, TEMPLATES } from './registry';
 	import { studio } from './store.svelte';
+	import type { BlockConfig } from './types';
+
+	interface Item {
+		key: string;
+		type: string;
+		label: string;
+		description: string;
+		group: 'Charts' | 'Text' | 'Sections';
+		config?: BlockConfig;
+		span?: number;
+	}
 
 	const open = $derived(!!studio.library);
 	const page = $derived(studio.current);
 	let q = $state('');
-	let cat = $state<string>('All');
 	let input = $state<HTMLInputElement>();
+	let focused = $state<string>('');
+
+	const SECTION_ORDER = ['Overview', 'Benchmarks', 'History', 'Features', 'Page'];
+	const items: Item[] = [
+		...TEMPLATES.map((t) => ({ key: t.id, type: t.type, label: t.label, description: t.description, group: 'Charts' as const, config: t.config, span: t.span })),
+		{ key: 'chart', type: 'chart', label: 'Blank chart', description: 'Start from scratch: pick a chart type and a measure, or write a formula.', group: 'Charts' },
+		...['note', 'heading'].map((t) => ({ key: t, type: t, label: BLOCKS[t].label, description: BLOCKS[t].description, group: 'Text' as const })),
+		...Object.values(BLOCKS)
+			.filter((d) => !['chart', 'note', 'heading'].includes(d.type))
+			.sort((a, b) => SECTION_ORDER.indexOf(a.category) - SECTION_ORDER.indexOf(b.category))
+			.map((d) => ({ key: d.type, type: d.type, label: d.label, description: d.description, group: 'Sections' as const }))
+	];
+
+	const unavailable = (it: Item) => {
+		const def = BLOCKS[it.type];
+		if (def.requires && !studio.ctx[def.requires]) return 'Only on its own page';
+		if (def.unique && studio.layout(page).blocks.some((b) => b.type === it.type)) return 'Already on this page';
+		return null;
+	};
+	const shown = $derived(items.filter((it) => !q.trim() || (it.label + ' ' + it.description + ' ' + it.group).toLowerCase().includes(q.trim().toLowerCase())));
+	const groups = $derived((['Charts', 'Text', 'Sections'] as const).map((g) => ({ g, items: shown.filter((i) => i.group === g) })).filter((g) => g.items.length));
+	const current = $derived(shown.find((i) => i.key === focused) ?? shown.find((i) => !unavailable(i)) ?? shown[0]);
 
 	$effect(() => {
 		if (open) {
 			q = '';
+			focused = '';
 			tick().then(() => input?.focus());
 		}
 	});
 
-	const available = (type: string) => {
-		const def = BLOCKS[type];
-		if (def.requires && !studio.ctx[def.requires]) return 'Only on its own page';
-		if (def.unique && studio.layout(page).blocks.some((b) => b.type === type)) return 'Already on this page';
-		return null;
-	};
-	const match = (...s: string[]) => !q.trim() || s.join(' ').toLowerCase().includes(q.trim().toLowerCase());
-
-	const templates = $derived(cat === 'All' || cat === 'Charts' ? TEMPLATES.filter((t) => match(t.label, t.description, 'chart')) : []);
-	const blocks = $derived(Object.values(BLOCKS).filter((d) => (cat === 'All' || d.category === cat) && match(d.label, d.description, d.category)));
-	const presets = $derived(cat === 'All' || cat === 'Layouts' ? PRESETS.filter((p) => (!p.pages || p.pages.includes(page)) && match(p.label, p.description, 'layout')) : []);
-
-	async function add(type: string, config?: Record<string, unknown>, span?: number) {
-		const id = studio.add(page, type, config, span, studio.library?.after);
+	async function add(it: Item) {
+		if (unavailable(it)) return;
+		const id = studio.add(page, it.type, it.config, it.span, studio.library?.after);
 		studio.library = null;
 		if (!id) return;
-		studio.selected = BLOCKS[type].fields?.length ? id : null;
+		studio.editing = true;
 		await tick();
 		document.querySelector(`[data-id="${id}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 	}
-	function applyPreset(id: string) {
-		const p = PRESETS.find((x) => x.id === id);
-		if (!p) return;
-		studio.apply(page, p.build(page), `Applied “${p.label}” · ⌘Z to undo`);
+
+	// Drag an item out of the library to place it exactly where you drop it.
+	let press: { it: Item; x: number; y: number } | null = null;
+	function down(e: PointerEvent, it: Item) {
+		if (e.button !== 0 || unavailable(it)) return;
+		press = { it, x: e.clientX, y: e.clientY };
+	}
+	function move(e: PointerEvent) {
+		if (!press || Math.hypot(e.clientX - press.x, e.clientY - press.y) < 8) return;
+		const it = press.it;
+		press = null;
+		const id = studio.add(page, it.type, it.config, it.span);
 		studio.library = null;
+		if (!id) return;
+		studio.editing = true;
+		studio.pendingDrag = { page, id, x: e.clientX, y: e.clientY };
 	}
+
 	function onkeydown(e: KeyboardEvent) {
-		if (open && e.key === 'Escape') studio.library = null;
+		if (!open) return;
+		if (e.key === 'Escape') studio.library = null;
+		else if (e.key === 'Enter' && current && document.activeElement === input) add(current);
+		else if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && shown.length) {
+			e.preventDefault();
+			const i = Math.max(0, shown.indexOf(current!));
+			focused = shown[(i + (e.key === 'ArrowDown' ? 1 : -1) + shown.length) % shown.length].key;
+			tick().then(() => document.querySelector('.lib .item.on')?.scrollIntoView({ block: 'nearest' }));
+		}
 	}
+
+	const PreviewComp = $derived(current ? BLOCKS[current.type].component : null);
+	const previewConfig = $derived(current ? { ...BLOCKS[current.type].defaults(), ...(current.config ?? {}) } : {});
 </script>
 
-<svelte:window {onkeydown} />
+<svelte:window {onkeydown} onpointermove={move} onpointerup={() => (press = null)} />
 
 {#if open}
 	<div class="scrim" role="presentation" onclick={() => (studio.library = null)}></div>
 	<div class="lib float" role="dialog" aria-modal="true" aria-label="Add a block">
 		<div class="top">
-			<input bind:this={input} type="search" bind:value={q} placeholder="Search blocks, charts and layouts…" aria-label="Search the block library" />
+			<input bind:this={input} type="search" bind:value={q} placeholder="Find a chart or section…" aria-label="Search blocks" />
 			<button class="x" onclick={() => (studio.library = null)} aria-label="Close">Esc</button>
 		</div>
-		<div class="cats" role="tablist">
-			{#each ['All', ...CATEGORIES, 'Layouts'] as c (c)}
-				<button role="tab" aria-selected={cat === c} onclick={() => (cat = c)}>{c}</button>
-			{/each}
+		<div class="panes">
+			<div class="list" role="listbox" aria-label="Blocks">
+				{#each groups as g (g.g)}
+					<div class="group-title">{g.g}</div>
+					{#each g.items as it (it.key)}
+						{@const why = unavailable(it)}
+						<button
+							class="item"
+							class:on={current?.key === it.key}
+							role="option"
+							aria-selected={current?.key === it.key}
+							aria-disabled={!!why}
+							onmouseenter={() => (focused = it.key)}
+							onfocus={() => (focused = it.key)}
+							onpointerdown={(e) => down(e, it)}
+							onclick={() => add(it)}
+						>
+							<span class="name">{it.label}</span>
+							<span class="desc">{why ?? it.description}</span>
+						</button>
+					{/each}
+				{:else}
+					<div class="none fg3">Nothing matches “{q}”.</div>
+				{/each}
+			</div>
+			<div class="preview">
+				{#if current && PreviewComp}
+					{@const why = unavailable(current)}
+					<div class="pv-head">
+						<div>
+							<div class="pv-name">{current.label}</div>
+							<div class="small fg3">{current.description}</div>
+						</div>
+						<button class="add" disabled={!!why} onclick={() => add(current)}>{why ?? 'Add to page'}</button>
+					</div>
+					<div class="stage" aria-hidden="true" inert>
+						{#key current.key}
+							<div class="scaled">
+								<PreviewComp config={previewConfig} ctx={studio.ctx} editing={false} update={() => {}} />
+							</div>
+						{/key}
+					</div>
+					<div class="small fg3 hint">Live preview with current data · click to add, or drag it onto the page</div>
+				{/if}
+			</div>
 		</div>
-		<div class="scroll">
-			{#if presets.length}
-				<div class="group-title">Layout presets <span class="fg3">replace the whole page</span></div>
-				<div class="cards">
-					{#each presets as p (p.id)}
-						<button class="item preset" onclick={() => applyPreset(p.id)}>
-							<span class="name">{p.label}</span>
-							<span class="desc">{p.description}</span>
-						</button>
-					{/each}
-				</div>
-			{/if}
-			{#if templates.length}
-				<div class="group-title">Chart templates</div>
-				<div class="cards">
-					{#each templates as t (t.id)}
-						<button class="item" onclick={() => add(t.type, t.config, t.span)}>
-							<span class="tag">chart</span>
-							<span class="name">{t.label}</span>
-							<span class="desc">{t.description}</span>
-						</button>
-					{/each}
-				</div>
-			{/if}
-			{#if blocks.length}
-				<div class="group-title">Blocks</div>
-				<div class="cards">
-					{#each blocks as d (d.type)}
-						{@const why = available(d.type)}
-						<button class="item" disabled={!!why} onclick={() => add(d.type)} data-tip={why ?? undefined}>
-							<span class="tag">{d.category.toLowerCase()}</span>
-							<span class="name">{d.type === 'chart' ? 'Blank chart' : d.label}</span>
-							<span class="desc">{why ?? d.description}</span>
-						</button>
-					{/each}
-				</div>
-			{/if}
-			{#if !presets.length && !templates.length && !blocks.length}
-				<div class="none fg3">Nothing matches “{q}”.</div>
-			{/if}
-		</div>
-		<div class="foot small fg3">Blocks are added {studio.library?.after ? 'after the selected block' : 'at the end of the page'}. Drag them anywhere afterwards.</div>
 	</div>
 {/if}
 
@@ -118,10 +161,10 @@
 		position: fixed;
 		z-index: 71;
 		left: 50%;
-		top: 8vh;
+		top: 6vh;
 		transform: translateX(-50%);
-		width: min(860px, calc(100vw - 32px));
-		max-height: 84vh;
+		width: min(1080px, calc(100vw - 32px));
+		height: min(720px, 86vh);
 		display: flex;
 		flex-direction: column;
 		background: var(--bg2);
@@ -145,89 +188,115 @@
 		padding: 2px 10px;
 		color: var(--fg2);
 	}
-	.cats {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 2px;
-		padding: 0 12px;
-		border-bottom: 1px solid var(--line);
+	.panes {
+		flex: 1;
+		min-height: 0;
+		display: grid;
+		grid-template-columns: 300px 1fr;
 	}
-	.cats button {
-		padding: 7px 10px 6px;
-		font-size: 12px;
-		color: var(--fg2);
-		border-bottom: 2px solid transparent;
-	}
-	.cats button[aria-selected='true'] {
-		color: var(--fg);
-		border-bottom-color: var(--fg);
-	}
-	.scroll {
+	.list {
 		overflow: auto;
-		padding: 4px 12px 12px;
+		border-right: 1px solid var(--line);
+		padding: 4px 0 12px;
 	}
 	.group-title {
-		font-size: 11px;
+		font-size: 10px;
 		text-transform: uppercase;
-		letter-spacing: 0.06em;
-		color: var(--fg2);
-		padding: 12px 0 8px;
-	}
-	.group-title .fg3 {
-		text-transform: none;
-		letter-spacing: 0;
-		margin-left: 6px;
-	}
-	.cards {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-		gap: 8px;
+		letter-spacing: 0.08em;
+		color: var(--fg3);
+		padding: 12px 14px 4px;
 	}
 	.item {
-		border: 1px solid var(--line);
-		background: var(--bg);
-		padding: 10px 12px;
 		display: flex;
 		flex-direction: column;
-		gap: 4px;
+		gap: 2px;
+		width: 100%;
+		padding: 7px 14px;
 		text-align: left;
-		position: relative;
+		cursor: grab;
+		touch-action: none;
 	}
-	.item:hover:not(:disabled) {
-		border-color: var(--fg3);
+	.item.on {
 		background: var(--hover);
+		box-shadow: inset 2px 0 var(--focus);
 	}
-	.item:disabled {
+	.item[aria-disabled='true'] {
 		opacity: 0.45;
 		cursor: not-allowed;
-	}
-	.preset {
-		border-color: var(--line2);
-	}
-	.tag {
-		position: absolute;
-		top: 8px;
-		right: 10px;
-		font-family: var(--mono);
-		font-size: 10px;
-		color: var(--fg3);
 	}
 	.name {
 		font-weight: 600;
 		font-size: 13px;
-		padding-right: 60px;
 	}
 	.desc {
-		font-size: 12px;
-		color: var(--fg2);
-		line-height: 1.4;
+		font-size: 11px;
+		color: var(--fg3);
+		line-height: 1.35;
 	}
-	.none {
-		padding: 30px;
+	.preview {
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		padding: 14px;
+		gap: 10px;
+		background: var(--bg);
+	}
+	.pv-head {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		gap: 12px;
+	}
+	.pv-name {
+		font-size: 15px;
+		font-weight: 600;
+	}
+	.add {
+		background: var(--fg);
+		color: var(--bg);
+		padding: 6px 14px;
+		font-size: 13px;
+		flex: none;
+	}
+	.add:disabled {
+		background: var(--line2);
+		color: var(--fg3);
+		cursor: not-allowed;
+	}
+	.stage {
+		flex: 1;
+		min-height: 0;
+		overflow: hidden;
+		border: 1px solid var(--line);
+		position: relative;
+		background: var(--bg);
+		-webkit-mask-image: linear-gradient(to bottom, #000 85%, transparent);
+		mask-image: linear-gradient(to bottom, #000 85%, transparent);
+	}
+	/* Real component, rendered at full width and scaled to fit the stage. */
+	.scaled {
+		width: 154%;
+		transform: scale(0.65);
+		transform-origin: top left;
+		padding: 14px;
+		box-sizing: border-box;
+		display: flex;
+		flex-direction: column;
+		gap: 18px;
+		pointer-events: none;
+	}
+	.hint {
 		text-align: center;
 	}
-	.foot {
-		padding: 8px 12px;
-		border-top: 1px solid var(--line);
+	.none {
+		padding: 30px 14px;
+	}
+	@media (max-width: 760px) {
+		.panes {
+			grid-template-columns: 1fr;
+		}
+		.preview {
+			display: none;
+		}
 	}
 </style>

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { arrange, columns, ordered } from '$lib/order.svelte';
+	import { reorder } from '$lib/reorder';
  import PlugIcon from '$lib/components/PlugIcon.svelte';
  import FeatureResult from '$lib/components/FeatureResult.svelte';
  import FeatureEvidence from '$lib/components/FeatureEvidence.svelte';
@@ -21,15 +23,15 @@
 	const propLinks = PROPOSAL_IDS.map((id) => ({ id, label: PROPS[id].title }));
 
 	// ── Support matrix ─────────────────────────────────────────────────────
-	const featCols = [
-		...FEATURE_ENGINES.map((id) => ({ label: RTB[id].name, sub: RTB[id].lang, rt: id }))
-	];
+	/** Engine columns in the user's order (drag a header to change it). */
+	const engines = $derived(arrange(FEATURE_ENGINES, (id) => id, columns.cols['feature-engines'] ?? []));
+	const featCols = $derived(engines.map((id) => ({ label: RTB[id].name, sub: RTB[id].lang, rt: id })));
 	const groups = $derived([...new Set(FEATS.map(f=>f.g))].map(g=>({g,rows:FEATS.filter(f=>f.g===g).map(f=>{
-    return {f,count:`${featureContracts(f.id).length} corpus tests`,cells:[...FEATURE_ENGINES.map(id=>({...supportCell('?'),detail:'',tracks:channels.map(channel=>runtimeFeatureTrack(id,f,ui.scope,channel,undefined))}))]};
+    return {f,count:`${featureContracts(f.id).length} corpus tests`,cells:[...engines.map(id=>({...supportCell('?'),detail:'',tracks:channels.map(channel=>runtimeFeatureTrack(id,f,ui.scope,channel,undefined))}))]};
   })})));
 
 	// ── Spec tests ─────────────────────────────────────────────────────────
-	const cols = $derived(FEATURE_CFG.filter((c) => !ui.scope.hide[c.id] && engineFeatureVersions(c.rt,ui.scope,'stable').length>0));
+	const cols = $derived(ordered(FEATURE_CFG.filter((c) => !ui.scope.hide[c.id] && engineFeatureVersions(c.rt,ui.scope,'stable').length>0)));
 
 	// ── Proposal performance ───────────────────────────────────────────────
 	const PERF_NOTE={exec:'Steady execution · shared successful execution contracts per family; compile-only probes excluded.',compile:'Compilation · shared successful contracts per family.',mem:'Steady process peak RSS · shared successful contracts; includes adapter process.'};
@@ -98,10 +100,10 @@
 	<div class="tbl-wrap tall">
 		<table class="mx" style:min-width="1400px">
 			<thead>
-				<tr>
+				<tr use:reorder={{ onmove: (id, t, after) => columns.moveCol('feature-engines', FEATURE_ENGINES, id, t, after), onstep: (id, d) => columns.stepCol('feature-engines', FEATURE_ENGINES, id, engines, d) }}>
 					<th class="stick th-label" style:min-width="185px">Feature</th>
 					{#each featCols as h (h.label)}
-						<th class="fh">
+						<th class="fh" data-col={h.rt} data-col-label={h.label}>
 							{#if h.rt}
 								{@const rt = h.rt}
 								<button class="w5" onclick={() => ui.openProfile(rt)} data-tip="Open {h.label} runtime profile">{h.label}</button>
@@ -168,10 +170,10 @@
 	<div class="tbl-wrap tall">
 		<table class="mx" style:min-width="1000px">
 			<thead>
-				<tr>
+				<tr use:reorder={{ onmove: (id, t, after) => columns.moveCfg(id, t, after), onstep: (id, d) => columns.stepCfg(id, cols.map((c) => c.id), d) }}>
 					<th class="stick th-label" style:min-width="240px">Proposal / extension · corpus</th>
 					{#each cols as c (c.id)}
-						<th class="ch r">
+						<th class="ch r" data-col={c.id} data-col-label="{c.rt} {c.be}">
 							<span class="cname jr"><Swatch color={c.col} bg={c.hollow ? 'transparent' : c.col} />{c.rt}</span>
 							<div class="mono micro fg3">{c.be}</div>
 						</th>

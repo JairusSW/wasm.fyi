@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { ordered } from '$lib/order.svelte';
 	import { COMPAT } from '$lib/data/features';
 	import { CFG } from '$lib/data/runtimes';
 	import { viewData } from '$lib/view-data';
@@ -19,7 +20,7 @@
 	const absFmt = (v: number) => fmtU(v, 'ms');
 
 	const rows = $derived(
-		CFG.filter((c) => !isOff(ui.scope, c.id) && isVisible(ui.scope, c)).map((c) => {
+		ordered(CFG.filter((c) => !isOff(ui.scope, c.id) && isVisible(ui.scope, c))).map((c) => {
 			if (!geo) {
 				const k = KER.find((x) => x.id === ui.kernel) ?? KER[0];
 				const t = kt(k, c);
@@ -41,7 +42,7 @@
 	const byAbs = $derived([...ok].sort((a, b) => a.abs! - b.abs!)[0]);
 
 	const sup = $derived(
-		CFG.filter((c) => isVisible(ui.scope, c)).map((c) => {
+		ordered(CFG.filter((c) => isVisible(ui.scope, c))).map((c) => {
 			const cc = compatCell('simd',c.id,ui.scope);
 			const k=KER.find(k=>k.id===ui.kernel) || KER[0];
       const sc=featureValue(ui.scope,k.scalar,c.id,'compile'),si=featureValue(ui.scope,k.vector,c.id,'compile');
@@ -58,7 +59,7 @@
 		})
 	);
 	const ktab = $derived(
-		CFG.filter((c) => isVisible(ui.scope, c)).map((c) => ({
+		ordered(CFG.filter((c) => isVisible(ui.scope, c))).map((c) => ({
 			c,
 			cells: KER.map((k) => {
 				const t = kt(k, c);

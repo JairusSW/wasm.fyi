@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { check, evaluate, parse, variables } from './expr';
 import { renderMarkdown } from './markdown';
 import { BLOCKS, DEFAULT_LAYOUTS, TEMPLATES, defaultLayout, sanitize } from './registry';
-import { PRESETS } from './presets';
 import { CHART_DEFAULTS, buildDataset, toCsv, type ChartConfig } from './charts/query';
 import type { Scope } from '$lib/model';
 
@@ -81,10 +80,13 @@ describe('layouts', () => {
 		expect(l.blocks[0].config.configs).toEqual(['A']);
 		expect(l.blocks[1].id).not.toBe('<bad id>');
 		expect(l.blocks[1].span).toBe(BLOCKS.note.span); // invalid span falls back to the default width
-		expect(sanitize('nope')).toBeNull();
 	});
-	it('every preset builds a valid layout', () => {
-		for (const p of PRESETS) for (const page of p.pages ?? ['home']) expect(sanitize(p.build(page))?.blocks.length).toBe(p.build(page).blocks.length);
+	it('sanitize migrates removed chart types and keeps height/collapse', () => {
+		const l = sanitize({ blocks: [{ id: 'c', type: 'chart', span: 6, height: 300, collapsed: true, config: { kind: 'strip' } }] })!;
+		expect(l.blocks[0].config.kind).toBe('bar');
+		expect(l.blocks[0].height).toBe(300);
+		expect(l.blocks[0].collapsed).toBe(true);
+		expect(sanitize('nope')).toBeNull();
 	});
 });
 
@@ -97,15 +99,15 @@ describe('chart datasets', () => {
 		}
 	});
 	it('reports bad expressions instead of drawing', () => {
-		expect(buildDataset(scope, chart({ metric: 'expr', expr: 'steady +' })).error).toMatch(/Expression error/);
+		expect(buildDataset(scope, chart({ metric: 'expr', expr: 'steady +' })).error).toBeTruthy();
 	});
-	it('baseline normalization gives the baseline a ratio of 1', () => {
-		const ds = buildDataset(scope, chart({ metric: 'steady', normalize: 'baseline', configs: ['A', 'B'] }));
+	it('baseline comparison gives the baseline a ratio of 1', () => {
+		const ds = buildDataset(scope, chart({ metric: 'steady', compare: 'baseline', configs: ['A', 'B'] }));
 		const a = ds.rows.find((r) => r.cfg.id === 'A');
 		if (a?.value != null) expect(a.value).toBeCloseTo(1);
 	});
 	it('missing measurements are never counted as values', () => {
-		const ds = buildDataset(scope, chart({ metric: 'steady', cohort: 'each' }));
+		const ds = buildDataset(scope, chart({ metric: 'steady' }));
 		for (const r of ds.rows) {
 			if (r.n === 0) expect(r.value).toBeNull();
 			else expect(r.value).toBeGreaterThan(0);

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { columns, ordered } from '$lib/order.svelte';
+	import { reorder } from '$lib/reorder';
 	import { CFG, MACH } from '$lib/data/runtimes';
 	import type { MachineId } from '$lib/data/types';
 	import { ui } from '$lib/state.svelte';
@@ -48,16 +50,18 @@
 				<option value={v}>{l}</option>
 			{/each}
 		</select>
-		<div class="chips" role="group" aria-label="Runtimes shown">
-			{#each CFG as c (c.id)}
+		<div class="chips" role="group" aria-label="Runtimes shown · drag to reorder columns" use:reorder={{ onmove: (id, t, after) => columns.moveCfg(id, t, after), onstep: (id, d) => columns.stepCfg(id, ordered(CFG).map((c) => c.id), d) }}>
+			{#each ordered(CFG) as c (c.id)}
 				{@const on = !ui.hide[c.id]}
 				<button
 					class="chip"
+					data-col={c.id}
+					data-col-label="{c.rt} {c.be}"
 					class:off={!on}
 					aria-pressed={on}
 					onclick={() => toggle(c.id)}
 					ondblclick={(e) => solo(e, c.id)}
-					data-tip={`${c.rt} ${viewData.hosts[ui.machine].configurations[c.id]?.version || 'not collected'} · ${c.be}\n${c.kind}\n${on ? 'Click to hide · double-click to show only this' : 'Hidden · click to show, double-click to solo'}`}
+					data-tip={`${c.rt} ${viewData.hosts[ui.machine].configurations[c.id]?.version || 'not collected'} · ${c.be}\n${c.kind}\n${on ? 'Click to hide · double-click to show only this' : 'Hidden · click to show, double-click to solo'}\nDrag to reorder columns everywhere`}
 				>
 					<Swatch color={c.col} bg={c.hollow ? 'transparent' : c.col} />{c.rt}
 					<span class="be">{c.be}</span>

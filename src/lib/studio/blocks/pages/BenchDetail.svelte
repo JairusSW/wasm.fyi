@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { ordered } from '$lib/order.svelte';
 	import type { BlockProps } from '../../types';
 	import { siteHref } from '$lib/links';
 	import RtLabel from '$lib/components/RtLabel.svelte';
@@ -15,7 +16,7 @@ import { historySegments } from '$lib/history-values';
 
 	let { ctx }: BlockProps = $props();
 	const b = $derived(ctx.bench!);
-	const vis = $derived(CFG.filter((c) => isVisible(ui.scope, c)));
+	const vis = $derived(ordered(CFG.filter((c) => isVisible(ui.scope, c))));
 	const okC = $derived(vis.filter((c) => benchVal(ui.scope, b, c.id, 'steady').st === 'ok'));
 
 	// ── Latency ────────────────────────────────────────────────────────────

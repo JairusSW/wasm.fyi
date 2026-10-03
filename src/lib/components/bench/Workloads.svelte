@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { columns, ordered } from '$lib/order.svelte';
+	import { reorder } from '$lib/reorder';
 	import { siteHref } from '$lib/links';
 	import { goto } from '$lib/navigation';
 	import { CFG } from '$lib/data/runtimes';
@@ -13,7 +15,7 @@
 	import Seg from '../Seg.svelte';
 	import Swatch from '../Swatch.svelte';
 
-	const cols = $derived(CFG.filter((c) => isVisible(ui.scope, c)));
+	const cols = $derived(ordered(CFG.filter((c) => isVisible(ui.scope, c))));
 
 	const cellFor = (b: Bench, c: Cfg, cf: number, caseLabel?: string, formatted?:string) => {
 		const s = ui.scope;
@@ -153,11 +155,11 @@
 <div class="tbl-wrap scroll">
 	<table class="mx" style:min-width="980px">
 		<thead>
-			<tr>
+			<tr use:reorder={{ onmove: (id, t, after) => columns.moveCfg(id, t, after), onstep: (id, d) => columns.stepCfg(id, cols.map((c) => c.id), d) }}>
 				<th class="stick th-label wl">Workload</th>
 				{#each cols as c (c.id)}
 					{@const mark = ui.sortBy?.id === c.id ? (ui.sortBy.dir > 0 ? '↑' : '↓') : ''}
-					<th class="colh">
+					<th class="colh" data-col={c.id} data-col-label="{c.rt} {c.be}">
 						<button class="sort" onclick={() => sortClick(c)} aria-label="Sort by {c.rt} {c.be}">
 							<span class="rtn"><Swatch color={c.col} bg={c.hollow ? 'transparent' : c.col} />{c.rt}<span class="small fg3">{mark}</span></span>
 							<span class="mono micro fg3">{c.be}{c.id === ui.baseline ? ' · BASE' : ''}</span>

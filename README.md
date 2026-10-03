@@ -81,16 +81,15 @@ The [application corpus](docs/corpora.md) covers 27 workload categories with pin
 
 ## Studio: modular, customizable pages
 
-Every page is a layout of **blocks** on a 12-column grid (`src/lib/studio/`). Outside edit mode a page looks exactly as designed; press **Customize** in the header (or **E**) to edit it.
+Every page is a layout of **blocks** on a 12-column grid (`src/lib/studio/`). It looks exactly as designed until you change it.
 
-- **Rearrange and resize:** drag a block by its ⠿ handle; drag its right edge to snap its width to grid columns. With the handle focused, arrow keys move it, `[` `]` resize it, Enter opens settings, D duplicates, H hides and Delete removes. ⌘Z / ⇧⌘Z undo and redo.
-- **Add blocks** from the library: page sections (hero, leaders, matrix, workloads…), notes (a safe Markdown subset), headings, spacers, and **charts**.
-- **Charts** are built from the measured view: ranked bars, grouped columns, heatmaps, strip plots, scatter, history lines, tables and single stats. Pick a metric or write a **derived metric** such as `compile + inst + first + 999 * steady` (a small, safe expression language in `expr.ts`; no `eval`). Missing inputs stay missing; aggregates use a shared workload set and say so when they can't. Charts export as CSV, SVG, PNG or a chart definition.
-- **Presets** rearrange a whole page for a question (startup, throughput, memory…).
-- **Dashboards** at `/studio` are free-form pages you create, rename and fill.
-- **Share** copies a link that carries the layout in the URL fragment (deflate + base64url); recipients preview it and can keep or discard it. Layouts can also be exported/imported as JSON.
-- **⌘K** opens a command palette: go to pages, dashboards and workloads, add charts, apply presets, switch machine or theme.
+- **Move anything:** hover a block and drag the ✥ grip, no mode needed. Press **Customize** (or **E**) for the full editor, where the whole title bar drags.
+- **Resize:** drag a block's right edge to snap its width to grid columns. Drag its bottom edge to make it shorter; taller content fades out with a *Show all* button, and dragging to the top collapses it to its title bar.
+- **Reorder columns:** drag any table column header. Runtime columns share one order across every table, chart and the scope bar (Alt+←/→ from the keyboard).
+- **Add blocks** from the library, which shows a live preview of each with current data. Click to add it, or drag it straight onto the page.
+- **Charts** come in four kinds, each answering one question: *Ranking*, *Trade-off* (scatter), *By workload* (heatmap) and *History*. Pick a measure, or write a formula such as `compile + inst + first + 999 * steady`. A small, safe expression language (`expr.ts`, no `eval`) evaluates it. Missing inputs stay missing, and averages use workloads measured on every runtime, saying so when they can't. Charts export as CSV, SVG or PNG.
+- **Dashboards** at `/studio`, **share links** (the layout travels in the URL fragment), JSON export/import, undo/redo (⌘Z / ⇧⌘Z, or the Undo button on toasts) and a **⌘K** command palette.
 
-Customizations are stored in `localStorage` (`wasmfyi:studio:v1`) as overrides on top of the default layouts in `registry.ts`, so the shipped design can evolve without breaking saved layouts; unknown blocks are dropped and configs repaired on load (`sanitize`).
+Layouts are saved in `localStorage` (`wasmfyi:studio:v1`, column order in `wasmfyi:order:v1`) as overrides on the defaults in `registry.ts`. Unknown blocks are dropped and configs repaired on load (`sanitize`).
 
-To add a block: create a component taking `BlockProps`, then register it in `BLOCKS` (`registry.ts`) with defaults, a default width and an optional settings schema — the settings panel is generated from it.
+To add a block: write a component taking `BlockProps`, then register it in `BLOCKS` with defaults, a default width and an optional settings schema. The settings panel is generated from it.

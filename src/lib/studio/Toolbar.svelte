@@ -40,7 +40,6 @@
 	<div class="ed-bar" role="toolbar" aria-label="Layout editor">
 		<span class="mode"><span class="dot"></span>Editing <b>{studio.pageName(page)}</b>{#if !studio.isCustom(page)}<span class="fg3"> · default layout</span>{/if}</span>
 		<button class="tb primary" onclick={() => (studio.library = {})}>＋ Add block</button>
-		<button class="tb" onclick={() => (studio.library = {})} data-tip="Layout presets live in the library">Presets</button>
 		<span class="sep"></span>
 		<button class="tb" disabled={!studio.canUndo(page)} onclick={() => studio.undo(page)} data-tip="Undo (⌘Z)">↶</button>
 		<button class="tb" disabled={!studio.canRedo(page)} onclick={() => studio.redo(page)} data-tip="Redo (⇧⌘Z)">↷</button>
@@ -64,13 +63,19 @@
 			{/if}
 		</div>
 		<input bind:this={fileInput} type="file" accept="application/json,.json" hidden onchange={importFile} />
-		<span class="hint small fg3">Drag ⠿ to move · drag the right edge to resize</span>
+		<span class="hint small fg3">Drag ✥ to move · drag the right edge to resize, the bottom edge to shorten · {studio.savedAt ? 'Saved' : 'Changes save automatically'}</span>
 		<button class="tb done" onclick={done}>Done</button>
 	</div>
 {/if}
 
 {#if studio.toast}
-	<div class="toast float" role="status">{studio.toast}</div>
+	{@const t = studio.toast}
+	<div class="toast float" role="status">
+		<span>{t.text}</span>
+		{#if t.undo && studio.canUndo(t.undo)}
+			<button class="undo" onclick={() => { studio.undo(t.undo!); studio.toast = null; }}>Undo</button>
+		{/if}
+	</div>
 {/if}
 
 <svelte:window onclick={(e) => more && !(e.target as Element).closest('.more-wrap') && ((more = false), (confirmReset = false))} />
@@ -159,7 +164,16 @@
 		border-color: var(--focus);
 		color: var(--fg);
 	}
+	.undo {
+		border: 1px solid var(--line2);
+		padding: 1px 10px;
+		font-size: 12px;
+		color: var(--focus);
+	}
 	.toast {
+		display: flex;
+		align-items: center;
+		gap: 12px;
 		position: fixed;
 		left: 50%;
 		bottom: 24px;

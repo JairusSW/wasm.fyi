@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { ordered } from '$lib/order.svelte';
 	import Carousel from '$lib/components/Carousel.svelte';
 	import Seg from '$lib/components/Seg.svelte';
 	import Swatch from '$lib/components/Swatch.svelte';
@@ -41,7 +42,7 @@ import { historyCell, historyChange, historySegments } from '$lib/history-values
 		const s = SER[id]!;
 		return ui.histMode === 'ratio' ? s[i] : isCov ? (s[i] - s[PIN]) / viewData.history[ui.machine].workloads.length : s[i] / s[PIN] - 1;
 	};
-	const plotC = $derived(CFG.filter((c) => isVisible(ui.scope, c) && SER[c.id]));
+	const plotC = $derived(ordered(CFG.filter((c) => isVisible(ui.scope, c) && SER[c.id])));
 	const fmtV = (v: number) => (isCov ? n0(v) : fmtU(v, M.u));
 
 	const scale = $derived.by(() => {
