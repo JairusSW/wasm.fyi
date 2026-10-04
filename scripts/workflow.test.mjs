@@ -119,7 +119,7 @@ test('wasm.fyi transport exports only the verified website projection', async ()
     const metadata = await packEvidence(source, archive, true, true, true);
     assert.equal(metadata.profile, 'wasm.fyi-v1');
     assert.equal(metadata.sha256, await fileDigest(archive));
-    command('gtar', ['-I', 'zstd', '-xf', archive, '-C', output]);
+    command(process.platform==='darwin'?'gtar':'tar', ['-I', 'zstd', '-xf', archive, '-C', output]);
     const relative = (await readFile(join(output, 'latest-wasm-fyi-report.txt'), 'utf8')).trim();
     const exported = join(output, relative);
     const projection = JSON.parse(await readFile(join(exported, 'data.json'), 'utf8'));
