@@ -77,7 +77,7 @@ else if (action === 'corpus-check') {
   const suite = await prepareCorpus(settings, run);
   verifyCorpusV8(suite);
   const id = 'corpus-check-' + new Date().toISOString().replace(/[:.]/g, '-') + '-' + randomUUID().slice(0, 8);
-  invoke('check', '--suite', suite, '--runtimes', runtimes, '--scenarios', 'first-call,steady', '--launches', '1', '--samples', '1', '--operations', '1', '--warmup', '0', '--timeout', collection.timeout, '--out', join(site, '.wasmbench/experiments', id));
+  invoke('check', '--suite', suite, '--runtimes', runtimes, '--scenarios', 'first-call,steady', '--launches', '1', '--samples', '1', '--operations', '1', '--warmup', '0', '--timeout', collection.timeout, '--validation-profile',process.env.WASMBENCH_VALIDATION_PROFILE || collection.validationProfile || 'all', '--out', join(site, '.wasmbench/experiments', id));
 }
 else if (action === 'doctor') invoke('doctor');
 else if (action === 'build') {
@@ -103,7 +103,7 @@ else if (action === 'build') {
   // first use, warmed execution. Lifetime RSS is reaped from those same trials;
   // a single steady memory pass retains heap/boundary metrics before native code.
   const lifecycleScenarios=['compile','instantiate','first-call','steady'];
-  const shared = ['--archive-tools=true','--suite', suite, '--runtimes', runtimes, '--timeout', collection.timeout, ...(process.env.WASMBENCH_VALIDATION_PROFILE ? ['--validation-profile', process.env.WASMBENCH_VALIDATION_PROFILE] : [])];
+  const shared = ['--archive-tools=true','--suite', suite, '--runtimes', runtimes, '--timeout', collection.timeout, '--validation-profile',process.env.WASMBENCH_VALIDATION_PROFILE || collection.validationProfile || 'all'];
   const logicalCpus=availableParallelism();
   const requestedWorkers=number('WASMBENCH_WORKERS',collection.workers||1);
   const workers=workersWithinCpuBudget(logicalCpus,requestedWorkers);

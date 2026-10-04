@@ -15,6 +15,7 @@
   ],
   "collection": {
     "suite": "wago",
+    "validationProfile": "all",
     "runtimes": [
       "wasmtime",
       "wasmtime-winch",

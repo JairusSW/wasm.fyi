@@ -13,7 +13,9 @@ default remains three samples for compilation, instantiation and steady executio
 and one for first call, memory and native code. Process lifetime peak RSS is
 recorded once per timing trial, covering all its samples. Compilation and
 instantiation are not repeated for RSS; one separate steady memory sample retains
-heap and boundary metrics. Each timing peak records its source run explicitly.
+heap and boundary metrics. Each timing peak records its source run explicitly. Corpus admission uses the
+full Wasm validation profile so valid artifacts requiring proposals reach the
+engine checks; this does not enable features that an engine has disabled.
 
 ## Local website workflow
 
