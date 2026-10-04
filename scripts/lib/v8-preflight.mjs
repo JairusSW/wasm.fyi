@@ -2,16 +2,18 @@ import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 
 // Reject a stale optimizing pipeline before collecting or publishing timings.
-export function verifyV8(root, pin, runtimes) {
-  const mode=runtimes.includes('v8-optimizing-only')?'optimizing-only':runtimes.includes('v8')?'production-default':null;
+export function verifyV8(root, pin, runtimes, requestedMode) {
+  const controlledDefault=runtimes.includes('v8') && requestedMode;
+  if(controlledDefault && !['optimizing-only','liftoff-only'].includes(requestedMode))throw Error('Invalid V8 compiler mode');
+  const mode=runtimes.includes('v8-optimizing-only')?'optimizing-only':runtimes.includes('v8')?(requestedMode || 'production-default'):null;
   if (!mode) return;
-    const compilerFlags=mode==='optimizing-only'?['--allow-natives-syntax','--no-liftoff','--no-wasm-tier-up','--no-wasm-lazy-compilation']:[];
-    const result = spawnSync(process.execPath, [...compilerFlags,join(root, 'adapters/v8/adapter.mjs'),...(mode==='optimizing-only'?['--compiler-mode=optimizing-only']:[])], {
+    const compilerFlags=mode!=='production-default'?['--allow-natives-syntax',mode==='liftoff-only'?'--liftoff-only':'--no-liftoff','--no-wasm-tier-up','--no-wasm-lazy-compilation',...(controlledDefault?['--no-wasm-native-module-cache']:[])]:[];
+    const result = spawnSync(process.execPath, [...compilerFlags,join(root, 'adapters/v8/adapter.mjs'),...(mode!=='production-default'?['--compiler-mode='+mode]:[])], {
       input: JSON.stringify({version:1,id:'tier-preflight',method:'describe'})+'\n', encoding:'utf8', timeout:30_000
     });
     if (result.status !== 0) throw new Error(`V8 ${mode} preflight failed: ${result.stderr || result.error}`);
     const description=JSON.parse(result.stdout.trim()).description;
-    validateV8Description(description, pin, mode,{allowLegacyCache:mode==='optimizing-only'});
+    validateV8Description(description, pin, mode,{allowLegacyCache:!controlledDefault && mode==='optimizing-only'});
     console.log(`Verified V8 ${pin.v8}: ${mode}`);
 }
 

@@ -20,6 +20,7 @@ const action = process.argv[2];
 if (action === 'collect') process.env.WASMBENCH_RECORD_FAILURES ||= '1';
 const { root, settings, run } = await harness();
 const collection = {...settings.collection, timeout:process.env.WASMBENCH_TIMEOUT || settings.collection.timeout};
+if(collection.v8CompilerMode)process.env.WASMBENCH_V8_COMPILER_MODE ||= collection.v8CompilerMode;
 const featureSuite = process.env.WASMBENCH_SUITE?.includes('corpora/features/') || process.env.WASMBENCH_SUITE==='all';
 const runtimes = process.env.WASMBENCH_RUNTIMES || (featureSuite ? featureConfigurations(settings) : collection.runtimes).join(',');
 if(runtimes.split(',').includes('wasmer-llvm') && ['build','collect','corpus-check'].includes(action))throw Error('wasmer-llvm is retired from the website benchmark collection; use wasmer-singlepass.');
@@ -92,7 +93,7 @@ else if (action === 'build') {
     if(process.env.WASMBENCH_SKIP_WAGO_BUILD==='1')console.log('Using the prebuilt Wago adapter for this isolated worker.');
     else {if (process.env.WASMBENCH_SKIP_HARNESS_PATCH !== '1') patchHarness(root);invoke('build','--runtimes','wago','--wago-source',process.env.WAGO_SOURCE);}
   }
-  verifyV8(root, settings.node, runtimes.split(','));
+  verifyV8(root, settings.node, runtimes.split(','),process.env.WASMBENCH_V8_COMPILER_MODE);
   const id = new Date().toISOString().replace(/[:.]/g, '-') + '-' + randomUUID().slice(0, 8);
   const directory = join(site, '.wasmbench/experiments', id);
   await mkdir(directory, { recursive: true });

@@ -16,6 +16,7 @@
   "collection": {
     "suite": "wago",
     "validationProfile": "all",
+    "v8CompilerMode": "optimizing-only",
     "runtimes": [
       "wasmtime",
       "wasmtime-winch",

@@ -21,13 +21,15 @@ reports.sort((a,b)=>b.created.localeCompare(a.created));
 const settings=await config();
 for(const report of reports)for(const runtime of report.runtimes) {
   const modes={'v8-optimizing-only':'optimizing-only','v8-liftoff-only':'liftoff-only'};
+  if(runtime.id==='v8' && ['optimizing-only','liftoff-only'].includes(runtime.description.backend))modes.v8=runtime.description.backend;
   if(modes[runtime.id])validateV8Description(runtime.description,settings.node,modes[runtime.id],{allowLegacyCache:true});
 }
 // Historical WasmFX reports remain in the sealed evidence store, but the
 // configuration is intentionally excluded from new feature and benchmark views.
 const configurations = { A:'wasmtime', B:'wasmtime-winch', D:'wasmer-singlepass', E:'wazero', F:'v8', G:'wago', I:'wasmi', K:'wasm3', L:'wavm', M:'spidermonkey', N:'jsc', O:'deno', P:'wamr', Q:'wazero-interpreter', S:'v8-wasmfx' };
 const scenarios = { compile:'compile', inst:'instantiate', first:'first-call', steady:'steady' };
-const memoryScenarios={rss:'steady',rssCompile:'compile',rssInst:'instantiate',rssFirst:'first-call'};
+const memoryScenarios={rss:'steady',rssCompile:'compile',rssInst:'instantiate',rssFirst:'first-call',rssCurrent:'steady',rssCurrentCompile:'compile',rssCurrentInst:'instantiate',rssCurrentFirst:'first-call'};
+const memoryObservers=Object.fromEntries(Object.keys(memoryScenarios).map(metric=>[metric,metric.startsWith('rssCurrent')?'process.rss':'process.peak_rss']));
 const prepared=JSON.parse(await readFile(join(site,'corpora/catalog.json')));
 if(prepared.schema!==1)throw Error('Unknown prepared corpus schema');
 const preparedById=new Map(prepared.workloads.map(w=>[w.contractId,w]));
@@ -109,19 +111,19 @@ for (const [machine, os] of [['m1','linux'],['m2','darwin']]) {
         // Partial sealed passes advance only metrics they actually measured.
         // A timing-only snapshot must not erase the last measured RSS or code image.
         const candidates=cohort.filter(report=>memoryScenarios[metric]
-          ? report.memory.some(m=>m.runtime===runtime && m.workload===workload.id && m.scenario===memoryScenarios[metric] && m.metric==='process.peak_rss')
+          ? report.memory.some(m=>m.runtime===runtime && m.workload===workload.id && m.scenario===memoryScenarios[metric] && m.metric===memoryObservers[metric])
           : metric==='code'
             ? report.codeRecords.some(c=>c.runtime===runtime && c.workload===workload.id)
             : report.summaries.some(s=>s.runtime===runtime && s.workload===workload.id && s.scenario===scenarios[metric] && s.profile==='timing'));
         for (const [i,snapshot] of ['s1','s2'].entries()) {
           const report=candidates[i];
           if (!report) continue;
-          const cell=memoryScenarios[metric]?measuredMemory(report,runtime,workload.id,workload.artifactSha256,memoryScenarios[metric],'process.peak_rss'):
+          const cell=memoryScenarios[metric]?measuredMemory(report,runtime,workload.id,workload.artifactSha256,memoryScenarios[metric],memoryObservers[metric]):
             metric==='code'?measuredCodeImage(report,runtime,workload.id,workload.artifactSha256):
             measuredTiming(report,runtime,workload.id,workload.artifactSha256,scenarios[metric]);
           const factor=memoryScenarios[metric]?1024**2:metric==='code'?1024:1e6;
           const summary=report.summaries.find(s=>s.runtime===runtime && s.workload===workload.id && s.scenario===(scenarios[metric] || 'steady') && s.profile==='timing');
-          const memory=memoryScenarios[metric]?report.memory.find(m=>m.runtime===runtime && m.workload===workload.id && m.scenario===memoryScenarios[metric] && m.metric==='process.peak_rss'):null;
+          const memory=memoryScenarios[metric]?report.memory.find(m=>m.runtime===runtime && m.workload===workload.id && m.scenario===memoryScenarios[metric] && m.metric===memoryObservers[metric]):null;
           const launchMedians=memoryScenarios[metric]?(memory?.launch_values || []).map(v=>v.bytes/factor):metric==='code'?[]:Object.values(summary?.launch_medians || {}).map(v=>v/factor);
           view.snapshots[snapshot][`${workload.id}|${slot}|${metric}`]={st:status[cell.status], ...(cell.status==='ok'?{v:cell.value/factor, ...(cell.interval?{interval:cell.interval.map(v=>v/factor)}:{})}:{reason:reasonId(cell.reason)}),report:report.id,
             launchMedians};
