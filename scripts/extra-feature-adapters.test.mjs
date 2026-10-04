@@ -13,7 +13,7 @@ function protocol(command,workload,scenario='steady',mutate=()=>{}) {
   const result=spawnSync(command[0],command.slice(1),{input:requests.map(r=>JSON.stringify(r)).join('\n')+'\n',encoding:'utf8',timeout:30000,maxBuffer:1024*1024});
   assert.equal(result.status,0,result.stderr);return result.stdout.trim().split('\n').map(line=>JSON.parse(line));
 }
-for(const runtime of ['wasmi','wasmedge','wasm3','wavm','wamr','chicory'].filter(runtime=>!process.env.WASMBENCH_RUNTIMES||process.env.WASMBENCH_RUNTIMES.split(',').includes(runtime)))test(`${runtime} verifies real lifecycle calls and withholds samples for changed inputs or failed oracles`,async context=>{
+for(const runtime of ['wasmi','wasmedge','wasm3','wavm','wamr','chicory'].filter(runtime=>(process.env.WASMBENCH_RUNTIMES||settings.collection.runtimes.join(',')).split(',').includes(runtime)))test(`${runtime} verifies real lifecycle calls and withholds samples for changed inputs or failed oracles`,async context=>{
   if(runtime==='wavm'){context.skip('Unreleased WAVM SDK excluded by release-only policy');return;}
   const binary=join(root,'bin',runtime==='chicory'?'adapter-chicory.jar':'adapter-'+runtime);
   if(!await exists(binary)) {

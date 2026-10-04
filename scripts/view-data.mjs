@@ -105,7 +105,7 @@ for(const runId of codeInspectionDirectories){
   if(index.schema!==1 || index.runId!==runId)throw new Error('Invalid code inspection index: '+runId);
   codeInspectionRuns.set(runId,new Set(index.records.map(record=>record.trial)));
 }
-for (const report of reports) output.reports[report.id] = { runId:report.runId, created:report.created, evidence:report.evidence, sha256:report.evidenceSha256, options:report.options,memorySource:report.memorySource,codeSource:report.codeSource,codeRecords:report.codeRecords.map(({runtime,workload,trial,status,report_record_index})=>({runtime,workload,trial,status,index:report_record_index,inspectable:codeInspectionRuns.get(report.codeSource?.id)?.has(trial) || false})),configurations:report.runtimes.map(c=>c.id),host:report.host.os };
+for (const report of reports) output.reports[report.id] = { collectionBundle:report.collectionBundle, runId:report.runId, created:report.created, evidence:report.evidence, sha256:report.evidenceSha256, options:report.options,memorySource:report.memorySource,codeSource:report.codeSource,codeRecords:report.codeRecords.map(({runtime,workload,trial,status,report_record_index})=>({runtime,workload,trial,status,index:report_record_index,inspectable:codeInspectionRuns.get(report.codeSource?.id)?.has(trial) || false})),configurations:report.runtimes.map(c=>c.id),host:report.host.os };
 for (const [machine, os] of [['m1','linux'],['m2','darwin']]) {
   const selected = reports.filter(r=>r.host.os===os);
   if (!selected.length) throw new Error('Missing measured host: '+os);

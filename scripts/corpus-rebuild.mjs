@@ -225,6 +225,7 @@ for(const b of lock.benchmarks.filter(b=>requested.includes(b.id))) {
   await writeFile(join(directory,'report.json'),JSON.stringify({schema:1,requested,outcomes},null,2)+'\n');
 }
 await writeFile(join(directory,'suite.json'),JSON.stringify(suite,null,2)+'\n');
+await writeFile(join(site,'.wasmbench/latest-source-build.json'),JSON.stringify({directory})+'\n');
 console.log(`Source build: ${suite.length}/${requested.length} verified; ${directory}`);
 if(outcomes.some(o=>o.status!=='verified'))process.exitCode=1;
 else if(!process.argv.some(arg=>arg.startsWith('--ids='))) {

@@ -95,6 +95,7 @@ import { historySegments } from '$lib/history-values';
 	);
 
   const references=$derived([...new Set(vis.flatMap(c=>['compile','inst','first','steady','rss','code'].map(metric=>viewCell(ui.machine,ui.snap,b.id,c.id,metric).report)).filter(Boolean))].map(id=>({id,...viewData.reports[id]})));
+  const collectionBundles=$derived([...new Map(references.flatMap(r=>r.collectionBundle?[[r.collectionBundle.url,r.collectionBundle] as const]:[])).values()]);
   const meta=$derived([
     {k:'Purpose',v:b.purpose || b.group},{k:'Input',v:b.input || 'not recorded'},
     {k:'Wasm artifact',v:fmtU(b.kb,'KiB')+' · sha256 '+b.artifactSha256},
@@ -111,6 +112,7 @@ import { historySegments } from '$lib/history-values';
     {k:'Sampling / warmup',v:references.map(r=>r.runId+': '+JSON.stringify(r.options)).join(' · ')},
     {k:'Reset policy',v:b.reset || 'not recorded'},
     {k:'Correctness oracle',v:JSON.stringify(b.oracle) || 'not recorded'},
+    {k:'Collection bundles',v:references.map(r=>r.collectionBundle?.id).filter(Boolean).join(' · ') || 'legacy collection'},
     {k:'Raw evidence',v:references.map(r=>r.evidence+' · sha256 '+r.sha256).join(' · ')},
     {k:'Provenance',v:'Collected on both named hosts; exact artifacts and adapter identities sealed per report.'}
   ]);
@@ -449,3 +451,7 @@ import { historySegments } from '$lib/history-values';
 		white-space: pre-wrap;
 	}
 </style>
+
+{#each collectionBundles as bundle (bundle.url)}
+  <p class="note"><a href={siteHref(bundle.url)}>Collection bundle {bundle.id} ({bundle.machine}) ↗</a> · exact adapters and run metadata</p>
+{/each}

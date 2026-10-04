@@ -21,7 +21,7 @@ check:
 test:
     pnpm test
     pnpm test:ai
-    node --test scripts/plugin-evidence.test.mjs scripts/retention.test.mjs scripts/release-policy.test.mjs scripts/weekly-history.test.mjs scripts/workflow.test.mjs scripts/application-corpus.test.mjs scripts/corpus-v8.test.mjs scripts/upstream-sources.test.mjs scripts/feature-adapter.test.mjs scripts/wasmer-adapter.test.mjs scripts/v8-preflight.test.mjs scripts/lib/feature-configurations.test.mjs scripts/extra-feature-adapters.test.mjs scripts/command-input.test.mjs scripts/verify-seal.test.mjs scripts/collection-recovery.test.mjs
+    node --test scripts/lib/benchmark-plan.test.mjs scripts/lib/corpus-collection.test.mjs scripts/benchmark-workflow.test.mjs scripts/plugin-evidence.test.mjs scripts/retention.test.mjs scripts/release-policy.test.mjs scripts/weekly-history.test.mjs scripts/workflow.test.mjs scripts/application-corpus.test.mjs scripts/corpus-v8.test.mjs scripts/upstream-sources.test.mjs scripts/feature-adapter.test.mjs scripts/wasmer-adapter.test.mjs scripts/v8-preflight.test.mjs scripts/lib/feature-configurations.test.mjs scripts/extra-feature-adapters.test.mjs scripts/command-input.test.mjs scripts/verify-seal.test.mjs scripts/collection-recovery.test.mjs
 
 # Validate gathered snapshots and their raw evidence.
 integration-audit:
@@ -142,7 +142,8 @@ corpus-check:
     node scripts/bench.mjs corpus-check
 
 # Build every application, library, kernel and feature artifact from source.
-corpus-build: corpus-build-all
+corpus-build *args:
+    node scripts/benchmark.mjs build-corpus "$@"
 
 corpus-build-all:
     node scripts/corpus-build-all.mjs
@@ -264,3 +265,27 @@ corpus-v8-local-check:
 # Refresh retained upstream source/build/fixture files from the configured checkout.
 corpus-sources-refresh:
     node scripts/upstream-sources.mjs
+
+# Capture each cached corpus, retain resumable state, and update the local site.
+benchmark *args:
+    node scripts/benchmark.mjs run "$@"
+
+benchmark-resume id:
+    node scripts/benchmark.mjs resume {{quote(id)}}
+
+benchmark-status *ids:
+    node scripts/benchmark.mjs status "$@"
+
+benchmark-stop id:
+    node scripts/benchmark.mjs stop {{quote(id)}}
+
+# Cache existing Wasm and fixtures without rebuilding them.
+corpus-cache *args:
+    node scripts/benchmark.mjs cache "$@"
+
+benchmark-test:
+    node --test scripts/lib/benchmark-plan.test.mjs scripts/lib/corpus-collection.test.mjs scripts/benchmark-workflow.test.mjs
+
+# Archive retained results without source checkouts or build caches.
+benchmark-export id output:
+    node scripts/benchmark-export.mjs {{quote(id)}} {{quote(output)}}

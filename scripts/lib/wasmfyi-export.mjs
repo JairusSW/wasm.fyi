@@ -64,5 +64,6 @@ export function validateWasmFyiReceipt(receipt) {
   assert(/^[a-f0-9]{64}$/.test(receipt.sourceReportSha256), 'Invalid source report digest');
   assert(/^[a-f0-9]{64}$/.test(receipt.sourceChecksumsSha256), 'Invalid source seal digest');
   assert(Number.isSafeInteger(receipt.sourceReportFiles) && receipt.sourceReportFiles > 0, 'Invalid source report file count');
+  if(receipt.collectionBundle){const b=receipt.collectionBundle;assert(/^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$/.test(b.id)&&/^[A-Za-z0-9][A-Za-z0-9_.-]*$/.test(b.machine),'Invalid collection bundle identity');assert.equal(b.url,`/wasmbench/runs/${b.id}/${b.machine}/bundle/index.json`,'Invalid collection bundle URL');}
   return receipt;
 }

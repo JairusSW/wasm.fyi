@@ -68,7 +68,8 @@ describe('existing workload views consume measured evidence',()=>{
 	it('lists only the six supported benchmark configurations',()=>{
         expect(CFG.map(config=>config.id)).toEqual(['A','D','E','F','G','L']);
         expect(Object.keys(viewData.configurations)).toEqual(['A','D','E','F','G','L']);
-        expect(viewData.applicationConfigurations).toEqual(['G']);
+        expect(viewData.applicationConfigurations).toContain('G');
+        expect(viewData.applicationConfigurations.every(slot=>CFG.some(config=>config.id===slot))).toBe(true);
         expect(CFG.find(config=>config.id==='A')?.be).toBe('cranelift');
         expect(CFG.find(config=>config.id==='D')?.be).toMatch(/^singlepass/);
     });

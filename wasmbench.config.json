@@ -216,5 +216,9 @@
   "hostAliases": {
     "Jairus-Tanaka.local": "measurement-mac",
     "jairus-tanaka.tail0dc14a.ts.net": "measurement-mac"
+  },
+  "harnessSource": {
+    "repository": "https://github.com/JairusSW/wasm-bench.git",
+    "revision": "0509a0a323f41c58a2f2db15a372fb2e63c692bf"
   }
 }

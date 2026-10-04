@@ -10,16 +10,21 @@ import { command, digest, harness, site } from './lib/wasmbench.mjs';
 const action = process.argv[2] || 'build';
 const root = join(site, 'corpora/features');
 const manifest = join(root, 'manifest.json');
+const requested=process.argv.find(a=>a.startsWith('--ids='))?.slice(6).split(',');
+const chosen=fixtures().filter(f=>!requested||requested.includes(`features/${f.feature}/${f.name}`));
+if(requested?.some(id=>!chosen.some(f=>id===`features/${f.feature}/${f.name}`)))throw Error('Unknown feature corpus');
 if (action === 'build') {
   const compilerBinary = await featureCompiler();
   const compiler = command(compilerBinary, ['--version']).toString().trim();
   if (!compiler.startsWith('wasm-tools 1.260.0')) throw new Error('Rebuild requires wasm-tools 1.260.0');
-  const adapter = await sourceAdapter();
+  const adapter = chosen.some(f=>f.wasiAdapter)?await sourceAdapter():{path:null,sha256:null};
   const adapterPath = adapter.path, adapterSha = adapter.sha256;
-  const workloads = [], recipes = [], failures = [];
+  const previous=requested?JSON.parse(await readFile(manifest)):[];
+  const oldBuild=requested?JSON.parse(await readFile(join(root,'build.json'))):{recipes:[]};
+  const workloads = previous.filter(w=>!requested?.includes(w.id.split('/').slice(0,3).join('/'))), recipes = oldBuild.recipes.filter(r=>!requested?.includes(`features/${r.feature}/${r.variant}`)), failures = [];
   await mkdir(join(root, 'sources'), { recursive: true });
   await mkdir(join(root, 'artifacts'), { recursive: true });
-  for (const fixture of fixtures()) {
+  for (const fixture of chosen) {
     const stem = `${fixture.feature}-${fixture.name}`;
     const source = `sources/${stem}.wat`, artifact = `artifacts/${stem}.wasm`;
     await writeFile(join(root, source), fixture.wat.trim() + '\n');
@@ -57,8 +62,9 @@ if (action === 'build') {
   const covered = new Set(recipes.filter(r => !r.baseline).map(r => r.feature));
   const missing = featureIds.filter(id => !covered.has(id));
   if (missing.length) throw new Error('Missing feature coverage: ' + missing.join(', '));
-  command(compilerBinary,['parse',join(root,'sources/threads-workers.wat'),'-o',join(root,'artifacts/threads-workers.wasm')]);
-  command(compilerBinary,['validate','--features','all',join(root,'artifacts/threads-workers.wasm')]);
+  const rebuildThreads=!requested||chosen.some(f=>f.feature==='threads');
+  if(rebuildThreads)command(compilerBinary,['parse',join(root,'sources/threads-workers.wat'),'-o',join(root,'artifacts/threads-workers.wasm')]);
+  if(rebuildThreads)command(compilerBinary,['validate','--features','all',join(root,'artifacts/threads-workers.wasm')]);
   await writeFile(join(root, 'build.json'), JSON.stringify({ schema: 1, compiler, generator: 'wasm-fyi-feature-corpus-v1',
     threadWorkers: { source:'sources/threads-workers.wat',sourceSha256:digest(await readFile(join(root,'sources/threads-workers.wat'))), artifact:'artifacts/threads-workers.wasm',artifactSha256:digest(await readFile(join(root,'artifacts/threads-workers.wasm'))),compiler,argv:['wasm-tools','parse','sources/threads-workers.wat','-o','artifacts/threads-workers.wasm'],cases:32 },
     expectedFeatures: featureIds, coveredFeatures: [...covered], missingFeatures: featureIds.filter(id => !covered.has(id)),

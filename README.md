@@ -168,3 +168,5 @@ For GitHub Pages, `just pages-build` builds with the project path and
 [Data access](docs/llm-access.md) ·
 [Issues](https://github.com/JairusSW/wasm.fyi/issues) ·
 [Sponsor](https://github.com/sponsors/JairusSW)
+
+Capture, resume, SSH workers, cached corpus builds and deployment: [benchmark commands](docs/benchmark-workflow.md).

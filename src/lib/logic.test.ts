@@ -74,9 +74,8 @@ describe('model', () => {
 		expect(isVisible(scope, { id: 'G', rt: 'wago' } as any)).toBe(true);
 		expect(isVisible(scope, { id: 'F', rt: 'v8' } as any)).toBe(false);
 	});
-	it('keeps uncollected WAVM outside measured benchmark tables',()=>{
-		expect(viewData.hosts.m1.configurations.L).toBeUndefined();
-		expect(isVisible(scope,{id:'L',rt:'wavm'} as any)).toBe(false);
+	it('shows WAVM when host-local measurements are available',()=>{
+		expect(isVisible(scope,{id:'L',rt:'wavm'} as any)).toBe(Boolean(viewData.hosts.m1.configurations.L));
 	});
 	it('baseline ratio is 1', () => {
 		expect(ratio(scope, 'lat', 'G', 3)!.r).toBe(1);
@@ -97,11 +96,11 @@ describe('model', () => {
         expect(leader(single, 'Fastest compilation', 'lat', 0, 'compile').clear).toBe(false);
 	});
     for(const machine of ['m1','m2'] as const)it(`ranks the measured Wago execution mean and respects hiding on ${machine}`,()=>{
-        const selected={...scope,machine,hide:{}};
+        const selected={...scope,machine,hide:Object.fromEntries(CFG.filter(config=>config.id!=='G').map(config=>[config.id,true]))};
         const result=leader(selected,'Fastest execution','lat',3,'steady');
         expect(result.places.map(p=>p.cfg.id)).toEqual(['G']);
         expect(result.places[0].ratio).toBe(ratio(selected,'lat','G',3)!.r);
-        expect(leader({...selected,hide:{G:true}},'Fastest execution','lat',3,'steady').places).toHaveLength(0);
+        expect(leader({...selected,hide:{...selected.hide,G:true}},'Fastest execution','lat',3,'steady').places).toHaveLength(0);
     });
     it('does not fabricate feature corpus outcomes when features were excluded',()=>{
         const cell=compatCell('core-mem','G',scope);

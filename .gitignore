@@ -27,3 +27,6 @@ src/lib/data/plugin-tests.json
 # Dependency checkouts and rebuilt outputs from retained upstream sources.
 /corpora/upstream/wago/.tmp/
 /corpora/upstream/wago/corpus/workloads/**/*.wasm
+
+# Parent archives are staged from their versioned data source.
+/static/wasmbench/runs/

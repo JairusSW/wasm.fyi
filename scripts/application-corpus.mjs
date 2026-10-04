@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdir, mkdtemp, copyFile, chmod } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, mkdtemp, copyFile, chmod, cp } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { command, digest, site, installDirectory } from './lib/wasmbench.mjs';
 import { kernels, reference, sample } from './lib/application-kernels.mjs';
@@ -7,6 +7,8 @@ const destination=join(site,'corpora/applications');
 let root=destination;
 const build=process.argv.includes('build');
 const check=process.argv.includes('check');
+const requested=process.argv.find(a=>a.startsWith('--ids='))?.slice(6).split(',');
+if(requested?.some(id=>!kernels.some(k=>k.id===id)))throw Error('Unknown application corpus');
 if(!build&&!check)throw Error('Usage: node scripts/application-corpus.mjs build|check');
 const source=await readFile(join(root,'sources/kernels.c'));
 const oracle=await readFile(join(site,'scripts/lib/application-kernels.mjs'));
@@ -22,8 +24,9 @@ if(build) {
   await mkdir(join(root,'sources'));await mkdir(join(root,'artifacts'));
   await copyFile(join(destination,'sources/kernels.c'),join(root,'sources/kernels.c'));
   await copyFile(join(destination,'LICENSE'),join(root,'LICENSE'));
-  const manifest=[];
-  for(const kernel of kernels) {
+  const manifest=requested?JSON.parse(await readFile(join(destination,'manifest.json'))).filter(w=>!requested.includes(w.id.split('/')[1])):[];
+  if(requested)await cp(join(destination,'artifacts'),join(root,'artifacts'),{recursive:true});
+  for(const kernel of kernels.filter(k=>!requested||requested.includes(k.id))) {
     const artifact=`artifacts/${kernel.id}.wasm`;
     const flags=['--target=wasm32-unknown-unknown','-mcpu=mvp','--no-wasm-opt','-mno-sign-ext','-mno-nontrapping-fptoint','-mno-bulk-memory','-fno-builtin','-ffp-contract=off','-O3','-fno-vectorize','-fno-slp-vectorize','-nostdlib',`-DKIND=${kernel.kind}`,
       '-Wl,--no-entry','-Wl,--export=benchmark','-Wl,--export-memory','-Wl,--max-memory=2359296','-Wl,--strip-all'];
@@ -44,6 +47,7 @@ if(build) {
           oraclePolicy:'independent JavaScript algorithm; complete output FNV-1a checksum; compared with Wasm on repeated invocations'}});
     }
   }
+  manifest.sort((a,b)=>kernels.findIndex(k=>a.id===`applications/${k.id}`)-kernels.findIndex(k=>b.id===`applications/${k.id}`));
   await writeFile(join(root,'manifest.json'),JSON.stringify(manifest,null,2)+'\n');
 }
 const manifest=JSON.parse(await readFile(join(root,'manifest.json')));

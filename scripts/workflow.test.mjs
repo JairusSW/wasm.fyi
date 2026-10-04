@@ -155,6 +155,18 @@ test('same-trial RSS requires its locked timing run and source profile',()=>{
   const altered=structuredClone(value);change(altered);assert.throws(()=>validateReport(altered));
  }
 });
+test('snapshot IDs preserve original timing memory provenance and reject tampering', () => {
+  const value=report();
+  value.sourceRunId=value.runId;
+  value.runId=`${value.sourceRunId}-${digest(JSON.stringify([value.host.hostname,value.host.os,value.host.arch,value.created,value.lockSha256])).slice(0,16)}`;
+  value.options.timing_peak_rss=true;
+  value.memorySource={id:'memory',profile:'memory',timing_id:value.sourceRunId};
+  value.memory=[{runtime:'engine/backend',workload:'core/add',metric:'process.peak_rss',source_profile:'timing',source_run:value.sourceRunId,median_bytes:100,ci95_low_bytes:null,ci95_high_bytes:null}];
+  validateReport(value);
+  for(const change of [v=>v.created='2026-10-02T00:00:00Z',v=>v.memory[0].source_run='other',v=>v.memorySource.timing_id='other']){
+    const altered=structuredClone(value);change(altered);assert.throws(()=>validateReport(altered));
+  }
+});
 test('checks evidence digests and rejects unsafe paths', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'wasm-fyi-validation-'));
   try {
