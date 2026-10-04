@@ -17,6 +17,8 @@ await locked(async () => {
   const staticDestination = join(site, 'static/wasmbench');
   const stagedData = join(temp, 'data');
   const prior = await exists(join(destination, 'index.json')) ? await readFile(join(destination, 'index.json')) : null;
+  const priorIndex=prior?JSON.parse(prior):null;
+  const emptyInitialIndex=priorIndex?.schema===2 && Array.isArray(priorIndex.reports) && priorIndex.reports.length===0;
   let finishData, finishStatic;
   const finishHistories=[];
   const priorBuild = await exists(join(site, 'build'));
@@ -33,7 +35,7 @@ await locked(async () => {
       const cache=join(temp,'verified-inputs');await cp(stagedData,cache,{recursive:true});
       const finish=await installDirectory(cache,join(work,'verified-inputs'));await finish(false);
     }
-    if (values.append && prior) {
+    if (values.append && prior && !emptyInitialIndex) {
       const previous = await validateData(destination);
       const incoming = await validateData(stagedData);
       // --append is an evidence union, not a retention pass: a focused refresh
