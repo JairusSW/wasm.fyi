@@ -85,6 +85,14 @@ describe('measured view boundary', () => {
 		compiler.codeRecords.push({runtime: 'wazero', workload: item.id, status: 'unsupported', reason: 'public embedding API does not export function code'});
 		expect(measuredCodeImage(compiler, 'wazero', item.id, item.sha256)).toMatchObject({status: 'not-measured', reason: 'public embedding API does not export function code'});
 	});
+	it('shows verified native size independently from byte export',()=>{
+		const copy=structuredClone(feature);
+		copy.codeRecords=copy.codeRecords.filter(record=>record.runtime!=='wasmtime'||record.workload!==item.id);
+		copy.codeRecords.push({runtime:'wasmtime',workload:item.id,status:'unavailable',image_bytes:undefined,size_bytes:114175248,reason:'native segment exceeds transport budget'});
+		expect(measuredCodeImage(copy,'wasmtime',item.id,item.sha256)).toMatchObject({status:'ok',value:114175248,unit:'bytes'});
+		copy.codeRecords[copy.codeRecords.length-1].size_bytes=undefined;
+		expect(measuredCodeImage(copy,'wasmtime',item.id,item.sha256).status).toBe('not-measured');
+	});
 
 	it('keeps timing-only snapshots from inventing memory or native-code results',()=>{
 		const latest=structuredClone(feature);

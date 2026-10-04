@@ -52,6 +52,11 @@ export function validateReport(report) {
     assert(configurations.has(c.runtime) && workloads.has(c.workload), 'Code record is outside the locked cohort');
     assert(nonnegative(c.image_bytes), 'Invalid code-image size');
     if (c.image_bytes !== null) assert.equal(c.status, 'available', 'Unavailable code must not have a value');
+    if(c.size_bytes!==undefined){
+      assert(Number.isSafeInteger(c.size_bytes) && c.size_bytes>=0,'Invalid engine-reported code size');
+      assert(['available','unavailable'].includes(c.status),'Rejected code evidence cannot expose code size');
+      if(c.image_bytes!==null)assert.equal(c.size_bytes,c.image_bytes,'Code size contradicts exported bytes');
+    }
   }
 }
 export async function validateData(directory) {

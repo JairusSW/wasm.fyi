@@ -125,11 +125,11 @@ export function measuredCodeImage(snapshot: MeasuredSnapshot, runtime: string, w
 	const compileOutcome = outcome(snapshot, runtime, workload, 'compile');
 	if (compileOutcome) return compileOutcome;
 	const records = snapshot.codeRecords.filter(item => item.runtime === runtime && item.workload === workload);
-	if (!records.length || records.some(item => item.status !== 'available')) {
+	if (!records.length || records.some(item => item.status !== 'available' && !(item.status === 'unavailable' && finite(item.size_bytes)))) {
 		const collectorReason = records.find(item => item.status !== 'available')?.reason;
 		return { status: 'not-measured', reason: typeof collectorReason === 'string' && collectorReason ? collectorReason : 'A complete extracted code image is unavailable.', evidence: reference(snapshot) };
 	}
-	const values = records.map(item => item.image_bytes);
+	const values = records.map(item => finite(item.size_bytes) ? item.size_bytes : item.image_bytes);
 	if (!values.every(finite)) throw new Error('Invalid code image size');
 	// Image extraction is deterministic; incompatible sizes must not be reduced to a headline median.
 	if (!values.every(value => value === values[0])) return { status: 'not-measured', reason: 'Extracted code images disagree across trials.', evidence: reference(snapshot) };
