@@ -53,6 +53,7 @@
     "operations": 1,
     "warmup": 3,
     "memory": true,
+    "timingPeakRSS": true,
     "code": true,
     "timeout": "5m",
     "phaseBarriers": false,

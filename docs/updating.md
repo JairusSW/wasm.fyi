@@ -10,7 +10,10 @@ The collector allows up to five minutes per trial, including adapter startup and
 all samples. Large source-built modules can exceed the former 30-second limit
 while completing successfully. Override this with `WASMBENCH_TIMEOUT`. The
 default remains three samples for compilation, instantiation and steady execution,
-and one for first call, memory and native code.
+and one for first call, memory and native code. Process lifetime peak RSS is
+recorded once per timing trial, covering all its samples. Compilation and
+instantiation are not repeated for RSS; one separate steady memory sample retains
+heap and boundary metrics. Each timing peak records its source run explicitly.
 
 ## Local website workflow
 

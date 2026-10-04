@@ -147,6 +147,14 @@ test('rejects memory values without paired-pass provenance', () => {
   const value = report(); value.memory = [{ runtime: 'engine/backend', workload: 'core/add', median_bytes: 100 }];
   assert.throws(() => validateReport(value), /matched-pass provenance/);
 });
+test('same-trial RSS requires its locked timing run and source profile',()=>{
+ const value=report();value.options.timing_peak_rss=true;value.memorySource={id:value.runId,profile:'timing'};
+ value.memory=[{runtime:'engine/backend',workload:'core/add',metric:'process.peak_rss',source_profile:'timing',source_run:value.runId,median_bytes:100,ci95_low_bytes:null,ci95_high_bytes:null}];
+ validateReport(value);
+ for(const change of [v=>v.options.timing_peak_rss=false,v=>v.memory[0].source_run='other',v=>v.memory[0].metric='host.alloc.bytes',v=>v.memorySource.profile='memory']) {
+  const altered=structuredClone(value);change(altered);assert.throws(()=>validateReport(altered));
+ }
+});
 test('checks evidence digests and rejects unsafe paths', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'wasm-fyi-validation-'));
   try {

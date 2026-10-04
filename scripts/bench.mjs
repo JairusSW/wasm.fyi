@@ -100,7 +100,8 @@ else if (action === 'build') {
   const suite = await prepareCorpus(settings, run, directory);
   verifyCorpusV8(suite);
   // Keep phase order stable across harness versions: compile, instantiate,
-  // first use, warmed execution. The memory and code passes follow afterward.
+  // first use, warmed execution. Lifetime RSS is reaped from those same trials;
+  // a single steady memory pass retains heap/boundary metrics before native code.
   const lifecycleScenarios=['compile','instantiate','first-call','steady'];
   const shared = ['--archive-tools=true','--suite', suite, '--runtimes', runtimes, '--timeout', collection.timeout, ...(process.env.WASMBENCH_VALIDATION_PROFILE ? ['--validation-profile', process.env.WASMBENCH_VALIDATION_PROFILE] : [])];
   const logicalCpus=availableParallelism();
@@ -112,7 +113,8 @@ else if (action === 'build') {
   const scenarioSamples = process.env.WASMBENCH_SCENARIO_SAMPLES
     ? JSON.parse(process.env.WASMBENCH_SCENARIO_SAMPLES)
     : collection.scenarioSamples || {'*': 1};
-  pass('run', ...lifecycleArgs, '--profile', 'timing', '--launches', String(number('WASMBENCH_LAUNCHES', collection.launches)),
+  const timingPeakRSS=collection.memory && collection.timingPeakRSS !== false && process.env.WASMBENCH_TIMING_ONLY !== '1';
+  pass('run', ...lifecycleArgs, ...(timingPeakRSS ? ['--timing-peak-rss'] : []), '--profile', 'timing', '--launches', String(number('WASMBENCH_LAUNCHES', collection.launches)),
     '--samples', String(number('WASMBENCH_SAMPLES', collection.samples)), '--operations', String(number('WASMBENCH_OPERATIONS', collection.operations)),
     '--samples-by-scenario', JSON.stringify(scenarioSamples),
     '--warmup', String(number('WASMBENCH_WARMUP', collection.warmup, 0)), '--out', timing);
@@ -121,7 +123,8 @@ else if (action === 'build') {
   const reportArgs = ['report', '--run', timing, '--out', report];
   if (collection.memory && process.env.WASMBENCH_TIMING_ONLY !== '1') {
     const memory = join(directory, `memory-${id}`);
-    const args = ['run', ...lifecycleArgs, '--profile', 'memory', '--launches', '1',
+    const memoryScenarios=timingPeakRSS ? ['steady'] : lifecycleScenarios;
+    const args = ['run', ...shared, '--scenarios',memoryScenarios.join(','), '--profile', 'memory', '--launches', '1',
       '--samples', '1', '--operations', '1', '--warmup', '0', '--out', memory];
     if (collection.phaseBarriers) args.push('--phase-barriers');
     pass(...args);

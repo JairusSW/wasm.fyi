@@ -41,6 +41,12 @@ export function validateReport(report) {
     assert(configurations.has(m.runtime) && workloads.has(m.workload), 'Memory is outside the locked cohort');
     assert(nonnegative(m.median_bytes) && interval(m.ci95_low_bytes, m.ci95_high_bytes), 'Invalid memory measurement');
     assert(report.memorySource, 'Memory values require matched-pass provenance');
+    if(m.source_profile === 'timing') {
+      assert.equal(m.metric,'process.peak_rss','Timing memory must be a process lifetime peak');
+      assert.equal(m.source_run,report.runId,'Timing memory must originate in the timing run');
+      assert.equal(report.options.timing_peak_rss,true,'Timing memory collection must be locked');
+      assert(report.memorySource.profile === 'timing' || report.memorySource.timing_id === report.runId,'Timing memory requires same-trial provenance');
+    }
   }
   for (const c of report.codeRecords || []) {
     assert(configurations.has(c.runtime) && workloads.has(c.workload), 'Code record is outside the locked cohort');
