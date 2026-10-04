@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { resolve, join } from 'node:path';
-import { availableParallelism, homedir } from 'node:os';
+import { availableParallelism, cpus, homedir } from 'node:os';
 import { command, digest, harness, site } from './lib/wasmbench.mjs';
 import { prepareCorpus } from './lib/corpus.mjs';
 import { featureConfigurations } from './lib/feature-configurations.mjs';
@@ -104,9 +104,10 @@ else if (action === 'build') {
   // a single steady memory pass retains heap/boundary metrics before native code.
   const lifecycleScenarios=['compile','instantiate','first-call','steady'];
   const shared = ['--archive-tools=true','--suite', suite, '--runtimes', runtimes, '--timeout', collection.timeout, '--validation-profile',process.env.WASMBENCH_VALIDATION_PROFILE || collection.validationProfile || 'all'];
-  const logicalCpus=availableParallelism();
+  const logicalCpus=cpus().length;
+  const availableCpus=availableParallelism();
   const requestedWorkers=number('WASMBENCH_WORKERS',collection.workers||1);
-  const workers=workersWithinCpuBudget(logicalCpus,requestedWorkers);
+  const workers=workersWithinCpuBudget(logicalCpus,requestedWorkers,availableCpus);
   if(workers!==requestedWorkers)console.log(`Capped benchmark workers from ${requestedWorkers} to ${workers} (${logicalCpus} available logical CPUs; at most one quarter in parallel).`);
   shared.push('--workers',String(workers));
   const lifecycleArgs = [...shared, '--scenarios', lifecycleScenarios.join(',')];

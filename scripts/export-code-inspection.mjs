@@ -38,6 +38,6 @@ for (const bundle of bundles) {
   }
   const sourceChecksumsSha256 = digest(await readFile(join(bundle, 'checksums.json')));
   await writeFile(join(target, 'index.json'), JSON.stringify({ schema: 1, runId, sourceChecksumsSha256, records: records.map(({ image, ...record }) => ({ ...record, image: { version: image.version, sha256: image.sha256, architecture: image.architecture, backend: image.backend, section_kind: image.section_kind, functions: image.functions || [] } })) }) + '\n');
-  await copyFile(join(site, 'static/wasmbench/code-inspection/view.html'), join(target, 'view.html'));
+  await copyFile(join(site, 'scripts/assets/code-inspection.html'), join(target, 'view.html'));
   console.log(`${runId}: published ${records.length} verified machine-code images (${sourceChecksumsSha256}); source bundle ${basename(bundle)}`);
 }
