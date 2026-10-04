@@ -6,6 +6,12 @@ checksum-verified sealed reports; static raw evidence is published under
 `wasmbench/`. [integration-audit.md](integration-audit.md) documents the view mapping
 and the limits of each measurement.
 
+The collector allows up to five minutes per trial, including adapter startup and
+all samples. Large source-built modules can exceed the former 30-second limit
+while completing successfully. Override this with `WASMBENCH_TIMEOUT`. The
+default remains three samples for compilation, instantiation and steady execution,
+and one for first call, memory and native code.
+
 ## Local website workflow
 
 ```sh

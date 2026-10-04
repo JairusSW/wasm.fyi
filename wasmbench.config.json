@@ -54,7 +54,7 @@
     "warmup": 3,
     "memory": true,
     "code": true,
-    "timeout": "30s",
+    "timeout": "5m",
     "phaseBarriers": false,
     "featureRuntimesByPlatform": {
       "darwin": [
