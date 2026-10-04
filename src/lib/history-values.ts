@@ -15,7 +15,8 @@ export function historyChange(before:ViewCell,after:ViewCell) {
 	const samples=Array.from({length:1024},()=>median(Array.from({length:b.length},()=>b[Math.floor(random()*b.length)]))/median(Array.from({length:a.length},()=>a[Math.floor(random()*a.length)]))-1).sort((a,b)=>a-b);
 	return {delta,interval:[samples[25],samples[998]] as [number,number],fixed:false};
 }
-const metricOf:Record<OtMetricKey,MetricKey>={exec:'steady',compile:'compile',inst:'inst',mem:'rss',code:'code',cov:'steady'};
+const metricOf:Record<OtMetricKey,MetricKey>={exec:'steady',wasmHost:'steady',hostWasm:'steady',roundTrip:'steady',compile:'compile',inst:'inst',mem:'rss',code:'code',cov:'steady'};
+export const historicalCallWorkloads=(key:OtMetricKey):string[]=>key==='wasmHost'?['mechanisms/wasm-to-host-call']:key==='hostWasm'?['mechanisms/host-to-wasm-call']:key==='roundTrip'?['mechanisms/wasm-to-host-call','mechanisms/host-to-wasm-call']:[];
 const valid=(c:ViewCell)=>c.st==='ok' && c.v!=null && Number.isFinite(c.v) && c.v>0;
 export function historySegments(values:number[],x:(i:number)=>number,y:(v:number)=>number):string[] {
 	const segments:string[]=[];let points:string[]=[];
@@ -30,6 +31,13 @@ export function historySegments(values:number[],x:(i:number)=>number,y:(v:number
 export function historySeries(s:Scope,cid:CfgId,key:OtMetricKey,workload=''):number[]|null {
 	const h=viewData.history[s.machine];const metric=metricOf[key];
 	const series=(w:string,c:CfgId)=>h.points.map((_,i)=>historyCell(s.machine,w,c,metric,i));
+	const calls=historicalCallWorkloads(key);
+	if(calls.length){
+		if(workload && !calls.includes(workload))return null;
+		const ids=workload?[workload]:calls;
+		const values=h.points.map((point,i)=>{const cells=ids.map(w=>historyCell(s.machine,w,cid,'steady',i));return point.status==='measured'&&cells.every(valid)?cells.reduce((sum,c)=>sum+c.v!,0):Number.NaN;});
+		return values.some(Number.isFinite)?values:null;
+	}
 	if(workload){const cells=series(workload,cid);return cells.some(valid)?cells.map(c=>valid(c)?c.v!:Number.NaN):null;}
 	if(key==='cov') {
 		if(!h.workloads.some(w=>series(w,cid).some(c=>c.report)))return null;

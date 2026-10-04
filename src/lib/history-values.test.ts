@@ -27,11 +27,23 @@ describe('recorded weekly history',()=>{
     });
     for(const machine of ['m1','m2'] as const)for(const weighting of ['workload','corpus'] as const)
     it(`matches current non-feature latency for the same beta.11 evidence on ${machine} with ${weighting} weighting`,()=>{
-        const selected={...scope,machine,baseline:'G' as const,weighting};
+        const selected={...scope,machine,baseline:'G' as const,weighting,hide:Object.fromEntries(Object.keys(viewData.configurations).filter(slot=>slot!=='G').map(slot=>[slot,true]))};
         for(const [key,col] of [['compile',0],['inst',1],['exec',3]] as const){
             const current=aggregate(selected,'lat','G',col)!;
             const history=historySeries(selected,'G',key)!;
             expect(history[0]).toBeCloseTo(current.v,12);
+        }
+    });
+    it('uses recorded directional call medians and their estimated sum for every revision',()=>{
+        for(const machine of ['m1','m2'] as const){
+            const selected={...scope,machine};
+            const a=historySeries(selected,'G','wasmHost')!,b=historySeries(selected,'G','hostWasm')!,round=historySeries(selected,'G','roundTrip')!;
+            for(const i of [0,1]){
+                expect(a[i]).toBe(historyCell(machine,'mechanisms/wasm-to-host-call','G','steady',i).v);
+                expect(b[i]).toBe(historyCell(machine,'mechanisms/host-to-wasm-call','G','steady',i).v);
+                expect(round[i]).toBe(a[i]+b[i]);
+            }
+            expect(historySeries(selected,'A','roundTrip')).toBeNull();
         }
     });
     it('does not reuse erased comparison-engine measurements',()=>{

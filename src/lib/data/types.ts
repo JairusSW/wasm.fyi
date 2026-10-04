@@ -5,7 +5,7 @@ export type SupportCode = 'y' | 'f' | 'p' | 'n' | '?' | '-';
 export type Status = 'ok' | 'unsupported' | 'disabled' | 'failed' | 'crashed' | 'timeout' | 'nm' | 'na' | 'unavail';
 export type MetricKey = 'compile' | 'rssCompile' | 'inst' | 'rssInst' | 'first' | 'steady' | 'rss' | 'code';
 export type OvKey = 'lat' | 'calls' | 'mem' | 'code' | 'cov';
-export type OtMetricKey = 'exec' | 'compile' | 'inst' | 'mem' | 'code' | 'cov';
+export type OtMetricKey = 'exec' | 'wasmHost' | 'hostWasm' | 'roundTrip' | 'compile' | 'inst' | 'mem' | 'code' | 'cov';
 
 /** A benchmarked runtime configuration: one runtime at one version with one backend. */
 export interface Cfg {

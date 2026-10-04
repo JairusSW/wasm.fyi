@@ -10,7 +10,7 @@
 	import { benchVal, isVisible, otSeries } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 import { viewData } from '$lib/view-data';
-import { historyCell, historyChange, historySegments } from '$lib/history-values';
+import { historyCell, historyChange, historySegments, historicalCallWorkloads } from '$lib/history-values';
 
 	const W = 860;
 	const HC = 280;
@@ -23,6 +23,9 @@ import { historyCell, historyChange, historySegments } from '$lib/history-values
 	const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 	const NOTE = {
 		exec: 'all non-feature workloads · steady execution per invocation',
+		wasmHost: 'typed callback · steady Wasm → host latency',
+		hostWasm: 'steady host → Wasm latency',
+		roundTrip: 'estimated sum of directional medians · not a measured nested round trip',
 		compile: 'module compile time',
 		inst: 'instantiation time',
 		mem: 'process lifetime peak RSS',
@@ -158,10 +161,11 @@ import { historyCell, historyChange, historySegments } from '$lib/history-values
 		const t = ui.histTo;
 		const cid = ui.histCfg;
 		const c = CB[cid];
-		const RM = ({ exec: 'steady', compile: 'compile', inst: 'inst', mem: 'rss', code: 'code', cov: 'steady' } as const)[M.key] as MetricKey;
+		const RM = ({ exec: 'steady', wasmHost: 'steady', hostWasm: 'steady', roundTrip: 'steady', compile: 'compile', inst: 'inst', mem: 'rss', code: 'code', cov: 'steady' } as const)[M.key] as MetricKey;
 		const EX = SER[cid] && !isCov ? SER[cid] : otSeries(s, cid, 'exec');
 		const dt = EX ? EX[t] / EX[f] : 1;
-        const rows=ALLB.map(b=>{
+        const callIds=historicalCallWorkloads(M.key);
+        const rows=ALLB.filter(b=>!callIds.length || callIds.includes(b.id)).map(b=>{
           const before=historyCell(s.machine,b.id,cid,RM,f),after=historyCell(s.machine,b.id,cid,RM,t);
           const change=historyChange(before,after);if(!change)return null;
           const d=change.delta,interval=change.interval;

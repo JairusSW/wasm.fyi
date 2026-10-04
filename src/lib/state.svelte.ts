@@ -83,7 +83,7 @@ const memSelCodec: Codec<CfgId[]> = {
 	ser: (v) => v.join(',')
 };
 
-const OT_KEYS = ['exec', 'compile', 'inst', 'mem', 'code', 'cov'] as const;
+const OT_KEYS = ['exec', 'wasmHost', 'hostWasm', 'roundTrip', 'compile', 'inst', 'mem', 'code', 'cov'] as const;
 const METRICS = ['compile', 'rssCompile', 'inst', 'rssInst', 'first', 'steady', 'rss', 'code'] as const;
 
 /** Each URL-backed field: its codec and the routes it belongs to (`*` = scope, every route). */

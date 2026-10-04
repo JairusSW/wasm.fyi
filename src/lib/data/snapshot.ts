@@ -12,6 +12,9 @@ export const OV: Record<OvKey, OvGroup> = {
 export const UNIT: Record<"lat" | "mem" | "code", string> = { lat: 'ms', mem: 'MiB', code: 'KiB' };
 export const OTM: Record<OtMetricKey, OtMetric> = {
   exec: { key: 'exec', l: 'Steady execution', g: 'lat', c: 3, u: 'ms', k: 1 },
+  wasmHost: { key: 'wasmHost', l: 'Wasm → host call', g: 'lat', c: 3, u: 'ms', k: 1 },
+  hostWasm: { key: 'hostWasm', l: 'Host → Wasm call', g: 'lat', c: 3, u: 'ms', k: 1 },
+  roundTrip: { key: 'roundTrip', l: 'Call round trip', g: 'lat', c: 3, u: 'ms', k: 1 },
   compile: { key: 'compile', l: 'Compilation', g: 'lat', c: 0, u: 'ms', k: 0.6 },
   inst: { key: 'inst', l: 'Instantiation', g: 'lat', c: 1, u: 'ms', k: 0.3 },
   mem: { key: 'mem', l: 'Memory', g: 'mem', c: 2, u: 'MiB', k: 0.4 },
