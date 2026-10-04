@@ -19,7 +19,7 @@ try {
  if(lock.options.profile!=='timing')throw Error('Recovery requires a timing bundle');
  state.originalSealSha256=digest(await readFile(join(timing,'checksums.json')));
  // Resolve shells from the original locked commands rather than PATH.
- for(const [id,name] of [['spidermonkey','WASMBENCH_SPIDERMONKEY'],['deno','WASMBENCH_DENO'],['chicory','WASMBENCH_JAVA']]) {
+ for(const [id,name] of [['spidermonkey','WASMBENCH_SPIDERMONKEY'],['deno','WASMBENCH_DENO']]) {
   const runtime=lock.runtime_configurations.find(r=>r.id===id);if(runtime)process.env[name]=runtime.command[0];
  }
  const suite=lock.options.suite;

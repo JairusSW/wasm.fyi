@@ -1,13 +1,24 @@
 <script lang="ts">
+	import { CFG } from '$lib/data/runtimes';
 	import type { MetricKey } from '$lib/data/types';
 	import { leader } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 	import Swatch from '../Swatch.svelte';
 
 	let { onmetric }: { onmetric: (m: MetricKey) => void } = $props();
+	let expanded = $state(false);
+	function ordinal(place: number) {
+		const suffix = place % 100 >= 11 && place % 100 <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[place % 10] || 'th';
+		return `${place}${suffix}`;
+	}
 
+	const compilationScope = $derived({
+		...ui.scope,
+		hide: { ...ui.hide, ...Object.fromEntries(CFG.filter((c) => c.interp === true).map((c) => [c.id, true])) }
+	});
 	const leaders = $derived([
-		leader(ui.scope, 'Fastest compilation', 'lat', 0, 'compile'),
+		leader(ui.scope, 'Lowest memory', 'mem', 2, 'rss'),
+		leader(compilationScope, 'Fastest compilation', 'lat', 0, 'compile'),
 		leader(ui.scope, 'Fastest instantiation', 'lat', 1, 'inst'),
 		leader(ui.scope, 'Fastest execution', 'lat', 3, 'steady'),
 		leader(ui.scope, 'Smallest generated code', 'code', 3, 'code')
@@ -33,14 +44,14 @@
 							<span class="mono small fg3 backend">{first.cfg.be}</span>
 						</span>
 					</span>
-					<span class="places" aria-label="Next places by measured mean">
-						{#each l.places.slice(1) as p (p.cfg.id)}
+					<span class="places" aria-label="Other places by measured mean">
+					{#each l.places.slice(1, expanded ? undefined : 3) as p (p.cfg.id)}
 							<span class="place" title={`${p.cfg.rt} ${p.cfg.be} · ${p.value}`}>
-								<span class="mono small fg3">{p.place === 2 ? '2nd' : '3rd'}</span>
+								<span class="mono small fg3">{ordinal(p.place)}</span>
 								<span class="entrant"><span class="who small"><Swatch color={p.cfg.col} bg={p.cfg.hollow ? 'transparent' : p.cfg.col} size={6} /><span>{p.cfg.rt}</span></span><span class="mono micro fg3 backend">{p.cfg.be}</span></span>
 								<span class="mono small result-value">{p.value}</span>
 							</span>
-						{/each}
+					{/each}
 					</span>
 				</span>
 			{:else}
@@ -50,6 +61,12 @@
 		</button>
 	{/each}
 </div>
+{#if leaders.some((l) => l.places.length > 3)}
+	<button class="expand-all" aria-expanded={expanded} onclick={() => expanded = !expanded}>
+		{expanded ? 'Show top three places' : 'Show all places'}
+		<span aria-hidden="true">{expanded ? '⌃' : '⌄'}</span>
+	</button>
+{/if}
 
 <style>
 	.leaders {
@@ -90,12 +107,27 @@
 		min-width: 0;
 		flex: 1;
 	}
-	.first,
 	.places {
 		display: flex;
 		flex-direction: column;
 		gap: 6px;
 		min-width: 0;
+	}
+	.expand-all {
+		width: 100%;
+		margin-top: -1px;
+		padding: 10px 14px;
+		border: 1px solid var(--line);
+		border-top: 0;
+		border-radius: 0;
+		background: var(--bg2);
+		color: var(--fg);
+		font: inherit;
+		font-size: 13px;
+		cursor: pointer;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
 	}
 	.place {
 		display: grid;

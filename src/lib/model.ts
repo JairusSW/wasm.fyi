@@ -42,7 +42,10 @@ export const isVisible = (s: Scope, c: Cfg) => {
   // digest rather than a semantic version. Keep that measured configuration in
   // the matrix; hash-pinned development builds from other engines stay hidden.
   const hashPinnedDevelopment=c.rt!=='wago' && /^[a-f0-9]{40}(?:\/|$)/i.test(version);
-  return !s.hide[c.id] && !hashPinnedDevelopment && !/nightly|snapshot|canary|0\.0\.0-prerelease/i.test(version);
+  // WAVM is the one explicitly approved prerelease in the benchmark cohort.
+  const approvedWavmPrerelease=c.rt==='wavm' && version==='nightly-2026-04-05-4e82bb9';
+  const unpublishedBuild=/nightly|snapshot|canary|0\.0\.0-prerelease/i.test(version);
+  return !s.hide[c.id] && !hashPinnedDevelopment && (!unpublishedBuild || approvedWavmPrerelease);
 };
 export const visibleCfgs = (s: Scope) => CFG.filter((c) => isVisible(s, c));
 
@@ -110,7 +113,7 @@ export function leader(s: Scope, label: string, group: PerfGroup, col: number, m
 	const list = CFG.map((c) => ({ c, x: ratio(s, group, c.id, col) }))
 		.filter((e): e is { c: Cfg; x: NonNullable<ReturnType<typeof ratio>> } => e.x != null && isVisible(s, e.c))
 		.sort((a, b) => a.x.r - b.x.r);
-	const top=list.slice(0,3);
+	const top=list;
 	const topValues=fmtUGroup(top.map(({c})=>absOf(s,group,c.id,col)?.v ?? null),UNIT[group]);
 	const places=top.map(({c,x},i)=>({place:i+1,cfg:c,value:topValues[i] || disp(s,group,c.id,col)!.t,ratio:x.r}));
 	if (!list.length)

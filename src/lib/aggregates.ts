@@ -4,14 +4,14 @@ import type { PerfGroup, Scope } from './model';
 
 export interface Aggregate {
 	v:number; r:number; ci:number; ratioInterval?:[number,number]; interval?:[number,number];
-	count:number; report:string;
+	count:number; report:string; reports:string[];
 }
 const metrics:Record<PerfGroup,(string|null)[]>={lat:['compile','inst','first','steady'],mem:['rssCompile','rssInst','rss',null],code:[null,null,null,'code',null]};
 const cache=new Map<string,Aggregate|null>();
 const median=(xs:number[])=>{const s=[...xs].sort((a,b)=>a-b);return s.length%2?s[s.length>>1]:(s[(s.length>>1)-1]+s[s.length>>1])/2;};
 const quantile=(xs:number[],q:number)=>{const s=[...xs].sort((a,b)=>a-b);const p=(s.length-1)*q;return s[Math.floor(p)]+(s[Math.ceil(p)]-s[Math.floor(p)])*(p%1);};
 
-/** One coherent locked report, a fixed successful shared cohort, no fallback baseline. */
+/** A host-local shared workload cohort merged from sealed reports; each cell retains its evidence. */
 export function aggregate(s:Scope,group:PerfGroup,cid:CfgId,col:number):Aggregate|null {
 	const metric=metrics[group][col];if(!metric)return null;
 	const ids=viewData.applicationConfigurations;
@@ -22,19 +22,22 @@ export function aggregate(s:Scope,group:PerfGroup,cid:CfgId,col:number):Aggregat
 	const remember=(value:Aggregate|null)=>{if(cache.size>512)cache.clear();cache.set(key,value);return value;};
 	const os=s.machine==='m1'?'linux':'darwin';
 	const snapshot=s.snapshot || 's1';
-	// Feature probes have their own performance views; execution headlines
-	// compare application contracts, including first-call execution.
-	const workloads=group==='lat' && col>=2?viewData.catalogue.filter(w=>!w.id.startsWith('features/')):viewData.catalogue;
-	const candidate=Object.entries(viewData.reports).find(([id,r])=>r.host===os && selected.every(c=>r.configurations.includes(viewData.configurations[c])) && workloads.some(w=>viewCell(s.machine,snapshot,w.id,selected[0],metric).report===id));
-	if(!candidate)return remember(null);
-	const [report]=candidate;
+	if(group==='lat' && (!ids.includes(cid)||!ids.includes(s.baseline)))return remember(null);
+	// Feature probes and non-application corpus contracts have separate views.
+	// Merge the application kernel rows from sealed shards on this host; each
+	// cell still points to its own evidence report.
+	const workloads=group==='lat'?viewData.catalogue.filter(w=>w.id.startsWith('applications/')):viewData.catalogue;
 	const cell=(w:string,c:CfgId)=>viewCell(s.machine,snapshot,w,c,metric);
-	const available=(c:ViewCell)=>c.report===report && c.st==='ok' && c.v!=null && Number.isFinite(c.v) && c.v>0;
-	// An unavailable code/memory collector does not become zero or a slow result.
-	const participants=group==='lat'?selected:selected.filter(c=>workloads.some(w=>available(cell(w.id,c))));
+	const available=(c:ViewCell)=>!!c.report && c.st==='ok' && c.v!=null && Number.isFinite(c.v) && c.v>0;
+	// One host-local cohort keeps every runtime's headline directly comparable.
+	// Configurations without successful application timings on this host are omitted.
+	const participants=selected.filter(c=>workloads.some(w=>available(cell(w.id,c))));
 	if(!participants.includes(cid))return remember(null);
 	const cohort=workloads.filter(w=>participants.every(c=>available(cell(w.id,c))));
 	if(!cohort.length)return remember(null);
+	const reports=[...new Set(cohort.flatMap(w=>participants.map(c=>cell(w.id,c).report)))];
+	if(!reports.length)return remember(null);
+	const report=[...reports].sort((a,b)=>viewData.reports[b].created.localeCompare(viewData.reports[a].created))[0];
 	const groupCounts=new Map<string,number>();for(const w of cohort)groupCounts.set(w.group,(groupCounts.get(w.group)||0)+1);
 	const weights=cohort.map(w=>s.weighting==='workload'?1/cohort.length:1/(groupCounts.size*groupCounts.get(w.group)!));
 	const columns=(c:CfgId)=>cohort.map(w=>cell(w.id,c));
@@ -42,7 +45,7 @@ export function aggregate(s:Scope,group:PerfGroup,cid:CfgId,col:number):Aggregat
 	const mean=(cells:ViewCell[],draw?:number[])=>Math.exp(cells.reduce((sum,c,i)=>sum+weights[i]*Math.log(draw?median(draw.map(j=>c.launchMedians![j])):c.v!),0));
 	const baselineAvailable=participants.includes(s.baseline);
 	const value=mean(numerator),base=baselineAvailable?mean(denominator):Number.NaN,ratio=cid===s.baseline?1:value/base;
-	const result:Aggregate={v:value,r:ratio,ci:Number.NaN,count:cohort.length,report};
+	const result:Aggregate={v:value,r:ratio,ci:Number.NaN,count:cohort.length,report,reports};
 	const n=Math.min(...numerator.map(c=>c.launchMedians?.length || 0));
 	const d=Math.min(...denominator.map(c=>c.launchMedians?.length || 0));
 	if(n>=2 && group!=='code') {

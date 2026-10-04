@@ -5,42 +5,38 @@ import type { Cfg, CfgId, Machine, MachineId, Runtime } from './types';
 
 export const RTS: Runtime[] = [
   { id: 'wasmtime', name: 'Wasmtime', lang: 'Rust', exec: ['JIT', 'AOT'], tiers: 'Cranelift (optimizing) · Winch (baseline) · precompiled .cwasm', arch: ['x86-64', 'AArch64', 's390x', 'RISC-V 64'], wasi: '0.1 · 0.2', cm: 'y', repo: 'github.com/bytecodealliance/wasmtime', lic: 'Apache-2.0 WITH LLVM-exception', rel: '37.0.1', size: '9.4 MB', embed: ['Rust', 'C/C++', 'Python', '.NET', 'Go', 'Ruby'], cfg: ['A', 'B'], notes: ['Cranelift is shared with rustc_codegen_cranelift', 'Pooling allocator for high instance density', 'Fuel and epoch-based interruption', 'DRC and null collectors for WasmGC'] },
-  { id: 'wasmer', name: 'Wasmer', lang: 'Rust', exec: ['JIT', 'AOT'], tiers: 'LLVM · Cranelift · Singlepass', arch: ['x86-64', 'AArch64', 'RISC-V 64'], wasi: '0.1 · WASIX', cm: 'n', repo: 'github.com/wasmerio/wasmer', lic: 'MIT', rel: '6.1.0', size: '11.8 MB', embed: ['Rust', 'C', 'Python', 'Go', 'JS', 'PHP'], cfg: ['C', 'D'], notes: ['Pluggable compiler backends', 'WASIX extends WASI with sockets, threads and fork', 'Headless engine for precompiled artifacts'] },
-  { id: 'wazero', name: 'wazero', lang: 'Go', exec: ['Interpreter', 'Compiler'], tiers: 'Wazevo compiler · interpreter', arch: ['x86-64', 'AArch64', 'any (interpreter)'], wasi: '0.1', cm: 'n', repo: 'github.com/tetratelabs/wazero', lic: 'Apache-2.0', rel: '1.9.0', size: '5.1 MB', embed: ['Go'], cfg: ['E'], notes: ['Zero dependencies, no cgo', 'The default runtime selects its compiler when supported by the host', 'Benchmarked here in compiler (Wazevo) mode'] },
+  { id: 'wasmer', name: 'Wasmer', lang: 'Rust', exec: ['JIT', 'AOT'], tiers: 'LLVM · Cranelift · Singlepass', arch: ['x86-64', 'AArch64', 'RISC-V 64'], wasi: '0.1 · WASIX', cm: 'n', repo: 'github.com/wasmerio/wasmer', lic: 'MIT', rel: '6.1.0', size: '11.8 MB', embed: ['Rust', 'C', 'Python', 'Go', 'JS', 'PHP'], cfg: ['D'], notes: ['Benchmarked here with the original Singlepass JIT backend.', 'WASIX extends WASI with sockets, threads and fork', 'Headless engine for precompiled artifacts'] },
+  { id: 'wazero', name: 'wazero', lang: 'Go', exec: ['Interpreter', 'Compiler'], tiers: 'Wazevo compiler · interpreter', arch: ['x86-64', 'AArch64', 'any (interpreter)'], wasi: '0.1', cm: 'n', repo: 'github.com/tetratelabs/wazero', lic: 'Apache-2.0', rel: '1.9.0', size: '5.1 MB', embed: ['Go'], cfg: ['E','Q'], notes: ['Zero dependencies, no cgo', 'The default runtime selects its compiler when supported by the host', 'Compiler and interpreter are measured as separate configurations'] },
   { id: 'wago', name: 'Wago', lang: 'Go', exec: ['Interpreter'], tiers: 'Interpreter', arch: ['any (Go targets)'], wasi: '0.1', cm: 'n', repo: '—', lic: '—', rel: '0.4.2', size: '—', embed: ['Go'], cfg: ['G'], notes: ['Metadata pending maintainer confirmation'] },
-  { id: 'v8', name: 'V8', lang: 'C++', exec: ['JIT'], tiers: 'Production-default tiering (Liftoff → Turboshaft as V8 decides)', arch: ['x64', 'ARM64', 'IA-32', 'ARM', 'RISC-V', 's390x', 'PPC64', 'LoongArch'], wasi: '— (host provides)', cm: 'n', repo: 'chromium.googlesource.com/v8/v8', lic: 'BSD-3-Clause', rel: '14.1', size: '≈30 MB (incl. JS)', embed: ['C++', 'Node.js', 'Deno', 'Chromium'], cfg: ['F'], engine: 0, notes: ['WasmGC objects live on the JS heap', 'Compiled-module code caching', 'Benchmarked with Node.js production-default tiering and caching'] },
+  { id: 'v8', name: 'V8', lang: 'C++', exec: ['JIT'], tiers: 'Liftoff → Turboshaft (production default tiering)', arch: ['x64', 'ARM64', 'IA-32', 'ARM', 'RISC-V', 's390x', 'PPC64', 'LoongArch'], wasi: 'Preview 1 via Node.js host', cm: 'n', repo: 'chromium.googlesource.org/v8/v8', lic: 'BSD-3-Clause', rel: '14.1', size: '≈30 MB (incl. JS)', embed: ['C++', 'Node.js', 'Deno', 'Chromium'], cfg: ['F'], engine: 0, notes: ['Benchmark uses Node.js production-default V8 tiering without forcing Liftoff or Turboshaft', 'WasmGC objects live on the JS heap', 'Compiled-module code caching', 'Node.js supplies a WASI Preview 1 host; this is embedding support, not a V8 engine feature', 'The benchmark adapter exposes wasi-command, but no sealed WASI corpus result has been collected yet'] },
   { id: 'spidermonkey', name: 'SpiderMonkey', lang: 'C++', exec: ['JIT'], tiers: 'Baseline → Ion (optimizing)', arch: ['x64', 'ARM64', 'x86', 'ARM', 'MIPS64', 'LoongArch', 'RISC-V 64'], wasi: '—', cm: 'n', repo: 'searchfox.org/mozilla-central', lic: 'MPL-2.0', rel: 'Firefox 143', size: '—', embed: ['C++', 'Firefox'], engine: 1, notes: ['Baseline compiler tuned for fast startup', 'Ion backend shared with JS'] },
   { id: 'jsc', name: 'JavaScriptCore', lang: 'C++', exec: ['Interpreter', 'JIT'], tiers: 'IPInt (in-place interpreter) → BBQ → OMG', arch: ['ARM64', 'x64'], wasi: '—', cm: 'n', repo: 'github.com/WebKit/WebKit', lic: 'LGPL-2.1 / BSD-2-Clause', rel: 'Safari 26', size: '—', embed: ['C', 'Swift / Obj-C', 'Safari', 'Bun'], engine: 2, notes: ['In-place interpreter skips a translation step', 'Three tiers with on-stack replacement'] },
   { id: 'wasmi', name: 'Wasmi', lang: 'Rust', exec: ['Interpreter'], tiers: 'Register-based interpreter · lazy translation', arch: ['any (Rust targets)', 'no_std'], wasi: '0.1', cm: 'n', repo: 'github.com/wasmi-labs/wasmi', lic: 'MIT OR Apache-2.0', rel: '0.51', size: '0.9 MB', embed: ['Rust', 'C'], notes: ['Designed for embedded and blockchain use', 'API mirrors Wasmtime', 'Lazy function translation for fast startup'] },
-  { id: 'wasmedge', name: 'WasmEdge', lang: 'C++', exec: ['Interpreter', 'AOT'], tiers: 'Interpreter · LLVM AOT', arch: ['x86-64', 'AArch64', 'RISC-V 64'], wasi: '0.1 (+ 0.2 partial)', cm: 'p', repo: 'github.com/WasmEdge/WasmEdge', lic: 'Apache-2.0', rel: '0.15', size: '4.2 MB', embed: ['C', 'Rust', 'Go', 'Java', 'Python'], notes: ['Plugins for WASI-NN, sockets and crypto', 'CNCF sandbox project'] },
   { id: 'wamr', name: 'WAMR', lang: 'C', exec: ['Interpreter', 'JIT', 'AOT'], tiers: 'Classic + fast interpreter · Fast JIT · LLVM JIT · LLVM AOT', arch: ['x86-64', 'x86', 'AArch64', 'ARM', 'RISC-V', 'Xtensa', 'MIPS', 'ARC'], wasi: '0.1', cm: 'n', repo: 'github.com/bytecodealliance/wasm-micro-runtime', lic: 'Apache-2.0 WITH LLVM-exception', rel: '2.4', size: '≈85 KB (interp)', embed: ['C', 'Rust', 'Go', 'Python'], notes: ['Built for embedded and IoT targets', 'Footprint configurable per feature'] },
   { id: 'wasm3', name: 'wasm3', lang: 'C', exec: ['Interpreter'], tiers: 'Threaded-code interpreter', arch: ['any (C99)', 'microcontrollers'], wasi: '0.1 (partial)', cm: 'n', repo: 'github.com/wasm3/wasm3', lic: 'MIT', rel: '0.5.0', size: '≈65 KB', embed: ['C', 'Python', 'Rust', 'Go', 'Swift'], notes: ['Minimal-maintenance mode', 'Runs on microcontrollers'] },
-  { id: 'chicory', name: 'Chicory', lang: 'Java', exec: ['Interpreter', 'AOT'], tiers: 'Interpreter · AOT to JVM bytecode', arch: ['any (JVM)'], wasi: '0.1', cm: 'n', repo: 'github.com/dylibso/chicory', lic: 'Apache-2.0', rel: '1.5', size: '≈1 MB (jar)', embed: ['Java', 'Kotlin', 'JVM'], notes: ['Pure JVM, no native dependencies', 'Build-time AOT compiles Wasm to Java bytecode'] },
 ];
 RTS.push(
-  {id:'wavm',name:'WAVM',lang:'C++',exec:['JIT'],tiers:'LLVM JIT',arch:['x86-64','AArch64'],wasi:'not tested',cm:'?',repo:'github.com/WAVM/WAVM',lic:'BSD-3-Clause',rel:'not collected',size:'not measured',embed:['C','C++'],notes:['Feature corpus uses the installed source-pinned LLVM embedding.']},
+  {id:'wavm',name:'WAVM',lang:'C++',exec:['JIT'],tiers:'LLVM JIT',arch:['x86-64','AArch64'],wasi:'not tested',cm:'?',repo:'github.com/WAVM/WAVM',lic:'BSD-3-Clause',rel:'nightly-2026-04-05-4e82bb9',size:'not measured',embed:['C','C++'],notes:['Official WAVM prerelease built from source and benchmarked on Apple M4 Max and AMD Ryzen 7 7800X3D.','LLVM 21.1.8 backend.']},
   {id:'deno',name:'Deno',lang:'Rust',exec:['JIT'],tiers:'V8 production defaults',arch:['x86-64','AArch64'],wasi:'not tested',cm:'?',repo:'github.com/denoland/deno',lic:'MIT',rel:'not collected',size:'not measured',embed:['JavaScript','TypeScript'],notes:['Feature corpus uses a standalone Deno process; browser and Node results are separate configurations.']}
 );
 export const RTB: Record<string, Runtime> = Object.fromEntries(RTS.map(r => [r.id, r]));
-export const SA = ['wasmtime', 'wasmer', 'wazero', 'wago', 'wasmi', 'wasmedge', 'wamr', 'wasm3', 'chicory'];
+export const SA = ['wasmtime', 'wasmer', 'wazero', 'wago', 'wasmi', 'wamr', 'wasm3'];
 const applicationCFG: Cfg[] = [
   { id: 'A', rt: 'wasmtime', ver: '37.0.1', be: 'cranelift', kind: 'optimizing JIT', col: 'var(--rt-wasmtime)', hollow: false },
   { id: 'B', rt: 'wasmtime', ver: '37.0.1', be: 'winch', kind: 'baseline JIT', col: 'var(--rt-wasmtime)', hollow: true },
-  { id: 'C', rt: 'wasmer', ver: '6.1.0', be: 'llvm', kind: 'ahead-of-time', col: 'var(--rt-wasmer)', hollow: false },
   { id: 'D', rt: 'wasmer', ver: '6.1.0', be: 'singlepass', kind: 'single-pass JIT', col: 'var(--rt-wasmer)', hollow: true },
   { id: 'E', rt: 'wazero', ver: '1.9.0', be: 'compiler', kind: 'Wazevo compiler', col: 'var(--rt-wazero)', hollow: false },
-  { id: 'F', rt: 'v8', ver: '14.6', be: 'production-default', kind: 'production tiering', col: 'var(--rt-v8)', hollow: false },
-  { id: 'G', rt: 'wago', ver: '0.4.2', be: 'interpreter', kind: 'interpreter', col: 'var(--rt-wago)', hollow: false, interp: true },
+  { id: 'F', rt: 'v8', ver: 'not collected', be: 'production-default-tiering', kind: 'production default', col: 'var(--rt-v8)', hollow: false },
+  { id: 'G', rt: 'wago', ver: '0.4.2', be: 'railshot', kind: 'compiler', col: 'var(--rt-wago)', hollow: false, interp: false },
 ];
 
 // The per-workload Benchmarks matrix includes each measured engine configuration.
 // Aggregate leaderboards still use viewData.applicationConfigurations only.
 const additionalCFG: Cfg[] = ([
-  ['I','wasmi','interpreter'],['J','wasmedge','interpreter'],['K','wasm3','interpreter'],
+  ['I','wasmi','interpreter'],['K','wasm3','interpreter'],
   ['L','wavm','llvm-jit'],['M','spidermonkey','production-default'],['N','jsc','production-default'],
-  ['O','deno','production-default'],['P','wamr','interpreter'],['Q','chicory','interpreter'],
-  ['R','wasmtime','component-async']
- ] as [CfgId,string,string][]).map(([id,rt,be])=>({id,rt,be,ver:'not collected',kind:'Measured engine configuration',col:`var(--rt-${rt}, var(--fg3))`,hollow:['R','S'].includes(id)}));
+  ['O','deno','production-default'],['P','wamr','interpreter'],['Q','wazero','interpreter']
+ ] as [CfgId,string,string][]).map(([id,rt,be])=>({id,rt,be,ver:'not collected',kind:be==='interpreter'?'interpreter':'Measured engine configuration',col:`var(--rt-${rt}, var(--fg3))`,hollow:id==='S',interp:['I','K','P','Q'].includes(id)}));
 export const CFG: Cfg[] = [...applicationCFG,...additionalCFG];
 export const FEATURE_CFG: Cfg[] = CFG;
 export const FEATURE_ENGINES = ['v8','spidermonkey','jsc',...SA,'wavm','deno'];
@@ -49,9 +45,8 @@ const shortVersion=(version:string)=>version.startsWith('binary-sha256:')?'sha25
 for(const c of FEATURE_CFG) {
   const measured=viewData.hosts.m1.configurations[c.id] || viewData.hosts.m2.configurations[c.id];
   const released=[...viewData.featureVersions.m1,...viewData.featureVersions.m2].find(v=>v.id===viewData.configurations[c.id] && v.channel==='stable' && v.description.runtime_version===measured?.version);
-  if(measured && (released || !/^[a-f0-9]{40}(?:\/|$)|nightly|snapshot|canary|0\.0\.0-prerelease/i.test(measured.version))){c.ver=shortVersion(released?.version || measured.version);c.be=c.id==='F'?'production-default':c.id==='R'?measured.backend+' + async':measured.backend;}
+  if(measured && (released || !/^[a-f0-9]{40}(?:\/|$)|nightly|snapshot|canary|0\.0\.0-prerelease/i.test(measured.version))){c.ver=shortVersion(released?.version || measured.version);c.be=c.id==='R'?measured.backend+' + async':measured.backend;}
   if(c.id==='E'||c.id==='G'){c.interp=false;c.kind='JIT compiler';}
-  if(c.id==='C')c.kind='LLVM JIT';
 }
 for(const runtime of RTS) {
   const c=FEATURE_CFG.find(c=>c.rt===runtime.id);

@@ -29,3 +29,11 @@ export function retainReports(reports,limit=12) {
   }
   return sorted.filter(report=>keep.has(report));
 }
+
+// Explicit append means keep the entire prior set while replacing duplicate
+// run IDs with their newly verified projection. Retention remains opt-in.
+export function appendReports(previous,incoming) {
+  const ids=new Set(incoming.map(report=>report.runId));
+  return [...incoming,...previous.filter(report=>!ids.has(report.runId))]
+    .sort((a,b)=>b.created.localeCompare(a.created));
+}

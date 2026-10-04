@@ -1,28 +1,34 @@
 import {digest} from './wasmbench.mjs';
 
-// A Wednesday is an index into a measured release, not its collection date.
-// Identical releases share work only within the same complete measurement recipe.
+// Weekly default-branch and release snapshots share work only for identical
+// source identities and complete measurement recipes.
 export function performanceHistoryQueue(plan,{host,corpusSha256,recipeSha256,options}) {
   if(!host || !/^[a-f0-9]{64}$/.test(corpusSha256) || !/^[a-f0-9]{64}$/.test(recipeSha256))throw Error('Performance history requires host, corpus and recipe identities');
   const jobs=new Map(),snapshots=[];
   const seen=new Set();
-  for(const pin of plan.pins) {
-    const key=pin.engine+'/'+pin.targetWeek;
-    if(seen.has(key))throw Error('Duplicate engine/Wednesday: '+key);
+  for(const pin of [...(plan.pins||[]),...(plan.releasePins||[])]) {
+    const targetType=pin.targetType||'weekly';
+    const key=pin.engine+'/'+targetType+'/'+(targetType==='release'?pin.targetRelease:pin.targetWeek);
+    if(seen.has(key))throw Error('Duplicate engine/Saturday: '+key);
     seen.add(key);
     if(pin.status!=='planned') {
-      snapshots.push({...pin,status:'unavailable',reason:pin.reason || 'No published release at the Wednesday cutoff.'});
+      snapshots.push({...pin,status:'unavailable',reason:pin.reason || 'No published release at the Saturday cutoff.'});
       continue;
     }
-    if(!pin.tag || !pin.repository || !Number.isFinite(+new Date(pin.publishedAt)) || !Number.isFinite(+new Date(pin.targetWeek)) || !pin.configurations?.length || +new Date(pin.publishedAt)>+new Date(pin.targetWeek))throw Error('Invalid released-engine history pin: '+key);
+    if(!pin.repository || !Number.isFinite(+new Date(pin.targetWeek)) || !pin.configurations?.length)throw Error('Invalid engine history pin: '+key);
+    if(targetType==='main'&&(!pin.branch||!/^([a-f0-9]{40}|[a-f0-9]{64})$/i.test(pin.revision)))throw Error('Invalid default-branch history pin: '+key);
+    if(targetType!=='main'&&(!pin.tag || !Number.isFinite(+new Date(pin.publishedAt)) || +new Date(pin.publishedAt)>+new Date(pin.targetWeek)))throw Error('Invalid released-engine history pin: '+key);
     const identity={engine:pin.engine,repository:pin.repository,tag:pin.tag,publishedAt:pin.publishedAt,prerelease:!!pin.prerelease,embeddedV8:pin.embeddedV8 || null,
-      host,corpusSha256,recipeSha256,configurations:pin.configurations,options};
+      branch:pin.branch||null,revision:pin.revision||null,host,corpusSha256,recipeSha256,configurations:pin.configurations,options};
     const jobId=digest(JSON.stringify(identity));
-    const job=jobs.get(jobId) || {id:jobId,identity,release:pin,targetWeeks:[],status:'pending'};
-    job.targetWeeks.push(pin.targetWeek);jobs.set(jobId,job);
+    const job=jobs.get(jobId) || {id:jobId,identity,source:pin,release:pin,targetWeeks:[],targetReleases:[],status:'pending'};
+    if(targetType==='release')job.targetReleases.push({tag:pin.targetRelease,publishedAt:pin.publishedAt});
+    else job.targetWeeks.push(pin.targetWeek);
+    jobs.set(jobId,job);
     snapshots.push({...pin,jobId,status:'pending'});
   }
-  const ordered=[...jobs.values()].sort((a,b)=>b.targetWeeks.at(-1).localeCompare(a.targetWeeks.at(-1)));
+  const latest=job=>[...job.targetWeeks,...job.targetReleases.map(r=>r.publishedAt)].sort().at(-1)||'';
+  const ordered=[...jobs.values()].sort((a,b)=>latest(b).localeCompare(latest(a)));
   return {schema:1,host,corpusSha256,recipeSha256,options,jobs:ordered,snapshots};
 }
 

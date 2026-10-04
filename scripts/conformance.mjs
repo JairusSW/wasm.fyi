@@ -22,7 +22,7 @@ else if(action==='collect'){
         wasmtime ||= await latestWasmtime(process.env.WASMBENCH_RELEASE_AS_OF);result=await wasiReport(wasmtime);
       }else if(['wago-wasi','wago-wasi-library','wago-component'].includes(lane)){
         const plugin=await releaseSource(lane.startsWith('wago-wasi')?'wago-org/wasi':'wago-org/component-model',{taggedLibrary:true,asOf:process.env.WASMBENCH_RELEASE_AS_OF});
-        const engine=await releaseSource('wago-org/wago',{asOf:process.env.WASMBENCH_RELEASE_AS_OF});
+        const engine=await releaseSource('wago-org/wago',{asOf:process.env.WASMBENCH_RELEASE_AS_OF,betaPrerelease:true});
         // Resolve tests against the released engine, never the plugin's pseudo-version dependency.
         const mod=join(directory,lane+'.mod');
         await writeFile(mod,await readFile(join(plugin.source,'go.mod')));
@@ -57,7 +57,7 @@ else if(action==='collect'){
           if(!manifests.length)result.status='runner-error';
         }else result.suite={repository:'wago-org/wasi',revision:plugin.revision,label:'Released WASI Preview 1 and Preview 2 plugin tests (not the upstream Linux-only suite)'};
       }else if(lane==='wago-core'){
-        const engine=await releaseSource('wago-org/wago',{asOf:process.env.WASMBENCH_RELEASE_AS_OF}),suite=suites.core,source=await checkoutSuite(suite);
+        const engine=await releaseSource('wago-org/wago',{asOf:process.env.WASMBENCH_RELEASE_AS_OF,betaPrerelease:true}),suite=suites.core,source=await checkoutSuite(suite);
         result=await goConformance(engine,['-run','^TestSpecSuiteExec$','./src/wago'],{WAGO_SPECTEST_DIR:source,WAGO_SPEC_VERSION:'3.0',...(process.env.WAGO_SPEC_INTERPRETER?{WAGO_SPEC_INTERPRETER:process.env.WAGO_SPEC_INTERPRETER}:{})});
         result.suite={...suite,inventory:await inventory(join(source,suite.directory))};
         if(!/TOTAL\[3\.0\]/.test(result.output))result.status='runner-error';

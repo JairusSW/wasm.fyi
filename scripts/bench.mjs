@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { resolve, join } from 'node:path';
-import { homedir } from 'node:os';
+import { availableParallelism, homedir } from 'node:os';
 import { command, digest, harness, site } from './lib/wasmbench.mjs';
 import { prepareCorpus } from './lib/corpus.mjs';
 import { featureConfigurations } from './lib/feature-configurations.mjs';
@@ -10,20 +10,39 @@ import { prepareFeatureTools } from './lib/feature-tools.mjs';
 import { releaseSource, assertReleasedSource } from './lib/release-policy.mjs';
 import { verifyV8 } from './lib/v8-preflight.mjs';
 import {wasmerRelease,assertWasmerReceipt} from './lib/wasmer-release.mjs';
+import {workersWithinCpuBudget} from './lib/worker-budget.mjs';
 
 const action = process.argv[2];
+// Collection is allowed to publish a complete, checksummed bundle with failed
+// cells so unsupported contracts remain visible as failures instead of
+// discarding otherwise valid measurements. The pass() helper still verifies
+// every sealed run before continuing.
+if (action === 'collect') process.env.WASMBENCH_RECORD_FAILURES ||= '1';
 const { root, settings, run } = await harness();
 const collection = {...settings.collection, timeout:process.env.WASMBENCH_TIMEOUT || settings.collection.timeout};
 const featureSuite = process.env.WASMBENCH_SUITE?.includes('corpora/features/') || process.env.WASMBENCH_SUITE==='all';
 const runtimes = process.env.WASMBENCH_RUNTIMES || (featureSuite ? featureConfigurations(settings) : collection.runtimes).join(',');
+if(runtimes.split(',').includes('wasmer-llvm') && ['build','collect','corpus-check'].includes(action))throw Error('wasmer-llvm is retired from the website benchmark collection; use wasmer-singlepass.');
+const extraToolsNeeded = runtimes.split(',').some(id => ['wasm3','wamr','spidermonkey','deno','jsc'].includes(id));
+if(runtimes.split(',').includes('wavm')) {
+  process.env.WASMBENCH_WAVM_VERSION ||= 'nightly-2026-04-05-4e82bb9';
+  process.env.WASMBENCH_WAVM_SDK ||= join(homedir(),'.local/share/wasm-fyi/toolchains/wavm-nightly-2026-04-05/sdk');
+}
 if(['build','collect','corpus-check'].includes(action) && runtimes.split(',').includes('wago')) {
   process.env.WASMBENCH_CORPUS_SOURCE ||= process.env.WAGO_SOURCE || collection.wagoSource;
-  const release=await releaseSource('wago-org/wago',{asOf:process.env.WASMBENCH_RELEASE_AS_OF});
+  const release=await releaseSource('wago-org/wago',{asOf:process.env.WASMBENCH_RELEASE_AS_OF,betaPrerelease:true});
   assertReleasedSource(release.source,release);
   process.env.WAGO_SOURCE=release.source;
 }
-if(runtimes.split(',').includes('wavm') && ['build','collect','corpus-check'].includes(action))throw Error('The available WAVM SDK is an unreleased build and cannot be collected.');
-if(featureSuite && ['build','collect'].includes(action))await prepareFeatureTools(root,settings,runtimes.split(','));
+if(runtimes.split(',').includes('wavm') && ['build','collect','corpus-check'].includes(action) && !/^nightly-\d{4}-\d{2}-\d{2}-[a-f0-9]{7,40}$/.test(process.env.WASMBENCH_WAVM_VERSION || ''))throw Error('Set WASMBENCH_WAVM_VERSION to the exact prerelease tag and source commit used to build the WAVM SDK.');
+if((featureSuite || extraToolsNeeded) && ['build','collect','corpus-check'].includes(action)) {
+  const releaseJsc=process.env.WASMBENCH_JSC,releaseJscVersion=process.env.WASMBENCH_JSC_VERSION;
+  await prepareFeatureTools(root,settings,runtimes.split(','));
+  // Keep a release-bound JSC shell selected instead of silently replacing it
+  // with the pinned development shell prepared for ordinary current checks.
+  if(releaseJsc)process.env.WASMBENCH_JSC=releaseJsc;
+  if(releaseJscVersion)process.env.WASMBENCH_JSC_VERSION=releaseJscVersion;
+}
 if (runtimes.split(',').some(id => ['wasmer-llvm','wasmer-singlepass'].includes(id))) {
   const pin=wasmerRelease(process.env.WASMBENCH_WASMER_VERSION);
   const sdk=resolve(process.env.WASMBENCH_WASMER_SDK || join(homedir(),`.local/share/wasm-fyi/toolchains/wasmer-c-api-${pin.version}/sdk`));
@@ -62,14 +81,17 @@ else if (action === 'corpus-check') {
 }
 else if (action === 'doctor') invoke('doctor');
 else if (action === 'build') {
-  patchHarness(root);
+  if (process.env.WASMBENCH_SKIP_HARNESS_PATCH !== '1') patchHarness(root);
   const args = ['build', '--runtimes', runtimes];
   if (runtimes.split(',').includes('wago')) args.push('--wago-source', resolve(site, process.env.WAGO_SOURCE || collection.wagoSource));
   invoke(...args);
 } else if (action === 'collect') {
   // Always rebuild the Wago adapter after selecting a release. A previously
   // compiled binary cannot inherit the new source identity.
-  if(runtimes.split(',').includes('wago')) {patchHarness(root);invoke('build','--runtimes','wago','--wago-source',process.env.WAGO_SOURCE);}
+  if(runtimes.split(',').includes('wago')) {
+    if(process.env.WASMBENCH_SKIP_WAGO_BUILD==='1')console.log('Using the prebuilt Wago adapter for this isolated worker.');
+    else {if (process.env.WASMBENCH_SKIP_HARNESS_PATCH !== '1') patchHarness(root);invoke('build','--runtimes','wago','--wago-source',process.env.WAGO_SOURCE);}
+  }
   verifyV8(root, settings.node, runtimes.split(','));
   const id = new Date().toISOString().replace(/[:.]/g, '-') + '-' + randomUUID().slice(0, 8);
   const directory = join(site, '.wasmbench/experiments', id);
@@ -77,23 +99,36 @@ else if (action === 'build') {
   const timing = join(directory, `timing-${id}`);
   const suite = await prepareCorpus(settings, run, directory);
   verifyCorpusV8(suite);
+  // Keep phase order stable across harness versions: compile, instantiate,
+  // first use, warmed execution. The memory and code passes follow afterward.
+  const lifecycleScenarios=['compile','instantiate','first-call','steady'];
   const shared = ['--archive-tools=true','--suite', suite, '--runtimes', runtimes, '--timeout', collection.timeout, ...(process.env.WASMBENCH_VALIDATION_PROFILE ? ['--validation-profile', process.env.WASMBENCH_VALIDATION_PROFILE] : [])];
-  pass('run', ...shared, '--profile', 'timing', '--launches', String(number('WASMBENCH_LAUNCHES', collection.launches)),
+  const logicalCpus=availableParallelism();
+  const requestedWorkers=number('WASMBENCH_WORKERS',collection.workers||1);
+  const workers=workersWithinCpuBudget(logicalCpus,requestedWorkers);
+  if(workers!==requestedWorkers)console.log(`Capped benchmark workers from ${requestedWorkers} to ${workers} (${logicalCpus} available logical CPUs; at most one quarter in parallel).`);
+  shared.push('--workers',String(workers));
+  const lifecycleArgs = [...shared, '--scenarios', lifecycleScenarios.join(',')];
+  const scenarioSamples = process.env.WASMBENCH_SCENARIO_SAMPLES
+    ? JSON.parse(process.env.WASMBENCH_SCENARIO_SAMPLES)
+    : collection.scenarioSamples || {'*': 1};
+  pass('run', ...lifecycleArgs, '--profile', 'timing', '--launches', String(number('WASMBENCH_LAUNCHES', collection.launches)),
     '--samples', String(number('WASMBENCH_SAMPLES', collection.samples)), '--operations', String(number('WASMBENCH_OPERATIONS', collection.operations)),
+    '--samples-by-scenario', JSON.stringify(scenarioSamples),
     '--warmup', String(number('WASMBENCH_WARMUP', collection.warmup, 0)), '--out', timing);
   invoke('verify', '--run', timing);
   const report = join(directory, 'report');
   const reportArgs = ['report', '--run', timing, '--out', report];
-  if (collection.memory) {
+  if (collection.memory && process.env.WASMBENCH_TIMING_ONLY !== '1') {
     const memory = join(directory, `memory-${id}`);
-    const args = ['run', ...shared, '--profile', 'memory', '--launches', '1',
+    const args = ['run', ...lifecycleArgs, '--profile', 'memory', '--launches', '1',
       '--samples', '1', '--operations', '1', '--warmup', '0', '--out', memory];
     if (collection.phaseBarriers) args.push('--phase-barriers');
     pass(...args);
     invoke('verify', '--run', memory);
     reportArgs.push('--memory-run', memory);
   }
-  if (collection.code) {
+  if (collection.code && process.env.WASMBENCH_TIMING_ONLY !== '1') {
     const code = join(directory, `code-${id}`);
     pass('run', ...shared, '--profile', 'code', '--scenarios', 'compile', '--launches', '1', '--samples', '1', '--operations', '1', '--warmup', '0', '--out', code);
     invoke('verify', '--run', code);

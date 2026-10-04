@@ -1,10 +1,11 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {wednesdays,snapshotKey} from './lib/weekly-history.mjs';
+import {readFileSync} from 'node:fs';import {featureConfigurations} from './lib/feature-configurations.mjs';
+import {saturdays,monthsBefore,snapshotKey,weeklyPolicy} from './lib/weekly-history.mjs';
 import {engineSources} from './lib/engine-sources.mjs';
 import {historyLanes} from './lib/history-lanes.mjs';
 import {wasmerRelease,assertWasmerReceipt} from './lib/wasmer-release.mjs';
 import {performanceHistoryQueue,performanceCorpusIdentity} from './lib/performance-history.mjs';
-import {engineVersion,assertHistoricalRuntime} from './lib/historical-binding.mjs';
+import {engineVersion,assertHistoricalRuntime,pendingBindingReason} from './lib/historical-binding.mjs';
 test('historical runtime evidence rejects current-SDK fallback and cached wazero compilation',()=>{
  const binding={engine:'wazero',version:'1.9.0',configuration:'wazero'};
  const runtime={id:'wazero',description:{runtime_version:'1.9.0',effective_configuration:{compile_policy:'fresh uncached module per operation; verification outside timer'}}};
@@ -14,6 +15,21 @@ test('historical runtime evidence rejects current-SDK fallback and cached wazero
  const wago={engine:'wago',configuration:'wago',source:{revision:'a'.repeat(40)}};
  assert.doesNotThrow(()=>assertHistoricalRuntime({id:'wago',description:{runtime_version:'a'.repeat(40)+'/source-'+ 'b'.repeat(64)}},wago));
  assert.throws(()=>assertHistoricalRuntime({id:'wago',description:{runtime_version:'c'.repeat(40)+'/source-'+ 'b'.repeat(64)}},wago),/source differs/);
+ const wasmer={engine:'wasmer',configuration:'wasmer-singlepass',version:'7.5.0'};
+ assert.doesNotThrow(()=>assertHistoricalRuntime({id:'wasmer-singlepass',description:{runtime_version:'7.5.0',backend:'singlepass-jit'}},wasmer));
+ assert.throws(()=>assertHistoricalRuntime({id:'wasmer-singlepass',description:{runtime_version:'7.5.0',backend:'cranelift'}},wasmer),/Singlepass/);
+ const wavm={engine:'wavm',configuration:'wavm',source:{adapterVersion:'nightly-2026-04-05-4e82bb9'}};
+ assert.doesNotThrow(()=>assertHistoricalRuntime({id:'wavm',description:{runtime_version:wavm.source.adapterVersion}},wavm));
+ const spider={engine:'spidermonkey',configuration:'spidermonkey',source:{binarySha256:'d'.repeat(64)}};
+ const spiderRuntime={id:'spidermonkey',description:{build:'binary-sha256:'+spider.source.binarySha256,effective_configuration:{wasm_compiler:'Ion only',flags:'--wasm-compiler=ion'}}};
+ assert.doesNotThrow(()=>assertHistoricalRuntime(spiderRuntime,spider));
+ assert.throws(()=>assertHistoricalRuntime({...spiderRuntime,description:{...spiderRuntime.description,effective_configuration:{wasm_compiler:'Baseline'}}},spider),/forced Ion/);
+ const jsc={engine:'jsc',configuration:'jsc',version:'2.54.1',source:{binarySha256:'e'.repeat(64)}};
+ const jscRuntime={id:'jsc',description:{runtime_version:'WebKitGTK/2.54.1',build:'binary-sha256:'+jsc.source.binarySha256,backend:'OMG (forced tier-up)'}};
+ assert.doesNotThrow(()=>assertHistoricalRuntime(jscRuntime,jsc));
+ assert.throws(()=>assertHistoricalRuntime({...jscRuntime,description:{...jscRuntime.description,build:'binary-sha256:'+'f'.repeat(64)}},jsc),/binary identity/);
+ assert.throws(()=>assertHistoricalRuntime({...jscRuntime,description:{...jscRuntime.description,backend:'production-default-tiering'}},jsc),/forced OMG/);
+ assert.equal(engineVersion({engine:'spidermonkey',tag:'157.0'}),'157.0');
  assert.equal(engineVersion({tag:'v0.1.0-beta.11'}),'0.1.0-beta.11');assert.throws(()=>engineVersion({tag:'main'}),/explicit SDK version/);
 });
 test('performance history reuses released identities without changing collection dates',()=>{
@@ -30,6 +46,34 @@ test('performance history reuses released identities without changing collection
  assert.throws(()=>performanceHistoryQueue({pins:[{...plan.pins[0],publishedAt:'invalid'}]},context),/Invalid released/);
  const newer={...base,tag:'v1.13.0',publishedAt:'2026-09-29T00:00:00Z',targetWeek:'2026-09-30T00:00:00Z'};
  assert.equal(performanceHistoryQueue({pins:[plan.pins[0],newer]},context).jobs[0].release.tag,'v1.13.0');
+});
+test('weekly and per-release targets reuse one measurement job for the same released engine',()=>{
+ const release={engine:'wazero',repository:'tetratelabs/wazero',tag:'v1.12.0',publishedAt:'2026-09-01T00:00:00Z',configurations:['wazero'],status:'planned'};
+ const plan={pins:[{...release,targetType:'weekly',targetWeek:'2026-09-05T00:00:00.000Z'}],
+   releasePins:[{...release,targetType:'release',targetRelease:'v1.12.0',targetWeek:release.publishedAt}]};
+ const queue=performanceHistoryQueue(plan,{host:'darwin/arm64',corpusSha256:'a'.repeat(64),recipeSha256:'b'.repeat(64),options:{samples:3}});
+ assert.equal(queue.jobs.length,1);assert.equal(queue.jobs[0].targetWeeks.length,1);
+ assert.deepEqual(queue.jobs[0].targetReleases,[{tag:'v1.12.0',publishedAt:release.publishedAt}]);
+ assert.equal(queue.snapshots[0].jobId,queue.snapshots[1].jobId);
+});
+test('Saturday main pins and release pins are separate source identities',()=>{
+ const main={engine:'wazero',targetType:'main',targetWeek:'2026-09-05T00:00:00.000Z',repository:'tetratelabs/wazero',branch:'main',revision:'a'.repeat(40),configurations:['wazero'],status:'planned'};
+ const release={engine:'wazero',targetType:'release',targetWeek:'2026-09-05T00:00:00.000Z',targetRelease:'v1.12.0',repository:'tetratelabs/wazero',tag:'v1.12.0',publishedAt:'2026-09-01T00:00:00Z',configurations:['wazero'],status:'planned'};
+ const context={host:'darwin/arm64',corpusSha256:'a'.repeat(64),recipeSha256:'b'.repeat(64),options:{samples:1}};
+ const queue=performanceHistoryQueue({pins:[main],releasePins:[release]},context);
+ assert.equal(queue.jobs.length,2);assert(queue.snapshots.every(s=>s.status==='pending'));
+ assert.equal(queue.jobs.find(j=>j.source.targetType==='main').identity.revision,'a'.repeat(40));
+ assert.equal(queue.jobs.find(j=>j.source.targetType==='release').identity.tag,'v1.12.0');
+ assert.throws(()=>performanceHistoryQueue({pins:[{...main,revision:'main'}]},context),/default-branch/);
+});
+test('mainline measurements stay pending until an exact-revision build binding is qualified',()=>{
+ assert.match(pendingBindingReason({targetType:'main',engine:'wago',revision:'a'.repeat(40)}),/source-revision performance build binding/);
+ assert.equal(pendingBindingReason({targetType:'release',engine:'wago',tag:'v0.1.0-beta.11'}),null);
+});
+test('history policy records Saturday main tracking and distinct main/release chart styling',()=>{
+ assert.match(weeklyPolicy,/Saturday 00:00 UTC/);
+ assert.match(weeklyPolicy,/default-branch commit for weekly main tracking/);
+ assert.match(weeklyPolicy,/dimmed trend line; individually released versions are bold history points/);
 });
 test('history corpus identity includes oracles and ABI and ignores host-specific artifact paths',()=>{
  const w={id:'applications/image-blur',sha256:'a'.repeat(64),artifact:'/mac/a.wasm',abi:'core',args:[192],reset:'stateless',oracle:{kind:'exact_u64',expected:['17']}};
@@ -67,22 +111,39 @@ test('released Wago gets official WASI on Linux and an explicit Mac gap',()=>{
  assert.deepEqual(mac.lanes,['wago-core','wago-component']);assert.equal(mac.gaps[0].scope,'wasi');
  assert.equal(historyLanes(pins,'2025-10-01T00:00:00.000Z','linux').lanes.length,0);
 });
-test('Wednesday boundaries are UTC, include the latest Wednesday and catch every missed week',()=>{
-  assert.deepEqual(wednesdays(new Date('2026-10-01T19:00:00Z'),2),['2026-09-23T00:00:00.000Z','2026-09-30T00:00:00.000Z']);
-  assert.equal(wednesdays(new Date('2026-09-30T23:59:59Z'),1)[0],'2026-09-30T00:00:00.000Z');
-  assert.equal(wednesdays(new Date('2026-09-29T23:59:59Z'),1)[0],'2026-09-23T00:00:00.000Z');
-  const dates=wednesdays(new Date('2026-10-15T00:00:00Z'),2,[{targetWeek:'2026-09-23T00:00:00Z'}]);
-  assert.equal(dates.length,4);assert(dates.every(d=>new Date(d).getUTCDay()===3));
+test('Saturday boundaries are UTC, include the latest Saturday and catch every missed week',()=>{
+  assert.deepEqual(saturdays(new Date('2026-10-04T19:00:00Z'),2),['2026-09-26T00:00:00.000Z','2026-10-03T00:00:00.000Z']);
+  assert.equal(saturdays(new Date('2026-10-03T23:59:59Z'),1)[0],'2026-10-03T00:00:00.000Z');
+  assert.equal(saturdays(new Date('2026-10-02T23:59:59Z'),1)[0],'2026-09-26T00:00:00.000Z');
+  const dates=saturdays(new Date('2026-10-17T00:00:00Z'),2,[{targetWeek:'2026-09-26T00:00:00Z'}]);
+  assert.equal(dates.length,4);assert(dates.every(d=>new Date(d).getUTCDay()===6));
+});
+test('four-month release window uses calendar months and is independent of Saturday snapshots',()=>{
+  assert.equal(monthsBefore(new Date('2026-10-03T12:00:00Z'),4),'2026-06-03T12:00:00.000Z');
+  assert.equal(monthsBefore(new Date('2026-05-31T00:00:00Z'),3),'2026-02-28T00:00:00.000Z');
 });
 test('reuse identity includes source, host, corpus, recipe, options and configuration',()=>{
   const input={engine:'wago',revision:'a'.repeat(40),suiteSha256:'b'.repeat(64),recipeSha256:'c'.repeat(64),host:'darwin/arm64',configurations:['wago'],options:{samples:3}};
   for(const key of Object.keys(input))assert.notEqual(snapshotKey(input),snapshotKey({...input,[key]:'changed'}));
 });
-test('all fourteen engines have explicit release sources and configurations',()=>{
-  assert.equal(Object.keys(engineSources).length,14);
+test('all release-capable benchmark configurations have explicit release sources',()=>{
+	assert.equal(Object.values(engineSources).reduce((n,source)=>n+source.configurations.length,0),14);
   for(const source of Object.values(engineSources)){assert(source.repository.includes('/'));assert(!source.branch);assert(source.configurations.length);}
 });
-test('a full year includes both Wednesday endpoints, 52 weekly intervals',()=>{
- const dates=wednesdays(new Date('2026-10-02T00:00:00Z'),53);
- assert.equal(dates.length,53);assert.equal(dates[0],'2025-10-01T00:00:00.000Z');assert.equal(dates.at(-1),'2026-09-30T00:00:00.000Z');
+test('both measured hosts select every current engine configuration including JSC',()=>{
+ const settings=JSON.parse(readFileSync(new URL('../wasmbench.config.json',import.meta.url)));
+ const expected=Object.values(engineSources).flatMap(source=>source.configurations).sort();
+ for(const platform of ['darwin','linux'])assert.deepEqual(featureConfigurations(settings,platform).sort(),expected);
+});
+test('default collection sample counts prioritize compile, instantiate and steady latency',()=>{
+ const settings=JSON.parse(readFileSync(new URL('../wasmbench.config.json',import.meta.url)));
+ assert.equal(settings.collection.scenarioSamples.compile,3);
+ assert.equal(settings.collection.scenarioSamples.instantiate,3);
+ assert.equal(settings.collection.scenarioSamples['first-call'],1);
+ assert.equal(settings.collection.scenarioSamples.steady,3);
+ assert.equal(settings.collection.scenarioSamples['*'],1);
+});
+test('the four-month history window includes every Saturday and catches up weekly',()=>{
+ const dates=saturdays(new Date('2026-10-03T00:00:00Z'),18);
+ assert.equal(dates.length,18);assert.equal(dates[0],'2026-06-06T00:00:00.000Z');assert.equal(dates.at(-1),'2026-10-03T00:00:00.000Z');
 });

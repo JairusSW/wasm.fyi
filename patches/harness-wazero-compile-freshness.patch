@@ -1,23 +1,32 @@
+diff --git a/adapters/wazero/main.go b/adapters/wazero/main.go
+index a479058..9d8d232 100644
 --- a/adapters/wazero/main.go
 +++ b/adapters/wazero/main.go
-@@ -324,7 +324,15 @@
+@@ -324,7 +324,7 @@ func (a *adapter) run(r *protocol.RunRequest) ([]protocol.Sample, error) {
  	if !slices.Contains([]string{"engine-init", "compile", "instantiate", "first-call", "steady", "trajectory", "teardown"}, r.Scenario) {
  		return nil, fmt.Errorf("unsupported scenario")
  	}
 -	if r.Scenario != "engine-init" {
-+	if r.Scenario == "compile" {
-+		// setup retains a compiled module and seeds wazero's per-runtime code
-+		// cache. Keep only an empty runtime for a genuine compile API window.
-+		a.close()
-+		a.engine = a.newEngine()
-+		if err := a.registerHostImports(); err != nil {
-+			return nil, err
-+		}
-+	} else if r.Scenario != "engine-init" {
++	if r.Scenario != "engine-init" && r.Scenario != "compile" {
  		if err := a.setup(); err != nil {
  			return nil, err
  		}
-@@ -507,7 +515,7 @@
+@@ -415,6 +415,14 @@ func (a *adapter) run(r *protocol.RunRequest) ([]protocol.Sample, error) {
+ 					err = a.checkEngine(e)
+ 					e.Close(ctx)
+ 				case "compile":
++					// Wazero retains compiled code in the runtime after a module
++					// handle closes. Give every sample its own empty runtime so
++					// measured calls cannot hit the per-runtime module cache.
++					a.close()
++					a.engine = a.newEngine()
++					if e := a.registerHostImports(); e != nil {
++						return nil, e
++					}
+ 					start := time.Now()
+ 					m, e := a.engine.CompileModule(ctx, a.wasm)
+ 					elapsed += time.Since(start).Nanoseconds()
+@@ -507,7 +515,7 @@ func main() {
  				if info, ok := debug.ReadBuildInfo(); ok {
  					build = info.String()
  				}

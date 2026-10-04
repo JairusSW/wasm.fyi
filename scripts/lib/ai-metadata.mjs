@@ -53,7 +53,7 @@ function decodeRows(view, hostId, snapshot, definitions) {
 
 /** Pure, deterministic rendering. No wall-clock timestamp or network requests. */
 export function renderAiMetadata(view, features, { base = '', sourceSha256, featuresSha256 } = {}) {
-  assert(view.statuses.every(s => ['ok', 'unsupported', 'failed', 'nm'].includes(s)), 'Unknown result status');
+  assert(view.statuses.every(s => ['ok', 'unsupported', 'failed', 'nm', 'na'].includes(s)), 'Unknown result status');
   assert(view.schema === 1 && view.encoding === 'indexed-cells-v1', 'Unsupported measured view encoding');
   assert(features.schema === 1 && Array.isArray(features.hosts), 'Unsupported feature evidence schema');
   const url = path => siteUrl(path, base);
@@ -90,7 +90,7 @@ export function renderAiMetadata(view, features, { base = '', sourceSha256, feat
       }
       if (snapshot === 's1') for (const slot of Object.keys(view.configurations)) {
         const selected = rows.filter(r => r.configuration === slot);
-        const statuses = Object.fromEntries(['ok', 'unsupported', 'failed', 'not-measured'].map(status => [status, selected.filter(r => r.status === status).length]));
+        const statuses = Object.fromEntries(['ok', 'unsupported', 'failed', 'not-measured', 'not-applicable'].map(status => [status, selected.filter(r => r.status === status).length]));
         counts.push({ host: hostId, configuration: slot, ...statuses,
           absent: view.catalogue.length * view.metrics.length - selected.length });
       }
@@ -126,7 +126,7 @@ export function renderAiMetadata(view, features, { base = '', sourceSha256, feat
       missingCellStatus: { const: 'not-measured' }, results: { type: 'array', items: {
         type: 'object', required: ['workload', 'configuration', 'runtime', 'metric', 'status', 'value', 'unit', 'interval', 'launchMedians', 'reason', 'report'],
         properties: { workload: { type: 'string' }, configuration: { type: 'string' }, runtime: { type: 'string' },
-          metric: { enum: Object.keys(metrics) }, status: { enum: ['ok', 'unsupported', 'failed', 'not-measured'] },
+          metric: { enum: Object.keys(metrics) }, status: { enum: ['ok', 'unsupported', 'failed', 'not-measured', 'not-applicable'] },
           value: { type: ['number', 'null'], minimum: 0 }, unit: { enum: ['ms', 'MiB', 'KiB'] },
           interval: { type: ['array', 'null'], items: { type: 'number' }, minItems: 2, maxItems: 2 },
           launchMedians: { type: ['array', 'null'], items: { type: 'number' } },

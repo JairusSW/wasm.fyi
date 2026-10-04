@@ -52,7 +52,7 @@ just corpus-check         # all configured runtimes; correctness, not published 
 just refresh              # full Mac + Hub measurement/import/build workflow
 ```
 
-Large collection is intentionally manual. Nothing schedules a daily run. `just refresh` uses the combined suite on both hosts; the existing Wednesday release-history workflow remains separate. Do not publish correctness-check duration as performance.
+Large collection is intentionally manual. Nothing schedules a daily run. `just refresh` uses the combined suite on both hosts; the Saturday release-history workflow remains separate. Do not publish correctness-check duration as performance.
 
 Set `WASMBENCH_CLANG` to a Linux/macOS LLVM 22.1.8 executable when it is not at the default Homebrew path. Compiler distributions can emit different Wasm despite sharing a version number; use the recorded compiler binary digest and artifact digest when reproducing a build. Both measurement hosts consume the same checked-in artifacts rather than rebuilding separately. Compiled artifacts are checked in, so ordinary collection, CI and deployment do not need LLVM. A rebuild stages a new directory, validates it, and only then replaces the prior corpus. Failed staging is retained under `.wasmbench` for diagnosis.
 

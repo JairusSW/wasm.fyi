@@ -2,7 +2,7 @@ import {cloneCopy as cp} from './lib/copy.mjs';
 import { parseArgs } from 'node:util';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
-import { datasetFiles, retainReports } from './lib/snapshot-index.mjs';
+import { appendReports, datasetFiles } from './lib/snapshot-index.mjs';
 import { compact, command, config, digest, exists, installDirectory, json, locked, site } from './lib/wasmbench.mjs';
 import { validateData } from './lib/validate-data.mjs';
 import { stageHistoryBaseline } from './lib/history-baseline.mjs';
@@ -36,14 +36,21 @@ await locked(async () => {
     if (values.append && prior) {
       const previous = await validateData(destination);
       const incoming = await validateData(stagedData);
-      const ids = new Set(incoming.reports.map(r => r.runId));
-      const reports = retainReports([...incoming.reports, ...previous.reports.filter(r => !ids.has(r.runId))], (await config()).retention || 12);
-      for (const r of reports) if (!await exists(join(stagedData, r.evidence))) await cp(join(destination, r.evidence), join(stagedData, r.evidence));
+      // --append is an evidence union, not a retention pass: a focused refresh
+      // must never discard an older runtime/corpus snapshot from the dataset.
+      const reports = appendReports(previous.reports,incoming.reports);
+      for (const r of reports) {
+        for (const file of [r.evidence, r.trialsEvidence, r.throughputEvidence].filter(Boolean)) {
+          if (!await exists(join(stagedData, file))) await cp(join(destination, file), join(stagedData, file));
+        }
+      }
       await writeIndex(stagedData, reports);
     }
     if (await exists(join(destination, 'report-catalog.json'))) await cp(join(destination, 'report-catalog.json'), join(stagedData, 'report-catalog.json'));
     const index = await validateData(stagedData);
     await command(process.execPath, ['scripts/stage-data.mjs', stagedData, join(temp, 'static')], { stdio: 'inherit' });
+    const priorCodeInspection=join(staticDestination,'code-inspection');
+    if(await exists(priorCodeInspection))await cp(priorCodeInspection,join(temp,'static/code-inspection'),{recursive:true});
     finishData = await installDirectory(stagedData, destination);
     finishStatic = await installDirectory(join(temp, 'static'), staticDestination, join(temp,'static-backup'));
     const runtimeIds=(await config()).collection.runtimes.filter(id=>id!=='wago');
@@ -70,5 +77,5 @@ await locked(async () => {
     await rm(join(site, 'build'), { recursive: true, force: true });
     if (priorBuild) await cp(join(temp, 'build-backup'), join(site, 'build'), { recursive: true });
     throw error;
-  } finally { await rm(temp, { recursive: true, force: true }); }
+  } finally { await rm(temp, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }); }
 });

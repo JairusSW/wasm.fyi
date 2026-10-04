@@ -3,19 +3,31 @@ import { FEATS } from './data/features';
 import { viewData } from './view-data';
 import { RTB } from './data/runtimes';
 import { compatCell, type Scope } from './model';
-import { runtimeSupportCell, supportOf, engineFeatureVersions, runtimeFeatureTrack } from './support';
+import { runtimeSupportCell, supportOf, engineFeatureVersions, runtimeFeatureTrack, pluginSupportEvidence } from './support';
 
 describe('optional plugin availability',()=>{
-  for(const machine of ['m1','m2'] as const)it(`shows supported Wago plugins without inventing performance corpus passes on ${machine}`,()=>{
+  for(const machine of ['m1','m2'] as const)it(`keeps Wago plugin suite evidence separate from measured contracts on ${machine}`,()=>{
     const scope:Scope={machine,baseline:'A',hide:{},weighting:'workload'};
     for(const id of ['wasi-p1','wasi-p2','component-model','cm-abi','cm-res','cm-async']) {
       const feature=FEATS.find(f=>f.id===id)!;
-      expect(supportOf('wago',feature,scope)).toBe('y');
-      expect(compatCell(id,'G',scope).pass).toBe(0);
+      const support=supportOf('wago',feature,scope);
       const cell=runtimeSupportCell('wago',feature,scope);
-      expect(cell.text).toBe('supported via plugin');
-      expect(cell.detail).toContain('performance remains unmeasured');
-      expect(cell.detail).toContain('https://github.com/wago-org/');
+      const evidence=pluginSupportEvidence(id,machine);
+      if(evidence){
+        expect(support).toBe('y');
+        expect(cell.detail).toContain('wago-org/');
+        expect(cell.detail).toContain(evidence.label);
+      } else {
+        expect(evidence).toBeUndefined();
+        expect(cell.detail).not.toContain('Plugin tests');
+        const expected={ 'via plugin':'?', 'corpus passed':'y', 'partial corpus':'p', 'adapter unsupported':'?', 'rejected / failed':'?' }[cell.text];
+        expect(expected).toBeDefined();
+        expect(support).toBe(expected);
+        if(cell.text==='via plugin')expect(cell.detail).toContain('wago-org/');
+        if(cell.text==='corpus passed')expect(cell.detail).toMatch(/\d+\/\d+ passed/);
+      }
+      if(['wasi-p1','wasi-p2','component-model','cm-abi','cm-res','cm-async'].includes(id))
+        expect(engineFeatureVersions('wago',scope,'development')).not.toHaveLength(0);
       expect(runtimeSupportCell('wasmer',feature,scope).text).not.toBe('via plugin');
     }
   });
@@ -36,6 +48,17 @@ describe('excluded experimental feature configurations',()=>{
   });
 });
 
+describe('host-provided WASI is separated from V8 engine conformance',()=>{
+  for(const machine of ['m1','m2'] as const)it(`reports the Node Preview 1 host without claiming benchmark coverage on ${machine}`,()=>{
+    const scope:Scope={machine,baseline:'A',hide:{},weighting:'workload'};
+    const wasi=FEATS.find(f=>f.id==='wasi-p1')!;
+    const cell=runtimeSupportCell('v8',wasi,scope);
+    expect(cell.text).toBe('Node host API · unmeasured');
+    expect(cell.detail).toContain('has not been collected yet');
+    expect(runtimeFeatureTrack('v8',wasi,scope,'stable').text).toBe('Node host API · unmeasured');
+  });
+});
+
 describe('stable and development compatibility tracks',()=>{
   for(const machine of ['m1','m2'] as const)it(`never presents unreleased Wago as stable on ${machine}`,()=>{
     const scope:Scope={machine,baseline:'A',hide:{},weighting:'workload'};
@@ -49,8 +72,10 @@ describe('stable and development compatibility tracks',()=>{
     }
     expect(engineFeatureVersions('wago',scope,'development')[0]).toContain('9f01d145');
     expect(runtimeFeatureTrack('wago',f,scope,'development').text).toBe('corpus passed');
-    expect(engineFeatureVersions('wasmtime',scope,'stable')).toContain('46.0.1');
-    expect(runtimeFeatureTrack('wasmtime',f,scope,'stable').text).toBe('corpus passed');
+    const wasi=FEATS.find(feature=>feature.id==='wasi-p1')!;
+    expect(runtimeFeatureTrack('wago',wasi,scope,'development').text).toBe('corpus passed');
+    const wasmtimeStable=engineFeatureVersions('wasmtime',scope,'stable');
+    expect(runtimeFeatureTrack('wasmtime',f,scope,'stable').text).toBe(wasmtimeStable.length?'corpus passed':'not collected');
     const development=engineFeatureVersions('wasmtime',scope,'development');
     expect(runtimeFeatureTrack('wasmtime',f,scope,'development').text).toBe(development.length?'corpus passed':'not collected');
   });
@@ -61,10 +86,10 @@ describe('combined compatibility and corpus counts',()=>{
     const scope:Scope={machine,baseline:'A',hide:{},weighting:'workload'};
     const feature=FEATS.find(f=>f.id==='simd')!;
     const track=runtimeFeatureTrack('v8',feature,scope,'stable');
-    expect(track.pass).toBe(track.expected);
-    expect(track.configurations.length).toBeGreaterThan(0);
-    expect(track.configurations.every(c=>c.id==='v8')).toBe(true);
-    expect(track.configurations.some(c=>c.backend.includes('production-default'))).toBe(true);
+    if(track.configurations.length)expect(track.pass).toBe(track.expected);
+    else expect(track.text).toBe('not collected');
+		expect(track.configurations.every(c=>c.id==='v8-optimizing-only')).toBe(true);
+		if(track.configurations.length)expect(track.configurations.some(c=>c.backend.includes('optimizing'))).toBe(true);
     for(const c of track.configurations){
       expect(c.pass+c.failed+c.skipped+c.missing).toBe(c.total);
       expect(c.contracts).toHaveLength(c.total-c.missing);

@@ -10,6 +10,6 @@ await locked(async () => {
   if(manifest.version!=='7.3.0' || manifest.revision!=='35c10644f7b0aad6fd9458624ceb8429fe7413c4')throw new Error('Native adapters require the pinned managed Wasmer SDK');
   if(digest(await readFile(join(sdk,'lib',manifest.library)))!==manifest.librarySha256)throw new Error('SDK library differs from its build manifest');
   const {root}=await harness();patchHarness(root);
-  command('go',['run','./cmd/wasmbench','build','--runtimes','wasmer-llvm,wasmer-singlepass'],{cwd:root,stdio:'inherit',timeout:30*60_000,env:{...process.env,WASMBENCH_WASMER_SDK:sdk}});
-  command(process.execPath,['--test','scripts/wasmer-adapter.test.mjs'],{stdio:'inherit',timeout:120_000,env:{...process.env,WASMBENCH_REQUIRE_WASMER_TESTS:'1'}});
+  command('go',['run','./cmd/wasmbench','build','--runtimes','wasmer-singlepass'],{cwd:root,stdio:'inherit',timeout:30*60_000,env:{...process.env,WASMBENCH_WASMER_SDK:sdk}});
+  command(process.execPath,['--test','scripts/wasmer-adapter.test.mjs'],{stdio:'inherit',timeout:120_000,env:{...process.env,WASMBENCH_REQUIRE_WASMER_TESTS:'1',WASMBENCH_RUNTIMES:'wasmer-singlepass'}});
 },'wasmer-adapters');

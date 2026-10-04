@@ -175,11 +175,11 @@ features-collect: features-adapters
 features-collect-hub:
     WASMBENCH_SUITE="corpora/features/manifest.json" WASMBENCH_VALIDATION_PROFILE=all WASMBENCH_WARMUP=0 WASMBENCH_RECORD_FAILURES=1 node scripts/hub.mjs collect
 
-# Resolve all fourteen engines to releases published by each Wednesday.
+# Resolve every engine to the release published by each Saturday cutoff.
 history-plan:
     node scripts/history.mjs plan
 
-# Queue the full corpus once per distinct Wednesday release and measurement recipe.
+# Queue the full corpus once per distinct Saturday/release and measurement recipe.
 history-performance-plan:
     node scripts/performance-history.mjs plan
 

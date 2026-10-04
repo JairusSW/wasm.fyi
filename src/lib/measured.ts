@@ -24,6 +24,7 @@ export interface MeasuredSnapshot {
 	sourceReportSha256: string;
 	options: { launches: number };
 	evidence: string; evidenceSha256: string;
+	memorySource?: {id:string;note:string}; codeSource?: {id:string;note:string};
 	runtimes: MeasuredRuntime[]; workloads: MeasuredWorkload[]; summaries: TimingSummary[];
 	memory: { runtime: string; workload: string; scenario: string; metric: string; median_bytes: number; ci95_low_bytes?: number; ci95_high_bytes?: number; independent_launches: number }[];
 	codeRecords: { runtime: string; workload: string; status: string; image_bytes?: number; [key: string]: unknown }[];
@@ -53,7 +54,7 @@ export function measuredHistory(history: MeasuredWeeklyHistory, snapshots: Measu
 export interface EvidenceReference { report: string; runId: string; collectedAt: string; evidence: string; sha256: string }
 export type MeasuredCell =
 	| { status: 'ok'; value: number; unit: 'ns/invocation' | 'bytes'; interval?: [number, number]; evidence: EvidenceReference }
-	| { status: 'unsupported' | 'failed' | 'not-measured' | 'not-collected'; reason: string; evidence?: EvidenceReference };
+	| { status: 'unsupported' | 'failed' | 'not-measured' | 'not-collected' | 'not-applicable'; reason: string; evidence?: EvidenceReference };
 
 export const measuredHostKey = (host: MeasuredHost) => JSON.stringify([host.hostname, host.os, host.arch]);
 const finite = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value) && value >= 0;
@@ -96,6 +97,7 @@ export function measuredTiming(snapshot: MeasuredSnapshot, runtime: string, work
 	}
 	const summary = snapshot.summaries.find(item => item.runtime === runtime && item.workload === workload && item.scenario === scenario && item.profile === 'timing')!;
 	if (!finite(summary.median_ns_per_operation) || summary.latency_status === 'failed_cell' || summary.sample_count <= 0 || summary.independent_launches <= 0) throw new Error('Successful timing lacks valid measured samples');
+	if (summary.median_ns_per_operation <= 0) return {status: 'not-measured', reason: 'The operation completed below the timing clock resolution.', evidence: reference(snapshot)};
 	return { status: 'ok', value: summary.median_ns_per_operation, unit: 'ns/invocation', interval: interval(summary.ci95_low, summary.ci95_high), evidence: reference(snapshot) };
 }
 
@@ -103,6 +105,7 @@ export function measuredTiming(snapshot: MeasuredSnapshot, runtime: string, work
 export function measuredMemory(snapshot: MeasuredSnapshot, runtime: string, workload: string, artifactSha256: string, scenario: string, metric: string): MeasuredCell {
 	const missing = contract(snapshot, runtime, workload, artifactSha256) ?? outcome(snapshot, runtime, workload, scenario);
 	if (missing) return missing;
+	if (!snapshot.memorySource) return { status: 'not-collected', reason: 'This report contains no memory-profile pass.', evidence: reference(snapshot) };
 	const measurement = snapshot.memory.find(item => item.runtime === runtime && item.workload === workload && item.scenario === scenario && item.metric === metric);
 	if (!measurement) return { status: 'not-measured', reason: 'This exact memory observer and boundary were not measured.', evidence: reference(snapshot) };
 	if (measurement.independent_launches !== snapshot.options.launches) return { status: 'not-measured', reason: 'The memory observer has incomplete independent-launch coverage.', evidence: reference(snapshot) };
@@ -112,10 +115,20 @@ export function measuredMemory(snapshot: MeasuredSnapshot, runtime: string, work
 
 /** The pinned extracted image size; this does not imply active or cumulative function-code bytes. */
 export function measuredCodeImage(snapshot: MeasuredSnapshot, runtime: string, workload: string, artifactSha256: string): MeasuredCell {
-	const missing = contract(snapshot, runtime, workload, artifactSha256) ?? outcome(snapshot, runtime, workload, 'compile');
+	const missing = contract(snapshot, runtime, workload, artifactSha256);
 	if (missing) return missing;
+	const configuration = snapshot.runtimes.find(item => item.id === runtime)!;
+	if (configuration.description.backend === 'interpreter') {
+		return { status: 'not-applicable', reason: 'This measured configuration is an interpreter and emits no native machine code.', evidence: reference(snapshot) };
+	}
+	if (!snapshot.codeSource) return { status: 'not-collected', reason: 'This report contains no native-code profile pass.', evidence: reference(snapshot) };
+	const compileOutcome = outcome(snapshot, runtime, workload, 'compile');
+	if (compileOutcome) return compileOutcome;
 	const records = snapshot.codeRecords.filter(item => item.runtime === runtime && item.workload === workload);
-	if (!records.length || records.some(item => item.status !== 'available')) return { status: 'not-measured', reason: 'A complete extracted code image is unavailable.', evidence: reference(snapshot) };
+	if (!records.length || records.some(item => item.status !== 'available')) {
+		const collectorReason = records.find(item => item.status !== 'available')?.reason;
+		return { status: 'not-measured', reason: typeof collectorReason === 'string' && collectorReason ? collectorReason : 'A complete extracted code image is unavailable.', evidence: reference(snapshot) };
+	}
 	const values = records.map(item => item.image_bytes);
 	if (!values.every(finite)) throw new Error('Invalid code image size');
 	// Image extraction is deterministic; incompatible sizes must not be reduced to a headline median.

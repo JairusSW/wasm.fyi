@@ -35,5 +35,5 @@ await locked(async () => {
     if (!process.argv.includes('--local')) command(process.execPath, ['scripts/hub.mjs','threads'], { stdio: 'inherit' });
   }
   command(process.execPath,['scripts/deduplicate-evidence.mjs'],{stdio:'inherit'});
-  command(process.execPath, ['scripts/update-data.mjs', '--append', '--rebuild', ...reports], { stdio: 'inherit' });
+  command(process.execPath, ['scripts/update-data.mjs', '--append', ...reports], { stdio: 'inherit' });
 }, 'refresh');

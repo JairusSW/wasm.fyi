@@ -1,4 +1,4 @@
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile, readdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { featureCandidates, featureSupport, featureCasePassed, matchesCurrentFeature } from './lib/feature-support.mjs';
 import { validateV8Description } from './lib/v8-preflight.mjs';
@@ -25,7 +25,7 @@ for(const report of reports)for(const runtime of report.runtimes) {
 }
 // Historical WasmFX reports remain in the sealed evidence store, but the
 // configuration is intentionally excluded from new feature and benchmark views.
-const configurations = { A:'wasmtime', B:'wasmtime-winch', C:'wasmer-llvm', D:'wasmer-singlepass', E:'wazero', F:'v8', G:'wago', H:'v8-liftoff-only', I:'wasmi', J:'wasmedge', K:'wasm3', L:'wavm', M:'spidermonkey', N:'jsc', O:'deno', P:'wamr', Q:'chicory', R:'wasmtime-component-async', S:'v8-wasmfx' };
+const configurations = { A:'wasmtime', B:'wasmtime-winch', D:'wasmer-singlepass', E:'wazero', F:'v8', G:'wago', I:'wasmi', K:'wasm3', L:'wavm', M:'spidermonkey', N:'jsc', O:'deno', P:'wamr', Q:'wazero-interpreter', S:'v8-wasmfx' };
 const scenarios = { compile:'compile', inst:'instantiate', first:'first-call', steady:'steady' };
 const memoryScenarios={rss:'steady',rssCompile:'compile',rssInst:'instantiate',rssFirst:'first-call'};
 const prepared=JSON.parse(await readFile(join(site,'corpora/catalog.json')));
@@ -77,9 +77,14 @@ for(const w of preparedFeatures) {
 }
 const reasons=new Map();
 function reasonId(reason) { if(!reasons.has(reason)){reasons.set(reason,reasons.size);output.reasons.push(reason);}return reasons.get(reason); }
-const status = { ok:'ok', unsupported:'unsupported', failed:'failed', 'not-measured':'nm', 'not-collected':'nm' };
+const status = { ok:'ok', unsupported:'unsupported', failed:'failed', 'not-measured':'nm', 'not-collected':'nm', 'not-applicable':'na' };
 const output = { schema:1, configurations, applicationConfigurations:[], catalogue:[...catalogue.values()].sort(compareWorkloads), hosts:{}, reports:{}, reasons:[],history:{},threads:{},statistics:{timingSamples:reports.reduce((n,r)=>n+r.summaries.reduce((n,s)=>n+(s.recorded_samples || 0),0),0)} };
-for (const report of reports) output.reports[report.id] = { runId:report.runId, created:report.created, evidence:report.evidence, sha256:report.evidenceSha256, options:report.options,memorySource:report.memorySource,codeSource:report.codeSource,configurations:report.runtimes.map(c=>c.id),host:report.host.os };
+const codeInspectionDirectory=join(site,'static/wasmbench/code-inspection');
+const codeInspectionRuns=new Set(await readdir(codeInspectionDirectory).catch(error=>{
+  if(error.code==='ENOENT')return [];
+  throw error;
+}));
+for (const report of reports) output.reports[report.id] = { runId:report.runId, created:report.created, evidence:report.evidence, sha256:report.evidenceSha256, options:report.options,memorySource:report.memorySource,codeSource:report.codeSource,codeRecords:report.codeRecords.map(({runtime,workload,trial,status,report_record_index})=>({runtime,workload,trial,status,index:report_record_index,inspectable:codeInspectionRuns.has(report.codeSource?.id)})),configurations:report.runtimes.map(c=>c.id),host:report.host.os };
 for (const [machine, os] of [['m1','linux'],['m2','darwin']]) {
   const selected = reports.filter(r=>r.host.os===os);
   if (!selected.length) throw new Error('Missing measured host: '+os);
@@ -118,17 +123,19 @@ for (const [machine, os] of [['m1','linux'],['m2','darwin']]) {
     }
   }
 }
-// A configured-but-not-yet-measured application engine stays visible in the
-// workload matrix, while leaderboards share only configurations recorded on
-// both hosts. This keeps a newly selected production mode from blanking all
-// other measured comparisons while its first report is being collected.
+// Leaderboards merge sealed application timing shards by host and exact
+// workload artifact. Every cell retains the report that measured it.
 const latestApplicationRuntimeIds=Object.fromEntries(['linux','darwin'].map(os=>{
-  const latest=reports.find(r=>r.host.os===os && r.workloads.some(w=>w.id.startsWith('applications/')) &&
+  const measured=reports.filter(r=>r.host.os===os && r.workloads.some(w=>w.id.startsWith('applications/')) &&
     r.summaries.some(s=>s.profile==='timing' && s.scenario==='steady'));
-  return [os,new Set(latest?.runtimes.map(runtime=>runtime.id) || [])];
+  return [os,new Set(measured.flatMap(r=>r.runtimes.map(runtime=>runtime.id)))];
 }));
-output.applicationConfigurations=Object.keys(configurations).filter(slot=>settings.collection.runtimes.includes(configurations[slot]) &&
-  latestApplicationRuntimeIds.linux.has(configurations[slot]) && latestApplicationRuntimeIds.darwin.has(configurations[slot]));
+const interpreterRuntimeIds=new Set(reports.flatMap(report=>report.runtimes
+  .filter(runtime=>/interpreter/i.test(runtime.description?.backend || ''))
+  .map(runtime=>runtime.id)));
+output.applicationConfigurations=Object.keys(configurations).filter(slot=>(settings.collection.runtimes.includes(configurations[slot]) || ['jsc','wavm'].includes(configurations[slot])) &&
+  !interpreterRuntimeIds.has(configurations[slot]) &&
+  (latestApplicationRuntimeIds.linux.has(configurations[slot]) || latestApplicationRuntimeIds.darwin.has(configurations[slot])));
 // Compact feature version evidence; no trial arrays enter the browser bundle.
 const support=await featureSupport(root,reports);
 output.featureVersions=Object.fromEntries(['m1','m2'].map(machine=>{
@@ -203,7 +210,7 @@ for(const [machine,name] of [['m1','linux-x64'],['m2','darwin-arm64']]) {
 // Compact the browser projection without rounding a measurement or interval.
 output.encoding = 'indexed-cells-v1';
 output.metrics = [...Object.keys(scenarios),...Object.keys(memoryScenarios),'code'];
-output.statuses = ['ok','unsupported','failed','nm'];
+output.statuses = ['ok','unsupported','failed','nm','na'];
 output.reportIds = Object.keys(output.reports);
 const workloadIndex=new Map(output.catalogue.map((w,i)=>[w.id,i]));
 const reportIndex=new Map(output.reportIds.map((id,i)=>[id,i]));
@@ -224,7 +231,9 @@ console.log(`Generated measured view catalogue: ${output.catalogue.length} contr
 // Project only checksum-verified plugin suite summaries; never add their
 // case counts to the performance corpus or synthesize performance samples.
 const {pluginEvidence}=await import('./lib/plugin-evidence.mjs');
-const pluginIndex=JSON.parse(await readFile(join(site,'data/conformance/index.json')));
+let pluginIndex={reports:[]};
+try { pluginIndex=JSON.parse(await readFile(join(site,'data/conformance/index.json'))); }
+catch(error) { if(error.code!=='ENOENT')throw error; }
 const pluginReports=[];
 for(const entry of pluginIndex.reports){
   if(!/^[a-f0-9]{64}\.json$/.test(entry.file))throw Error('Unsafe plugin evidence path');

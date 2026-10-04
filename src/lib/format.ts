@@ -51,7 +51,7 @@ export const fmtU = (v: number, u: string): string => {
 	if (u === 'MB') return v.toFixed(1) + ' MB';
 	if (u === 'KB') return v >= 1024 ? (v / 1024).toFixed(2) + ' MB' : v.toFixed(0) + ' KB';
 	if (u === 'MiB') return v.toFixed(1) + ' MiB';
-	if (u === 'KiB') return v >= 1024 ? (v / 1024).toFixed(2) + ' MiB' : v.toFixed(0) + ' KiB';
+	if (u === 'KiB') return v >= 1024 ? (v / 1024).toFixed(2) + ' MiB' : v < 1.5 ? n0(v * 1024) + ' B' : compact(v, 1) + ' KiB';
 	return String(v);
 };
 

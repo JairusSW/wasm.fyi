@@ -7,6 +7,7 @@ import { validateData } from './lib/validate-data.mjs';
 import { verifySeal } from './lib/verify-seal.mjs';
 import { withholdFailedCells } from './lib/measurement-policy.mjs';
 import { writeIndex } from './lib/snapshot-index.mjs';
+import { validateWasmFyiReceipt } from './lib/wasmfyi-export.mjs';
 
 const { values, positionals } = parseArgs({ options: { output: { type: 'string' }, rebuild: { type: 'boolean', default: false } }, allowPositionals: true });
 const { root, settings, run } = await harness();
@@ -22,9 +23,12 @@ try {
     let dir = resolve(root, source.path);
     const rebuild = source.rebuild || values.rebuild;
     const originalBytes = await exists(join(dir, 'data.json')) ? await readFile(join(dir, 'data.json')) : null;
+    const wasmfyiPath = join(dir, 'wasm-fyi-export.json');
+    const wasmfyi = await exists(wasmfyiPath) ? validateWasmFyiReceipt(JSON.parse(await readFile(wasmfyiPath, 'utf8'))) : null;
     const sealed = await exists(join(dir, 'checksums.json'));
     if (sealed) await verifySeal(dir);
     else if (!rebuild) throw new Error(`Unsealed report requires explicit rebuilding from sealed raw bundles: ${dir}`);
+    if (wasmfyi && rebuild) throw new Error('A wasm.fyi transport projection cannot be rebuilt without its retained source report.');
     const originalData = originalBytes ? JSON.parse(originalBytes) : {};
     if (originalData.publication) throw new Error('Qualified publication requires separate operator-key verification.');
     if (rebuild) {
@@ -39,7 +43,7 @@ try {
       else if (await exists(join(original, 'raw-code'))) command.push('--code-run', join(original, 'raw-code'));
       run(...command);
     }
-    run('verify-report', '--dir', dir);
+    if (!wasmfyi) run('verify-report', '--dir', dir);
     const bytes = await readFile(join(dir, 'data.json'));
     const checksums = JSON.parse(await readFile(join(dir, 'checksums.json'), 'utf8'));
     if (digest(bytes) !== checksums['data.json']) throw new Error(`Report changed after verification: ${dir}`);
@@ -52,7 +56,7 @@ try {
     if (data.publication) throw new Error('Qualified publication requires separate operator-key verification.');
     const id = digest(bytes);
     reports.push({
-      id, sourceReportSha256: originalBytes ? digest(originalBytes) : null, sourceReportSealed: sealed, runId: manifest.id, created: manifest.created, publication: manifest.publication,
+      id, sourceReportSha256: wasmfyi?.sourceReportSha256 || (originalBytes ? digest(originalBytes) : null), sourceReportSealed: wasmfyi ? true : sealed, runId: manifest.id, created: manifest.created, publication: manifest.publication,
       analysisVersion: data.analysis_version, source: source.path.split('/').at(-1),
       host: manifest.host, options: manifest.lock.options, lockSha256: manifest.lock_sha256,
       runtimes: manifest.lock.runtime_configurations, workloads: manifest.lock.workloads,

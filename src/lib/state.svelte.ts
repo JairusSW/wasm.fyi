@@ -82,7 +82,7 @@ const memSelCodec: Codec<CfgId[]> = {
 };
 
 const OT_KEYS = ['exec', 'compile', 'inst', 'mem', 'code', 'cov'] as const;
-const METRICS = ['compile', 'inst', 'first', 'steady', 'rss', 'code'] as const;
+const METRICS = ['compile', 'rssCompile', 'inst', 'rssInst', 'first', 'steady', 'rss', 'code'] as const;
 
 /** Each URL-backed field: its codec and the routes it belongs to (`*` = scope, every route). */
 const FIELDS = {
@@ -90,8 +90,8 @@ const FIELDS = {
 	machine: { codec: str<MachineId>('m', 'm1', ['m1', 'm2']), routes: '*' },
 	snap: { codec: str('snap', 's1', ['s1', 's2']), routes: '*' },
 	hide: { codec: hideCodec, routes: '*' },
-	group: { codec: str<OvKey>('view', 'lat', ['lat', 'mem', 'code', 'cov']), routes: ['/benchmarks'] },
-	metric: { codec: str<MetricKey>('metric', 'steady', METRICS), routes: ['/benchmarks'] },
+	group: { codec: str<OvKey>('view', 'lat', ['compile', 'calls', 'lat', 'mem', 'code', 'cov']), routes: ['/benchmarks'] },
+	metric: { codec: str<MetricKey>('metric', 'compile', METRICS), routes: ['/benchmarks'] },
 	tag: { codec: nullable('tag'), routes: ['/benchmarks'] },
 	q: { codec: str('q', ''), routes: ['/benchmarks'] },
 	sortBy: { codec: sortCodec, routes: ['/benchmarks'] },
@@ -132,7 +132,7 @@ class UiState {
 
 	// benchmarks
 	group = $state<OvKey>('lat');
-	metric = $state<MetricKey>('steady');
+	metric = $state<MetricKey>('compile');
 	tag = $state<string | null>(null);
 	q = $state('');
 	sortBy = $state<{ id: CfgId; dir: 1 | -1 } | null>(null);

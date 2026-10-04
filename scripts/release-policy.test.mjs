@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {latestRelease,releasedBuild,parseReleasePages} from './lib/release-policy.mjs';
+import {latestRelease,latestBetaRelease,releasedBuild,parseReleasePages} from './lib/release-policy.mjs';
 import {goResults,countOutcomes,wasiCaseTotals} from './lib/conformance.mjs';
-test('Wednesday source selection uses publication time, never main, drafts or nightlies',()=>{
+test('Saturday source selection uses publication time, never main, drafts or nightlies',()=>{
   const r=(tag,date,extra={})=>({tag_name:tag,published_at:date,draft:false,prerelease:false,...extra});
   const rows=[r('nightly/2026-09-30','2026-09-30T00:00:00Z'),r('v2','2026-10-01T00:00:00Z'),r('v1','2026-09-29T00:00:00Z'),r('v3','2026-09-30T00:00:00Z',{draft:true})];
   assert.equal(latestRelease(rows,'2026-09-30T00:00:00Z').tag_name,'v1');
@@ -10,6 +10,9 @@ test('Wednesday source selection uses publication time, never main, drafts or ni
   assert.equal(latestRelease([r('v1','2026-09-30T00:00:00Z')],'2026-09-30T00:00:00.000Z').tag_name,'v1');
   assert.equal(releasedBuild(r('main','2026-09-29T00:00:00Z')),false);
   assert.equal(releasedBuild(r('v0.1-beta.11','2026-09-29T00:00:00Z',{prerelease:true})),true);
+  assert.equal(latestRelease([r('v0.2-beta.1','2026-10-02T00:00:00Z',{prerelease:true}),r('v0.1.9','2026-09-29T00:00:00Z')]).tag_name,'v0.1.9');
+  assert.equal(latestBetaRelease([r('v0.2-beta.1','2026-10-02T00:00:00Z',{prerelease:true}),r('v0.1-beta.9','2026-09-30T00:00:00Z',{prerelease:true})],'2026-10-01T00:00:00Z').tag_name,'v0.1-beta.9');
+  assert.equal(latestBetaRelease([r('v0.2-beta.1','2026-10-02T00:00:00Z',{prerelease:true})],'2026-10-01T00:00:00Z'),null);
   assert.equal(releasedBuild(r('main',null)),false);
 });
 test('upstream Go runners count leaf tests, retain skips, and expose zero-test invocations',()=>{

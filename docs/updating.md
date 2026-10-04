@@ -73,11 +73,12 @@ just refresh-local       # bounded Mac-only validation
 
 Collection creates unique run IDs under `.wasmbench/experiments/`. It collects a
 minimally instrumented timing pass, a separate matched memory pass, and an optional
-code pass. Each bundle and final report is verified on its measurement host. Fresh imports
-verify the original archive seal and regenerate the derived report with the Mac
-controller before final verification. AMD64 and ARM64 floating-point reductions
-can differ in their last bit; raw trials and host identities stay unchanged.
-The export retains both the original report digest and the regenerated digest. The unique leaf names matter:
+code pass. Each bundle and final report is verified on its measurement host.
+Local report imports verify the complete report seal; Hub exports are reduced to
+the fields consumed by wasm.fyi after Hub verifies the full report. AMD64 and
+ARM64 floating-point reductions can differ in their last bit, so each host's
+sealed analysis and raw trial values remain associated with that host. The
+website projection retains the digest of the original Hub report. The unique leaf names matter:
 the harness indexes experiments by output directory name.
 
 Default collection covers Wago/Railshot, wazero/compiler, Wasmtime/Cranelift,
@@ -109,10 +110,13 @@ builds adapters there, collects all three passes, and copies sealed evidence bac
 Existing Hub checkouts are untouched. Source HEAD and dirty status accompany the
 archive. Toolchain and runtime build identities remain in the sealed evidence.
 A persistent SSH control socket is reused during collection.
-Evidence travels in an XZ-compressed tar archive: identical files are hard-linked in
-an owned transport copy, so repeated runtime executables are stored once. Original
-experiment files stay intact. The controller verifies the archive digest, restores
-all paths, and then verifies the report seal and each raw bundle.
+Successful Hub collections retain their complete sealed report on Hub and send a
+wasm.fyi-only projection in a Zstandard-compressed tar archive. That projection
+contains the measurements, summaries, and trial evidence consumed by the site;
+large raw bundles and archived builders do not travel back to the Mac. The
+controller verifies the archive digest and projection seal before importing it.
+Failed or diagnostic collections continue to use the complete XZ evidence
+archive so their raw files remain available for diagnosis.
 Tailscale may require
 interactive authentication; authenticate before enabling unattended updates. If
 SSH access expires, the job fails and preserves the last published site.
@@ -265,7 +269,7 @@ batch is unsuitable for the broader algorithms. Every fresh pass still runs its
 own sacrificial correctness preflight. Unsupported outcomes get no timing credit;
 incorrect results, crashes and unexpected errors stop the update.
 
-The manual refresh includes the original feature corpus, released-engine proposal configurations, real worker measurements and official conformance suites. Wednesday release history is planned separately; incomplete historical runners remain explicit gaps. See [feature and history workflow](features-and-history.md) for commands, JSON endpoints, collection scopes, failure handling and historical interpretation. Snapshot inventory schema 2 keeps full evidence in separate hashed files; summary and evidence digests must both be checked by consumers.
+The manual refresh includes the original feature corpus, released-engine proposal configurations, real worker measurements and official conformance suites. Historical measurement is a manual catch-up: each run plans every missed Saturday in the latest four months, pins the default branch as the dimmed mainline, and also pins every eligible release in that window as a bold point. Wago betas, WAVM prereleases/tags, and stable releases for other engines are eligible. Incomplete historical runners remain explicit gaps. See [feature and history workflow](features-and-history.md) for commands, JSON endpoints, collection scopes, failure handling and historical interpretation. Snapshot inventory schema 2 keeps full evidence in separate hashed files; summary and evidence digests must both be checked by consumers.
 
 ### V8 compiler tiers
 
@@ -325,7 +329,11 @@ The SDK cache is under `~/.local/share/wasm-fyi/toolchains/features-v1-<platform
 its manifest verifies every installed file before collection. macOS needs
 Homebrew OpenJDK 25, or `WASMBENCH_JAVA` pointing to a Java/Javac/Jar installation
 supporting Java 21. Hub uses its installed Java 21. A selected WAVM SDK must
-already exist at `WASMBENCH_WAVM_SDK` or the harness's `.wasmbench/extra-sdk/wavm`.
+already exist at `WASMBENCH_WAVM_SDK` or
+`~/.local/share/wasm-fyi/toolchains/wavm-nightly-2026-04-05/sdk`. WAVM is included
+in the default benchmark collection using prerelease `nightly-2026-04-05`
+(source commit `4e82bb9`); set `WASMBENCH_WAVM_SDK` and
+`WASMBENCH_WAVM_VERSION` only when selecting a different installed build.
 No alternative engine is substituted for an unavailable platform configuration.
 
 WAMR uses the classic interpreter with GC and exception handling enabled.

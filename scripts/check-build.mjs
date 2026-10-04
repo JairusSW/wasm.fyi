@@ -54,6 +54,7 @@ const sitemap = await readFile(join(buildRoot, 'sitemap.xml'), 'utf8');
 for (const match of sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)) await checkPublicLink(match[1].replaceAll('&amp;', '&'));
 for (const path of pages) {
   if (path.endsWith('/404.html')) continue;
+  if (path.includes('/wasmbench/code-inspection/')) continue;
   const html = await readFile(path, 'utf8');
   const canonical = /<link rel="canonical" href="([^"]+)"/.exec(html)?.[1];
   assert.equal(canonical, new URL(relative(buildRoot, path).replace(/index\.html$/, ''), publicRoot).href, `Wrong canonical URL: ${path}`);

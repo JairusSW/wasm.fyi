@@ -16,6 +16,29 @@ export function parseCorpusJSON(text) {
   });
 }
 
+// The source-built upstream manifest can be copied between the Mac and Hub.
+// Its artifact and command-input paths are absolute on the machine that built
+// the corpus, so rebase them beneath this checkout's retained source trees.
+export function rebaseRetainedPath(value, siteRoot = site) {
+  const source=String(value);
+  const normalized=source.replaceAll('\\','/');
+  for(const [marker,target] of [['.wasmbench/upstream/',['.wasmbench','upstream']],['corpora/upstream/wago/',['corpora','upstream','wago']]]) {
+    const index=normalized.indexOf(marker);
+    if(index>=0&&(index===0||normalized[index-1]==='/'))return resolve(siteRoot,...target,...normalized.slice(index+marker.length).split('/'));
+  }
+  return value;
+}
+
+export function rebaseRetainedWorkload(workload, siteRoot = site) {
+  const visit=value=>{
+    if(typeof value==='string')return rebaseRetainedPath(value,siteRoot);
+    if(Array.isArray(value))return value.map(visit);
+    if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).map(([key,item])=>[key,visit(item)]));
+    return value;
+  };
+  return visit(workload);
+}
+
 export async function prepareCorpus(settings, run, directory) {
   const selected = process.env.WASMBENCH_SUITE || settings.collection.suite;
   if (selected !== 'wago' && selected !== 'all') return selected.endsWith('.json') ? resolve(site, selected) : selected;
@@ -33,7 +56,7 @@ export async function prepareCorpus(settings, run, directory) {
     try{retained=parseCorpusJSON(await readFile(resolve(site,corpus.buildManifest),'utf8'));}
     catch(error){if(error.code==='ENOENT')throw Error('Run just corpus-build-all to compile the complete corpus from source before collection');throw error;}
     if(!Array.isArray(retained)||retained.length!==corpus.ids.length||new Set(retained.map(w=>w.id.split('/')[1])).size!==corpus.ids.length||corpus.ids.some(id=>!retained.some(w=>w.id.split('/')[1]===id)))throw Error('Incomplete source-built upstream corpus');
-    workloads=retained.filter(w=>ids.includes(w.id.split('/')[1]));
+    workloads=retained.filter(w=>ids.includes(w.id.split('/')[1])).map(w=>rebaseRetainedWorkload(w));
     for(const w of workloads)if(digest(await readFile(w.artifact))!==w.sha256)throw Error('Source-built artifact digest mismatch: '+w.id);
   } else {
     process.stdout.write(run('import-wago', '--source', source, '--ids', ids.join(','), '--out', manifest));
@@ -53,6 +76,11 @@ export async function prepareCorpus(settings, run, directory) {
   const applicationIds = process.env.WASMBENCH_APPLICATION_IDS?.split(',').filter(Boolean);
   const applications = process.env.WASMBENCH_CORPUS_IDS && applicationIds === undefined ? [] : await applicationWorkloads(corpus.applications, applicationIds);
   workloads.push(...applications);
+  if(corpus.buildManifest||selected==='all') {
+    const callsManifest=join(output,'host-calls.json');
+    process.stdout.write(run('corpus','--suite','calls','--out',callsManifest));
+    workloads.push(...parseCorpusJSON(await readFile(callsManifest,'utf8')));
+  }
   if(selected==='all') {
     const featuresRoot=resolve(site,'corpora/features');
     const features=parseCorpusJSON(await readFile(join(featuresRoot,'manifest.json'),'utf8'));
@@ -66,7 +94,7 @@ export async function prepareCorpus(settings, run, directory) {
 
   if(new Set(workloads.map(w=>w.id)).size!==workloads.length)throw Error('Duplicate combined corpus IDs');
   await writeFile(manifest, JSON.stringify(workloads, null, 2) + '\n');
-  const summary = { source: 'wago + wasm.fyi application kernels', selectedBenchmarks: ids, applicationContracts: applications.length, workloadContracts: workloads.length,
+  const summary = { source: 'Wago + wasm.fyi application kernels + source-built host-call fixtures', selectedBenchmarks: ids, applicationContracts: applications.length, workloadContracts: workloads.length,
     executable: workloads.filter(w => !w.unsupported_reason).length,
     unsupported: workloads.filter(w => w.unsupported_reason).map(w => ({ id: w.id, reason: w.unsupported_reason })),
     workloads: workloads.map(w => ({ id: w.id, sha256: w.sha256, abi: w.abi, license: w.license, source: w.source, provenance: w.provenance })) };

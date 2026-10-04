@@ -1,28 +1,36 @@
 import {readFile,writeFile,mkdir,readdir} from 'node:fs/promises';
+import {randomUUID} from 'node:crypto';
 import {join,resolve} from 'node:path';
 import {site,harness,digest,command} from './lib/wasmbench.mjs';
 import {prepareCorpus,parseCorpusJSON} from './lib/corpus.mjs';
 import {performanceHistoryQueue,performanceCorpusIdentity} from './lib/performance-history.mjs';
 import {engineSources} from './lib/engine-sources.mjs';
+import {availableParallelism} from 'node:os';
+import {workersWithinCpuBudget} from './lib/worker-budget.mjs';
 
 if((process.argv[2] || 'plan')!=='plan')throw Error('Usage: performance-history.mjs plan');
 if(process.env.WASMBENCH_CORPUS_IDS || process.env.WASMBENCH_APPLICATION_IDS)throw Error('Performance history requires the complete corpus');
 const {root,settings,run}=await harness();
 const directory=join(site,'.wasmbench/performance-history');await mkdir(directory,{recursive:true});
 const releasePlan=JSON.parse(await readFile(join(site,'data/release-history/plan.json')));
-const weeks=Number(process.env.WASMBENCH_PERFORMANCE_HISTORY_WEEKS || 8);
+const weeks=Number(process.env.WASMBENCH_PERFORMANCE_HISTORY_WEEKS || 18);
 if(!Number.isSafeInteger(weeks)||weeks<1||weeks>53)throw Error('Performance history weeks must be 1..53');
 const selectedWeeks=releasePlan.weeks.slice(-weeks);
-const plan={...releasePlan,weeks:selectedWeeks,pins:releasePlan.pins.filter(pin=>selectedWeeks.includes(pin.targetWeek))};
+const weeklyPins=(releasePlan.mainPins||[]).filter(pin=>selectedWeeks.includes(pin.targetWeek));
+const releaseStart=releasePlan.historyWindowStart || selectedWeeks[0],releaseEnd=releasePlan.historyWindowEnd || selectedWeeks.at(-1);
+const releasePins=(releasePlan.releasePins||[]).filter(pin=>pin.status==='planned'&&+new Date(pin.publishedAt)>=+new Date(releaseStart)&&+new Date(pin.publishedAt)<=+new Date(releaseEnd));
+const plan={...releasePlan,weeks:selectedWeeks,weeklyPins,pins:weeklyPins,releasePins};
 for(const targetWeek of plan.weeks)for(const engine of Object.keys(engineSources)) {
-  if(plan.pins.filter(p=>p.targetWeek===targetWeek&&p.engine===engine).length!==1)throw Error('Release plan is missing a unique engine/Wednesday: '+engine+'/'+targetWeek);
+  if(weeklyPins.filter(p=>p.targetWeek===targetWeek&&p.engine===engine).length!==1)throw Error('Release plan is missing a unique engine/Saturday: '+engine+'/'+targetWeek);
 }
-process.env.WASMBENCH_SUITE='all';
-const manifest=process.env.WASMBENCH_HISTORY_SUITE?resolve(process.env.WASMBENCH_HISTORY_SUITE):await prepareCorpus(settings,run,join(directory,'corpus'));
+const includeFeatures=process.env.WASMBENCH_HISTORY_INCLUDE_FEATURES!=='0';
+process.env.WASMBENCH_SUITE=includeFeatures?'all':'wago';
+const corpusDirectory=join(directory,'corpus',`${includeFeatures?'all':'applications'}-${new Date().toISOString().replace(/[:.]/g,'-')}-${randomUUID().slice(0,8)}`);
+const manifest=process.env.WASMBENCH_HISTORY_SUITE?resolve(process.env.WASMBENCH_HISTORY_SUITE):await prepareCorpus(settings,run,corpusDirectory);
 const workloads=parseCorpusJSON(await readFile(manifest,'utf8'));
 const catalog=JSON.parse(await readFile(join(site,'corpora/catalog.json')));
-const features=JSON.parse(await readFile(join(site,'corpora/features/manifest.json')));
-const required=new Set([...catalog.workloads.map(w=>w.contractId),...features.map(w=>w.id)]);
+const features=includeFeatures?JSON.parse(await readFile(join(site,'corpora/features/manifest.json'))):[];
+const required=new Set([...catalog.workloads.map(w=>w.contractId),...features.map(w=>w.id),'mechanisms/host-to-wasm-call','mechanisms/wasm-to-host-call']);
 if(workloads.length!==required.size || workloads.some(w=>!required.has(w.id)) || new Set(workloads.map(w=>w.id)).size!==required.size)throw Error('Historical performance suite must contain every application and feature contract');
 // Verify pinned artifacts now. A collector must repeat this check before running.
 for(const w of workloads)if(digest(await readFile(resolve(w.artifact)))!==w.sha256)throw Error('Historical corpus bytes changed: '+w.id);
@@ -41,9 +49,12 @@ const harnessFiles=command('git',['ls-files','-z','--cached','--others','--exclu
 const inputs=await Promise.all([...siteFiles.map(p=>['site/'+p,join(site,p)]),...harnessFiles.map(p=>['harness/'+p,join(root,p)])]
   .sort(([a],[b])=>a.localeCompare(b)).map(async([path,file])=>({path,sha256:digest(await readFile(file))})));
 const recipeSha256=digest(JSON.stringify({inputs,toolchainPins:{node:settings.node,features:settings.featureTools}}));
-const options={launches:settings.collection.launches,samples:settings.collection.samples,operations:settings.collection.operations,warmup:settings.collection.warmup,
+const historySamples=process.env.WASMBENCH_HISTORY_SAMPLES?.trim()?Number(process.env.WASMBENCH_HISTORY_SAMPLES):null;
+if(historySamples!==null&&(!Number.isSafeInteger(historySamples)||historySamples<1||historySamples>100))throw Error('WASMBENCH_HISTORY_SAMPLES must be 1..100');
+const options={launches:settings.collection.launches,workers:workersWithinCpuBudget(availableParallelism(),settings.collection.workers??1),samples:historySamples??settings.collection.samples,operations:settings.collection.operations,warmup:settings.collection.warmup,
+  scenarioSamples:historySamples?{'*':historySamples}:settings.collection.scenarioSamples || {'*':1},
   timeout:'300s',validationProfile:'all',memory:settings.collection.memory,code:settings.collection.code,phaseBarriers:settings.collection.phaseBarriers};
 const queue=performanceHistoryQueue(plan,{host:process.platform+'/'+process.arch,corpusSha256:performanceCorpusIdentity(workloads),recipeSha256,options});
-await writeFile(join(directory,'queue.json'),JSON.stringify({...queue,created:new Date().toISOString(),suite:manifest,workloads:workloads.length,recipeInputs:inputs,policy:plan.policy},null,2)+'\n');
-console.log(`${queue.jobs.length} distinct released-engine jobs for ${plan.weeks.length} Wednesdays; ${queue.snapshots.filter(s=>s.status==='unavailable').length} unavailable release points; ${workloads.length} workloads per job.`);
+await writeFile(join(directory,'queue.json'),JSON.stringify({...queue,created:new Date().toISOString(),suite:manifest,workloads:workloads.length,workloadScope:includeFeatures?'applications + corpora + host calls + features':'applications + corpora + host calls',recipeInputs:inputs,policy:plan.policy},null,2)+'\n');
+console.log(`${queue.jobs.length} distinct released-engine jobs across ${plan.weeks.length} Saturdays and ${releasePins.length} individual releases; ${queue.snapshots.filter(s=>s.status==='unavailable').length} unavailable release points; ${workloads.length} workloads per job (${includeFeatures?'features included':'features held'}).`);
 console.log('Queue prepared; no historical performance measurements are claimed by this planning step.');

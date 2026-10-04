@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { exists, digest, site } from './wasmbench.mjs';
 import { validateData } from './validate-data.mjs';
 import { datasetFiles } from './snapshot-index.mjs';
+import { engineSources } from './engine-sources.mjs';
 
 export const threadEvidencePath = name => /^(?:[a-f0-9]{64}|(?:darwin-arm64|linux-x64)(?:-(?:optimizing-only|liftoff-only))?)\.json$/.test(name);
 export function validateThreadEvidence(data) {
@@ -28,9 +29,12 @@ export function validateThreadEvidence(data) {
 export async function stageAuxiliary(destination) {
   const releasePlan=join(site,'data/release-history/plan.json');
   if(await exists(releasePlan)){
-    const plan=JSON.parse(await readFile(releasePlan));assert.equal(plan.schema,2);
-    assert(plan.weeks.every(w=>new Date(w).getUTCDay()===3),'Release snapshots must be Wednesdays');
-    assert(plan.pins.length===plan.weeks.length*14,'Incomplete release plan inventory');
+    const plan=JSON.parse(await readFile(releasePlan));assert.equal(plan.schema,4);
+    assert(plan.weeks.every(w=>new Date(w).getUTCDay()===6),'Release snapshots must be Saturdays');
+    const expectedConfigurations=Object.values(engineSources).reduce((n,source)=>n+source.configurations.length,0);
+    for(const week of plan.weeks){const pins=plan.pins.filter(p=>p.targetWeek===week);assert.equal(pins.reduce((n,p)=>n+p.configurations.length,0),expectedConfigurations,'Incomplete weekly release plan inventory');}
+    for(const week of plan.weeks){const pins=plan.mainPins.filter(p=>p.targetWeek===week);assert.equal(pins.length,Object.keys(engineSources).length,'Incomplete weekly main branch inventory');assert(pins.every(p=>p.targetType==='main'),'Weekly tracking must pin default branch commits');}
+    assert(Array.isArray(plan.releasePins),'Missing individual release pins');
     await mkdir(join(destination,'release-history'),{recursive:true});await cp(releasePlan,join(destination,'release-history/plan.json'));
   }
   const conformance=join(site,'data/conformance');
@@ -42,6 +46,12 @@ export async function stageAuxiliary(destination) {
       assert.equal(digest(await readFile(join(conformance,report.file))),report.sha256,'Changed conformance evidence');
     }
     await cp(conformance,join(destination,'conformance'),{recursive:true});
+  } else {
+    // The Features page links to this evidence catalogue even when no official
+    // suite has been collected. Keep the route valid without inventing results.
+    const target=join(destination,'conformance');
+    await mkdir(target,{recursive:true});
+    await writeFile(join(target,'index.json'),JSON.stringify({schema:1,reports:[]})+'\n');
   }
   const preflightSource=join(site,'data/wasmer-preflight');
   if(await exists(preflightSource)) {

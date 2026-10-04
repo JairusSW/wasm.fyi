@@ -6,13 +6,13 @@ function fixture() {
   const view = {
     schema: 1, encoding: 'indexed-cells-v1', configurations: { A: 'engine-baseline', B: 'engine-other' },
     catalogue: [{ id: 'features/a/test & <one>', artifactSha256: 'a'.repeat(64), kb: 2, ms: 99, group: 'Tests', purpose: 'A | workload\nwith text', baseline: false, workUnit: 'invocation', unitsPerInvocation: 1, abi: 'core', reset: 'fresh_instance', oracle: { kind: 'exact' } }],
-    metrics: ['compile', 'rss', 'code'], statuses: ['ok', 'unsupported', 'failed', 'nm'], reportIds: ['new', 'old'],
+    metrics: ['compile', 'rss', 'code'], statuses: ['ok', 'unsupported', 'failed', 'nm', 'na'], reportIds: ['new', 'old'],
     reports: {
       new: { created: '2026-10-01T12:00:00Z', runId: 'new-run', evidence: 'new.json', sha256: 'b'.repeat(64), configurations: ['engine-baseline'], host: 'linux', options: {} },
       old: { created: '2026-09-01T12:00:00Z', runId: 'old-run', evidence: 'history/old.json', sha256: 'c'.repeat(64), configurations: ['engine-baseline'], host: 'linux', options: {} }
     },
     reasons: ['collector unavailable'], hosts: { m1: { label: 'Test host', os: 'linux/x64', policy: {}, configurations: { A: { runtime: 'engine-baseline', backend: 'baseline', version: 'exact-revision' } }, snapshots: {
-      s1: [[0, 0, 0, 0, 0, 0, [0, 0], [0], null], [0, 0, 1, 3, 0, null, null, [], 0], [0, 0, 2, 2, 0, null, null, [], 0]],
+      s1: [[0, 0, 0, 0, 0, 0, [0, 0], [0], null], [0, 0, 1, 3, 0, null, null, [], 0], [0, 0, 2, 2, 0, null, null, [], 0], [0, 0, 2, 4, 0, null, null, [], 0]],
       s2: [[0, 0, 2, 0, 1, 123, null, [123], null]]
     } } }, history: { m1: {} }, threads: { m1: { created: '2026-09-01', sha256: 'd'.repeat(64), evidence: 'worker.json' } }
   };
@@ -30,6 +30,7 @@ test('exports numeric zero, null, reasons, intervals and newest failure without 
   assert.equal(rows[0].value, 0); assert.deepEqual(rows[0].interval, [0, 0]); assert.deepEqual(rows[0].launchMedians, [0]);
   assert.equal(rows[1].value, null); assert.equal(rows[1].status, 'not-measured'); assert.equal(rows[1].reason, 'collector unavailable');
   assert.equal(rows[2].status, 'failed'); assert.equal(rows[2].value, null); assert.equal(rows[2].report, 'new');
+  assert.equal(rows[3].status, 'not-applicable'); assert.equal(rows[3].value, null);
   assert.equal(read(artifacts, 'benchmarks-m1-s2-code.json').results[0].value, 123);
   assert.equal(read(artifacts, 'benchmarks-m1-s1-compile.json').missingCellStatus, 'not-measured');
   assert(!rows.some(r => r.configuration === 'B'), 'Absent is not invented unsupported evidence');

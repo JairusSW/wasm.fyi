@@ -19,8 +19,8 @@ describe('recorded weekly history',()=>{
 		expect(before.report).toBe(after.report);
 		expect(historyChange(before,after)).toEqual({delta:0,interval:[0,0],fixed:true});
 	});
-	it('includes both native Wasmer backends as fixed current comparisons on each host',()=>{
-    for(const machine of ['m1','m2'] as const)for(const cid of ['C','D'] as const){
+	it('includes Wasmer Singlepass as a fixed current comparison on each host',()=>{
+    for(const machine of ['m1','m2'] as const)for(const cid of ['D'] as const){
       expect(viewData.history[machine].versions[cid][0]).toBe('7.3.0');
       const first=historyCell(machine,'wago/tiny/add',cid,'steady',0);
       const last=historyCell(machine,'wago/tiny/add',cid,'steady',7);
@@ -37,7 +37,7 @@ describe('recorded weekly history',()=>{
 	});
 	it('cannot fabricate history for a feature-only workload or uncollected backend',()=>{
 		expect(historySeries(scope,'A','exec','features/simd/i32x4-add/64')).toBeNull();
-		if(viewData.history.m1.versions.C[0]==='not collected')expect(historySeries(scope,'C','exec')).toBeNull();
+		expect(historySeries(scope,'C','exec')).toBeNull();
 		expect(historyChange({st:'failed',report:''},{st:'ok',v:1,report:'other'})).toBeNull();
 	});
 });

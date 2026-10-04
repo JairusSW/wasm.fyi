@@ -9,7 +9,7 @@ async function store(name: string) {
 	return { index, snapshots };
 }
 const { index, snapshots } = await store('wasmbench');
-const feature = snapshots.find(snapshot => snapshot.host.os === 'linux' && snapshot.workloads.some(workload => workload.id.startsWith('features/')) && snapshot.runtimes.some(runtime => runtime.id === 'wasmtime-component-async') && snapshot.memory.length > 0 && snapshot.codeRecords.length > 0)!;
+const feature = snapshots.find(snapshot => snapshot.host.os === 'linux' && snapshot.workloads.some(workload => workload.id.startsWith('features/')) && snapshot.runtimes.some(runtime => runtime.id === 'wasmtime') && snapshot.memory.length > 0 && snapshot.codeRecords.length > 0)!;
 const item = feature.workloads.find(workload => workload.id === 'features/core-num/integer-multiply-add/1')!;
 
 describe('measured view boundary', () => {
@@ -44,6 +44,15 @@ describe('measured view boundary', () => {
 		expect(measuredMemory(copy, 'wasmtime', item.id, item.sha256, 'steady', 'host.js_heap.end').status).toBe('failed');
 	});
 
+	it('does not publish zero-duration samples as valid latency', () => {
+		const copy = structuredClone(feature);
+		const summary = copy.summaries.find(summary => summary.runtime === 'wasmtime' && summary.workload === item.id && summary.scenario === 'steady')!;
+		summary.median_ns_per_operation = 0;
+		expect(measuredTiming(copy, 'wasmtime', item.id, item.sha256, 'steady')).toMatchObject({
+			status: 'not-measured', reason: 'The operation completed below the timing clock resolution.'
+		});
+	});
+
 	it('never substitutes heap for RSS or compile-only support for execution', () => {
 		const memory = feature.memory.find(memory => memory.runtime === 'v8-optimizing-only' && memory.workload === item.id && memory.scenario === 'compile' && memory.metric === 'host.js_heap.end')!;
 		const cell = measuredMemory(feature, 'v8-optimizing-only', item.id, item.sha256, 'compile', memory.metric);
@@ -54,8 +63,8 @@ describe('measured view boundary', () => {
 		expect(measuredMemory(incomplete, 'v8-optimizing-only', item.id, item.sha256, 'compile', memory.metric).status).toBe('not-measured');
 		expect(measuredMemory(feature, 'v8-optimizing-only', item.id, item.sha256, 'compile', 'invented.rss').status).toBe('not-measured');
 		const async = feature.workloads.find(workload => workload.id === 'features/cm-async/future-stream-compile/1')!;
-		expect(measuredTiming(feature, 'wasmtime-component-async', async.id, async.sha256, 'compile').status).toBe('ok');
-		expect(measuredTiming(feature, 'wasmtime-component-async', async.id, async.sha256, 'steady').status).toBe('unsupported');
+		expect(feature.runtimes.some(runtime => runtime.id === 'wasmtime-component-async')).toBe(false);
+		expect(measuredTiming(feature, 'wasmtime-component-async', async.id, async.sha256, 'compile').status).toBe('not-collected');
 	});
 
 	it('exposes code images as images and rejects conflicting sizes', () => {
@@ -67,11 +76,22 @@ describe('measured view boundary', () => {
 		expect(measuredCodeImage(copy, 'wasmtime', item.id, item.sha256).status).toBe('not-measured');
 	});
 
+	it('marks interpreter code as not applicable and keeps native collector limits visible', () => {
+		const interp = structuredClone(feature);
+		const wago = interp.runtimes.find(runtime => runtime.id === 'wago')!;
+		wago.description.backend = 'interpreter';
+		expect(measuredCodeImage(interp, 'wago', item.id, item.sha256)).toMatchObject({status: 'not-applicable'});
+		const compiler = structuredClone(feature);
+		compiler.codeRecords.push({runtime: 'wazero', workload: item.id, status: 'unsupported', reason: 'public embedding API does not export function code'});
+		expect(measuredCodeImage(compiler, 'wazero', item.id, item.sha256)).toMatchObject({status: 'not-measured', reason: 'public embedding API does not export function code'});
+	});
+
 	it('keeps timing-only snapshots from inventing memory or native-code results',()=>{
-		const latest=snapshots.find(snapshot=>snapshot.host.os==='linux'&&snapshot.created>'2026-10-02T08:00:00Z')!;
+		const latest=structuredClone(feature);
+		latest.memory=[];latest.codeRecords=[];latest.memorySource=undefined;latest.codeSource=undefined;
 		expect(latest.memory).toHaveLength(0);expect(latest.codeRecords).toHaveLength(0);
-		expect(measuredMemory(latest,'wasmtime',item.id,item.sha256,'steady','process.peak_rss').status).toBe('not-measured');
-		expect(measuredCodeImage(latest,'wasmtime',item.id,item.sha256).status).toBe('not-measured');
+		expect(measuredMemory(latest,'wasmtime',item.id,item.sha256,'steady','process.peak_rss').status).toBe('not-collected');
+		expect(measuredCodeImage(latest,'wasmtime',item.id,item.sha256).status).toBe('not-collected');
 	});
 
 	it('checks deployed projection bytes, metadata and hosted base paths', async () => {

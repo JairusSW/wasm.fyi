@@ -16,28 +16,40 @@
   "collection": {
     "suite": "wago",
     "runtimes": [
-      "wago",
-      "wazero",
       "wasmtime",
       "wasmtime-winch",
-      "v8",
-      "wasmer-llvm",
-      "wasmer-singlepass"
-    ],
-    "featureRuntimes": [
-      "wasmer-llvm",
+      "wavm",
       "wasmer-singlepass",
+      "wazero",
+      "wazero-interpreter",
+      "v8",
+      "wago",
       "wasmi",
-      "wasmedge",
       "wasm3",
       "wamr",
-      "chicory",
+      "spidermonkey",
+      "deno",
+      "jsc"
+    ],
+    "featureRuntimes": [
+      "wasmer-singlepass",
+      "wasmi",
+      "wasm3",
+      "wamr",
       "spidermonkey",
       "deno"
     ],
     "wagoSource": "../../Wago/wago",
-    "launches": 6,
+    "launches": 1,
+    "workers": 3,
     "samples": 3,
+    "scenarioSamples": {
+      "*": 1,
+      "compile": 3,
+      "instantiate": 3,
+      "first-call": 1,
+      "steady": 3
+    },
     "operations": 1,
     "warmup": 3,
     "memory": true,
@@ -46,6 +58,9 @@
     "phaseBarriers": false,
     "featureRuntimesByPlatform": {
       "darwin": [
+        "jsc"
+      ],
+      "linux": [
         "jsc"
       ]
     }
@@ -195,6 +210,18 @@
           "url": "https://github.com/denoland/deno/releases/download/v2.9.7/deno-x86_64-unknown-linux-gnu.zip",
           "sha256": "c6527f24f4b16031d3ae4fa9f658d5f11534c8d84ce7dc8502420280919c3490",
           "format": "zip"
+        },
+        "jsc-dev": {
+          "url": "https://archive.ubuntu.com/ubuntu/pool/universe/w/webkit2gtk/libjavascriptcoregtk-4.1-dev_2.52.6-0ubuntu0.24.04.1_amd64.deb",
+          "sha256": "78c6bdb6dd6463e2adb2ed4408921b7ef68e09e610cfc121b2999a3959d5c6a0",
+          "format": "deb",
+          "runtimeVersion": "WebKitGTK/2.52.6"
+        },
+        "jsc-shell": {
+          "url": "https://archive.ubuntu.com/ubuntu/pool/universe/w/webkit2gtk/libjavascriptcoregtk-bin_2.52.6-0ubuntu0.24.04.1_amd64.deb",
+          "sha256": "c80587f4a76fbd8384ad3f02a0fb7801f20128373f71338907a4a12916322e87",
+          "format": "deb",
+          "runtimeVersion": "WebKitGTK/2.52.6"
         }
       }
     }

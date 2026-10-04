@@ -7,7 +7,7 @@
 	import { viewData } from '$lib/view-data';
 	import { EVENTS, SNAPS } from '$lib/data/snapshot';
 	import { PROPOSAL_IDS, href } from '$lib/links';
-	import { TOTAL_WORKLOADS, sharedCount, disp, isOff, isVisible, ratio } from '$lib/model';
+	import { TOTAL_WORKLOADS, disp, isOff, isVisible, ratio } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 	import { shortCount, n0 } from '$lib/format';
 
@@ -28,7 +28,6 @@
 			val: disp(s, 'lat', x.c.id, 3)!.t
 		}));
 	});
-	const nShared = $derived(`${sharedCount(ui.scope)} shared measured contracts`);
 
 	const tiles: [number, string][] = [
 		[RTS.length, 'runtimes & engines tracked'],
@@ -98,8 +97,10 @@
 	</div>
 	<div class="panel board">
 		<div class="board-head">
-			<span class="w6">Fastest execution</span>
-			<span class="mono small fg3">{board[0]?viewData.reports[board[0].report].created.slice(0,10):'not measured'} · per invocation</span>
+			<div class="board-title">
+				<span class="w6">Fastest execution</span>
+				<span class="mono small fg3">{board[0]?viewData.reports[board[0].report].created.slice(0,10):'not measured'} · per invocation</span>
+			</div>
 		</div>
 		<div class="board-rows">
 			{#each board as b (b.c.id)}
@@ -118,7 +119,7 @@
 				</button>
 			{/each}
 		</div>
-		<div class="board-foot small fg3">Geometric mean over {nShared} in one pinned report · independent launch bootstrap</div>
+	<div class="board-foot small fg3">Geometric mean over shared application workloads · merged host-local reports · Wasmtime Cranelift baseline</div>
 	</div>
 </section>
 
@@ -260,11 +261,12 @@
 	.board-head {
 		display: flex;
 		justify-content: space-between;
-		align-items: baseline;
+		align-items: center;
 		gap: 8px;
 		padding: 12px 16px;
 		border-bottom: 1px solid var(--line);
 	}
+	.board-title { display: flex; flex-direction: column; gap: 2px; }
 	.board-rows {
 		padding: 10px 16px;
 		display: flex;
@@ -291,6 +293,9 @@
 	.board-foot {
 		padding: 10px 16px;
 		border-top: 1px solid var(--line);
+	}
+	@media (max-width: 600px) {
+		.board-head { align-items: flex-start; flex-direction: column; }
 	}
 	.tiles-row {
 		display: grid;

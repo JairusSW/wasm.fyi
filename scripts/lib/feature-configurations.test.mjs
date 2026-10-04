@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { featureConfigurations } from './feature-configurations.mjs';
 
-test('feature suites exclude WasmFX on every platform',()=>{
+test('feature suites exclude WasmFX and Wasmtime async on every platform',()=>{
   const settings={collection:{
     runtimes:['v8','v8-wasmfx'],
     featureRuntimes:['wasmi','v8-wasmfx'],
@@ -12,6 +12,6 @@ test('feature suites exclude WasmFX on every platform',()=>{
     const ids=featureConfigurations(settings,platform);
     assert(ids.includes('v8'));
     assert(!ids.includes('v8-wasmfx'));
-    assert(ids.includes('wasmtime-component-async'));
+    assert(!ids.includes('wasmtime-component-async'));
   }
 });

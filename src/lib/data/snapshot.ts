@@ -3,8 +3,10 @@ import { viewData } from '../view-data';
 import type { Bench, BenchGroup, CfgId, MetricKey, OtMetric, OtMetricKey, OvGroup, OvKey, Snap, SnapEvent, Status } from './types';
 
 export const OV: Record<OvKey, OvGroup> = {
-  lat:{label:'Latency',cols:['Compilation','Instantiation','First call','Steady execution'],metrics:['compile','inst','first','steady']},
-  mem:{label:'Memory',cols:['Compile run peak RSS','Instantiate run peak RSS','Steady run peak RSS','Retained @ +1 s'],metrics:['rss','rss','rss','rss']},
+  compile:{label:'Compilation latency',cols:['Compilation'],metrics:['compile']},
+  calls:{label:'Call latency',cols:['Wasm → host','Host → Wasm'],metrics:['steady','steady']},
+  lat:{label:'Runtime latency',cols:['Instantiation','First call','Steady execution'],metrics:['inst','first','steady']},
+  mem:{label:'Memory',cols:['Compile run peak RSS','Instantiate run peak RSS','Steady run peak RSS','Retained @ +1 s'],metrics:['rssCompile','rssInst','rss','rss']},
   code:{label:'Machine Code',cols:['Function code','Stubs & trampolines','Metadata & pools','Extracted native image','Cumulative emitted'],metrics:['code','code','code','code','code']},
   cov:{label:'Correctness',cols:['Correct','Failed','Crashed / timeout','Unsupported / disabled','Not measured'],metrics:['steady','steady','steady','steady','steady']}
 };

@@ -1,12 +1,13 @@
-import {readFile,writeFile,mkdir,rename,rm,statfs} from 'node:fs/promises';
+import {readFile,writeFile,mkdir,rename,rm,statfs,readdir,link,unlink,stat} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
-import {homedir} from 'node:os';
+import {homedir,availableParallelism} from 'node:os';
 import {site,harness,command,digest,exists,locked} from './lib/wasmbench.mjs';
 import {parseCorpusJSON} from './lib/corpus.mjs';
 import {performanceCorpusIdentity} from './lib/performance-history.mjs';
-import {copyHistoricalHarness,buildHistoricalBinding,assertHistoricalRuntime} from './lib/historical-binding.mjs';
+import {copyHistoricalHarness,buildHistoricalBinding,assertHistoricalRuntime,pendingBindingReason} from './lib/historical-binding.mjs';
+import {workersWithinCpuBudget} from './lib/worker-budget.mjs';
 
 // Acquire the same Linux measurement lock as the current Hub supervisor.
 // flock retains it while the nested collector is alive, including all builds.
@@ -21,6 +22,23 @@ const directory=join(site,'.wasmbench/performance-history');
 const {root:base}=await harness();
 await mkdir(directory,{recursive:true});
 const env={...process.env,GOWORK:'off',GOFLAGS:'-buildvcs=false'};
+async function deduplicateWorkloadArtifacts(directory,workloads) {
+  const sourceByDigest=new Map(workloads.map(w=>[w.sha256,resolve(w.artifact)]));
+  async function visit(path) {
+    for(const item of await readdir(path,{withFileTypes:true})) {
+      const file=join(path,item.name);
+      if(item.isDirectory())await visit(file);
+      else if(item.isFile()&&item.name.endsWith('.wasm')) {
+        const source=sourceByDigest.get(digest(await readFile(file)));
+        if(!source||resolve(file)===source)continue;
+        const [from,to]=await Promise.all([stat(file),stat(source)]);
+        if(from.dev!==to.dev)continue;
+        await unlink(file);await link(source,file);
+      }
+    }
+  }
+  await visit(directory);
+}
 const active=await readFile(join(site,'.wasmbench/full-2026-10-02/active-runs.json'),'utf8').then(JSON.parse,()=>null);
 const localOwners=process.platform==='darwin'?[active?.mac?.pid,active?.macRecovery?.pid]:[];
 for(const localPid of localOwners.filter(Boolean)) {
@@ -31,11 +49,12 @@ for(const localPid of localOwners.filter(Boolean)) {
   catch(error){if(error.code!=='ESRCH')throw error;}
 }
 await locked(async()=>{
-  // Reuse the complete corpus that planning already imported. Re-importing to
-  // the same manifest path fails with O_EXCL in the Wasm bench controller.
-  const suite=join(directory,'corpus','wago-suite.json');
-  command(process.execPath,['scripts/performance-history.mjs','plan'],{env:{...env,WASMBENCH_HISTORY_SUITE:suite},stdio:'inherit'});
+  // Planning owns a fresh immutable corpus directory. The full-run and Hub
+  // supervisors may perform that plan before starting this collector.
+  if(process.env.WASMBENCH_HISTORY_PLAN_READY!=='1')
+    command(process.execPath,['scripts/performance-history.mjs','plan'],{env,stdio:'inherit'});
   const queue=JSON.parse(await readFile(join(directory,'queue.json')));
+  queue.options.workers=workersWithinCpuBudget(availableParallelism(),queue.options.workers);
   if(queue.host!==process.platform+'/'+process.arch)throw Error('Historical queue belongs to another architecture');
   const workloads=parseCorpusJSON(await readFile(queue.suite,'utf8'));
   if(performanceCorpusIdentity(workloads)!==queue.corpusSha256)throw Error('Historical corpus contracts changed');
@@ -47,10 +66,15 @@ await locked(async()=>{
   async function save(){const path=join(directory,'results.json');await writeFile(path+'.tmp',JSON.stringify(state,null,2)+'\n');await rename(path+'.tmp',path);}
   await save();
   for(const job of queue.jobs) {
-    const result={id:job.id,release:job.release,targetWeeks:job.targetWeeks,status:'running',configurations:[]};
+    const result={id:job.id,release:job.release,targetWeeks:job.targetWeeks,targetReleases:job.targetReleases||[],status:'running',configurations:[]};
     state.jobs.push(result);await save();
     for(const configuration of job.identity.configurations) {
       if(!/^[a-z0-9-]+$/.test(configuration))throw Error('Unsafe historical configuration ID');
+      const pendingReason=pendingBindingReason(job.release);
+      if(pendingReason) {
+        result.configurations.push({id:configuration,status:'pending-binding',reason:pendingReason});
+        result.status='incomplete';await save();continue;
+      }
       const cached=previous.jobs.find(j=>j.id===job.id)?.configurations.find(c=>c.id===configuration&&c.status==='collected');
       if(cached) {
         try {
@@ -80,7 +104,7 @@ await locked(async()=>{
       const invoke=(...args)=>command(controller,args,{cwd:root,env,stdio:'inherit'});
       try {
         // Unsupported binding code is a pending task, not an engine failure.
-        if(!['wago','wazero','wasmtime','wasmi'].includes(job.release.engine)) {
+        if(!['wago','wazero','wasmtime','wasmi','v8','jsc','deno','wasm3','wamr','wasmer','wavm','spidermonkey'].includes(job.release.engine)) {
           entry.status='pending-binding';entry.reason='A release-specific performance build binding is required.';await save();continue;
         }
         await copyHistoricalHarness(base,root);
@@ -98,7 +122,7 @@ await locked(async()=>{
         runtime.description=JSON.parse(described).description;
         assertHistoricalRuntime(runtime,binding);
         await writeFile(join(attempt,'preflight-description.json'),JSON.stringify(runtime,null,2)+'\n');
-        if(['wago','wazero'].includes(binding.engine)) {
+        if(binding.engine==='wago'||(binding.engine==='wazero'&&configuration==='wazero')) {
           const audit=join(attempt,'compile-audit');
           command(process.execPath,['scripts/compile-latency-audit.mjs',audit],{env:{...env,WASMBENCH_ROOT:root,WASMBENCH_BIN:controller,
             WASMBENCH_AUDIT_RUNTIMES:configuration,WASMBENCH_AUDIT_WAGO_TAG:binding.engine==='wago'?job.release.tag:undefined,
@@ -110,13 +134,16 @@ await locked(async()=>{
         for(const profile of profiles) {
           const output=join(attempt,profile+'-'+randomUUID().slice(0,8));
           const args=['run',...shared,'--profile',profile,'--launches',String(profile==='timing'?opts.launches:1),
-            '--samples',String(profile==='timing'?opts.samples:1),'--operations',String(profile==='timing'?opts.operations:1),
+            '--workers',String(opts.workers||1),'--samples',String(profile==='timing'?opts.samples:1),'--operations',String(profile==='timing'?opts.operations:1),
+            ...(profile==='timing'?['--samples-by-scenario',JSON.stringify(opts.scenarioSamples||{'*':1})]:[]),
             '--warmup',String(profile==='timing'?opts.warmup:0),'--out',output];
           if(profile==='code')args.push('--scenarios','compile');
           if(profile==='memory'&&opts.phaseBarriers)args.push('--phase-barriers');
           let failure;
           try{invoke(...args);}catch(error){failure=error;}
           // Trial failures are retained only when the complete bundle verifies.
+          invoke('verify','--run',output);
+          await deduplicateWorkloadArtifacts(output,workloads);
           invoke('verify','--run',output);
           const manifest=JSON.parse(await readFile(join(output,'manifest.json')));
           const runtimes=manifest.lock.runtime_configurations;
@@ -128,15 +155,18 @@ await locked(async()=>{
           reportArgs.push(profile==='timing'?'--run':profile==='memory'?'--memory-run':'--code-run',output);
         }
         const report=join(attempt,'report');invoke(...reportArgs,'--out',report);invoke('verify-report','--dir',report);
+        await deduplicateWorkloadArtifacts(report,workloads);invoke('verify-report','--dir',report);
         entry.status='collected';entry.report=report;entry.sha256=digest(await readFile(join(report,'data.json')));entry.collectedAt=new Date().toISOString();
       } catch(error) {
-        entry.status=error.code==='BINDING_PENDING'?'pending-binding':'runner-error';entry.reason=error.message;
+        entry.status=error.code==='BINDING_PENDING'?'pending-binding':error.code==='BINDING_UNAVAILABLE'?'unavailable':'runner-error';entry.reason=error.message;
         console.error('Historical performance job:',job.release.engine,job.release.tag,configuration,entry.status,error.message);
       }
       finally {
         // Failed SDK builds also leave large intermediates. Preserve their
         // sources and diagnostics while removing only this owned attempt's targets.
-        for(const adapter of ['wasmtime','native'])await rm(join(root,'adapters',adapter,'target'),{recursive:true,force:true,maxRetries:5,retryDelay:200});
+        for(const target of [join(root,'adapters/wasmtime/target'),join(root,'adapters/native/target'),
+          ...(job.release.engine==='wasmer'?[join(root,'toolchains','wasmer-'+job.release.tag.replace(/^v/,''),'target')]:[])])
+          await rm(target,{recursive:true,force:true,maxRetries:5,retryDelay:200});
         entry.buildIntermediatesRemoved=true;
       }
       entry.completedAt=new Date().toISOString();await save();

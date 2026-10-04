@@ -1,11 +1,13 @@
 <script lang="ts">
-	import { CFG } from '$lib/data/runtimes';
+import { CFG } from '$lib/data/runtimes';
+import { ST } from '$lib/data/status';
 	import { OV } from '$lib/data/snapshot';
 	import type { MetricKey, OvKey } from '$lib/data/types';
 	import { fmtUGroup, n0 } from '$lib/format';
 	import { heatCount, heatRatio } from '$lib/heat';
 	import { TOTAL_WORKLOADS, sharedCount, cov, absOf, disp, isOff, isVisible, ratio } from '$lib/model';
-	import { ui } from '$lib/state.svelte';
+import { ui } from '$lib/state.svelte';
+import { viewCell, viewData } from '$lib/view-data';
 	import Carousel from '../Carousel.svelte';
 	import RtLabel from '../RtLabel.svelte';
 	import Tabs from '../Tabs.svelte';
@@ -18,6 +20,8 @@
 	const g = $derived(OV[ui.group]);
 
 	const SHARED_NOTE: Record<OvKey, string> = {
+		compile: 'Successful shared contracts from one locked report.',
+		calls: 'Two verified typed boundary-call workloads from one locked report.',
 		lat: 'Successful shared contracts from one locked report.',
 		mem: 'Process lifetime peak RSS in each separate memory scenario.',
 		code: 'Extracted image bytes; unavailable collectors remain unmeasured.',
@@ -33,13 +37,30 @@
 		return col === 0 ? 1 - t : t;
 	};
 
+	const callWorkloads = ['mechanisms/wasm-to-host-call', 'mechanisms/host-to-wasm-call'];
+	const callCells = $derived.by(() => {
+		const configs = CFG.filter((c) => isVisible(ui.scope, c));
+		const raw = callWorkloads.map((workload) => configs.map((config) => viewCell(ui.machine, ui.snap, workload, config.id, 'steady')));
+		const values = raw.flatMap(cells => cells.map(cell => cell.st === 'ok' ? cell.v ?? null : null));
+		const formatted = fmtUGroup(values, 'ns');
+		return new Map(configs.map((config, configIndex) => [config.id, raw.map((cells, directionIndex) => {
+			const cell = cells[configIndex];
+			const baseline = viewCell(ui.machine, ui.snap, callWorkloads[directionIndex], ui.baseline, 'steady');
+			if (cell.st !== 'ok' || cell.v == null) return {text: ST[cell.st][1], bg: 'transparent', color: ST[cell.st][2]};
+			const baselineValue = baseline.st === 'ok' ? baseline.v : null;
+			const rel = baselineValue && baselineValue > 0 ? cell.v / baselineValue : null;
+			return {text: formatted[directionIndex * configs.length + configIndex] || '—', bg: heatRatio(rel), color: 'var(--fg)'};
+		})]));
+	});
+
 	const rows = $derived.by(() => {
 		const s = ui.scope;
 		return CFG.filter((c) => isVisible(s, c)).map((c) => {
 			const off = isOff(s, c.id);
 			const cv = cov(c.id,ui.scope);
-			const commonTimes=ui.group==='lat'?fmtUGroup(g.metrics.map((_,i)=>absOf(s,'lat',c.id,i)?.v ?? null),'ms'):null;
+			const commonTimes=ui.group==='compile'?fmtUGroup([absOf(s,'lat',c.id,0)?.v ?? null],'ms'):ui.group==='lat'?fmtUGroup(g.metrics.map((_,i)=>absOf(s,'lat',c.id,i+1)?.v ?? null),'ms'):null;
 			const cells = g.cols.map((_, i) => {
+				if (ui.group === 'calls') return callCells.get(c.id)?.[i] || {text:'—',bg:'transparent',color:'var(--fg3)'};
 				if (ui.group === 'cov') {
 					const v = cv[i];
 					if (off) return { text: '—', bg: 'transparent', color: 'var(--fg3)' };
@@ -49,9 +70,13 @@
 						color: v || i === 0 ? 'var(--fg)' : 'var(--fg3)'
 					};
 				}
-				const grp = ui.group as 'lat' | 'mem' | 'code';
-				const r = ratio(s, grp, c.id, i);
-				if (!r) return { text: disp(s,grp,c.id,i)?.t || (off?'unavailable':'not measured'), bg:'transparent',color:'var(--fg3)' };
+				const grp = ui.group === 'compile' || ui.group === 'lat' ? 'lat' : ui.group as 'mem' | 'code';
+				const sourceIndex = ui.group === 'compile' ? 0 : ui.group === 'lat' ? i + 1 : i;
+				const r = ratio(s, grp, c.id, sourceIndex);
+				if (!r) {
+					const interpreter=grp==='code'&&viewData.hosts[s.machine].configurations[c.id]?.backend==='interpreter';
+					return { text: interpreter?'n/a':disp(s,grp,c.id,i)?.t || (off?'unavailable':'not measured'), bg:'transparent',color:'var(--fg3)' };
+				}
 				return { text: commonTimes?.[i] || disp(s, grp, c.id, i)!.t, bg: heatRatio(r.r), color: 'var(--fg)' };
 			});
 			return {
@@ -64,7 +89,7 @@
 	});
 
 	const snapTaken = $derived(ui.snap === 's1' ? 'Latest measured cells' : 'Previous measured cells');
-	const snapAgo = $derived(`${sharedCount(ui.scope)} shared successful contracts in the latency cohort`);
+	const snapAgo = $derived(ui.group === 'calls' ? '2 measured call workloads' : `${sharedCount(ui.scope)} shared successful contracts in the latency cohort`);
 </script>
 
 <div class="stack">

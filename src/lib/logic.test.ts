@@ -1,9 +1,11 @@
 import { COMPAT } from './data/features';
 import { describe, expect, it } from 'vitest';
 import { ALLB } from './data/snapshot';
+import { CFG } from './data/runtimes';
 import { fmtU, fmtUGroup, fx, pct, relative } from './format';
 import { heatCount, heatRatio } from './heat';
 import { benchVal, compatCell, isVisible, kidCells, leader, ratio, seriesFmt, type Scope } from './model';
+import { viewData } from './view-data';
 
 const scope: Scope = { machine: 'm1', baseline: 'A', weighting: 'corpus', hide: {} };
 
@@ -29,6 +31,9 @@ describe('format', () => {
 		expect(fmtU(41.2, 'ms')).toBe('41.2 ms');
 		expect(fmtU(1500, 'ms')).toBe('1.5 s');
 		expect(fmtU(2048, 'KB')).toBe('2.00 MB');
+		expect(fmtU(0.49, 'KiB')).toBe('502 B');
+		expect(fmtU(1.25, 'KiB')).toBe('1,280 B');
+		expect(fmtU(1.5, 'KiB')).toBe('1.5 KiB');
 	});
 	it('shares a useful time unit across adjacent values where their range allows it',()=>{
 		expect(fmtUGroup([0.0008,0.0012],'ms')).toEqual(['800 ns','1200 ns']);
@@ -39,6 +44,14 @@ describe('format', () => {
 		expect(fx(28.4)).toBe('28.4×');
 		expect(pct(-0.031)).toBe('−3.1%');
 		expect(pct(0)).toBe('±0.0%');
+	});
+});
+
+describe('engine classes',()=>{
+	it('classifies the selected measured backend rather than every capability an engine offers',()=>{
+		const byId=Object.fromEntries(CFG.map(c=>[c.id,c]));
+		expect(['I','K','P','Q'].every(id=>byId[id].interp)).toBe(true);
+		expect(['A','B','D','E','F','G','M','N','O'].every(id=>!byId[id].interp)).toBe(true);
 	});
 });
 
@@ -61,29 +74,33 @@ describe('model', () => {
 		expect(isVisible(scope, { id: 'G', rt: 'wago' } as any)).toBe(true);
 		expect(isVisible(scope, { id: 'G', rt: 'v8' } as any)).toBe(false);
 	});
+	it('shows the source-pinned WAVM prerelease in benchmark tables',()=>{
+		expect(viewData.hosts.m1.configurations.L?.version).toBe('nightly-2026-04-05-4e82bb9');
+		expect(isVisible(scope,{id:'L',rt:'wavm'} as any)).toBe(true);
+	});
 	it('baseline ratio is 1', () => {
 		expect(ratio(scope, 'lat', 'A', 3)!.r).toBe(1);
 	});
     it('keeps unavailable code collectors distinct from true zero', () => {
       const b=ALLB.find(b=>b.id==='wago/tiny/add')!;
-      expect(benchVal(scope,b,'C','code').st).toBe('nm');
+		expect(benchVal(scope,b,'D','code').st).toBe('nm');
     });
     it('reads Singlepass measurements on the actual Mac rather than a machine multiplier', () => {
       const b=ALLB.find(b=>b.id==='wago/tiny/add')!;
       expect(benchVal({...scope,machine:'m2'},b,'D','steady').st).toBe('ok');
     });
     it('never scales a measurement into an uncollected input case', () => {
-      expect(benchVal(scope,ALLB[0],'C','steady',2).st).toBe('nm');
+		expect(benchVal(scope,ALLB[0],'D','steady',2).st).toBe('nm');
     });
 	it('reports no clear leader when intervals overlap', () => {
 		const single={...scope,hide:{B:true,C:true,D:true,E:true,F:true,G:true,H:true}};
         expect(leader(single, 'Fastest compilation', 'lat', 0, 'compile').clear).toBe(false);
 	});
-	for(const machine of ['m1','m2'] as const)it(`ranks the first three measured execution means and respects hidden configurations on ${machine}`,()=>{
+	for(const machine of ['m1','m2'] as const)it(`ranks every measured execution mean and respects hidden configurations on ${machine}`,()=>{
 		const selected={...scope,machine,hide:{G:true}};
 		const result=leader(selected,'Fastest execution','lat',3,'steady');
-		expect(result.places).toHaveLength(3);
-		expect(result.places.map(p=>p.place)).toEqual([1,2,3]);
+		expect(result.places.length).toBeGreaterThan(3);
+		expect(result.places.map(p=>p.place)).toEqual(result.places.map((_,i)=>i+1));
 		expect(result.places.some(p=>p.cfg.id==='G')).toBe(false);
 		for(const [i,p] of result.places.entries()){
 			expect(p.ratio).toBe(ratio(selected,'lat',p.cfg.id,3)!.r);

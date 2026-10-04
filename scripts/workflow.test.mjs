@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { command, compact, digest, installDirectory } from './lib/wasmbench.mjs';
 import { packEvidence, fileDigest } from './lib/evidence-archive.mjs';
+import { validateWasmFyiReceipt } from './lib/wasmfyi-export.mjs';
 import { writeIndex, datasetFiles } from './lib/snapshot-index.mjs';
 import { validateReport, validateData } from './lib/validate-data.mjs';
 import { threadEvidencePath, validateThreadEvidence } from './lib/auxiliary-data.mjs';
@@ -72,6 +73,62 @@ test('evidence transport preserves duplicate bytes and source files and retains 
     assert.equal((await packEvidence(source, archive, false)).files, 3);
     await symlink(join(source, paths[0]), join(source, 'unsafe-link'));
     await assert.rejects(packEvidence(source, archive), /regular files only/);
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+test('complete Hub transport can include only the latest sealed report', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'wasm-fyi-latest-report-'));
+  try {
+    const source = join(directory, 'source'), output = join(directory, 'output');
+    const report = join(source, 'experiments', 'run-123', 'report');
+    await mkdir(join(report, 'raw'), { recursive: true });
+    await mkdir(join(source, 'experiments', 'old-run', 'report'), { recursive: true });
+    await writeFile(join(source, 'latest-report.txt'), `${report}\n`);
+    await writeFile(join(report, 'checksums.json'), '{}');
+    await writeFile(join(report, 'raw', 'manifest.json'), '{}');
+    await writeFile(join(source, 'experiments', 'old-run', 'report', 'checksums.json'), 'old');
+    await writeFile(join(source, 'upstream-cache.json'), 'not needed after sealing');
+    await mkdir(output);
+    const archive = join(directory, 'latest.tar.xz');
+    const metadata = await packEvidence(source, archive, true, true);
+    assert.equal(metadata.files, 3);
+    command('tar', ['-xJf', archive, '-C', output]);
+    assert.equal(await readFile(join(output, 'latest-report.txt'), 'utf8'), `${report}\n`);
+    assert.equal(await readFile(join(output, 'experiments/run-123/report/raw/manifest.json'), 'utf8'), '{}');
+    await assert.rejects(readFile(join(output, 'experiments/old-run/report/checksums.json')));
+    await assert.rejects(readFile(join(output, 'upstream-cache.json')));
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+test('wasm.fyi transport exports only the verified website projection', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'wasm-fyi-projection-'));
+  try {
+    const source = join(directory, 'source');
+    const report = join(source, 'experiments', 'run-123', 'report');
+    const output = join(directory, 'output');
+    await mkdir(report, { recursive: true }); await mkdir(output);
+    const data = {
+      schema: 1, analysis_version: 'fixture', unused_large_field: 'drop me',
+      bundle: { manifest: { id: 'run-123', kind: 'measurement', lock: { options: { profile: 'timing' } } },
+        artifact_admission: [], trials: [{ id: 't1', samples: [] }] },
+      summaries: [], metrics: [], scenarios: [], throughput: [], code_records: [], code_source: null
+    };
+    const dataBytes = Buffer.from(JSON.stringify(data) + '\n');
+    await writeFile(join(report, 'data.json'), dataBytes);
+    await writeFile(join(report, 'checksums.json'), JSON.stringify({ 'data.json': digest(dataBytes) }));
+    await writeFile(join(source, 'latest-report.txt'), report + '\n');
+    const archive = join(directory, 'evidence.tar.zst');
+    const metadata = await packEvidence(source, archive, true, true, true);
+    assert.equal(metadata.profile, 'wasm.fyi-v1');
+    assert.equal(metadata.sha256, await fileDigest(archive));
+    command('gtar', ['-I', 'zstd', '-xf', archive, '-C', output]);
+    const relative = (await readFile(join(output, 'latest-wasm-fyi-report.txt'), 'utf8')).trim();
+    const exported = join(output, relative);
+    const projection = JSON.parse(await readFile(join(exported, 'data.json'), 'utf8'));
+    assert.equal(projection.unused_large_field, undefined);
+    assert.equal(projection.bundle.trials[0].id, 't1');
+    assert.equal(projection.bundle.manifest.id, 'run-123');
+    const receipt = validateWasmFyiReceipt(JSON.parse(await readFile(join(exported, 'wasm-fyi-export.json'), 'utf8')));
+    assert.equal(receipt.runId, 'run-123');
+    assert.equal(receipt.sourceReportSha256, digest(dataBytes));
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
 test('rejects diagnostic timing masquerading as latency', () => {

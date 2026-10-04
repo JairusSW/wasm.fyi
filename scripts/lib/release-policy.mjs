@@ -7,12 +7,19 @@ export const releasedBuild = release => !release.draft && !!release.published_at
 export function latestRelease(releases,asOf=new Date().toISOString()) {
   const cutoff=+new Date(asOf);
   if(!Number.isFinite(cutoff))throw Error('Invalid release cutoff');
-  return releases.filter(releasedBuild).filter(r=>Number.isFinite(+new Date(r.published_at)) && +new Date(r.published_at)<=cutoff).sort((a,b)=>+new Date(b.published_at)-+new Date(a.published_at))[0] || null;
+  return releases.filter(r=>!r.prerelease).filter(releasedBuild).filter(r=>Number.isFinite(+new Date(r.published_at)) && +new Date(r.published_at)<=cutoff).sort((a,b)=>+new Date(b.published_at)-+new Date(a.published_at))[0] || null;
+}
+export function latestBetaRelease(releases,asOf=new Date().toISOString()) {
+  const cutoff=+new Date(asOf);
+  if(!Number.isFinite(cutoff))throw Error('Invalid release cutoff');
+  return releases.filter(r=>r.prerelease && /beta/i.test(r.tag_name)).filter(releasedBuild)
+    .filter(r=>Number.isFinite(+new Date(r.published_at)) && +new Date(r.published_at)<=cutoff)
+    .sort((a,b)=>+new Date(b.published_at)-+new Date(a.published_at))[0] || null;
 }
 export const parseReleasePages=output=>output.trim().split('\n').filter(Boolean).flatMap(line=>JSON.parse(line));
 export const githubReleases=repository=>parseReleasePages(command('gh',['api','--paginate',`repos/${repository}/releases?per_page=100`,'--jq','. | tojson']).toString());
 export const releaseCache=()=>process.env.WASMBENCH_RELEASE_CACHE || join(homedir(),'.cache/wasm-fyi/releases');
-export async function releaseSource(repository,{tag,asOf,taggedLibrary=false}={}) {
+export async function releaseSource(repository,{tag,asOf,taggedLibrary=false,betaPrerelease=false}={}) {
   let candidates;
   if(taggedLibrary){
     if(asOf)throw Error('Historical plugin snapshots require verified publication dates; Go module tag commit times are insufficient.');
@@ -20,7 +27,8 @@ export async function releaseSource(repository,{tag,asOf,taggedLibrary=false}={}
     if(!/^v[0-9]+\.[0-9]+\.[0-9]+(?:[-+].*)?$/.test(info.Version) || /-[0-9]{14}-[a-f0-9]+$/.test(info.Version))throw Error('Plugin has no released module version');
     candidates=[{tag_name:info.Version,published_at:info.Time,draft:false,prerelease:info.Version.includes('-'),html_url:`https://github.com/${repository}/tree/${info.Version}`}];
   }else candidates=githubReleases(repository);
-  const release=tag?candidates.find(r=>r.tag_name===tag && releasedBuild(r)):latestRelease(candidates,asOf);
+  const release=tag?candidates.find(r=>r.tag_name===tag && releasedBuild(r)):
+    betaPrerelease?latestBetaRelease(candidates,asOf):latestRelease(candidates,asOf);
   if(!release)throw Error(`No published non-development release for ${repository}${tag?' at '+tag:''}`);
   const source=join(releaseCache(),repository.replace('/','-'),release.tag_name.replaceAll('/','-'));
   await mkdir(source,{recursive:true});

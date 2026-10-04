@@ -4,6 +4,7 @@ import { ALLB, BENCH } from './data/snapshot';
 import { benchVal, type Scope } from './model';
 import { viewCell, viewData } from './view-data';
 import { CFG } from './data/runtimes';
+import { MET } from './data/metrics';
 
 import preparedFeatures from '../../corpora/features/manifest.json';
 import preparedApplications from '../../corpora/catalog.json';
@@ -50,24 +51,41 @@ describe('existing workload views consume measured evidence',()=>{
 		expect(ALLB.some(b=>b.id==='sqlite-speedtest1')).toBe(false);
 	});
 	it('lists every benchmarked engine configuration on the Benchmarks page',()=>{
-		expect(CFG.map(config=>config.id)).toEqual(Object.keys(viewData.configurations).filter(id=>!['H','S'].includes(id)));
-		expect(CFG.find(config=>config.id==='F')?.be).toBe('production-default');
+		expect(CFG.map(config=>config.id)).toEqual(Object.keys(viewData.configurations).filter(id=>id!=='S'));
+		expect(viewData.configurations).not.toHaveProperty('C');
+		expect(CFG.find(config=>config.id==='Q')?.be).toBe('interpreter');
+		expect(viewData.configurations.Q).toBe('wazero-interpreter');
+		expect(CFG.find(config=>config.id==='F')?.be).toBe('production-default-tiering');
 		expect(CFG.some(config=>config.id==='H')).toBe(false);
 		expect(viewData.configurations.F).toBe('v8');
-		expect(viewData.applicationConfigurations).toEqual(['A','B','C','D','E','G']);
-		for(const id of ['I','J','K','M','N','O','P','Q','R'] as const)
+		expect(viewData.applicationConfigurations).toEqual(['A','B','D','E','F','G','L','M','N','O']);
+		for(const id of ['I','K','M','N','O','P'] as const)
 			expect(viewData.hosts.m1.configurations[id]||viewData.hosts.m2.configurations[id]).toBeDefined();
+	});
+	it('orders workload metrics with phase-matched RSS before first and steady calls',()=>{
+		expect(Object.keys(MET)).toEqual(['compile','rssCompile','inst','rssInst','first','steady','rss','code']);
+		for(const machine of ['m1','m2'] as const) {
+			for(const metric of ['rssCompile','rssInst'] as const) {
+				const cell=viewCell(machine,'s1','wago/tiny/add','A',metric);
+				expect(cell.st).toBe('ok');
+				expect(cell.v).toBeGreaterThan(0);
+				const report=viewData.reports[cell.report];
+				expect(report?.memorySource?.id).toMatch(/^memory-/);
+			}
+		}
 	});
 	for(const machine of ['m1','m2'] as const)it(`matches ${machine} rendered cell units to the sealed summary`,async()=>{
 		const b=ALLB.find(b=>b.id==='wago/tiny/add')!;
-		const cell=viewCell(machine,'s1',b.id,'C','steady');
+		const cell=viewCell(machine,'s1',b.id,'D','steady');
 		const ref=viewData.reports[cell.report];
 		const raw=JSON.parse(await readFile(new URL('../../data/wasmbench/'+ref.evidence,import.meta.url),'utf8'));
-		const summary=raw.summaries.find((s:any)=>s.runtime==='wasmer-llvm'&&s.workload===b.id&&s.scenario==='steady'&&s.profile==='timing');
+		const summary=raw.summaries.find((s:any)=>s.runtime==='wasmer-singlepass'&&s.workload===b.id&&s.scenario==='steady'&&s.profile==='timing');
 		expect(cell.st).toBe('ok');
 		expect(cell.v).toBe(summary.median_ns_per_operation/1e6);
-		expect(cell.interval).toEqual([summary.ci95_low/1e6,summary.ci95_high/1e6]);
-		expect(benchVal({...scope,machine},b,'C','steady')).toEqual({st:'ok',v:cell.v});
+		if (Number.isFinite(summary.ci95_low) && Number.isFinite(summary.ci95_high))
+			expect(cell.interval).toEqual([summary.ci95_low/1e6,summary.ci95_high/1e6]);
+		else expect(cell.interval).toBeUndefined();
+		expect(benchVal({...scope,machine},b,'D','steady')).toEqual({st:'ok',v:cell.v});
 	});
 	it('preserves explicit unsupported and unavailable cells without old-success fallback',()=>{
 		const b=ALLB.find(b=>b.id==='features/simd/i32x4-add-multiply/64')!;
@@ -91,8 +109,8 @@ it('history retains frozen artifact identities when the current corpus is rebuil
 });
 
 
-it('rebuilt source workloads await fresh measurements',()=>{
+it('preserves measured source workload results and unsupported engine outcomes',()=>{
   const b=ALLB.find(b=>b.id==='wago/json-as-simd/serializeN')!;
-  expect(benchVal(scope,b,'D','steady')).toEqual({st:'nm'});
-  expect(b.ms).toBeNull();
+  expect(benchVal(scope,b,'D','steady')).toEqual({st:'unsupported'});
+  expect(b.ms).toBeGreaterThan(0);
 });

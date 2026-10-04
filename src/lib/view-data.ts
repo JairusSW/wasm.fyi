@@ -25,7 +25,7 @@ interface ViewData {
 		workloads:string[];artifactSha256:Record<string,string>;versions:Record<CfgId,string[]>;
 		cells:Record<string,(ViewCell & {role:'retrospective-revision'|'fixed-comparison-baseline'})[]>;
 	}>;
-	reports: Record<string,{runId:string;created:string;evidence:string;sha256:string;options:Record<string,unknown>;memorySource?:{id:string;note:string};codeSource?:{id:string;note:string};configurations:string[];host:string}>;
+	reports: Record<string,{runId:string;created:string;evidence:string;sha256:string;options:Record<string,unknown>;memorySource?:{id:string;note:string};codeSource?:{id:string;note:string};codeRecords:{runtime:string;workload:string;trial:string;status:string;index:number;inspectable:boolean}[];configurations:string[];host:string}>;
 }
 type PackedCell = [number,number,number,number,number,number|null,[number,number]|null,number[]|null,number|null];
 type PackedHistoryCell=[number,number,number|null,[number,number]|null,number[]|null,number|null];

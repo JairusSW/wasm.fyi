@@ -4,6 +4,7 @@
 	import { COMPAT, FLAGS, FT } from '$lib/data/features';
 	import { CB, CFG, MACH } from '$lib/data/runtimes';
 	import { ALLB, MET, OV, PHASE_NOTE } from '$lib/data/snapshot';
+	import type { MetricKey } from '$lib/data/types';
 	import { ST, ST_DESC } from '$lib/data/status';
 	import { fmtU, relative, n0, workloadName } from '$lib/format';
 	import { benchHref } from '$lib/links';
@@ -31,10 +32,15 @@
 		const t = ST[r.st];
 		const measured = viewCell(s.machine,ui.snap,b.id,c.id,d.m);
 		const report = viewData.reports[measured.report];
+		const options = report?.options as {launches?:number;samples?:number;scenario_samples?:Record<string,number>;warmup?:number} | undefined;
+		const scenario = ({compile:'compile',rssCompile:'compile',inst:'instantiate',rssInst:'instantiate',first:'first-call',steady:'steady',rss:'steady',code:'compile'} satisfies Partial<Record<MetricKey,string>>)[d.m];
+		const singleSamplePass = ['rss','rssCompile','rssInst','code'].includes(d.m);
+		const phaseSamples = scenario ? options?.scenario_samples?.[scenario] : undefined;
+		const sampleCount = singleSamplePass ? 1 : phaseSamples ?? options?.scenario_samples?.['*'] ?? options?.samples ?? 'unavailable';
 		const config = viewData.hosts[s.machine].configurations[c.id];
 		const ok = r.st === 'ok';
 		const v = ok ? r.v : 0;
-		const dots = ok && d.m !== 'rss' && d.m !== 'code' ? measured.launchMedians || [] : [];
+		const dots = ok && !['rss','rssCompile','rssInst','code'].includes(d.m) ? measured.launchMedians || [] : [];
 		const lo = dots.length ? Math.min(...dots) : v;
 		const hi = dots.length ? Math.max(...dots) : v;
 		const X = (x: number) => 10 + ((x - lo) / (hi - lo || 1)) * 400;
@@ -61,11 +67,11 @@
 			minL: ok ? fmtU(lo, u) : '',
 			maxL: ok ? fmtU(hi, u) : '',
             stats: ok ? [
-              {k:'Independent launches',v:String(report?.options.launches || 'unavailable')},
-              {k:'Samples requested / launch',v:String(report?.options.samples || 'unavailable')},
-              {k:'Steady warmups / launch',v:String(report?.options.warmup ?? 'unavailable')},
+              {k:'Independent launches',v:String(singleSamplePass ? 1 : options?.launches ?? 'unavailable')},
+              {k:'Samples requested / launch',v:String(sampleCount)},
+              {k:'Warmups / launch',v:String(singleSamplePass ? 0 : options?.warmup ?? 'unavailable')},
               {k:'Median',v:fmtU(v,u)},
-              {k:'Observer',v:d.m==='rss'?'process.peak_rss':d.m==='code'?'extracted native image':'verified embedding calls'},
+              {k:'Observer',v:['rss','rssCompile','rssInst'].includes(d.m)?'process.peak_rss':d.m==='code'?'extracted native image':'verified embedding calls'},
               {k:'Evidence',v:report?report.sha256.slice(0,12)+'…':'unavailable'}
             ] : [],
 			phaseNote: PHASE_NOTE[d.m],

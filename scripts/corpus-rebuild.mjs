@@ -4,7 +4,7 @@ import { join, resolve, dirname, basename } from 'node:path';
 import { spawn } from 'node:child_process';
 import { platform, arch } from 'node:os';
 import { randomUUID } from 'node:crypto';
-import { site, digest, config } from './lib/wasmbench.mjs';
+import { site, digest, config, exists } from './lib/wasmbench.mjs';
 import { parseCorpusJSON } from './lib/corpus.mjs';
 
 const settings=await config();
@@ -18,6 +18,17 @@ const tree=join(directory,'tree');
 const sdkHost={ 'darwin-arm64':'arm64-macos','darwin-x64':'x86_64-macos','linux-x64':'x86_64-linux','linux-arm64':'arm64-linux'}[platform()+'-'+arch()];
 const sdk=resolve(process.env.WASI_SDK || join(site,'.wasmbench/toolchains','wasi-sdk-34.0-'+sdkHost));
 const env={...process.env,WASI_SDK:sdk,WASI_SDK_PATH:sdk};
+// Prefer an installed rustup toolchain when Homebrew's standalone rustc is on
+// PATH. The benchmark has both wasm32-unknown-unknown and WASI Rust workloads;
+// the compiler must have both target libraries available.
+if(!env.RUSTC) {
+  try {
+    const candidate=command('rustup',['which','rustc']).toString().trim();
+    const sysroot=command(candidate,['--print','sysroot']).toString().trim();
+    const targets=['wasm32-unknown-unknown','wasm32-wasip1'];
+    if((await Promise.all(targets.map(target=>exists(join(sysroot,'lib/rustlib',target))))).every(Boolean))env.RUSTC=candidate;
+  } catch {}
+}
 let currentSources=[];const artifactSources=new Map();
 const recipeSha256=digest(await readFile(join(site,'scripts/corpus-rebuild.mjs')));
 const sourcePorts=join(directory,'ports'),sourcePatches=join(directory,'patches');
@@ -47,6 +58,12 @@ async function run(program,args,options={}) {
 async function checkout(name,repository,revision) {
   currentSources.push({name,repository,revision});
   const dir=join(tree,'.tmp',name);await mkdir(dirname(dir),{recursive:true});
+  if(await exists(dir)) {
+    const actualRepository=command('git',['-C',dir,'remote','get-url','origin']).toString().trim();
+    const actualRevision=command('git',['-C',dir,'rev-parse','HEAD']).toString().trim();
+    if(actualRepository!==repository || actualRevision!==revision)throw Error('Source checkout identity changed during rebuild: '+name);
+    return dir;
+  }
   await run('git',['init','--quiet',dir]);
   await run('git',['remote','add','origin',repository],{cwd:dir});
   await run('git',['fetch','--depth=1','origin',revision],{cwd:dir});
@@ -188,7 +205,7 @@ for(const b of lock.benchmarks.filter(b=>requested.includes(b.id))) {
     w.artifact=artifact;w.sha256=digest(await readFile(artifact));
     for(const f of Object.values(w.command?.files||{}))f.path=resolve(site,f.path);
     const inputs=artifactSources.get(b.artifact);
-    w.source={...inputs[0],repository:inputs[0].repository || inputs[0].url,buildRecipe:'scripts/corpus-rebuild.mjs',inputs};w.generator='wasm-fyi-source-build-v1';
+    w.source=inputs[0].repository || inputs[0].url || inputs[0].name || inputs[0].recipe || b.recipe;w.generator='wasm-fyi-source-build-v1';
     w.provenance.rebuild={sources:artifactSources.get(b.artifact),recipe:'scripts/corpus-rebuild.mjs',recipeSha256,inputsSha256:digest(await readFile(join(directory,'inputs.json'))),originalRecipe:b.recipe};
     const resultFile=join(directory,b.id+'.check.json');
     const inputFile=join(directory,b.id+'.contract.json');await writeFile(inputFile,JSON.stringify(w));

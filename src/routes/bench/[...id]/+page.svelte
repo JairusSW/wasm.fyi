@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { base } from '$app/paths';
 	import { siteHref } from '$lib/links';
 	import RtLabel from '$lib/components/RtLabel.svelte';
 	import Seg from '$lib/components/Seg.svelte';
@@ -64,7 +65,13 @@ import { historySegments } from '$lib/history-values';
 	// ── Code ───────────────────────────────────────────────────────────────
   const codeRows=$derived(vis.map(c=>{
     const cell=viewCell(ui.machine,ui.snap,b.id,c.id,'code');
-    return {c,cells:['not collected','not collected','not collected',cell.st==='ok' && cell.v!=null?fmtU(cell.v,'KiB'):'not measured','not collected','not collected','not collected']};
+    const report=viewData.reports[cell.report];
+    const native=report?.codeRecords.find(record=>record.runtime===viewData.configurations[c.id]&&record.workload===b.id&&record.status==='available'&&record.inspectable);
+    const inspect=report?.codeSource?.id&&native
+      ? `${base}/wasmbench/code-inspection/${encodeURIComponent(report.codeSource.id)}/view.html?trial=${encodeURIComponent(native.trial)}`
+      : null;
+    const image=cell.st==='ok'&&cell.v!=null?fmtU(cell.v,'KiB'):cell.st==='na'?'n/a':cell.st==='unsupported'?'unsupported':cell.st==='failed'?'failed':'not measured';
+    return {c,inspect,cells:['not collected','not collected','not collected',image,'not collected','not collected','not collected']};
   }));
 
 	// ── History ────────────────────────────────────────────────────────────
@@ -264,13 +271,13 @@ import { historySegments } from '$lib/history-values';
 				{#each codeRows as r (r.c.id)}
 					<tr>
 						<td class="nowrap"><RtLabel c={r.c} /></td>
-						{#each r.cells as c, i (i)}<td class="mono fg2" class:r={i < 5}>{c}</td>{/each}
+					{#each r.cells as c, i (i)}<td class="mono fg2" class:r={i < 5}>{c}{#if i===3&&r.inspect}<br /><a href={r.inspect} target="_blank" rel="noreferrer">Inspect image</a>{/if}</td>{/each}
 					</tr>
 				{/each}
 			</tbody>
 		</table>
 	</div>
-	<div class="note">Function-level side-by-side explorer (WAT ↔ native, normalized addresses) ships with the code-explorer release.</div>
+	<div class="note">“Inspect image” opens the exact extracted bytes and engine-reported function ranges. These bytes include any wrappers and embedded data; ranges are not instruction-only sizes.</div>
 {:else if ui.bdTab === 'history'}
 	<div class="tbl-wrap">
 		<table class="t" style:min-width="600px">

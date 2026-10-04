@@ -1,15 +1,19 @@
-import { cp, mkdir, mkdtemp, readFile, readdir, realpath, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, readFile, readdir, realpath, readlink, rm, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { command, digest, exists, installDirectory, site } from './wasmbench.mjs';
 
-const relevant=['wasmedge','wasm3','wamr','chicory','spidermonkey','deno','wavm'];
+const relevant=['wasmedge','wasm3','wamr','chicory','spidermonkey','deno','wavm','jsc'];
 async function tree(directory,relative='') {
   const files={};
   for(const entry of await readdir(join(directory,relative),{withFileTypes:true})) {
     const name=join(relative,entry.name);
     if(entry.isDirectory())Object.assign(files,await tree(directory,name));
+    else if(entry.isSymbolicLink()) {
+      try{files[name]=digest(await readFile(join(directory,name)));}
+      catch(error){if(error.code!=='ENOENT')throw error;files[name]='symlink:'+await readlink(join(directory,name));}
+    }
     else if(name!=='build.json')files[name]=digest(await readFile(join(directory,name)));
   }
   return files;
@@ -20,10 +24,12 @@ export async function prepareFeatureTools(root,settings,ids) {
   if(!pins?.assets?.[platform])throw new Error('Feature toolchain is not pinned for '+platform);
   const target=join(homedir(),'.local/share/wasm-fyi/toolchains/features-v1-'+platform);
   const identity=digest(JSON.stringify(pins)+await readFile(fileURLToPath(import.meta.url),'utf8'));
+  const wamrFlags=['-DCMAKE_BUILD_TYPE=Release','-DWAMR_BUILD_AOT=0','-DWAMR_DISABLE_STACK_HW_BOUND_CHECK=1','-DWAMR_BUILD_FAST_INTERP=0','-DWAMR_BUILD_GC=1','-DWAMR_BUILD_EXCE_HANDLING=1','-DWAMR_BUILD_LIBC_WASI=0','-DWAMR_BUILD_LIBC_BUILTIN=0','-DBUILD_SHARED_LIBS=ON'];
   const ready=await exists(join(target,'build.json')) && JSON.parse(await readFile(join(target,'build.json')));
   if(ready && ready.identity===identity) {
     if(JSON.stringify(await tree(target))!==JSON.stringify(ready.files))throw new Error('Managed feature toolchain changed; restore its recorded build before collecting');
   } else {
+    const reusableBuild=!!ready && JSON.stringify(ready.pins?.sources)===JSON.stringify(pins.sources) && JSON.stringify(ready.wamrFlags)===JSON.stringify(wamrFlags) && JSON.stringify(await tree(target))===JSON.stringify(ready.files);
     await mkdir(dirname(target),{recursive:true});
     const temp=await mkdtemp(join(dirname(target),'.features-build-')),sdk=join(temp,'sdk');
     try {
@@ -35,11 +41,17 @@ export async function prepareFeatureTools(root,settings,ids) {
         const destination=join(temp,name);await mkdir(destination,{recursive:true});
         if(asset.format==='jar')await cp(archive,join(sdk,name+'.jar'));
         else if(asset.format==='zip')command('unzip',['-q',archive,'-d',destination]);
+        else if(asset.format==='deb')command('dpkg-deb',['-x',archive,destination]);
         else command('tar',['-xzf',archive,...(name==='wasmedge'?[]:['--strip-components=1']),'-C',destination]);
       }
       for(const name of ['wasmedge','spidermonkey','deno'])await cp(join(temp,name),join(sdk,name),{recursive:true,verbatimSymlinks:true});
+      if(await exists(join(temp,'jsc-dev')))await cp(join(temp,'jsc-dev'),join(sdk,'jsc-dev'),{recursive:true,verbatimSymlinks:true});
+      if(await exists(join(temp,'jsc-shell')))await cp(join(temp,'jsc-shell'),join(sdk,'jsc-shell'),{recursive:true,verbatimSymlinks:true});
       if(await exists(join(sdk,'wasmedge/lib64')) && !await exists(join(sdk,'wasmedge/lib')))await cp(join(sdk,'wasmedge/lib64'),join(sdk,'wasmedge/lib'),{recursive:true,verbatimSymlinks:true});
       command('chmod',['+x',join(sdk,'spidermonkey/js'),join(sdk,'deno/deno')]);
+      if(reusableBuild) {
+        for(const name of ['wasm3','wamr'])await cp(join(target,name),join(sdk,name),{recursive:true,verbatimSymlinks:true});
+      } else {
       const wasm3Build=join(temp,'wasm3-build');
       command('cmake',['-S',join(temp,'wasm3'),'-B',wasm3Build,'-DCMAKE_BUILD_TYPE=Release','-DBUILD_WASI=none'],{stdio:'inherit'});
       command('cmake',['--build',wasm3Build,'--target','m3','-j','4'],{stdio:'inherit'});
@@ -47,13 +59,13 @@ export async function prepareFeatureTools(root,settings,ids) {
       for(const name of await readdir(join(temp,'wasm3/source')))if(name.endsWith('.h'))await cp(join(temp,'wasm3/source',name),join(sdk,'wasm3/include',name));
       await cp(join(wasm3Build,'source/libm3.a'),join(sdk,'wasm3/lib/libm3.a'));
       const wamrBuild=join(temp,'wamr-build');
-      const flags=['-DCMAKE_BUILD_TYPE=Release','-DWAMR_BUILD_AOT=0','-DWAMR_DISABLE_STACK_HW_BOUND_CHECK=1','-DWAMR_BUILD_FAST_INTERP=0','-DWAMR_BUILD_GC=1','-DWAMR_BUILD_EXCE_HANDLING=1','-DWAMR_BUILD_LIBC_WASI=0','-DWAMR_BUILD_LIBC_BUILTIN=0','-DBUILD_SHARED_LIBS=ON'];
-      command('cmake',['-S',join(temp,'wamr/product-mini/platforms',process.platform),'-B',wamrBuild,...flags],{stdio:'inherit'});
+      command('cmake',['-S',join(temp,'wamr/product-mini/platforms',process.platform),'-B',wamrBuild,...wamrFlags],{stdio:'inherit'});
       command('cmake',['--build',wamrBuild,'--target','vmlib','-j','4'],{stdio:'inherit'});
       await mkdir(join(sdk,'wamr/include'),{recursive:true});await mkdir(join(sdk,'wamr/lib'),{recursive:true});
       for(const name of await readdir(join(temp,'wamr/core/iwasm/include')))if(name.endsWith('.h'))await cp(join(temp,'wamr/core/iwasm/include',name),join(sdk,'wamr/include',name));
       for(const name of await readdir(wamrBuild))if(/^libiwasm.*\.(dylib|so)(\.[\d.]+)?$/.test(name))await cp(join(wamrBuild,name),join(sdk,'wamr/lib',name),{dereference:true});
-      await writeFile(join(sdk,'build.json'),JSON.stringify({schema:1,identity,pins,wamrFlags:flags,files:await tree(sdk)})+'\n');
+      }
+      await writeFile(join(sdk,'build.json'),JSON.stringify({schema:1,identity,pins,wamrFlags,files:await tree(sdk)})+'\n');
       const finish=await installDirectory(sdk,target);await finish(false);
     } finally {await rm(temp,{recursive:true,force:true});}
   }
@@ -61,9 +73,23 @@ export async function prepareFeatureTools(root,settings,ids) {
   process.env.WASMBENCH_WASM3_SDK=join(target,'wasm3');process.env.WASMBENCH_WASM3_VERSION='0.5.0';
   process.env.WASMBENCH_WAMR_SDK=join(target,'wamr');process.env.WASMBENCH_WAMR_VERSION='2.4.5';
   process.env.WASMBENCH_SPIDERMONKEY=join(target,'spidermonkey/js');process.env.WASMBENCH_DENO=join(target,'deno/deno');
+  if(ids.includes('jsc')) {
+    const jsc=pins.assets[platform]?.['jsc-dev'];
+    if(process.platform==='darwin') {
+      // System jsc exposes millisecond-precision performance.now(); use the
+      // embedding adapter's steady_clock on macOS as on Linux.
+      process.env.WASMBENCH_JSC_HOST=join(root,'bin/adapter-jsc');
+    } else if(process.platform==='linux') {
+      if(!jsc?.runtimeVersion || !/^[\w./+-]+$/.test(jsc.runtimeVersion))throw new Error('JavaScriptCoreGTK runtime version must be pinned for '+platform);
+      process.env.WASMBENCH_JSC_HOST=join(root,'bin/adapter-jsc');
+      process.env.WASMBENCH_JSC_SDK=join(target,'jsc-dev');
+      process.env.WASMBENCH_JSC=join(target,'jsc-shell/usr/bin/jsc');
+      process.env.WASMBENCH_JSC_VERSION=jsc.runtimeVersion;
+    }
+  }
   if(ids.includes('wavm')) {
-    process.env.WASMBENCH_WAVM_SDK ||= join(root,'.wasmbench/extra-sdk/wavm');
-    process.env.WASMBENCH_WAVM_VERSION ||= '0.0.0-prerelease';
+    process.env.WASMBENCH_WAVM_SDK ||= join(homedir(),'.local/share/wasm-fyi/toolchains/wavm-nightly-2026-04-05/sdk');
+    process.env.WASMBENCH_WAVM_VERSION ||= 'nightly-2026-04-05-4e82bb9';
     if(!await exists(join(process.env.WASMBENCH_WAVM_SDK,'include/WAVM/wavm-c/wavm-c.h')))throw new Error('Install a WAVM SDK or set WASMBENCH_WAVM_SDK; no alternate engine will be substituted');
   }
   if(ids.includes('chicory')) {
