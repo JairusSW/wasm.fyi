@@ -81,11 +81,17 @@ function reasonId(reason) { if(!reasons.has(reason)){reasons.set(reason,reasons.
 const status = { ok:'ok', unsupported:'unsupported', failed:'failed', 'not-measured':'nm', 'not-collected':'nm', 'not-applicable':'na' };
 const output = { schema:1, configurations, applicationConfigurations:[], catalogue:[...catalogue.values()].sort(compareWorkloads), hosts:{}, reports:{}, reasons:[],history:{},threads:{},statistics:{timingSamples:reports.reduce((n,r)=>n+r.summaries.reduce((n,s)=>n+(s.recorded_samples || 0),0),0)} };
 const codeInspectionDirectory=join(site,'static/wasmbench/code-inspection');
-const codeInspectionRuns=new Set(await readdir(codeInspectionDirectory).catch(error=>{
+const codeInspectionDirectories=await readdir(codeInspectionDirectory).catch(error=>{
   if(error.code==='ENOENT')return [];
   throw error;
-}));
-for (const report of reports) output.reports[report.id] = { runId:report.runId, created:report.created, evidence:report.evidence, sha256:report.evidenceSha256, options:report.options,memorySource:report.memorySource,codeSource:report.codeSource,codeRecords:report.codeRecords.map(({runtime,workload,trial,status,report_record_index})=>({runtime,workload,trial,status,index:report_record_index,inspectable:codeInspectionRuns.has(report.codeSource?.id)})),configurations:report.runtimes.map(c=>c.id),host:report.host.os };
+});
+const codeInspectionRuns=new Map();
+for(const runId of codeInspectionDirectories){
+  const index=JSON.parse(await readFile(join(codeInspectionDirectory,runId,'index.json')));
+  if(index.schema!==1 || index.runId!==runId)throw new Error('Invalid code inspection index: '+runId);
+  codeInspectionRuns.set(runId,new Set(index.records.map(record=>record.trial)));
+}
+for (const report of reports) output.reports[report.id] = { runId:report.runId, created:report.created, evidence:report.evidence, sha256:report.evidenceSha256, options:report.options,memorySource:report.memorySource,codeSource:report.codeSource,codeRecords:report.codeRecords.map(({runtime,workload,trial,status,report_record_index})=>({runtime,workload,trial,status,index:report_record_index,inspectable:codeInspectionRuns.get(report.codeSource?.id)?.has(trial) || false})),configurations:report.runtimes.map(c=>c.id),host:report.host.os };
 for (const [machine, os] of [['m1','linux'],['m2','darwin']]) {
   const selected = reports.filter(r=>r.host.os===os);
   if (!selected.length) throw new Error('Missing measured host: '+os);
