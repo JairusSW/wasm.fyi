@@ -5,11 +5,17 @@
 	import Matrix from '$lib/components/bench/Matrix.svelte';
 	import OverTime from '$lib/components/bench/OverTime.svelte';
 	import Workloads from '$lib/components/bench/Workloads.svelte';
-	import type { MetricKey } from '$lib/data/types';
+	import type { MetricKey, OvKey } from '$lib/data/types';
 	import { sharedCount } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 
 	const nShared = $derived(`${sharedCount(ui.scope)} shared application workloads`);
+
+	async function showOverview(group: OvKey) {
+		ui.group = group;
+		await tick();
+		document.getElementById('overview')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+	}
 
 	/** Switch the per-workload matrix to a metric and bring it into view. */
 	async function showMetric(m: MetricKey) {
@@ -30,8 +36,8 @@
 	<a class="link-quiet push" href={siteHref(`/compare`)}>Startup vs throughput model →</a>
 </div>
 
-<Leaders onmetric={showMetric} />
-<Matrix onmetric={showMetric} />
+<Leaders onmetric={showMetric} onoverview={showOverview} />
+<div id="overview"><Matrix onmetric={showMetric} /></div>
 <OverTime />
 <Workloads />
 

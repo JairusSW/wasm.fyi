@@ -1,12 +1,14 @@
 <script lang="ts">
-	import type { MetricKey } from '$lib/data/types';
+	import type { MetricKey, OvKey } from '$lib/data/types';
 	import { leader } from '$lib/model';
+	import { extraLeaders } from '$lib/rankings';
 	import { ui } from '$lib/state.svelte';
 	import Swatch from '../Swatch.svelte';
 
-	let { onmetric }: { onmetric: (m: MetricKey) => void } = $props();
+	let { onmetric, onoverview }: { onmetric: (m: MetricKey) => void; onoverview: (group: OvKey) => void } = $props();
 
 	const leaders = $derived([
+		...extraLeaders(ui.scope),
 		leader(ui.scope, 'Fastest compilation', 'lat', 0, 'compile'),
 		leader(ui.scope, 'Fastest instantiation', 'lat', 1, 'inst'),
 		leader(ui.scope, 'Fastest execution', 'lat', 3, 'steady'),
@@ -18,8 +20,8 @@
 	{#each leaders as l (l.label)}
 		<button
 			class="leader hoverbg"
-			onclick={() => onmetric(l.metric)}
-			data-tip={[l.label, 'Places rank measured means; overlapping uncertainty does not establish a clear lead.', 'Click to see the underlying results'].join('\n')}
+			onclick={() => 'overview' in l ? onoverview(l.overview) : onmetric(l.metric)}
+			data-tip={[l.label, 'note' in l ? l.note : 'Places rank measured means; overlapping uncertainty does not establish a clear lead.', 'Click to see the underlying results'].join('\n')}
 		>
 			<span class="kicker">{l.label}</span>
 			{#if l.places.length}
