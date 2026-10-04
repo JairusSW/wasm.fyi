@@ -18,6 +18,18 @@ for (const entry of index.reports) {
   reports.push(JSON.parse(bytes));
 }
 reports.sort((a,b)=>b.created.localeCompare(a.created));
+// Index once instead of scanning every report-wide record array for each cell.
+// The slices retain the same report identity, source options and exact contracts.
+const reportCells=new WeakMap();
+for(const report of reports){
+  const cells=new Map();
+  const key=(runtime,workload)=>JSON.stringify([runtime,workload]);
+  for(const runtime of report.runtimes)for(const workload of report.workloads){
+    cells.set(key(runtime.id,workload.id),{...report,runtimes:[runtime],workloads:[workload],summaries:[],memory:[],codeRecords:[]});
+  }
+  for(const field of ['summaries','memory','codeRecords'])for(const record of report[field])cells.get(key(record.runtime,record.workload))?.[field].push(record);
+  reportCells.set(report,cells);
+}
 const settings=await config();
 for(const report of reports)for(const runtime of report.runtimes) {
   const modes={'v8-optimizing-only':'optimizing-only','v8-liftoff-only':'liftoff-only'};
@@ -26,7 +38,7 @@ for(const report of reports)for(const runtime of report.runtimes) {
 }
 // Historical WasmFX reports remain in the sealed evidence store, but the
 // configuration is intentionally excluded from new feature and benchmark views.
-const configurations = { A:'wasmtime', B:'wasmtime-winch', D:'wasmer-singlepass', E:'wazero', F:'v8', G:'wago', I:'wasmi', K:'wasm3', L:'wavm', M:'spidermonkey', N:'jsc', O:'deno', P:'wamr', Q:'wazero-interpreter', S:'v8-wasmfx' };
+const configurations = { A:'wasmtime', D:'wasmer-singlepass', E:'wazero', F:'v8', G:'wago', L:'wavm' };
 const scenarios = { compile:'compile', inst:'instantiate', first:'first-call', steady:'steady' };
 const memoryScenarios={rss:'steady',rssCompile:'compile',rssInst:'instantiate',rssFirst:'first-call',rssCurrent:'steady',rssCurrentCompile:'compile',rssCurrentInst:'instantiate',rssCurrentFirst:'first-call'};
 const memoryObservers=Object.fromEntries(Object.keys(memoryScenarios).map(metric=>[metric,metric.startsWith('rssCurrent')?'process.rss':'process.peak_rss']));
@@ -106,7 +118,8 @@ for (const [machine, os] of [['m1','linux'],['m2','darwin']]) {
     if (config) view.configurations[slot]={ runtime, version:runtime==='deno' && config.description.build?.startsWith('Deno ')?`${config.description.build.slice(5)} / V8 ${config.description.runtime_version}`:config.description.runtime_version, backend:config.description.backend };
     for (const workload of output.catalogue) {
       // A newer failed/unsupported result wins. Never backfill it with a success.
-      const cohort=workload.id.startsWith('features/')?featureCandidates(selected,runtime,workload.id,workload.artifactSha256):selected.filter(r=>r.runtimes.some(c=>c.id===runtime) && r.workloads.some(w=>w.id===workload.id && w.sha256===workload.artifactSha256));
+      const sources=workload.id.startsWith('features/')?featureCandidates(selected,runtime,workload.id,workload.artifactSha256):selected;
+      const cohort=sources.map(report=>reportCells.get(report).get(JSON.stringify([runtime,workload.id]))).filter(report=>report?.workloads[0].sha256===workload.artifactSha256);
       for (const metric of [...Object.keys(scenarios),...Object.keys(memoryScenarios),'code']) {
         // Partial sealed passes advance only metrics they actually measured.
         // A timing-only snapshot must not erase the last measured RSS or code image.
@@ -142,7 +155,7 @@ const latestApplicationRuntimeIds=Object.fromEntries(['linux','darwin'].map(os=>
 const interpreterRuntimeIds=new Set(reports.flatMap(report=>report.runtimes
   .filter(runtime=>/interpreter/i.test(runtime.description?.backend || ''))
   .map(runtime=>runtime.id)));
-output.applicationConfigurations=Object.keys(configurations).filter(slot=>(settings.collection.runtimes.includes(configurations[slot]) || ['jsc','wavm'].includes(configurations[slot])) &&
+output.applicationConfigurations=Object.keys(configurations).filter(slot=>settings.collection.runtimes.includes(configurations[slot]) &&
   !interpreterRuntimeIds.has(configurations[slot]) &&
   (latestApplicationRuntimeIds.linux.has(configurations[slot]) || latestApplicationRuntimeIds.darwin.has(configurations[slot])));
 // Compact feature version evidence; no trial arrays enter the browser bundle.
