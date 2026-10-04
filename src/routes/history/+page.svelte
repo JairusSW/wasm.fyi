@@ -10,7 +10,7 @@
 	import { benchVal, isVisible, otSeries } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 import { viewData } from '$lib/view-data';
-import { historyCell, historyChange, historySegments, historicalCallWorkloads } from '$lib/history-values';
+import { historyCell, historyChange, historySegments, historicalCallWorkloads, historyCallDetails } from '$lib/history-values';
 
 	const W = 860;
 	const HC = 280;
@@ -133,6 +133,7 @@ import { historyCell, historyChange, historySegments, historicalCallWorkloads } 
 					c,
 					raw: ui.histMode === 'ratio' ? (isCov ? -v : v) : val(c.id, hi),
 					value: fmtH(c.id, hi),
+					callDetails: M.key === 'roundTrip' ? historyCallDetails(ui.scope,c.id,hi) : '',
 					ver: verAt(c.id, hi,ui.machine) + (hi > 0 && verAt(c.id, hi,ui.machine) !== verAt(c.id, hi - 1,ui.machine) ? ' ◆ new' : ''),
 					delta: d == null ? '—' : isCov ? (d >= 0 ? '+' : '−') + Math.abs(d) : relative(1+d,ui.deltaFormat),
 					dColor: flat ? 'var(--fg3)' : good ? 'var(--good)' : 'var(--bad)',
@@ -308,6 +309,7 @@ import { historyCell, historyChange, historySegments, historicalCallWorkloads } 
 						<span class="mono">{r.value}</span>
 						<span class="mono small r" style:color={r.dColor}>{r.delta}</span>
 					</div>
+					{#if r.callDetails}<div class="htip-ev">{r.callDetails}</div>{/if}
 				{/each}
 				{#if tip.ev}<div class="htip-ev">{tip.ev}</div>{/if}
 			</div>
