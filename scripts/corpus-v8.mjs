@@ -8,12 +8,15 @@ import { config, digest, site, harness } from './lib/wasmbench.mjs';
 
 const settings=await config();
 if(process.version!==`v${settings.node.version}`||process.versions.v8!==settings.node.v8)throw Error('Use pinned Node/V8 from wasmbench.config.json');
-const workloads=await applicationWorkloads('corpora/applications/manifest.json');
+const suiteOnly=process.argv[2]==='--suite-only';
+const selection=suiteOnly?process.argv[3]:process.argv[2];
+if(suiteOnly&&!selection)throw Error('--suite-only requires a prepared manifest');
+const workloads=suiteOnly?[]:await applicationWorkloads('corpora/applications/manifest.json');
 const root=join(site,'corpora/features');
 const manifest=JSON.parse(await readFile(join(root,'manifest.json')));
 const generated=new Map(fixtures().flatMap(f=>f.sizes.map(size=>[`features/${f.feature}/${f.name}/${size}`,{f,size}])));
 if(manifest.length!==generated.size)throw Error('Feature inventory mismatch');
-for(const w of manifest) {
+for(const w of suiteOnly?[]:manifest) {
   const item=generated.get(w.id);if(!item)throw Error('Unknown feature fixture: '+w.id);
   const {f,size}=item;
   const source=await readFile(join(root,w.source),'utf8');
@@ -26,10 +29,10 @@ for(const w of manifest) {
   workloads.push({...w,artifact:resolve(root,w.artifact)});
 }
 // Optionally check the exact prepared upstream selection as well.
-if(process.argv[2]!=='--local') {
+if(selection!=='--local') {
   let path;
-  if(process.argv[2]==='--from-source')path=resolve(site,settings.corpus.buildManifest);
-  else if(process.argv[2])path=resolve(process.argv[2]);
+  if(selection==='--from-source')path=resolve(site,settings.corpus.buildManifest);
+  else if(selection)path=resolve(selection);
   else {const h=await harness();path=await prepareCorpus(h.settings,h.run);}
   const imported=JSON.parse(await readFile(path));
   workloads.push(...imported.filter(w=>!workloads.some(existing=>existing.id===w.id)).map(w=>({...w,artifact:resolve(dirname(path),w.artifact)})));

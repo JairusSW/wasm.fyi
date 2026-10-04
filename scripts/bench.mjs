@@ -59,7 +59,7 @@ const number = (name, fallback, minimum = 1) => {
 const verifyCorpusV8 = suite => {
   const selected=process.env.WASMBENCH_SUITE || collection.suite;
   if(['wago','all','corpora/features/manifest.json'].includes(selected))
-    process.stdout.write(command(process.execPath,[join(site,'scripts/corpus-v8.mjs'),suite]));
+    process.stdout.write(command(process.execPath,[join(site,'scripts/corpus-v8.mjs'),'--suite-only',suite]));
 };
 const invoke = (...args) => process.stdout.write(run(...args));
 const pass = (...args) => {
