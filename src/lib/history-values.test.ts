@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { viewCell, viewData } from './view-data';
 import { historyCell, historyChange, historySegments, historySeries } from './history-values';
-import { aggregate } from './aggregates';
+import { readFileSync } from 'node:fs';
 import type { Scope } from './model';
 
 const scope:Scope={machine:'m1',baseline:'A',hide:{},weighting:'workload'};
@@ -15,24 +15,31 @@ describe('recorded weekly history',()=>{
         for(const p of viewData.history.m1.points)expect(p.collectedAt!.slice(0,10)).toBe('2026-10-04');
         for(const machine of ['m1','m2'] as const)expect(viewData.history[machine].versions.G[0]).toBe('v0.1.0-beta.11');
     });
-    it('uses the existing beta.11 cells for both hosts without replacing their evidence',()=>{
+    it('keeps unchanged beta.11 cells aligned while refreshed current evidence stays separate',()=>{
         for(const machine of ['m1','m2'] as const)for(const workload of viewData.catalogue)
             for(const metric of ['compile','inst','first','steady'] as const){
                 const current=viewCell(machine,'s1',workload.id,'G',metric);
                 const historical=historyCell(machine,workload.id,'G',metric,0);
-                expect(historical.st).toBe(current.st);
-                expect(historical.v).toBe(current.v);
-                expect(historical.report).toBe(current.report);
+                if(historical.report===current.report){
+                    expect(historical.st).toBe(current.st);
+                    expect(historical.v).toBe(current.v);
+                }
+                if(historical.report)expect(viewData.reports[historical.report]).toBeDefined();
             }
     });
-    for(const machine of ['m1','m2'] as const)for(const weighting of ['workload','corpus'] as const)
-    it(`matches current non-feature latency for the same beta.11 evidence on ${machine} with ${weighting} weighting`,()=>{
-        const selected={...scope,machine,baseline:'G' as const,weighting,hide:Object.fromEntries(Object.keys(viewData.configurations).filter(slot=>slot!=='G').map(slot=>[slot,true]))};
-        for(const [key,col] of [['compile',0],['inst',1],['exec',3]] as const){
-            const current=aggregate(selected,'lat','G',col)!;
-            const history=historySeries(selected,'G',key)!;
-            expect(history[0]).toBeCloseTo(current.v,12);
-        }
+    it('retains exact archived beta.11 timing values after current measurements are refreshed',()=>{
+        const reports=new Map<string,ReturnType<typeof JSON.parse>>();
+        for(const machine of ['m1','m2'] as const)for(const workload of viewData.catalogue)
+            for(const [metric,scenario] of [['compile','compile'],['inst','instantiate'],['first','first-call'],['steady','steady']] as const){
+                const historical=historyCell(machine,workload.id,'G',metric,0);
+                if(historical.st!=='ok')continue;
+                if(!reports.has(historical.report))reports.set(historical.report,JSON.parse(readFileSync(new URL(`../../data/wasmbench/${historical.report}.json`,import.meta.url),'utf8')));
+                const report=reports.get(historical.report)!;
+                const summary=report.summaries.find((s:{runtime:string;workload:string;scenario:string;profile:string})=>s.runtime==='wago'&&s.workload===workload.id&&s.scenario===scenario&&s.profile==='timing');
+                expect(summary).toBeDefined();
+                expect(historical.v).toBe(summary.median_ns_per_operation/1e6);
+                expect(report.runtimes.find((r:{id:string})=>r.id==='wago').description.runtime_version).toMatch(/^9f01d145d54ac7ab458b6b2f6047db90a757410a\//);
+            }
     });
     it('uses recorded directional call medians and their estimated sum for every revision',()=>{
         for(const machine of ['m1','m2'] as const){
