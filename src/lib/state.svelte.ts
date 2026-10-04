@@ -3,6 +3,7 @@
 // URL omits them, so any view can be shared by copying the address bar.
 import { CFG } from './data/runtimes';
 import { viewData } from './view-data';
+import { comparisonBaseline } from './comparison-baseline';
 const defaultConfig=CFG.find(c=>viewData.hosts.m1.configurations[c.id]||viewData.hosts.m2.configurations[c.id])?.id||'A';
 import { SNAPS } from './data/snapshot';
 import type { CfgId, MachineId, MetricKey, OtMetricKey, OvKey } from './data/types';
@@ -126,7 +127,7 @@ class UiState {
 	machine = $state<MachineId>('m1');
 	snap = $state<'s1' | 's2'>('s1');
 	hide = $state<Partial<Record<CfgId, boolean>>>({});
-	baseline = $state<CfgId>(defaultConfig);
+	baseline = $derived(comparisonBaseline(defaultConfig, CFG.filter(c => viewData.hosts[this.machine].configurations[c.id]).map(c => c.id)));
 	weighting = $state<'corpus' | 'workload'>('corpus');
 	adv = $state(false);
 	theme = $state<'dark' | 'light'>('dark');
