@@ -37,6 +37,7 @@ export const cn = (c: Cfg) => `${c.rt} ${c.be}`;
 export const mf = (m: MachineId, id: CfgId) => MACH[m].f[id] ?? 1;
 export const isOff = (s: Scope, id: CfgId) => !!MACH[s.machine].off[id];
 export const isVisible = (s: Scope, c: Cfg) => {
+  if(!viewData.hosts[s.machine].configurations[c.id])return false;
   const version=viewData.hosts[s.machine].configurations[c.id]?.version || '';
   // Wago reports identify the sealed runtime by its source revision and source
   // digest rather than a semantic version. Keep that measured configuration in
@@ -69,7 +70,7 @@ export function absOf(s:Scope,group:PerfGroup,cid:CfgId,col:number) {
   return a?{v:a.v,ci:a.interval?Math.max(Math.abs(a.v-a.interval[0]),Math.abs(a.interval[1]-a.v)):Number.NaN,interval:a.interval,count:a.count,report:a.report}:null;
 }
 export function sharedCount(s:Scope,group:PerfGroup='lat',col=3) {
-  const application=CFG.filter(c=>viewData.applicationConfigurations.includes(viewData.configurations[c.id] as CfgId));
+  const application=CFG.filter(c=>viewData.applicationConfigurations.includes(c.id));
   return application.map(c=>aggregate(s,group,c.id,col)).find(a=>a)?.count || 0;
 }
 export function disp(s:Scope,group:PerfGroup,cid:CfgId,col:number) {

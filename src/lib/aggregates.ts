@@ -13,24 +13,38 @@ const quantile=(xs:number[],q:number)=>{const s=[...xs].sort((a,b)=>a-b);const p
 
 /** A host-local shared workload cohort merged from sealed reports; each cell retains its evidence. */
 export function aggregate(s:Scope,group:PerfGroup,cid:CfgId,col:number):Aggregate|null {
-	const metric=metrics[group][col];if(!metric)return null;
+	const metric=metrics[group][col];
 	const ids=viewData.applicationConfigurations;
 	const visible=ids.filter(id=>!s.hide[id]);
 	const selected=[...new Set([...visible,s.baseline])];
 	const key=JSON.stringify([s.machine,s.snapshot || 's1',s.weighting,selected,cid,group,col]);
 	if(cache.has(key))return cache.get(key)!;
 	const remember=(value:Aggregate|null)=>{if(cache.size>512)cache.clear();cache.set(key,value);return value;};
+	if(group==='mem' && col===3) {
+		const average=(configuration:CfgId)=>{
+			const cells=viewData.catalogue.flatMap(w=>['rssCurrentCompile','rssCurrentInst','rssCurrentFirst','rssCurrent'].map(m=>viewCell(s.machine,s.snapshot || 's1',w.id,configuration,m)))
+				.filter(c=>c.st==='ok' && !!c.report && c.v!=null && Number.isFinite(c.v) && c.v>0);
+			return {v:cells.length?cells.reduce((sum,c)=>sum+c.v!,0)/cells.length:Number.NaN,
+				count:cells.length,reports:[...new Set(cells.map(c=>c.report))]};
+		};
+		const measured=average(cid),baseline=cid===s.baseline?measured:average(s.baseline);
+		if(!measured.count)return remember(null);
+		const reports=[...new Set([...measured.reports,...baseline.reports])];
+		const report=[...measured.reports].sort((a,b)=>viewData.reports[b].created.localeCompare(viewData.reports[a].created))[0];
+		return remember({v:measured.v,r:baseline.count?measured.v/baseline.v:Number.NaN,
+			ci:Number.NaN,count:measured.count,report,reports});
+	}
+	if(!metric)return remember(null);
 	const os=s.machine==='m1'?'linux':'darwin';
 	const snapshot=s.snapshot || 's1';
 	if(group==='lat' && (!ids.includes(cid)||!ids.includes(s.baseline)))return remember(null);
-	// Feature probes and non-application corpus contracts have separate views.
-	// Merge the application kernel rows from sealed shards on this host; each
-	// cell still points to its own evidence report.
-	const workloads=group==='lat'?viewData.catalogue.filter(w=>w.id.startsWith('applications/')):viewData.catalogue;
+	// Feature probes have separate views. Include every other contract in
+	// latency headlines; each cell retains its own evidence report.
+	const workloads=group==='lat'?viewData.catalogue.filter(w=>!w.id.startsWith('features/')):viewData.catalogue;
 	const cell=(w:string,c:CfgId)=>viewCell(s.machine,snapshot,w,c,metric);
 	const available=(c:ViewCell)=>!!c.report && c.st==='ok' && c.v!=null && Number.isFinite(c.v) && c.v>0;
 	// One host-local cohort keeps every runtime's headline directly comparable.
-	// Configurations without successful application timings on this host are omitted.
+	// Configurations without successful non-feature timings on this host are omitted.
 	const participants=selected.filter(c=>workloads.some(w=>available(cell(w.id,c))));
 	if(!participants.includes(cid))return remember(null);
 	const cohort=workloads.filter(w=>participants.every(c=>available(cell(w.id,c))));

@@ -81,7 +81,7 @@ import { historySegments } from '$lib/history-values';
 			if (!vals) return { c, segments: [], now: 'not collected', delta: '', dColor: 'var(--fg3)' };
 			const lo = Math.min(...vals.filter(Number.isFinite));
 			const hi = Math.max(...vals.filter(Number.isFinite));
-			const X = (i: number) => 2 + i * (156 / (SNAPS.length-1));
+			const X = (i: number) => 2 + i * (156 / Math.max(1,SNAPS.length-1));
 			const Y = (v: number) => 21 - ((v - lo) / (hi - lo || 1)) * 18;
 			const d = vals[SNAPS.length-1] / vals[0] - 1;
 			return {

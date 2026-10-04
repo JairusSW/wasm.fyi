@@ -16,11 +16,13 @@ const releasePlan=JSON.parse(await readFile(join(site,'data/release-history/plan
 const weeks=Number(process.env.WASMBENCH_PERFORMANCE_HISTORY_WEEKS || 18);
 if(!Number.isSafeInteger(weeks)||weeks<1||weeks>53)throw Error('Performance history weeks must be 1..53');
 const selectedWeeks=releasePlan.weeks.slice(-weeks);
-const weeklyPins=(releasePlan.mainPins||[]).filter(pin=>selectedWeeks.includes(pin.targetWeek));
+const supported=new Set(settings.collection.runtimes);
+const selectPins=pins=>pins.map(pin=>({...pin,configurations:pin.configurations.filter(id=>supported.has(id))})).filter(pin=>pin.configurations.length);
+const weeklyPins=selectPins(releasePlan.mainPins||[]).filter(pin=>selectedWeeks.includes(pin.targetWeek));
 const releaseStart=releasePlan.historyWindowStart || selectedWeeks[0],releaseEnd=releasePlan.historyWindowEnd || selectedWeeks.at(-1);
-const releasePins=(releasePlan.releasePins||[]).filter(pin=>pin.status==='planned'&&+new Date(pin.publishedAt)>=+new Date(releaseStart)&&+new Date(pin.publishedAt)<=+new Date(releaseEnd));
+const releasePins=selectPins(releasePlan.releasePins||[]).filter(pin=>pin.status==='planned'&&+new Date(pin.publishedAt)>=+new Date(releaseStart)&&+new Date(pin.publishedAt)<=+new Date(releaseEnd));
 const plan={...releasePlan,weeks:selectedWeeks,weeklyPins,pins:weeklyPins,releasePins};
-for(const targetWeek of plan.weeks)for(const engine of Object.keys(engineSources)) {
+for(const targetWeek of plan.weeks)for(const engine of Object.keys(engineSources).filter(engine=>engineSources[engine].configurations.some(id=>supported.has(id)))) {
   if(weeklyPins.filter(p=>p.targetWeek===targetWeek&&p.engine===engine).length!==1)throw Error('Release plan is missing a unique engine/Saturday: '+engine+'/'+targetWeek);
 }
 const includeFeatures=process.env.WASMBENCH_HISTORY_INCLUDE_FEATURES!=='0';

@@ -1,3 +1,4 @@
+import{latestReports}from'./lib/latest-reports.mjs';
 import{mkdir,readFile,writeFile,rename}from'node:fs/promises';
 import{join,resolve}from'node:path';
 import{spawn}from'node:child_process';
@@ -6,7 +7,7 @@ import{config,site}from'./lib/wasmbench.mjs';
 import{featureConfigurations}from'./lib/feature-configurations.mjs';
 const directory=resolve(process.argv[2] || join(site,'.wasmbench/full-run'));
 await mkdir(directory,{recursive:true});
-const settings=await config(),runtimes=featureConfigurations(settings);
+const settings=await config(),runtimes=process.env.WASMBENCH_RUNTIMES?.split(',')||featureConfigurations(settings);
 const historyWeeks=Number(process.env.WASMBENCH_FULL_HISTORY_WEEKS||18);
 const historyAuthorized=process.env.WASMBENCH_RUN_HISTORY==='1'&&process.env.WASMBENCH_HOLD_HISTORY!=='1';
 const suite=process.env.WASMBENCH_FULL_SUITE||'wago';
@@ -26,12 +27,15 @@ async function step(name,args,extra={},allowIncomplete=false){
 await save();
 try{
  const env={WASMBENCH_SUITE:suite,WASMBENCH_RUNTIMES:runtimes.join(','),WASMBENCH_VALIDATION_PROFILE:'all',WASMBENCH_RECORD_FAILURES:'1',WASMBENCH_TIMEOUT:'300s',WASMBENCH_WORKERS:process.env.WASMBENCH_WORKERS||'3',WASMBENCH_SKIP_HARNESS_PATCH:'1'};
- const hubEnv={...env,WASMBENCH_RUNTIMES:featureConfigurations(settings,'linux').join(','),WASMBENCH_JSC:process.env.WASMBENCH_JSC_HUB||env.WASMBENCH_JSC};
+ const hubEnv={...env,WASMBENCH_RUNTIMES:process.env.WASMBENCH_RUNTIMES||featureConfigurations(settings,'linux').join(','),WASMBENCH_JSC:process.env.WASMBENCH_JSC_HUB||env.WASMBENCH_JSC};
  await step('build',['scripts/bench.mjs','build'],env);
- const auditEnv={WASMBENCH_AUDIT_RUNTIMES:'wago,wazero'};
+ const auditRuntimes=runtimes.filter(id=>['wago','wazero'].includes(id));
+ if(auditRuntimes.length) {
+ const auditEnv={WASMBENCH_AUDIT_RUNTIMES:auditRuntimes.join(',')};
  const auditOutcomes=await Promise.allSettled([step('compile-latency-audit-mac',['scripts/compile-latency-audit.mjs'],auditEnv),step('compile-latency-audit-hub',['scripts/hub.mjs','compile-audit',...(hubStage?[hubStage]:[])],{...hubEnv,...auditEnv})]);
  const auditFailures=auditOutcomes.map((result,index)=>result.status==='rejected'?{name:index===0?'compile-latency-audit-mac':'compile-latency-audit-hub',error:result.reason?.message||String(result.reason)}:null).filter(Boolean);
  if(auditFailures.length)throw Error('Independent compile-latency audit incomplete: '+JSON.stringify(auditFailures));
+ }
  if(process.env.WASMBENCH_SKIP_LATEST!=='1') {
   state.phase='collecting-mac-and-hub';await save();
   const outcomes=await Promise.allSettled([step('collect-mac',['scripts/bench.mjs','collect'],env),step('collect-hub',['scripts/hub.mjs','collect',...(hubStage?[hubStage]:[])],hubEnv)]);

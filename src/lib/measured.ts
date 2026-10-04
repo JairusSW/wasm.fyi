@@ -31,21 +31,23 @@ export interface MeasuredSnapshot {
 }
 
 export interface MeasuredWeeklyHistory {
-	baseline: { report: string };
-	results: { targetWeek: string; revision: string; collectedAt?: string; status: string; runId?: string; reportSha256?: string }[];
+	baseline: { report: string; reports?: string[] };
+	results: { targetWeek: string; revision: string; version?: string; collectedAt?: string; status: string; runId?: string; reportSha256?: string; reports?: {runId:string;collectedAt:string;reportSha256:string}[] }[];
 }
 
 /** Retrospective Wago measurements and fixed comparisons have different provenance. No interpolation. */
 export function measuredHistory(history: MeasuredWeeklyHistory, snapshots: MeasuredSnapshot[], host: MeasuredHost, runtime: string, workload: string, artifactSha256: string, scenario: string) {
-	const baseline = snapshots.find(snapshot => snapshot.id === history.baseline.report);
+	const matches=(snapshot:MeasuredSnapshot)=>snapshot.workloads.some(w=>w.id===workload&&w.sha256===artifactSha256)&&snapshot.runtimes.some(r=>r.id===runtime)&&snapshot.summaries.some(s=>s.runtime===runtime&&s.workload===workload&&s.scenario===scenario&&s.profile==='timing');
+	const baseline = snapshots.find(snapshot => (history.baseline.reports||[history.baseline.report]).includes(snapshot.id)&&matches(snapshot));
 	return history.results.map(week => {
 		const role = runtime === 'wago' ? 'retrospective-revision' as const : 'fixed-comparison-baseline' as const;
-		const snapshot = runtime === 'wago' ? snapshots.find(snapshot => snapshot.runId === week.runId) : baseline;
+		const receipt=week.reports?.find(pin=>snapshots.some(snapshot=>snapshot.runId===pin.runId&&matches(snapshot)))||week;
+		const snapshot = runtime === 'wago' ? snapshots.find(snapshot => snapshot.runId === receipt.runId&&matches(snapshot)) : baseline;
 		let cell: MeasuredCell;
 		if (week.status !== 'measured' || !snapshot) cell = { status: 'not-collected', reason: 'This historical point was not collected.' };
 		else if (measuredHostKey(snapshot.host) !== measuredHostKey(host)) cell = { status: 'not-collected', reason: 'This historical report belongs to a different host.' };
 		else {
-			if (runtime === 'wago' && (snapshot.created !== week.collectedAt || snapshot.sourceReportSha256 !== week.reportSha256)) throw new Error('Historical report differs from its weekly manifest');
+			if (runtime === 'wago' && (snapshot.created !== receipt.collectedAt || snapshot.sourceReportSha256 !== receipt.reportSha256)) throw new Error('Historical report differs from its weekly manifest');
 			cell = measuredTiming(snapshot, runtime, workload, artifactSha256, scenario);
 		}
 		return { targetWeek: week.targetWeek, revision: runtime === 'wago' ? week.revision : undefined, role, cell };

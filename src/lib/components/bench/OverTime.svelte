@@ -15,7 +15,7 @@ import { historySegments } from '$lib/history-values';
 	import Tabs from '../Tabs.svelte';
 
 	const NOTE = {
-		exec: 'steady-state per call',
+		exec: 'all non-feature workloads · steady execution per invocation',
 		compile: 'module compile time',
 		inst: 'instantiation time',
 		mem: 'process lifetime peak RSS',
@@ -31,8 +31,8 @@ import { historySegments } from '$lib/history-values';
 	};
 
 	// Sparkline geometry in a 600×34 viewBox stretched to the cell width.
-	const WX = (i: number) => 6 + i * (588 / (SNAPS.length-1));
-	const STEP = 588 / (SNAPS.length-1);
+	const WX = (i: number) => 6 + i * (588 / Math.max(1,SNAPS.length-1));
+	const STEP = 588 / Math.max(1,SNAPS.length-1);
 
 	const rows = $derived.by(() => {
 		const s = ui.scope;
@@ -137,6 +137,7 @@ import { historySegments } from '$lib/history-values';
 									<svg viewBox="0 0 600 34" preserveAspectRatio="none">
 										{#if h.hv}<line x1={h.hx} x2={h.hx} y1="0" y2="34" class="cross" />{/if}
 										{#each h.segments as points}<polyline {points} style:stroke={h.c.col} style:stroke-dasharray={h.c.hollow ? '4 3' : 'none'} />{/each}
+                                        {#if SNAPS.length===1 && h.segments.length}<circle cx={h.segments[0].split(',')[0]} cy={h.segments[0].split(',')[1]} r="3" style:fill={h.c.col} />{/if}
 										{#each SNAPS as p (p.i)}
 											<rect
 												role="presentation"

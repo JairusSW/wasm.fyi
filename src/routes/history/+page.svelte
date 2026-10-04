@@ -18,11 +18,11 @@ import { historyCell, historyChange, historySegments } from '$lib/history-values
 	const pr = 16;
 	const pt = 38;
 	const pb = 26;
-	const X = (i: number) => pl + (i * (W - pl - pr)) / (SNAPS.length-1);
-	const STEP = (W - pl - pr) / (SNAPS.length-1);
+	const X = (i: number) => pl + (i * (W - pl - pr)) / Math.max(1,SNAPS.length-1);
+	const STEP = (W - pl - pr) / Math.max(1,SNAPS.length-1);
 	const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 	const NOTE = {
-		exec: 'steady-state per call',
+		exec: 'all non-feature workloads · steady execution per invocation',
 		compile: 'module compile time',
 		inst: 'instantiation time',
 		mem: 'process lifetime peak RSS',
@@ -213,7 +213,7 @@ import { historyCell, historyChange, historySegments } from '$lib/history-values
 
 <div class="head">
 	<h1>History</h1>
-	<span class="subtitle fg3">Retrospective Wago revisions · frozen cohort · fixed comparison-engine baseline</span>
+	<span class="subtitle fg3">Retrospective Wago revisions · frozen cohort</span>
 </div>
 <Tabs options={OTM_KEYS.map((k) => [k, OTM[k].l])} value={ui.otMetric} onselect={(k) => (ui.otMetric = k)} />
 <Carousel title="{M.l} History" sub="{oi + 1} / {OTM_KEYS.length} · {NOTE[M.key]}" onprev={() => step(-1)} onnext={() => step(1)} noun="metric" />
@@ -273,7 +273,10 @@ import { historyCell, historyChange, historySegments } from '$lib/history-values
 			{/each}
 			<line x1={X(f).toFixed(1)} x2={X(f).toFixed(1)} y1="38" y2="254" style="stroke:var(--fg)" />
 			<line x1={X(t).toFixed(1)} x2={X(t).toFixed(1)} y1="38" y2="254" style="stroke:var(--fg)" />
-			{#if tip}
+			{#if SNAPS.length===1}
+                {#each plotC as c}<circle cx={X(0)} cy={scale.Y(val(c.id,0))} r="3" style:fill={c.col} />{/each}
+            {/if}
+            {#if tip}
 				<line x1={tip.x} x2={tip.x} y1="30" y2="254" style="stroke:var(--fg3)" />
 				{#each tip.rows as d (d.c.id)}<circle cx={tip.x} cy={d.y} r={d.r} style:stroke={d.c.col} style="fill:var(--bg2);stroke-width:2" />{/each}
 			{/if}
@@ -336,7 +339,7 @@ import { historyCell, historyChange, historySegments } from '$lib/history-values
 			</button>
 		{/each}
 	</div>
-	<div class="note">Revision markers identify retrospectively measured Wago source. Comparison engines use a fixed baseline, not reconstructed historical releases. The corpus is frozen; current source rebuilds do not change these measurements.</div>
+	<div class="note">Revision markers identify retrospectively measured Wago source. The corpus is frozen; current source rebuilds do not change these measurements.</div>
 </div>
 
 <div class="panel report">

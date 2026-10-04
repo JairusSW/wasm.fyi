@@ -2,6 +2,8 @@
 // runtimes) persist across pages; page keys reset to their defaults when a
 // URL omits them, so any view can be shared by copying the address bar.
 import { CFG } from './data/runtimes';
+import { viewData } from './view-data';
+const defaultConfig=CFG.find(c=>viewData.hosts.m1.configurations[c.id]||viewData.hosts.m2.configurations[c.id])?.id||'A';
 import { SNAPS } from './data/snapshot';
 import type { CfgId, MachineId, MetricKey, OtMetricKey, OvKey } from './data/types';
 import type { Scope } from './model';
@@ -90,16 +92,16 @@ const FIELDS = {
 	machine: { codec: str<MachineId>('m', 'm1', ['m1', 'm2']), routes: '*' },
 	snap: { codec: str('snap', 's1', ['s1', 's2']), routes: '*' },
 	hide: { codec: hideCodec, routes: '*' },
-	group: { codec: str<OvKey>('view', 'lat', ['compile', 'calls', 'lat', 'mem', 'code', 'cov']), routes: ['/benchmarks'] },
-	metric: { codec: str<MetricKey>('metric', 'compile', METRICS), routes: ['/benchmarks'] },
+	group: { codec: str<OvKey>('view', 'lat', ['lat', 'calls', 'mem', 'code', 'cov']), routes: ['/benchmarks'] },
+	metric: { codec: str<MetricKey>('metric', 'steady', METRICS), routes: ['/benchmarks'] },
 	tag: { codec: nullable('tag'), routes: ['/benchmarks'] },
 	q: { codec: str('q', ''), routes: ['/benchmarks'] },
 	sortBy: { codec: sortCodec, routes: ['/benchmarks'] },
 	otMetric: { codec: str<OtMetricKey>('ot', 'exec', OT_KEYS), routes: ['/benchmarks', '/history'] },
 	histMode: { codec: str('mode', 'ratio', ['ratio', 'change'] as const), routes: ['/history'] },
-	histFrom: { codec: int('from', 0, 0, SNAPS.length-2), routes: ['/history'] },
-	histTo: { codec: int('to', SNAPS.length-1, 1, SNAPS.length-1), routes: ['/history'] },
-	histCfg: { codec: str<CfgId>('cfg', 'A', CFG_IDS), routes: ['/history'] },
+	histFrom: { codec: int('from', 0, 0, Math.max(0,SNAPS.length-2)), routes: ['/history'] },
+	histTo: { codec: int('to', Math.max(0,SNAPS.length-1), Math.min(1,Math.max(0,SNAPS.length-1)), Math.max(0,SNAPS.length-1)), routes: ['/history'] },
+	histCfg: { codec: str<CfgId>('cfg', defaultConfig, CFG_IDS), routes: ['/history'] },
 	compatView: { codec: str('view', 'support', ['support', 'tests', 'perf'] as const), routes: ['/features'] },
 	perfMetric: { codec: str('pm', 'exec', ['exec', 'compile', 'mem'] as const), routes: ['/features'] },
 	bdTab: {
@@ -124,7 +126,7 @@ class UiState {
 	machine = $state<MachineId>('m1');
 	snap = $state<'s1' | 's2'>('s1');
 	hide = $state<Partial<Record<CfgId, boolean>>>({});
-	baseline = $state<CfgId>('A');
+	baseline = $state<CfgId>(defaultConfig);
 	weighting = $state<'corpus' | 'workload'>('corpus');
 	adv = $state(false);
 	theme = $state<'dark' | 'light'>('dark');
@@ -132,7 +134,7 @@ class UiState {
 
 	// benchmarks
 	group = $state<OvKey>('lat');
-	metric = $state<MetricKey>('compile');
+	metric = $state<MetricKey>('steady');
 	tag = $state<string | null>(null);
 	q = $state('');
 	sortBy = $state<{ id: CfgId; dir: 1 | -1 } | null>(null);
@@ -144,7 +146,7 @@ class UiState {
 	histMode = $state<'ratio' | 'change'>('ratio');
 	histFrom = $state(0);
 	histTo = $state(SNAPS.length-1);
-	histCfg = $state<CfgId>('A');
+	histCfg = $state<CfgId>(defaultConfig);
 	histPick = $state<'from' | 'to'>('to');
 
 	// features

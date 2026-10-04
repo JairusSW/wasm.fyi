@@ -20,8 +20,7 @@ import { viewCell, viewData } from '$lib/view-data';
 	const g = $derived(OV[ui.group]);
 
 	const SHARED_NOTE: Record<OvKey, string> = {
-		compile: 'Successful shared contracts from one locked report.',
-		calls: 'Two verified typed boundary-call workloads from one locked report.',
+		calls: 'Two measured directions; round trip estimates their sum.',
 		lat: 'Successful shared contracts from one locked report.',
 		mem: 'Process lifetime peak RSS in each separate memory scenario.',
 		code: 'Extracted image bytes; unavailable collectors remain unmeasured.',
@@ -38,18 +37,36 @@ import { viewCell, viewData } from '$lib/view-data';
 	};
 
 	const callWorkloads = ['mechanisms/wasm-to-host-call', 'mechanisms/host-to-wasm-call'];
+	function opsRate(milliseconds: number) {
+		const rate = 1000 / milliseconds;
+		if (rate >= 1e9) return (rate / 1e9).toFixed(1) + 'b';
+		if (rate >= 1e6) return (rate / 1e6).toFixed(1) + 'm';
+		if (rate >= 1e3) return (rate / 1e3).toFixed(1) + 'k';
+		return rate.toFixed(1);
+	}
+	const peakMemoryNote = 'Arithmetic mean of recorded whole-process RSS snapshots taken after each benchmark batch, across compilation, instantiation, first-call and steady workloads on this host and snapshot. Each available workload-phase measurement has equal weight. These are boundary samples, not a continuous time average. Missing current RSS observations remain not measured.';
+	const roundTripNote = 'Estimated sum of Wasm → host and Host → Wasm steady-state latencies; not an independently measured nested round trip.';
+	function roundTrip(a: ReturnType<typeof viewCell>, b: ReturnType<typeof viewCell>): ReturnType<typeof viewCell> {
+		if (a.st !== 'ok') return a;
+		if (b.st !== 'ok') return b;
+		if (a.v == null || b.v == null) return { ...a, st: 'nm', v: undefined };
+		return { ...a, v: a.v + b.v };
+	}
 	const callCells = $derived.by(() => {
 		const configs = CFG.filter((c) => isVisible(ui.scope, c));
 		const raw = callWorkloads.map((workload) => configs.map((config) => viewCell(ui.machine, ui.snap, workload, config.id, 'steady')));
+		raw.push(raw[0].map((cell, i) => roundTrip(cell, raw[1][i])));
+		const baselines = callWorkloads.map(workload => viewCell(ui.machine, ui.snap, workload, ui.baseline, 'steady'));
+		baselines.push(roundTrip(baselines[0], baselines[1]));
 		const values = raw.flatMap(cells => cells.map(cell => cell.st === 'ok' ? cell.v ?? null : null));
 		const formatted = fmtUGroup(values, 'ms');
 		return new Map(configs.map((config, configIndex) => [config.id, raw.map((cells, directionIndex) => {
 			const cell = cells[configIndex];
-			const baseline = viewCell(ui.machine, ui.snap, callWorkloads[directionIndex], ui.baseline, 'steady');
+			const baseline = baselines[directionIndex];
 			if (cell.st !== 'ok' || cell.v == null) return {text: ST[cell.st][1], bg: 'transparent', color: ST[cell.st][2]};
 			const baselineValue = baseline.st === 'ok' ? baseline.v : null;
 			const rel = baselineValue && baselineValue > 0 ? cell.v / baselineValue : null;
-			return {text: formatted[directionIndex * configs.length + configIndex] || '—', bg: heatRatio(rel), color: 'var(--fg)'};
+			return {text: formatted[directionIndex * configs.length + configIndex] || '—', rate: cell.v > 0 ? `${opsRate(cell.v)} ops/s · reciprocal of latency` : '', bg: heatRatio(rel), color: 'var(--fg)'};
 		})]));
 	});
 
@@ -58,7 +75,7 @@ import { viewCell, viewData } from '$lib/view-data';
 		return CFG.filter((c) => isVisible(s, c)).map((c) => {
 			const off = isOff(s, c.id);
 			const cv = cov(c.id,ui.scope);
-			const commonTimes=ui.group==='compile'?fmtUGroup([absOf(s,'lat',c.id,0)?.v ?? null],'ms'):ui.group==='lat'?fmtUGroup(g.metrics.map((_,i)=>absOf(s,'lat',c.id,i+1)?.v ?? null),'ms'):null;
+			const commonTimes=ui.group==='lat'?fmtUGroup(g.metrics.map((_,i)=>absOf(s,'lat',c.id,i)?.v ?? null),'ms'):null;
 			const cells = g.cols.map((_, i) => {
 				if (ui.group === 'calls') return callCells.get(c.id)?.[i] || {text:'—',bg:'transparent',color:'var(--fg3)'};
 				if (ui.group === 'cov') {
@@ -70,8 +87,8 @@ import { viewCell, viewData } from '$lib/view-data';
 						color: v || i === 0 ? 'var(--fg)' : 'var(--fg3)'
 					};
 				}
-				const grp = ui.group === 'compile' || ui.group === 'lat' ? 'lat' : ui.group as 'mem' | 'code';
-				const sourceIndex = ui.group === 'compile' ? 0 : ui.group === 'lat' ? i + 1 : i;
+				const grp = ui.group as 'lat' | 'mem' | 'code';
+				const sourceIndex = i;
 				const r = ratio(s, grp, c.id, sourceIndex);
 				if (!r) {
 					const interpreter=grp==='code'&&viewData.hosts[s.machine].configurations[c.id]?.backend==='interpreter';
@@ -111,7 +128,7 @@ import { viewCell, viewData } from '$lib/view-data';
 					<th class="stick th-label">Runtime</th>
 					{#each g.cols as label, i (label)}
 						<th class="colh">
-							<button onclick={() => onmetric(g.metrics[i])} data-tip="Open the per-benchmark {label} matrix">{label}</button>
+							<button onclick={() => onmetric(g.metrics[i])} data-tip={ui.group === 'mem' && i === 3 ? peakMemoryNote : ui.group === 'calls' && i === 2 ? roundTripNote : `Open the per-benchmark ${label} matrix`}>{label}</button>
 						</th>
 					{/each}
 					<th class="colh">Correct</th>
@@ -128,7 +145,7 @@ import { viewCell, viewData } from '$lib/view-data';
 									style:background={x.bg}
 									style:color={x.color}
 									onclick={() => onmetric(g.metrics[i])}
-									data-tip={`${r.c.rt} ${r.c.be} — ${g.cols[i]}\n${x.text}\nClick to see per-workload results`}>{x.text}</button
+									data-tip={`${r.c.rt} ${r.c.be} — ${g.cols[i]}\n${x.text}\n${'rate' in x && x.rate ? x.rate + '\n' : ''}${ui.group === 'mem' && i === 3 ? peakMemoryNote + '\n' : ui.group === 'calls' && i === 2 ? roundTripNote + '\n' : ''}Click to see per-workload results`}>{x.text}</button
 								>
 							</td>
 						{/each}

@@ -80,7 +80,7 @@
 	</div>
 </div>
 
-<div class="note">Node {record.node} · V8 {record.v8} · collected {record.created}. {record.policy} <a href={siteHref('/wasmbench/threads/'+record.evidence)}>All 32 verified worker cases</a></div>
+<div class="note">{#if record.evidence}Node {record.node} · V8 {record.v8} · collected {record.created}. {record.policy} <a href={siteHref('/wasmbench/threads/'+record.evidence)}>All 32 verified worker cases</a>{:else}Threads have not been measured in this dataset.{/if}</div>
 
 <style>
 	.wide {

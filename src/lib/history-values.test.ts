@@ -1,38 +1,51 @@
 import { describe, expect, it } from 'vitest';
-import { viewData } from './view-data';
+import { viewCell, viewData } from './view-data';
 import { historyCell, historyChange, historySegments, historySeries } from './history-values';
+import { aggregate } from './aggregates';
 import type { Scope } from './model';
 
 const scope:Scope={machine:'m1',baseline:'A',hide:{},weighting:'workload'};
 describe('recorded weekly history',()=>{
-	it('uses eight aligned weekly dates and preserves actual revisions and collection dates',()=>{
-		expect(viewData.history.m1.points).toHaveLength(8);
-		expect(viewData.history.m2.points.map(p=>p.date)).toEqual(viewData.history.m1.points.map(p=>p.date));
-		for(const p of viewData.history.m1.points){expect(p.revision).toMatch(/^[a-f0-9]{40}$/);expect(p.collectedAt!.slice(0,10)).not.toBe(p.date);}
-	});
-	it('keeps comparison engines on their fixed measured baseline',()=>{
-		const values=historySeries(scope,'A','exec')!;
-		expect(values).toHaveLength(8);
-		expect(new Set(values).size).toBe(1);
-		const before=historyCell('m1','wago/tiny/add','A','steady',0);
-		const after=historyCell('m1','wago/tiny/add','A','steady',7);
-		expect(before.report).toBe(after.report);
-		expect(historyChange(before,after)).toEqual({delta:0,interval:[0,0],fixed:true});
-	});
-	it('includes Wasmer Singlepass as a fixed current comparison on each host',()=>{
-    for(const machine of ['m1','m2'] as const)for(const cid of ['D'] as const){
-      expect(viewData.history[machine].versions[cid][0]).toBe('7.3.0');
-      const first=historyCell(machine,'wago/tiny/add',cid,'steady',0);
-      const last=historyCell(machine,'wago/tiny/add',cid,'steady',7);
-      expect(first.st).toBe('ok');expect(first.report).toBe(last.report);
-      expect(historyChange(first,last)).toEqual({delta:0,interval:[0,0],fixed:true});
-    }
-  });
+	it('aligns host dates and keeps actual revisions and collection dates',()=>{
+        expect(viewData.history.m1.points.map(p=>[p.date,p.revision])).toEqual([
+            ['2026-09-29','9f01d145d54ac7ab458b6b2f6047db90a757410a'],
+            ['2026-10-03','0ef007c70581bf56155a4daf6fce8bda3f2c5ff1']
+        ]);
+        expect(viewData.history.m2.points.map(p=>p.date)).toEqual(viewData.history.m1.points.map(p=>p.date));
+        for(const p of viewData.history.m1.points)expect(p.collectedAt!.slice(0,10)).toBe('2026-10-04');
+        for(const machine of ['m1','m2'] as const)expect(viewData.history[machine].versions.G[0]).toBe('v0.1.0-beta.11');
+    });
+    it('uses the existing beta.11 cells for both hosts without replacing their evidence',()=>{
+        for(const machine of ['m1','m2'] as const)for(const workload of viewData.catalogue)
+            for(const metric of ['compile','inst','first','steady'] as const){
+                const current=viewCell(machine,'s1',workload.id,'G',metric);
+                const historical=historyCell(machine,workload.id,'G',metric,0);
+                expect(historical.st).toBe(current.st);
+                expect(historical.v).toBe(current.v);
+                expect(historical.report).toBe(current.report);
+            }
+    });
+    for(const machine of ['m1','m2'] as const)for(const weighting of ['workload','corpus'] as const)
+    it(`matches current non-feature latency for the same beta.11 evidence on ${machine} with ${weighting} weighting`,()=>{
+        const selected={...scope,machine,baseline:'G' as const,weighting};
+        for(const [key,col] of [['compile',0],['inst',1],['exec',3]] as const){
+            const current=aggregate(selected,'lat','G',col)!;
+            const history=historySeries(selected,'G',key)!;
+            expect(history[0]).toBeCloseTo(current.v,12);
+        }
+    });
+    it('does not reuse erased comparison-engine measurements',()=>{
+        for(const machine of ['m1','m2'] as const)for(const cid of ['A','D'] as const){
+            expect(historyCell(machine,'applications/image-blur',cid,'steady',0).st).toBe('nm');
+            expect(historySeries({...scope,machine},cid,'exec')).toBeNull();
+        }
+    });
 	it('retains a failed historical contract as a gap instead of interpolating it',()=>{
 		const entry=Object.entries(viewData.history.m1.cells).find(([key,cells])=>key.endsWith('|G|steady') && cells.some(c=>c.st==='failed'))!;
 		const workload=entry[0].slice(0,-'|G|steady'.length);
-		const values=historySeries(scope,'G','exec',workload)!;
-		for(const [i,c] of entry[1].entries())if(c.st==='failed')expect(Number.isNaN(values[i])).toBe(true);
+		const values=historySeries(scope,'G','exec',workload);
+		expect(values).toBeNull();
+		expect(historyCell('m1',workload,'G','steady',0).st).toBe('failed');
 		expect(historySegments([1,2,Number.NaN,4],i=>i,v=>v)).toEqual(['0.0,1.0 1.0,2.0','3.0,4.0']);
 	});
 	it('cannot fabricate history for a feature-only workload or uncollected backend',()=>{

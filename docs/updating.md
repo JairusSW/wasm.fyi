@@ -12,10 +12,21 @@ while completing successfully. Override this with `WASMBENCH_TIMEOUT`. The
 default remains three samples for compilation, instantiation and steady execution,
 and one for first call, memory and native code. Process lifetime peak RSS is
 recorded once per timing trial, covering all its samples. Compilation and
-instantiation are not repeated for RSS; one separate steady memory sample retains
-heap and boundary metrics. Each timing peak records its source run explicitly. Corpus admission uses the
-full Wasm validation profile so valid artifacts requiring proposals reach the
-engine checks; this does not enable features that an engine has disabled.
+instantiation peaks come from those timing trials. Current RSS uses separate
+memory-profile boundary snapshots for all four lifecycle phases, on Linux and
+macOS ARM64/AMD64; the displayed average is over those recorded snapshots.
+
+Collection defaults to one corpus at a time. Contracts sharing a Wasm artifact
+stay together: compile, instantiate, first call, steady execution, diagnostic
+memory, and native code. Each corpus is verified and exported before its processes
+and duplicate binaries, Wasm copies, and report intermediates are discarded.
+Trial logs and checksummed measurement projections remain. `latest-reports.json`
+contains the complete corpus report list; refresh and Hub transport import every
+entry. A saved collection can resume with `WASMBENCH_RESUME_COLLECTION`.
+
+Set `WASMBENCH_RUNTIMES=wago` for a Wago-only pass. The current configuration
+excludes feature collection. `WASMBENCH_WAGO_TAG` selects a published release;
+`WASMBENCH_WAGO_REVISION` requires a clean `WAGO_SOURCE` at that exact commit.
 
 ## Local website workflow
 

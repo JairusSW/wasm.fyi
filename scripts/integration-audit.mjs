@@ -19,7 +19,7 @@ async function dataModule(name) {
 const { CFG } = await dataModule('runtimes');
 const { ALLB } = await dataModule('snapshot');
 const { reports } = await validateData(join(site, 'data/wasmbench'));
-const runtimeIds = { A: 'wasmtime', B: 'wasmtime-winch', D: 'wasmer-singlepass', E: 'wazero', F: 'v8', G: 'wago' };
+const runtimeIds = { A: 'wasmtime', D: 'wasmer-singlepass', E: 'wazero', F: 'v8', G: 'wago', L: 'wavm' };
 const configurations = CFG.map(cfg => {
   const matches = reports.flatMap(report => report.runtimes.filter(runtime => runtime.id === runtimeIds[cfg.id]).map(runtime => ({ host: report.host.os + '/' + report.host.arch, backend: runtime.description.backend, version: runtime.description.runtime_version })));
   const measured = [...new Map(matches.map(match => [JSON.stringify(match), match])).values()];

@@ -35,10 +35,13 @@ export function historySeries(s:Scope,cid:CfgId,key:OtMetricKey,workload=''):num
 		if(!h.workloads.some(w=>series(w,cid).some(c=>c.report)))return null;
 		return h.points.map((_,i)=>h.workloads.filter(w=>historyCell(s.machine,w,cid,'steady',i).st==='ok').length);
 	}
+	// Both latency views include all non-feature contracts.
+	const nonFeatures=new Set(viewData.catalogue.filter(w=>!w.id.startsWith('features/')).map(w=>w.id));
+	const workloads=['exec','compile','inst'].includes(key)?h.workloads.filter(w=>nonFeatures.has(w)):h.workloads;
 	const requested=[...new Set([...viewData.applicationConfigurations.filter(c=>!s.hide[c]),cid,s.baseline])];
-	const participants=requested.filter(c=>h.workloads.some(w=>series(w,c).some(valid)));
+	const participants=requested.filter(c=>workloads.some(w=>series(w,c).some(valid)));
 	if(!participants.includes(cid))return null;
-	const cohort=h.workloads.filter(w=>participants.every(c=>series(w,c).filter((_,i)=>h.points[i].status==='measured').every(valid)));
+	const cohort=workloads.filter(w=>participants.every(c=>series(w,c).filter((_,i)=>h.points[i].status==='measured').every(valid)));
 	if(!cohort.length)return null;
 	const groups=new Map(viewData.catalogue.map(w=>[w.id,w.group]));
 	const counts=new Map<string,number>();for(const w of cohort){const g=groups.get(w)!;counts.set(g,(counts.get(g)||0)+1);}

@@ -19,7 +19,8 @@ if(process.platform==='linux'&&!process.argv.includes('--under-host-lock')) {
 
 // Run under the host measurement lock. Never share a live adapter build tree.
 const directory=join(site,'.wasmbench/performance-history');
-const {root:base}=await harness();
+const {root:base,settings}=await harness();
+const supported=new Set(settings.collection.runtimes);
 await mkdir(directory,{recursive:true});
 const env={...process.env,GOWORK:'off',GOFLAGS:'-buildvcs=false'};
 async function deduplicateWorkloadArtifacts(directory,workloads) {
@@ -65,10 +66,10 @@ await locked(async()=>{
   const state={schema:1,pid:process.pid,startedAt:new Date().toISOString(),queue,phase:'collect',jobs:[]};
   async function save(){const path=join(directory,'results.json');await writeFile(path+'.tmp',JSON.stringify(state,null,2)+'\n');await rename(path+'.tmp',path);}
   await save();
-  for(const job of queue.jobs) {
+  for(const job of queue.jobs.filter(job=>job.identity.configurations.some(id=>supported.has(id)))) {
     const result={id:job.id,release:job.release,targetWeeks:job.targetWeeks,targetReleases:job.targetReleases||[],status:'running',configurations:[]};
     state.jobs.push(result);await save();
-    for(const configuration of job.identity.configurations) {
+    for(const configuration of job.identity.configurations.filter(id=>supported.has(id))) {
       if(!/^[a-z0-9-]+$/.test(configuration))throw Error('Unsafe historical configuration ID');
       const pendingReason=pendingBindingReason(job.release);
       if(pendingReason) {

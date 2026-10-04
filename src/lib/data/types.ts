@@ -4,7 +4,7 @@ export type ProposalId = 'simd' | 'gc' | 'memory64' | 'threads';
 export type SupportCode = 'y' | 'f' | 'p' | 'n' | '?' | '-';
 export type Status = 'ok' | 'unsupported' | 'disabled' | 'failed' | 'crashed' | 'timeout' | 'nm' | 'na' | 'unavail';
 export type MetricKey = 'compile' | 'rssCompile' | 'inst' | 'rssInst' | 'first' | 'steady' | 'rss' | 'code';
-export type OvKey = 'compile' | 'calls' | 'lat' | 'mem' | 'code' | 'cov';
+export type OvKey = 'lat' | 'calls' | 'mem' | 'code' | 'cov';
 export type OtMetricKey = 'exec' | 'compile' | 'inst' | 'mem' | 'code' | 'cov';
 
 /** A benchmarked runtime configuration: one runtime at one version with one backend. */

@@ -27,7 +27,7 @@ describe('optional plugin availability',()=>{
         if(cell.text==='corpus passed')expect(cell.detail).toMatch(/\d+\/\d+ passed/);
       }
       if(['wasi-p1','wasi-p2','component-model','cm-abi','cm-res','cm-async'].includes(id))
-        expect(engineFeatureVersions('wago',scope,'development')).not.toHaveLength(0);
+        expect(engineFeatureVersions('wago',scope,'development')).toHaveLength(0);
       expect(runtimeSupportCell('wasmer',feature,scope).text).not.toBe('via plugin');
     }
   });
@@ -70,10 +70,10 @@ describe('stable and development compatibility tracks',()=>{
     else for(const c of track.configurations){
       expect(viewData.featureVersions[machine].some(v=>v.channel==='stable' && v.version===c.version && v.id===c.id)).toBe(true);
     }
-    expect(engineFeatureVersions('wago',scope,'development')[0]).toContain('9f01d145');
-    expect(runtimeFeatureTrack('wago',f,scope,'development').text).toBe('corpus passed');
+    expect(engineFeatureVersions('wago',scope,'development')).toHaveLength(0);
+    expect(runtimeFeatureTrack('wago',f,scope,'development').text).toBe('not collected');
     const wasi=FEATS.find(feature=>feature.id==='wasi-p1')!;
-    expect(runtimeFeatureTrack('wago',wasi,scope,'development').text).toBe('corpus passed');
+    expect(runtimeFeatureTrack('wago',wasi,scope,'development').text).toBe('not collected');
     const wasmtimeStable=engineFeatureVersions('wasmtime',scope,'stable');
     expect(runtimeFeatureTrack('wasmtime',f,scope,'stable').text).toBe(wasmtimeStable.length?'corpus passed':'not collected');
     const development=engineFeatureVersions('wasmtime',scope,'development');

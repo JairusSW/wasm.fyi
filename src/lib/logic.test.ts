@@ -7,7 +7,7 @@ import { heatCount, heatRatio } from './heat';
 import { benchVal, compatCell, isVisible, kidCells, leader, ratio, seriesFmt, type Scope } from './model';
 import { viewData } from './view-data';
 
-const scope: Scope = { machine: 'm1', baseline: 'A', weighting: 'corpus', hide: {} };
+const scope: Scope = { machine: 'm1', baseline: 'G', weighting: 'corpus', hide: {} };
 
 describe('format', () => {
 	it('expresses the same ratio as a multiplier or signed percentage',()=>{
@@ -50,8 +50,8 @@ describe('format', () => {
 describe('engine classes',()=>{
 	it('classifies the selected measured backend rather than every capability an engine offers',()=>{
 		const byId=Object.fromEntries(CFG.map(c=>[c.id,c]));
-		expect(['I','K','P','Q'].every(id=>byId[id].interp)).toBe(true);
-		expect(['A','B','D','E','F','G','M','N','O'].every(id=>!byId[id].interp)).toBe(true);
+		expect(CFG.some(c=>c.interp)).toBe(false);
+		expect(['A','D','E','F','G','L'].every(id=>!byId[id].interp)).toBe(true);
 	});
 });
 
@@ -72,46 +72,40 @@ describe('heat scale', () => {
 describe('model', () => {
 	it('shows Wago with its sealed source identity while hiding hash-pinned development builds', () => {
 		expect(isVisible(scope, { id: 'G', rt: 'wago' } as any)).toBe(true);
-		expect(isVisible(scope, { id: 'G', rt: 'v8' } as any)).toBe(false);
+		expect(isVisible(scope, { id: 'F', rt: 'v8' } as any)).toBe(false);
 	});
-	it('shows the source-pinned WAVM prerelease in benchmark tables',()=>{
-		expect(viewData.hosts.m1.configurations.L?.version).toBe('nightly-2026-04-05-4e82bb9');
-		expect(isVisible(scope,{id:'L',rt:'wavm'} as any)).toBe(true);
+	it('keeps uncollected WAVM outside measured benchmark tables',()=>{
+		expect(viewData.hosts.m1.configurations.L).toBeUndefined();
+		expect(isVisible(scope,{id:'L',rt:'wavm'} as any)).toBe(false);
 	});
 	it('baseline ratio is 1', () => {
-		expect(ratio(scope, 'lat', 'A', 3)!.r).toBe(1);
+		expect(ratio(scope, 'lat', 'G', 3)!.r).toBe(1);
 	});
     it('keeps unavailable code collectors distinct from true zero', () => {
       const b=ALLB.find(b=>b.id==='wago/tiny/add')!;
-		expect(benchVal(scope,b,'D','code').st).toBe('nm');
+		expect(benchVal(scope,b,'D','code').st).toBe('unavail');
     });
-    it('reads Singlepass measurements on the actual Mac rather than a machine multiplier', () => {
+    it('reads Wago measurements on the actual Mac rather than a machine multiplier', () => {
       const b=ALLB.find(b=>b.id==='wago/tiny/add')!;
-      expect(benchVal({...scope,machine:'m2'},b,'D','steady').st).toBe('ok');
+      expect(benchVal({...scope,machine:'m2'},b,'G','steady').st).toBe('ok');
     });
     it('never scales a measurement into an uncollected input case', () => {
-		expect(benchVal(scope,ALLB[0],'D','steady',2).st).toBe('nm');
+		expect(benchVal(scope,ALLB[0],'G','steady',2).st).toBe('nm');
     });
 	it('reports no clear leader when intervals overlap', () => {
 		const single={...scope,hide:{B:true,C:true,D:true,E:true,F:true,G:true,H:true}};
         expect(leader(single, 'Fastest compilation', 'lat', 0, 'compile').clear).toBe(false);
 	});
-	for(const machine of ['m1','m2'] as const)it(`ranks every measured execution mean and respects hidden configurations on ${machine}`,()=>{
-		const selected={...scope,machine,hide:{G:true}};
-		const result=leader(selected,'Fastest execution','lat',3,'steady');
-		expect(result.places.length).toBeGreaterThan(3);
-		expect(result.places.map(p=>p.place)).toEqual(result.places.map((_,i)=>i+1));
-		expect(result.places.some(p=>p.cfg.id==='G')).toBe(false);
-		for(const [i,p] of result.places.entries()){
-			expect(p.ratio).toBe(ratio(selected,'lat',p.cfg.id,3)!.r);
-			if(i)expect(p.ratio).toBeGreaterThanOrEqual(result.places[i-1].ratio);
-		}
-	});
-	it('counts exact corpus children without assigning fabricated failures', () => {
-    const fam=COMPAT.flatMap(s=>s.fams).find(f=>f.id==='core-mem')!;
-    const cell=compatCell(fam.id,'A',scope);
-    const kids=kidCells(fam,0,scope);
-    for(const field of ['total','pass','fail','crash','skip'] as const)expect(kids.reduce((sum,k)=>sum+k[field],0)).toBe(cell[field]);
-    expect(compatCell('uncollected-family','A',scope).run).toBe(false);
-  });
+    for(const machine of ['m1','m2'] as const)it(`ranks the measured Wago execution mean and respects hiding on ${machine}`,()=>{
+        const selected={...scope,machine,hide:{}};
+        const result=leader(selected,'Fastest execution','lat',3,'steady');
+        expect(result.places.map(p=>p.cfg.id)).toEqual(['G']);
+        expect(result.places[0].ratio).toBe(ratio(selected,'lat','G',3)!.r);
+        expect(leader({...selected,hide:{G:true}},'Fastest execution','lat',3,'steady').places).toHaveLength(0);
+    });
+    it('does not fabricate feature corpus outcomes when features were excluded',()=>{
+        const cell=compatCell('core-mem','G',scope);
+        expect(cell.total).toBe(0);expect(cell.run).toBe(false);
+        expect(compatCell('uncollected-family','G',scope).run).toBe(false);
+    });
 });

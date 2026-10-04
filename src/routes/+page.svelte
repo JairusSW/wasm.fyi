@@ -97,10 +97,8 @@
 	</div>
 	<div class="panel board">
 		<div class="board-head">
-			<div class="board-title">
-				<span class="w6">Fastest execution</span>
-				<span class="mono small fg3">{board[0]?viewData.reports[board[0].report].created.slice(0,10):'not measured'} · per invocation</span>
-			</div>
+			<span class="w6">Fastest execution</span>
+			<span class="mono small fg3">{board[0]?viewData.reports[board[0].report].created.slice(0,10):'not measured'} · per invocation</span>
 		</div>
 		<div class="board-rows">
 			{#each board as b (b.c.id)}
@@ -119,7 +117,7 @@
 				</button>
 			{/each}
 		</div>
-	<div class="board-foot small fg3">Geometric mean over shared application workloads · merged host-local reports · Wasmtime Cranelift baseline</div>
+	<div class="board-foot small fg3">Geometric mean over measured application workloads · merged host-local reports</div>
 	</div>
 </section>
 
@@ -261,12 +259,11 @@
 	.board-head {
 		display: flex;
 		justify-content: space-between;
-		align-items: center;
+		align-items: baseline;
 		gap: 8px;
 		padding: 12px 16px;
 		border-bottom: 1px solid var(--line);
 	}
-	.board-title { display: flex; flex-direction: column; gap: 2px; }
 	.board-rows {
 		padding: 10px 16px;
 		display: flex;

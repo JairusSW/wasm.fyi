@@ -1,7 +1,7 @@
 // Build in an empty staging tree. Never populate outputs from release modules.
 import { readFile, writeFile, mkdir, copyFile, symlink, access, readdir, rename } from 'node:fs/promises';
 import { join, resolve, dirname, basename } from 'node:path';
-import { spawn } from 'node:child_process';
+import { spawn, execFileSync } from 'node:child_process';
 import { platform, arch } from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { site, digest, config, exists } from './lib/wasmbench.mjs';
@@ -181,7 +181,15 @@ for(const b of lock.benchmarks.filter(b=>requested.includes(b.id))) {
         await run('make',['-C',join(dir,'src'),'lua',`CC=${join(sdk,'bin/clang')}`,`AR=${join(sdk,'bin/llvm-ar')} rcu`,`RANLIB=${join(sdk,'bin/llvm-ranlib')}`,
           `MYCFLAGS=-include ${join(port,'compat.h')} -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_PROCESS_CLOCKS -mllvm -wasm-enable-sjlj`,
           `MYLDFLAGS=${shim} -lwasi-emulated-signal -lwasi-emulated-process-clocks -lsetjmp`]);
-        await copyFile(join(dir,'src/lua'),artifact);
+        // SDK 34's SjLj support library emits the retired EH encoding. Convert
+        // that output to standardized try_table/exnref without optimizing it.
+        const wasmOpt=env.WASM_OPT || 'wasm-opt';
+        const version=execFileSync(wasmOpt,['--version'],{encoding:'utf8'}).trim();
+        if(version!=='wasm-opt version 130')throw Error('Lua requires Binaryen wasm-opt version 130');
+        const legacy=join(dir,'src/lua');
+        const args=['--translate-to-exnref','--emit-exnref','--all-features',legacy,'-o',artifact];
+        await run(wasmOpt,args);
+        currentSources.push({name:'binaryen',repository:'https://github.com/WebAssembly/binaryen',revision:'version_130',version,inputSha256:digest(await readFile(legacy)),flags:args.slice(0,3)});
       } else if(b.id==='json2csv-people') {
         const dir=await checkout('json2csv','https://github.com/jehiah/json2csv.git','0bd0bb4e06a282ff4c9ec979a52159c379bf9652');
         await run('go',['build','-mod=readonly','-trimpath','-o',artifact,'.'],{cwd:dir,env:{...env,CGO_ENABLED:'0',GOOS:'wasip1',GOARCH:'wasm'}});

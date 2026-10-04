@@ -81,11 +81,15 @@ export async function stageAuxiliary(destination) {
     const ids=new Set(index.reports.map(r=>r.runId));
     assert(weekly.results.length===weekly.weeks.length,'Incomplete weekly inventory');
     for(const week of weekly.results) {
-      assert(week.status==='measured' && ids.has(week.runId),'Missing historical measured evidence');
-      const report=index.reports.find(r=>r.runId===week.runId);
-      assert.equal(report.created,week.collectedAt,'Backdated historical evidence');
-      assert.equal(report.sourceReportSha256,week.reportSha256,'Historical source digest mismatch');
-      assert(report.runtimes.some(r=>r.id==='wago' && r.description.runtime_version.startsWith(week.revision+'/')),'Historical revision mismatch');
+      const receipts=week.reports||[week];
+      assert(week.status==='measured' && receipts.length,'Missing historical measured evidence');
+      for(const receipt of receipts) {
+        assert(ids.has(receipt.runId),'Missing historical corpus shard');
+        const report=index.reports.find(r=>r.runId===receipt.runId);
+        assert.equal(report.created,receipt.collectedAt,'Backdated historical evidence');
+        assert.equal(report.sourceReportSha256,receipt.reportSha256,'Historical source digest mismatch');
+        assert(report.runtimes.some(r=>r.id==='wago' && r.description.runtime_version.startsWith(week.revision+'/')),'Historical revision mismatch');
+      }
     }
     // Keep the comparison baseline with history; daily retention cannot remove it.
     assert(weekly.baseline && index.reports.some(r=>r.id===weekly.baseline.report && r.evidenceSha256===weekly.baseline.evidenceSha256),'Missing pinned historical comparison baseline');

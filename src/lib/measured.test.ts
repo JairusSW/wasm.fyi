@@ -9,8 +9,16 @@ async function store(name: string) {
 	return { index, snapshots };
 }
 const { index, snapshots } = await store('wasmbench');
-const feature = snapshots.find(snapshot => snapshot.host.os === 'linux' && snapshot.workloads.some(workload => workload.id.startsWith('features/')) && snapshot.runtimes.some(runtime => runtime.id === 'wasmtime') && snapshot.memory.length > 0 && snapshot.codeRecords.length > 0)!;
-const item = feature.workloads.find(workload => workload.id === 'features/core-num/integer-multiply-add/1')!;
+// Controlled fixtures exercise collector rules independently of the deployed engines.
+const item={id:'features/core-num/integer-multiply-add/1',sha256:'a'.repeat(64),work_unit:'call',units_per_invocation:1};
+const ids=['wasmtime','wazero','v8-optimizing-only','wago'];
+const feature:MeasuredSnapshot={id:'fixture',runId:'fixture-run',created:'2026-10-04T12:00:00Z',sourceReportSha256:'b'.repeat(64),host:{hostname:'fixture',os:'linux',arch:'amd64'},options:{launches:3},evidence:'fixture.json',evidenceSha256:'c'.repeat(64),
+ runtimes:ids.map(id=>({id,file_sha256:{},description:{runtime:id,runtime_version:'1.0.0',backend:'compiler',effective_configuration:id==='wazero'?{compile_policy:'fresh uncached module per operation; verification outside timer'}:{flags:JSON.stringify(['--no-wasm-native-module-cache'])}}})),
+ workloads:[item,{...item,id:'features/cm-async/future-stream-compile/1'}],
+ summaries:ids.flatMap(runtime=>['compile','instantiate','first-call','steady'].map(scenario=>({runtime,workload:item.id,scenario,profile:'timing',outcomes:{ok:3},latency_status:'timing_pass',median_ns_per_operation:100,independent_launches:3,sample_count:6}))),
+ memorySource:{id:'memory-fixture',note:'fixture'},codeSource:{id:'code-fixture',note:'fixture'},
+ memory:ids.flatMap(runtime=>['compile','steady'].flatMap(scenario=>['host.js_heap.end','process.peak_rss'].map(metric=>({runtime,workload:item.id,scenario,metric,median_bytes:4096,independent_launches:3})))),
+ codeRecords:ids.filter(id=>id!=='wazero').map(runtime=>({runtime,workload:item.id,status:'available',image_bytes:100}))};
 
 describe('measured view boundary', () => {
 	it('reads actual host-specific timing and keeps engine IDs distinct from preview slots', () => {
@@ -111,20 +119,34 @@ describe('measured view boundary', () => {
 		await expect(loadMeasuredSnapshot('/wasm.fyi/wasmbench', { ...entry, host: { ...entry.host, hostname: 'wrong-host' } }, fetcher)).rejects.toThrow('metadata');
 	});
 
-	it('reads all eight weeks on both hosts and retains fixed-baseline provenance and gaps', async () => {
+	it('reads each pinned historical point on both hosts and retains shard provenance and gaps', async () => {
 		for (const name of ['history', 'history-hub']) {
 			const { snapshots } = await store(name);
 			const history = JSON.parse(await readFile(new URL(name + '/weekly.json', root), 'utf8')) as MeasuredWeeklyHistory;
-			const historical = snapshots.find(snapshot => snapshot.runId === history.results[0].runId)!;
-			const workload = historical.workloads.find(workload => workload.id.includes('/nbody/'))!;
+			const receipts=history.results[0].reports||[history.results[0]];
+			const historical=snapshots.find(snapshot=>receipts.some(pin=>pin.runId===snapshot.runId)&&snapshot.workloads.some(w=>w.id==='applications/image-blur'))!;
+			const workload=historical.workloads.find(w=>w.id==='applications/image-blur')!;
 			const cells = measuredHistory(history, snapshots, historical.host, 'wago', workload.id, workload.sha256, 'steady');
-			expect(cells).toHaveLength(8);
+			expect(cells).toHaveLength(history.results.length);
 			expect(cells.every(point => point.role === 'retrospective-revision' && point.cell.status === 'ok')).toBe(true);
 			const baseline = measuredHistory(history, snapshots, historical.host, 'wasmtime', workload.id, workload.sha256, 'steady');
 			expect(baseline.every(point => point.role === 'fixed-comparison-baseline' && point.revision === undefined)).toBe(true);
-			const gaps = measuredHistory(history, snapshots.filter(snapshot => snapshot.runId !== history.results[2].runId), historical.host, 'wago', workload.id, workload.sha256, 'steady');
-			expect(gaps[2].cell.status).toBe('not-collected');
-			expect(gaps).toHaveLength(8);
+			const gaps = measuredHistory(history, snapshots.filter(snapshot => snapshot.runId !== historical.runId), historical.host, 'wago', workload.id, workload.sha256, 'steady');
+			expect(gaps[0].cell.status).toBe('not-collected');
+			expect(gaps).toHaveLength(history.results.length);
 		}
 	});
+});
+
+it('resolves historical corpus shards independently and rejects a changed receipt',()=>{
+ const a=structuredClone(feature),b=structuredClone(feature);
+ a.runId='history-a';a.id='history-a';b.runId='history-b';b.id='history-b';
+ b.workloads[0].id='applications/second';
+ for(const summary of b.summaries)summary.workload='applications/second';
+ const history:MeasuredWeeklyHistory={baseline:{report:a.id,reports:[a.id,b.id]},results:[{targetWeek:'2026-10-03T23:59:00-04:00',revision:'d'.repeat(40),status:'measured',reports:[a,b].map(s=>({runId:s.runId,collectedAt:s.created,reportSha256:s.sourceReportSha256!}))}]};
+ expect(measuredHistory(history,[a,b],a.host,'wago',item.id,item.sha256,'steady')[0].cell).toMatchObject({status:'ok',evidence:{report:a.id}});
+ expect(measuredHistory(history,[a,b],a.host,'wago',b.workloads[0].id,item.sha256,'steady')[0].cell).toMatchObject({status:'ok',evidence:{report:b.id}});
+ expect(measuredHistory(history,[a],a.host,'wago',b.workloads[0].id,item.sha256,'steady')[0].cell.status).toBe('not-collected');
+ history.results[0].reports![1].reportSha256='changed';
+ expect(()=>measuredHistory(history,[a,b],a.host,'wago',b.workloads[0].id,item.sha256,'steady')).toThrow('weekly manifest');
 });

@@ -10,6 +10,7 @@ import { prepareFeatureTools } from './lib/feature-tools.mjs';
 import { releaseSource, assertReleasedSource } from './lib/release-policy.mjs';
 import { verifyV8 } from './lib/v8-preflight.mjs';
 import {wasmerRelease,assertWasmerReceipt} from './lib/wasmer-release.mjs';
+import {collectCorpusByCorpus} from './lib/corpus-collection.mjs';
 import {workersWithinCpuBudget} from './lib/worker-budget.mjs';
 
 const action = process.argv[2];
@@ -23,7 +24,10 @@ const collection = {...settings.collection, timeout:process.env.WASMBENCH_TIMEOU
 if(collection.v8CompilerMode)process.env.WASMBENCH_V8_COMPILER_MODE ||= collection.v8CompilerMode;
 const featureSuite = process.env.WASMBENCH_SUITE?.includes('corpora/features/') || process.env.WASMBENCH_SUITE==='all';
 const runtimes = process.env.WASMBENCH_RUNTIMES || (featureSuite ? featureConfigurations(settings) : collection.runtimes).join(',');
-if(runtimes.split(',').includes('wasmer-llvm') && ['build','collect','corpus-check'].includes(action))throw Error('wasmer-llvm is retired from the website benchmark collection; use wasmer-singlepass.');
+if(['build','collect','corpus-check'].includes(action)) {
+  const unsupported=runtimes.split(',').filter(id=>!collection.runtimes.includes(id));
+  if(unsupported.length)throw Error('Unsupported website benchmark configurations: '+unsupported.join(',')+'. Supported: '+collection.runtimes.join(',')+'.');
+}
 const extraToolsNeeded = runtimes.split(',').some(id => ['wasm3','wamr','spidermonkey','deno','jsc'].includes(id));
 if(runtimes.split(',').includes('wavm')) {
   process.env.WASMBENCH_WAVM_VERSION ||= 'nightly-2026-04-05-4e82bb9';
@@ -31,9 +35,15 @@ if(runtimes.split(',').includes('wavm')) {
 }
 if(['build','collect','corpus-check'].includes(action) && runtimes.split(',').includes('wago')) {
   process.env.WASMBENCH_CORPUS_SOURCE ||= process.env.WAGO_SOURCE || collection.wagoSource;
-  const release=await releaseSource('wago-org/wago',{asOf:process.env.WASMBENCH_RELEASE_AS_OF,betaPrerelease:true});
-  assertReleasedSource(release.source,release);
-  process.env.WAGO_SOURCE=release.source;
+  if(process.env.WASMBENCH_WAGO_REVISION) {
+    const source=resolve(site,process.env.WAGO_SOURCE||collection.wagoSource);
+    const revision=process.env.WASMBENCH_WAGO_REVISION;
+    if(!/^[a-f0-9]{40}$/.test(revision)||command('git',['rev-parse','HEAD'],{cwd:source}).toString().trim()!==revision||command('git',['status','--porcelain','--untracked-files=no'],{cwd:source}).length)throw Error('Pinned Wago source must be clean at the exact requested revision');
+    process.env.WAGO_SOURCE=source;
+  } else {
+    const release=await releaseSource('wago-org/wago',{tag:process.env.WASMBENCH_WAGO_TAG||collection.wagoRelease?.tag,asOf:process.env.WASMBENCH_RELEASE_AS_OF,betaPrerelease:true});
+    assertReleasedSource(release.source,release);process.env.WAGO_SOURCE=release.source;
+  }
 }
 if(runtimes.split(',').includes('wavm') && ['build','collect','corpus-check'].includes(action) && !/^nightly-\d{4}-\d{2}-\d{2}-[a-f0-9]{7,40}$/.test(process.env.WASMBENCH_WAVM_VERSION || ''))throw Error('Set WASMBENCH_WAVM_VERSION to the exact prerelease tag and source commit used to build the WAVM SDK.');
 if((featureSuite || extraToolsNeeded) && ['build','collect','corpus-check'].includes(action)) {
@@ -95,11 +105,15 @@ else if (action === 'build') {
   }
   verifyV8(root, settings.node, runtimes.split(','),process.env.WASMBENCH_V8_COMPILER_MODE);
   const id = new Date().toISOString().replace(/[:.]/g, '-') + '-' + randomUUID().slice(0, 8);
-  const directory = join(site, '.wasmbench/experiments', id);
+  const directory = process.env.WASMBENCH_RESUME_COLLECTION?resolve(site,process.env.WASMBENCH_RESUME_COLLECTION):join(site, '.wasmbench/experiments', id);
   await mkdir(directory, { recursive: true });
   const timing = join(directory, `timing-${id}`);
-  const suite = await prepareCorpus(settings, run, directory);
+  const suite = process.env.WASMBENCH_RESUME_COLLECTION?join(directory,'wago-suite.json'):await prepareCorpus(settings, run, directory);
   verifyCorpusV8(suite);
+  if(collection.corpusByCorpus!==false) {
+    await collectCorpusByCorpus({directory,suite,runtimes,collection,run,number,site});
+    console.log(`Verified corpus collection retained at ${directory}`);
+  } else {
   // Keep phase order stable across harness versions: compile, instantiate,
   // first use, warmed execution. Lifetime RSS is reaped from those same trials;
   // a single steady memory pass retains heap/boundary metrics before native code.
@@ -142,5 +156,7 @@ else if (action === 'build') {
   invoke(...reportArgs);
   invoke('verify-report', '--dir', report);
   await writeFile(join(site, '.wasmbench/latest-report.txt'), report + '\n');
+  await writeFile(join(site,'.wasmbench/latest-reports.json'),JSON.stringify([report])+'\n');
   console.log(`Sealed experiment retained at ${directory}`);
+  }
 } else throw new Error('Usage: node scripts/bench.mjs doctor|build|corpus|corpus-check|collect');

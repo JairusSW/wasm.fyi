@@ -130,9 +130,9 @@ test('all release-capable benchmark configurations have explicit release sources
 	assert.equal(Object.values(engineSources).reduce((n,source)=>n+source.configurations.length,0),14);
   for(const source of Object.values(engineSources)){assert(source.repository.includes('/'));assert(!source.branch);assert(source.configurations.length);}
 });
-test('both measured hosts select every current engine configuration including JSC',()=>{
+test('both measured hosts select only the six supported configurations',()=>{
  const settings=JSON.parse(readFileSync(new URL('../wasmbench.config.json',import.meta.url)));
- const expected=Object.values(engineSources).flatMap(source=>source.configurations).sort();
+ const expected=['wasmtime','v8','wasmer-singlepass','wazero','wavm','wago'].sort();
  for(const platform of ['darwin','linux'])assert.deepEqual(featureConfigurations(settings,platform).sort(),expected);
 });
 test('default collection sample counts prioritize compile, instantiate and steady latency',()=>{

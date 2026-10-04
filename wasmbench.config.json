@@ -19,28 +19,13 @@
     "v8CompilerMode": "optimizing-only",
     "runtimes": [
       "wasmtime",
-      "wasmtime-winch",
-      "wavm",
+      "v8",
       "wasmer-singlepass",
       "wazero",
-      "wazero-interpreter",
-      "v8",
-      "wago",
-      "wasmi",
-      "wasm3",
-      "wamr",
-      "spidermonkey",
-      "deno",
-      "jsc"
+      "wavm",
+      "wago"
     ],
-    "featureRuntimes": [
-      "wasmer-singlepass",
-      "wasmi",
-      "wasm3",
-      "wamr",
-      "spidermonkey",
-      "deno"
-    ],
+    "featureRuntimes": [],
     "wagoSource": "../../Wago/wago",
     "launches": 1,
     "workers": 3,
@@ -59,14 +44,13 @@
     "code": true,
     "timeout": "5m",
     "phaseBarriers": false,
-    "featureRuntimesByPlatform": {
-      "darwin": [
-        "jsc"
-      ],
-      "linux": [
-        "jsc"
-      ]
-    }
+    "featureRuntimesByPlatform": {},
+    "corpusByCorpus": true,
+    "wagoRelease": {
+      "tag": "v0.1.0-beta.11",
+      "revision": "9f01d145d54ac7ab458b6b2f6047db90a757410a"
+    },
+    "includeFeatures": false
   },
   "retention": 12,
   "hosts": {

@@ -1,4 +1,4 @@
-import { readFile, readdir, writeFile } from 'node:fs/promises';
+import { readFile, readdir, writeFile, access } from 'node:fs/promises';
 import { join } from 'node:path';
 import { featureCandidates, featureSupport, featureCasePassed, matchesCurrentFeature } from './lib/feature-support.mjs';
 import { validateV8Description } from './lib/v8-preflight.mjs';
@@ -78,7 +78,7 @@ for(const w of prepared.workloads) {
   });
 }
 // Changed feature probes are discoverable without inheriting old results.
-for(const w of preparedFeatures) {
+for(const w of settings.collection.includeFeatures===false?[]:preparedFeatures) {
   if(catalogue.has(w.id))continue;
   const bytes=await readFile(join(featuresRoot,w.artifact));
   if(digest(bytes)!==w.sha256)throw Error('Changed prepared feature '+w.id);
@@ -115,7 +115,7 @@ for (const [machine, os] of [['m1','linux'],['m2','darwin']]) {
   output.hosts[machine]=view;
   for (const [slot,runtime] of Object.entries(configurations)) {
     const config=selected.flatMap(r=>r.runtimes).find(c=>c.id===runtime);
-    if (config) view.configurations[slot]={ runtime, version:runtime==='deno' && config.description.build?.startsWith('Deno ')?`${config.description.build.slice(5)} / V8 ${config.description.runtime_version}`:config.description.runtime_version, backend:config.description.backend };
+    if (config) view.configurations[slot]={ runtime, version:runtime==='wago'&&config.description.runtime_version.startsWith(settings.collection.wagoRelease?.revision+'/')?settings.collection.wagoRelease.tag:runtime==='deno' && config.description.build?.startsWith('Deno ')?`${config.description.build.slice(5)} / V8 ${config.description.runtime_version}`:config.description.runtime_version, backend:config.description.backend };
     for (const workload of output.catalogue) {
       // A newer failed/unsupported result wins. Never backfill it with a success.
       const sources=workload.id.startsWith('features/')?featureCandidates(selected,runtime,workload.id,workload.artifactSha256):selected;
@@ -176,6 +176,7 @@ output.featureVersions=Object.fromEntries(['m1','m2'].map(machine=>{
 }));
 for(const [machine,name] of [['m1','history-hub'],['m2','history']]) {
   const directory=join(site,'data',name);
+  if(!await access(join(directory,'index.json')).then(()=>true,()=>false)){output.history[machine]={points:[],workloads:[],artifactSha256:{},cells:{},versions:{}};continue;}
   await validateData(directory);
   const inventory=JSON.parse(await readFile(join(directory,'index.json')));
   const weekly=JSON.parse(await readFile(join(directory,'weekly.json')));
@@ -186,19 +187,22 @@ for(const [machine,name] of [['m1','history-hub'],['m2','history']]) {
     const report=JSON.parse(bytes);snapshots.push(report);
     if(!output.reports[report.id])output.reports[report.id]={runId:report.runId,created:report.created,evidence:name+'/'+report.evidence,sha256:report.evidenceSha256,options:report.options,memorySource:report.memorySource,codeSource:report.codeSource,configurations:report.runtimes.map(c=>c.id),host:report.host.os,historical:true};
   }
-  const baseline=snapshots.find(s=>s.id===weekly.baseline.report);
+  const baselineReports=snapshots.filter(s=>(weekly.baseline.reports||[weekly.baseline.report]).includes(s.id));
+  const baseline=baselineReports[0];
+  const baselineWorkloads=[...new Map(baselineReports.flatMap(s=>s.workloads).map(w=>[w.id,w])).values()];
   if(!baseline)throw new Error('Missing fixed history baseline');
-  const history={points:weekly.results.map(w=>({date:w.targetWeek.slice(0,10),revision:w.revision,collectedAt:w.collectedAt,status:w.status})),workloads:baseline.workloads.filter(w=>catalogue.has(w.id)).map(w=>w.id),artifactSha256:Object.fromEntries(baseline.workloads.filter(w=>catalogue.has(w.id)).map(w=>[w.id,w.sha256])),cells:{},versions:{}};
+  const history={points:weekly.results.map(w=>({date:w.targetWeek.slice(0,10),revision:w.revision,collectedAt:w.collectedAt,status:w.status})),workloads:baselineWorkloads.filter(w=>catalogue.has(w.id)).map(w=>w.id),artifactSha256:Object.fromEntries(baselineWorkloads.filter(w=>catalogue.has(w.id)).map(w=>[w.id,w.sha256])),cells:{},versions:{}};
   output.history[machine]=history;
   for(const [slot,runtime] of Object.entries(configurations)) {
     const description=baseline.runtimes.find(c=>c.id===runtime)?.description;
-    history.versions[slot]=weekly.results.map(w=>slot==='G'?w.revision:description?.runtime_version || 'not collected');
-    for(const w of baseline.workloads) {
+    history.versions[slot]=weekly.results.map(w=>slot==='G'?(w.version || w.revision):description?.runtime_version || 'not collected');
+    for(const w of baselineWorkloads) {
       // History owns its frozen artifact identity, independently of new source builds.
       if(!catalogue.has(w.id))continue;
       for(const [metric,scenario] of Object.entries({...scenarios,rss:'steady',code:'compile'})) {
         history.cells[`${w.id}|${slot}|${metric}`]=measuredHistory(weekly,snapshots,baseline.host,runtime,w.id,w.sha256,scenario).map((point,i)=>{
-          const report=runtime==='wago'?snapshots.find(s=>s.runId===weekly.results[i].runId):baseline;
+          const week=weekly.results[i];
+          const report=runtime==='wago'?snapshots.find(s=>(week.reports?.some(pin=>pin.runId===s.runId)||s.runId===week.runId)&&s.workloads.some(item=>item.id===w.id&&item.sha256===w.sha256)&&(metric==='rss'?s.memory.some(m=>m.runtime===runtime&&m.workload===w.id&&m.scenario==='steady'&&m.metric==='process.peak_rss'):metric==='code'?s.codeRecords.some(c=>c.runtime===runtime&&c.workload===w.id):s.summaries.some(t=>t.runtime===runtime&&t.workload===w.id&&t.scenario===scenario))):baselineReports.find(s=>s.workloads.some(item=>item.id===w.id&&item.sha256===w.sha256));
           const cell=weekly.results[i].status!=='measured' || !report?point.cell:metric==='rss'?measuredMemory(report,runtime,w.id,w.sha256,'steady','process.peak_rss'):metric==='code'?measuredCodeImage(report,runtime,w.id,w.sha256):point.cell;
           const factor=metric==='rss'?1024**2:metric==='code'?1024:1e6;
           const summary=report?.summaries.find(s=>s.runtime===runtime && s.workload===w.id && s.scenario===scenario && s.profile==='timing');
@@ -208,8 +212,9 @@ for(const [machine,name] of [['m1','history-hub'],['m2','history']]) {
     }
   }
 }
-if(JSON.stringify(output.history.m1.points.map(p=>p.date))!==JSON.stringify(output.history.m2.points.map(p=>p.date)))throw new Error('Historical host dates differ');
+if(output.history.m1.points.length&&output.history.m2.points.length&&JSON.stringify(output.history.m1.points.map(p=>p.date))!==JSON.stringify(output.history.m2.points.map(p=>p.date)))throw new Error('Historical host dates differ');
 for(const [machine,name] of [['m1','linux-x64'],['m2','darwin-arm64']]) {
+  if(!await access(join(site,'data/threads',name+'.json')).then(()=>true,()=>false)){output.threads[machine]={created:'',configuration:'not collected',node:'',v8:'',policy:'No thread measurements collected.',evidence:'',sha256:'',results:[]};continue;}
   const ref=JSON.parse(await readFile(join(site,'data/threads',name+'.json')));
   const bytes=await readFile(join(site,'data/threads',ref.evidence));
   if(digest(bytes)!==ref.sha256)throw new Error('Changed worker evidence');

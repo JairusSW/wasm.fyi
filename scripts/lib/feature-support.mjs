@@ -23,7 +23,7 @@ export function featureHostKey(host,aliases={}) {
 export async function featureSupport(directory, reports) {
   const hosts = new Map();
   const aliases=(await config()).hostAliases || {};
-  const releases=JSON.parse(await readFile(new URL('../../data/feature-releases.json',import.meta.url),'utf8'));
+  const releases=await readFile(new URL('../../data/feature-releases.json',import.meta.url),'utf8').then(JSON.parse,error=>{if(error.code!=='ENOENT')throw error;return {identities:{}};});
   for (const report of [...reports].sort((a,b) => b.created.localeCompare(a.created))) {
     if (!report.workloads.some(w => w.id.startsWith('features/'))) continue;
     const hostKey=featureHostKey(report.host,aliases);

@@ -94,7 +94,7 @@ if (action === 'doctor') {
     const list = join(local, `${name}-files.txt`);
     const metadata = join(site, '.wasmbench/source-metadata', id, name);
     await mkdir(join(site, '.wasmbench/source-metadata', id), { recursive: true });
-    command('git', ['clone', '--bare', '--depth=1', '--filter=blob:none', '--upload-pack=git -c uploadpack.allowFilter=true upload-pack', pathToFileURL(source).href, metadata], { stdio: 'inherit' });
+    command('git', ['clone', '--bare', '--depth=1', pathToFileURL(source).href, metadata], { stdio: 'inherit' });
     rsync([metadata + '/', remotePath(remote + '/' + name + '/.git/')]);
     process.stdout.write(ssh(`set -eu; git -C ${quote(remote + '/' + name)} config core.bare false; git -C ${quote(remote + '/' + name)} reset --mixed --quiet HEAD`));
     await writeFile(list, files);
@@ -109,7 +109,7 @@ if (action === 'doctor') {
   rsync([join(site, 'scripts/lib/validate-data.mjs'), join(site, 'scripts/lib/snapshot-index.mjs'), join(site, 'scripts/lib/verify-seal.mjs'), join(site, 'scripts/lib/measurement-policy.mjs'), remotePath(remote + '/site/scripts/lib/')]);
   rsync([join(site, 'patches/legacy-wago-api.patch'), remotePath(remote + '/site/patches/')]);
   rsync([join(site, 'scripts/bench.mjs'), join(site,'scripts/full-run.mjs'),join(site,'scripts/compile-latency-audit.mjs'),join(site,'scripts/corpus-v8.mjs'),join(site,'scripts/corpus-v8-worker.mjs'), remotePath(remote + '/site/scripts/')]);
-  rsync([join(site,'scripts/lib/worker-budget.mjs'),remotePath(remote+'/site/scripts/lib/')]);
+  rsync([join(site,'scripts/lib/corpus-collection.mjs'),join(site,'scripts/lib/latest-reports.mjs'),join(site,'scripts/lib/worker-budget.mjs'),remotePath(remote+'/site/scripts/lib/')]);
   rsync([join(site, 'scripts/wasmer-adapter.test.mjs'), remotePath(remote + '/site/scripts/')]);
   rsync([join(site, 'scripts/extra-feature-adapters.test.mjs'), remotePath(remote + '/site/scripts/')]);
   rsync([join(site, 'scripts/pack-evidence.mjs'), remotePath(remote + '/site/scripts/')]);
@@ -142,7 +142,7 @@ if (action === 'doctor') {
     rsync(['--from0',`--files-from=${manifest}`,currentHarness+'/',remotePath(remote+'/harness/')]);
     for(const name of ['scripts','adapters','patches','corpora'])rsync(['-r',join(site,name+'/'),remotePath(remote+'/site/'+name+'/')]);
   }
-  const overrides = ['WASMBENCH_RUNTIMES', 'WASMBENCH_SUITE', 'WASMBENCH_LAUNCHES', 'WASMBENCH_SAMPLES', 'WASMBENCH_SCENARIO_SAMPLES', 'WASMBENCH_OPERATIONS', 'WASMBENCH_WARMUP', 'WASMBENCH_WORKERS', 'WASMBENCH_CORPUS_IDS', 'WASMBENCH_APPLICATION_IDS', 'WASMBENCH_VALIDATION_PROFILE', 'WASMBENCH_RECORD_FAILURES', 'WASMBENCH_TIMING_ONLY', 'WASMBENCH_SKIP_HARNESS_PATCH', 'WASMBENCH_TIMEOUT', 'WASMBENCH_HISTORY_ANCHOR', 'WASMBENCH_HISTORY_WEEKS','WASMBENCH_PERFORMANCE_HISTORY_WEEKS','WASMBENCH_CONFORMANCE_LANES','WASMBENCH_RELEASE_AS_OF','WASMBENCH_RELEASE_CACHE','WASMBENCH_WAVM_SDK','WASMBENCH_WAVM_VERSION','WASMBENCH_JSC','WASMBENCH_JSC_VERSION','WASMBENCH_FULL_HISTORY_WEEKS','WASMBENCH_AUDIT_RUNTIMES','WASMBENCH_AUDIT_WAGO_TAG','WASMBENCH_AUDIT_WAZERO_VERSION','WAGO_SPEC_INTERPRETER']
+  const overrides = ['WASMBENCH_WAGO_TAG','WASMBENCH_WAGO_REVISION','WASMBENCH_RUNTIMES', 'WASMBENCH_SUITE', 'WASMBENCH_LAUNCHES', 'WASMBENCH_SAMPLES', 'WASMBENCH_SCENARIO_SAMPLES', 'WASMBENCH_OPERATIONS', 'WASMBENCH_WARMUP', 'WASMBENCH_WORKERS', 'WASMBENCH_CORPUS_IDS', 'WASMBENCH_APPLICATION_IDS', 'WASMBENCH_VALIDATION_PROFILE', 'WASMBENCH_RECORD_FAILURES', 'WASMBENCH_TIMING_ONLY', 'WASMBENCH_SKIP_HARNESS_PATCH', 'WASMBENCH_TIMEOUT', 'WASMBENCH_HISTORY_ANCHOR', 'WASMBENCH_HISTORY_WEEKS','WASMBENCH_PERFORMANCE_HISTORY_WEEKS','WASMBENCH_CONFORMANCE_LANES','WASMBENCH_RELEASE_AS_OF','WASMBENCH_RELEASE_CACHE','WASMBENCH_WAVM_SDK','WASMBENCH_WAVM_VERSION','WASMBENCH_JSC','WASMBENCH_JSC_VERSION','WASMBENCH_FULL_HISTORY_WEEKS','WASMBENCH_AUDIT_RUNTIMES','WASMBENCH_AUDIT_WAGO_TAG','WASMBENCH_AUDIT_WAZERO_VERSION','WAGO_SPEC_INTERPRETER']
     .filter(key => process.env[key]).map(key => `${key}=${quote(process.env[key])}`).join(' ');
   let completed = false;
   try {
@@ -191,11 +191,15 @@ if (action === 'doctor') {
   } else if (action==='compile-audit') {
     console.log(`Hub scratch compile-latency audit evidence retained at ${local}/.wasmbench/compile-latency-audit`);
   } else {
-  const relativeReport = (await readFile(join(local, 'latest-wasm-fyi-report.txt'), 'utf8')).trim();
-  if (!/^wasm-fyi\/[a-zA-Z0-9-]+\/report$/.test(relativeReport)) throw new Error('Invalid wasm.fyi report projection pointer');
-  const report = join(local, relativeReport);
-  await verifySeal(report);
-  await writeFile(join(site, '.wasmbench/latest-hub-report.txt'), report + '\n');
+  const relativeReports=await readFile(join(local,'latest-wasm-fyi-reports.json'),'utf8').then(JSON.parse,error=>{if(error.code!=='ENOENT')throw error;return null;})||[(await readFile(join(local,'latest-wasm-fyi-report.txt'),'utf8')).trim()];
+  const reports=[];
+  for(const relativeReport of relativeReports) {
+    if(!/^wasm-fyi\/[a-zA-Z0-9-]+\/report$/.test(relativeReport))throw Error('Invalid wasm.fyi projection pointer');
+    const report=join(local,relativeReport);await verifySeal(report);reports.push(report);
+  }
+  const report=reports.at(-1);
+  await writeFile(join(site,'.wasmbench/latest-hub-reports.json'),JSON.stringify(reports)+'\n');
+  await writeFile(join(site,'.wasmbench/latest-hub-report.txt'),report+'\n');
   console.log(`Compact wasm.fyi projection retained at ${report}; complete sealed evidence remains on Hub at ~/${remote}`);
   }
 } else throw new Error('Usage: node scripts/hub.mjs doctor|collect|history|performance-history|compile-audit|threads|conformance [EXPERIMENT_TO_RESUME]');
