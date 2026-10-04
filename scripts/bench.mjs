@@ -86,8 +86,8 @@ else if (action === 'build') {
   if (runtimes.split(',').includes('wago')) args.push('--wago-source', resolve(site, process.env.WAGO_SOURCE || collection.wagoSource));
   invoke(...args);
 } else if (action === 'collect') {
-  // Always rebuild the Wago adapter after selecting a release. A previously
-  // compiled binary cannot inherit the new source identity.
+  // Resolve the selected release through the harness build cache. Only changed
+  // source, adapter or toolchain inputs require another compilation.
   if(runtimes.split(',').includes('wago')) {
     if(process.env.WASMBENCH_SKIP_WAGO_BUILD==='1')console.log('Using the prebuilt Wago adapter for this isolated worker.');
     else {if (process.env.WASMBENCH_SKIP_HARNESS_PATCH !== '1') patchHarness(root);invoke('build','--runtimes','wago','--wago-source',process.env.WAGO_SOURCE);}
