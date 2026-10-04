@@ -29,6 +29,8 @@ The pinned source builders validate their oracles before publishing the cache. U
 
 Selectors accept complete workload IDs, family prefixes, or the corpus name (for example `qoi`). Multiple selectors may be comma-separated or supplied with repeated `--corpus`. Every contract sharing a Wasm artifact stays in the same corpus job.
 
+Supported benchmark engines are Wago, wazero compiler, Wasmtime Cranelift, V8 Turboshaft, WAVM LLVM and Wasmer Singlepass. V8 uses the pinned optimizing-only mode with Liftoff, tier-up and lazy compilation disabled. Sealed older reports keep their recorded backend identity.
+
 ```sh
 just bench --kind non-feature --engines wasmtime,v8,wasmer-singlepass,wazero,wavm,wago
 just bench --kind features --corpus features/simd --engines wago,v8

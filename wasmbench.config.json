@@ -18,12 +18,12 @@
     "validationProfile": "all",
     "v8CompilerMode": "optimizing-only",
     "runtimes": [
+      "wago",
+      "wazero",
       "wasmtime",
       "v8",
-      "wasmer-singlepass",
-      "wazero",
       "wavm",
-      "wago"
+      "wasmer-singlepass"
     ],
     "featureRuntimes": [],
     "wagoSource": "../../Wago/wago",
