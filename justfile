@@ -267,25 +267,25 @@ corpus-sources-refresh:
     node scripts/upstream-sources.mjs
 
 # Capture each cached corpus, retain resumable state, and update the local site.
-benchmark *args:
+bench *args:
     node scripts/benchmark.mjs run "$@"
 
-benchmark-resume id:
+bench-resume id:
     node scripts/benchmark.mjs resume {{quote(id)}}
 
-benchmark-status *ids:
+bench-status *ids:
     node scripts/benchmark.mjs status "$@"
 
-benchmark-stop id:
+bench-stop id:
     node scripts/benchmark.mjs stop {{quote(id)}}
 
 # Cache existing Wasm and fixtures without rebuilding them.
 corpus-cache *args:
     node scripts/benchmark.mjs cache "$@"
 
-benchmark-test:
+bench-test:
     node --test scripts/lib/benchmark-plan.test.mjs scripts/lib/corpus-collection.test.mjs scripts/benchmark-workflow.test.mjs
 
 # Archive retained results without source checkouts or build caches.
-benchmark-export id output:
+bench-export id output:
     node scripts/benchmark-export.mjs {{quote(id)}} {{quote(output)}}

@@ -5,7 +5,7 @@ import { site } from "./lib/wasmbench.mjs";
 import { runCommand } from "./lib/benchmark-process.mjs";
 const [id, output] = process.argv.slice(2);
 if (!/^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$/.test(id || "") || !output)
-  throw Error("Usage: just benchmark-export ID output.tar.gz");
+  throw Error("Usage: just bench-export ID output.tar.gz");
 const root = join(site, ".wasmbench/benchmark-runs", id),
   staged = await mkdtemp(join(tmpdir(), "benchmark-export-"));
 try {

@@ -5,14 +5,14 @@ Build corpus artifacts explicitly, then measure them as often as needed. A measu
 ```sh
 just setup
 just corpus-build                         # all upstream, application, feature and call artifacts
-just benchmark                            # all cached non-feature corpora, all six engines, local machine
+just bench                            # all cached non-feature corpora, all six engines, local machine
 ```
 
 On the first run, existing artifacts for the selected scope are adopted automatically. To populate the complete cache explicitly without compilation:
 
 ```sh
 just corpus-cache --kind both
-just benchmark --corpus qoi,applications/image-blur --engines wago,wazero
+just bench --corpus qoi,applications/image-blur --engines wago,wazero
 ```
 
 `corpus-build` accepts the same corpus selectors and feature scope. For example:
@@ -30,10 +30,10 @@ The pinned source builders validate their oracles before publishing the cache. U
 Selectors accept complete workload IDs, family prefixes, or the corpus name (for example `qoi`). Multiple selectors may be comma-separated or supplied with repeated `--corpus`. Every contract sharing a Wasm artifact stays in the same corpus job.
 
 ```sh
-just benchmark --kind non-feature --engines wasmtime,v8,wasmer-singlepass,wazero,wavm,wago
-just benchmark --kind features --corpus features/simd --engines wago,v8
-just benchmark --kind both --engines wazero --machines local,hub --workers local=25%,hub=50%
-just benchmark --corpus applications/image-blur --engines wazero --machines bench@another-host --workers 2
+just bench --kind non-feature --engines wasmtime,v8,wasmer-singlepass,wazero,wavm,wago
+just bench --kind features --corpus features/simd --engines wago,v8
+just bench --kind both --engines wazero --machines local,hub --workers local=25%,hub=50%
+just bench --corpus applications/image-blur --engines wazero --machines bench@another-host --workers 2
 ```
 
 The default worker budget is 25% of the logical CPUs admitted to each process, rounded down with a minimum of one. An integer requests that many workers. Every worker runs exactly one complete corpus job and gives each adapter one Go/Rayon/OpenMP thread. Linux workers also pin their controller and descendants to separate admitted CPUs. macOS limits concurrency but does not claim CPU affinity, exclusive cores, or publication-qualified host isolation. Parallel jobs can still contend for shared caches and memory bandwidth.
@@ -43,10 +43,10 @@ The default worker budget is 25% of the logical CPUs admitted to each process, r
 ## Progress, stop and resume
 
 ```sh
-just benchmark --id nightly --engines wago --workers 25%
-just benchmark-status nightly
-just benchmark-stop nightly
-just benchmark-resume nightly
+just bench --id nightly --engines wago --workers 25%
+just bench-status nightly
+just bench-stop nightly
+just bench-resume nightly
 ```
 
 Ctrl-C also stops the supervisors and measurement subprocesses. Each session keeps an immutable `plan.json`, coordinator/host state, per-corpus results, sealed transport exports and trial logs under `.wasmbench/benchmark-runs/ID`. Completed corpora are skipped on resume. An interrupted corpus starts again from compilation; its partial attempt is discarded. This avoids combining partially measured passes. Artifacts remain cached under `.wasmbench/corpus-cache`, and remote machines retain content-addressed copies under their workspace's `corpus-cache`.
@@ -64,14 +64,14 @@ Live local updates are enabled by default. Run `just dev` in another terminal; e
 Each corpus's evidence links to its parent collection bundle. There is one parent bundle per machine/session, containing exact archived runner, analyzer, adapters, and high-level host/recipe metadata. Download its `index.json`, concatenate the listed gzip parts in order, verify its SHA-256, and extract the archive. Files are split below GitHub's single-file size limit. System libraries outside the harness archive remain explicit host prerequisites. Corpus evidence is delivered separately instead of retransmitting that bundle for every corpus.
 
 ```sh
-just benchmark --id publish-example --engines wago --machines local,hub --deploy
+just bench --id publish-example --engines wago --machines local,hub --deploy
 ```
 
 `--deploy` builds and validates the resulting website, commits only the measurement datasets and parent bundles, pushes the current named branch, dispatches the existing GitHub Pages workflow for that branch, and waits for its verified result. Commit implementation changes first. Git/GitHub authentication and Pages permissions must already be configured. Progress includes the Actions workflow status and final deployment verdict.
 
 ```sh
-just benchmark-export nightly /tmp/nightly-results.tar.gz
-just benchmark-test
+just bench-export nightly /tmp/nightly-results.tar.gz
+just bench-test
 ```
 
 The results archive includes the plan, progress, per-corpus reports/logs and parent bundles; it excludes source checkouts, build caches and duplicate Wasm inputs.

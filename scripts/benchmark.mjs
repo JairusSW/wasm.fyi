@@ -33,7 +33,7 @@ import { verifyParentBundle } from "./lib/benchmark-bundle.mjs";
 import { verifySeal } from "./lib/verify-seal.mjs";
 import { releaseSource } from "./lib/release-policy.mjs";
 try {
-  const help = `Usage: just benchmark [options]
+  const help = `Usage: just bench [options]
   --corpus qoi,applications/image-blur (repeatable; exact IDs or family prefixes)
   --kind non-feature|features|both       default: non-feature
   --engines wago,wazero,v8               default: all six supported engines
@@ -43,9 +43,9 @@ try {
   --id NAME --launches N --samples N --timeout 5m
   --no-live                             retain reports without changing site
   --deploy                              commit results, push branch, deploy Pages
-just benchmark-resume ID                 same immutable plan; completed corpora skipped
-just benchmark-status [ID]               durable progress and outcomes
-just benchmark-stop ID                  stop local and SSH host supervisors
+just bench-resume ID                 same immutable plan; completed corpora skipped
+just bench-status [ID]               durable progress and outcomes
+just bench-stop ID                  stop local and SSH host supervisors
 just corpus-cache [--corpus ... --kind both]    adopt built artifacts without compilation
 just corpus-build [--corpus ... --kind both]    explicit source build + hashed cache
 `;
@@ -342,7 +342,7 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
   } else {
     try {
       await stat(directory);
-      throw Error("Run ID already exists; use benchmark-resume");
+      throw Error("Run ID already exists; use bench-resume");
     } catch (e) {
       if (e.code !== "ENOENT") throw e;
     }
@@ -477,7 +477,7 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
     started: new Date().toISOString(),
   });
   console.log(
-    `Run ${id}\n${plan.jobs.length} corpora · ${plan.engines.join(", ")} · ${plan.machines.map((m) => m.name + " " + m.workers).join(", ")}\nResume: just benchmark-resume ${id}\nStop: just benchmark-stop ${id}`,
+    `Run ${id}\n${plan.jobs.length} corpora · ${plan.engines.join(", ")} · ${plan.machines.map((m) => m.name + " " + m.workers).join(", ")}\nResume: just bench-resume ${id}\nStop: just bench-stop ${id}`,
   );
   let uploading = Promise.resolve(),
     uploadError,
@@ -809,7 +809,7 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
           await new Promise((r) => setTimeout(r, 250));
           if (attempt === 39)
             throw Error(
-              "Previous host supervisor has not stopped; use benchmark-stop " +
+              "Previous host supervisor has not stopped; use bench-stop " +
                 id,
             );
         }
