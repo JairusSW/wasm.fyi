@@ -183,6 +183,7 @@ class UiState {
 			else if (!global) (this as any)[key] = structuredClone(f.codec.def);
 			else if (raw != null) (this as any)[key] = structuredClone(f.codec.def);
 		}
+		if (this.otMetric === 'wasmHost' || this.otMetric === 'hostWasm') this.otMetric = 'roundTrip';
 		if (this.histFrom >= this.histTo) this.histFrom = Math.max(0, this.histTo - 1);
 	}
 

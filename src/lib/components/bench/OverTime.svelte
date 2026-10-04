@@ -9,7 +9,7 @@
 	import { href } from '$lib/links';
 	import { isOff, isVisible, otSeries, seriesFmt } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
-import { historySegments } from '$lib/history-values';
+import { historySegments, historyCallDetails } from '$lib/history-values';
 	import Carousel from '../Carousel.svelte';
 	import RtLabel from '../RtLabel.svelte';
 	import Tabs from '../Tabs.svelte';
@@ -66,6 +66,7 @@ import { historySegments } from '$lib/history-values';
 				tip: tipOn
 					? {
 							date: SNAPS[hi_].date,
+							callDetails: ui.otMetric === 'roundTrip' ? historyCallDetails(ui.scope,c.id,hi_) : '',
 							ver: `${c.rt} ${verAt(c.id, hi_,ui.machine)}`,
 							val: fv(vals[hi_]),
 							delta: hd ? hd.t + ' vs prev week' : 'first snapshot',
@@ -165,6 +166,7 @@ import { historySegments } from '$lib/history-values';
 											<span class="tip-top"><span class="mono">{h.tip.date}</span><span>{h.tip.ver}</span></span>
 											<span class="mono tip-val">{h.tip.val}</span>
 											<span class="mono small" style:color={h.tip.dColor}>{h.tip.delta}</span>
+											{#if h.tip.callDetails}<span class="tip-ev">{h.tip.callDetails}</span>{/if}
 											{#if h.tip.ev}<span class="tip-ev">{h.tip.ev}</span>{/if}
 										</div>
 									{/if}

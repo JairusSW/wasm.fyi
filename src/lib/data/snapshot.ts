@@ -21,7 +21,7 @@ export const OTM: Record<OtMetricKey, OtMetric> = {
   code: { key: 'code', l: 'Machine Code', g: 'code', c: 3, u: 'KiB', k: 0.5 },
   cov: { key: 'cov', l: 'Correctness', g: 'cov', c: 0, u: 'n', k: 0 },
 };
-export const OTM_KEYS = Object.keys(OTM) as OtMetricKey[];
+export const OTM_KEYS: OtMetricKey[] = (Object.keys(OTM) as OtMetricKey[]).filter(key => key !== 'wasmHost' && key !== 'hostWasm');
 export const SNAPS: Snap[] = (viewData.history.m1.points.length?viewData.history.m1.points:viewData.history.m2.points).map((p,i)=>({i,date:p.date,short:p.date.slice(5)}));
 export const HARNESS_BREAK=0;
 export const PIN=0;

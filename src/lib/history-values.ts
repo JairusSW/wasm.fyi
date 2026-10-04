@@ -1,3 +1,4 @@
+import { fmtU } from './format';
 import { viewData, type ViewCell } from './view-data';
 import type { CfgId, MachineId, MetricKey, OtMetricKey } from './data/types';
 import type { Scope } from './model';
@@ -54,4 +55,12 @@ export function historySeries(s:Scope,cid:CfgId,key:OtMetricKey,workload=''):num
 	const groups=new Map(viewData.catalogue.map(w=>[w.id,w.group]));
 	const counts=new Map<string,number>();for(const w of cohort){const g=groups.get(w)!;counts.set(g,(counts.get(g)||0)+1);}
 	return h.points.map((point,i)=>point.status!=='measured'?Number.NaN:Math.exp(cohort.reduce((total,w)=>total+Math.log(historyCell(s.machine,w,cid,metric,i).v!)*(s.weighting==='workload'?1/cohort.length:1/(counts.size*counts.get(groups.get(w)!)!)),0)));
+}
+
+
+export function historyCallDetails(scope:Scope, cid:CfgId, point:number) {
+	const wasmHost=historySeries(scope,cid,'wasmHost')?.[point];
+	const hostWasm=historySeries(scope,cid,'hostWasm')?.[point];
+	const format=(value:number|undefined)=>value!=null && Number.isFinite(value)?fmtU(value,'ms'):'not measured';
+	return `Wasm → host: ${format(wasmHost)} · Host → Wasm: ${format(hostWasm)} · Estimated round trip sums both medians; not a measured nested round trip.`;
 }
