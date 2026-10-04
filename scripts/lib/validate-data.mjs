@@ -20,6 +20,11 @@ export function validateReport(report) {
   assert.equal(workloads.size, report.workloads.length, 'Duplicate workload identity');
   for (const w of report.workloads) assert(sha.test(w.sha256), `Missing artifact hash: ${w.id}`);
   assert(report.host?.os && report.host?.arch && report.created, 'Missing host or timestamp');
+  if (report.sourceRunId !== undefined) {
+    assert(typeof report.sourceRunId === 'string' && report.sourceRunId.length, 'Missing source run identity');
+    const suffix = digest(JSON.stringify([report.host.hostname, report.host.os, report.host.arch, report.created, report.lockSha256])).slice(0, 16);
+    assert.equal(report.runId, `${report.sourceRunId}-${suffix}`, 'Snapshot identity disagrees with source run provenance');
+  }
   const cells = new Set();
   for (const s of report.summaries) {
     assert(configurations.has(s.runtime) && workloads.has(s.workload), 'Summary is outside the locked cohort');
@@ -43,9 +48,9 @@ export function validateReport(report) {
     assert(report.memorySource, 'Memory values require matched-pass provenance');
     if(m.source_profile === 'timing') {
       assert.equal(m.metric,'process.peak_rss','Timing memory must be a process lifetime peak');
-      assert.equal(m.source_run,report.runId,'Timing memory must originate in the timing run');
+      assert.equal(m.source_run,report.sourceRunId ?? report.runId,'Timing memory must originate in the timing run');
       assert.equal(report.options.timing_peak_rss,true,'Timing memory collection must be locked');
-      assert(report.memorySource.profile === 'timing' || report.memorySource.timing_id === report.runId,'Timing memory requires same-trial provenance');
+      assert(report.memorySource.profile === 'timing' || report.memorySource.timing_id === (report.sourceRunId ?? report.runId),'Timing memory requires same-trial provenance');
     }
   }
   for (const c of report.codeRecords || []) {

@@ -56,7 +56,10 @@ try {
     if (data.publication) throw new Error('Qualified publication requires separate operator-key verification.');
     const id = digest(bytes);
     reports.push({
-      id, sourceReportSha256: wasmfyi?.sourceReportSha256 || (originalBytes ? digest(originalBytes) : null), sourceReportSealed: wasmfyi ? true : sealed, runId: manifest.id, created: manifest.created, publication: manifest.publication,
+      id, sourceReportSha256: wasmfyi?.sourceReportSha256 || (originalBytes ? digest(originalBytes) : null), sourceReportSealed: wasmfyi ? true : sealed,
+      sourceRunId: manifest.id,
+      runId: `${manifest.id}-${digest(JSON.stringify([manifest.host.hostname, manifest.host.os, manifest.host.arch, manifest.created, manifest.lock_sha256])).slice(0, 16)}`,
+      created: manifest.created, publication: manifest.publication,
       analysisVersion: data.analysis_version, source: source.path.split('/').at(-1),
       host: manifest.host, options: manifest.lock.options, lockSha256: manifest.lock_sha256,
       runtimes: manifest.lock.runtime_configurations, workloads: manifest.lock.workloads,
