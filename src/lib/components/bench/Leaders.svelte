@@ -1,18 +1,18 @@
 <script lang="ts">
 	import type { MetricKey, OvKey } from '$lib/data/types';
 	import { leader } from '$lib/model';
-	import { extraLeaders } from '$lib/rankings';
 	import { ui } from '$lib/state.svelte';
 	import Swatch from '../Swatch.svelte';
 
 	let { onmetric, onoverview }: { onmetric: (m: MetricKey) => void; onoverview: (group: OvKey) => void } = $props();
 
+	const rankingNote = 'Places rank measured means; overlapping uncertainty does not establish a clear lead.';
 	const leaders = $derived([
-		...extraLeaders(ui.scope),
-		leader(ui.scope, 'Fastest compilation', 'lat', 0, 'compile'),
-		leader(ui.scope, 'Fastest instantiation', 'lat', 1, 'inst'),
-		leader(ui.scope, 'Fastest execution', 'lat', 3, 'steady'),
-		leader(ui.scope, 'Smallest generated code', 'code', 3, 'code')
+		{ ...leader(ui.scope, 'Fastest compilation', 'lat', 0, 'compile'), overview: null, note: rankingNote },
+		{ ...leader(ui.scope, 'Fastest instantiation', 'lat', 1, 'inst'), overview: null, note: rankingNote },
+		{ ...leader(ui.scope, 'Lowest average RSS', 'mem', 3, 'rss'), overview: 'mem' as OvKey,
+			note: 'Arithmetic mean of recorded whole-process RSS snapshots after benchmark batches across compilation, instantiation, first-call and steady workloads. Each available workload-phase measurement has equal weight. Lower is better. Boundary samples, not a continuous time average; missing observations remain unmeasured.' },
+		{ ...leader(ui.scope, 'Fastest execution', 'lat', 3, 'steady'), overview: null, note: rankingNote }
 	]);
 </script>
 
@@ -20,8 +20,8 @@
 	{#each leaders as l (l.label)}
 		<button
 			class="leader hoverbg"
-			onclick={() => 'overview' in l ? onoverview(l.overview) : onmetric(l.metric)}
-			data-tip={[l.label, 'note' in l ? l.note : 'Places rank measured means; overlapping uncertainty does not establish a clear lead.', 'Click to see the underlying results'].join('\n')}
+			onclick={() => l.overview ? onoverview(l.overview) : onmetric(l.metric)}
+			data-tip={[l.label, l.note, 'Click to see the underlying results'].join('\n')}
 		>
 			<span class="kicker">{l.label}</span>
 			{#if l.places.length}
