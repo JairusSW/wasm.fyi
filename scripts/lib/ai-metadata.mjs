@@ -18,6 +18,10 @@ export const metricDefinitions = () => Object.fromEntries([
   ...Object.entries({ rssCompile: 'compile', rssInst: 'instantiate', rssFirst: 'first-call' }).map(([id, scenario]) => [id, {
     label: `${scenario} run process lifetime peak RSS`, unit: MET.rss.u,
     note: PHASE_NOTE.rss + ` Matched ${scenario} scenario.`
+  }]),
+  ...Object.entries({rssCurrent:'steady',rssCurrentCompile:'compile',rssCurrentInst:'instantiate',rssCurrentFirst:'first-call'}).map(([id,scenario])=>[id,{
+    label:`${scenario} process current RSS`,unit:MET.rss.u,
+    note:`Process resident memory at the recorded ${scenario} observation point; not lifetime peak RSS or a heap allocation count. Inspect the report for its exact observation boundary.`
   }])
 ]);
 export const POLICY = [
