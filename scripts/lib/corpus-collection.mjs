@@ -68,7 +68,7 @@ export async function collectCorpusByCorpus({directory,suite,runtimes,collection
     if(group.every(w=>w.id.startsWith('mechanisms/'))) {
       const callTiming=join(scratch,prefix+'-call-timing'),callReport=join(scratch,id+'-call-latency','report');
       await mkdir(join(scratch,id+'-call-latency'));
-      await pass('run',...shared,'--scenarios','steady','--profile','timing','--launches',String(number('WASMBENCH_LAUNCHES',collection.launches)),'--samples','5','--operations','1000000','--warmup','3','--out',callTiming);
+      await pass('run',...shared,'--scenarios','steady','--profile','timing','--launches',String(number('WASMBENCH_LAUNCHES',collection.launches)),'--samples',String(number('WASMBENCH_CALL_SAMPLES',3)),'--operations','1000000','--warmup','3','--out',callTiming);
       await invoke('verify','--run',callTiming);await invoke('report','--run',callTiming,'--out',callReport);await invoke('verify-report','--dir',callReport);
       const callData=JSON.parse(await readFile(join(callReport,'data.json'))),mainData=JSON.parse(await readFile(join(report,'data.json')));
       if(JSON.stringify(callData.bundle.manifest.lock.runtime_configurations)!==JSON.stringify(mainData.bundle.manifest.lock.runtime_configurations))throw Error('Call adapters changed within corpus collection');
