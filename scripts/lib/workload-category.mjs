@@ -1,5 +1,6 @@
 // Classify the measured operation, independently of its source repository.
 export function workloadCategory(w) {
+  if (/^mechanisms\/(host-to-wasm-call|wasm-to-host-call)$/.test(w.id)) return 'Host calls';
   if (w.id.startsWith('features/')) return `Features · ${w.provenance?.feature || w.features?.[0] || 'baseline'}`;
   if (w.provenance?.category) return w.provenance.category;
   const name = w.id.split('/')[1];

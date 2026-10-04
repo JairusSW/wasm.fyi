@@ -42,7 +42,7 @@ import { viewCell, viewData } from '$lib/view-data';
 		const configs = CFG.filter((c) => isVisible(ui.scope, c));
 		const raw = callWorkloads.map((workload) => configs.map((config) => viewCell(ui.machine, ui.snap, workload, config.id, 'steady')));
 		const values = raw.flatMap(cells => cells.map(cell => cell.st === 'ok' ? cell.v ?? null : null));
-		const formatted = fmtUGroup(values, 'ns');
+		const formatted = fmtUGroup(values, 'ms');
 		return new Map(configs.map((config, configIndex) => [config.id, raw.map((cells, directionIndex) => {
 			const cell = cells[configIndex];
 			const baseline = viewCell(ui.machine, ui.snap, callWorkloads[directionIndex], ui.baseline, 'steady');
@@ -75,9 +75,9 @@ import { viewCell, viewData } from '$lib/view-data';
 				const r = ratio(s, grp, c.id, sourceIndex);
 				if (!r) {
 					const interpreter=grp==='code'&&viewData.hosts[s.machine].configurations[c.id]?.backend==='interpreter';
-					return { text: interpreter?'n/a':disp(s,grp,c.id,i)?.t || (off?'unavailable':'not measured'), bg:'transparent',color:'var(--fg3)' };
+					return { text: interpreter?'n/a':disp(s,grp,c.id,sourceIndex)?.t || (off?'unavailable':'not measured'), bg:'transparent',color:'var(--fg3)' };
 				}
-				return { text: commonTimes?.[i] || disp(s, grp, c.id, i)!.t, bg: heatRatio(r.r), color: 'var(--fg)' };
+				return { text: commonTimes?.[i] || disp(s, grp, c.id, sourceIndex)!.t, bg: heatRatio(r.r), color: 'var(--fg)' };
 			});
 			return {
 				c,

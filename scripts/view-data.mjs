@@ -36,7 +36,8 @@ const preparedFeatures=JSON.parse(await readFile(join(featuresRoot,'manifest.jso
 const featuresById=new Map(preparedFeatures.map(w=>[w.id,w]));
 const catalogue = new Map();
 for (const report of reports) for (const w of report.workloads) {
-  if (!/^(wago|features|applications)\//.test(w.id) || w.id.startsWith('features/stack-switching/') || catalogue.has(w.id) || (w.id.startsWith('features/') ? !matchesCurrentFeature(w,featuresById) : preparedById.get(w.id)?.sha256!==w.sha256)) continue;
+  const callMechanism = /^mechanisms\/(host-to-wasm-call|wasm-to-host-call)$/.test(w.id) && w.generator === 'wasmbench-host-call-v1';
+  if (!/^(wago|features|applications|mechanisms)\//.test(w.id) || w.id.startsWith('features/stack-switching/') || catalogue.has(w.id) || (w.id.startsWith('features/') ? !matchesCurrentFeature(w,featuresById) : !callMechanism && preparedById.get(w.id)?.sha256!==w.sha256)) continue;
   const structure = report.artifactStructures?.find(a=>a.sha256===w.sha256);
   if(!structure || !Number.isSafeInteger(structure.bytes) || structure.bytes < 8)throw new Error('Missing measured artifact size: '+w.id);
   const baselineReport=reports.find(r=>r.runtimes.some(c=>c.id==='wasmtime') && r.workloads.some(item=>item.id===w.id && item.sha256===w.sha256));

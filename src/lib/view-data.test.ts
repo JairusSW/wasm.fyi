@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
-import { ALLB, BENCH } from './data/snapshot';
+import { ALLB, BENCH, OV } from './data/snapshot';
 import { benchVal, type Scope } from './model';
 import { viewCell, viewData } from './view-data';
 import { CFG } from './data/runtimes';
@@ -10,8 +10,23 @@ import preparedFeatures from '../../corpora/features/manifest.json';
 import preparedApplications from '../../corpora/catalog.json';
 const scope:Scope={machine:'m1',baseline:'A',hide:{},weighting:'corpus'};
 describe('existing workload views consume measured evidence',()=>{
+  it('places call latency alongside compilation latency',()=>{
+    expect(Object.keys(OV).slice(0,3)).toEqual(['compile','calls','lat']);
+    expect(OV.calls.cols).toEqual(['Wasm → host','Host → Wasm']);
+  });
+  for(const machine of ['m1','m2'] as const)it(`exposes both ${machine} boundary-call timings with their original units`,async()=>{
+    for(const id of ['mechanisms/host-to-wasm-call','mechanisms/wasm-to-host-call']) {
+      expect(ALLB.find(w=>w.id===id)?.group).toBe('Host calls');
+      const cell=viewCell(machine,'s1',id,'A','steady');
+      expect(cell.st).toBe('ok');
+      const ref=viewData.reports[cell.report];
+      const raw=JSON.parse(await readFile(new URL('../../data/wasmbench/'+ref.evidence,import.meta.url),'utf8'));
+      const summary=raw.summaries.find((s:any)=>s.runtime==='wasmtime'&&s.workload===id&&s.scenario==='steady'&&s.profile==='timing');
+      expect(cell.v).toBe(summary.median_ns_per_operation/1e6);
+    }
+  });
 	it('groups applications by operation and places every feature group last',()=>{
-		const applications=ALLB.filter(w=>!w.id.startsWith('features/'));
+		const applications=ALLB.filter(w=>!w.id.startsWith('features/')&&!w.id.startsWith('mechanisms/'));
 		expect(applications).toHaveLength(166);
 		expect(new Set(applications.map(w=>w.group)).size).toBe(27);
         for(const group of new Set(applications.map(w=>w.group))) {
@@ -23,7 +38,7 @@ describe('existing workload views consume measured evidence',()=>{
 		expect(BENCH.some(g=>g.g.includes('Wago'))).toBe(false);
 		for(const catalogue of [viewData.catalogue,ALLB]) {
 			const firstFeature=catalogue.findIndex(w=>w.id.startsWith('features/'));
-			expect(firstFeature).toBe(applications.length);
+			expect(firstFeature).toBe(applications.length+2);
 			expect(catalogue.slice(firstFeature).every(w=>w.id.startsWith('features/'))).toBe(true);
 		}
 		for(const [id,group] of [
@@ -43,9 +58,9 @@ describe('existing workload views consume measured evidence',()=>{
     }
   });
 	it('uses exact workload identifiers and independent artifact digests',()=>{
-		expect(ALLB).toHaveLength(preparedApplications.workloads.length+preparedFeatures.length);
+		expect(ALLB).toHaveLength(preparedApplications.workloads.length+preparedFeatures.length+2);
         const prepared=new Map([...preparedApplications.workloads.map(w=>[w.contractId,w.sha256] as const),...preparedFeatures.map(w=>[w.id,w.sha256] as const)]);
-        for(const w of ALLB)expect(w.artifactSha256).toBe(prepared.get(w.id));
+        for(const w of ALLB.filter(w=>!w.id.startsWith('mechanisms/')))expect(w.artifactSha256).toBe(prepared.get(w.id));
 		expect(new Set(ALLB.map(b=>b.id)).size).toBe(ALLB.length);
 		for(const b of ALLB)expect(b.artifactSha256).toMatch(/^[a-f0-9]{64}$/);
 		expect(ALLB.some(b=>b.id==='sqlite-speedtest1')).toBe(false);
