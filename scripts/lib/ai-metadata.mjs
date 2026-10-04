@@ -49,7 +49,7 @@ function decodeRows(view, hostId, snapshot, definitions) {
     assert(reason == null || typeof view.reasons[reason] === 'string', 'Invalid reason reference');
     assert(interval == null || status === 'ok' && interval.length === 2 && interval.every(Number.isFinite), 'Invalid interval');
     return { workload, configuration, runtime: view.configurations[configuration], metric,
-      status: status === 'nm' ? 'not-measured' : status,
+      status: status === 'nm' ? 'not-measured' : status === 'na' ? 'not-applicable' : status,
       value: value ?? null, unit: definitions[metric].unit, interval: interval ?? null,
       launchMedians: launches ?? null, reason: reason == null ? null : view.reasons[reason], report };
   });

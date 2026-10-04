@@ -12,7 +12,7 @@ function fixture() {
       old: { created: '2026-09-01T12:00:00Z', runId: 'old-run', evidence: 'history/old.json', sha256: 'c'.repeat(64), configurations: ['engine-baseline'], host: 'linux', options: {} }
     },
     reasons: ['collector unavailable'], hosts: { m1: { label: 'Test host', os: 'linux/x64', policy: {}, configurations: { A: { runtime: 'engine-baseline', backend: 'baseline', version: 'exact-revision' } }, snapshots: {
-      s1: [[0, 0, 0, 0, 0, 0, [0, 0], [0], null], [0, 0, 1, 3, 0, null, null, [], 0], [0, 0, 2, 2, 0, null, null, [], 0], [0, 0, 2, 4, 0, null, null, [], 0]],
+      s1: [[0, 0, 0, 0, 0, 0, [0, 0], [0], null], [0, 0, 1, 3, 0, null, null, [], 0], [0, 0, 2, 2, 0, null, null, [], 0]],
       s2: [[0, 0, 2, 0, 1, 123, null, [123], null]]
     } } }, history: { m1: {} }, threads: { m1: { created: '2026-09-01', sha256: 'd'.repeat(64), evidence: 'worker.json' } }
   };
@@ -30,7 +30,6 @@ test('exports numeric zero, null, reasons, intervals and newest failure without 
   assert.equal(rows[0].value, 0); assert.deepEqual(rows[0].interval, [0, 0]); assert.deepEqual(rows[0].launchMedians, [0]);
   assert.equal(rows[1].value, null); assert.equal(rows[1].status, 'not-measured'); assert.equal(rows[1].reason, 'collector unavailable');
   assert.equal(rows[2].status, 'failed'); assert.equal(rows[2].value, null); assert.equal(rows[2].report, 'new');
-  assert.equal(rows[3].status, 'not-applicable'); assert.equal(rows[3].value, null);
   assert.equal(read(artifacts, 'benchmarks-m1-s2-code.json').results[0].value, 123);
   assert.equal(read(artifacts, 'benchmarks-m1-s1-compile.json').missingCellStatus, 'not-measured');
   assert(!rows.some(r => r.configuration === 'B'), 'Absent is not invented unsupported evidence');
@@ -112,4 +111,12 @@ test('output verification rejects missing, stale and wrong-base-path files', asy
     await rm(join(directory, 'data/llm/index.json'));
     await assert.rejects(checkAiMetadata(directory, artifacts), /ENOENT/);
   } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
+test('exports interpreter native code as not applicable without duplicate cells',()=>{
+  const {view,features}=fixture();
+  view.hosts.m1.snapshots.s1[2][3]=4;
+  const artifacts=renderAiMetadata(view,features);
+  const row=read(artifacts,'benchmarks-m1-s1-code.json').results[0];
+  assert.equal(row.status,'not-applicable');assert.equal(row.value,null);
 });
