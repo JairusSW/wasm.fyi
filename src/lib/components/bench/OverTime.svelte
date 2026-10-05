@@ -8,7 +8,9 @@
 	import { href } from '$lib/links';
 	import { isOff, isVisible, otSeries, seriesFmt } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
-import { historySegments, historyCurve, historyCallDetails, historyReusesEvidence, historyAggregateDetails } from '$lib/history-values';
+import { historySegments, historyCurve, historyCallDetails, historyReusesEvidence, historyAggregateDetails, historyVersionChanges } from '$lib/history-values';
+import { viewData } from '$lib/view-data';
+import HistoryMarker from '../HistoryMarker.svelte';
 	import Carousel from '../Carousel.svelte';
 	import RtLabel from '../RtLabel.svelte';
 	import Tabs from '../Tabs.svelte';
@@ -47,6 +49,7 @@ import { historySegments, historyCurve, historyCallDetails, historyReusesEvidenc
 			const hi = Math.max(...finite);
 			const WY = (v: number) => 30 - ((v - lo) / (hi - lo || 1)) * 26;
 			const segments=historySegments(vals,WX,WY,true);
+			const versions=new Set(historyVersionChanges(viewData.history[s.machine].versions[c.id] || [],vals));
 			const hi_ = hover?.i;
 			const hv = hi_ != null && Number.isFinite(vals[hi_]);
 			const hd = hv && hi_ > 0 && Number.isFinite(vals[hi_-1]) ? chg(vals[hi_], vals[hi_ - 1]) : null;
@@ -58,7 +61,7 @@ import { historySegments, historyCurve, historyCallDetails, historyReusesEvidenc
 				c,
 				na: false as const,
 				segments,
-				points: vals.flatMap((v,i)=>Number.isFinite(v)?[{i,x:WX(i),y:WY(v)}]:[]),
+				points: vals.flatMap((v,i)=>Number.isFinite(v)?[{i,x:WX(i),y:WY(v),version:versions.has(i)?verAt(c.id,i,s.machine):''}]:[]),
 				hv,
 				hx: hv ? WX(hi_).toFixed(1) : '0',
 				dl: hv ? pc(WX(hi_), 600) : '0%',
@@ -115,7 +118,7 @@ import { historySegments, historyCurve, historyCallDetails, historyReusesEvidenc
 			onnext={() => step(1)}
 			noun="metric"
 		/>
-		<span class="s12 fg3">{SNAPS.length} retrospective weekly points · hover to inspect · ← → keys</span>
+		<span class="s12 fg3">{SNAPS.length} retrospective points · ◆ version · ● snapshot · hover to inspect</span>
 		<span class="s12 fg2">{spEvent}</span>
 		<a class="link-quiet push" href={siteHref(histHref(ui.histCfg))}>History</a>
 	</div>
@@ -143,7 +146,6 @@ import { historySegments, historyCurve, historyCallDetails, historyReusesEvidenc
 									<svg viewBox="0 0 600 34" preserveAspectRatio="none">
 										{#if h.hv}<line x1={h.hx} x2={h.hx} y1="0" y2="34" class="cross" />{/if}
 										{#each h.segments as points}<path d={historyCurve(points)} style:stroke={h.c.col} style:stroke-dasharray={h.c.hollow ? '4 3' : 'none'} />{/each}
-                                        {#each h.points as p (p.i)}<circle class="history-point" cx={p.x} cy={p.y} r="2.5" style:fill={h.c.col} />{/each}
 										{#each SNAPS as p (p.i)}
 											<rect
 												role="presentation"
@@ -160,6 +162,7 @@ import { historySegments, historyCurve, historyCallDetails, historyReusesEvidenc
 											/>
 										{/each}
 									</svg>
+									{#each h.points as p (p.i)}<HistoryMarker x={pc(p.x,600)} y={pc(p.y,34)} color={h.c.col} version={p.version} />{/each}
 									{#if h.hv}
 										<span class="dot" style:left={h.dl} style:top={h.dt} style:border-color={h.c.col}></span>
 									{/if}
