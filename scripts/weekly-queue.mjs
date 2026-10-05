@@ -17,9 +17,9 @@ for(const pin of pins.pins){
   seen.add(origin);
   const receipt=await readFile(join(origin,pin.engine+'-build.json'),'utf8').then(JSON.parse,()=>null);
   if(receipt){
-   const plan=JSON.parse(await readFile(join(origin,'sessions',pin.engine,'plan.json')));
-   const state=JSON.parse(await readFile(join(origin,'sessions',pin.engine,'state.json')));
-   if(['completed','completed-with-failures'].includes(state.status) && receipt.pin.revision===pin.revision && receipt.pin.repository===pin.repository && receipt.harnessRevision==='9332ced5e59c0c3fd9c5aabc6ebc2ed991431eb9' && corpus===performanceCorpusIdentity(plan.jobs.flatMap(j=>j.workloads)) && JSON.stringify(plan.collection)===JSON.stringify({...settings.collection,runtimes:pin.configurations,includeFeatures:false,workers:1}))reused.push({engine:pin.engine,revision:pin.revision,from:origin,cutoffs:[plan.sourcePin.targetWeek,pins.cutoff]});
+   const plan=await readFile(join(origin,'sessions',pin.engine,'plan.json'),'utf8').then(JSON.parse,()=>null);
+   const state=await readFile(join(origin,'sessions',pin.engine,'state.json'),'utf8').then(JSON.parse,()=>null);
+   if(plan && state && ['completed','completed-with-failures'].includes(state.status) && receipt.pin.revision===pin.revision && receipt.pin.repository===pin.repository && receipt.harnessRevision==='9332ced5e59c0c3fd9c5aabc6ebc2ed991431eb9' && corpus===performanceCorpusIdentity(plan.jobs.flatMap(j=>j.workloads)) && JSON.stringify(plan.collection)===JSON.stringify({...settings.collection,runtimes:pin.configurations,includeFeatures:false,workers:1}))reused.push({engine:pin.engine,revision:pin.revision,from:origin,cutoffs:[plan.sourcePin.targetWeek,pins.cutoff]});
    break;
   }
   const reuse=await readFile(join(origin,'reuse.json'),'utf8').then(JSON.parse,()=>null),entry=reuse?.reused.find(r=>r.engine===pin.engine);

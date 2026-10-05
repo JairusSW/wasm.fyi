@@ -136,3 +136,14 @@ it('anchors relative history to each machine first measured point while retainin
  }
  expect(historyPin('m1')).toBeGreaterThan(historyPin('m2'));
 });
+
+
+it('does not let an older failure change a later historical average',()=>{
+ const selected:Scope={machine:'m2',baseline:'G',hide:{},weighting:'corpus'};
+ const h=viewData.history.m2,beta=betaIndex('m2');
+ const before=historySeries(selected,'G','exec')![beta];
+ const older=h.points.findIndex((p,i)=>i<beta && p.status==='measured' && h.workloads.some(w=>historyCell('m2',w,'G','steady',i).st==='ok'));
+ const workload=h.workloads.find(w=>historyCell('m2',w,'G','steady',older).st==='ok'&&historyCell('m2',w,'G','steady',beta).st==='ok')!;
+ const cells=h.cells[`${workload}|G|steady`],original=cells[older];
+ try{cells[older]={st:'failed',report:original.report,role:original.role};expect(historySeries(selected,'G','exec')![beta]).toBe(before);}finally{cells[older]=original;}
+});

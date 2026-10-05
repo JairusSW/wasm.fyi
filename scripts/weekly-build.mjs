@@ -1,5 +1,5 @@
 // Build the Saturday default-branch snapshots in an isolated native harness.
-import {readFile, writeFile, mkdir, cp, stat} from 'node:fs/promises';
+import {readFile, writeFile, mkdir, cp, stat, readdir} from 'node:fs/promises';
 import {join, resolve} from 'node:path';
 import {homedir} from 'node:os';
 import {randomUUID} from 'node:crypto';
@@ -7,6 +7,7 @@ import {copyHistoricalHarness} from './lib/historical-binding.mjs';
 import {runCommand} from './lib/benchmark-process.mjs';
 import {digest} from './lib/wasmbench.mjs';
 import {atomicJSON} from './lib/benchmark-plan.mjs';
+import {adaptLegacyWago} from './lib/wago-legacy.mjs';
 const [directoryArg, engine, baseArg] = process.argv.slice(2);
 const directory=resolve(directoryArg), base=resolve(baseArg), root=join(directory,'harness',engine);
 const pin=JSON.parse(await readFile(join(directory,'pins.json'))).pins.find(p=>p.engine===engine);
@@ -38,6 +39,14 @@ if(engine==='wago') {
  const wago=process.env.WEEKLY_WAGO_SOURCE || source;
  const revision=(await run('git',['-C',wago,'rev-parse','HEAD'])).output.trim();
  if(revision!==pin.revision || (await run('git',['-C',wago,'status','--porcelain','--untracked-files=no'])).output.trim())throw Error('Wago source pin differs or is dirty');
+ const api=await readFile(join(wago,'wago.go'),'utf8');
+ if(!api.includes('func NewImports(')){
+  const module=JSON.parse((await run('go',['mod','download','-json','github.com/wago-org/wasi@v0.3.1'])).output);
+  if(!module.Dir || !module.Sum)throw Error('WASI compatibility source receipt missing');
+  const apiDirectory=join(wago,'src/wago');
+  const legacyApi=(await Promise.all((await readdir(apiDirectory)).filter(f=>f.endsWith('.go')&&!f.endsWith('_test.go')).map(f=>readFile(join(apiDirectory,f),'utf8')))).join('\n');
+  provenance.compatibility=await adaptLegacyWago({root,base,module,run,api:legacyApi});
+ }
  await build('--runtimes','wago','--wago-source',wago);
 } else if(engine==='wazero') {
  const download=JSON.parse((await run('go',['mod','download','-json','github.com/tetratelabs/wazero@'+pin.revision])).output);
