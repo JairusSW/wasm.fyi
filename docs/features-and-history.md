@@ -57,7 +57,11 @@ Unsupported configurations retain explicit reasons. Incorrect results, traps, cr
 
 ## Historical interpretation
 
-History is a retrospective experiment: weekly Wago commits run **today** on the same pinned current corpus against fixed current comparison engines. `targetWeek` and `revisionDate` never replace `collectedAt`. The baseline's versions, input digests and report are preserved alongside history, independently of daily snapshot retention. Historical results are descriptive comparisons on the recorded host; they do not reconstruct old hardware, old compilers, or every engine's past releases.
+The legacy Wago backfill is a retrospective experiment: weekly Wago commits run **today** on the same pinned current corpus against fixed current comparison engines. `targetWeek` and `revisionDate` never replace `collectedAt`. The baseline's versions, input digests and report are preserved alongside history, independently of daily snapshot retention. Historical results are descriptive comparisons on the recorded host; they do not reconstruct old hardware, old compilers, or every engine's past releases.
+
+Multi-engine weekly snapshots bind each supported engine to its own exact source revision. Unchanged Git hashes reuse existing measurements when the machine, corpus contracts, adapter recipe and compiler configuration also match. The additional history date references the original report IDs and bundle URLs, preserves their collection timestamps, and creates no duplicate runs or evidence files. Comparisons of the same reports are labeled **reused evidence**, with no new confidence interval.
+
+The All Workloads group rows show arithmetic averages of each engine's successful measurements, with contributing counts in the tooltip. Individual workload values and the row heatmap are independent of the comparison baseline.
 
 The backfill starts eight weeks before the UTC date anchor and uses the last reachable Wago commit before each weekly midnight. `WASMBENCH_HISTORY_ANCHOR=2026-10-01T00:00:00Z` reproduces the initial August 6 through September 24 selection. `WASMBENCH_HISTORY_WEEKS` accepts 1–52; the normal workflow uses eight. A fixed corpus source can be selected independently with `WASMBENCH_CORPUS_SOURCE`. Detached revision worktrees and isolated adapter copies preserve existing changes. The legacy adapter maps the old `PreparedFunction`/imports/host callback API without changing engine source. Historical correctness failures remain visible rather than becoming historical speed claims.
 

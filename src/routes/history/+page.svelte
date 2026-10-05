@@ -170,14 +170,15 @@ import { historyCell, historyChange, historySegments, historicalCallWorkloads, h
           const before=historyCell(s.machine,b.id,cid,RM,f),after=historyCell(s.machine,b.id,cid,RM,t);
           const change=historyChange(before,after);if(!change)return null;
           const d=change.delta,interval=change.interval;
-          const verdict=change.fixed?'fixed comparison baseline':!interval?'inconclusive':interval[0]>.02?'regressed':interval[1]<-.02?'improved':interval[0]>=-.02 && interval[1]<=.02?'no practical change':'inconclusive';
-          const colors:Record<string,string>={regressed:'var(--bad)',improved:'var(--good)',inconclusive:'var(--fg2)','no practical change':'var(--fg3)','fixed comparison baseline':'var(--fg3)'};
-          return {name:workloadName(b.id),group:b.group,details:'',before:fmtU(before.v!,MET[RM].u),after:fmtU(after.v!,MET[RM].u),d,delta:relative(1+d,ui.deltaFormat),ci:interval?`${relative(1+interval[0],ui.deltaFormat)} – ${relative(1+interval[1],ui.deltaFormat)}`:'not available',verdict,vColor:colors[verdict]};
+          const verdict=change.fixed?'reused evidence':!interval?'inconclusive':interval[0]>.02?'regressed':interval[1]<-.02?'improved':interval[0]>=-.02 && interval[1]<=.02?'no practical change':'inconclusive';
+          const colors:Record<string,string>={regressed:'var(--bad)',improved:'var(--good)',inconclusive:'var(--fg2)','no practical change':'var(--fg3)','reused evidence':'var(--fg3)'};
+          return {name:workloadName(b.id),group:b.group,details:'',before:fmtU(before.v!,MET[RM].u),after:fmtU(after.v!,MET[RM].u),d,delta:relative(1+d,ui.deltaFormat),ci:change.fixed?'not applicable':interval?`${relative(1+interval[0],ui.deltaFormat)} – ${relative(1+interval[1],ui.deltaFormat)}`:'not available',verdict,vColor:colors[verdict]};
         }).filter(x=>x!=null).sort((a,b)=>Math.abs(b.d)-Math.abs(a.d));
         const beforeCall=SER[cid]?.[f],afterCall=SER[cid]?.[t];
+        const reusedCall=directionRows.length===callIds.length&&directionRows.every(r=>r.verdict==='reused evidence');
         const rows=M.key==='roundTrip'?(beforeCall!=null && afterCall!=null && Number.isFinite(beforeCall) && Number.isFinite(afterCall)?[{
           name:'Estimated call round trip',group:'Host calls',before:fmtU(beforeCall,'ms'),after:fmtU(afterCall,'ms'),d:afterCall/beforeCall-1,
-          delta:relative(afterCall/beforeCall,ui.deltaFormat),ci:'not available',verdict:'inconclusive',vColor:'var(--fg2)',
+          delta:relative(afterCall/beforeCall,ui.deltaFormat),ci:reusedCall?'not applicable':'not available',verdict:reusedCall?'reused evidence':'inconclusive',vColor:reusedCall?'var(--fg3)':'var(--fg2)',
           details:`Before: ${historyCallDetails(s,cid,f)}\nAfter: ${historyCallDetails(s,cid,t)}`
         }]:[]):directionRows;
 		const cnt = (v: string) => rows.filter((r) => r.verdict === v).length;
