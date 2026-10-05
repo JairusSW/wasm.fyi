@@ -75,7 +75,7 @@ export async function validateData(directory) {
         assert(sha.test(entry.hostSha256),'Invalid host digest');
         const host=index.hosts?.[entry.hostSha256];
         assert(host && digest(JSON.stringify(host))===entry.hostSha256,'Host digest mismatch');
-        if(entry.host !== undefined)assert.deepEqual(entry.host,host,'Conflicting host metadata');
+        if(entry.host !== undefined)for(const [key,value] of Object.entries(entry.host))assert.deepEqual(value,host[key],'Conflicting host metadata');
         entry.host=host;
       }
       assert(sha.test(entry.id) && entry.projection === `${entry.id}.summary.json`, 'Unsafe projection path');

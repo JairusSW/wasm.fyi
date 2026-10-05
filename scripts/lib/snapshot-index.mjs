@@ -11,7 +11,7 @@ export async function writeIndex(directory, reports) {
     const { id, runId, created, host, evidence, evidenceSha256 } = report;
     const hostSha256 = digest(JSON.stringify(host));
     hosts[hostSha256] = host;
-    entries.push({ id, runId, created, hostSha256, evidence, evidenceSha256, projection, projectionSha256: digest(bytes) });
+    entries.push({ id, runId, created, host:{os:host.os,arch:host.arch,hostname:host.hostname}, hostSha256, evidence, evidenceSha256, projection, projectionSha256: digest(bytes) });
   }
   await writeFile(join(directory, 'index.json'), JSON.stringify({ schema: 2, hosts, reports: entries }) + '\n');
 }

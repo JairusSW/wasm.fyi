@@ -96,7 +96,7 @@ try{
      if(machine==='local')await script('weekly-retire.mjs',[native]);
      else await ssh('cd '+quote(remoteSite)+' && '+quote(remoteNode)+' scripts/weekly-retire.mjs '+quote(native));
     }
-    progress.previous=native;progress.completed.push(date);progress.status='completed';await save();
+    progress.previous=native;if(!progress.completed.includes(date))progress.completed.push(date);progress.status='completed';await save();
     if(progress.completed.length%state.publishEvery===0)try{await publish(machine);}catch(error){progress.publicationErrors??=[];progress.publicationErrors.push({date,reason:error.message});await save();}
    }catch(error){
     if(abort.signal.aborted)throw error;
