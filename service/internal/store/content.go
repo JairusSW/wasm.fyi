@@ -61,6 +61,8 @@ func (s *Store) Install(id string, r io.Reader) error {
 	return s.installBytes(id, b)
 }
 func (s *Store) installBytes(id string, b []byte) error {
+	s.contentMu.Lock()
+	defer s.contentMu.Unlock()
 	if !wire.IsHash(id) || len(b) > wire.ChunkBytes || wire.Hash(b) != id {
 		return wire.Invalid("invalid content")
 	}
@@ -86,6 +88,9 @@ func (s *Store) installBytes(id string, b []byte) error {
 	} else if !os.IsNotExist(e) {
 		return e
 	}
+	if int64(len(b)) > s.limits.ContentBytes-s.contentBytes {
+		return ErrQuota
+	}
 	directory := filepath.Join(s.root, "objects")
 	f, e := os.CreateTemp(directory, ".install-")
 	if e != nil {
@@ -97,6 +102,10 @@ func (s *Store) installBytes(id string, b []byte) error {
 		return e
 	}
 	if e = f.Sync(); e != nil {
+		f.Close()
+		return e
+	}
+	if e = s.checkpoint("content-synced"); e != nil {
 		f.Close()
 		return e
 	}
@@ -116,6 +125,11 @@ func (s *Store) installBytes(id string, b []byte) error {
 		if !bytes.Equal(existing, b) {
 			return fmt.Errorf("conflicting content installation")
 		}
+	} else {
+		s.contentBytes += int64(len(b))
+	}
+	if e = s.checkpoint("content-installed"); e != nil {
+		return e
 	}
 	if e = os.Remove(f.Name()); e != nil {
 		return e

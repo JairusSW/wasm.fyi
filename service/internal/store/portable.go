@@ -3,6 +3,7 @@ package store
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -243,8 +244,14 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 			if jobs[id] {
 				continue
 			}
+			if _, e = s.get(key("aborted", id)); e == nil {
+				continue
+			} else if !errors.Is(e, pebble.ErrNotFound) {
+				return nil, e
+			}
 			for _, export := range job.Exports {
 				for _, object := range export.Manifest.Objects {
+					marked[object.SHA256] = true
 					b, e := s.content(object.SHA256)
 					if os.IsNotExist(e) {
 						continue
@@ -384,6 +391,10 @@ func Rebuild(source, destination, publisher string) error {
 			return e
 		}
 		batch := target.db.NewBatch()
+		if e = target.releaseImport(batch, jobID, job); e != nil {
+			batch.Close()
+			return e
+		}
 		for _, entry := range []struct{ k, v []byte }{{key("revision", id), rb}, {key("accepted", rev.Job), []byte(id)}, {key("current"), []byte(id)}} {
 			if e = batch.Set(entry.k, entry.v, nil); e != nil {
 				batch.Close()

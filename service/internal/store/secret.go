@@ -10,7 +10,7 @@ import (
 func (s *Store) CursorKey() ([]byte, error) {
 	s.publish.Lock()
 	defer s.publish.Unlock()
-	if s.poisoned {
+	if s.poisoned.Load() {
 		return nil, ErrNeedsRestart
 	}
 	fs, e := os.OpenRoot(s.root)

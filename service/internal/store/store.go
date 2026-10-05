@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"sort"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/JairusSW/wasm.fyi/service/internal/wire"
@@ -37,18 +38,21 @@ type Revision struct {
 	Qualification      string    `json:"operatorQualification"`
 }
 type Store struct {
-	db        *pebble.DB
-	root      string
-	publish   sync.Mutex
-	mu        sync.RWMutex
-	published map[string]Revision
-	current   string
-	publisher string
-	fail      func(string) error
-	poisoned  bool
-	objects   *os.Root
-	users     sync.RWMutex
-	closed    bool
+	db           *pebble.DB
+	root         string
+	publish      sync.Mutex
+	mu           sync.RWMutex
+	published    map[string]Revision
+	current      string
+	publisher    string
+	fail         func(string) error
+	poisoned     atomic.Bool
+	objects      *os.Root
+	users        sync.RWMutex
+	closed       bool
+	limits       Limits
+	contentMu    sync.Mutex
+	contentBytes int64
 }
 
 // Key fields are length-prefixed, versioned tuples, never slash concatenation.
@@ -61,6 +65,12 @@ func key(fields ...string) []byte {
 	return out
 }
 func Open(root, publisher string) (*Store, error) {
+	return OpenWithLimits(root, publisher, DefaultLimits())
+}
+func OpenWithLimits(root, publisher string, limits Limits) (*Store, error) {
+	if limits.PendingJobs < 1 || limits.PendingBytes < 1 || limits.ContentBytes < wire.ChunkBytes {
+		return nil, wire.Invalid("invalid storage limits")
+	}
 	if publisher == "" {
 		return nil, fmt.Errorf("publisher identity required")
 	}
@@ -90,8 +100,18 @@ func Open(root, publisher string) (*Store, error) {
 		db.Close()
 		return nil, e
 	}
-	s := &Store{db: db, root: root, publisher: publisher, published: map[string]Revision{}, objects: objects}
+	s := &Store{db: db, root: root, publisher: publisher, published: map[string]Revision{}, objects: objects, limits: limits}
+	if e = s.scanContentUsage(); e != nil {
+		db.Close()
+		objects.Close()
+		return nil, e
+	}
 	if e = s.restore(); e != nil {
+		db.Close()
+		objects.Close()
+		return nil, e
+	}
+	if e = s.initializeAdmission(); e != nil {
 		db.Close()
 		objects.Close()
 		return nil, e
@@ -219,7 +239,7 @@ func (s *Store) Revisions() []string {
 func (s *Store) Submit(j wire.Job) (string, error) {
 	s.publish.Lock()
 	defer s.publish.Unlock()
-	if s.poisoned {
+	if s.poisoned.Load() {
 		return "", ErrNeedsRestart
 	}
 	if e := j.Validate(); e != nil {
@@ -233,6 +253,19 @@ func (s *Store) Submit(j wire.Job) (string, error) {
 		return "", wire.Invalid("job manifest exceeds ceiling")
 	}
 	id := wire.Hash(b)
+	if _, e = s.get(key("aborted", id)); e == nil {
+		return "", ErrConflict
+	} else if !errors.Is(e, pebble.ErrNotFound) {
+		return "", e
+	}
+	if old, e := s.get(key("import", id)); e == nil {
+		if !bytes.Equal(old, b) {
+			return "", ErrConflict
+		}
+		return id, nil
+	} else if !errors.Is(e, pebble.ErrNotFound) {
+		return "", e
+	}
 	bindings := []struct{ key, value []byte }{
 		{key("session", j.Session), mustEncode([]string{j.Plan, j.ConfiguredHarnessPin})},
 		{key("member", j.Session, j.Machine), []byte(j.ParentBundleSHA256)},
@@ -240,6 +273,9 @@ func (s *Store) Submit(j wire.Job) (string, error) {
 	}
 	batch := s.db.NewBatch()
 	defer batch.Close()
+	if e = s.reserveImport(batch, id, j); e != nil {
+		return "", e
+	}
 	for _, binding := range bindings {
 		old, e := s.get(binding.key)
 		if e == nil && string(old) != string(binding.value) {
@@ -256,7 +292,7 @@ func (s *Store) Submit(j wire.Job) (string, error) {
 		return "", e
 	}
 	if e = batch.Commit(pebble.Sync); e != nil {
-		s.poisoned = true
+		s.poisoned.Store(true)
 		return "", e
 	}
 	return id, nil
@@ -325,10 +361,15 @@ func (s *Store) Commit(id string) (string, error) {
 func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 	s.publish.Lock()
 	defer s.publish.Unlock()
-	if s.poisoned {
+	if s.poisoned.Load() {
 		return "", ErrNeedsRestart
 	}
 	if e := ctx.Err(); e != nil {
+		return "", e
+	}
+	if _, e := s.get(key("aborted", id)); e == nil {
+		return "", ErrConflict
+	} else if !errors.Is(e, pebble.ErrNotFound) {
 		return "", e
 	}
 	// A redelivery after any later publication resolves to the original revision.
@@ -632,6 +673,9 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 	rb, _ := wire.Encode(rev)
 	batch := s.db.NewBatch()
 	defer batch.Close()
+	if e = s.releaseImport(batch, id, j); e != nil {
+		return "", e
+	}
 	for _, pair := range []struct{ k, v []byte }{{key("revision", revID), rb}, {key("accepted", id), []byte(revID)}, {key("current"), []byte(revID)}} {
 		if e = batch.Set(pair.k, pair.v, nil); e != nil {
 			return "", e
@@ -644,20 +688,20 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 		return "", e
 	}
 	if e = batch.Commit(pebble.Sync); e != nil {
-		s.poisoned = true
+		s.poisoned.Store(true)
 		return "", e
 	}
 	// Deliberately separate Pebble visibility from public visibility until sync.
 	if e = s.checkpoint("after-commit"); e != nil {
-		s.poisoned = true
+		s.poisoned.Store(true)
 		return "", e
 	}
 	if e = s.portable(revID); e != nil {
-		s.poisoned = true
+		s.poisoned.Store(true)
 		return "", e
 	}
 	if e = s.checkpoint("after-portable"); e != nil {
-		s.poisoned = true
+		s.poisoned.Store(true)
 		return "", e
 	}
 	s.mu.Lock()

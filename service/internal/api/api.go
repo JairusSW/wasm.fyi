@@ -147,6 +147,14 @@ func problem(w http.ResponseWriter, r *http.Request, e error) {
 		status = 409
 		message = e.Error()
 		code = "immutable_conflict"
+	} else if errors.Is(e, store.ErrQuota) {
+		status = 507
+		message = e.Error()
+		code = "storage_quota"
+	} else if errors.Is(e, store.ErrUndeclared) {
+		status = 403
+		message = e.Error()
+		code = "undeclared_object"
 	} else if errors.Is(e, wire.ErrInvalid) {
 		status = 400
 		message = "invalid request"
@@ -201,6 +209,20 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("X-Content-Type-Options", "nosniff")
+	if r.URL.Path == "/healthz" || r.URL.Path == "/readyz" {
+		if r.Method != "GET" {
+			w.Header().Set("Allow", "GET")
+			w.WriteHeader(405)
+			return
+		}
+		health := a.Store.Health()
+		status := 200
+		if r.URL.Path == "/readyz" && !health.Ready {
+			status = 503
+		}
+		respond(w, r, status, health, false)
+		return
+	}
 	if strings.HasPrefix(r.URL.Path, "/admin/v1/") {
 		a.admin(w, r)
 		return
@@ -416,13 +438,39 @@ func (a *API) admin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	parts := strings.Split(strings.Trim(strings.TrimPrefix(r.URL.Path, "/admin/v1/"), "/"), "/")
+	if len(parts) == 1 && parts[0] == "metrics" && r.Method == "GET" {
+		stats, e := a.Store.Stats()
+		if e != nil {
+			problem(w, r, e)
+			return
+		}
+		respond(w, r, 200, stats, false)
+		return
+	}
 	if len(parts) == 2 && parts[0] == "objects" && r.Method == "PUT" {
 		r.Body = http.MaxBytesReader(w, r.Body, wire.ChunkBytes)
-		if e := a.Store.Install(parts[1], r.Body); e != nil {
+		if e := a.Store.InstallDeclared(parts[1], r.Body); e != nil {
 			problem(w, r, e)
 			return
 		}
 		respond(w, r, 201, map[string]string{"sha256": parts[1]}, false)
+		return
+	}
+	if len(parts) == 2 && parts[0] == "imports" && r.Method == "GET" {
+		status, e := a.Store.ImportStatus(parts[1])
+		if e != nil {
+			problem(w, r, e)
+			return
+		}
+		respond(w, r, 200, status, false)
+		return
+	}
+	if len(parts) == 3 && parts[0] == "imports" && parts[2] == "abort" && r.Method == "POST" {
+		if e := a.Store.Abort(parts[1]); e != nil {
+			problem(w, r, e)
+			return
+		}
+		respond(w, r, 200, map[string]string{"id": parts[1], "state": "aborted"}, false)
 		return
 	}
 	if len(parts) == 1 && parts[0] == "imports" && r.Method == "POST" {

@@ -128,7 +128,7 @@ func (s *Store) Backup(ctx context.Context, destination string) (BackupManifest,
 	s.publish.Lock()
 	defer s.publish.Unlock()
 	manifest := BackupManifest{Schema: 1, Current: s.Current(), Files: []wire.Object{}}
-	if s.poisoned {
+	if s.poisoned.Load() {
 		return manifest, ErrNeedsRestart
 	}
 	if _, e := os.Lstat(destination); e == nil {
@@ -140,12 +140,19 @@ func (s *Store) Backup(ctx context.Context, destination string) (BackupManifest,
 	if e != nil {
 		return manifest, e
 	}
+	required, e := s.reachable(false)
+	if e != nil {
+		return manifest, e
+	}
 	parent := filepath.Dir(destination)
 	temp, e := os.MkdirTemp(parent, ".backup-")
 	if e != nil {
 		return manifest, e
 	}
 	defer os.RemoveAll(temp)
+	if e = os.Mkdir(filepath.Join(temp, "objects"), 0700); e != nil {
+		return manifest, e
+	}
 	// Checkpoint metadata and immutable content describe the same serialized
 	// publication state. Uploads may complete during copying, but cannot publish.
 	if e = s.db.Checkpoint(filepath.Join(temp, "checkpoint"), pebble.WithFlushedWAL()); e != nil {
@@ -195,6 +202,9 @@ func (s *Store) Backup(ctx context.Context, destination string) (BackupManifest,
 	for _, id := range objects {
 		record, e := copyRegular(ctx, s.objects, id, filepath.Join(temp, "objects", id), wire.ChunkBytes)
 		if e != nil {
+			if os.IsNotExist(e) && !required[id] {
+				continue
+			}
 			return manifest, e
 		}
 		if record.SHA256 != id {

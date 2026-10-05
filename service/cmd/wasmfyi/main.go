@@ -32,6 +32,11 @@ func run(ctx context.Context, args []string) error {
 	addr := flags.String("listen", "127.0.0.1:8090", "HTTP listen address")
 	publisher := flags.String("publisher", "local-coordinator", "authenticated publisher identity")
 	output := flags.String("output", "", "new backup/restore/rebuild destination")
+	apply := flags.Bool("apply", false, "apply orphan quarantine/cleanup; gc defaults to preview")
+	limits := store.DefaultLimits()
+	flags.IntVar(&limits.PendingJobs, "max-pending-jobs", limits.PendingJobs, "maximum staged imports")
+	flags.Int64Var(&limits.PendingBytes, "max-pending-bytes", limits.PendingBytes, "maximum declared bytes across staged imports")
+	flags.Int64Var(&limits.ContentBytes, "max-content-bytes", limits.ContentBytes, "maximum bytes in content storage")
 	cert := flags.String("tls-cert", "", "TLS certificate for direct non-loopback serving")
 	key := flags.String("tls-key", "", "TLS key for direct non-loopback serving")
 	if e := flags.Parse(args); e != nil {
@@ -55,20 +60,27 @@ func run(ctx context.Context, args []string) error {
 			return store.Restore(ctx, *root, *output, *publisher)
 		}
 		return store.Rebuild(*root, *output, *publisher)
-	case "serve", "backup":
+	case "serve", "backup", "gc":
 	default:
-		return fmt.Errorf("unknown command %q; use serve, backup, verify-backup, restore or rebuild", action)
+		return fmt.Errorf("unknown command %q; use serve, backup, verify-backup, restore, rebuild or gc", action)
 	}
 	if action == "backup" && *output == "" {
 		return fmt.Errorf("backup requires --output")
 	}
 	// One process owns the database. CLI backups are offline; attempts to open a
 	// live owner's data fail on Pebble's lock rather than bypassing that owner.
-	s, e := store.Open(*root, *publisher)
+	s, e := store.OpenWithLimits(*root, *publisher, limits)
 	if e != nil {
 		return e
 	}
 	defer s.Close()
+	if action == "gc" {
+		report, e := s.GC(ctx, store.GCOptions{Apply: *apply, Grace: 24 * time.Hour, QuarantineGrace: 7 * 24 * time.Hour})
+		if e != nil {
+			return e
+		}
+		return json.NewEncoder(os.Stdout).Encode(report)
+	}
 	if action == "backup" {
 		manifest, e := s.Backup(ctx, *output)
 		if e != nil {

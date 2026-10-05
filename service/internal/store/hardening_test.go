@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"syscall"
 	"testing"
 	"time"
 
@@ -137,5 +138,36 @@ func TestScopedIndexesSkipUnrelatedCorruption(t *testing.T) {
 	reports, e := s.CatalogPage(context.Background(), rev, "report", 0, 100)
 	if e != nil || len(reports.Items) != 1 {
 		t.Fatalf("report page touched unrelated results: %v", e)
+	}
+}
+
+func TestContentDiskFailureDoesNotPublishAndRetryRestoresDurability(t *testing.T) {
+	s := openTest(t, t.TempDir())
+	defer s.Close()
+	body := []byte("disk-failure-fixture")
+	id := wire.Hash(body)
+	for _, point := range []string{"content-synced", "content-installed"} {
+		s.fail = func(stage string) error {
+			if stage == point {
+				return syscall.ENOSPC
+			}
+			return nil
+		}
+		e := s.Install(id, bytes.NewReader(body))
+		if !errors.Is(e, syscall.ENOSPC) {
+			t.Fatal("disk failure injection was not reached", point, e)
+		}
+		if s.Current() != "" {
+			t.Fatal("filesystem failure published dataset")
+		}
+		s.fail = nil
+		if e = s.Install(id, bytes.NewReader(body)); e != nil {
+			t.Fatal("durability retry failed", e)
+		}
+		if _, e = s.content(id); e != nil {
+			t.Fatal(e)
+		}
+		id = wire.Hash(append(body, byte(1)))
+		body = append(body, byte(1))
 	}
 }

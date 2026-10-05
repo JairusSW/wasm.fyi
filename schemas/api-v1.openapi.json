@@ -1330,6 +1330,9 @@
           },
           "413": {
             "description": "Payload exceeds byte limit"
+          },
+          "507": {
+            "description": "Configured storage or pending-import quota exceeded"
           }
         }
       }
@@ -1372,6 +1375,9 @@
           },
           "413": {
             "description": "Payload exceeds byte limit"
+          },
+          "507": {
+            "description": "Configured storage or pending-import quota exceeded"
           }
         }
       }
@@ -1412,6 +1418,9 @@
           },
           "413": {
             "description": "Payload exceeds byte limit"
+          },
+          "507": {
+            "description": "Configured storage or pending-import quota exceeded"
           }
         }
       }
@@ -1461,6 +1470,127 @@
           },
           "413": {
             "description": "Payload exceeds byte limit"
+          },
+          "507": {
+            "description": "Configured storage or pending-import quota exceeded"
+          }
+        }
+      }
+    },
+    "/admin/v1/imports/{id}": {
+      "get": {
+        "summary": "Bounded import status",
+        "security": [
+          {
+            "publisherToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded metadata"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "409": {
+            "description": "Published or conflicting immutable attempt"
+          },
+          "507": {
+            "description": "Configured storage or pending-import quota exceeded"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./site-v2.schema.json#/$defs/Digest"
+            }
+          }
+        ]
+      }
+    },
+    "/admin/v1/imports/{id}/abort": {
+      "post": {
+        "summary": "Abort an unpublished import and release reservations",
+        "security": [
+          {
+            "publisherToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded metadata"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "409": {
+            "description": "Published or conflicting immutable attempt"
+          },
+          "507": {
+            "description": "Configured storage or pending-import quota exceeded"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./site-v2.schema.json#/$defs/Digest"
+            }
+          }
+        ]
+      }
+    },
+    "/admin/v1/metrics": {
+      "get": {
+        "summary": "Authenticated storage and compaction metrics",
+        "security": [
+          {
+            "publisherToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded metadata"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "409": {
+            "description": "Published or conflicting immutable attempt"
+          },
+          "507": {
+            "description": "Configured storage or pending-import quota exceeded"
+          }
+        }
+      }
+    },
+    "/healthz": {
+      "get": {
+        "summary": "Process/readiness and dataset availability",
+        "responses": {
+          "200": {
+            "description": "Healthy process or ready service"
+          },
+          "503": {
+            "description": "Restart/durability recovery required"
+          }
+        }
+      }
+    },
+    "/readyz": {
+      "get": {
+        "summary": "Process/readiness and dataset availability",
+        "responses": {
+          "200": {
+            "description": "Healthy process or ready service"
+          },
+          "503": {
+            "description": "Restart/durability recovery required"
           }
         }
       }

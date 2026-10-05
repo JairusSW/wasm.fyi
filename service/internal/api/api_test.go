@@ -200,3 +200,54 @@ func TestCompressionAndAuthentication(t *testing.T) {
 		t.Fatal(w.Body.String())
 	}
 }
+
+func TestReadinessAndDeclaredUploads(t *testing.T) {
+	s, e := store.Open(t.TempDir(), "test")
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer s.Close()
+	token := strings.Repeat("x", 32)
+	h, e := New(s, token, bytes.Repeat([]byte{1}, 32))
+	if e != nil {
+		t.Fatal(e)
+	}
+	if w := request(t, h, "GET", "/readyz", nil, nil); w.Code != 200 {
+		t.Fatal(w.Body.String())
+	}
+	if w := request(t, h, "GET", "/admin/v1/metrics", nil, nil); w.Code != 401 {
+		t.Fatal("unauthenticated metrics")
+	}
+	auth := map[string]string{"Authorization": "Bearer " + token}
+	body := []byte("undeclared")
+	if w := request(t, h, "PUT", "/admin/v1/objects/"+wire.Hash(body), body, auth); w.Code != 403 {
+		t.Fatal("unrestricted content upload", w.Code, w.Body.String())
+	}
+	j, _, e := testutil.Fixture("status", time.Now().UTC())
+	if e != nil {
+		t.Fatal(e)
+	}
+	b, _ := wire.Encode(j)
+	created := request(t, h, "POST", "/admin/v1/imports", b, auth)
+	var entry struct {
+		ID string `json:"id"`
+	}
+	if e = json.Unmarshal(created.Body.Bytes(), &entry); e != nil {
+		t.Fatal(e)
+	}
+	status := request(t, h, "GET", "/admin/v1/imports/"+entry.ID, nil, auth)
+	if status.Code != 200 || !strings.Contains(status.Body.String(), `"state":"staged"`) {
+		t.Fatal(status.Body.String())
+	}
+	aborted := request(t, h, "POST", "/admin/v1/imports/"+entry.ID+"/abort", nil, auth)
+	if aborted.Code != 200 {
+		t.Fatal(aborted.Body.String())
+	}
+	if w := request(t, h, "POST", "/admin/v1/imports/"+entry.ID+"/commit", nil, auth); w.Code != 409 {
+		t.Fatal("aborted import published", w.Code)
+	}
+	stats := request(t, h, "GET", "/admin/v1/metrics", nil, auth)
+	if stats.Code != 200 || !strings.Contains(stats.Body.String(), `"pendingJobs":0`) {
+		t.Fatal(stats.Body.String())
+	}
+}

@@ -149,3 +149,45 @@ real-service coordinator publication/resume tests. Docker is unavailable here, s
 this pass does not claim a Linux runtime test or CI result. See the current
 [backend completion audit](backend-acceptance.md) for the still-open producer,
 scientific-policy, query-scale, artifact, online-operations and hosting gates.
+
+
+## Admission, cleanup and abrupt-crash gates
+
+HTTP object uploads now require a permit from an active staged manifest, including
+the exact declared digest and size. Shared objects retain permits until the last
+pending import releases them. Reservations are idempotent and released in the
+same durable batch as publication or an explicit abort. Defaults permit at most
+128 pending imports, 512 MiB of declared pending bytes, and 50 GiB of content
+storage; `--max-pending-jobs`, `--max-pending-bytes` and `--max-content-bytes`
+configure those limits. Content accounting includes quarantined payloads across
+restart. These are content/pending budgets, not a promise to bound every byte in
+Pebble, backups or the host filesystem.
+
+`GET /admin/v1/imports/ID` returns bounded publication progress; `POST
+/admin/v1/imports/ID/abort` releases reservations without altering published
+revisions or rewriting immutable attempt identity. `/healthz` and `/readyz`
+distinguish process readiness from the presence of a published dataset. The
+protected `/admin/v1/metrics` reports pending/content/database bytes and
+compaction state without tool paths or evidence inventories.
+
+Cleanup is preview-first:
+
+```sh
+wasmfyi gc --data /private/data
+wasmfyi gc --data /private/data --apply
+```
+
+It retains all published revisions and active imports. Unreferenced hash-named
+objects must pass a 24-hour grace period before quarantine, then a seven-day
+quarantine interval before deletion. Each deletion needs a validated receipt
+and fresh reachability marks. New imports can rescue quarantined objects;
+unknown filenames are counted and preserved. Backup/cleanup/publication are
+serialized by the database owner, so cleanup cannot remove files while a backup
+is being assembled. No historical revision retention policy is enabled yet.
+
+Subprocess tests abruptly exit at `files`, `indexes`, `before-commit`,
+`after-commit` and `after-portable`, reopen the actual Pebble database and check
+publication/history boundaries plus duplicate delivery. ENOSPC injection after
+content sync and installation checks that retries re-establish durable content
+and never expose a partial dataset. These tests do not fill the real machine's
+disk. Further backend scientific/producer/API/scale gates remain in the audit.
