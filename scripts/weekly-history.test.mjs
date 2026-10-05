@@ -147,3 +147,23 @@ test('the four-month history window includes every Saturday and catches up weekl
  const dates=saturdays(new Date('2026-10-03T00:00:00Z'),18);
  assert.equal(dates.length,18);assert.equal(dates[0],'2026-06-06T00:00:00.000Z');assert.equal(dates.at(-1),'2026-10-03T00:00:00.000Z');
 });
+
+
+import {alignHistoryDates,historyDate} from './lib/history-align.mjs';
+test('aligns different host dates with gaps and preserves original evidence objects',()=>{
+ const old={date:'2026-09-26',revision:'old',status:'measured'},newer={date:'2026-10-03',revision:'new',status:'measured'};
+ const a={st:'ok',report:'arm-old',v:1},b={st:'ok',report:'amd-new',v:2};
+ const h={arm:{points:[old,newer],cells:{exec:[a,a]},versions:{wago:['old','new']}},amd:{points:[newer],cells:{exec:[b]},versions:{wago:['new']}}};
+ alignHistoryDates(h);
+ assert.deepEqual(h.amd.points[0],{date:'2026-09-26',revision:'',status:'not-collected'});
+ assert.equal(h.amd.cells.exec[0].st,'nm');assert.equal(h.amd.cells.exec[0].report,'');assert.equal(h.amd.versions.wago[0],'not collected');
+ assert.equal(h.amd.points[1],newer);assert.equal(h.amd.cells.exec[1],b);assert.equal(h.arm.cells.exec[0],a);
+ const once=structuredClone(h);alignHistoryDates(h);assert.deepEqual(h,once);
+});
+
+test('labels late Eastern Saturday cutoffs by their local calendar date',()=>{
+ assert.equal(historyDate('2026-09-27T03:59:00Z'),'2026-09-26');
+ assert.equal(historyDate('2026-10-03T23:59:00-04:00'),'2026-10-03');
+ assert.equal(historyDate('2026-09-29T14:07:11-04:00'),'2026-09-29');
+ assert.equal(historyDate('2026-09-26'),'2026-09-26');
+});
