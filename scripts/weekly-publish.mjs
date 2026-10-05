@@ -58,6 +58,7 @@ try {
    const origin=weekly.results.find(w=>new Date(w.targetWeek).toISOString()===new Date(plan.sourcePin.targetWeek).toISOString());
    const point=origin?.engines?.[receipt.runtime.id];assert(point?.reports?.length,'Reuse evidence has not been published');
    for(const ref of point.reports)assert(previous.reports.some(r=>r.runId===ref.runId&&r.sourceReportSha256===ref.reportSha256&&r.created===ref.collectedAt),'Reuse report reference differs');
+   if(target.gaps)delete target.gaps[receipt.runtime.id];
    target.engines[receipt.runtime.id]={...point,source:pin,reusedFrom:origin.targetWeek,parity:assertCaptureParity(plan,receipt,calendar)};
    console.log(engine,machine,pin.revision.slice(0,12),'unchanged source: reused existing report and bundle references');
    continue;
@@ -95,6 +96,7 @@ try {
   assert.equal(new Set(imported.reports.flatMap(r=>r.workloads.map(w=>w.id))).size,168,'Missing workload evidence');
   merged=appendReports(merged,imported.reports);
   for(const report of imported.reports)for(const name of [report.evidence,report.trialsEvidence,report.throughputEvidence])if(name)await cp(join(incoming,name),join(staged,name));
+  if(target.gaps)delete target.gaps[runtime];
   target.engines[runtime]={revision:plan.sourcePin.revision,runtimeVersion:description.runtime_version,backend:description.backend,status:'measured',collectedAt:imported.reports[0].created,
    source:plan.sourcePin,harnessRevision:receipt.harnessRevision,parity:assertCaptureParity(plan,receipt,calendar),reports:imported.reports.map(r=>({runId:r.runId,collectedAt:r.created,reportSha256:r.sourceReportSha256}))};
   const retained=join(site,'data/benchmark-runs',plan.id,machine);await mkdir(retained,{recursive:true});
