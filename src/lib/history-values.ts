@@ -5,6 +5,17 @@ import type { CfgId, MachineId, MetricKey, OtMetricKey } from './data/types';
 import type { Scope } from './model';
 
 export const historyCell=(machine:MachineId,workload:string,cid:CfgId,metric:MetricKey,i:number):ViewCell=>viewData.history[machine].cells[`${workload}|${cid}|${metric}`]?.[i] || {st:'nm',report:''};
+/** Mark the first measured version and changes from the previous measured version, skipping gaps. */
+export function historyVersionChanges(versions:string[],values:number[]):number[] {
+ let previous='';const changes:number[]=[];
+ for(const [i,value] of values.entries()){
+  const version=versions[i];
+  if(!Number.isFinite(value)||!version||version==='not collected')continue;
+  if(version!==previous)changes.push(i);
+  previous=version;
+ }
+ return changes;
+}
 export function historyChange(before:ViewCell,after:ViewCell) {
 	if(!valid(before)||!valid(after))return null;
 	const delta=after.v!/before.v!-1;

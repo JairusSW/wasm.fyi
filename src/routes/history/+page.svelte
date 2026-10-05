@@ -10,7 +10,8 @@
 	import { benchVal, otSeries } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 import { viewData } from '$lib/view-data';
-import { historyCell, historyChange, historySegments, historyCurve, historicalCallWorkloads, historyCallDetails, historyAggregateDetails } from '$lib/history-values';
+import { historyCell, historyChange, historySegments, historyCurve, historicalCallWorkloads, historyCallDetails, historyAggregateDetails, historyVersionChanges } from '$lib/history-values';
+import HistoryMarker from '$lib/components/HistoryMarker.svelte';
 
 	const W = 860;
 	const HC = 280;
@@ -80,14 +81,15 @@ import { historyCell, historyChange, historySegments, historyCurve, historicalCa
 		plotC.map((c) => {
 			const sel = c.id === ui.histCfg;
 			const Y = scale.Y;
+			const versions=new Set(historyVersionChanges(viewData.history[ui.machine].versions[c.id] || [],SNAPS.map(p=>val(c.id,p.i))));
 			return {
 				c,
 				sel,
 				width: sel ? 2.2 : 1.2,
 				op: sel ? 1 : 0.7,
-                points: SNAPS.filter(p=>Number.isFinite(val(c.id,p.i))).map(p=>({i:p.i,x:X(p.i),y:Y(val(c.id,p.i))})),
+                points: SNAPS.filter(p=>Number.isFinite(val(c.id,p.i))).map(p=>({i:p.i,x:X(p.i),y:Y(val(c.id,p.i)),version:versions.has(p.i)?verAt(c.id,p.i,ui.machine):''})),
                 segs:historySegments(SNAPS.map(p=>val(c.id,p.i)),X,Y,true),
-				bumps: SNAPS.filter((p) => p.i > 0 && Number.isFinite(val(c.id,p.i)) && verAt(c.id, p.i,ui.machine) !== verAt(c.id, p.i - 1,ui.machine)).map((p) => {
+				bumps: SNAPS.filter((p) => versions.has(p.i)).map((p) => {
 					const x = X(p.i);
 					const y = Y(val(c.id, p.i));
 					return { i: p.i, tf: `translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(45)`, bl: pc(x, W), bt: (((y - 8) / HC) * 100).toFixed(2) + '%', ver: verAt(c.id, p.i,ui.machine) };
@@ -281,16 +283,8 @@ import { historyCell, historyChange, historySegments, historyCurve, historicalCa
 					/>
 				{/each}
 			{/each}
-			{#each lines as l (l.c.id)}
-				{#each l.bumps as b (b.i)}
-					<rect x="-4" y="-4" width="8" height="8" transform={b.tf} style:fill={l.c.col} style:opacity={l.op} style="stroke:var(--bg2);stroke-width:1.5" />
-				{/each}
-			{/each}
 			<line x1={X(f).toFixed(1)} x2={X(f).toFixed(1)} y1="38" y2="254" style="stroke:var(--fg)" />
 			<line x1={X(t).toFixed(1)} x2={X(t).toFixed(1)} y1="38" y2="254" style="stroke:var(--fg)" />
-			{#each lines as l (l.c.id)}
-                {#each l.points as p (p.i)}<circle class="history-point" cx={p.x} cy={p.y} r={l.sel ? 3.5 : 3} style:fill={l.c.col} style="stroke:var(--bg2);stroke-width:1" />{/each}
-            {/each}
             {#if tip}
 				<line x1={tip.x} x2={tip.x} y1="30" y2="254" style="stroke:var(--fg3)" />
 				{#each tip.rows as d (d.c.id)}<circle cx={tip.x} cy={d.y} r={d.r} style:stroke={d.c.col} style="fill:var(--bg2);stroke-width:2" />{/each}
@@ -309,6 +303,9 @@ import { historyCell, historyChange, historySegments, historyCurve, historicalCa
 				/>
 			{/each}
 		</svg>
+		{#each lines as l (l.c.id)}
+			{#each l.points as p (p.i)}<HistoryMarker x={pc(p.x,W)} y={pc(p.y,HC)} color={l.c.col} version={p.version} selected={l.sel} />{/each}
+		{/each}
 		{#if tip}
 			<div class="htip float" role="tooltip" style:left={tip.l} style:transform={tip.tf}>
 				<div class="htip-top"><span class="mono">{tip.date}</span><span>vs previous week</span></div>
@@ -345,7 +342,7 @@ import { historyCell, historyChange, historySegments, historyCurve, historicalCa
 	</div>
 	<div class="keys">
 		<span class="key"><span class="k-range"></span>Change-report range — click chart or use From / To</span>
-		<span class="key"><span class="k-diamond"></span>Runtime version bump</span>
+		<span class="key"><span class="k-diamond"></span>Runtime version · circle = unchanged version</span>
 		<span class="key"><span class="k-event"></span>Retrospective source revision — hover for details</span>
 	</div>
 	<div class="report-for">

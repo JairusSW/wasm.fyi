@@ -2,13 +2,18 @@ import { describe, expect, it } from 'vitest';
 import { aggregate } from './aggregates';
 import { fmtU } from './format';
 import { viewCell, viewData } from './view-data';
-import { historyCell, historyChange, historySegments, historyCurve, historySeries, historyCallDetails, historyReusesEvidence, historyCohort } from './history-values';
+import { historyCell, historyChange, historySegments, historyCurve, historySeries, historyCallDetails, historyReusesEvidence, historyCohort, historyVersionChanges } from './history-values';
 import { OTM_KEYS, historyPin } from './data/snapshot';
 import { readFileSync } from 'node:fs';
 import type { Scope } from './model';
 
 const betaIndex=(machine:'m1'|'m2')=>viewData.history[machine].points.findIndex(p=>p.date==='2026-09-29');
 const scope:Scope={machine:'m1',baseline:'A',hide:{},weighting:'workload'};
+it('marks measured versions without inventing version changes around gaps',()=>{
+ expect(historyVersionChanges(['not collected','v1','not collected','v1','v2','v3'],[NaN,1,NaN,2,3,NaN])).toEqual([1,4]);
+ expect(historyVersionChanges(['v1','v2','v1'],[1,NaN,2])).toEqual([0]);
+ expect(historyVersionChanges(['v1','v1','v2'],[NaN,NaN,NaN])).toEqual([]);
+});
 it('curves between recorded endpoints with bounded horizontal tangents',()=>{
  expect(historyCurve('0,10 20,0 40,5')).toBe('M 0,10 C 10,10 10,0 20,0 C 30,0 30,5 40,5');
  expect(historyCurve('20,5')).toBe('M 20,5');
