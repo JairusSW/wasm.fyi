@@ -1,3 +1,4 @@
+import { aggregate, aggregateCohort } from './aggregates';
 import { fmtU } from './format';
 import { viewData, type ViewCell } from './view-data';
 import type { CfgId, MachineId, MetricKey, OtMetricKey } from './data/types';
@@ -65,6 +66,8 @@ export function historySeries(s:Scope,cid:CfgId,key:OtMetricKey,workload=''):num
 	}
 	const groups=new Map(viewData.catalogue.map(w=>[w.id,w.group]));
 	const values=h.points.map((point,i)=>{
+		const current=point.currentLatency?.[cid];
+		if(current && ['exec','compile','inst'].includes(key))return aggregate({...s,snapshot:current},'lat',cid,key==='exec'?3:key==='compile'?0:1)?.v ?? Number.NaN;
 		const cohort=historyCohort(s,cid,key,i);
 		if(point.status!=='measured'||!cohort.length)return Number.NaN;
 		const counts=new Map<string,number>();for(const w of cohort){const g=groups.get(w)!;counts.set(g,(counts.get(g)||0)+1);}
@@ -77,6 +80,8 @@ export function historySeries(s:Scope,cid:CfgId,key:OtMetricKey,workload=''):num
 /** Each date owns its measured cohort; older failures cannot rewrite newer averages. */
 export function historyCohort(s:Scope,cid:CfgId,key:OtMetricKey,i:number):string[] {
  const h=viewData.history[s.machine],metric=metricOf[key];
+ const current=h.points[i]?.currentLatency?.[cid];
+ if(current && ['exec','compile','inst'].includes(key))return aggregateCohort({...s,snapshot:current},'lat',cid,key==='exec'?3:key==='compile'?0:1).cohort.map(w=>w.id);
  const nonFeatures=new Set(viewData.catalogue.filter(w=>!w.id.startsWith('features/')).map(w=>w.id));
  const workloads=['exec','compile','inst'].includes(key)?h.workloads.filter(w=>nonFeatures.has(w)):h.workloads;
  const requested=[...new Set([...(Object.keys(viewData.configurations) as CfgId[]).filter(c=>!s.hide[c]),cid,s.baseline])];
@@ -85,7 +90,8 @@ export function historyCohort(s:Scope,cid:CfgId,key:OtMetricKey,i:number):string
 }
 export function historyAggregateDetails(s:Scope,cid:CfgId,key:OtMetricKey,i:number):string {
  if(!['exec','compile','inst'].includes(key))return '';
- return `Geometric mean of ${historyCohort(s,cid,key,i).length} successful non-feature workloads shared by engines measured on this date; ${s.weighting} weighting. Archived capture; current measurements are separate.`;
+ const capture=viewData.history[s.machine].points[i]?.currentLatency?.[cid]?'Same canonical release capture and workload cohort as the current chart.':'Archived capture.';
+ return `Geometric mean of ${historyCohort(s,cid,key,i).length} successful non-feature workloads; ${s.weighting} weighting. ${capture}`;
 }
 
 
