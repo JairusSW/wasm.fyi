@@ -1,5 +1,6 @@
 // Queue the next shared source snapshot after this host finishes.
 import assert from 'node:assert/strict';
+import {execFileSync} from 'node:child_process';
 import {readFile,writeFile,stat,mkdir} from 'node:fs/promises';
 import {join,resolve,dirname} from 'node:path';
 import {homedir} from 'node:os';
@@ -13,8 +14,10 @@ const [previousArg,directoryArg]=process.argv.slice(2),previous=resolve(previous
 assert((process.platform==='darwin'&&process.arch==='arm64')||(process.platform==='linux'&&process.arch==='x64'),'Weekly history requires native Apple ARM64 or Linux AMD64');
 const machine=process.platform==='darwin'?'local':'hub';
 const prior=await readFile(join(directory,'weekly-run.json'),'utf8').then(JSON.parse,()=>null);
+if(prior?.status==='collected'){console.log('This native weekly snapshot is already sealed.');process.exit(0);}
 if(prior && prior.pid!==process.pid && !['collected','failed','incomplete','paused'].includes(prior.status)){
- try{process.kill(prior.pid,0);throw Error('Next-week supervisor is already running');}catch(error){if(error.code!=='ESRCH')throw error;}
+ let command='';try{command=execFileSync('ps',['-p',String(prior.pid),'-o','args='],{encoding:'utf8'});}catch{}
+ assert(!(command.includes('weekly-next.mjs')&&command.includes(directory)),'Next-week supervisor is already running');
 }
 const abort=new AbortController();for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>abort.abort());
 const state={schema:1,pid:process.pid,status:'waiting-previous',started:new Date().toISOString(),engines:{}};

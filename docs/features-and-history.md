@@ -121,6 +121,9 @@ publishes. Unavailable upstream commits and host build/qualification failures
 remain explicit gaps; they do not receive benchmark values. Logs and completed
 corpus evidence survive interruptions. Completed build caches are retired while
 native runners, analyzers, qualification receipts and sealed evidence remain.
+AMD64 collectors run independently of the SSH connection. Transport outages
+wait and reconnect to the same native job; they do not advance past uncollected
+weeks. The Apple supervisor prevents idle sleep while this finite queue runs.
 
 Production builds serve historical raw reports and projections through a small
 archive index with immutable GitHub commit URLs and SHA-256 digests. The original
