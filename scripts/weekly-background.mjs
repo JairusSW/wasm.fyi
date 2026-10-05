@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {spawn,execFileSync} from 'node:child_process';
 import {open,readFile,writeFile,mkdir,stat} from 'node:fs/promises';
 import {resolve,join} from 'node:path';
+import {homedir} from 'node:os';
 import {site,config} from './lib/wasmbench.mjs';
 import {atomicJSON} from './lib/benchmark-plan.mjs';
 import {runCommand,quote} from './lib/benchmark-process.mjs';
@@ -40,7 +41,9 @@ for(const sig of ['SIGINT','SIGTERM'])process.on(sig,async()=>{
 
 const settings=await config(),host=settings.hosts.hub;
 const remoteSite='/home/hub/.cache/wasm-fyi/weekly-20261003/site',remoteRoot='/home/hub/.cache/wasm-fyi',remoteNode='/home/hub/.cache/wasm-fyi/toolchains/node-v26.4.0-linux-x64/bin/node';
-const sshFlags=['-o','BatchMode=yes','-o','ConnectTimeout=10','-o','ControlMaster=no','-o','ControlPath=none','-o','ServerAliveInterval=5','-o','ServerAliveCountMax=2'];
+const socketDirectory=join(homedir(),'.ssh/controlmasters');await mkdir(socketDirectory,{recursive:true,mode:0o700});
+const socket=join(socketDirectory,'wasm-fyi-hub');
+const sshFlags=['-o','BatchMode=yes','-o','ConnectTimeout=10','-o','ControlMaster=auto','-o','ControlPersist=yes','-o','ControlPath='+socket,'-o','ServerAliveInterval=30','-o','ServerAliveCountMax=6'];
 const transport='ssh '+sshFlags.join(' '),sleep=async()=>{for(let i=0;i<30&&!abort.signal.aborted;i++)await new Promise(r=>setTimeout(r,1000));if(abort.signal.aborted)throw Error('Interrupted');};
 const run=async(program,argv,opts={})=>{for(;;)try{return await runCommand(program,argv,{cwd:site,signal:abort.signal,onLine:line=>console.log(line),...opts});}catch(error){
  if(abort.signal.aborted||!(['ssh','rsync'].includes(program)&&/exited (255|12|30|35);/.test(error.message)))throw error;
@@ -97,8 +100,14 @@ try{
      }
      assert.equal(current.state?.status,'collected','AMD native capture stopped: '+(current.state?.reason??current.state?.status));
     }else{
-     await script('weekly-queue.mjs',[progress.previous,native]);progress.status='collecting';await save();
-     await script('weekly-next.mjs',[progress.previous,native],{log:join(native,'background-native.log')});
+     // A coordinator restart must adopt surviving native work, not duplicate it.
+     const activeNative=pid=>{if(!Number.isInteger(pid))return false;try{const command=execFileSync('ps',['-p',String(pid),'-o','args='],{encoding:'utf8',stdio:['ignore','pipe','ignore']});return command.includes('weekly-next.mjs')&&command.includes(native);}catch{return false;}};
+     let existing=await read(join(native,'weekly-run.json')).catch(()=>null);
+     while(activeNative(existing?.pid)){progress.status='collecting';await save();await sleep();existing=await read(join(native,'weekly-run.json')).catch(()=>null);}
+     if(existing?.status!=='collected'){
+      await script('weekly-queue.mjs',[progress.previous,native]);progress.status='collecting';await save();
+      await script('weekly-next.mjs',[progress.previous,native],{log:join(native,'background-native.log')});
+     }
     }
     if(machine==='hub'){
      // Ship only sealed corpus reports, parent bundles and receipts, not SDK caches.
