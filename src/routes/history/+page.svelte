@@ -23,7 +23,7 @@ import HistoryMarker from '$lib/components/HistoryMarker.svelte';
 	const STEP = (W - pl - pr) / Math.max(1,SNAPS.length-1);
 	const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 	const NOTE = {
-		exec: 'all non-feature workloads · steady execution per invocation',
+		exec: 'shared non-feature reference cohort · steady execution per invocation',
 		wasmHost: 'typed callback · steady Wasm → host latency',
 		hostWasm: 'steady host → Wasm latency',
 		roundTrip: 'estimated sum of directional medians · not a measured nested round trip',
@@ -230,7 +230,7 @@ import HistoryMarker from '$lib/components/HistoryMarker.svelte';
 
 <div class="head">
 	<h1>History</h1>
-	<span class="subtitle fg3">Retrospective engine revisions · frozen workload artifacts · cohort shown per date</span>
+	<span class="subtitle fg3">Retrospective engine revisions · frozen workload artifacts · current-chart reference cohort</span>
 </div>
 <Tabs options={OTM_KEYS.map((k) => [k, OTM[k].l])} value={ui.otMetric} onselect={(k) => (ui.otMetric = k)} />
 <Carousel title="{M.l} History" sub="{oi + 1} / {OTM_KEYS.length} · {NOTE[M.key]}" onprev={() => step(-1)} onnext={() => step(1)} noun="metric" />

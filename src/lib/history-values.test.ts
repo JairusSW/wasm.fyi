@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { aggregate } from './aggregates';
+import { aggregate, aggregateCohort } from './aggregates';
 import { fmtU } from './format';
 import { viewCell, viewData } from './view-data';
 import { historyCell, historyChange, historySegments, historyCurve, historySeries, historyCallDetails, historyReusesEvidence, historyCohort, historyVersionChanges } from './history-values';
@@ -166,8 +166,20 @@ it('does not let an older failure change a later historical average',()=>{
  const cells=h.cells[`${workload}|G|steady`],original=cells[older];
  try{cells[older]={st:'failed',report:original.report,role:original.role};expect(historySeries(selected,'G','exec')![beta]).toBe(before);}finally{cells[older]=original;}
 });
+it('does not let another historical engine change Wago workload selection or its average',()=>{
+ const selected:Scope={machine:'m2',baseline:'A',hide:{},weighting:'corpus'};
+ const h=viewData.history.m2,i=h.points.findIndex(p=>p.date==='2026-10-03');
+ const before=historySeries(selected,'G','exec')![i],cohort=historyCohort(selected,'G','exec',i);
+ const cells=h.cells[`${cohort[0]}|A|steady`],original=cells[i];
+ try{
+  cells[i]={st:'failed',report:original.report,role:original.role};
+  expect(historySeries(selected,'G','exec')![i]).toBe(before);
+  expect(historyCohort(selected,'G','exec',i)).toEqual(cohort);
+ }finally{cells[i]=original;}
+ expect(cohort).toEqual(historyCohort(selected,'G','exec',betaIndex('m2')));
+});
 
-it('recalculates every sealed week from its own shared non-feature measurements',()=>{
+it('recalculates every sealed week on the current reference cohort, preserving missing measurements',()=>{
  let checked=0;
  for(const machine of ['m1','m2'] as const)for(const weighting of ['corpus','workload'] as const){
   const selected:Scope={machine,baseline:'G',hide:{},weighting};
@@ -176,13 +188,12 @@ it('recalculates every sealed week from its own shared non-feature measurements'
    const series=new Map(viewData.applicationConfigurations.map(cid=>[cid,historySeries(selected,cid,key)]));
    for(const [i,point] of h.points.entries()){
     if(point.status!=='measured'||point.currentLatency)continue;
-    const workloads=viewData.catalogue.filter(w=>!w.id.startsWith('features/')&&h.workloads.includes(w.id));
+    const workloads=aggregateCohort({...selected,snapshot:'s1'},'lat','G',key==='exec'?3:key==='compile'?0:1).cohort;
     const ok=(id:string,cid:typeof viewData.applicationConfigurations[number])=>{const c=historyCell(machine,id,cid,metric,i);return !!c.report&&c.st==='ok'&&c.v!=null&&Number.isFinite(c.v)&&c.v>0;};
-    const engines=viewData.applicationConfigurations.filter(cid=>workloads.some(w=>ok(w.id,cid)));
-    const cohort=workloads.filter(w=>engines.every(cid=>ok(w.id,cid)));
     for(const cid of viewData.applicationConfigurations){
+     const cohort=workloads.filter(w=>ok(w.id,cid));
      const value=series.get(cid)?.[i];
-     if(!engines.includes(cid)||!cohort.length){expect(value==null||Number.isNaN(value)).toBe(true);continue;}
+     if(!cohort.length){expect(value==null||Number.isNaN(value)).toBe(true);continue;}
      const groups=[...new Set(cohort.map(w=>w.group))];
      const logs=cohort.map(w=>Math.log(historyCell(machine,w.id,cid,metric,i).v!));
      const expected=weighting==='workload'?Math.exp(logs.reduce((a,b)=>a+b,0)/logs.length):Math.exp(groups.reduce((sum,g)=>{const indices=cohort.flatMap((w,j)=>w.group===g?[j]:[]);return sum+indices.reduce((a,j)=>a+logs[j],0)/indices.length;},0)/groups.length);
