@@ -67,9 +67,9 @@ try{
  const ready=[];
  for(const [i,result] of builds.entries()){
   const engine=changed[i];
-  if(result.status==='rejected'){state.engines[engine]={status:'build-failed',reason:result.reason.message};await save();continue;}
+  if(result.status==='rejected'){console.error(engine+' build failed: '+result.reason.message);state.engines[engine]={status:'build-failed',reason:result.reason.message};await save();continue;}
   try{await script('weekly-collect.mjs',[directory,engine,'--qualify-only']);ready.push(engine);}
-  catch(error){if(abort.signal.aborted)throw error;state.engines[engine]={status:'qualification-failed',reason:error.message};await save();}
+  catch(error){if(abort.signal.aborted)throw error;console.error(engine+' qualification failed: '+error.message);state.engines[engine]={status:'qualification-failed',reason:error.message};await save();}
  }
  if(abort.signal.aborted)throw Error('Interrupted');
  for(const engine of ready){

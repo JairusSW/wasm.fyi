@@ -108,8 +108,8 @@ it does not resolve cutoffs or upstream revisions independently on AMD64.
 Run `just bench --history --deploy` to backfill the saved four-month window on
 both prepared native workspaces. It starts a durable background supervisor;
 `just bench-history-status` shows each machine's week, completed snapshots and
-explicit failures, and `just bench-history-stop` stops it at resumable corpus
-boundaries. Run the same command to resume. This is a finite historical queue;
+explicit failures, and `just bench-history-stop` stops it with completed corpora
+retained. Run the same command to resume. This is a finite historical queue;
 it does not schedule future Saturday runs.
 
 Both machines share one Eastern cutoff/source/corpus/recipe calendar. Each takes
