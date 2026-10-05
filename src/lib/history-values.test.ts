@@ -92,15 +92,17 @@ it('uses one round-trip history tab while keeping directional measurements in it
  expect(historyCallDetails({...scope,baseline:'G'},'G',betaIndex('m1'))).toContain('not a measured nested round trip');
 });
 it('retains a newly recorded engine point without filling its older gap',()=>{
- const h=viewData.history.m1;
- const workload=h.workloads.find(w=>!w.startsWith('features/')&&historyCell('m1',w,'G','steady',1).st==='ok')!;
- const key=`${workload}|A|steady`,prior=h.cells[key];
+ const h=viewData.history.m1,last=h.points.length-1,beta=betaIndex('m1');
+ const workload=h.workloads.find(w=>!w.startsWith('features/')&&historyCell('m1',w,'G','steady',last).st==='ok'&&historyCell('m1',w,'G','steady',beta).st==='ok')!;
+ const prior=h.cells;
  try {
-  h.cells[key]=[{st:'nm',report:'',role:'retrospective-revision'}, {...historyCell('m1',workload,'G','steady',1),role:'retrospective-revision'}];
+  h.cells={...prior};
+  for(const key of Object.keys(h.cells))if(key.endsWith('|A|steady'))h.cells[key]=h.points.map(()=>({st:'nm',report:'',role:'retrospective-revision'}));
+  h.cells[`${workload}|A|steady`][last]={...historyCell('m1',workload,'G','steady',last),role:'retrospective-revision'};
   const values=historySeries({...scope,baseline:'G',hide:Object.fromEntries(viewData.applicationConfigurations.filter(c=>c!=='G'&&c!=='A').map(c=>[c,true]))},'A','exec');
-  expect(values).not.toBeNull();expect(values![0]).toBeNaN();expect(values![1]).toBeGreaterThan(0);
+  expect(values).not.toBeNull();expect(values!.slice(0,last).every(Number.isNaN)).toBe(true);expect(values![last]).toBeGreaterThan(0);
   expect(historySeries({...scope,baseline:'G'},'A','cov')![0]).toBeNaN();
- } finally {if(prior)h.cells[key]=prior;else delete h.cells[key];}
+ } finally {h.cells=prior;}
 });
 
 it('identifies reused WAVM evidence without treating equal version labels as proof',()=>{
