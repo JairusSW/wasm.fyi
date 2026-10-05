@@ -39,6 +39,13 @@ test('external projections retain evidence and reject changed summaries or index
     await writeFile(join(directory, value.evidence), bytes);
     const projected = { ...compact(value), evidenceSha256: digest(bytes) };
     await writeIndex(directory, [projected]);
+    const sharedIndex = JSON.parse(await readFile(join(directory, 'index.json')));
+    assert.equal(Object.keys(sharedIndex.hosts).length,1);
+    assert.equal(sharedIndex.reports[0].host,undefined);
+    sharedIndex.hosts[sharedIndex.reports[0].hostSha256].os='tampered';
+    await writeFile(join(directory,'index.json'),JSON.stringify(sharedIndex));
+    await assert.rejects(validateData(directory),/Host digest mismatch/);
+    await writeIndex(directory,[projected]);
     const validated = await validateData(directory);
     assert.deepEqual(validated.reports, [projected]);
     assert.equal(datasetFiles(validated).length, 3);

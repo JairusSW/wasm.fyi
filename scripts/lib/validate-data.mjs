@@ -71,6 +71,13 @@ export async function validateData(directory) {
   if (index.schema === 2) {
     const reports = [];
     for (const entry of index.reports) {
+      if(entry.hostSha256 !== undefined) {
+        assert(sha.test(entry.hostSha256),'Invalid host digest');
+        const host=index.hosts?.[entry.hostSha256];
+        assert(host && digest(JSON.stringify(host))===entry.hostSha256,'Host digest mismatch');
+        if(entry.host !== undefined)assert.deepEqual(entry.host,host,'Conflicting host metadata');
+        entry.host=host;
+      }
       assert(sha.test(entry.id) && entry.projection === `${entry.id}.summary.json`, 'Unsafe projection path');
       assert(sha.test(entry.projectionSha256), 'Missing projection digest');
       const bytes = await readFile(resolve(directory, entry.projection));

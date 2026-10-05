@@ -3,15 +3,17 @@ import { join } from 'node:path';
 import { digest } from './wasmbench.mjs';
 
 export async function writeIndex(directory, reports) {
-  const entries = [];
+  const entries = [], hosts = {};
   for (const report of reports) {
     const projection = `${report.id}.summary.json`;
     const bytes = JSON.stringify(report) + '\n';
     await writeFile(join(directory, projection), bytes);
     const { id, runId, created, host, evidence, evidenceSha256 } = report;
-    entries.push({ id, runId, created, host, evidence, evidenceSha256, projection, projectionSha256: digest(bytes) });
+    const hostSha256 = digest(JSON.stringify(host));
+    hosts[hostSha256] = host;
+    entries.push({ id, runId, created, hostSha256, evidence, evidenceSha256, projection, projectionSha256: digest(bytes) });
   }
-  await writeFile(join(directory, 'index.json'), JSON.stringify({ schema: 2, reports: entries }) + '\n');
+  await writeFile(join(directory, 'index.json'), JSON.stringify({ schema: 2, hosts, reports: entries }) + '\n');
 }
 
 export function datasetFiles(index) {

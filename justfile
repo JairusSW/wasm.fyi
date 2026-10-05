@@ -21,7 +21,7 @@ check:
 test:
     pnpm test
     pnpm test:ai
-    node --test scripts/lib/benchmark-plan.test.mjs scripts/lib/corpus-collection.test.mjs scripts/benchmark-workflow.test.mjs scripts/plugin-evidence.test.mjs scripts/retention.test.mjs scripts/release-policy.test.mjs scripts/weekly-history.test.mjs scripts/workflow.test.mjs scripts/application-corpus.test.mjs scripts/corpus-v8.test.mjs scripts/upstream-sources.test.mjs scripts/feature-adapter.test.mjs scripts/wasmer-adapter.test.mjs scripts/v8-preflight.test.mjs scripts/lib/feature-configurations.test.mjs scripts/extra-feature-adapters.test.mjs scripts/command-input.test.mjs scripts/verify-seal.test.mjs scripts/collection-recovery.test.mjs
+    node --test scripts/lib/weekly-calendar.test.mjs scripts/lib/benchmark-plan.test.mjs scripts/lib/corpus-collection.test.mjs scripts/benchmark-workflow.test.mjs scripts/plugin-evidence.test.mjs scripts/retention.test.mjs scripts/release-policy.test.mjs scripts/weekly-history.test.mjs scripts/workflow.test.mjs scripts/application-corpus.test.mjs scripts/corpus-v8.test.mjs scripts/upstream-sources.test.mjs scripts/feature-adapter.test.mjs scripts/wasmer-adapter.test.mjs scripts/v8-preflight.test.mjs scripts/lib/feature-configurations.test.mjs scripts/extra-feature-adapters.test.mjs scripts/command-input.test.mjs scripts/verify-seal.test.mjs scripts/collection-recovery.test.mjs
 
 # Validate gathered snapshots and their raw evidence.
 integration-audit:
@@ -284,8 +284,12 @@ corpus-cache *args:
     node scripts/benchmark.mjs cache "$@"
 
 bench-test:
-    node --test scripts/lib/benchmark-plan.test.mjs scripts/lib/corpus-collection.test.mjs scripts/benchmark-workflow.test.mjs
+    node --test scripts/lib/weekly-calendar.test.mjs scripts/lib/benchmark-plan.test.mjs scripts/lib/corpus-collection.test.mjs scripts/benchmark-workflow.test.mjs
 
 # Archive retained results without source checkouts or build caches.
 bench-export id output:
     node scripts/benchmark-export.mjs {{quote(id)}} {{quote(output)}}
+
+# Resolve one Saturday 11:59 PM Eastern snapshot for both ARM64 and AMD64.
+history-week-plan date:
+    node scripts/weekly-plan.mjs {{quote(date)}}

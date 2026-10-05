@@ -91,3 +91,15 @@ The public `wasmbench/feature-support.json` retains `versions` alongside the lat
 If timing completed but a later pass stopped, set `WASMBENCH_ROOT` to the original isolated harness and `WASMBENCH_BIN` to its controller, then run `just collect-resume <timing-bundle>`. Recovery verifies the original seal and requires unchanged adapter commands, file hashes, descriptions, and workload IDs/digests before starting the missing memory and code passes. Outputs and recovery status stay beside the original experiment; recovery does not install or publish data automatically.
 
 Root `.DS_Store` files are mutable Finder metadata and are excluded from evidence sealing and verification, including legacy seals. All benchmark files, nested metadata, symlinks, and unexpected files retain strict verification. Original seals are preserved. Historical collection removes only each attempt's disposable Cargo target directories after successful or failed builds, retaining sources and diagnostics, and stops before another build if less than 20 GiB is available.
+
+Weekly main snapshots use **Saturday at 11:59 PM America/New_York**, including
+Eastern daylight-saving changes. Resolve the six engine revisions once for both
+machines with `just history-week-plan 2026-10-03`. This writes a shared calendar
+and identical ARM64/AMD64 pins under `.wasmbench/weekly-YYYYMMDD`; existing pins
+are immutable. Native collection and publication reject a host date or revision
+that differs from that calendar. Measurement timestamps remain the actual capture
+time. Unchanged revisions reuse evidence only on the same machine with the same
+corpus contracts and measurement recipe.
+
+Remote historical collection receives the coordinator's saved history plan;
+it does not resolve cutoffs or upstream revisions independently on AMD64.
