@@ -1,8 +1,8 @@
 <script lang="ts">
- let {x,y,color,version='',selected=false}: {x:string;y:string;color:string;version?:string;selected?:boolean}=$props();
+ let {x,y,color,version='',selected=false,partial=false}: {x:string;y:string;color:string;version?:string;selected?:boolean;partial?:boolean}=$props();
 </script>
 
-<span class="history-marker" class:version-marker={!!version} class:selected style:left={x} style:top={y} style:background={color} title={version ? `Version ${version}` : undefined} aria-hidden="true"></span>
+<span class="history-marker" class:version-marker={!!version} class:selected class:partial style:left={x} style:top={y} style:background={partial?'var(--bg2)':color} style:border-color={partial?color:undefined} title={version ? `Version ${version}` : partial?'Partial workload coverage':undefined} aria-hidden="true"></span>
 
 <style>
  .history-marker {
@@ -21,4 +21,5 @@
   border-radius: 0;
   transform: translate(-50%, -50%) rotate(45deg);
  }
+ .partial { border: 1px solid; }
 </style>
