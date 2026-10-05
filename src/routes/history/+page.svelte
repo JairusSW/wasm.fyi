@@ -328,8 +328,10 @@ import HistoryMarker from '$lib/components/HistoryMarker.svelte';
 		>
 		{#each lines as l (l.c.id)}
 			{#if l.sel}
-				{#each l.bumps as b (b.i)}
-					<span class="ver mono" style:left={b.bl} style:top={b.bt} style:color={l.c.col}>{b.ver}</span>
+				{#each l.bumps as b, j (b.i)}
+					{#if !/^[a-f0-9]{12}$/.test(b.ver) || j===0 || j===l.bumps.length-1}
+						<span class="ver mono" style:left={b.bl} style:top={b.bt} style:color={l.c.col}>{b.ver}</span>
+					{/if}
 				{/each}
 			{/if}
 		{/each}
