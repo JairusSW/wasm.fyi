@@ -123,19 +123,25 @@ describe('measured view boundary', () => {
 		for (const name of ['history', 'history-hub']) {
 			const { snapshots } = await store(name);
 			const history = JSON.parse(await readFile(new URL(name + '/weekly.json', root), 'utf8')) as MeasuredWeeklyHistory;
-			const receipts=history.results[0].reports||[history.results[0]];
+			const first=history.results.findIndex(point=>point.engines?.wago?.reports?.length || (!point.engines && (point.reports?.length || point.runId)));
+			expect(first).toBeGreaterThanOrEqual(0);
+			const source=history.results[first];
+			const receipts=source.engines?.wago?.reports||source.reports||[source];
 			const historical=snapshots.find(snapshot=>receipts.some(pin=>pin.runId===snapshot.runId)&&snapshot.workloads.some(w=>w.id==='applications/image-blur'))!;
 			const workload=historical.workloads.find(w=>w.id==='applications/image-blur')!;
 			const cells = measuredHistory(history, snapshots, historical.host, 'wago', workload.id, workload.sha256, 'steady');
 			expect(cells).toHaveLength(history.results.length);
-			expect(cells.every(point => point.role === 'retrospective-revision' && point.cell.status === 'ok')).toBe(true);
+			for(const [i,point] of cells.entries()){
+                expect(point.role).toBe('retrospective-revision');
+                expect(point.cell.status).toBe(history.results[i].engines && !history.results[i].engines?.wago ? 'not-collected' : 'ok');
+            }
 			const baseline = measuredHistory(history, snapshots, historical.host, 'wasmtime', workload.id, workload.sha256, 'steady');
 			for(const [i,point] of baseline.entries()){
                 expect(point.role).toBe(history.results[i].engines?'retrospective-revision':'fixed-comparison-baseline');
                 expect(point.revision).toBe(history.results[i].engines?.wasmtime?.revision);
             }
 			const gaps = measuredHistory(history, snapshots.filter(snapshot => snapshot.runId !== historical.runId), historical.host, 'wago', workload.id, workload.sha256, 'steady');
-			expect(gaps[0].cell.status).toBe('not-collected');
+			expect(gaps[first].cell.status).toBe('not-collected');
 			expect(gaps).toHaveLength(history.results.length);
 		}
 	});

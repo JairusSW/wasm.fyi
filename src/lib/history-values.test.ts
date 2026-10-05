@@ -5,22 +5,27 @@ import { OTM_KEYS } from './data/snapshot';
 import { readFileSync } from 'node:fs';
 import type { Scope } from './model';
 
+const betaIndex=(machine:'m1'|'m2')=>viewData.history[machine].points.findIndex(p=>p.date==='2026-09-29');
 const scope:Scope={machine:'m1',baseline:'A',hide:{},weighting:'workload'};
 describe('recorded weekly history',()=>{
 	it('aligns host dates and keeps actual revisions and collection dates',()=>{
-        expect(viewData.history.m1.points.map(p=>[p.date,p.revision])).toEqual([
-            ['2026-09-29','9f01d145d54ac7ab458b6b2f6047db90a757410a'],
-            ['2026-10-03','0ef007c70581bf56155a4daf6fce8bda3f2c5ff1']
-        ]);
-        expect(viewData.history.m2.points.map(p=>p.date)).toEqual(viewData.history.m1.points.map(p=>p.date));
-        for(const p of viewData.history.m1.points)expect(Date.parse(p.collectedAt!)).toBeGreaterThan(Date.parse(p.date+'T00:00:00Z'));
-        for(const machine of ['m1','m2'] as const)expect(viewData.history[machine].versions.G[0]).toBe('v0.1.0-beta.11');
+        const dates=viewData.history.m1.points.map(p=>p.date);
+        expect(dates).toEqual([...dates].sort());
+        expect(viewData.history.m2.points.map(p=>p.date)).toEqual(dates);
+        for(const machine of ['m1','m2'] as const){
+            const beta=betaIndex(machine);expect(beta).toBeGreaterThanOrEqual(0);
+            expect(viewData.history[machine].points[beta].revision).toBe('9f01d145d54ac7ab458b6b2f6047db90a757410a');
+            expect(viewData.history[machine].versions.G[beta]).toBe('v0.1.0-beta.11');
+            for(const p of viewData.history[machine].points)if(p.collectedAt)expect(Date.parse(p.collectedAt)).toBeGreaterThan(Date.parse(p.date+'T00:00:00Z'));
+        }
+        const older=dates.indexOf('2026-09-26');
+        if(older>=0){expect(viewData.history.m1.points[older].status).toBe('not-collected');expect(historyCell('m1','applications/image-blur','G','steady',older).report).toBe('');}
     });
     it('keeps unchanged beta.11 cells aligned while refreshed current evidence stays separate',()=>{
         for(const machine of ['m1','m2'] as const)for(const workload of viewData.catalogue)
             for(const metric of ['compile','inst','first','steady'] as const){
                 const current=viewCell(machine,'s1',workload.id,'G',metric);
-                const historical=historyCell(machine,workload.id,'G',metric,0);
+                const historical=historyCell(machine,workload.id,'G',metric,betaIndex(machine));
                 if(historical.report===current.report){
                     expect(historical.st).toBe(current.st);
                     expect(historical.v).toBe(current.v);
@@ -32,7 +37,7 @@ describe('recorded weekly history',()=>{
         const reports=new Map<string,ReturnType<typeof JSON.parse>>();
         for(const machine of ['m1','m2'] as const)for(const workload of viewData.catalogue)
             for(const [metric,scenario] of [['compile','compile'],['inst','instantiate'],['first','first-call'],['steady','steady']] as const){
-                const historical=historyCell(machine,workload.id,'G',metric,0);
+                const historical=historyCell(machine,workload.id,'G',metric,betaIndex(machine));
                 if(historical.st!=='ok')continue;
                 if(!reports.has(historical.report))reports.set(historical.report,JSON.parse(readFileSync(new URL(`../../data/${viewData.reports[historical.report].evidence.includes('/')?viewData.reports[historical.report].evidence:'wasmbench/'+viewData.reports[historical.report].evidence}`,import.meta.url),'utf8')));
                 const report=reports.get(historical.report)!;
@@ -46,28 +51,30 @@ describe('recorded weekly history',()=>{
         for(const machine of ['m1','m2'] as const){
             const selected={...scope,machine};
             const a=historySeries(selected,'G','wasmHost')!,b=historySeries(selected,'G','hostWasm')!,round=historySeries(selected,'G','roundTrip')!;
-            for(const i of [0,1]){
-                expect(a[i]).toBe(historyCell(machine,'mechanisms/wasm-to-host-call','G','steady',i).v);
-                expect(b[i]).toBe(historyCell(machine,'mechanisms/host-to-wasm-call','G','steady',i).v);
-                expect(round[i]).toBe(a[i]+b[i]);
+            for(const [i] of viewData.history[machine].points.entries()){
+                const left=historyCell(machine,'mechanisms/wasm-to-host-call','G','steady',i),right=historyCell(machine,'mechanisms/host-to-wasm-call','G','steady',i);
+                if(left.st==='ok'&&right.st==='ok'){
+                    expect(a[i]).toBe(left.v);expect(b[i]).toBe(right.v);expect(round[i]).toBe(a[i]+b[i]);
+                }else expect(round[i]).toBeNaN();
             }
             const other=historySeries(selected,'A','roundTrip');
-            expect(other == null || Number.isNaN(other[0])).toBe(true);
+            expect(other == null || Number.isNaN(other[betaIndex(machine)])).toBe(true);
         }
     });
     it('does not reuse erased comparison-engine measurements',()=>{
         for(const machine of ['m1','m2'] as const)for(const cid of ['A','D'] as const){
-            expect(historyCell(machine,'applications/image-blur',cid,'steady',0).st).toBe('nm');
+            expect(historyCell(machine,'applications/image-blur',cid,'steady',betaIndex(machine)).st).toBe('nm');
             const series=historySeries({...scope,machine},cid,'exec');
-            expect(series == null || Number.isNaN(series[0])).toBe(true);
+            expect(series == null || Number.isNaN(series[betaIndex(machine)])).toBe(true);
         }
     });
 	it('retains a failed historical contract as a gap instead of interpolating it',()=>{
 		const entry=Object.entries(viewData.history.m1.cells).find(([key,cells])=>key.endsWith('|G|steady') && cells.some(c=>c.st==='failed'))!;
 		const workload=entry[0].slice(0,-'|G|steady'.length);
 		const values=historySeries(scope,'G','exec',workload);
-		expect(values).toBeNull();
-		expect(historyCell('m1',workload,'G','steady',0).st).toBe('failed');
+		const failed=entry[1].findIndex(c=>c.st==='failed');
+		expect(values==null || Number.isNaN(values[failed])).toBe(true);
+		expect(historyCell('m1',workload,'G','steady',failed).st).toBe('failed');
 		expect(historySegments([1,2,Number.NaN,4],i=>i,v=>v)).toEqual(['0.0,1.0 1.0,2.0','3.0,4.0']);
 	});
 	it('cannot fabricate history for a feature-only workload or uncollected backend',()=>{
@@ -80,9 +87,9 @@ describe('recorded weekly history',()=>{
 
 it('uses one round-trip history tab while keeping directional measurements in its details',()=>{
  expect(OTM_KEYS).toContain('roundTrip');expect(OTM_KEYS).not.toContain('wasmHost');expect(OTM_KEYS).not.toContain('hostWasm');
- expect(historyCallDetails({...scope,baseline:'G'},'G',0)).toContain('Wasm → host:');
- expect(historyCallDetails({...scope,baseline:'G'},'G',0)).toContain('Host → Wasm:');
- expect(historyCallDetails({...scope,baseline:'G'},'G',0)).toContain('not a measured nested round trip');
+ expect(historyCallDetails({...scope,baseline:'G'},'G',betaIndex('m1'))).toContain('Wasm → host:');
+ expect(historyCallDetails({...scope,baseline:'G'},'G',betaIndex('m1'))).toContain('Host → Wasm:');
+ expect(historyCallDetails({...scope,baseline:'G'},'G',betaIndex('m1'))).toContain('not a measured nested round trip');
 });
 it('retains a newly recorded engine point without filling its older gap',()=>{
  const h=viewData.history.m1;

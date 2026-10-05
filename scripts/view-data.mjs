@@ -4,6 +4,7 @@ import { featureCandidates, featureSupport, featureCasePassed, matchesCurrentFea
 import { validateV8Description } from './lib/v8-preflight.mjs';
 import { digest, site, config } from './lib/wasmbench.mjs';
 import { validateData } from './lib/validate-data.mjs';
+import { alignHistoryDates, historyDate } from './lib/history-align.mjs';
 import { workloadCategory, compareWorkloads } from './lib/workload-category.mjs';
 import { measuredTiming, measuredMemory, measuredCodeImage, measuredHistory, historicalRuntimePoint } from '../src/lib/measured.ts';
 
@@ -191,7 +192,7 @@ for(const [machine,name] of [['m1','history-hub'],['m2','history']]) {
   const baseline=baselineReports[0];
   const baselineWorkloads=[...new Map(baselineReports.flatMap(s=>s.workloads).map(w=>[w.id,w])).values()];
   if(!baseline)throw new Error('Missing fixed history baseline');
-  const history={points:weekly.results.map(w=>({date:w.targetWeek.slice(0,10),revision:w.revision,collectedAt:w.collectedAt,status:w.status})),workloads:baselineWorkloads.filter(w=>catalogue.has(w.id)).map(w=>w.id),artifactSha256:Object.fromEntries(baselineWorkloads.filter(w=>catalogue.has(w.id)).map(w=>[w.id,w.sha256])),cells:{},versions:{}};
+  const history={points:weekly.results.map(w=>({date:historyDate(w.targetWeek),revision:w.revision,collectedAt:w.collectedAt,status:w.status})),workloads:baselineWorkloads.filter(w=>catalogue.has(w.id)).map(w=>w.id),artifactSha256:Object.fromEntries(baselineWorkloads.filter(w=>catalogue.has(w.id)).map(w=>[w.id,w.sha256])),cells:{},versions:{}};
   output.history[machine]=history;
   for(const [slot,runtime] of Object.entries(configurations)) {
     const description=baseline.runtimes.find(c=>c.id===runtime)?.description;
@@ -213,7 +214,7 @@ for(const [machine,name] of [['m1','history-hub'],['m2','history']]) {
     }
   }
 }
-if(output.history.m1.points.length&&output.history.m2.points.length&&JSON.stringify(output.history.m1.points.map(p=>p.date))!==JSON.stringify(output.history.m2.points.map(p=>p.date)))throw new Error('Historical host dates differ');
+alignHistoryDates(output.history);
 for(const [machine,name] of [['m1','linux-x64'],['m2','darwin-arm64']]) {
   if(!await access(join(site,'data/threads',name+'.json')).then(()=>true,()=>false)){output.threads[machine]={created:'',configuration:'not collected',node:'',v8:'',policy:'No thread measurements collected.',evidence:'',sha256:'',results:[]};continue;}
   const ref=JSON.parse(await readFile(join(site,'data/threads',name+'.json')));

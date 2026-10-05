@@ -81,6 +81,10 @@ export async function stageAuxiliary(destination) {
     const ids=new Set(index.reports.map(r=>r.runId));
     assert(weekly.results.length===weekly.weeks.length,'Incomplete weekly inventory');
     for(const week of weekly.results) {
+      if(week.engines){
+        assert(week.status==='measured' && Object.keys(week.engines).length,'Missing historical measured engines');
+        continue; // Per-engine receipts below also support points without Wago.
+      }
       const receipts=week.reports||[week];
       assert(week.status==='measured' && receipts.length,'Missing historical measured evidence');
       for(const receipt of receipts) {
