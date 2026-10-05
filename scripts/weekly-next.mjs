@@ -1,7 +1,9 @@
 // Queue the next shared source snapshot after this host finishes.
 import assert from 'node:assert/strict';
 import {readFile,writeFile,stat,mkdir} from 'node:fs/promises';
-import {join,resolve} from 'node:path';
+import {join,resolve,dirname} from 'node:path';
+import {homedir} from 'node:os';
+process.env.PATH=[dirname(process.execPath),join(homedir(),'.cargo/bin'),process.env.PATH].join(':');
 import {site,config,digest} from './lib/wasmbench.mjs';
 import {atomicJSON,readCache} from './lib/benchmark-plan.mjs';
 import {performanceCorpusIdentity} from './lib/performance-history.mjs';
@@ -46,6 +48,9 @@ try{
   const pin=pins.pins.find(p=>p.engine===engine),source=join(directory,'sources',engine);
   if(!await stat(join(source,'.git')).catch(()=>null)){
    await run('git',['clone','--filter=blob:none','--no-checkout','https://github.com/'+pin.repository+'.git',source]);
+  }
+  const head=await run('git',['rev-parse','HEAD'],{cwd:source,check:false});
+  if(head.code!==0 || head.output.trim()!==pin.revision){
    await run('git',['fetch','origin',pin.revision],{cwd:source});
    await run('git',['checkout','--detach',pin.revision],{cwd:source});
   }
