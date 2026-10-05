@@ -1,6 +1,7 @@
 // Verify and append a completed host's exact-source weekly sessions to history.
 import assert from 'node:assert/strict';
-import {readFile,writeFile,mkdir,mkdtemp,cp,rm} from 'node:fs/promises';
+import {readFile,writeFile,mkdir,mkdtemp,rm} from 'node:fs/promises';
+import {cloneCopy as cp} from './lib/copy.mjs';
 import {join,resolve} from 'node:path';
 import {site,installDirectory,digest,config} from './lib/wasmbench.mjs';
 import {readCache,portableWorkloads} from './lib/benchmark-plan.mjs';

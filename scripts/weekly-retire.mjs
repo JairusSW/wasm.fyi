@@ -27,7 +27,7 @@ for(const target of targets){
   const temp=join(directory,'.retained-'+randomUUID());await link(file,temp);preserved.push([file,temp]);
  }
  await atomicJSON(retirementFile,{target,preserved,status:'retiring'});
- await rm(target,{recursive:true,force:true});
+ await rm(target,{recursive:true,force:true,maxRetries:15,retryDelay:200});
  for(const [file,temp] of preserved){await mkdir(dirname(file),{recursive:true});await rename(temp,file);}
  await atomicJSON(retirementFile,{target,preserved:[],status:'retired'});
  console.log('Retired native build cache '+target+'; '+preserved.length+' executable artifacts preserved');
