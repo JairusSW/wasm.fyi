@@ -91,6 +91,20 @@ export async function stageAuxiliary(destination) {
         assert(report.runtimes.some(r=>r.id==='wago' && r.description.runtime_version.startsWith(week.revision+'/')),'Historical revision mismatch');
       }
     }
+    for(const week of weekly.results)for(const [runtime,pin] of Object.entries(week.engines || {})) {
+      assert(pin.status==='measured' && pin.reports?.length,'Missing per-engine historical evidence');
+      assert(/^[a-f0-9]{40}$/.test(pin.revision),'Missing exact historical source revision');
+      for(const receipt of pin.reports) {
+        const report=index.reports.find(r=>r.runId===receipt.runId);
+        assert(report,'Missing per-engine historical corpus shard');
+        assert.equal(report.created,receipt.collectedAt,'Backdated engine history');
+        assert.equal(report.sourceReportSha256,receipt.reportSha256,'Engine history source digest mismatch');
+        const configuration=report.runtimes.find(r=>r.id===runtime);
+        assert(configuration,'Wrong engine in historical receipt');
+        assert.equal(configuration.description.runtime_version,pin.runtimeVersion,'Historical runtime version mismatch');
+        assert.equal(configuration.description.backend,pin.backend,'Historical compiler mismatch');
+      }
+    }
     // Keep the comparison baseline with history; daily retention cannot remove it.
     assert(weekly.baseline && index.reports.some(r=>r.id===weekly.baseline.report && r.evidenceSha256===weekly.baseline.evidenceSha256),'Missing pinned historical comparison baseline');
     const target=join(destination,targetName);await mkdir(target,{recursive:true});

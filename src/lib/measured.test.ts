@@ -150,3 +150,15 @@ it('resolves historical corpus shards independently and rejects a changed receip
  history.results[0].reports![1].reportSha256='changed';
  expect(()=>measuredHistory(history,[a,b],a.host,'wago',b.workloads[0].id,item.sha256,'steady')).toThrow('weekly manifest');
 });
+
+it('uses each engine’s pinned weekly report and keeps missing engine snapshots as gaps',()=>{
+ const historical=structuredClone(feature);historical.id='weekly-wasmtime';historical.runId='weekly-wasmtime-run';
+ historical.summaries.forEach(summary=>{summary.median_ns_per_operation=180;});
+ const pin={revision:'e'.repeat(40),status:'measured',reports:[{runId:historical.runId,collectedAt:historical.created,reportSha256:historical.sourceReportSha256!}]};
+ const history:MeasuredWeeklyHistory={baseline:{report:feature.id},results:[{targetWeek:'2026-10-03T23:59:00-04:00',revision:'d'.repeat(40),status:'measured',engines:{wasmtime:pin}}]};
+ const point=measuredHistory(history,[feature,historical],feature.host,'wasmtime',item.id,item.sha256,'steady')[0];
+ expect(point).toMatchObject({role:'retrospective-revision',revision:pin.revision,cell:{status:'ok',value:180,evidence:{report:historical.id}}});
+ expect(measuredHistory(history,[feature,historical],feature.host,'wazero',item.id,item.sha256,'steady')[0].cell.status).toBe('not-collected');
+ pin.reports[0].reportSha256='changed';
+ expect(()=>measuredHistory(history,[feature,historical],feature.host,'wasmtime',item.id,item.sha256,'steady')).toThrow('weekly manifest');
+});
