@@ -8,7 +8,7 @@
 	import { href } from '$lib/links';
 	import { isOff, isVisible, otSeries, seriesFmt } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
-import { historySegments, historyCallDetails, historyReusesEvidence } from '$lib/history-values';
+import { historySegments, historyCurve, historyCallDetails, historyReusesEvidence } from '$lib/history-values';
 	import Carousel from '../Carousel.svelte';
 	import RtLabel from '../RtLabel.svelte';
 	import Tabs from '../Tabs.svelte';
@@ -141,7 +141,7 @@ import { historySegments, historyCallDetails, historyReusesEvidence } from '$lib
 								{#if !h.na}
 									<svg viewBox="0 0 600 34" preserveAspectRatio="none">
 										{#if h.hv}<line x1={h.hx} x2={h.hx} y1="0" y2="34" class="cross" />{/if}
-										{#each h.segments as points}<polyline {points} style:stroke={h.c.col} style:stroke-dasharray={h.c.hollow ? '4 3' : 'none'} />{/each}
+										{#each h.segments as points}<path d={historyCurve(points)} style:stroke={h.c.col} style:stroke-dasharray={h.c.hollow ? '4 3' : 'none'} />{/each}
                                         {#each h.points as p (p.i)}<circle class="history-point" cx={p.x} cy={p.y} r="2.5" style:fill={h.c.col} />{/each}
 										{#each SNAPS as p (p.i)}
 											<rect
@@ -228,7 +228,7 @@ import { historySegments, historyCallDetails, historyReusesEvidence } from '$lib
 		height: 100%;
 		overflow: visible;
 	}
-	polyline {
+	path {
 		fill: none;
 		stroke-width: 1.6;
 		stroke-linejoin: round;

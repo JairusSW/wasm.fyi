@@ -1,12 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { viewCell, viewData } from './view-data';
-import { historyCell, historyChange, historySegments, historySeries, historyCallDetails, historyReusesEvidence } from './history-values';
+import { historyCell, historyChange, historySegments, historyCurve, historySeries, historyCallDetails, historyReusesEvidence } from './history-values';
 import { OTM_KEYS, historyPin } from './data/snapshot';
 import { readFileSync } from 'node:fs';
 import type { Scope } from './model';
 
 const betaIndex=(machine:'m1'|'m2')=>viewData.history[machine].points.findIndex(p=>p.date==='2026-09-29');
 const scope:Scope={machine:'m1',baseline:'A',hide:{},weighting:'workload'};
+it('curves between recorded endpoints with bounded horizontal tangents',()=>{
+ expect(historyCurve('0,10 20,0 40,5')).toBe('M 0,10 C 10,10 10,0 20,0 C 30,0 30,5 40,5');
+ expect(historyCurve('20,5')).toBe('M 20,5');
+ expect(historyCurve('')).toBe('');
+});
 it('connects recorded chart points across empty dates without creating measurements',()=>{
  const values=[Number.NaN,2,Number.NaN,4,Number.NaN];
  expect(historySegments(values,i=>i*10,v=>v,true)).toEqual(['10.0,2.0 30.0,4.0']);

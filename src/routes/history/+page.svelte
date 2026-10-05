@@ -10,7 +10,7 @@
 	import { benchVal, otSeries } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 import { viewData } from '$lib/view-data';
-import { historyCell, historyChange, historySegments, historicalCallWorkloads, historyCallDetails } from '$lib/history-values';
+import { historyCell, historyChange, historySegments, historyCurve, historicalCallWorkloads, historyCallDetails } from '$lib/history-values';
 
 	const W = 860;
 	const HC = 280;
@@ -270,8 +270,8 @@ import { historyCell, historyChange, historySegments, historicalCallWorkloads, h
 			{#each events as e (e.x)}<line x1={e.x} x2={e.x} y1="30" y2="254" style:stroke={e.stroke} style:stroke-dasharray={e.dash} />{/each}
 			{#each lines as l (l.c.id)}
 				{#each l.segs as p, k (k)}
-					<polyline
-						points={p}
+					<path
+						d={historyCurve(p)}
 						style:stroke={l.c.col}
 						style:stroke-width={l.width}
 						style:opacity={l.op}
