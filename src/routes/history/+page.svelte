@@ -10,7 +10,7 @@
 	import { benchVal, otSeries } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 import { viewData } from '$lib/view-data';
-import { historyCell, historyChange, historySegments, historyCurve, historicalCallWorkloads, historyCallDetails, historyAggregateDetails, historyVersionChanges } from '$lib/history-values';
+import { historyCell, historyChange, historySegments, historyCurve, historicalCallWorkloads, historyCallDetails, historyAggregateDetails, historyVersionChanges, historyCoverage, historyComparison } from '$lib/history-values';
 import HistoryMarker from '$lib/components/HistoryMarker.svelte';
 
 	const W = 860;
@@ -44,7 +44,7 @@ import HistoryMarker from '$lib/components/HistoryMarker.svelte';
 	const val = (id: CfgId, i: number) => {
 		const s = SER[id]!;
 		const first=s.find(Number.isFinite)!;
-		return ui.histMode === 'ratio' ? s[i] : isCov ? (s[i] - first) / viewData.history[ui.machine].workloads.length : s[i] / first - 1;
+		return ui.histMode === 'ratio' ? s[i] : isCov ? (s[i] - first) / viewData.history[ui.machine].workloads.length : (historyComparison(ui.scope,id,M.key,s.findIndex(Number.isFinite),i)?.ratio??NaN)-1;
 	};
 	const plotC = $derived(CFG.filter((c) => !ui.scope.hide[c.id] && SER[c.id]));
 	const fmtV = (v: number) => (isCov ? n0(v) : fmtU(v, M.u));
@@ -87,8 +87,8 @@ import HistoryMarker from '$lib/components/HistoryMarker.svelte';
 				sel,
 				width: sel ? 2.2 : 1.2,
 				op: sel ? 1 : 0.7,
-                points: SNAPS.filter(p=>Number.isFinite(val(c.id,p.i))).map(p=>({i:p.i,x:X(p.i),y:Y(val(c.id,p.i)),version:versions.has(p.i)?verAt(c.id,p.i,ui.machine):''})),
-                segs:historySegments(SNAPS.map(p=>val(c.id,p.i)),X,Y,true),
+                points: SNAPS.filter(p=>Number.isFinite(val(c.id,p.i))).map(p=>({i:p.i,x:X(p.i),y:Y(val(c.id,p.i)),version:versions.has(p.i)?verAt(c.id,p.i,ui.machine):'',partial:!historyCoverage(ui.scope,c.id,M.key,p.i).complete})),
+                segs:historySegments(SNAPS.map(p=>ui.histMode==='ratio'&&!historyCoverage(ui.scope,c.id,M.key,p.i).complete?NaN:val(c.id,p.i)),X,Y,true),
 				bumps: SNAPS.filter((p) => versions.has(p.i)).map((p) => {
 					const x = X(p.i);
 					const y = Y(val(c.id, p.i));
@@ -129,8 +129,9 @@ import HistoryMarker from '$lib/components/HistoryMarker.svelte';
 			.map((c) => {
 				const s = SER[c.id]!;
 				const v = s[hi];
-				const pv = hi > 0 && Number.isFinite(s[hi-1]) ? s[hi - 1] : null;
-				const d = pv == null ? null : isCov ? v - pv : v / pv - 1;
+				const previous=s.findLastIndex((v,i)=>i<hi&&Number.isFinite(v));
+				const comparison=historyComparison(ui.scope,c.id,M.key,previous,hi);
+				const d = !comparison ? null : isCov ? comparison.after-comparison.before : comparison.ratio-1;
 				const good = d == null ? null : isCov ? d > 0 : d < 0;
 				const flat = d == null || (isCov ? d === 0 : Math.abs(d) < 0.02);
 				return {
@@ -139,7 +140,7 @@ import HistoryMarker from '$lib/components/HistoryMarker.svelte';
 					value: fmtH(c.id, hi),
 					aggregateDetails: historyAggregateDetails(ui.scope,c.id,M.key,hi),
 					callDetails: M.key === 'roundTrip' ? historyCallDetails(ui.scope,c.id,hi) : '',
-					ver: verAt(c.id, hi,ui.machine) + (hi > 0 && verAt(c.id, hi,ui.machine) !== verAt(c.id, hi - 1,ui.machine) ? ' ◆ new' : ''),
+					ver: verAt(c.id, hi,ui.machine) + (historyVersionChanges(viewData.history[ui.machine].versions[c.id]||[],s).includes(hi) ? ' ◆ release' : ''),
 					delta: d == null ? '—' : isCov ? (d >= 0 ? '+' : '−') + Math.abs(d) : relative(1+d,ui.deltaFormat),
 					dColor: flat ? 'var(--fg3)' : good ? 'var(--good)' : 'var(--bad)',
 					fw: c.id === ui.histCfg ? 600 : 400,
@@ -169,7 +170,8 @@ import HistoryMarker from '$lib/components/HistoryMarker.svelte';
 		const c = CB[cid];
 		const RM = ({ exec: 'steady', wasmHost: 'steady', hostWasm: 'steady', roundTrip: 'steady', compile: 'compile', inst: 'inst', mem: 'rss', code: 'code', cov: 'steady' } as const)[M.key] as MetricKey;
 		const EX = SER[cid] && !isCov ? SER[cid] : otSeries(s, cid, 'exec');
-		const dt = EX ? EX[t] / EX[f] : 1;
+		const matched=historyComparison(s,cid,isCov?'exec':M.key,f,t);
+		const dt = matched?.ratio??NaN;
         const callIds=historicalCallWorkloads(M.key);
         const directionRows=ALLB.filter(b=>!callIds.length || callIds.includes(b.id)).map(b=>{
           const before=historyCell(s.machine,b.id,cid,RM,f),after=historyCell(s.machine,b.id,cid,RM,t);
@@ -207,7 +209,7 @@ import HistoryMarker from '$lib/components/HistoryMarker.svelte';
 				{ k: 'No practical change', v: cnt('no practical change'), c: 'var(--fg3)' }
 			],
 			other: [
-				{ k: M.key==='roundTrip'?'Estimated call round trip':'Corpus geomean (' + (isCov ? 'execution' : M.l.toLowerCase()) + ')', v: Number.isFinite(dt) && (SER[cid] || isCov) ? relative(dt,ui.deltaFormat) : 'not measured' },
+				{ k: M.key==='roundTrip'?'Estimated call round trip':`Matched geomean (${matched?.count??0} workloads)`, v: Number.isFinite(dt) && (SER[cid] || isCov) ? relative(dt,ui.deltaFormat) : 'not measured' },
 				{ k: 'Coverage', v: covText },
 				{ k: 'Process lifetime peak RSS', v: 'See recorded memory series; no inferred phase delta' },
 				{ k: 'Extracted native image', v: 'See recorded image series; no active-code inference' },
@@ -304,11 +306,11 @@ import HistoryMarker from '$lib/components/HistoryMarker.svelte';
 			{/each}
 		</svg>
 		{#each lines as l (l.c.id)}
-			{#each l.points as p (p.i)}<HistoryMarker x={pc(p.x,W)} y={pc(p.y,HC)} color={l.c.col} version={p.version} selected={l.sel} />{/each}
+			{#each l.points as p (p.i)}<HistoryMarker x={pc(p.x,W)} y={pc(p.y,HC)} color={l.c.col} version={p.version} selected={l.sel} partial={p.partial} />{/each}
 		{/each}
 		{#if tip}
 			<div class="htip float" role="tooltip" style:left={tip.l} style:transform={tip.tf}>
-				<div class="htip-top"><span class="mono">{tip.date}</span><span>vs previous week</span></div>
+				<div class="htip-top"><span class="mono">{tip.date}</span><span>matched vs previous point</span></div>
 				{#each tip.rows as r (r.c.id)}
 					<div class="htip-row" style:font-weight={r.fw}>
 						<Swatch color={r.c.col} bg={r.c.hollow ? 'transparent' : r.c.col} />
@@ -345,6 +347,7 @@ import HistoryMarker from '$lib/components/HistoryMarker.svelte';
 	<div class="keys">
 		<span class="key"><span class="k-range"></span>Change-report range — click chart or use From / To</span>
 		<span class="key"><span class="k-diamond"></span>Release version · circle = source snapshot</span>
+		<span class="key">○ Partial workload coverage · excluded from absolute trend lines</span>
 		<span class="key"><span class="k-event"></span>Retrospective source revision — hover for details</span>
 	</div>
 	<div class="report-for">

@@ -2,7 +2,7 @@ import { aggregate, aggregateCohort, measuredCohort, cohortWeights, weightedGeom
 import { fmtU } from './format';
 import { viewData, type ViewCell } from './view-data';
 import type { CfgId, MachineId, MetricKey, OtMetricKey } from './data/types';
-import type { Scope } from './model';
+import type { Scope, PerfGroup } from './model';
 
 export const historyCell=(machine:MachineId,workload:string,cid:CfgId,metric:MetricKey,i:number):ViewCell=>viewData.history[machine].cells[`${workload}|${cid}|${metric}`]?.[i] || {st:'nm',report:''};
 /** Release labels receive markers; source revisions and unmeasured points do not. */
@@ -29,6 +29,7 @@ export function historyChange(before:ViewCell,after:ViewCell) {
 	return {delta,interval:[samples[25],samples[998]] as [number,number],fixed:false};
 }
 const metricOf:Record<OtMetricKey,MetricKey>={exec:'steady',wasmHost:'steady',hostWasm:'steady',roundTrip:'steady',compile:'compile',inst:'inst',mem:'rss',code:'code',cov:'steady'};
+const aggregateOf:Partial<Record<OtMetricKey,[PerfGroup,number]>>={exec:['lat',3],compile:['lat',0],inst:['lat',1],mem:['mem',2],code:['code',3]};
 export const historicalCallWorkloads=(key:OtMetricKey):string[]=>key==='wasmHost'?['mechanisms/wasm-to-host-call']:key==='hostWasm'?['mechanisms/host-to-wasm-call']:key==='roundTrip'?['mechanisms/wasm-to-host-call','mechanisms/host-to-wasm-call']:[];
 const valid=(c:ViewCell)=>c.st==='ok' && c.v!=null && Number.isFinite(c.v) && c.v>0;
 export function historyReusesEvidence(machine:MachineId,cid:CfgId,key:OtMetricKey,before:number,after:number) {
@@ -78,7 +79,8 @@ export function historySeries(s:Scope,cid:CfgId,key:OtMetricKey,workload=''):num
 	const catalogue=new Map(viewData.catalogue.map(w=>[w.id,w]));
 	const values=h.points.map((point,i)=>{
 		const current=point.currentLatency?.[cid];
-		if(current && ['exec','compile','inst'].includes(key))return aggregate({...s,snapshot:current},'lat',cid,key==='exec'?3:key==='compile'?0:1)?.v ?? Number.NaN;
+		const column=aggregateOf[key];
+		if(current && column?.[0]==='lat')return aggregate({...s,snapshot:current},column[0],cid,column[1])?.v ?? Number.NaN;
 		const cohort=historyCohort(s,cid,key,i);
 		if(point.status!=='measured'||!cohort.length)return Number.NaN;
 		return weightedGeometricMean(cohort.map(w=>historyCell(s.machine,w,cid,metric,i).v!),cohortWeights(cohort.map(w=>catalogue.get(w)!),s.weighting));
@@ -91,9 +93,10 @@ export function historySeries(s:Scope,cid:CfgId,key:OtMetricKey,workload=''):num
 export function historyCohort(s:Scope,cid:CfgId,key:OtMetricKey,i:number):string[] {
  const h=viewData.history[s.machine],metric=metricOf[key];
  const current=h.points[i]?.currentLatency?.[cid];
- if(current && ['exec','compile','inst'].includes(key))return aggregateCohort({...s,snapshot:current},'lat',cid,key==='exec'?3:key==='compile'?0:1).cohort.map(w=>w.id);
- if(['exec','compile','inst'].includes(key)){
-  const reference=aggregateCohort({...s,snapshot:'s1'},'lat',cid,key==='exec'?3:key==='compile'?0:1).cohort;
+ const column=aggregateOf[key];
+ if(current && column?.[0]==='lat')return aggregateCohort({...s,snapshot:current},column[0],cid,column[1]).cohort.map(w=>w.id);
+ if(column){
+  const reference=aggregateCohort({...s,snapshot:'s1'},column[0],cid,column[1]).cohort;
   if(reference.length)return reference.filter(w=>{const c=historyCell(s.machine,w.id,cid,metric,i);return !!c.report&&valid(c);}).map(w=>w.id);
  }
  const recorded=new Set(h.workloads);
@@ -102,12 +105,38 @@ export function historyCohort(s:Scope,cid:CfgId,key:OtMetricKey,i:number):string
  return measuredCohort(workloads,requested,cid,(w,c)=>historyCell(s.machine,w,c,metric,i)).cohort.map(w=>w.id);
 }
 export function historyAggregateDetails(s:Scope,cid:CfgId,key:OtMetricKey,i:number):string {
- if(!['exec','compile','inst'].includes(key))return '';
+ const column=aggregateOf[key];if(!column)return '';
  const capture=viewData.history[s.machine].points[i]?.currentLatency?.[cid]?'Same canonical release capture and workload cohort as the current chart.':'Archived capture.';
  const count=historyCohort(s,cid,key,i).length;
- const reference=aggregateCohort({...s,snapshot:'s1'},'lat',cid,key==='exec'?3:key==='compile'?0:1).cohort.length;
+ const reference=aggregateCohort({...s,snapshot:'s1'},column[0],cid,column[1]).cohort.length;
  const coverage=reference?`${count} of ${reference} reference non-feature workloads${count<reference?'; partial coverage':''}`:`${count} successful non-feature workloads`;
  return `Geometric mean of ${coverage}; ${s.weighting} weighting. Reference cohort matches the current chart. ${capture}`;
+}
+
+export function historyCoverage(s:Scope,cid:CfgId,key:OtMetricKey,i:number) {
+ const column=aggregateOf[key];
+ if(!column)return {complete:true,measured:0,reference:0};
+ const reference=aggregateCohort({...s,snapshot:'s1'},column[0],cid,column[1]).cohort.length;
+ const measured=historyCohort(s,cid,key,i).length;
+ return {complete:!reference||measured===reference,measured,reference};
+}
+
+/** Compare recorded values on exactly the same workloads at both dates. */
+export function historyComparison(s:Scope,cid:CfgId,key:OtMetricKey,before:number,after:number) {
+ if(before<0||after<0)return null;
+ if(!aggregateOf[key]){
+  const values=historySeries(s,cid,key),a=values?.[before],b=values?.[after];
+  return a!=null&&b!=null&&Number.isFinite(a)&&Number.isFinite(b)?{before:a,after:b,ratio:b/a,count:0}:null;
+ }
+ const next=new Set(historyCohort(s,cid,key,after));
+ const workloads=historyCohort(s,cid,key,before).filter(w=>next.has(w));
+ const metric=metricOf[key];
+ const matched=workloads.filter(w=>valid(historyCell(s.machine,w,cid,metric,before))&&valid(historyCell(s.machine,w,cid,metric,after)));
+ if(!matched.length)return null;
+ const catalogue=new Map(viewData.catalogue.map(w=>[w.id,w]));
+ const weights=cohortWeights(matched.map(w=>catalogue.get(w)!),s.weighting);
+ const mean=(i:number)=>weightedGeometricMean(matched.map(w=>historyCell(s.machine,w,cid,metric,i).v!),weights);
+ const a=mean(before),b=mean(after);return {before:a,after:b,ratio:b/a,count:matched.length};
 }
 
 

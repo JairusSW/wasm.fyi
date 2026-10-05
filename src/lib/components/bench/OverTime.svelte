@@ -8,7 +8,7 @@
 	import { href } from '$lib/links';
 	import { isOff, isVisible, otSeries, seriesFmt } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
-import { historySegments, historyCurve, historyCallDetails, historyReusesEvidence, historyAggregateDetails, historyVersionChanges } from '$lib/history-values';
+import { historySegments, historyCurve, historyCallDetails, historyReusesEvidence, historyAggregateDetails, historyVersionChanges, historyCoverage, historyComparison } from '$lib/history-values';
 import { viewData } from '$lib/view-data';
 import HistoryMarker from '../HistoryMarker.svelte';
 	import Carousel from '../Carousel.svelte';
@@ -48,20 +48,24 @@ import HistoryMarker from '../HistoryMarker.svelte';
 			const lo = Math.min(...finite);
 			const hi = Math.max(...finite);
 			const WY = (v: number) => 30 - ((v - lo) / (hi - lo || 1)) * 26;
-			const segments=historySegments(vals,WX,WY,true);
+			const coverage=vals.map((_,i)=>historyCoverage(s,c.id,ui.otMetric,i));
+			const segments=historySegments(vals.map((v,i)=>coverage[i].complete?v:NaN),WX,WY,true);
 			const versions=new Set(historyVersionChanges(viewData.history[s.machine].versions[c.id] || [],vals));
 			const hi_ = hover?.i;
 			const hv = hi_ != null && Number.isFinite(vals[hi_]);
-			const hd = hv && hi_ > 0 && Number.isFinite(vals[hi_-1]) ? chg(vals[hi_], vals[hi_ - 1]) : null;
+			const previousIndex=hv?vals.findLastIndex((v,i)=>i<hi_!&&Number.isFinite(v)):-1;
+			const previous=hv?historyComparison(s,c.id,ui.otMetric,previousIndex,hi_):null;
+			const hd = previous ? chg(previous.after,previous.before) : null;
 			const firstIndex=vals.findIndex(Number.isFinite),first=vals[firstIndex],last=vals[SNAPS.length-1];
-            const reused=historyReusesEvidence(ui.machine,c.id,ui.otMetric,hv?hi_-1:firstIndex,hv?hi_:SNAPS.length-1);
-            const d8 = finite.length>1 && first!=null && Number.isFinite(last)?chg(last,first):null;
+            const reused=historyReusesEvidence(ui.machine,c.id,ui.otMetric,hv?previousIndex:firstIndex,hv?hi_:SNAPS.length-1);
+            const comparison=historyComparison(s,c.id,ui.otMetric,firstIndex,SNAPS.length-1);
+            const d8 = finite.length>1&&comparison?chg(comparison.after,comparison.before):null;
 			const tipOn = hv && hover!.row === c.id;
 			return {
 				c,
 				na: false as const,
 				segments,
-				points: vals.flatMap((v,i)=>Number.isFinite(v)?[{i,x:WX(i),y:WY(v),version:versions.has(i)?verAt(c.id,i,s.machine):''}]:[]),
+				points: vals.flatMap((v,i)=>Number.isFinite(v)?[{i,x:WX(i),y:WY(v),version:versions.has(i)?verAt(c.id,i,s.machine):'',partial:!coverage[i].complete}]:[]),
 				hv,
 				hx: hv ? WX(hi_).toFixed(1) : '0',
 				dl: hv ? pc(WX(hi_), 600) : '0%',
@@ -74,7 +78,7 @@ import HistoryMarker from '../HistoryMarker.svelte';
 							callDetails: ui.otMetric === 'roundTrip' ? historyCallDetails(ui.scope,c.id,hi_) : '',
 							ver: `${c.rt} ${verAt(c.id, hi_,ui.machine)}`,
 							val: fv(vals[hi_]),
-							delta: reused ? 'reused evidence' : hd ? hd.t + ' vs prev week' : 'first snapshot',
+							delta: reused ? 'reused evidence' : hd ? hd.t + ' vs previous point' + (previous?.count?` · ${previous.count} matched workloads`:'') : 'no matched previous point',
 							dColor: hd ? col(hd) : 'var(--fg3)',
 							ev: EVENTS.filter((e) => e.i === hi_)
 								.map((e) => e.label)
@@ -118,7 +122,7 @@ import HistoryMarker from '../HistoryMarker.svelte';
 			onnext={() => step(1)}
 			noun="metric"
 		/>
-		<span class="s12 fg3">{SNAPS.length} retrospective points · ◆ release · ● source snapshot · hover to inspect</span>
+		<span class="s12 fg3">◆ release · ● source snapshot · ○ partial coverage · changes use matched workloads</span>
 		<span class="s12 fg2">{spEvent}</span>
 		<a class="link-quiet push" href={siteHref(histHref(ui.histCfg))}>History</a>
 	</div>
@@ -162,7 +166,7 @@ import HistoryMarker from '../HistoryMarker.svelte';
 											/>
 										{/each}
 									</svg>
-									{#each h.points as p (p.i)}<HistoryMarker x={pc(p.x,600)} y={pc(p.y,34)} color={h.c.col} version={p.version} />{/each}
+									{#each h.points as p (p.i)}<HistoryMarker x={pc(p.x,600)} y={pc(p.y,34)} color={h.c.col} version={p.version} partial={p.partial} />{/each}
 									{#if h.hv}
 										<span class="dot" style:left={h.dl} style:top={h.dt} style:border-color={h.c.col}></span>
 									{/if}
