@@ -8,7 +8,7 @@
 	import { ST, ST_DESC } from '$lib/data/status';
 	import { fmtU, relative, n0, workloadName } from '$lib/format';
 	import { benchHref } from '$lib/links';
-	import { TOTAL_WORKLOADS, benchVal, cfgIndex, cn, compatCell, cov, featureContracts, featureOutcome, kidCells, ratio, type PerfGroup } from '$lib/model';
+	import { TOTAL_WORKLOADS, benchVal, cfgIndex, compatCell, cov, featureContracts, featureOutcome, kidCells, ratio, type PerfGroup } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 	import Swatch from './Swatch.svelte';
 	import { viewCell, viewData, viewReason } from '$lib/view-data';
@@ -28,7 +28,6 @@
 		const c = CB[d.c];
 		const u = MET[d.m].u;
 		const r = benchVal(s, b, c.id, d.m, d.cf);
-		const br = benchVal(s, b, s.baseline, d.m, d.cf);
 		const t = ST[r.st];
 		const measured = viewCell(s.machine,ui.snap,b.id,c.id,d.m);
 		const report = viewData.reports[measured.report];
@@ -57,9 +56,6 @@
 			stDesc: viewReason(measured) || ST_DESC[r.st] || '',
 			abs: ok ? fmtU(v, u) : '',
 			absCi: ok && measured.interval ? `95% CI ${fmtU(measured.interval[0],u)} – ${fmtU(measured.interval[1],u)}` : 'CI unavailable',
-			baseName: cn(CB[s.baseline]),
-			ratio: ok && br.st === 'ok' ? relative(v / br.v,ui.deltaFormat) : 'n/a',
-			baseAbs: br.st === 'ok' ? 'baseline ' + fmtU(br.v, u) : 'baseline not comparable',
 			dots: dots.map((x, i) => ({ x: X(x).toFixed(1), y: (26 + (i % 3) * 4).toFixed(0) })),
 			medX: ok ? X(v).toFixed(1) : '0',
 			boxX: ok && measured.interval ? X(measured.interval[0]).toFixed(1) : '0',
@@ -203,16 +199,11 @@
 					{#if cell.ok}<span class="fg2">recorded independent oracle verified</span>{/if}
 				</div>
 				{#if cell.ok}
-					<div class="tiles two">
+					<div class="tiles">
 						<div class="pad">
 							<div class="small fg3">Absolute (median)</div>
 							<div class="mono big">{cell.abs}</div>
 							<div class="mono small fg3">{cell.absCi}</div>
-						</div>
-						<div class="pad">
-							<div class="small fg3">vs {cell.baseName}</div>
-							<div class="mono big">{cell.ratio}</div>
-							<div class="mono small fg3">{cell.baseAbs}</div>
 						</div>
 					</div>
 					<div class="sect">
@@ -378,9 +369,6 @@
 		align-items: center;
 		gap: 8px;
 		font-size: 12px;
-	}
-	.two {
-		grid-template-columns: 1fr 1fr;
 	}
 	.three {
 		grid-template-columns: repeat(3, 1fr);
