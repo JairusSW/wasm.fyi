@@ -1,6 +1,6 @@
 // Catalogue, metric labels and retrospective dates backed by sealed evidence.
 import { viewData } from '../view-data';
-import type { Bench, BenchGroup, CfgId, MetricKey, OtMetric, OtMetricKey, OvGroup, OvKey, Snap, SnapEvent, Status } from './types';
+import type { Bench, BenchGroup, CfgId, MachineId, MetricKey, OtMetric, OtMetricKey, OvGroup, OvKey, Snap, SnapEvent, Status } from './types';
 
 export const OV: Record<OvKey, OvGroup> = {
   lat:{label:'Latency',cols:['Compilation','Instantiation','First call','Steady execution'],metrics:['compile','inst','first','steady']},
@@ -24,7 +24,7 @@ export const OTM: Record<OtMetricKey, OtMetric> = {
 export const OTM_KEYS: OtMetricKey[] = (Object.keys(OTM) as OtMetricKey[]).filter(key => key !== 'wasmHost' && key !== 'hostWasm');
 export const SNAPS: Snap[] = (viewData.history.m1.points.length?viewData.history.m1.points:viewData.history.m2.points).map((p,i)=>({i,date:p.date,short:p.date.slice(5)}));
 export const HARNESS_BREAK=0;
-export const PIN=0;
+export const historyPin=(machine:MachineId)=>Math.max(0,viewData.history[machine].points.findIndex(p=>p.status==='measured'));
 export const EVENTS:SnapEvent[]=(viewData.history.m1.points.length?viewData.history.m1.points:viewData.history.m2.points).map((p,i)=>({i,kind:'revision',label:`Retrospective source snapshot ${p.date}`}));
 export const verAt=(cid:CfgId,i:number,machine:'m1'|'m2'='m1')=>{
   const v=viewData.history[machine].versions[cid]?.[i];

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { viewCell, viewData } from './view-data';
 import { historyCell, historyChange, historySegments, historySeries, historyCallDetails, historyReusesEvidence } from './history-values';
-import { OTM_KEYS } from './data/snapshot';
+import { OTM_KEYS, historyPin } from './data/snapshot';
 import { readFileSync } from 'node:fs';
 import type { Scope } from './model';
 
@@ -109,4 +109,13 @@ it('identifies reused WAVM evidence without treating equal version labels as pro
  const h=viewData.history.m2,a=h.points.findIndex(p=>p.date==='2026-09-26'),b=h.points.findIndex(p=>p.date==='2026-10-03');
  if(a>=0){expect(historyReusesEvidence('m2','L','roundTrip',a,b)).toBe(true);expect(historyReusesEvidence('m2','G','roundTrip',a,b)).toBe(false);}
  expect(historyReusesEvidence('m2','L','roundTrip',b,b)).toBe(false);
+});
+
+it('anchors relative history to each machine first measured point while retaining its earlier gaps',()=>{
+ for(const machine of ['m1','m2'] as const){
+  const h=viewData.history[machine],i=historyPin(machine);
+  expect(h.points[i].status).toBe('measured');
+  expect(h.points.slice(0,i).every(p=>p.status!=='measured')).toBe(true);
+ }
+ expect(historyPin('m1')).toBeGreaterThan(historyPin('m2'));
 });
