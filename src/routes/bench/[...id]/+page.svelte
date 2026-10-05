@@ -71,7 +71,7 @@ import { historySegments } from '$lib/history-values';
       ? `${base}/wasmbench/code-inspection/${encodeURIComponent(report.codeSource.id)}/view.html?trial=${encodeURIComponent(native.trial)}`
       : null;
     const image=cell.st==='ok'&&cell.v!=null?fmtU(cell.v,'KiB'):cell.st==='na'?'n/a':cell.st==='unsupported'?'unsupported':cell.st==='failed'?'failed':'not measured';
-    return {c,inspect,cells:['not collected','not collected','not collected',image,'not collected','not collected','not collected']};
+    return {c,inspect,cells:[image,'not collected','not collected','not collected']};
   }));
 
 	// ── History ────────────────────────────────────────────────────────────
@@ -253,16 +253,13 @@ import { historySegments } from '$lib/history-values';
 	<div class="note">Memory values come from matched memory-profile runs. Timing and memory are separate measurements; phase end values and physical reclamation are not inferred.</div>
 {:else if ui.bdTab === 'code'}
 	<div class="lede">
-		Extracted native image bytes from a separate code-profile pass. Images can include wrappers and data. Function, stub, metadata, active-tier and cumulative breakdowns are not collected.
+		Extracted native image bytes from a separate code-profile pass. Images can include wrappers and data. Active-tier and cumulative breakdowns are not collected.
 	</div>
 	<div class="tbl-wrap">
-		<table class="t" style:min-width="900px">
+		<table class="t" style:min-width="620px">
 			<thead>
 				<tr>
 					<th>Configuration</th>
-					<th class="r">Function code</th>
-					<th class="r">Stubs &amp; trampolines</th>
-					<th class="r">Metadata &amp; pools</th>
 					<th class="r">Extracted image</th>
 					<th class="r">Cumulative emitted</th>
 					<th>Compiled functions</th>
@@ -273,7 +270,7 @@ import { historySegments } from '$lib/history-values';
 				{#each codeRows as r (r.c.id)}
 					<tr>
 						<td class="nowrap"><RtLabel c={r.c} /></td>
-					{#each r.cells as c, i (i)}<td class="mono fg2" class:r={i < 5}>{c}{#if i===3&&r.inspect}<br /><a href={r.inspect} target="_blank" rel="noreferrer">Inspect image</a>{/if}</td>{/each}
+					{#each r.cells as c, i (i)}<td class="mono fg2" class:r={i < 2}>{c}{#if i===0&&r.inspect}<br /><a href={r.inspect} target="_blank" rel="noreferrer">Inspect image</a>{/if}</td>{/each}
 					</tr>
 				{/each}
 			</tbody>

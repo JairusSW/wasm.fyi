@@ -6,7 +6,7 @@ export const OV: Record<OvKey, OvGroup> = {
   lat:{label:'Latency',cols:['Compilation','Instantiation','First call','Steady execution'],metrics:['compile','inst','first','steady']},
   calls:{label:'Call latency',cols:['Wasm → host','Host → Wasm','Round trip'],metrics:['steady','steady','steady']},
   mem:{label:'Memory',cols:['Compile run peak RSS','Instantiate run peak RSS','Steady run peak RSS','Average process RSS'],metrics:['rssCompile','rssInst','rss','rss']},
-  code:{label:'Machine Code',cols:['Function code','Stubs & trampolines','Metadata & pools','Extracted native image','Cumulative emitted'],metrics:['code','code','code','code','code']},
+  code:{label:'Machine Code',cols:['Extracted native image','Cumulative emitted'],metrics:['code','code']},
   cov:{label:'Correctness',cols:['Correct','Failed','Crashed / timeout','Unsupported / disabled','Not measured'],metrics:['steady','steady','steady','steady','steady']}
 };
 export const UNIT: Record<"lat" | "mem" | "code", string> = { lat: 'ms', mem: 'MiB', code: 'KiB' };
