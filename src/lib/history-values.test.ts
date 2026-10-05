@@ -151,6 +151,34 @@ it('does not let an older failure change a later historical average',()=>{
  try{cells[older]={st:'failed',report:original.report,role:original.role};expect(historySeries(selected,'G','exec')![beta]).toBe(before);}finally{cells[older]=original;}
 });
 
+it('recalculates every sealed week from its own shared non-feature measurements',()=>{
+ let checked=0;
+ for(const machine of ['m1','m2'] as const)for(const weighting of ['corpus','workload'] as const){
+  const selected:Scope={machine,baseline:'G',hide:{},weighting};
+  const h=viewData.history[machine];
+  for(const [key,metric] of [['compile','compile'],['inst','inst'],['exec','steady']] as const){
+   const series=new Map(viewData.applicationConfigurations.map(cid=>[cid,historySeries(selected,cid,key)]));
+   for(const [i,point] of h.points.entries()){
+    if(point.status!=='measured'||point.currentLatency?.G)continue;
+    const workloads=viewData.catalogue.filter(w=>!w.id.startsWith('features/')&&h.workloads.includes(w.id));
+    const ok=(id:string,cid:typeof viewData.applicationConfigurations[number])=>{const c=historyCell(machine,id,cid,metric,i);return !!c.report&&c.st==='ok'&&c.v!=null&&Number.isFinite(c.v)&&c.v>0;};
+    const engines=viewData.applicationConfigurations.filter(cid=>workloads.some(w=>ok(w.id,cid)));
+    const cohort=workloads.filter(w=>engines.every(cid=>ok(w.id,cid)));
+    for(const cid of viewData.applicationConfigurations){
+     const value=series.get(cid)?.[i];
+     if(!engines.includes(cid)||!cohort.length){expect(value==null||Number.isNaN(value)).toBe(true);continue;}
+     const groups=[...new Set(cohort.map(w=>w.group))];
+     const logs=cohort.map(w=>Math.log(historyCell(machine,w.id,cid,metric,i).v!));
+     const expected=weighting==='workload'?Math.exp(logs.reduce((a,b)=>a+b,0)/logs.length):Math.exp(groups.reduce((sum,g)=>{const indices=cohort.flatMap((w,j)=>w.group===g?[j]:[]);return sum+indices.reduce((a,j)=>a+logs[j],0)/indices.length;},0)/groups.length);
+     expect(value).toBeCloseTo(expected,10);
+     expect(historyCohort(selected,cid,key,i)).toEqual(cohort.map(w=>w.id));checked++;
+    }
+   }
+  }
+ }
+ expect(checked).toBeGreaterThan(100);
+});
+
 
 for(const machine of ['m1','m2'] as const)for(const weighting of ['corpus','workload'] as const)
 it(`matches current and beta.11 history averages exactly on ${machine} with ${weighting} weighting`,()=>{

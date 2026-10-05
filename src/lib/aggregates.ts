@@ -11,16 +11,25 @@ const cache=new Map<string,Aggregate|null>();
 const median=(xs:number[])=>{const s=[...xs].sort((a,b)=>a-b);return s.length%2?s[s.length>>1]:(s[(s.length>>1)-1]+s[s.length>>1])/2;};
 const quantile=(xs:number[],q:number)=>{const s=[...xs].sort((a,b)=>a-b);const p=(s.length-1)*q;return s[Math.floor(p)]+(s[Math.ceil(p)]-s[Math.floor(p)])*(p%1);};
 
+/** The same evidence eligibility and weighting apply to current and sealed weekly captures. */
+export function measuredCohort<T extends {id:string}>(workloads:T[],selected:CfgId[],cid:CfgId,cell:(w:string,c:CfgId)=>ViewCell) {
+ const available=(w:string,c:CfgId)=>{const v=cell(w,c);return !!v.report && v.st==='ok' && v.v!=null && Number.isFinite(v.v) && v.v>0;};
+ const participants=selected.filter(c=>workloads.some(w=>available(w.id,c)));
+ return {participants,cohort:participants.includes(cid)?workloads.filter(w=>participants.every(c=>available(w.id,c))):[]};
+}
+export function cohortWeights(workloads:{group:string}[],weighting:Scope['weighting']):number[] {
+ const counts=new Map<string,number>();for(const w of workloads)counts.set(w.group,(counts.get(w.group)||0)+1);
+ return workloads.map(w=>weighting==='workload'?1/workloads.length:1/(counts.size*counts.get(w.group)!));
+}
+export const weightedGeometricMean=(values:number[],weights:number[])=>Math.exp(values.reduce((sum,v,i)=>sum+weights[i]*Math.log(v),0));
+
 /** The exact current cohort, shared by headline and canonical release history. */
 export function aggregateCohort(s:Scope,group:PerfGroup,cid:CfgId,col:number) {
  const metric=metrics[group][col];
  const ids=viewData.applicationConfigurations;
  const selected=[...new Set([...ids.filter(id=>!s.hide[id]),s.baseline])];
  const workloads=group==='lat'?viewData.catalogue.filter(w=>!w.id.startsWith('features/')):viewData.catalogue;
- const available=(w:string,c:CfgId)=>{const cell=viewCell(s.machine,s.snapshot || 's1',w,c,metric || '');return !!cell.report && cell.st==='ok' && cell.v!=null && Number.isFinite(cell.v) && cell.v>0;};
- const participants=metric?selected.filter(c=>workloads.some(w=>available(w.id,c))):[];
- const cohort=participants.includes(cid)?workloads.filter(w=>participants.every(c=>available(w.id,c))):[];
- return {cohort,participants};
+ return measuredCohort(workloads,metric?selected:[],cid,(w,c)=>viewCell(s.machine,s.snapshot || 's1',w,c,metric || ''));
 }
 
 /** A host-local shared workload cohort merged from sealed reports; each cell retains its evidence. */
@@ -56,11 +65,10 @@ export function aggregate(s:Scope,group:PerfGroup,cid:CfgId,col:number):Aggregat
 	const reports=[...new Set(cohort.flatMap(w=>participants.map(c=>cell(w.id,c).report)))];
 	if(!reports.length)return remember(null);
 	const report=[...reports].sort((a,b)=>viewData.reports[b].created.localeCompare(viewData.reports[a].created))[0];
-	const groupCounts=new Map<string,number>();for(const w of cohort)groupCounts.set(w.group,(groupCounts.get(w.group)||0)+1);
-	const weights=cohort.map(w=>s.weighting==='workload'?1/cohort.length:1/(groupCounts.size*groupCounts.get(w.group)!));
+	const weights=cohortWeights(cohort,s.weighting);
 	const columns=(c:CfgId)=>cohort.map(w=>cell(w.id,c));
 	const numerator=columns(cid),denominator=columns(s.baseline);
-	const mean=(cells:ViewCell[],draw?:number[])=>Math.exp(cells.reduce((sum,c,i)=>sum+weights[i]*Math.log(draw?median(draw.map(j=>c.launchMedians![j])):c.v!),0));
+	const mean=(cells:ViewCell[],draw?:number[])=>weightedGeometricMean(cells.map(c=>draw?median(draw.map(j=>c.launchMedians![j])):c.v!),weights);
 	const baselineAvailable=participants.includes(s.baseline);
 	const value=mean(numerator),base=baselineAvailable?mean(denominator):Number.NaN,ratio=cid===s.baseline?1:value/base;
 	const result:Aggregate={v:value,r:ratio,ci:Number.NaN,count:cohort.length,report,reports};
