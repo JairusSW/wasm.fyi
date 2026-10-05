@@ -58,6 +58,7 @@ import { historySegments, historyCallDetails, historyReusesEvidence } from '$lib
 				c,
 				na: false as const,
 				segments,
+				points: vals.flatMap((v,i)=>Number.isFinite(v)?[{i,x:WX(i),y:WY(v)}]:[]),
 				hv,
 				hx: hv ? WX(hi_).toFixed(1) : '0',
 				dl: hv ? pc(WX(hi_), 600) : '0%',
@@ -141,7 +142,7 @@ import { historySegments, historyCallDetails, historyReusesEvidence } from '$lib
 									<svg viewBox="0 0 600 34" preserveAspectRatio="none">
 										{#if h.hv}<line x1={h.hx} x2={h.hx} y1="0" y2="34" class="cross" />{/if}
 										{#each h.segments as points}<polyline {points} style:stroke={h.c.col} style:stroke-dasharray={h.c.hollow ? '4 3' : 'none'} />{/each}
-                                        {#if SNAPS.length===1 && h.segments.length}<circle cx={h.segments[0].split(',')[0]} cy={h.segments[0].split(',')[1]} r="3" style:fill={h.c.col} />{/if}
+                                        {#each h.points as p (p.i)}<circle class="history-point" cx={p.x} cy={p.y} r="2.5" style:fill={h.c.col} />{/each}
 										{#each SNAPS as p (p.i)}
 											<rect
 												role="presentation"
