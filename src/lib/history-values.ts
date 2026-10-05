@@ -42,7 +42,7 @@ export function historySeries(s:Scope,cid:CfgId,key:OtMetricKey,workload=''):num
 	if(workload){const cells=series(workload,cid);return cells.some(valid)?cells.map(c=>valid(c)?c.v!:Number.NaN):null;}
 	if(key==='cov') {
 		if(!h.workloads.some(w=>series(w,cid).some(c=>c.report)))return null;
-		return h.points.map((_,i)=>h.workloads.filter(w=>historyCell(s.machine,w,cid,'steady',i).st==='ok').length);
+		return h.points.map((_,i)=>h.workloads.some(w=>historyCell(s.machine,w,cid,'steady',i).report)?h.workloads.filter(w=>historyCell(s.machine,w,cid,'steady',i).st==='ok').length:Number.NaN);
 	}
 	// Both latency views include all non-feature contracts.
 	const nonFeatures=new Set(viewData.catalogue.filter(w=>!w.id.startsWith('features/')).map(w=>w.id));

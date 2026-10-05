@@ -1,5 +1,4 @@
 <script lang="ts">
- import { configVersion } from '$lib/data/runtimes';
 	import { siteHref } from '$lib/links';
 	import { goto } from '$lib/navigation';
 	import { CFG } from '$lib/data/runtimes';
@@ -40,7 +39,7 @@ import { historySegments, historyCallDetails } from '$lib/history-values';
 	const rows = $derived.by(() => {
 		const s = ui.scope;
 		const { fv, chg, col } = seriesFmt(ui.otMetric,ui.deltaFormat);
-		return CFG.filter((c) => isVisible(s, c)).map((c) => {
+		return CFG.filter((c) => !s.hide[c.id] && (isVisible(s, c) || otSeries(s,c.id,ui.otMetric))).map((c) => {
 			const vals = otSeries(s, c.id, ui.otMetric);
 			if (!vals) return { c, na: true as const, now: isOff(s, c.id) ? 'unavailable' : 'n/a' };
 			const finite=vals.filter(Number.isFinite);
@@ -52,7 +51,7 @@ import { historySegments, historyCallDetails } from '$lib/history-values';
 			const hv = hi_ != null && Number.isFinite(vals[hi_]);
 			const hd = hv && hi_ > 0 && Number.isFinite(vals[hi_-1]) ? chg(vals[hi_], vals[hi_ - 1]) : null;
 			const first=vals.find(Number.isFinite),last=vals[SNAPS.length-1];
-            const d8 = first!=null && Number.isFinite(last)?chg(last,first):null;
+            const d8 = finite.length>1 && first!=null && Number.isFinite(last)?chg(last,first):null;
 			const tipOn = hv && hover!.row === c.id;
 			return {
 				c,
@@ -131,7 +130,7 @@ import { historySegments, historyCallDetails } from '$lib/history-values';
 				{#each rows as h (h.c.id)}
 					<tr class="hoverbg" onclick={() => goto(histHref(h.c.id))}>
 						<td class="nowrap w1">
-							<a class="rt" href={siteHref(histHref(h.c.id))} data-tip={`${h.c.rt} ${configVersion(ui.machine,h.c.id)} · ${h.c.be}\n${h.c.kind}\nClick to open history`}>
+							<a class="rt" href={siteHref(histHref(h.c.id))} data-tip={`${h.c.rt} ${verAt(h.c.id,SNAPS.length-1,ui.machine)} · ${h.c.be}\n${h.c.kind}\nClick to open history`}>
 								<RtLabel c={h.c} mono />
 							</a>
 						</td>
