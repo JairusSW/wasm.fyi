@@ -143,7 +143,7 @@
 		const tradeoffs: { t: string; v: string }[] = [];
 		(['lat', 'mem', 'code'] as PerfGroup[]).forEach((g) =>
 			OV[g].cols.forEach((col, i) => {
-				const list = CFG.map((c) => ({ c, x: ratio(s, g, c.id, i) }))
+				const list = CFG.map((c) => ({ c, x: ratio(s, g, c.id, g === 'code' ? i + 3 : i) }))
 					.filter((e) => e.x != null)
 					.map((e) => ({ c: e.c, r: e.x!.r, ci: e.x!.ci }))
 					.sort((a, b) => a.r - b.r);

@@ -88,7 +88,7 @@ import { viewCell, viewData } from '$lib/view-data';
 					};
 				}
 				const grp = ui.group as 'lat' | 'mem' | 'code';
-				const sourceIndex = i;
+				const sourceIndex = grp === 'code' ? i + 3 : i;
 				const r = ratio(s, grp, c.id, sourceIndex);
 				if (!r) {
 					const interpreter=grp==='code'&&viewData.hosts[s.machine].configurations[c.id]?.backend==='interpreter';
