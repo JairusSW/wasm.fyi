@@ -26,10 +26,10 @@ export function historyReusesEvidence(machine:MachineId,cid:CfgId,key:OtMetricKe
   const recorded=pairs.filter(([a,b])=>a.report || b.report);
   return recorded.length>0 && recorded.every(([a,b])=>a.report && a.report===b.report && a.st===b.st);
 }
-export function historySegments(values:number[],x:(i:number)=>number,y:(v:number)=>number):string[] {
+export function historySegments(values:number[],x:(i:number)=>number,y:(v:number)=>number,connectGaps=false):string[] {
 	const segments:string[]=[];let points:string[]=[];
 	for(const [i,v] of values.entries()){
-		if(!Number.isFinite(v)){if(points.length)segments.push(points.join(' '));points=[];continue;}
+		if(!Number.isFinite(v)){if(connectGaps)continue;if(points.length)segments.push(points.join(' '));points=[];continue;}
 		points.push(x(i).toFixed(1)+','+y(v).toFixed(1));
 	}
 	if(points.length)segments.push(points.join(' '));return segments;
