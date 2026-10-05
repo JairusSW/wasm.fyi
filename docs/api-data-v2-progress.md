@@ -96,3 +96,56 @@ pnpm exec vitest run src/lib/api/client.test.ts
 Producer checks run `go test ./publish ./cmd/wasmbench`. The golden fixture is synthetic, emitted by the producer's `TestSiteExportParityAndBounds`; it is not performance evidence. Producer tests also export a fully verified report fixture and compare every timing summary field with its source. Storage tests cover publication-stage failures/restart, hidden staging IDs, concurrent duplicate deliveries, current/previous/backfill semantics and persistent-map sharing. HTTP tests cover signed cursors, scope tampering, compression, source-byte limits, unavailable downloads and missing/corrupt inputs. An end-to-end test starts the real service and drives the coordinator sink without executing benchmarks.
 
 Pebble's batch and filesystem durability are separate; see the [pinned Pebble documentation](https://pkg.go.dev/github.com/cockroachdb/pebble/v2@v2.1.7). Backing up only its DB directory is insufficient for this content-backed service. Operations tooling is pending; this is a development checkpoint, not a production cutover.
+
+
+## Backend hardening pass
+
+The next backend pass adds immutable session, machine-member and attempt bindings;
+conflicting redelivery returns 409. JSON ingestion rejects duplicate keys as well
+as unknown fields. Content reads enforce their size before allocation, reject
+symlinks and swapped inodes, and install without overwriting existing files.
+Filesystem retries re-establish durability rather than assuming existence proves
+it. Public responses use safe structured errors for invalid input, missing scope,
+limits, conflicting identities, and durability failures.
+
+Persistent dimension and catalog-kind indexes let selected queries avoid unrelated
+cells and descriptors. Catalog paging loads only the returned records. Requests
+honor cancellation and have an internal 32 MiB selected-result byte budget as well
+as the ordinary response and scan ceilings. Earlier unindexed revisions remain
+readable; the first subsequent publication builds their missing indexes rather
+than silently dropping their data. Full large-inventory scale tests remain open.
+
+A durable `published.json` pointer is installed after the synchronous database
+commit and before exposing its revision. DB-free rebuild follows that pointer's
+immutable ancestry; it cannot promote abandoned staging/index roots. Startup
+checks the committed ancestry and shared content closure before serving.
+
+Offline operations are now available (only one process may own the database):
+
+```sh
+wasmfyi backup --data /private/live-data --output /private/new-backup
+wasmfyi verify-backup --data /private/new-backup
+wasmfyi restore --data /private/new-backup --output /private/new-data
+wasmfyi rebuild --data /private/new-backup --output /private/rebuilt-data
+```
+
+Backups contain a synced Pebble checkpoint detached from live hardlinks, every
+referenced published content object, available staged-import content, the durable
+pointer, and the private cursor secret. Bounded inventories checksum every file;
+verification rejects corrupt, unlisted and symlinked resources. Restore preserves
+pending imports through the checkpoint; content-only rebuild reconstructs
+published state and idempotency receipts without the database. Neither command
+replaces an existing destination, including a destination created concurrently.
+Atomic non-replacing directory installation is implemented for Linux and macOS;
+other platforms explicitly reject this operation.
+
+The service drains requests on SIGINT/SIGTERM, cancels obsolete work, and retains
+its durable cursor key across restarts/restores. Direct non-loopback listeners
+require TLS; a loopback listener can sit behind an operator-managed HTTPS proxy.
+The dependency closure still excludes SQLite and all harness execution packages.
+
+These changes passed local race tests, vet, command-level recovery tests and the
+real-service coordinator publication/resume tests. Docker is unavailable here, so
+this pass does not claim a Linux runtime test or CI result. See the current
+[backend completion audit](backend-acceptance.md) for the still-open producer,
+scientific-policy, query-scale, artifact, online-operations and hosting gates.

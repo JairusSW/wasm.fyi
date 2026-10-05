@@ -1,68 +1,142 @@
 package main
 
 import (
-	"crypto/rand"
+	"context"
+	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
-	"path/filepath"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/JairusSW/wasm.fyi/service/internal/api"
 	"github.com/JairusSW/wasm.fyi/service/internal/store"
 )
 
-func run() error {
-	root := flag.String("data", ".wasmfyi", "Pebble and local content directory")
-	addr := flag.String("listen", "127.0.0.1:8090", "HTTP listen address")
-	publisher := flag.String("publisher", "local-coordinator", "authenticated publisher identity")
-	flag.Parse()
-	token := os.Getenv("WASMFYI_ADMIN_TOKEN")
-	if len(token) < 32 {
-		return fmt.Errorf("WASMFYI_ADMIN_TOKEN must contain at least 32 characters")
+func run(ctx context.Context, args []string) error {
+	action := "serve"
+	if len(args) > 0 && args[0] == "" {
+		return fmt.Errorf("empty command")
 	}
+	if len(args) > 0 && args[0][0] != '-' {
+		action = args[0]
+		args = args[1:]
+	}
+	flags := flag.NewFlagSet("wasmfyi "+action, flag.ContinueOnError)
+	root := flags.String("data", ".wasmfyi", "private Pebble and content directory")
+	addr := flags.String("listen", "127.0.0.1:8090", "HTTP listen address")
+	publisher := flags.String("publisher", "local-coordinator", "authenticated publisher identity")
+	output := flags.String("output", "", "new backup/restore/rebuild destination")
+	cert := flags.String("tls-cert", "", "TLS certificate for direct non-loopback serving")
+	key := flags.String("tls-key", "", "TLS key for direct non-loopback serving")
+	if e := flags.Parse(args); e != nil {
+		return e
+	}
+	if flags.NArg() != 0 {
+		return fmt.Errorf("unexpected positional arguments")
+	}
+	switch action {
+	case "verify-backup":
+		manifest, e := store.VerifyBackup(ctx, *root)
+		if e != nil {
+			return e
+		}
+		return json.NewEncoder(os.Stdout).Encode(manifest)
+	case "restore", "rebuild":
+		if *output == "" {
+			return fmt.Errorf("%s requires --output", action)
+		}
+		if action == "restore" {
+			return store.Restore(ctx, *root, *output, *publisher)
+		}
+		return store.Rebuild(*root, *output, *publisher)
+	case "serve", "backup":
+	default:
+		return fmt.Errorf("unknown command %q; use serve, backup, verify-backup, restore or rebuild", action)
+	}
+	if action == "backup" && *output == "" {
+		return fmt.Errorf("backup requires --output")
+	}
+	// One process owns the database. CLI backups are offline; attempts to open a
+	// live owner's data fail on Pebble's lock rather than bypassing that owner.
 	s, e := store.Open(*root, *publisher)
 	if e != nil {
 		return e
 	}
 	defer s.Close()
-	path := filepath.Join(*root, "cursor.key")
-	key, e := os.ReadFile(path)
-	if os.IsNotExist(e) {
-		key = make([]byte, 32)
-		if _, e = rand.Read(key); e != nil {
-			return e
-		}
-		f, e := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+	if action == "backup" {
+		manifest, e := s.Backup(ctx, *output)
 		if e != nil {
 			return e
 		}
-		if _, e = f.Write(key); e != nil {
-			f.Close()
-			return e
-		}
-		if e = f.Sync(); e != nil {
-			f.Close()
-			return e
-		}
-		if e = f.Close(); e != nil {
-			return e
-		}
-	} else if e != nil {
-		return e
+		return json.NewEncoder(os.Stdout).Encode(manifest)
 	}
-	handler, e := api.New(s, token, key)
+	token := os.Getenv("WASMFYI_ADMIN_TOKEN")
+	if len(token) < 32 {
+		return fmt.Errorf("WASMFYI_ADMIN_TOKEN must contain at least 32 characters")
+	}
+	if (*cert == "") != (*key == "") {
+		return fmt.Errorf("provide both --tls-cert and --tls-key")
+	}
+	host, _, e := net.SplitHostPort(*addr)
 	if e != nil {
 		return e
 	}
-	server := &http.Server{Addr: *addr, Handler: handler, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 * 1024}
-	log.Printf("wasm.fyi API listening on %s", *addr)
-	return server.ListenAndServe()
+	ip := net.ParseIP(host)
+	if *cert == "" && host != "localhost" && (ip == nil || !ip.IsLoopback()) {
+		return fmt.Errorf("direct non-loopback serving requires TLS; use loopback behind a trusted HTTPS proxy")
+	}
+	cursorKey, e := s.CursorKey()
+	if e != nil {
+		return e
+	}
+	handler, e := api.New(s, token, cursorKey)
+	if e != nil {
+		return e
+	}
+	listener, e := net.Listen("tcp", *addr)
+	if e != nil {
+		return e
+	}
+	defer listener.Close()
+	server := &http.Server{Handler: handler, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 * 1024, BaseContext: func(net.Listener) context.Context { return ctx }}
+	done := make(chan error, 1)
+	go func() {
+		if *cert != "" {
+			done <- server.ServeTLS(listener, *cert, *key)
+		} else {
+			done <- server.Serve(listener)
+		}
+	}()
+	log.Printf("wasm.fyi API listening on %s", listener.Addr())
+	select {
+	case e := <-done:
+		if errors.Is(e, http.ErrServerClosed) {
+			return nil
+		}
+		return e
+	case <-ctx.Done():
+		shutdown, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		if e = server.Shutdown(shutdown); e != nil {
+			_ = server.Close()
+		}
+		serveError := <-done
+		if serveError != nil && !errors.Is(serveError, http.ErrServerClosed) {
+			return serveError
+		}
+		return e
+	}
 }
 func main() {
-	if e := run(); e != nil {
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+	if e := run(ctx, os.Args[1:]); e != nil {
 		log.Fatal(e)
 	}
 }

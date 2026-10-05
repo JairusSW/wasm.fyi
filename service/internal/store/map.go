@@ -67,8 +67,14 @@ func (s *Store) mapSet(root, key, value string, depth int) (string, error) {
 		if e != nil {
 			return "", e
 		}
+		if child == n.Children[prefix] {
+			return root, nil
+		}
 		n.Children[prefix] = child
 		return s.put(n)
+	}
+	if n.Entries[key] == value {
+		return root, nil
 	}
 	n.Entries[key] = value
 	if len(n.Entries) <= 32 {

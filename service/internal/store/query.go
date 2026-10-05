@@ -1,10 +1,14 @@
 package store
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"regexp"
 	"sort"
+	"strconv"
+	"strings"
 
 	"github.com/JairusSW/wasm.fyi/service/internal/wire"
 )
@@ -16,6 +20,8 @@ type Query struct {
 	Selection     string `json:"selection"`
 	Environment   string `json:"environment,omitempty"`
 	Runtime       string `json:"runtime,omitempty"`
+	Track         string `json:"track,omitempty"`
+	Definition    string `json:"definition,omitempty"`
 	Configuration string `json:"configuration,omitempty"`
 	Contract      string `json:"contract,omitempty"`
 	Workload      string `json:"workload,omitempty"`
@@ -28,8 +34,11 @@ type Query struct {
 }
 
 func (q Query) Matches(r wire.Result) bool {
-	return (q.Environment == "" || q.Environment == r.EnvironmentID) && (q.Runtime == "" || q.Runtime == r.Runtime) && (q.Configuration == "" || q.Configuration == r.ConfigurationID) && (q.Contract == "" || q.Contract == r.ContractID) && (q.Workload == "" || q.Workload == r.Workload) && (q.Metric == "" || q.Metric == r.Metric) && (q.Scenario == "" || q.Scenario == r.Scenario) && (q.Profile == "" || q.Profile == r.Profile) && (q.Statistic == "" || q.Statistic == r.Statistic)
+	return (q.Environment == "" || q.Environment == r.EnvironmentID) && (q.Runtime == "" || q.Runtime == r.Runtime) && (q.Configuration == "" || q.Configuration == r.ConfigurationID) && (q.Contract == "" || q.Contract == r.ContractID) && (q.Workload == "" || q.Workload == r.Workload) && (q.Metric == "" || q.Metric == r.Metric) && (q.Scenario == "" || q.Scenario == r.Scenario) && (q.Profile == "" || q.Profile == r.Profile) && (q.Statistic == "" || q.Statistic == r.Statistic) && (q.Track == "" || q.Track == r.TrackID) && (q.Definition == "" || q.Definition == r.MetricDefinitionID)
 }
+
+var numericValue = regexp.MustCompile(`^-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]{1,3})?$`)
+
 func value(r wire.Record) (*big.Rat, bool) {
 	var v wire.Result
 	if json.Unmarshal(r.Data, &v) != nil {
@@ -49,17 +58,36 @@ func value(r wire.Record) (*big.Rat, bool) {
 			return nil, false
 		}
 	}
+	if len(text) > 128 || !numericValue.MatchString(text) {
+		return nil, false
+	}
+	if at := strings.IndexAny(text, "eE"); at >= 0 {
+		exponent, e := strconv.Atoi(text[at+1:])
+		if e != nil || exponent > 308 || exponent < -308 {
+			return nil, false
+		}
+	}
 	f, ok := new(big.Rat).SetString(text)
 	return f, ok
 }
 func (s *Store) Results(q Query, historical bool) ([]wire.Record, error) {
+	return s.ResultsContext(context.Background(), q, historical)
+}
+func (s *Store) ResultsContext(ctx context.Context, q Query, historical bool) ([]wire.Record, error) {
+	if (q.Sort == "value" || q.Sort == "-value") && (q.Metric == "" || q.Statistic == "") {
+		return nil, wire.Invalid("value sort requires metric and statistic")
+	}
 	rev, e := s.Revision(q.Revision)
 	if e != nil {
 		return nil, e
 	}
 	out := []wire.Record{}
 	budget := ScanLimit
+	decoded := 0
 	add := func(id string) error {
+		if e := ctx.Err(); e != nil {
+			return e
+		}
 		budget--
 		if budget < 0 {
 			return ErrLimit
@@ -75,6 +103,10 @@ func (s *Store) Results(q Query, historical bool) ([]wire.Record, error) {
 		if !q.Matches(v) {
 			return nil
 		}
+		decoded += len(r.Data)
+		if decoded > 32*1024*1024 {
+			return ErrLimit
+		}
 		v.Evidence = nil
 		b, e := wire.Encode(v)
 		if e != nil {
@@ -84,7 +116,14 @@ func (s *Store) Results(q Query, historical bool) ([]wire.Record, error) {
 		out = append(out, r)
 		return nil
 	}
-	e = s.walk(rev.Selection, &budget, func(_ string, digest string) error {
+	e = s.candidates(ctx, rev, q, &budget, func(cellKey string) error {
+		digest, e := s.mapGet(rev.Selection, cellKey)
+		if e != nil {
+			return e
+		}
+		if digest == "" {
+			return fmt.Errorf("corrupt selection index")
+		}
 		var c cell
 		if e := s.load(digest, &c); e != nil {
 			return e
@@ -119,7 +158,7 @@ func (s *Store) Results(q Query, historical bool) ([]wire.Record, error) {
 		return nil, e
 	}
 	if (q.Sort == "value" || q.Sort == "-value") && (q.Metric == "" || q.Statistic == "") {
-		return nil, fmt.Errorf("value sort requires metric and statistic")
+		return nil, wire.Invalid("value sort requires metric and statistic")
 	}
 	sort.Slice(out, func(i, j int) bool {
 		if q.Sort == "value" || q.Sort == "-value" {
@@ -152,20 +191,16 @@ func (s *Store) Results(q Query, historical bool) ([]wire.Record, error) {
 	return out, nil
 }
 func (s *Store) Catalog(revision, kind string) ([]wire.Record, error) {
+	return s.CatalogContext(context.Background(), revision, kind)
+}
+func (s *Store) CatalogContext(ctx context.Context, revision, kind string) ([]wire.Record, error) {
 	rev, e := s.Revision(revision)
 	if e != nil {
 		return nil, e
 	}
 	out := []wire.Record{}
 	budget := ScanLimit
-	e = s.walk(rev.Catalog, &budget, func(k, digest string) error {
-		if len(k) <= len(kind) || k[:len(kind)+1] != kind+":" {
-			return nil
-		}
-		var r wire.Record
-		if e := s.load(digest, &r); e != nil {
-			return e
-		}
+	e = s.indexedCatalog(ctx, rev, kind, &budget, func(r wire.Record) error {
 		out = append(out, r)
 		return nil
 	})

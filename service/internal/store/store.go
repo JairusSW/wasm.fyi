@@ -3,6 +3,8 @@
 package store
 
 import (
+	"bytes"
+	"context"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
@@ -20,11 +22,13 @@ import (
 var ErrNotFound = errors.New("resource not found in published revision")
 var ErrLimit = errors.New("query exceeds scan or byte limit; narrow the scope")
 var ErrNeedsRestart = errors.New("publication durability uncertain; restart service before another import")
+var ErrConflict = errors.New("immutable session or attempt conflicts with existing delivery")
 
 type Revision struct {
 	Parent             string    `json:"parent,omitempty"`
 	Catalog            string    `json:"catalogRoot"`
 	Selection          string    `json:"selectionRoot"`
+	Indexes            string    `json:"indexRoot,omitempty"`
 	Job                string    `json:"job"`
 	Publisher          string    `json:"trustedPublisher"`
 	Created            time.Time `json:"publishedAt"`
@@ -42,6 +46,9 @@ type Store struct {
 	publisher string
 	fail      func(string) error
 	poisoned  bool
+	objects   *os.Root
+	users     sync.RWMutex
+	closed    bool
 }
 
 // Key fields are length-prefixed, versioned tuples, never slash concatenation.
@@ -60,6 +67,15 @@ func Open(root, publisher string) (*Store, error) {
 	if e := os.MkdirAll(filepath.Join(root, "objects"), 0700); e != nil {
 		return nil, e
 	}
+	for _, path := range []string{root, filepath.Join(root, "objects")} {
+		info, e := os.Lstat(path)
+		if e != nil {
+			return nil, e
+		}
+		if !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
+			return nil, fmt.Errorf("data directory must be a real directory")
+		}
+	}
 	if e := syncDir(root); e != nil {
 		return nil, e
 	}
@@ -69,14 +85,40 @@ func Open(root, publisher string) (*Store, error) {
 	if e != nil {
 		return nil, e
 	}
-	s := &Store{db: db, root: root, publisher: publisher, published: map[string]Revision{}}
+	objects, e := os.OpenRoot(filepath.Join(root, "objects"))
+	if e != nil {
+		db.Close()
+		return nil, e
+	}
+	s := &Store{db: db, root: root, publisher: publisher, published: map[string]Revision{}, objects: objects}
 	if e = s.restore(); e != nil {
 		db.Close()
+		objects.Close()
 		return nil, e
 	}
 	return s, nil
 }
-func (s *Store) Close() error { return s.db.Close() }
+func (s *Store) Close() error {
+	s.users.Lock()
+	defer s.users.Unlock()
+	if s.closed {
+		return nil
+	}
+	s.publish.Lock()
+	defer s.publish.Unlock()
+	s.closed = true
+	return errors.Join(s.db.Close(), s.objects.Close())
+}
+
+// Lease lets server shutdown wait until every admitted handler has returned.
+func (s *Store) Lease() (func(), error) {
+	s.users.RLock()
+	if s.closed {
+		s.users.RUnlock()
+		return nil, ErrNeedsRestart
+	}
+	return s.users.RUnlock, nil
+}
 func (s *Store) get(k []byte) ([]byte, error) {
 	v, c, e := s.db.Get(k)
 	if e != nil {
@@ -87,67 +129,26 @@ func (s *Store) get(k []byte) ([]byte, error) {
 }
 func (s *Store) restore() error {
 	prefix := key("revision")
-	upper := append(append([]byte(nil), prefix...), 255)
-	it, e := s.db.NewIter(&pebble.IterOptions{LowerBound: prefix, UpperBound: upper})
+	it, e := s.db.NewIter(nil)
 	if e != nil {
 		return e
 	}
 	defer it.Close()
-	for it.First(); it.Valid(); it.Next() {
+	for it.SeekGE(prefix); it.Valid() && bytes.HasPrefix(it.Key(), prefix); it.Next() {
 		var r Revision
-		if e = json.Unmarshal(it.Value(), &r); e != nil {
+		if e = wire.Decode(it.Value(), &r); e != nil {
 			return e
 		}
 		id := wire.Hash(it.Value())
+		if !bytes.Equal(it.Key(), key("revision", id)) || !wire.IsHash(r.Catalog) || !wire.IsHash(r.Selection) || !wire.IsHash(r.Job) || r.Indexes != "" && !wire.IsHash(r.Indexes) || r.Parent != "" && !wire.IsHash(r.Parent) {
+			return fmt.Errorf("invalid committed revision")
+		}
 		b, e := s.content(id)
 		if e != nil {
 			return e
 		}
-		if string(b) != string(it.Value()) {
+		if !bytes.Equal(b, it.Value()) {
 			return fmt.Errorf("portable revision differs")
-		}
-		// Reject missing/corrupt reachable content before accepting the registry.
-		budget := 1000000
-		if e = s.walk(r.Catalog, &budget, func(_ string, digest string) error { _, e := s.content(digest); return e }); e != nil {
-			return e
-		}
-		if e = s.walk(r.Selection, &budget, func(_ string, digest string) error {
-			var c cell
-			if e := s.load(digest, &c); e != nil {
-				return e
-			}
-			for h := c.History; h != ""; {
-				budget--
-				if budget < 0 {
-					return ErrLimit
-				}
-				var point history
-				if e := s.load(h, &point); e != nil {
-					return e
-				}
-				h = point.Previous
-			}
-			return nil
-		}); e != nil {
-			return e
-		}
-		var job wire.Job
-		if e = s.load(r.Job, &job); e != nil {
-			return e
-		}
-		if e = job.Validate(); e != nil {
-			return e
-		}
-		for _, export := range job.Exports {
-			for _, object := range export.Manifest.Objects {
-				b, e := s.content(object.SHA256)
-				if e != nil {
-					return e
-				}
-				if len(b) != object.Bytes {
-					return fmt.Errorf("restored object size differs")
-				}
-			}
 		}
 		s.published[id] = r
 	}
@@ -156,16 +157,35 @@ func (s *Store) restore() error {
 	}
 	b, e := s.get(key("current"))
 	if errors.Is(e, pebble.ErrNotFound) {
-		return nil
+		if len(s.published) > 0 {
+			return fmt.Errorf("revision registry has no active pointer")
+		}
+		return s.portable("")
 	}
 	if e != nil {
 		return e
 	}
 	s.current = string(b)
-	if _, ok := s.published[s.current]; !ok {
-		return fmt.Errorf("active revision is not committed")
+	seen := map[string]bool{}
+	for id := s.current; id != ""; {
+		if seen[id] {
+			return fmt.Errorf("revision parent cycle")
+		}
+		seen[id] = true
+		r, ok := s.published[id]
+		if !ok {
+			return fmt.Errorf("active revision chain is incomplete")
+		}
+		id = r.Parent
 	}
-	return nil
+	if len(seen) != len(s.published) {
+		return fmt.Errorf("unreachable committed revision")
+	}
+	// Shared persistent nodes are validated once across all retained revisions.
+	if _, e = s.reachable(false); e != nil {
+		return e
+	}
+	return s.portable(s.current)
 }
 func (s *Store) Current() string { s.mu.RLock(); defer s.mu.RUnlock(); return s.current }
 func (s *Store) Revision(id string) (Revision, error) {
@@ -197,6 +217,11 @@ func (s *Store) Revisions() []string {
 	return ids
 }
 func (s *Store) Submit(j wire.Job) (string, error) {
+	s.publish.Lock()
+	defer s.publish.Unlock()
+	if s.poisoned {
+		return "", ErrNeedsRestart
+	}
 	if e := j.Validate(); e != nil {
 		return "", e
 	}
@@ -205,14 +230,38 @@ func (s *Store) Submit(j wire.Job) (string, error) {
 		return "", e
 	}
 	if len(b) > wire.ChunkBytes {
-		return "", fmt.Errorf("job manifest exceeds ceiling")
+		return "", wire.Invalid("job manifest exceeds ceiling")
 	}
 	id := wire.Hash(b)
-	if e = s.db.Set(key("import", id), b, pebble.Sync); e != nil {
+	bindings := []struct{ key, value []byte }{
+		{key("session", j.Session), mustEncode([]string{j.Plan, j.ConfiguredHarnessPin})},
+		{key("member", j.Session, j.Machine), []byte(j.ParentBundleSHA256)},
+		{key("attempt", j.Session, j.Machine, j.Corpus, j.Attempt), []byte(id)},
+	}
+	batch := s.db.NewBatch()
+	defer batch.Close()
+	for _, binding := range bindings {
+		old, e := s.get(binding.key)
+		if e == nil && string(old) != string(binding.value) {
+			return "", ErrConflict
+		}
+		if e != nil && !errors.Is(e, pebble.ErrNotFound) {
+			return "", e
+		}
+		if e = batch.Set(binding.key, binding.value, nil); e != nil {
+			return "", e
+		}
+	}
+	if e = batch.Set(key("import", id), b, nil); e != nil {
+		return "", e
+	}
+	if e = batch.Commit(pebble.Sync); e != nil {
+		s.poisoned = true
 		return "", e
 	}
 	return id, nil
 }
+func mustEncode(v []string) []byte { b, _ := wire.Encode(v); return b }
 func (s *Store) Job(id string) (wire.Job, error) {
 	var j wire.Job
 	if !wire.IsHash(id) {
@@ -271,10 +320,16 @@ func (s *Store) checkpoint(stage string) error {
 	return nil
 }
 func (s *Store) Commit(id string) (string, error) {
+	return s.CommitContext(context.Background(), id)
+}
+func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 	s.publish.Lock()
 	defer s.publish.Unlock()
 	if s.poisoned {
 		return "", ErrNeedsRestart
+	}
+	if e := ctx.Err(); e != nil {
+		return "", e
 	}
 	// A redelivery after any later publication resolves to the original revision.
 	if b, e := s.get(key("accepted", id)); e == nil {
@@ -294,14 +349,20 @@ func (s *Store) Commit(id string) (string, error) {
 		return "", e
 	}
 	if len(missing) > 0 {
-		return "", fmt.Errorf("import missing %d objects", len(missing))
+		return "", wire.Invalid(fmt.Sprintf("import missing %d objects", len(missing)))
 	}
 	records := map[string]wire.Record{}
 	digests := map[string]string{}
 	evidence := map[string]bool{}
 	reportObjects := map[string]wire.Manifest{}
 	for _, x := range j.Exports {
+		if e := ctx.Err(); e != nil {
+			return "", e
+		}
 		for _, o := range x.Manifest.Objects {
+			if e := ctx.Err(); e != nil {
+				return "", e
+			}
 			if o.Kind == "evidence" {
 				evidence[o.SHA256] = true
 				continue
@@ -311,23 +372,23 @@ func (s *Store) Commit(id string) (string, error) {
 				return "", e
 			}
 			var r wire.Record
-			if e = json.Unmarshal(b, &r); e != nil {
+			if e = wire.Decode(b, &r); e != nil {
 				return "", e
 			}
 			if !wire.IsHash(r.ID) || len(r.Data) == 0 {
-				return "", fmt.Errorf("invalid record")
+				return "", wire.Invalid("invalid record")
 			}
 			if r.Kind == "artifact" && len(r.Data)+512 > 10*1024 {
-				return "", fmt.Errorf("artifact descriptor exceeds budget")
+				return "", wire.Invalid("artifact descriptor exceeds budget")
 			}
 			switch r.Kind {
 			case "environment", "configuration", "track", "workload", "metric", "result", "artifact":
 				if wire.Hash(r.Data) != r.ID {
-					return "", fmt.Errorf("record identity mismatch")
+					return "", wire.Invalid("record identity mismatch")
 				}
 			case "report":
 				if r.ID != x.Manifest.ReportID {
-					return "", fmt.Errorf("report identity mismatch")
+					return "", wire.Invalid("report identity mismatch")
 				}
 				var descriptor struct {
 					Run    string `json:"runId"`
@@ -339,15 +400,15 @@ func (s *Store) Commit(id string) (string, error) {
 				}
 				identity, _ := wire.Encode([]string{descriptor.Run, descriptor.Report, descriptor.Seal})
 				if wire.Hash(identity) != r.ID || descriptor.Report != x.Manifest.SourceReportSHA256 || descriptor.Seal != x.Manifest.SourceSealSHA256 {
-					return "", fmt.Errorf("source identities differ from manifest")
+					return "", wire.Invalid("source identities differ from manifest")
 				}
 				reportObjects[r.ID] = x.Manifest
 			default:
-				return "", fmt.Errorf("unsupported record kind")
+				return "", wire.Invalid("unsupported record kind")
 			}
 			k := r.Kind + ":" + r.ID
 			if d, ok := digests[k]; ok && d != o.SHA256 {
-				return "", fmt.Errorf("conflicting canonical record")
+				return "", wire.Invalid("conflicting canonical record")
 			}
 			records[k] = r
 			digests[k] = o.SHA256
@@ -355,7 +416,7 @@ func (s *Store) Commit(id string) (string, error) {
 	}
 	for _, x := range j.Exports {
 		if _, ok := reportObjects[x.Manifest.ReportID]; !ok {
-			return "", fmt.Errorf("missing report descriptor")
+			return "", wire.Invalid("missing report descriptor")
 		}
 	}
 	for _, r := range records {
@@ -363,20 +424,20 @@ func (s *Store) Commit(id string) (string, error) {
 			continue
 		}
 		var v wire.Result
-		if e = json.Unmarshal(r.Data, &v); e != nil {
+		if e = wire.Decode(r.Data, &v); e != nil {
 			return "", e
 		}
 		if v.Runtime == "" || v.Workload == "" || v.Scenario == "" || v.Profile == "" || v.Metric == "" || v.Statistic == "" || v.AnalysisVersion == "" || v.Created.IsZero() || len(v.Summary) == 0 {
-			return "", fmt.Errorf("incomplete result identity")
+			return "", wire.Invalid("incomplete result identity")
 		}
 		for _, k := range []string{"report:" + v.ReportID, "environment:" + v.EnvironmentID, "configuration:" + v.ConfigurationID, "workload:" + v.ContractID, "track:" + v.TrackID, "metric:" + v.MetricDefinitionID} {
 			if _, ok := records[k]; !ok {
-				return "", fmt.Errorf("unresolved result reference")
+				return "", wire.Invalid("unresolved result reference")
 			}
 		}
 		for _, h := range v.Evidence {
 			if !evidence[h] {
-				return "", fmt.Errorf("unresolved evidence reference")
+				return "", wire.Invalid("unresolved evidence reference")
 			}
 		}
 		var configuration, workload struct {
@@ -389,7 +450,7 @@ func (s *Store) Commit(id string) (string, error) {
 			return "", e
 		}
 		if configuration.ID != v.Runtime || workload.ID != v.Workload {
-			return "", fmt.Errorf("logical identity differs from exact record")
+			return "", wire.Invalid("logical identity differs from exact record")
 		}
 		var summary struct {
 			Artifact string `json:"artifactId"`
@@ -399,7 +460,7 @@ func (s *Store) Commit(id string) (string, error) {
 		}
 		if summary.Artifact != "" {
 			if _, ok := records["artifact:"+summary.Artifact]; !ok {
-				return "", fmt.Errorf("unresolved artifact reference")
+				return "", wire.Invalid("unresolved artifact reference")
 			}
 		}
 	}
@@ -419,7 +480,7 @@ func (s *Store) Commit(id string) (string, error) {
 					for _, ref := range refs {
 						h, ok := ref.(string)
 						if !ok || !evidence[h] {
-							return "", fmt.Errorf("unresolved evidence chunk")
+							return "", wire.Invalid("unresolved evidence chunk")
 						}
 					}
 				}
@@ -436,7 +497,22 @@ func (s *Store) Commit(id string) (string, error) {
 		if e != nil {
 			return "", e
 		}
-		rev.Catalog, rev.Selection = old.Catalog, old.Selection
+		rev.Catalog, rev.Selection, rev.Indexes = old.Catalog, old.Selection, old.Indexes
+		if old.Indexes == "" {
+			budget := 1000000
+			if e = s.walk(old.Catalog, &budget, func(_, digest string) error {
+				if e := ctx.Err(); e != nil {
+					return e
+				}
+				var r wire.Record
+				if e := s.load(digest, &r); e != nil {
+					return e
+				}
+				return s.addRecordIndexes(&rev, r, digest)
+			}); e != nil {
+				return "", e
+			}
+		}
 	}
 	keys := make([]string, 0, len(records))
 	for k := range records {
@@ -444,25 +520,34 @@ func (s *Store) Commit(id string) (string, error) {
 	}
 	sort.Strings(keys)
 	for _, k := range keys {
+		if e := ctx.Err(); e != nil {
+			return "", e
+		}
 		existing, e := s.mapGet(rev.Catalog, k)
 		if e != nil {
 			return "", e
 		}
 		if existing != "" && existing != digests[k] {
-			return "", fmt.Errorf("immutable record collision")
+			return "", wire.Invalid("immutable record collision")
 		}
 		rev.Catalog, e = s.mapSet(rev.Catalog, k, digests[k], 0)
 		if e != nil {
 			return "", e
 		}
+		if e = s.addRecordIndexes(&rev, records[k], digests[k]); e != nil {
+			return "", e
+		}
 	}
 	for _, k := range keys {
+		if e := ctx.Err(); e != nil {
+			return "", e
+		}
 		r := records[k]
 		if r.Kind != "result" {
 			continue
 		}
 		var v wire.Result
-		if e = json.Unmarshal(r.Data, &v); e != nil {
+		if e = wire.Decode(r.Data, &v); e != nil {
 			return "", e
 		}
 		cellKey := v.Cell()
@@ -555,12 +640,23 @@ func (s *Store) Commit(id string) (string, error) {
 	if e = s.checkpoint("before-commit"); e != nil {
 		return "", e
 	}
+	if e = ctx.Err(); e != nil {
+		return "", e
+	}
 	if e = batch.Commit(pebble.Sync); e != nil {
 		s.poisoned = true
 		return "", e
 	}
 	// Deliberately separate Pebble visibility from public visibility until sync.
 	if e = s.checkpoint("after-commit"); e != nil {
+		s.poisoned = true
+		return "", e
+	}
+	if e = s.portable(revID); e != nil {
+		s.poisoned = true
+		return "", e
+	}
+	if e = s.checkpoint("after-portable"); e != nil {
 		s.poisoned = true
 		return "", e
 	}

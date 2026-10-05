@@ -75,8 +75,19 @@ func TestPinnedCursorAndEvidence(t *testing.T) {
 	if len(page.Items) != 1 || page.Next == "" || page.Total != 3 || page.Revision != old {
 		t.Fatal("unbounded or incomplete page")
 	}
-	if strings.Contains(first.Body.String(), "launch_medians") || strings.Contains(first.Body.String(), "sourceSealSha256") {
-		t.Fatal("global report or evidence loaded")
+	var result wire.Result
+	if e = json.Unmarshal(page.Items[0].Data, &result); e != nil {
+		t.Fatal(e)
+	}
+	var summary map[string]json.RawMessage
+	if e = json.Unmarshal(result.Summary, &summary); e != nil {
+		t.Fatal(e)
+	}
+	if _, present := summary["launch_medians"]; present {
+		t.Fatal("launch evidence loaded in summary")
+	}
+	if strings.Contains(first.Body.String(), "sourceSealSha256") {
+		t.Fatal("global report loaded")
 	}
 	importFixture(t, s, "second", time.Now().Add(time.Hour).UTC())
 	next := request(t, h, "GET", "/api/v1/results?limit=1&cursor="+url.QueryEscape(page.Next), nil, nil)

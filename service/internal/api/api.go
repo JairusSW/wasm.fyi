@@ -3,6 +3,7 @@ package api
 
 import (
 	"compress/gzip"
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
@@ -13,6 +14,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/JairusSW/wasm.fyi/service/internal/store"
 	"github.com/JairusSW/wasm.fyi/service/internal/wire"
@@ -26,7 +28,7 @@ type API struct {
 }
 
 func New(s *store.Store, token string, key []byte) (http.Handler, error) {
-	if token == "" || len(key) < 32 {
+	if len(token) < 32 || len(key) < 32 {
 		return nil, fmt.Errorf("admin token and at least 32 cursor-key bytes required")
 	}
 	a := &API{Store: s, Token: token, CursorKey: key, active: make(chan struct{}, 8)}
@@ -49,23 +51,23 @@ func (a *API) parse(token string) (cursor, error) {
 	var c cursor
 	p := strings.Split(token, ".")
 	if len(p) != 2 || len(token) > 2048 {
-		return c, fmt.Errorf("invalid cursor")
+		return c, wire.Invalid("invalid cursor")
 	}
 	b, e := base64.RawURLEncoding.DecodeString(p[0])
 	if e != nil {
-		return c, fmt.Errorf("invalid cursor")
+		return c, wire.Invalid("invalid cursor")
 	}
 	sig, e := base64.RawURLEncoding.DecodeString(p[1])
 	if e != nil {
-		return c, fmt.Errorf("invalid cursor")
+		return c, wire.Invalid("invalid cursor")
 	}
 	mac := hmac.New(sha256.New, a.CursorKey)
 	mac.Write(b)
 	if !hmac.Equal(sig, mac.Sum(nil)) {
-		return c, fmt.Errorf("invalid cursor")
+		return c, wire.Invalid("invalid cursor")
 	}
 	if e = json.Unmarshal(b, &c); e != nil || c.Offset < 0 || !wire.IsHash(c.Revision) {
-		return c, fmt.Errorf("invalid cursor")
+		return c, wire.Invalid("invalid cursor")
 	}
 	return c, nil
 }
@@ -126,31 +128,50 @@ func respond(w http.ResponseWriter, r *http.Request, status int, v any, immutabl
 	}
 }
 func problem(w http.ResponseWriter, r *http.Request, e error) {
-	status := 400
-	message := "invalid request"
+	status := 500
+	message := "internal service error"
+	code := "internal_error"
 	if errors.Is(e, store.ErrNotFound) {
 		status = 404
 		message = e.Error()
+		code = "not_found"
 	} else if errors.Is(e, store.ErrLimit) {
 		status = 422
 		message = e.Error()
+		code = "scope_limit"
 	} else if errors.Is(e, store.ErrNeedsRestart) {
 		status = 503
 		message = e.Error()
+		code = "restart_required"
+	} else if errors.Is(e, store.ErrConflict) {
+		status = 409
+		message = e.Error()
+		code = "immutable_conflict"
+	} else if errors.Is(e, wire.ErrInvalid) {
+		status = 400
+		message = "invalid request"
+		code = "invalid_request"
+	} else if errors.Is(e, context.DeadlineExceeded) || errors.Is(e, context.Canceled) {
+		status = 503
+		message = "request canceled or timed out"
+		code = "query_timeout"
+	} else {
+		var tooLarge *http.MaxBytesError
+		if errors.As(e, &tooLarge) {
+			status = 413
+			message = "request exceeds byte limit"
+			code = "payload_too_large"
+		}
 	}
-	respond(w, r, status, map[string]string{"error": message}, false)
+	respond(w, r, status, map[string]string{"error": message, "code": code}, false)
 }
 func decode(w http.ResponseWriter, r *http.Request, v any) error {
 	r.Body = http.MaxBytesReader(w, r.Body, wire.ResponseBytes)
-	d := json.NewDecoder(r.Body)
-	d.DisallowUnknownFields()
-	if e := d.Decode(v); e != nil {
+	b, e := io.ReadAll(r.Body)
+	if e != nil {
 		return e
 	}
-	if e := d.Decode(new(any)); e != io.EOF {
-		return fmt.Errorf("trailing input")
-	}
-	return nil
+	return wire.Decode(b, v)
 }
 func limit(r *http.Request) (int, error) {
 	if r.URL.Query().Get("limit") == "" {
@@ -158,11 +179,20 @@ func limit(r *http.Request) (int, error) {
 	}
 	n, e := strconv.Atoi(r.URL.Query().Get("limit"))
 	if e != nil || n < 1 || n > 1000 {
-		return 0, fmt.Errorf("invalid limit")
+		return 0, wire.Invalid("invalid limit")
 	}
 	return n, nil
 }
 func (a *API) serve(w http.ResponseWriter, r *http.Request) {
+	finish, e := a.Store.Lease()
+	if e != nil {
+		problem(w, r, e)
+		return
+	}
+	defer finish()
+	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+	defer cancel()
+	r = r.WithContext(ctx)
 	select {
 	case a.active <- struct{}{}:
 		defer func() { <-a.active }()
@@ -281,12 +311,12 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 	}
 	if path == "results" || path == "history" {
 		allowed := map[string]bool{}
-		for _, k := range []string{"revision", "selection", "environment", "runtime", "configuration", "contract", "workload", "metric", "scenario", "profile", "statistic", "sort", "limit", "cursor"} {
+		for _, k := range []string{"revision", "selection", "environment", "runtime", "track", "definition", "configuration", "contract", "workload", "metric", "scenario", "profile", "statistic", "sort", "limit", "cursor"} {
 			allowed[k] = true
 		}
 		for k, v := range params {
 			if !allowed[k] || len(v) != 1 {
-				problem(w, r, fmt.Errorf("unsupported query"))
+				problem(w, r, wire.Invalid("unsupported query"))
 				return
 			}
 		}
@@ -298,7 +328,7 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 			selection = "previous"
 		}
 		if selection != "current" && selection != "previous" {
-			problem(w, r, fmt.Errorf("unsupported selection"))
+			problem(w, r, wire.Invalid("unsupported selection"))
 			return
 		}
 		sortOrder := params.Get("sort")
@@ -306,13 +336,13 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 			sortOrder = "catalog"
 		}
 		if sortOrder != "catalog" && sortOrder != "value" && sortOrder != "-value" {
-			problem(w, r, fmt.Errorf("unsupported sort"))
+			problem(w, r, wire.Invalid("unsupported sort"))
 			return
 		}
-		q := store.Query{Revision: revision, Selection: selection, Environment: params.Get("environment"), Runtime: params.Get("runtime"), Configuration: params.Get("configuration"), Contract: params.Get("contract"), Workload: params.Get("workload"), Metric: params.Get("metric"), Scenario: params.Get("scenario"), Profile: params.Get("profile"), Statistic: params.Get("statistic"), Sort: sortOrder, Limit: n}
+		q := store.Query{Revision: revision, Selection: selection, Environment: params.Get("environment"), Runtime: params.Get("runtime"), Track: params.Get("track"), Definition: params.Get("definition"), Configuration: params.Get("configuration"), Contract: params.Get("contract"), Workload: params.Get("workload"), Metric: params.Get("metric"), Scenario: params.Get("scenario"), Profile: params.Get("profile"), Statistic: params.Get("statistic"), Sort: sortOrder, Limit: n}
 		qb, _ := wire.Encode(q)
 		queryHash := wire.Hash(append([]byte(path+":"), qb...))
-		rows, e := a.Store.Results(q, path == "history")
+		rows, e := a.Store.ResultsContext(r.Context(), q, path == "history")
 		if e != nil {
 			problem(w, r, e)
 			return
@@ -323,30 +353,39 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 	if kind, ok := kinds[path]; ok && kind != "result" {
 		for k, v := range params {
 			if (k != "revision" && k != "limit" && k != "cursor") || len(v) != 1 {
-				problem(w, r, fmt.Errorf("unsupported query"))
+				problem(w, r, wire.Invalid("unsupported query"))
 				return
 			}
 		}
-		rows, e := a.Store.Catalog(revision, kind)
+		query := path + ":" + strconv.Itoa(n)
+		if c.Revision != "" && (c.Revision != revision || c.Query != query) {
+			problem(w, r, wire.Invalid("cursor scope differs"))
+			return
+		}
+		p, e := a.Store.CatalogPage(r.Context(), revision, kind, c.Offset, n)
 		if e != nil {
 			problem(w, r, e)
 			return
 		}
-		a.page(w, r, revision, path+":"+strconv.Itoa(n), rows, n, c, immutable)
+		next := ""
+		if p.Next < p.Total {
+			next = a.sign(cursor{revision, query, p.Next})
+		}
+		respond(w, r, 200, map[string]any{"revision": revision, "items": p.Items, "nextCursor": next, "complete": p.Next == p.Total, "total": p.Total}, immutable)
 		return
 	}
 	http.NotFound(w, r)
 }
 func (a *API) page(w http.ResponseWriter, r *http.Request, revision, query string, rows any, n int, c cursor, immutable bool) {
 	if c.Revision != "" && (c.Revision != revision || c.Query != query) {
-		problem(w, r, fmt.Errorf("cursor scope differs"))
+		problem(w, r, wire.Invalid("cursor scope differs"))
 		return
 	}
 	b, _ := wire.Encode(rows)
 	var list []json.RawMessage
 	_ = json.Unmarshal(b, &list)
 	if c.Offset > len(list) {
-		problem(w, r, fmt.Errorf("cursor offset invalid"))
+		problem(w, r, wire.Invalid("cursor offset invalid"))
 		return
 	}
 	end := c.Offset + n
@@ -411,7 +450,7 @@ func (a *API) admin(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Query().Get("offset") != "" {
 				offset, e = strconv.Atoi(r.URL.Query().Get("offset"))
 				if e != nil || offset < 0 || offset > len(items) {
-					problem(w, r, fmt.Errorf("invalid offset"))
+					problem(w, r, wire.Invalid("invalid offset"))
 					return
 				}
 			}
@@ -423,7 +462,7 @@ func (a *API) admin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if parts[2] == "commit" && r.Method == "POST" {
-			revision, e := a.Store.Commit(parts[1])
+			revision, e := a.Store.CommitContext(r.Context(), parts[1])
 			if e != nil {
 				problem(w, r, e)
 				return
