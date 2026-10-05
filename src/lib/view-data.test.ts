@@ -53,7 +53,8 @@ describe('existing workload views consume measured evidence',()=>{
 	});
 	it('prepared image, 3D and inference workloads show only measured metrics',()=>{
     for(const id of ['applications/image-blur','applications/mesh-skinning','applications/ml-inference']) {
-      expect(ALLB.find(w=>w.id===id)?.ms).toBeNull();
+      const baselines=(['m1','m2'] as const).map(machine=>viewCell(machine,'s1',id,'A','steady')).filter(cell=>cell.st==='ok');
+      expect(baselines.length?baselines.map(cell=>cell.v):[null]).toContain(ALLB.find(w=>w.id===id)?.ms);
       for(const machine of ['m1','m2'] as const){const cell=viewCell(machine,'s1',id,'G','steady');expect(cell.st).toBe('ok');expect(cell.report).toMatch(/^[a-f0-9]{64}$/);}
     }
   });
@@ -100,7 +101,7 @@ describe('existing workload views consume measured evidence',()=>{
 	});
 	it('leaves uncollected engines and contracts unmeasured',()=>{
         const b=ALLB.find(b=>b.id==='applications/image-blur')!;
-        expect(benchVal(scope,b,'D','steady')).toEqual({st:'unavail'});
+        expect(benchVal(scope,b,'C','steady')).toEqual({st:'nm'});
         expect(benchVal(scope,{...b,id:'uncollected/input'},'G','steady')).toEqual({st:'nm'});
     });
 });

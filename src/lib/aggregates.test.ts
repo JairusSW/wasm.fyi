@@ -42,7 +42,7 @@ describe('recorded aggregate cohort',()=>{
 		expect(cells.some(c=>c.report===result.report)).toBe(true);
 	});
 	it('does not invent RSS for an uncollected engine',()=>{
-        expect(aggregate({...scope,machine:'m2'},'mem','A',3)).toBeNull();
+        expect(aggregate({...scope,machine:'m2'},'mem','C',3)).toBeNull();
     });
 	it('does not invent native code breakdowns',()=>{
 		expect(aggregate(scope,'code','G',0)).toBeNull();

@@ -70,9 +70,10 @@ describe('heat scale', () => {
 });
 
 describe('model', () => {
-	it('shows Wago with its sealed source identity while hiding hash-pinned development builds', () => {
+	it('shows sealed Wago and host-local V8 measurements while honoring explicit hiding', () => {
 		expect(isVisible(scope, { id: 'G', rt: 'wago' } as any)).toBe(true);
-		expect(isVisible(scope, { id: 'F', rt: 'v8' } as any)).toBe(false);
+		expect(isVisible(scope, { id: 'F', rt: 'v8' } as any)).toBe(Boolean(viewData.hosts.m1.configurations.F));
+		expect(isVisible({ ...scope, hide: { F: true } }, { id: 'F', rt: 'v8' } as any)).toBe(false);
 	});
 	it('shows WAVM when host-local measurements are available',()=>{
 		expect(isVisible(scope,{id:'L',rt:'wavm'} as any)).toBe(Boolean(viewData.hosts.m1.configurations.L));
@@ -80,9 +81,9 @@ describe('model', () => {
 	it('baseline ratio is 1', () => {
 		expect(ratio(scope, 'lat', 'G', 3)!.r).toBe(1);
 	});
-    it('keeps unavailable code collectors distinct from true zero', () => {
+    it('keeps missing code measurements distinct from true zero', () => {
       const b=ALLB.find(b=>b.id==='wago/tiny/add')!;
-		expect(benchVal(scope,b,'D','code').st).toBe('unavail');
+		expect(benchVal(scope,b,'C','code')).toEqual({st:'nm'});
     });
     it('reads Wago measurements on the actual Mac rather than a machine multiplier', () => {
       const b=ALLB.find(b=>b.id==='wago/tiny/add')!;

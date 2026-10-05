@@ -35,6 +35,18 @@ export function historySegments(values:number[],x:(i:number)=>number,y:(v:number
 	if(points.length)segments.push(points.join(' '));return segments;
 }
 
+/** Horizontal tangents keep each curve within its two measured endpoint values. */
+export function historyCurve(points:string):string {
+ const coordinates=points.trim().split(/\s+/).filter(Boolean).map(p=>p.split(',').map(Number));
+ if(!coordinates.length)return '';
+ let path=`M ${coordinates[0].join(',')}`;
+ for(let i=1;i<coordinates.length;i++){
+  const [px,py]=coordinates[i-1],[x,y]=coordinates[i],mid=(px+x)/2;
+  path+=` C ${mid},${py} ${mid},${y} ${x},${y}`;
+ }
+ return path;
+}
+
 /** A fixed successful cohort across each engine's recorded points; missing points stay gaps. */
 export function historySeries(s:Scope,cid:CfgId,key:OtMetricKey,workload=''):number[]|null {
 	const h=viewData.history[s.machine];const metric=metricOf[key];
