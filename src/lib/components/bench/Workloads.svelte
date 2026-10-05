@@ -5,8 +5,8 @@
 	import { BENCH, MET, PHASE_NOTE } from '$lib/data/snapshot';
 	import { ST } from '$lib/data/status';
 	import type { Bench, Cfg, MetricKey } from '$lib/data/types';
-	import { fmtU, fmtUGroup, relative, n0, workloadName } from '$lib/format';
-	import { heatRatio } from '$lib/heat';
+	import { fmtU, fmtUGroup, n0, workloadName } from '$lib/format';
+	import { heatCount } from '$lib/heat';
 	import { benchHref } from '$lib/links';
 	import { benchVal, isVisible } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
@@ -15,7 +15,7 @@
 
 	const cols = $derived(CFG.filter((c) => isVisible(ui.scope, c)));
 
-	const cellFor = (b: Bench, c: Cfg, cf: number, caseLabel?: string, formatted?:string) => {
+	const cellFor = (b: Bench, c: Cfg, cf: number, caseLabel?: string, formatted?:string, bg='transparent') => {
 		const s = ui.scope;
 		const m = ui.metric;
 		const u = MET[m].u;
@@ -25,26 +25,27 @@
 			const t = ST[r.st];
 			return { text: t[0] + ' ' + t[1], sub: '', bg: 'transparent', color: t[2], open };
 		}
-		const br = benchVal(s, b, s.baseline, m, cf);
-		const ratio = br.st === 'ok' ? r.v / br.v : null;
 		return {
 			text: formatted || fmtU(r.v, u),
-			sub: ratio && c.id !== s.baseline ? relative(ratio,ui.deltaFormat) : '',
-			bg: heatRatio(ratio),
+			sub: '',
+			bg,
 			color: 'var(--fg)',
 			open
 		};
 	};
 	const cellsFor = (b:Bench,cf=1,caseLabel?:string) => {
 		const s=ui.scope,m=ui.metric,u=MET[m].u;
-		const formatted=(u==='ms'||u==='µs')?fmtUGroup(cols.map(c=>{
+		const values=cols.map(c=>{
 			const r=benchVal(s,b,c.id,m,cf);return r.st==='ok'?r.v:null;
-		}),u):null;
-		return cols.map((c,i)=>cellFor(b,c,cf,caseLabel,formatted?.[i]));
+		});
+		const formatted=fmtUGroup(values,u);
+		const measured=values.filter((v):v is number=>v!=null);
+		const lo=Math.min(...measured),hi=Math.max(...measured);
+		return cols.map((c,i)=>cellFor(b,c,cf,caseLabel,formatted[i],values[i]!=null&&hi>lo?heatCount((values[i]!-lo)/(hi-lo)):'transparent'));
 	};
 
 	type Row =
-		| { kind: 'group'; name: string; count: string; open: boolean; cells: string[] }
+		| { kind: 'group'; name: string; count: string; open: boolean; cells: {text:string;count:number}[] }
 		| {
 				kind: 'item';
 				b: Bench;
@@ -69,16 +70,12 @@
 			if (!items.length) continue;
 			shown += items.length;
 			const collapsed = !!ui.collapsed[g.g];
-			const gcells = cols.map((c) => {
-				const rs = items
-					.map((b) => {
-						const a = benchVal(s, b, c.id, m);
-						const bb = benchVal(s, b, s.baseline, m);
-						return a.st === 'ok' && bb.st === 'ok' ? Math.log(a.v / bb.v) : null;
-					})
-					.filter((x): x is number => x != null);
-				return rs.length ? relative(Math.exp(rs.reduce((x, y) => x + y, 0) / rs.length),ui.deltaFormat) + ` n=${rs.length}` : '—';
+			const averages = cols.map((c) => {
+				const values=items.map(b=>benchVal(s,b,c.id,m)).flatMap(r=>r.st==='ok'?[r.v]:[]);
+				return {value:values.length?values.reduce((a,b)=>a+b,0)/values.length:null,count:values.length};
 			});
+			const formatted=fmtUGroup(averages.map(a=>a.value),MET[m].u);
+			const gcells=averages.map((a,i)=>({text:formatted[i]||'—',count:a.count}));
 			rows.push({ kind: 'group', name: g.g, count: `${items.length} shown · ${n0(g.total)} in corpus`, open: !collapsed, cells: gcells });
 			if (collapsed) continue;
 			let list = items;
@@ -132,7 +129,7 @@
 
 <div class="head" id="workloads">
 	<h2>All workloads</h2>
-	<span class="s12 fg3">{MET[ui.metric].l} · {view.shown} workloads · click a cell for details</span>
+	<span class="s12 fg3">{MET[ui.metric].l} · {view.shown} workloads · group averages · click a cell for details</span>
 </div>
 <div class="row">
 	<Seg
@@ -160,7 +157,7 @@
 					<th class="colh">
 						<button class="sort" onclick={() => sortClick(c)} aria-label="Sort by {c.rt} {c.be}">
 							<span class="rtn"><Swatch color={c.col} bg={c.hollow ? 'transparent' : c.col} />{c.rt}<span class="small fg3">{mark}</span></span>
-							<span class="mono micro fg3">{c.be}{c.id === ui.baseline ? ' · BASE' : ''}</span>
+							<span class="mono micro fg3">{c.be}</span>
 						</button>
 					</th>
 				{/each}
@@ -179,8 +176,8 @@
 								<span class="mono caret">{r.open ? '▾' : '▸'}</span><span class="w6">{r.name}</span><span class="small fg3">{r.count}</span>
 							</button>
 						</td>
-						{#each r.cells as text, k (k)}
-							<td class="mono small fg2 r gcell" data-tip={`${r.name} — ${cols[k].rt} ${cols[k].be}\n${text}\nCorpus aggregate (geomean)`}>{text}</td>
+						{#each r.cells as cell, k (k)}
+							<td class="mono small fg2 r gcell" data-tip={`${r.name} — ${cols[k].rt} ${cols[k].be}\n${cell.text}\nArithmetic mean of ${cell.count} successful workload measurements; each workload has equal weight.`}>{cell.text}</td>
 						{/each}
 					</tr>
 				{:else}
