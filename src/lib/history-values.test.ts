@@ -7,6 +7,12 @@ import type { Scope } from './model';
 
 const betaIndex=(machine:'m1'|'m2')=>viewData.history[machine].points.findIndex(p=>p.date==='2026-09-29');
 const scope:Scope={machine:'m1',baseline:'A',hide:{},weighting:'workload'};
+it('connects recorded chart points across empty dates without creating measurements',()=>{
+ const values=[Number.NaN,2,Number.NaN,4,Number.NaN];
+ expect(historySegments(values,i=>i*10,v=>v,true)).toEqual(['10.0,2.0 30.0,4.0']);
+ expect(Number.isNaN(values[2])).toBe(true);
+ expect(historySegments([Number.NaN],i=>i,v=>v,true)).toEqual([]);
+});
 describe('recorded weekly history',()=>{
 	it('aligns host dates and keeps actual revisions and collection dates',()=>{
         const dates=viewData.history.m1.points.map(p=>p.date);

@@ -86,7 +86,7 @@ import { historyCell, historyChange, historySegments, historicalCallWorkloads, h
 				width: sel ? 2.2 : 1.2,
 				op: sel ? 1 : 0.7,
                 points: SNAPS.filter(p=>Number.isFinite(val(c.id,p.i))).map(p=>({i:p.i,x:X(p.i),y:Y(val(c.id,p.i))})),
-                segs:historySegments(SNAPS.map(p=>val(c.id,p.i)),X,Y),
+                segs:historySegments(SNAPS.map(p=>val(c.id,p.i)),X,Y,true),
 				bumps: SNAPS.filter((p) => p.i > 0 && Number.isFinite(val(c.id,p.i)) && verAt(c.id, p.i,ui.machine) !== verAt(c.id, p.i - 1,ui.machine)).map((p) => {
 					const x = X(p.i);
 					const y = Y(val(c.id, p.i));

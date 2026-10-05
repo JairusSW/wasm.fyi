@@ -46,7 +46,7 @@ import { historySegments, historyCallDetails, historyReusesEvidence } from '$lib
 			const lo = Math.min(...finite);
 			const hi = Math.max(...finite);
 			const WY = (v: number) => 30 - ((v - lo) / (hi - lo || 1)) * 26;
-			const segments=historySegments(vals,WX,WY);
+			const segments=historySegments(vals,WX,WY,true);
 			const hi_ = hover?.i;
 			const hv = hi_ != null && Number.isFinite(vals[hi_]);
 			const hd = hv && hi_ > 0 && Number.isFinite(vals[hi_-1]) ? chg(vals[hi_], vals[hi_ - 1]) : null;
