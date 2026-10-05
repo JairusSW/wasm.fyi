@@ -75,8 +75,8 @@ try{
  // Every host receives the same resolved pins, including explicit upstream gaps.
  for(const date of dates){await script('weekly-plan.mjs',[date]);}
  await ssh('mkdir -p '+quote(remoteSite+'/data')+' '+quote(remoteSite+'/scripts/lib'));
- await run('rsync',['-az','-e',transport,join(site,'scripts/weekly-next.mjs'),join(site,'scripts/weekly-remote.mjs'),join(site,'scripts/weekly-queue.mjs'),join(site,'scripts/weekly-collect.mjs'),join(site,'scripts/weekly-build.mjs'),join(site,'scripts/weekly-retire.mjs'),join(site,'scripts/weekly-publish.mjs'),host.ssh+':'+remoteSite+'/scripts/']);
- await run('rsync',['-az','-e',transport,join(site,'scripts/lib/weekly-calendar.mjs'),join(site,'scripts/lib/weekly-parity.mjs'),join(site,'scripts/lib/snapshot-index.mjs'),join(site,'scripts/lib/validate-data.mjs'),host.ssh+':'+remoteSite+'/scripts/lib/']);
+ await run('rsync',['-az','-e',transport,join(site,'scripts/weekly-next.mjs'),join(site,'scripts/weekly-remote.mjs'),join(site,'scripts/weekly-queue.mjs'),join(site,'scripts/weekly-collect.mjs'),join(site,'scripts/weekly-build.mjs'),join(site,'scripts/weekly-repair.mjs'),join(site,'scripts/weekly-retire.mjs'),join(site,'scripts/weekly-publish.mjs'),host.ssh+':'+remoteSite+'/scripts/']);
+ await run('rsync',['-az','-e',transport,join(site,'scripts/lib/weekly-calendar.mjs'),join(site,'scripts/lib/wago-legacy.mjs'),join(site,'scripts/lib/weekly-parity.mjs'),join(site,'scripts/lib/snapshot-index.mjs'),join(site,'scripts/lib/validate-data.mjs'),host.ssh+':'+remoteSite+'/scripts/lib/']);
  await run('rsync',['-az','-e',transport,join(site,'data/history-calendar.json'),host.ssh+':'+remoteSite+'/data/']);
  const work=async machine=>{
   const progress=state.machines[machine];
@@ -115,6 +115,19 @@ try{
      await run('rsync',['-az','-e',transport,'--include=sessions/***','--include=*-build.json','--include=*-build.log','--include=pins.json','--include=reuse.json','--include=harness-pin.json','--include=suite.json','--include=weekly-run.json','--include=weekly-run.log','--exclude=*',host.ssh+':'+native+'/',local+'/']);
      const reuse=await read(join(local,'reuse.json'));for(const entry of reuse.reused)entry.from=resolve('.wasmbench/'+(entry.from??reuse.from).split('/').at(-1)+'/hub');reuse.from=resolve('.wasmbench/'+reuse.from.split('/').at(-1)+'/hub');await atomicJSON(join(local,'reuse.json'),reuse);
      await script('weekly-publish.mjs',[local,machine]);
+    }
+    // The native collector has released this host. Repair an existing Wago
+    // build gap here so timing never overlaps another weekly capture.
+    if(machine==='local')await script('weekly-repair.mjs',[native]);
+    else {
+     await ssh('cd '+quote(remoteSite)+' && flock -w 60 '+quote(remoteRoot+'/measurement.lock')+' '+quote(remoteNode)+' scripts/weekly-repair.mjs '+quote(native));
+     const repairs=JSON.parse((await ssh('cat '+quote(remoteRoot+'/history-repairs.json')+' 2>/dev/null || echo \'{"weeks":[]}\'')).output);
+     for(const repaired of repairs.weeks){
+      assert(/^weekly-\d{8}$/.test(repaired),'Unsafe repaired week');
+      const from=remoteRoot+'/'+repaired,to=resolve('.wasmbench/'+repaired+'/hub');await mkdir(to,{recursive:true});
+      await run('rsync',['-az','-e',transport,'--include=sessions/***','--include=*-build.json','--include=pins.json','--include=suite.json','--include=weekly-run.json','--exclude=*',host.ssh+':'+from+'/',to+'/']);
+      await script('weekly-publish.mjs',[to,machine,'wago']);
+     }
     }
     if(date<'2026-09-26'){
      if(machine==='local')await script('weekly-retire.mjs',[native]);

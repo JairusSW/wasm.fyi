@@ -10,7 +10,7 @@
 	import { benchVal, otSeries } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 import { viewData } from '$lib/view-data';
-import { historyCell, historyChange, historySegments, historyCurve, historicalCallWorkloads, historyCallDetails } from '$lib/history-values';
+import { historyCell, historyChange, historySegments, historyCurve, historicalCallWorkloads, historyCallDetails, historyAggregateDetails } from '$lib/history-values';
 
 	const W = 860;
 	const HC = 280;
@@ -135,6 +135,7 @@ import { historyCell, historyChange, historySegments, historyCurve, historicalCa
 					c,
 					raw: ui.histMode === 'ratio' ? (isCov ? -v : v) : val(c.id, hi),
 					value: fmtH(c.id, hi),
+					aggregateDetails: historyAggregateDetails(ui.scope,c.id,M.key,hi),
 					callDetails: M.key === 'roundTrip' ? historyCallDetails(ui.scope,c.id,hi) : '',
 					ver: verAt(c.id, hi,ui.machine) + (hi > 0 && verAt(c.id, hi,ui.machine) !== verAt(c.id, hi - 1,ui.machine) ? ' ◆ new' : ''),
 					delta: d == null ? '—' : isCov ? (d >= 0 ? '+' : '−') + Math.abs(d) : relative(1+d,ui.deltaFormat),
@@ -227,7 +228,7 @@ import { historyCell, historyChange, historySegments, historyCurve, historicalCa
 
 <div class="head">
 	<h1>History</h1>
-	<span class="subtitle fg3">Retrospective engine revisions · frozen cohort</span>
+	<span class="subtitle fg3">Retrospective engine revisions · frozen workload artifacts · cohort shown per date</span>
 </div>
 <Tabs options={OTM_KEYS.map((k) => [k, OTM[k].l])} value={ui.otMetric} onselect={(k) => (ui.otMetric = k)} />
 <Carousel title="{M.l} History" sub="{oi + 1} / {OTM_KEYS.length} · {NOTE[M.key]}" onprev={() => step(-1)} onnext={() => step(1)} noun="metric" />
@@ -318,6 +319,7 @@ import { historyCell, historyChange, historySegments, historyCurve, historicalCa
 						<span class="mono">{r.value}</span>
 						<span class="mono small r" style:color={r.dColor}>{r.delta}</span>
 					</div>
+					{#if r.aggregateDetails}<div class="htip-ev">{r.aggregateDetails}</div>{/if}
 					{#if r.callDetails}<div class="htip-ev">{r.callDetails}</div>{/if}
 				{/each}
 				{#if tip.ev}<div class="htip-ev">{tip.ev}</div>{/if}

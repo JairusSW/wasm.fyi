@@ -47,7 +47,7 @@ export function historyCurve(points:string):string {
  return path;
 }
 
-/** A fixed successful cohort across each engine's recorded points; missing points stay gaps. */
+/** A measured cohort for each date; missing points stay gaps. */
 export function historySeries(s:Scope,cid:CfgId,key:OtMetricKey,workload=''):number[]|null {
 	const h=viewData.history[s.machine];const metric=metricOf[key];
 	const series=(w:string,c:CfgId)=>h.points.map((_,i)=>historyCell(s.machine,w,c,metric,i));
@@ -63,18 +63,29 @@ export function historySeries(s:Scope,cid:CfgId,key:OtMetricKey,workload=''):num
 		if(!h.workloads.some(w=>series(w,cid).some(c=>c.report)))return null;
 		return h.points.map((_,i)=>h.workloads.some(w=>historyCell(s.machine,w,cid,'steady',i).report)?h.workloads.filter(w=>historyCell(s.machine,w,cid,'steady',i).st==='ok').length:Number.NaN);
 	}
-	// Both latency views include all non-feature contracts.
-	const nonFeatures=new Set(viewData.catalogue.filter(w=>!w.id.startsWith('features/')).map(w=>w.id));
-	const workloads=['exec','compile','inst'].includes(key)?h.workloads.filter(w=>nonFeatures.has(w)):h.workloads;
-	const requested=[...new Set([...(Object.keys(viewData.configurations) as CfgId[]).filter(c=>!s.hide[c]),cid,s.baseline])];
-	const participants=requested.filter(c=>workloads.some(w=>series(w,c).some(valid)));
-	if(!participants.includes(cid))return null;
-	const recordedPoints=new Map(participants.map(c=>[c,h.points.map((point,i)=>point.status==='measured'&&workloads.some(w=>valid(historyCell(s.machine,w,c,metric,i))))]));
-	const cohort=workloads.filter(w=>participants.every(c=>series(w,c).filter((_,i)=>recordedPoints.get(c)![i]).every(valid)));
-	if(!cohort.length)return null;
 	const groups=new Map(viewData.catalogue.map(w=>[w.id,w.group]));
-	const counts=new Map<string,number>();for(const w of cohort){const g=groups.get(w)!;counts.set(g,(counts.get(g)||0)+1);}
-	return h.points.map((point,i)=>point.status!=='measured' || !recordedPoints.get(cid)![i]?Number.NaN:Math.exp(cohort.reduce((total,w)=>total+Math.log(historyCell(s.machine,w,cid,metric,i).v!)*(s.weighting==='workload'?1/cohort.length:1/(counts.size*counts.get(groups.get(w)!)!)),0)));
+	const values=h.points.map((point,i)=>{
+		const cohort=historyCohort(s,cid,key,i);
+		if(point.status!=='measured'||!cohort.length)return Number.NaN;
+		const counts=new Map<string,number>();for(const w of cohort){const g=groups.get(w)!;counts.set(g,(counts.get(g)||0)+1);}
+		return Math.exp(cohort.reduce((total,w)=>total+Math.log(historyCell(s.machine,w,cid,metric,i).v!)*(s.weighting==='workload'?1/cohort.length:1/(counts.size*counts.get(groups.get(w)!)!)),0));
+	});
+	return values.some(Number.isFinite)?values:null;
+}
+
+
+/** Each date owns its measured cohort; older failures cannot rewrite newer averages. */
+export function historyCohort(s:Scope,cid:CfgId,key:OtMetricKey,i:number):string[] {
+ const h=viewData.history[s.machine],metric=metricOf[key];
+ const nonFeatures=new Set(viewData.catalogue.filter(w=>!w.id.startsWith('features/')).map(w=>w.id));
+ const workloads=['exec','compile','inst'].includes(key)?h.workloads.filter(w=>nonFeatures.has(w)):h.workloads;
+ const requested=[...new Set([...(Object.keys(viewData.configurations) as CfgId[]).filter(c=>!s.hide[c]),cid,s.baseline])];
+ const participants=requested.filter(c=>workloads.some(w=>valid(historyCell(s.machine,w,c,metric,i))));
+ return participants.includes(cid)?workloads.filter(w=>participants.every(c=>valid(historyCell(s.machine,w,c,metric,i)))):[];
+}
+export function historyAggregateDetails(s:Scope,cid:CfgId,key:OtMetricKey,i:number):string {
+ if(!['exec','compile','inst'].includes(key))return '';
+ return `Geometric mean of ${historyCohort(s,cid,key,i).length} successful non-feature workloads shared by engines measured on this date; ${s.weighting} weighting. Archived capture; current measurements are separate.`;
 }
 
 
