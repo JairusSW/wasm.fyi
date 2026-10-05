@@ -6,6 +6,7 @@ import { validateData } from './lib/validate-data.mjs';
 import { stageAuxiliary } from './lib/auxiliary-data.mjs';
 import { featureSupport } from './lib/feature-support.mjs';
 import { datasetFiles } from './lib/snapshot-index.mjs';
+import { stageCollectionBundles, committedArchiveLocation } from './lib/stage-collection-bundles.mjs';
 const source = resolve(process.argv[2] || `${site}/data/wasmbench`);
 const destination = resolve(process.argv[3] || `${site}/static/wasmbench`);
 const index = await validateData(source);
@@ -16,7 +17,7 @@ try {
   await writeFile(join(staged, 'feature-support.json'), JSON.stringify(await featureSupport(source, index.reports)) + '\n');
   await cp(join(site,'corpora/catalog.json'),join(staged,'corpus-catalog.json'));
   await stageAuxiliary(staged);
-  if(await exists(join(site,'data/benchmark-runs')))await cp(join(site,'data/benchmark-runs'),join(staged,'runs'),{recursive:true});
+  if(await exists(join(site,'data/benchmark-runs')))await stageCollectionBundles(join(site,'data/benchmark-runs'),join(staged,'runs'),await committedArchiveLocation());
   const codeInspection=join(destination,'code-inspection');
   if(await exists(codeInspection))
     await cp(codeInspection,join(staged,'code-inspection'),{recursive:true});

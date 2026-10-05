@@ -167,3 +167,24 @@ test('labels late Eastern Saturday cutoffs by their local calendar date',()=>{
  assert.equal(historyDate('2026-09-29T14:07:11-04:00'),'2026-09-29');
  assert.equal(historyDate('2026-09-26'),'2026-09-26');
 });
+
+import {stageCollectionBundles} from './lib/stage-collection-bundles.mjs';
+import {mkdtemp,mkdir,writeFile,readFile,rm,access} from 'node:fs/promises';
+import {tmpdir} from 'node:os';import {join} from 'node:path';
+import {digest} from './lib/wasmbench.mjs';
+test('staged committed bundles preserve hashes and use immutable archive URLs; unpublished bundles stay local',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'history-archives-'));
+ try{
+  const source=join(root,'source'),bundle=join(source,'weekly-test/local/bundle');await mkdir(bundle,{recursive:true});
+  const part=Buffer.from('sealed archive bytes'),metadata=JSON.stringify({planSha256:'pinned-plan'}),index={schema:1,id:'weekly-test',machine:'local',bytes:part.length,sha256:digest(part),parts:[{path:'bundle.tar.gz.part-000',bytes:part.length,sha256:digest(part)}],metadata:'metadata.json',metadataSha256:digest(metadata)};
+  const original=JSON.stringify(index);await writeFile(join(bundle,'index.json'),original);await writeFile(join(bundle,'metadata.json'),metadata);await writeFile(join(bundle,index.parts[0].path),part);
+  const target=join(root,'published');await stageCollectionBundles(source,target,{archiveBaseUrl:'https://raw.githubusercontent.com/org/repo/'+ 'a'.repeat(40)+'/data/benchmark-runs/',committed:async(path,bytes)=>path==='weekly-test/local/bundle/index.json'&&bytes.toString()===original});
+  const published=join(target,'weekly-test/local/bundle'),projection=JSON.parse(await readFile(join(published,'index.json')));
+  assert.equal(projection.parts[0].url,'https://raw.githubusercontent.com/org/repo/'+ 'a'.repeat(40)+'/data/benchmark-runs/weekly-test/local/bundle/bundle.tar.gz.part-000');
+  assert.equal(projection.sha256,index.sha256);assert.equal(projection.parts[0].sha256,index.parts[0].sha256);assert.equal(projection.sourceIndexSha256,digest(original));assert.equal((await readFile(join(published,'source-index.json'))).toString(),original);
+  await assert.rejects(access(join(published,index.parts[0].path)));
+  const local=join(root,'local');await stageCollectionBundles(source,local,{archiveBaseUrl:'https://raw.githubusercontent.com/org/repo/main/',committed:async()=>false});
+  assert.deepEqual(await readFile(join(local,'weekly-test/local/bundle',index.parts[0].path)),part);
+  await writeFile(join(bundle,index.parts[0].path),'tampered');await assert.rejects(stageCollectionBundles(source,join(root,'tampered')),{message:'Parent archive part digest mismatch'});
+ }finally{await rm(root,{recursive:true,force:true});}
+});
