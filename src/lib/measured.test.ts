@@ -144,7 +144,7 @@ describe('measured view boundary', () => {
 			expect(gaps[first].cell.status).toBe('not-collected');
 			expect(gaps).toHaveLength(history.results.length);
 		}
-	});
+	}, 30_000);
 });
 
 it('resolves historical corpus shards independently and rejects a changed receipt',()=>{

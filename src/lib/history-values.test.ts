@@ -29,8 +29,14 @@ describe('recorded weekly history',()=>{
             expect(viewData.history[machine].versions.G[beta]).toBe('v0.1.0-beta.11');
             for(const p of viewData.history[machine].points)if(p.collectedAt)expect(Date.parse(p.collectedAt)).toBeGreaterThan(Date.parse(p.date+'T00:00:00Z'));
         }
-        const older=dates.indexOf('2026-09-26');
-        if(older>=0){expect(viewData.history.m1.points[older].status).toBe('not-collected');expect(historyCell('m1','applications/image-blur','G','steady',older).report).toBe('');}
+        for(const [machine,name] of [['m1','history-hub'],['m2','history']] as const){
+            const raw=JSON.parse(readFileSync(new URL(`../../data/${name}/weekly.json`,import.meta.url),'utf8'));
+            for(const [i,point] of viewData.history[machine].points.entries()){
+                const source=raw.results.find((p:{targetWeek:string})=>new Date(p.targetWeek).toLocaleDateString('en-CA',{timeZone:'America/New_York'})===point.date);
+                expect(point.status).toBe(source?.status??'not-collected');
+                if(!source)expect(historyCell(machine,'applications/image-blur','G','steady',i).report).toBe('');
+            }
+        }
     });
     it('keeps unchanged beta.11 cells aligned while refreshed current evidence stays separate',()=>{
         for(const machine of ['m1','m2'] as const)for(const workload of viewData.catalogue)
