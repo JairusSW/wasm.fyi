@@ -50,7 +50,11 @@ const ssh=(command,opts={})=>run('ssh',[...sshFlags,host.ssh,command],opts);
 const script=(name,argv,opts={})=>run(process.execPath,[join(site,'scripts',name),...argv],opts);
 const dates=prior?.dates??saturdays(new Date(),18).map(historyDate).reverse();
 const state={schema:1,pid:process.pid,status:'running',scope:'historical-only',started:prior?.started??new Date().toISOString(),dates,publishEvery:2,machines:prior?.machines??{local:{previous:resolve('.wasmbench/weekly-20260926'),completed:[],failed:[]},hub:{previous:remoteRoot+'/weekly-20261003',completed:[],failed:[]}}};
-const save=()=>atomicJSON(stateFile,{...state,updated:new Date().toISOString()});await save();
+let stateWrites=Promise.resolve();
+const save=()=>{
+ const snapshot=structuredClone({...state,updated:new Date().toISOString()});
+ stateWrites=stateWrites.then(()=>atomicJSON(stateFile,snapshot));return stateWrites;
+};await save();
 if(process.platform==='darwin'){
  const awake=spawn('caffeinate',['-i','-w',String(process.pid)],{stdio:'ignore'});awake.on('error',error=>console.error('Idle sleep prevention:',error.message));awake.unref();
 }
