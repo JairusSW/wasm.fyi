@@ -16,7 +16,7 @@ import HistoryMarker from '../HistoryMarker.svelte';
 	import Tabs from '../Tabs.svelte';
 
 	const NOTE = {
-		exec: 'all non-feature workloads · steady execution per invocation',
+		exec: 'shared non-feature reference cohort · steady execution per invocation',
 		wasmHost: 'typed callback · steady Wasm → host latency',
 		hostWasm: 'steady host → Wasm latency',
 		roundTrip: 'estimated sum of directional medians · not a measured nested round trip',

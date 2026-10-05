@@ -87,11 +87,15 @@ export function historySeries(s:Scope,cid:CfgId,key:OtMetricKey,workload=''):num
 }
 
 
-/** Each date owns its measured cohort; older failures cannot rewrite newer averages. */
+/** Use the current comparison cohort as a stable reference; retain each capture's gaps. */
 export function historyCohort(s:Scope,cid:CfgId,key:OtMetricKey,i:number):string[] {
  const h=viewData.history[s.machine],metric=metricOf[key];
  const current=h.points[i]?.currentLatency?.[cid];
  if(current && ['exec','compile','inst'].includes(key))return aggregateCohort({...s,snapshot:current},'lat',cid,key==='exec'?3:key==='compile'?0:1).cohort.map(w=>w.id);
+ if(['exec','compile','inst'].includes(key)){
+  const reference=aggregateCohort({...s,snapshot:'s1'},'lat',cid,key==='exec'?3:key==='compile'?0:1).cohort;
+  if(reference.length)return reference.filter(w=>{const c=historyCell(s.machine,w.id,cid,metric,i);return !!c.report&&valid(c);}).map(w=>w.id);
+ }
  const recorded=new Set(h.workloads);
  const workloads=viewData.catalogue.filter(w=>recorded.has(w.id)&&(!['exec','compile','inst'].includes(key)||!w.id.startsWith('features/')));
  const requested=[...new Set([...viewData.applicationConfigurations.filter(c=>!s.hide[c]),s.baseline])];
@@ -100,7 +104,10 @@ export function historyCohort(s:Scope,cid:CfgId,key:OtMetricKey,i:number):string
 export function historyAggregateDetails(s:Scope,cid:CfgId,key:OtMetricKey,i:number):string {
  if(!['exec','compile','inst'].includes(key))return '';
  const capture=viewData.history[s.machine].points[i]?.currentLatency?.[cid]?'Same canonical release capture and workload cohort as the current chart.':'Archived capture.';
- return `Geometric mean of ${historyCohort(s,cid,key,i).length} successful non-feature workloads; ${s.weighting} weighting. ${capture}`;
+ const count=historyCohort(s,cid,key,i).length;
+ const reference=aggregateCohort({...s,snapshot:'s1'},'lat',cid,key==='exec'?3:key==='compile'?0:1).cohort.length;
+ const coverage=reference?`${count} of ${reference} reference non-feature workloads${count<reference?'; partial coverage':''}`:`${count} successful non-feature workloads`;
+ return `Geometric mean of ${coverage}; ${s.weighting} weighting. Reference cohort matches the current chart. ${capture}`;
 }
 
 
