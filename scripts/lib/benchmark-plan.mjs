@@ -22,8 +22,9 @@ export function workerCount(value, cores) {
     n = Math.max(1, Math.floor((cores * percent) / 100));
   } else if (/^\d+$/.test(text)) n = Number(text);
   else throw Error("Workers must be a core count or percentage, e.g. 4 or 25%");
-  if (!Number.isSafeInteger(n) || n < 1 || n > cores)
-    throw Error(`Worker count must be between 1 and ${cores}`);
+  const limit = Math.max(1, Math.floor(cores / 4));
+  if (!Number.isSafeInteger(n) || n < 1 || n > limit)
+    throw Error(`Worker count must be between 1 and ${limit} (quarter-core budget)`);
   return n;
 }
 export function machineWorkers(text, name) {
@@ -35,7 +36,7 @@ export function machineWorkers(text, name) {
     pairs.some((p) => p.length !== 2 || !p[0] || !p[1]) ||
     new Set(pairs.map((p) => p[0])).size !== pairs.length
   )
-    throw Error("Use --workers local=25%,hub=50%");
+    throw Error("Use --workers local=25%,hub=25%");
   return new Map(pairs).get(name) || "25%";
 }
 export function selectWorkloads(

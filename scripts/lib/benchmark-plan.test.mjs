@@ -17,7 +17,9 @@ import { digest } from "./wasmbench.mjs";
 test("quarter-core default works on small and large machines, with explicit caps", () => {
   assert.equal(workerCount(undefined, 16), 4);
   assert.equal(workerCount(undefined, 2), 1);
-  assert.equal(workerCount("50%", 16), 8);
+  assert.throws(() => workerCount("50%", 16), /quarter-core budget/);
+  assert.equal(workerCount("25%", 8), 2);
+  assert.throws(() => workerCount("3", 8), /quarter-core budget/);
   assert.equal(workerCount("3", 16), 3);
   for (const v of ["0%", "101%", "17", "0", "wat"])
     assert.throws(() => workerCount(v, 16));

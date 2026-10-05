@@ -34,11 +34,11 @@ Supported benchmark engines are Wago, wazero compiler, Wasmtime Cranelift, V8 Tu
 ```sh
 just bench --kind non-feature --engines wasmtime,v8,wasmer-singlepass,wazero,wavm,wago
 just bench --kind features --corpus features/simd --engines wago,v8
-just bench --kind both --engines wazero --machines local,hub --workers local=25%,hub=50%
+just bench --kind both --engines wazero --machines local,hub --workers local=25%,hub=25%
 just bench --corpus applications/image-blur --engines wazero --machines bench@another-host --workers 2
 ```
 
-The default worker budget is 25% of the logical CPUs admitted to each process, rounded down with a minimum of one. An integer requests that many workers. Every worker runs exactly one complete corpus job and gives each adapter one Go/Rayon/OpenMP thread. Linux workers also pin their controller and descendants to separate admitted CPUs. macOS limits concurrency but does not claim CPU affinity, exclusive cores, or publication-qualified host isolation. Parallel jobs can still contend for shared caches and memory bandwidth.
+The default worker budget is 25% of the logical CPUs admitted to each process, rounded down with a minimum of one. An integer requests that many workers; requests above the quarter-core budget are rejected. Every worker runs exactly one complete corpus job and gives each adapter one Go/Rayon/OpenMP thread. Linux workers also pin their controller and descendants to separate admitted CPUs. macOS limits concurrency but does not claim CPU affinity, exclusive cores, or publication-qualified host isolation. Parallel jobs can still contend for shared caches and memory bandwidth.
 
 `hub` comes from `hosts` in `wasmbench.config.json`. Add other named SSH machines there, or pass an SSH alias / `user@host` directly. SSH must work noninteractively. Each remote host needs Git, rsync, Go, Cargo/Rust, tar, curl and (on Linux) taskset. If the configured local harness checkout is absent, the command fetches `harnessSource` at its exact configured commit. The command installs the pinned Node/V8 on SSH hosts, transfers the selected cached inputs and source revisions, builds native adapters on the destination, and retrieves completed corpora individually. It does not require a GitHub key on the destination. Wasmer's pinned SDK is prepared automatically; WAVM requires the pinned native SDK at the configured path or `WASMBENCH_WAVM_SDK`. Unavailable prerequisites fail during preparation before measurements start; no engine is substituted.
 

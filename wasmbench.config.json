@@ -28,7 +28,7 @@
     "featureRuntimes": [],
     "wagoSource": "../../Wago/wago",
     "launches": 1,
-    "workers": 3,
+    "workers": "25%",
     "samples": 3,
     "scenarioSamples": {
       "*": 1,

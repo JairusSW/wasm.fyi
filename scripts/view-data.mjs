@@ -5,6 +5,7 @@ import { validateV8Description } from './lib/v8-preflight.mjs';
 import { digest, site, config } from './lib/wasmbench.mjs';
 import { validateData } from './lib/validate-data.mjs';
 import { workloadCategory, compareWorkloads } from './lib/workload-category.mjs';
+import { callTimingCandidates } from './lib/call-timing.mjs';
 import { measuredTiming, measuredMemory, measuredCodeImage, measuredHistory, historicalRuntimePoint } from '../src/lib/measured.ts';
 
 // This is the view projection of verified evidence, never a source of measurements.
@@ -123,11 +124,11 @@ for (const [machine, os] of [['m1','linux'],['m2','darwin']]) {
       for (const metric of [...Object.keys(scenarios),...Object.keys(memoryScenarios),'code']) {
         // Partial sealed passes advance only metrics they actually measured.
         // A timing-only snapshot must not erase the last measured RSS or code image.
-        const candidates=cohort.filter(report=>memoryScenarios[metric]
+        const candidates=callTimingCandidates(cohort.filter(report=>memoryScenarios[metric]
           ? report.memory.some(m=>m.runtime===runtime && m.workload===workload.id && m.scenario===memoryScenarios[metric] && m.metric===memoryObservers[metric])
           : metric==='code'
             ? report.codeRecords.some(c=>c.runtime===runtime && c.workload===workload.id)
-            : report.summaries.some(s=>s.runtime===runtime && s.workload===workload.id && s.scenario===scenarios[metric] && s.profile==='timing'));
+            : report.summaries.some(s=>s.runtime===runtime && s.workload===workload.id && s.scenario===scenarios[metric] && s.profile==='timing')),workload.id,metric);
         for (const [i,snapshot] of ['s1','s2'].entries()) {
           const report=candidates[i];
           if (!report) continue;
