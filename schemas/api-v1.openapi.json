@@ -1594,6 +1594,61 @@
           }
         }
       }
+    },
+    "/api/v1/reports/{id}/evidence": {
+      "get": {
+        "summary": "Read referenced pass-context evidence for one report",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./site-v2.schema.json#/$defs/Digest"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "chunk",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded revision-scoped response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Response400_1"
+          },
+          "404": {
+            "$ref": "#/components/responses/Response404_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/Response422_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/Response429_4"
+          }
+        }
+      }
     }
   },
   "components": {

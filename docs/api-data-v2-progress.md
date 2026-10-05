@@ -191,3 +191,25 @@ publication/history boundaries plus duplicate delivery. ENOSPC injection after
 content sync and installation checks that retries re-establish durable content
 and never expose a partial dataset. These tests do not fill the real machine's
 disk. Further backend scientific/producer/API/scale gates remain in the audit.
+
+
+## Producer context and evidence closure
+
+The producer records its actual executable SHA-256 separately from the collecting
+runner SHA-256 and includes available module/Go/VCS build identity. Pass manifests
+and admission records are referenced evidence: exact lock/options, host facts,
+pass IDs and recipes survive conversion. Trial details retain diagnostic log,
+start/duration, isolation and recorded diagnostic fields; adapter samples and
+phase events have independent array chunks. Launch medians and warmup diagnostics
+are preserved in explicit evidence instead of being dropped from the transport.
+None of these additions recompute numerical summaries or create launch values.
+Native `code_image` payloads still await binary transport and remain excluded.
+
+`/reports/ID/evidence` lists pass-context references or reads an explicitly
+selected chunk. Selected-result evidence reads follow only that result's references, with request
+cancellation and scan/decoded-byte limits. Ingestion rejects malformed or unresolved
+links, including report-level pass contexts. Startup validation, backup/rebuild and
+cleanup follow the same reference format. Tests cover nested resources, unrelated
+digest rejection, cancellation and content-only recovery. Legacy evidence objects
+remain readable. Root inventories, individual diagnostic objects and analytical
+exports retain the size limitations listed above.

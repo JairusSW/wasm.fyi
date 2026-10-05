@@ -110,22 +110,13 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 			return e
 		}
 		marked[id] = true
-		var raw json.RawMessage
-		if e = wire.Decode(b, &raw); e != nil {
+		refs, e := wire.EvidenceReferences(b)
+		if e != nil {
 			return e
 		}
-		if len(b) > 0 && b[0] == '{' {
-			var refs struct {
-				Samples      []string `json:"samples"`
-				Observations []string `json:"observations"`
-			}
-			if e = json.Unmarshal(b, &refs); e != nil {
+		for _, ref := range refs {
+			if e = markEvidence(ref); e != nil {
 				return e
-			}
-			for _, ref := range append(refs.Samples, refs.Observations...) {
-				if e = markEvidence(ref); e != nil {
-					return e
-				}
 			}
 		}
 		return nil
@@ -138,6 +129,19 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 		var r wire.Record
 		if e := read(id, &r); e != nil {
 			return e
+		}
+		if r.Kind == "report" {
+			var report struct {
+				PassContexts []string `json:"passContexts"`
+			}
+			if e := json.Unmarshal(r.Data, &report); e != nil {
+				return e
+			}
+			for _, ref := range report.PassContexts {
+				if e := markEvidence(ref); e != nil {
+					return e
+				}
+			}
 		}
 		if r.Kind == "result" {
 			var v wire.Result

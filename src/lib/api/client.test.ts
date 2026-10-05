@@ -18,4 +18,13 @@ describe('revision-scoped API client',()=>{
  it('aborts obsolete requests when a revision client closes',async()=>{
   let pendingSignal:AbortSignal|undefined;const request=vi.fn(async(url:unknown,options?:RequestInit)=>{if(String(url).endsWith('/manifest'))return response(manifest);pendingSignal=options?.signal as AbortSignal;return response({revision,items:[]})});const client=await DatasetClient.connect('',request as typeof fetch);const promise=client.results({});client.close();expect(pendingSignal?.aborted).toBe(true);await expect(promise).rejects.toThrow();
  });
+ it('loads report evidence only when explicitly requested',async()=>{
+  const request=vi.fn(async(url:unknown)=>response(String(url).endsWith('/manifest')?manifest:{kind:'pass-context',manifest:{id:'pass'}}));
+  const client=await DatasetClient.connect('',request as typeof fetch);
+  expect(request).toHaveBeenCalledTimes(1);
+  const value=await client.load<{kind:string}>(`reports/${'b'.repeat(64)}/evidence`,{chunk:'c'.repeat(64)});
+  expect(value.kind).toBe('pass-context');expect(request).toHaveBeenCalledTimes(2);
+  expect(String(request.mock.calls[1][0])).toContain(`revision=${revision}`);
+ });
+
 });

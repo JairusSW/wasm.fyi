@@ -184,3 +184,30 @@ func (r Result) Cell() string {
 	b, _ := Encode([]string{r.EnvironmentID, r.TrackID, r.ContractID, r.Scenario, r.Profile, r.MetricDefinitionID, r.Statistic})
 	return Hash(b)
 }
+
+// EvidenceReferences recognizes transport links only at the object envelope.
+// Scientific payloads in data and array rows are never interpreted as links.
+func EvidenceReferences(b []byte) ([]string, error) {
+	var raw json.RawMessage
+	if err := Decode(b, &raw); err != nil {
+		return nil, err
+	}
+	if len(raw) == 0 || raw[0] != '{' {
+		return nil, nil
+	}
+	var envelope struct {
+		Samples      []string `json:"samples"`
+		Observations []string `json:"observations"`
+		References   []string `json:"references"`
+	}
+	if err := json.Unmarshal(raw, &envelope); err != nil {
+		return nil, Invalid("invalid evidence references")
+	}
+	refs := append(append(envelope.Samples, envelope.Observations...), envelope.References...)
+	for _, ref := range refs {
+		if !IsHash(ref) {
+			return nil, Invalid("invalid evidence reference hash")
+		}
+	}
+	return refs, nil
+}

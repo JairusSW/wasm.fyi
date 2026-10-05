@@ -211,6 +211,9 @@ func (s *Store) CatalogContext(ctx context.Context, revision, kind string) ([]wi
 	return out, nil
 }
 func (s *Store) Evidence(revision, result, digest string) ([]byte, error) {
+	return s.EvidenceContext(context.Background(), revision, result, digest)
+}
+func (s *Store) EvidenceContext(ctx context.Context, revision, result, digest string) ([]byte, error) {
 	r, e := s.Record(revision, "result", result)
 	if e != nil {
 		return nil, e
@@ -219,25 +222,69 @@ func (s *Store) Evidence(revision, result, digest string) ([]byte, error) {
 	if e = json.Unmarshal(r.Data, &v); e != nil {
 		return nil, e
 	}
-	for _, h := range v.Evidence {
-		if h == digest {
-			return s.content(h)
+	return s.evidenceContext(ctx, v.Evidence, digest)
+}
+
+func (s *Store) ReportEvidenceContext(ctx context.Context, revision, report, digest string) ([]byte, error) {
+	record, err := s.Record(revision, "report", report)
+	if err != nil {
+		return nil, err
+	}
+	var descriptor struct {
+		PassContexts []string `json:"passContexts"`
+	}
+	if err = json.Unmarshal(record.Data, &descriptor); err != nil {
+		return nil, err
+	}
+	return s.evidenceContext(ctx, descriptor.PassContexts, digest)
+}
+
+func (s *Store) evidenceContext(ctx context.Context, roots []string, digest string) ([]byte, error) {
+	if !wire.IsHash(digest) {
+		return nil, wire.Invalid("invalid evidence digest")
+	}
+	// Traverse only this selected record's evidence graph, with explicit work
+	// and decoded-byte limits. This permits nested pass/detail resources without
+	// turning a digest lookup into global evidence discovery.
+	pending := append([]string{}, roots...)
+	seen := map[string]bool{}
+	decoded, processed := 0, 0
+	for len(pending) > 0 {
+		if err := ctx.Err(); err != nil {
+			return nil, err
 		}
+		processed++
+		if processed > ScanLimit {
+			return nil, ErrLimit
+		}
+		h := pending[len(pending)-1]
+		pending = pending[:len(pending)-1]
+		if seen[h] {
+			continue
+		}
+		if len(seen) >= ScanLimit {
+			return nil, ErrLimit
+		}
+		seen[h] = true
 		b, e := s.content(h)
 		if e != nil {
 			return nil, e
 		}
-		var refs struct {
-			Samples      []string `json:"samples"`
-			Observations []string `json:"observations"`
+		decoded += len(b)
+		if decoded > 32*1024*1024 {
+			return nil, ErrLimit
 		}
-		if json.Unmarshal(b, &refs) == nil {
-			for _, ref := range append(refs.Samples, refs.Observations...) {
-				if ref == digest {
-					return s.content(ref)
-				}
-			}
+		if h == digest {
+			return b, nil
 		}
+		refs, e := wire.EvidenceReferences(b)
+		if e != nil {
+			return nil, e
+		}
+		if len(pending)+len(refs)+processed > ScanLimit {
+			return nil, ErrLimit
+		}
+		pending = append(pending, refs...)
 	}
 	return nil, ErrNotFound
 }

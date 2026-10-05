@@ -310,21 +310,35 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 			respond(w, r, 200, map[string]any{"revision": revision, "record": record}, immutable)
 			return
 		}
-		if kind == "result" && len(parts) == 3 && parts[2] == "samples" {
-			var v wire.Result
+		if len(parts) == 3 && ((kind == "result" && parts[2] == "samples") || (kind == "report" && parts[2] == "evidence")) {
+			for key, values := range params {
+				if (key != "revision" && key != "chunk") || len(values) != 1 {
+					problem(w, r, wire.Invalid("unsupported evidence query"))
+					return
+				}
+			}
+			var v struct {
+				Evidence     []string `json:"evidence"`
+				PassContexts []string `json:"passContexts"`
+			}
 			if e = json.Unmarshal(record.Data, &v); e != nil {
 				problem(w, r, e)
 				return
 			}
 			if digest := params.Get("chunk"); digest != "" {
-				b, e := a.Store.Evidence(revision, parts[1], digest)
+				var b []byte
+				if kind == "report" {
+					b, e = a.Store.ReportEvidenceContext(r.Context(), revision, parts[1], digest)
+				} else {
+					b, e = a.Store.EvidenceContext(r.Context(), revision, parts[1], digest)
+				}
 				if e != nil {
 					problem(w, r, e)
 					return
 				}
 				respond(w, r, 200, json.RawMessage(b), immutable)
 			} else {
-				respond(w, r, 200, map[string]any{"revision": revision, "chunks": v.Evidence}, immutable)
+				respond(w, r, 200, map[string]any{"revision": revision, "chunks": append(v.Evidence, v.PassContexts...)}, immutable)
 			}
 			return
 		}

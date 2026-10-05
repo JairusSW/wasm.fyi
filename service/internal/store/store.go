@@ -505,26 +505,36 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 			}
 		}
 	}
+	// Report-level pass references are part of the export's integrity closure.
+	for _, record := range records {
+		if record.Kind != "report" {
+			continue
+		}
+		var report struct {
+			PassContexts []string `json:"passContexts"`
+		}
+		if e = json.Unmarshal(record.Data, &report); e != nil {
+			return "", wire.Invalid("invalid pass contexts")
+		}
+		for _, ref := range report.PassContexts {
+			if !evidence[ref] {
+				return "", wire.Invalid("unresolved pass context")
+			}
+		}
+	}
 	// Evidence chunks may reference only declared evidence objects; never paths.
 	for id := range evidence {
 		b, e := s.content(id)
 		if e != nil {
 			return "", e
 		}
-		var v any
-		if e = json.Unmarshal(b, &v); e != nil {
+		refs, e := wire.EvidenceReferences(b)
+		if e != nil {
 			return "", e
 		}
-		if obj, ok := v.(map[string]any); ok {
-			for _, field := range []string{"samples", "observations"} {
-				if refs, ok := obj[field].([]any); ok {
-					for _, ref := range refs {
-						h, ok := ref.(string)
-						if !ok || !evidence[h] {
-							return "", wire.Invalid("unresolved evidence chunk")
-						}
-					}
-				}
+		for _, ref := range refs {
+			if !evidence[ref] {
+				return "", wire.Invalid("unresolved evidence chunk")
 			}
 		}
 	}

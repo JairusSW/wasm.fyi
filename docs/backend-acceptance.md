@@ -7,7 +7,7 @@ passing the existing synthetic fixture tests.
 
 | Requirement | Current evidence / remaining work |
 | --- | --- |
-| Verified producer, legacy compatibility, full producer identities | Basic exporter verified; exporter identity and broader evidence closure pending |
+| Verified producer, legacy compatibility, full producer identities | Verified exporter records exact binary/build identity and full pass manifest/admission; trial details, adapter/phase evidence and launch diagnostics preserved with tested selected-result/recovery closure; broader analytical evidence still pending |
 | Bounded inventories and evidence, binary and inspection availability | Small JSON chunks implemented; scalable inventories/native export pending |
 | Exact metric/profile/collector/denominator/method identity | Source registry retained; complete selector and compatibility policies pending |
 | Completed-job unit, immutable plans, attempts, parent bundles, resume | Sink and immutable session/member/attempt bindings tested; archive resources and broader resume/attempt fixtures pending |

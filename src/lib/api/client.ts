@@ -27,7 +27,7 @@ export class DatasetClient {
  async load<T>(resource:string,parameters:Record<string,string|number>={},signal?:AbortSignal):Promise<T> {
   signal?.throwIfAborted();
   if(this.abort.signal.aborted)throw new ApiError('Dataset client is closed');
-  if(!/^(results|reports|metrics|tracks|configurations|environments|workloads|artifacts|history)(\/([a-f0-9]{64})(\/samples)?)?$/.test(resource))throw new ApiError('Unsupported API resource');
+  if(!/^(results|reports|metrics|tracks|configurations|environments|workloads|artifacts|history)(\/([a-f0-9]{64})(\/(samples|evidence))?)?$/.test(resource))throw new ApiError('Unsupported API resource');
   if(parameters.revision!==undefined&&parameters.revision!==this.revision)throw new ApiError('Query revision differs from client');
   const query=new URLSearchParams(Object.entries({...parameters,revision:this.revision}).map(([k,v])=>[k,String(v)]));query.sort();
   const key=`${resource}?${query}`;const cached=this.cache.get(key);
@@ -37,7 +37,7 @@ export class DatasetClient {
   combined.throwIfAborted();
   // Sample chunks are producer arrays or trial envelopes, with no revision
   // field; the URL and result membership checks bind them to this revision.
-  if(!resource.endsWith('/samples')&&(value as {revision?:string}).revision!==this.revision)throw new ApiError('Response revision differs from active dataset');
+  if(!resource.endsWith('/samples')&&!resource.endsWith('/evidence')&&(value as {revision?:string}).revision!==this.revision)throw new ApiError('Response revision differs from active dataset');
   this.cache.set(key,{value,bytes});this.bytes+=bytes;
   while(this.cache.size>32||this.bytes>4*MAX_RESPONSE){const oldest=this.cache.keys().next().value!;this.bytes-=this.cache.get(oldest)!.bytes;this.cache.delete(oldest)}
   return value as T;

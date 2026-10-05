@@ -251,3 +251,73 @@ func TestReadinessAndDeclaredUploads(t *testing.T) {
 		t.Fatal(stats.Body.String())
 	}
 }
+
+func TestReportPassEvidence(t *testing.T) {
+	s, err := store.Open(t.TempDir(), "test-publisher")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	handler, err := New(s, strings.Repeat("x", 32), bytes.Repeat([]byte{1}, 32))
+	if err != nil {
+		t.Fatal(err)
+	}
+	job, objects, err := testutil.Fixture("report-context", time.Now().UTC())
+	if err != nil {
+		t.Fatal(err)
+	}
+	evidence, _ := wire.Encode(map[string]any{"kind": "pass-context", "manifest": map[string]any{"id": "source-pass", "options": map[string]any{"launches": 1}}})
+	digest := wire.Hash(evidence)
+	objects[digest] = evidence
+	manifest := &job.Exports[0].Manifest
+	manifest.Objects = append(manifest.Objects, wire.Object{SHA256: digest, Bytes: len(evidence), Kind: "evidence"})
+	for i, object := range manifest.Objects {
+		if object.Kind != "record" {
+			continue
+		}
+		var record wire.Record
+		_ = json.Unmarshal(objects[object.SHA256], &record)
+		if record.Kind != "report" {
+			continue
+		}
+		var data map[string]json.RawMessage
+		_ = json.Unmarshal(record.Data, &data)
+		data["passContexts"], _ = wire.Encode([]string{digest})
+		record.Data, _ = wire.Encode(data)
+		body, _ := wire.Encode(record)
+		delete(objects, object.SHA256)
+		object.SHA256, object.Bytes = wire.Hash(body), len(body)
+		manifest.Objects[i] = object
+		objects[object.SHA256] = body
+	}
+	body, _ := wire.Encode(manifest)
+	job.Exports[0].SHA256 = wire.Hash(body)
+	for hash, body := range objects {
+		if err = s.Install(hash, bytes.NewReader(body)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	id, err := s.Submit(job)
+	if err != nil {
+		t.Fatal(err)
+	}
+	revision, err := s.Commit(id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := "/api/v1/reports/" + manifest.ReportID + "/evidence?revision=" + revision
+	listing := request(t, handler, "GET", path, nil, nil)
+	if listing.Code != 200 || !strings.Contains(listing.Body.String(), digest) {
+		t.Fatal("lost report context listing", listing.Code, listing.Body.String())
+	}
+	chunk := request(t, handler, "GET", path+"&chunk="+digest, nil, nil)
+	if chunk.Code != 200 || !bytes.Equal(bytes.TrimSpace(chunk.Body.Bytes()), evidence) {
+		t.Fatal("changed report context", chunk.Code, chunk.Body.String())
+	}
+	for _, query := range []string{"&chunk=" + strings.Repeat("a", 64), "&chunk=" + digest + "&chunk=" + digest, "&unexpected=value"} {
+		response := request(t, handler, "GET", path+query, nil, nil)
+		if response.Code != 400 && response.Code != 404 {
+			t.Fatal("accepted forged/ambiguous evidence request", response.Code)
+		}
+	}
+}
