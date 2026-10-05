@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, readdir, writeFile, rm, mkdir, stat, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { command, compact, digest, installDirectory } from './lib/wasmbench.mjs';
+import { command, compact, digest, installDirectory, site } from './lib/wasmbench.mjs';
 import { packEvidence, fileDigest } from './lib/evidence-archive.mjs';
 import { validateWasmFyiReceipt } from './lib/wasmfyi-export.mjs';
 import { writeIndex, datasetFiles } from './lib/snapshot-index.mjs';
@@ -374,6 +374,20 @@ test('staged historical evidence includes the verified external trial and throug
  const directory=await mkdtemp(join(tmpdir(),'wasm-fyi-history-stage-'));
  try {
   await stageAuxiliary(directory);
-  for(const name of ['history','history-hub'])await validateData(join(directory,name));
+  for(const name of ['history','history-hub']){
+   const staged=JSON.parse(await readFile(join(directory,name,'index.json')));
+   if(staged.type!=='immutable-history-archive'){await validateData(join(directory,name));continue;}
+   const canonical=await validateData(join(site,'data',name));
+   assert.equal(staged.sourceIndex.sha256,digest(await readFile(join(site,'data',name,'index.json'))));
+   assert.match(staged.sourceIndex.url,new RegExp('/[a-f0-9]{40}/data/'+name+'/index\\.json$'));
+   const linked=new Map(staged.reports.map(r=>[r.id,r]));
+   for(const report of canonical.reports){
+    const ref=linked.get(report.id);assert(ref,'Missing archived report reference');
+    assert.equal(ref.evidence.sha256,report.evidenceSha256);
+    assert.equal(ref.projection.sha256,digest(await readFile(join(site,'data',name,report.id+'.summary.json'))));
+    if(report.trialsEvidence){assert.equal(ref.trials.sha256,report.trialsEvidenceSha256);assert(ref.trials.url.endsWith('/'+report.trialsEvidence));}
+    if(report.throughputEvidence){assert.equal(ref.throughput.sha256,report.throughputEvidenceSha256);assert(ref.throughput.url.endsWith('/'+report.throughputEvidence));}
+   }
+  }
  } finally {await rm(directory,{recursive:true,force:true});}
 });
