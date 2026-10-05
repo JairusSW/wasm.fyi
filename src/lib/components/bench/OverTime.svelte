@@ -49,7 +49,7 @@ import HistoryMarker from '../HistoryMarker.svelte';
 			const hi = Math.max(...finite);
 			const WY = (v: number) => 30 - ((v - lo) / (hi - lo || 1)) * 26;
 			const coverage=vals.map((_,i)=>historyCoverage(s,c.id,ui.otMetric,i));
-			const segments=historySegments(vals.map((v,i)=>coverage[i].complete?v:NaN),WX,WY,true);
+			const segments=historySegments(vals,WX,WY,true);
 			const versions=new Set(historyVersionChanges(viewData.history[s.machine].versions[c.id] || [],vals));
 			const hi_ = hover?.i;
 			const hv = hi_ != null && Number.isFinite(vals[hi_]);
