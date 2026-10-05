@@ -1,0 +1,70 @@
+// Bind the frozen benchmark adapter and WASI P1 to historical slot callbacks.
+// The pinned runtime and the frozen base checkout are never modified.
+import {readFile,writeFile,mkdir,readdir,cp,chmod} from 'node:fs/promises';
+import {join} from 'node:path';
+import {digest} from './wasmbench.mjs';
+const replace=(text,from,to)=>{if(!text.includes(from))throw Error('Legacy compatibility source changed: '+from.slice(0,70));return text.replace(from,to);};
+const cut=(text,start,end)=>{const a=text.indexOf(start),b=text.indexOf(end,a);if(a<0||b<0)throw Error('Legacy compatibility boundary changed: '+start);return text.slice(0,a)+text.slice(b);};
+export async function adaptLegacyWago({root,base,module,run,api}){
+ const wasi=join(root,'legacy-wasi');await mkdir(join(wasi,'internal/core'),{recursive:true});await mkdir(join(wasi,'p1'),{recursive:true});
+ for(const file of await readdir(join(module.Dir,'internal/core')))if(file.endsWith('.go')&&!file.endsWith('_test.go')&&file!=='definition.go'){const target=join(wasi,'internal/core',file);await chmod(target,0o644).catch(()=>{});await cp(join(module.Dir,'internal/core',file),target);await chmod(target,0o644);}
+ await chmod(join(wasi,'go.mod'),0o644).catch(()=>{});await cp(join(module.Dir,'go.mod'),join(wasi,'go.mod'));await chmod(join(wasi,'go.mod'),0o644);
+ let core=await readFile(join(wasi,'internal/core/core.go'),'utf8');
+ core=cut(core,'func Provider(', '// Plugin is');core=core.replace(/\n\s*arguments \*wago.GuestArgumentsAccess\n/,'\n');
+ core=cut(core,'func (e *Plugin) Register(', '// Imports returns');
+ core=core.replaceAll('*wago.Imports','wago.Imports');
+ core=replace(core,'out := wago.NewImports()','out := make(wago.Imports)');
+ core=replace(core,'out.HostFunc(e.module, b.name, b.callback()).Params(b.params...).Results(b.results...).Capability(b.cap).Docs(b.docs)','out[e.module+"."+b.name] = wago.HostFunc(b.fn)');
+ core=cut(core,'func (b binding) callback()', 'type guestCapability');
+ core+= '\n// Close releases the per-instance raw bundle after the measured instance closes.\nfunc (e *Plugin) Close() { e.closeAll() }\nfunc Bundle(module string, cfg Config) (wago.Imports, func()) { e := &Plugin{module:module,cfg:cloneConfig(cfg)}; e.resetFS(); _ = e.initFS(false); return e.Imports(), e.Close }\n';
+ await writeFile(join(wasi,'internal/core/core.go'),core);
+ let fs=await readFile(join(wasi,'internal/core/fs.go'),'utf8');
+ fs=fs.replace(/\n\s*resolver \*wago.CallerResolver\n/,'\n').replace(/\n\s*states\s+map\[wago.InstanceIdentity\]\*fsState\n/,'\n');
+ fs=replace(fs,'&fsGuard{states: make(map[wago.InstanceIdentity]*fsState)}','&fsGuard{}');
+ fs=cut(fs,'\tif e.guard.resolver != nil {','\tstate.mu.Lock()');
+ fs=cut(fs,'func (e *Plugin) closeInstance(', 'func (e *Plugin) closeAll()');
+ fs=replace(fs,'len(e.guard.states)+1','1');fs=cut(fs,'\tfor _, state := range e.guard.states {','\te.fs = nil');
+ await writeFile(join(wasi,'internal/core/fs.go'),fs);
+ await writeFile(join(wasi,'p1/p1.go'),'package p1\nimport (wago "github.com/wago-org/wago"; "github.com/wago-org/wasi/internal/core")\nconst Module="wasi_snapshot_preview1"\ntype Config=core.Config\ntype Preopen=core.Preopen\nfunc Imports(cfg Config) wago.Imports {return core.Imports(Module,cfg)}\nfunc Bundle(cfg Config) (wago.Imports,func()) {return core.Bundle(Module,cfg)}\n');
+ const adapter=join(root,'adapters/wago');
+ for(const file of await readdir(join(base,'adapters/wago')))if(file.endsWith('.go'))await cp(join(base,'adapters/wago',file),join(adapter,file));
+ let main=await readFile(join(adapter,'main.go'),'utf8');
+ main=main.replace(/\n\s*(component "github.com\/wago-org\/component-model"|wagoplugin "github.com\/wago-org\/wago\/plugin")\n/g,'\n');
+ main=main.replace(/\n\s*wagoplugin \"github.com\/wago-org\/wago\/plugin\"/g,'');
+ main=main.replace('*wago.Imports','wago.Imports');main=cut(main,'\tcomponentRuntime *wago.Runtime','\n}');
+ main=cut(main,'\tif a.componentCache != nil {','\tif a.hostIdentity != nil {');
+ main=replace(main,'func(v int32) int32 { return v }','wago.HostFunc(func(_ wago.HostModule, p, r []uint64) { r[0] = p[0] })');
+ main=replace(main,'wago.NewImports().Function("wasmbench", "identity", a.hostIdentity)','wago.Imports{"wasmbench.identity": a.hostIdentity}');
+ main=replace(main,'wago.HostCallFunc(func(call wago.HostCall) {','wago.HostFunc(func(_ wago.HostModule, p, _ []uint64) {');
+ for(let i=0;i<4;i++)main=main.replaceAll(`uint32(call.I32(${i}))`,`uint32(p[${i}])`);
+ main=replace(main,'wago.NewImports().Function("env", "abort", a.hostIdentity)','wago.Imports{"env.abort": a.hostIdentity}');
+ if(!api.includes('func LoadTrustedArtifact('))main=main.replaceAll('wago.LoadTrustedArtifact(', 'wago.Load(');
+ if(!api.includes('WithMaxModuleBytes('))main=main.replaceAll("exact workload artifact size; Wago's 64 MiB default does not reject larger benchmark artifacts",'historical runtime defaults; per-module byte limit API unavailable').replaceAll('Wago defaults; maxModuleBytes is set to the exact prepared artifact size per workload','historical Wago defaults').replace('wago.NewRuntimeConfig().WithMaxModuleBytes(uint64(len(a.wasm)))','wago.NewRuntimeConfig()');
+ if(!api.includes('CodeSize()'))main=main.replaceAll('a.compiled.CodeSize()', 'len(a.compiled.Code)').replace('a.compiled.WriteCodeTo(&image)', 'image.Write(a.compiled.Code)').replaceAll('wago.Compiled.WriteCodeTo','wago.Compiled.Code');
+ main=cut(main,'\t\t\t\tcase "component":','\t\t\t\tdefault:');
+ main=replace(main,'\t\t\t\tdefault:\n\t\t\t\t\te = fmt.Errorf("unsupported ABI")','\t\t\t\tcase "component":\n\t\t\t\t\te = unsupportedRequest("historical Wago has no Component Model plugin API")\n\t\t\t\tdefault:\n\t\t\t\t\te = fmt.Errorf("unsupported ABI")');
+ const metadata='\n\t\t\t\tresp.Description.Embedding = "Go API / legacy HostFunc slots with adapted WASI P1 v0.3.1"\n\t\t\t\tresp.Description.ABIs = []string{"core", "wasi-command"}\n\t\t\t\tresp.Description.Features = []string{"mvp", "bulk-memory", "simd", "wasi-preview1"}\n\t\t\t\tfor _, capability := range []string{"can_run_component_commands", "can_component_command_lifecycle", "can_component_u64_calls_v1"} { resp.Description.Capabilities[capability] = false }\n\t\t\t\tresp.Description.Configuration["host_callback_api"] = "legacy HostFunc slot callbacks; typed callback API unavailable in pinned runtime"\n\t\t\t\tresp.Description.Configuration["wasi_preview1"] = "WASI v0.3.1 raw per-instance imports adapted to legacy HostFunc slots; same readonly fixtures, rights attenuation, argv and stream oracles"\n\t\t\t\tresp.Description.Configuration["wasi_preview2"] = "unavailable in historical runtime"\n\t\t\t\tresp.Description.Configuration["component_model"] = "unavailable in historical runtime"\n\t\t\t\tdelete(resp.Description.Configuration, "component_compile_cache")\n';
+ main=replace(main,'\n\t\t\t\tresp.Description.Scenarios = append(resp.Description.Scenarios, "app-init")',metadata+'\n\t\t\t\tresp.Description.Scenarios = append(resp.Description.Scenarios, "app-init")');
+ if(!api.includes('type HostTrap '))main=main.replace('wago.HostTrap{Err: protocol.AssemblyScriptAbort(uint32(p[0]), uint32(p[1]), uint32(p[2]), uint32(p[3]))}', 'protocol.AssemblyScriptAbort(uint32(p[0]), uint32(p[1]), uint32(p[2]), uint32(p[3]))');
+ await writeFile(join(adapter,'main.go'),main);
+ let plugin=await readFile(join(adapter,'plugin_features.go'),'utf8');
+ plugin=plugin.replace(/\n\s*(component "github.com\/wago-org\/component-model"|wagoplugin "github.com\/wago-org\/wago\/plugin"|"github.com\/wago-org\/wasi\/p2"|"slices")\n/g,'\n');
+ plugin=cut(plugin,'type componentConsumer struct', 'type boundedBuffer struct');
+ plugin=cut(plugin,'func (a *adapter) runComponentOne(', 'func (a *adapter) runPluginFeature(');
+ plugin=plugin.slice(0,plugin.indexOf('\tif w.ABI == "component" {'))+'\treturn nil, unsupportedRequest("historical Wago has no Component Model plugin API")\n}\n';
+ plugin=plugin.replace(/\n\s*\"strings\"/g,'');
+ plugin=plugin.replaceAll('p2.Preopen','p1.Preopen');
+ plugin=replace(plugin,'imports := p1.Imports(', 'imports, closeImports := p1.Bundle(');
+ plugin=replace(plugin,'readonly, err := readonlyP1OpenOverrides(imports)','defer closeImports()\n\treadonly, err := readonlyP1OpenOverrides(imports)');
+ await writeFile(join(adapter,'plugin_features.go'),plugin);
+ let readonly=await readFile(join(adapter,'wasi_readonly.go'),'utf8');
+ readonly=readonly.replaceAll('*wago.Imports','wago.Imports').replace('imports.Lookup(p1.Module, "path_open")','imports[p1.Module+".path_open"]').replaceAll('wago.CallerHostCallFunc','wago.HostFunc').replace('out := wago.NewImports()','out := make(wago.Imports)').replace('out.HostFunc(p1.Module, "path_open", wago.HostFunc(func(caller wago.Caller, call wago.HostCall) {\n\t\targs, results := call.ParamSlots(), call.ResultSlots()','out[p1.Module+".path_open"] = wago.HostFunc(func(caller wago.HostModule, args, results []uint64) {').replace('len(results) != 1','len(results) < 1').replace('open(caller, call)','open(caller, args, results[:1])').replace(/\}\)\)\.Params\([^\n]+\)\.Results\(wago.ValI32\)/,'})');
+ await writeFile(join(adapter,'wasi_readonly.go'),readonly);
+ let build=await readFile(join(base,'experiment/build.go'),'utf8');
+ build=replace(build,'\n\tif e = os.WriteFile(modfile, []byte(content), 0644);','\n\tcontent += "\\nreplace github.com/wago-org/wasi => " + strconv.Quote(filepath.Join(root,"legacy-wasi")) + "\\n"\n\tif e = os.WriteFile(modfile, []byte(content), 0644);');
+ await writeFile(join(root,'experiment/build.go'),build);
+ for(const file of await readdir(adapter))if(file.endsWith('.go')&&!file.endsWith('_test.go')){const path=join(adapter,file);let text=await readFile(path,'utf8');if(!api.includes('type WasmFunc struct'))text=text.replaceAll('wago.WasmFunc','wago.PreparedFunction').replaceAll('.WasmFunc(','.PrepareFunction(');if(!api.includes('UnsafeBytes()'))text=text.replaceAll('.UnsafeBytes()', '.Bytes()');await writeFile(path,text);}
+ await run('gofmt',['-w',adapter,join(wasi,'internal/core'),join(wasi,'p1'),join(root,'experiment/build.go')]);
+ const hashes={};for(const dir of [adapter,join(wasi,'internal/core'),join(wasi,'p1')])for(const file of (await readdir(dir)).sort())if(file.endsWith('.go')&&!file.endsWith('_test.go'))hashes[dir.slice(root.length+1)+'/'+file]=digest(await readFile(join(dir,file)));
+ return {api:'legacy HostFunc slots',wasi:{version:module.Version,sum:module.Sum,origin:module.Origin},patchSha256:digest(JSON.stringify(hashes)),files:hashes,componentModel:'unavailable'};
+}

@@ -111,5 +111,6 @@ it('history retains the exact pinned corpus shard digests',async()=>{
  const root=new URL('../../data/history/',import.meta.url);
  const index=JSON.parse(await readFile(new URL('index.json',root),'utf8'));
  const reports=await Promise.all(index.reports.map(async(r:any)=>JSON.parse(await readFile(new URL(r.projection,root),'utf8'))));
- for(const id of viewData.history.m2.workloads)expect(reports.some(r=>r.workloads.some((w:any)=>w.id===id&&w.sha256===viewData.history.m2.artifactSha256[id]))).toBe(true);
-});
+ const artifacts=new Set(reports.flatMap(r=>r.workloads.map((w:any)=>`${w.id}|${w.sha256}`)));
+ for(const id of viewData.history.m2.workloads)expect(artifacts.has(`${id}|${viewData.history.m2.artifactSha256[id]}`)).toBe(true);
+},30000);
