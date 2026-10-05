@@ -344,7 +344,7 @@ import HistoryMarker from '$lib/components/HistoryMarker.svelte';
 	</div>
 	<div class="keys">
 		<span class="key"><span class="k-range"></span>Change-report range — click chart or use From / To</span>
-		<span class="key"><span class="k-diamond"></span>Runtime version · circle = unchanged version</span>
+		<span class="key"><span class="k-diamond"></span>Release version · circle = source snapshot</span>
 		<span class="key"><span class="k-event"></span>Retrospective source revision — hover for details</span>
 	</div>
 	<div class="report-for">

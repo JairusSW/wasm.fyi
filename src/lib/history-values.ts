@@ -5,12 +5,12 @@ import type { CfgId, MachineId, MetricKey, OtMetricKey } from './data/types';
 import type { Scope } from './model';
 
 export const historyCell=(machine:MachineId,workload:string,cid:CfgId,metric:MetricKey,i:number):ViewCell=>viewData.history[machine].cells[`${workload}|${cid}|${metric}`]?.[i] || {st:'nm',report:''};
-/** Mark the first measured version and changes from the previous measured version, skipping gaps. */
+/** Release labels receive markers; source revisions and unmeasured points do not. */
 export function historyVersionChanges(versions:string[],values:number[]):number[] {
  let previous='';const changes:number[]=[];
  for(const [i,value] of values.entries()){
   const version=versions[i];
-  if(!Number.isFinite(value)||!version||version==='not collected')continue;
+  if(!Number.isFinite(value)||!version||version==='not collected'||/^[a-f0-9]{7,40}(?:$|\/)/i.test(version))continue;
   if(version!==previous)changes.push(i);
   previous=version;
  }

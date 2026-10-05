@@ -14,6 +14,15 @@ it('marks measured versions without inventing version changes around gaps',()=>{
  expect(historyVersionChanges(['v1','v2','v1'],[1,NaN,2])).toEqual([0]);
  expect(historyVersionChanges(['v1','v1','v2'],[NaN,NaN,NaN])).toEqual([]);
 });
+it('does not treat Wago source commits as release versions',()=>{
+ const revision='0ef007c70581bf56155a4daf6fce8bda3f2c5ff1';
+ expect(historyVersionChanges([revision,'v0.1.0-beta.11',revision,revision+'/source-digest'],[1,2,3,4])).toEqual([1]);
+ for(const machine of ['m1','m2'] as const){
+  const versions=viewData.history[machine].versions.G;
+  const values=historySeries({...scope,machine},'G','exec')!;
+  expect(historyVersionChanges(versions,values)).toEqual([betaIndex(machine)]);
+ }
+});
 it('curves between recorded endpoints with bounded horizontal tangents',()=>{
  expect(historyCurve('0,10 20,0 40,5')).toBe('M 0,10 C 10,10 10,0 20,0 C 30,0 30,5 40,5');
  expect(historyCurve('20,5')).toBe('M 20,5');
