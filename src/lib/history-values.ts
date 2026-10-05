@@ -19,6 +19,13 @@ export function historyChange(before:ViewCell,after:ViewCell) {
 const metricOf:Record<OtMetricKey,MetricKey>={exec:'steady',wasmHost:'steady',hostWasm:'steady',roundTrip:'steady',compile:'compile',inst:'inst',mem:'rss',code:'code',cov:'steady'};
 export const historicalCallWorkloads=(key:OtMetricKey):string[]=>key==='wasmHost'?['mechanisms/wasm-to-host-call']:key==='hostWasm'?['mechanisms/host-to-wasm-call']:key==='roundTrip'?['mechanisms/wasm-to-host-call','mechanisms/host-to-wasm-call']:[];
 const valid=(c:ViewCell)=>c.st==='ok' && c.v!=null && Number.isFinite(c.v) && c.v>0;
+export function historyReusesEvidence(machine:MachineId,cid:CfgId,key:OtMetricKey,before:number,after:number) {
+  if(before<0 || before===after)return false;
+  const calls=historicalCallWorkloads(key),workloads=calls.length?calls:viewData.history[machine].workloads;
+  const pairs=workloads.map(w=>[historyCell(machine,w,cid,metricOf[key],before),historyCell(machine,w,cid,metricOf[key],after)]);
+  const recorded=pairs.filter(([a,b])=>a.report || b.report);
+  return recorded.length>0 && recorded.every(([a,b])=>a.report && a.report===b.report && a.st===b.st);
+}
 export function historySegments(values:number[],x:(i:number)=>number,y:(v:number)=>number):string[] {
 	const segments:string[]=[];let points:string[]=[];
 	for(const [i,v] of values.entries()){

@@ -186,7 +186,7 @@ for(const [machine,name] of [['m1','history-hub'],['m2','history']]) {
     const bytes=await readFile(join(directory,entry.projection));
     if(digest(bytes)!==entry.projectionSha256)throw new Error('Changed history input');
     const report=JSON.parse(bytes);snapshots.push(report);
-    if(!output.reports[report.id])output.reports[report.id]={runId:report.runId,created:report.created,evidence:name+'/'+report.evidence,sha256:report.evidenceSha256,options:report.options,memorySource:report.memorySource,codeSource:report.codeSource,configurations:report.runtimes.map(c=>c.id),host:report.host.os,historical:true};
+    if(!output.reports[report.id])output.reports[report.id]={collectionBundle:report.collectionBundle,runId:report.runId,created:report.created,evidence:name+'/'+report.evidence,sha256:report.evidenceSha256,options:report.options,memorySource:report.memorySource,codeSource:report.codeSource,configurations:report.runtimes.map(c=>c.id),host:report.host.os,historical:true};
   }
   const baselineReports=snapshots.filter(s=>(weekly.baseline.reports||[weekly.baseline.report]).includes(s.id));
   const baseline=baselineReports[0];

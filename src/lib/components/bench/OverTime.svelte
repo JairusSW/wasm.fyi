@@ -8,7 +8,7 @@
 	import { href } from '$lib/links';
 	import { isOff, isVisible, otSeries, seriesFmt } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
-import { historySegments, historyCallDetails } from '$lib/history-values';
+import { historySegments, historyCallDetails, historyReusesEvidence } from '$lib/history-values';
 	import Carousel from '../Carousel.svelte';
 	import RtLabel from '../RtLabel.svelte';
 	import Tabs from '../Tabs.svelte';
@@ -50,7 +50,8 @@ import { historySegments, historyCallDetails } from '$lib/history-values';
 			const hi_ = hover?.i;
 			const hv = hi_ != null && Number.isFinite(vals[hi_]);
 			const hd = hv && hi_ > 0 && Number.isFinite(vals[hi_-1]) ? chg(vals[hi_], vals[hi_ - 1]) : null;
-			const first=vals.find(Number.isFinite),last=vals[SNAPS.length-1];
+			const firstIndex=vals.findIndex(Number.isFinite),first=vals[firstIndex],last=vals[SNAPS.length-1];
+            const reused=historyReusesEvidence(ui.machine,c.id,ui.otMetric,hv?hi_-1:firstIndex,hv?hi_:SNAPS.length-1);
             const d8 = finite.length>1 && first!=null && Number.isFinite(last)?chg(last,first):null;
 			const tipOn = hv && hover!.row === c.id;
 			return {
@@ -68,7 +69,7 @@ import { historySegments, historyCallDetails } from '$lib/history-values';
 							callDetails: ui.otMetric === 'roundTrip' ? historyCallDetails(ui.scope,c.id,hi_) : '',
 							ver: `${c.rt} ${verAt(c.id, hi_,ui.machine)}`,
 							val: fv(vals[hi_]),
-							delta: hd ? hd.t + ' vs prev week' : 'first snapshot',
+							delta: reused ? 'reused evidence' : hd ? hd.t + ' vs prev week' : 'first snapshot',
 							dColor: hd ? col(hd) : 'var(--fg3)',
 							ev: EVENTS.filter((e) => e.i === hi_)
 								.map((e) => e.label)
@@ -77,7 +78,7 @@ import { historySegments, historyCallDetails } from '$lib/history-values';
 						}
 					: null,
 				now: hv ? fv(vals[hi_]) : Number.isFinite(last)?fv(last):'not measured',
-				delta: hv ? (hd ? hd.t : '—') : d8?.t || 'not measured',
+				delta: reused ? 'reused evidence' : hv ? (hd ? hd.t : '—') : d8?.t || 'not measured',
 				dColor: hv ? (hd ? col(hd) : 'var(--fg3)') : d8?col(d8):'var(--fg3)'
 			};
 		});
@@ -123,7 +124,7 @@ import { historySegments, historyCallDetails } from '$lib/history-values';
 					<th>Runtime</th>
 					<th class="mono">{sh == null ? SNAPS[0].short+' → '+SNAPS[SNAPS.length-1].short : 'snap-' + SNAPS[sh].date}</th>
 					<th class="r">{sh == null ? 'Now' : 'At snapshot'}</th>
-					<th class="r">{sh == null ? 'Δ first → last point' : 'Δ prev week'}</th>
+					<th class="r">{sh == null ? 'Δ first → last recorded' : 'Δ prev week'}</th>
 				</tr>
 			</thead>
 			<tbody>
