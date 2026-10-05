@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { aggregate, aggregateCohort } from './aggregates';
 import { fmtU } from './format';
 import { viewCell, viewData } from './view-data';
-import { historyCell, historyChange, historySegments, historyCurve, historySeries, historyCallDetails, historyReusesEvidence, historyCohort, historyVersionChanges } from './history-values';
+import { historyCell, historyChange, historySegments, historyCurve, historySeries, historyCallDetails, historyReusesEvidence, historyCohort, historyVersionChanges, historyComparison, historyCoverage } from './history-values';
 import { OTM_KEYS, historyPin } from './data/snapshot';
 import { readFileSync } from 'node:fs';
 import type { Scope } from './model';
@@ -177,6 +177,37 @@ it('does not let another historical engine change Wago workload selection or its
   expect(historyCohort(selected,'G','exec',i)).toEqual(cohort);
  }finally{cells[i]=original;}
  expect(cohort).toEqual(historyCohort(selected,'G','exec',betaIndex('m2')));
+});
+it('identifies Wasmer partial WASI coverage and compares release/main on identical recorded workloads',()=>{
+ for(const machine of ['m1','m2'] as const){
+  const selected:Scope={...scope,machine,weighting:'corpus'},h=viewData.history[machine];
+  const a=h.points.findIndex(p=>p.date==='2026-10-01'),b=h.points.findIndex(p=>p.date==='2026-10-03');
+  expect(historyCoverage(selected,'D','exec',a).complete).toBe(true);
+  const coverage=historyCoverage(selected,'D','exec',b);expect(coverage.complete).toBe(false);
+  expect(coverage.measured).toBeLessThan(coverage.reference);
+  const comparison=historyComparison(selected,'D','exec',a,b)!;
+  expect(comparison.count).toBe(coverage.measured);
+  const cells=historyCohort(selected,'D','exec',b).map(w=>({w: viewData.catalogue.find(item=>item.id===w)!,a:historyCell(machine,w,'D','steady',a).v!,b:historyCell(machine,w,'D','steady',b).v!}));
+  const groups=[...new Set(cells.map(c=>c.w.group))];
+  const mean=(key:'a'|'b')=>Math.exp(groups.reduce((sum,g)=>{const xs=cells.filter(c=>c.w.group===g);return sum+xs.reduce((total,c)=>total+Math.log(c[key]),0)/xs.length;},0)/groups.length);
+  expect(comparison.before).toBeCloseTo(mean('a'),10);expect(comparison.after).toBeCloseTo(mean('b'),10);
+  expect(comparison.ratio).toBeCloseTo(mean('b')/mean('a'),12);
+  expect(comparison.before).not.toBe(historySeries(selected,'D','exec')![a]);
+ }
+});
+it('uses current reference cohorts for every engine and every aggregate metric',()=>{
+ for(const machine of ['m1','m2'] as const)for(const [key,metric,group,col] of [['exec','steady','lat',3],['compile','compile','lat',0],['inst','inst','lat',1],['mem','rss','mem',2],['code','code','code',3]] as const){
+  const selected:Scope={...scope,machine};
+  for(const cid of viewData.applicationConfigurations){
+   const reference=aggregateCohort(selected,group,cid,col).cohort;if(!reference.length)continue;
+   const h=viewData.history[machine];
+   for(const [i] of h.points.entries()){
+    const expected=reference.filter(w=>{const c=historyCell(machine,w.id,cid,metric,i);return !!c.report&&c.st==='ok'&&c.v!=null&&Number.isFinite(c.v)&&c.v>0;}).map(w=>w.id);
+    expect(historyCohort(selected,cid,key,i)).toEqual(expected);
+    expect(historyCoverage(selected,cid,key,i).complete).toBe(expected.length===reference.length);
+   }
+  }
+ }
 });
 
 it('recalculates every sealed week on the current reference cohort, preserving missing measurements',()=>{
