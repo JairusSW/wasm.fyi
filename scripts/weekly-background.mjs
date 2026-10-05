@@ -25,7 +25,19 @@ if(action==='start'){
  console.log(`Historical backfill started (${child.pid}). Progress: ${log}`);process.exit(0);
 }
 if(prior?.status==='running'&&prior.pid!==process.pid&&alive(prior.pid))throw Error('Historical backfill supervisor already running');
-const abort=new AbortController();let stopping=false;for(const sig of ['SIGINT','SIGTERM'])process.on(sig,async()=>{if(stopping)return;stopping=true;try{const active=state.machines.hub.date;if(active){const native=remoteRoot+'/weekly-'+active.replaceAll('-','');await runCommand('ssh',[...sshFlags,host.ssh,quote(remoteNode)+' --input-type=module -e '+quote('import {readFile} from "node:fs/promises";const s=JSON.parse(await readFile('+JSON.stringify(native+'/weekly-run.json')+'));if(s.status!=="collected")try{process.kill(s.pid,"SIGTERM");}catch{}')]);}}catch(error){console.error('Remote stop:',error.message);}finally{abort.abort();}});
+const abort=new AbortController();let stopping=false;
+for(const sig of ['SIGINT','SIGTERM'])process.on(sig,async()=>{
+ if(stopping)return;stopping=true;
+ try{
+  const active=state.machines.hub.date;
+  if(active){
+   const native=remoteRoot+'/weekly-'+active.replaceAll('-','');
+   const stopCode='import {readFile} from "node:fs/promises";import {execFileSync} from "node:child_process";const s=JSON.parse(await readFile('+JSON.stringify(native+'/weekly-run.json')+'));if(s.status!=="collected")try{const command=execFileSync("ps",["-p",String(s.pid),"-o","args="],{encoding:"utf8"});if(command.includes("weekly-next.mjs")&&command.includes('+JSON.stringify(native)+'))process.kill(s.pid,"SIGTERM");}catch{}';
+   await runCommand('ssh',[...sshFlags,host.ssh,quote(remoteNode)+' --input-type=module -e '+quote(stopCode)]);
+  }
+ }catch(error){console.error('Remote stop:',error.message);}finally{abort.abort();}
+});
+
 const settings=await config(),host=settings.hosts.hub;
 const remoteSite='/home/hub/.cache/wasm-fyi/weekly-20261003/site',remoteRoot='/home/hub/.cache/wasm-fyi',remoteNode='/home/hub/.cache/wasm-fyi/toolchains/node-v26.4.0-linux-x64/bin/node';
 const sshFlags=['-o','BatchMode=yes','-o','ConnectTimeout=10','-o','ControlMaster=no','-o','ControlPath=none','-o','ServerAliveInterval=5','-o','ServerAliveCountMax=2'];
@@ -96,6 +108,9 @@ try{
      if(machine==='local')await script('weekly-retire.mjs',[native]);
      else await ssh('cd '+quote(remoteSite)+' && '+quote(remoteNode)+' scripts/weekly-retire.mjs '+quote(native));
     }
+    const nativeState=machine==='local'?await read(join(native,'weekly-run.json')):JSON.parse((await ssh('cat '+quote(native+'/weekly-run.json'))).output);
+    const gaps=Object.entries(nativeState.engines).filter(([,e])=>['unavailable','build-failed','qualification-failed'].includes(e.status));
+    if(gaps.length){progress.gaps??=[];progress.gaps.push({date,engines:Object.fromEntries(gaps)});}
     progress.previous=native;if(!progress.completed.includes(date))progress.completed.push(date);progress.status='completed';await save();
     if(progress.completed.length%state.publishEvery===0)try{await publish(machine);}catch(error){progress.publicationErrors??=[];progress.publicationErrors.push({date,reason:error.message});await save();}
    }catch(error){
@@ -108,6 +123,6 @@ try{
  };
  const jobs=await Promise.allSettled(['local','hub'].map(work));
  for(const job of jobs)if(job.status==='rejected')throw job.reason;
- await publication;state.status=state.machines.local.failed.length||state.machines.hub.failed.length?'completed-with-gaps':'completed';await save();
+ await publication;state.status=state.machines.local.failed.length||state.machines.hub.failed.length||state.machines.local.gaps?.length||state.machines.hub.gaps?.length||state.machines.local.publicationErrors?.length||state.machines.hub.publicationErrors?.length?'completed-with-gaps':'completed';await save();
  console.log('Historical backfill finished; no future Saturday runs are scheduled.');
 }catch(error){state.status=abort.signal.aborted?'paused':'failed';state.reason=error.message;await save();throw error;}

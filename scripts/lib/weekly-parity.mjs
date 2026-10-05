@@ -37,10 +37,11 @@ export function assertWeeklyParity(arm,amd,calendar,{requireComplete=false}={}) 
    if(!point)continue; // A faster host may advance; the common chart inserts a gap.
    const value=point.engines?.[pin.configurations[0]];
    if(pin.status==='unavailable'){
-    assert(!value && point.gaps?.[pin.configurations[0]]?.source.status==='unavailable','Unavailable upstream must remain an explicit gap');continue;
+    assert(!value && point.gaps?.[pin.configurations[0]]?.source.status==='unavailable','Unavailable upstream must remain an explicit gap');
+    const gap=point.gaps[pin.configurations[0]];assert.equal(gap.source.repository,pin.repository,'Upstream gap repository differs');assert.equal(new Date(gap.source.targetWeek).toISOString(),cutoff,'Upstream gap date differs');continue;
    }
    if(!value && ['build-failed','qualification-failed'].includes(point.gaps?.[pin.configurations[0]]?.type)){
-    const gap=point.gaps[pin.configurations[0]];assert.equal(gap.source.revision,pin.revision,'Build gap source hash differs');assert(gap.reason,'Build gap needs a reason');assert.deepEqual(gap.parity,{corpusSha256:week.capture.corpusSha256,recipeSha256:digest(JSON.stringify(week.capture)),harnessRevision:week.capture.harnessRevision},'Build gap capture recipe differs');continue;
+    const gap=point.gaps[pin.configurations[0]];assert.equal(gap.source.revision,pin.revision,'Build gap source hash differs');assert.equal(new Date(gap.source.targetWeek).toISOString(),cutoff,'Build gap date differs');assert(gap.reason,'Build gap needs a reason');assert.deepEqual(gap.parity,{corpusSha256:week.capture.corpusSha256,recipeSha256:digest(JSON.stringify(week.capture)),harnessRevision:week.capture.harnessRevision},'Build gap capture recipe differs');continue;
    }
    assert(value?.status==='measured' && value.reports?.length,'Incomplete paired week: '+week.date+'/'+pin.engine+'/'+(i?'amd64':'arm64'));
    assert.equal(value.revision,pin.revision,'Historical source hash differs from shared pin');
