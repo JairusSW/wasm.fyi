@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "id": "weekly-20260620-wasmtime",
+  "machine": "local",
+  "bytes": 22627917,
+  "sha256": "815eee0ebe3a69a37dbc6bde45aa4f2fba97192ad328699a94536b30b0486b46",
+  "format": "tar+gzip concatenated parts",
+  "parts": [
+    {
+      "path": "bundle.tar.gz.part-000",
+      "bytes": 22627917,
+      "sha256": "815eee0ebe3a69a37dbc6bde45aa4f2fba97192ad328699a94536b30b0486b46"
+    }
+  ],
+  "metadata": "metadata.json",
+  "metadataSha256": "a9efd46f2ae5ebeb281985a013af1857084e0db3f7ecaa597e961efb17b63d6a",
+  "download": "Concatenate parts in order, verify the full SHA-256, then tar -xzf bundle.tar.gz."
+}
