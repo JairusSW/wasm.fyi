@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "root": "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20261003/harness/wavm",
+  "controller": "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20261003/controller",
+  "harnessRevision": "9332ced5e59c0c3fd9c5aabc6ebc2ed991431eb9",
+  "controllerSha256": "da0848c6e403d2b9369c61f2afd30bcae9b66ffed96d241469aecbde5d6d4369",
+  "analyzerSha256": "57b025f2921ea1b21effc35f3d4e97393fc83256aa771ad068e7d7237d541811",
+  "pin": {
+    "engine": "wavm",
+    "targetType": "main",
+    "targetWeek": "2026-10-04T03:59:00Z",
+    "repository": "WAVM/WAVM",
+    "branch": "master",
+    "revision": "4e82bb9fecf9c1bdb4d00f96fa89063ee4382d09",
+    "committedAt": "2026-04-04T18:40:00Z",
+    "url": "https://github.com/WAVM/WAVM/commit/4e82bb9fecf9c1bdb4d00f96fa89063ee4382d09",
+    "status": "planned",
+    "configurations": [
+      "wavm"
+    ]
+  },
+  "provenance": {
+    "engine": "wavm",
+    "targetType": "main",
+    "targetWeek": "2026-10-04T03:59:00Z",
+    "repository": "WAVM/WAVM",
+    "branch": "master",
+    "revision": "4e82bb9fecf9c1bdb4d00f96fa89063ee4382d09",
+    "committedAt": "2026-04-04T18:40:00Z",
+    "url": "https://github.com/WAVM/WAVM/commit/4e82bb9fecf9c1bdb4d00f96fa89063ee4382d09",
+    "status": "planned",
+    "configurations": [
+      "wavm"
+    ],
+    "sdk": "/Users/work/.local/share/wasm-fyi/toolchains/wavm-nightly-2026-04-05/sdk",
+    "sdkSource": "/Users/work/.cache/wasm-fyi/releases/WAVM-WAVM/nightly-2026-04-05"
+  },
+  "runtime": {
+    "host_file_sha256": {
+      "/Users/work/.local/share/wasm-fyi/toolchains/wavm-nightly-2026-04-05/sdk/lib/libWAVM.0.dylib": "056949d2ffe4832217bf3f1f76944eb2b58ba259463b6704136d442c6f641842"
+    },
+    "native_dependency_policy": "macho-third-party-closure-v1; system shared-cache libraries excluded; absolute loads remain exact host prerequisites",
+    "id": "wavm",
+    "command": [
+      "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20261003/harness/wavm/bin/adapter-wavm"
+    ],
+    "file_sha256": {
+      "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20261003/harness/wavm/bin/adapter-wavm": "5581a4a577df81acfc8f32d8ce6678fcace5d8ae141334c63b90fc50a8df31ed"
+    }
+  },
+  "env": {
+    "WASMBENCH_V8_COMPILER_MODE": "optimizing-only",
+    "WASMBENCH_WAVM_SDK": "/Users/work/.local/share/wasm-fyi/toolchains/wavm-nightly-2026-04-05/sdk",
+    "WASMBENCH_WAVM_VERSION": "nightly-2026-04-05-4e82bb9"
+  },
+  "builtAt": "2026-10-05T00:11:19.706Z"
+}

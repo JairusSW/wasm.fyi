@@ -1,0 +1,59 @@
+{
+  "schema": 1,
+  "root": "/home/hub/.cache/wasm-fyi/weekly-20261003/harness/wago",
+  "controller": "/home/hub/.cache/wasm-fyi/weekly-20261003/controller",
+  "harnessRevision": "9332ced5e59c0c3fd9c5aabc6ebc2ed991431eb9",
+  "controllerSha256": "34741da126f5a73c2ae569f6a7fd5ef7d54a8e30198170566abed4011d6ad985",
+  "analyzerSha256": "649d645c5630c68c919394f381ccca528f14e946cc3c16adcdd07ea227440d65",
+  "pin": {
+    "engine": "wago",
+    "targetType": "main",
+    "targetWeek": "2026-10-04T03:59:00Z",
+    "repository": "wago-org/wago",
+    "branch": "main",
+    "revision": "0ef007c70581bf56155a4daf6fce8bda3f2c5ff1",
+    "committedAt": "2026-10-04T01:05:16Z",
+    "url": "https://github.com/wago-org/wago/commit/0ef007c70581bf56155a4daf6fce8bda3f2c5ff1",
+    "status": "planned",
+    "configurations": [
+      "wago"
+    ]
+  },
+  "provenance": {
+    "engine": "wago",
+    "targetType": "main",
+    "targetWeek": "2026-10-04T03:59:00Z",
+    "repository": "wago-org/wago",
+    "branch": "main",
+    "revision": "0ef007c70581bf56155a4daf6fce8bda3f2c5ff1",
+    "committedAt": "2026-10-04T01:05:16Z",
+    "url": "https://github.com/wago-org/wago/commit/0ef007c70581bf56155a4daf6fce8bda3f2c5ff1",
+    "status": "planned",
+    "configurations": [
+      "wago"
+    ]
+  },
+  "runtime": {
+    "elf_startup_dependencies": {
+      "version": "linux-glibc-startup-closure-v1",
+      "interpreter": {
+        "path": "",
+        "sha256": ""
+      },
+      "libraries": {},
+      "control_files": null
+    },
+    "native_dependency_policy": "linux-glibc-startup-closure-v1; explicit trusted loader --list; exact startup library hashes and loader controls; re-resolved before execution; excludes later dlopen and kernel vDSO",
+    "id": "wago",
+    "command": [
+      "/home/hub/.cache/wasm-fyi/weekly-20261003/harness/wago/bin/adapter-wago"
+    ],
+    "file_sha256": {
+      "/home/hub/.cache/wasm-fyi/weekly-20261003/harness/wago/bin/adapter-wago": "94ee2b5300a8d089597c8ca03df023bf685c6f0bf793c9a56791af7499472398"
+    }
+  },
+  "env": {
+    "WASMBENCH_V8_COMPILER_MODE": "optimizing-only"
+  },
+  "builtAt": "2026-10-05T00:18:22.872Z"
+}
