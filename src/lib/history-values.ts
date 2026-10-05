@@ -1,4 +1,4 @@
-import { aggregate, aggregateCohort } from './aggregates';
+import { aggregate, aggregateCohort, measuredCohort, cohortWeights, weightedGeometricMean } from './aggregates';
 import { fmtU } from './format';
 import { viewData, type ViewCell } from './view-data';
 import type { CfgId, MachineId, MetricKey, OtMetricKey } from './data/types';
@@ -64,14 +64,13 @@ export function historySeries(s:Scope,cid:CfgId,key:OtMetricKey,workload=''):num
 		if(!h.workloads.some(w=>series(w,cid).some(c=>c.report)))return null;
 		return h.points.map((_,i)=>h.workloads.some(w=>historyCell(s.machine,w,cid,'steady',i).report)?h.workloads.filter(w=>historyCell(s.machine,w,cid,'steady',i).st==='ok').length:Number.NaN);
 	}
-	const groups=new Map(viewData.catalogue.map(w=>[w.id,w.group]));
+	const catalogue=new Map(viewData.catalogue.map(w=>[w.id,w]));
 	const values=h.points.map((point,i)=>{
 		const current=point.currentLatency?.[cid];
 		if(current && ['exec','compile','inst'].includes(key))return aggregate({...s,snapshot:current},'lat',cid,key==='exec'?3:key==='compile'?0:1)?.v ?? Number.NaN;
 		const cohort=historyCohort(s,cid,key,i);
 		if(point.status!=='measured'||!cohort.length)return Number.NaN;
-		const counts=new Map<string,number>();for(const w of cohort){const g=groups.get(w)!;counts.set(g,(counts.get(g)||0)+1);}
-		return Math.exp(cohort.reduce((total,w)=>total+Math.log(historyCell(s.machine,w,cid,metric,i).v!)*(s.weighting==='workload'?1/cohort.length:1/(counts.size*counts.get(groups.get(w)!)!)),0));
+		return weightedGeometricMean(cohort.map(w=>historyCell(s.machine,w,cid,metric,i).v!),cohortWeights(cohort.map(w=>catalogue.get(w)!),s.weighting));
 	});
 	return values.some(Number.isFinite)?values:null;
 }
@@ -82,11 +81,10 @@ export function historyCohort(s:Scope,cid:CfgId,key:OtMetricKey,i:number):string
  const h=viewData.history[s.machine],metric=metricOf[key];
  const current=h.points[i]?.currentLatency?.[cid];
  if(current && ['exec','compile','inst'].includes(key))return aggregateCohort({...s,snapshot:current},'lat',cid,key==='exec'?3:key==='compile'?0:1).cohort.map(w=>w.id);
- const nonFeatures=new Set(viewData.catalogue.filter(w=>!w.id.startsWith('features/')).map(w=>w.id));
- const workloads=['exec','compile','inst'].includes(key)?h.workloads.filter(w=>nonFeatures.has(w)):h.workloads;
- const requested=[...new Set([...(Object.keys(viewData.configurations) as CfgId[]).filter(c=>!s.hide[c]),cid,s.baseline])];
- const participants=requested.filter(c=>workloads.some(w=>valid(historyCell(s.machine,w,c,metric,i))));
- return participants.includes(cid)?workloads.filter(w=>participants.every(c=>valid(historyCell(s.machine,w,c,metric,i)))):[];
+ const recorded=new Set(h.workloads);
+ const workloads=viewData.catalogue.filter(w=>recorded.has(w.id)&&(!['exec','compile','inst'].includes(key)||!w.id.startsWith('features/')));
+ const requested=[...new Set([...viewData.applicationConfigurations.filter(c=>!s.hide[c]),s.baseline])];
+ return measuredCohort(workloads,requested,cid,(w,c)=>historyCell(s.machine,w,c,metric,i)).cohort.map(w=>w.id);
 }
 export function historyAggregateDetails(s:Scope,cid:CfgId,key:OtMetricKey,i:number):string {
  if(!['exec','compile','inst'].includes(key))return '';
