@@ -9,6 +9,7 @@ import {validateData} from './lib/validate-data.mjs';
 import {appendReports,writeIndex} from './lib/snapshot-index.mjs';
 import {verifyParentBundle} from './lib/benchmark-bundle.mjs';
 import {runCommand} from './lib/benchmark-process.mjs';
+import {assertCaptureParity} from './lib/weekly-parity.mjs';
 import {sharedWeeklySnapshot} from './lib/weekly-calendar.mjs';
 const [directoryArg,machine,...selectedEngines]=process.argv.slice(2),directory=resolve(directoryArg);
 const engines=selectedEngines.length?selectedEngines:['wago','wazero','wasmtime','v8','wavm','wasmer'];
@@ -17,9 +18,10 @@ assert(['local','hub'].includes(machine),'Expected local or hub');
 const dataset=join(site,'data',machine==='local'?'history':'history-hub');
 const previous=await validateData(dataset),weekly=JSON.parse(await readFile(join(dataset,'weekly.json')));
 const pins=JSON.parse(await readFile(join(directory,'pins.json'))),cutoff=new Date(pins.cutoff).toISOString();
-const sharedSnapshot=sharedWeeklySnapshot(pins,JSON.parse(await readFile(join(site,'data/history-calendar.json'))));
+const calendar=JSON.parse(await readFile(join(site,'data/history-calendar.json')));
+const sharedSnapshot=sharedWeeklySnapshot(pins,calendar);
 let target=weekly.results.find(w=>new Date(w.targetWeek).toISOString()===cutoff);
-if(!target){target={targetWeek:pins.cutoff,revision:pins.pins.find(p=>p.engine==='wago').revision,status:'measured',engines:{}};weekly.results.push(target);}
+if(!target){target={targetWeek:pins.cutoff,revision:pins.pins.find(p=>p.engine==='wago').revision??'',status:'measured',engines:{}};weekly.results.push(target);}
 target.targetWeek=sharedSnapshot.cutoff;
 const reuse=await readFile(join(directory,'reuse.json'),'utf8').then(JSON.parse,()=>null);
 const staged=await mkdtemp(join(site,'data','.weekly-'));
@@ -29,8 +31,19 @@ try {
  const oldWago=previous.reports.find(r=>r.runId===target.reports?.[0]?.runId || r.runId===target.runId)?.runtimes.find(r=>r.id==='wago');
  target.engines ??= {wago:{revision:target.revision,status:target.status,collectedAt:target.collectedAt,reports:target.reports || [{runId:target.runId,collectedAt:target.collectedAt,reportSha256:target.reportSha256}],runtimeVersion:oldWago?.description.runtime_version,backend:oldWago?.description.backend}};
  for(const engine of engines) {
+  const requested=pins.pins.find(p=>p.engine===engine);
+  if(requested.status==='unavailable'){
+   target.gaps??={};target.gaps[requested.configurations[0]]={source:requested,reason:requested.reason};
+   delete target.engines[requested.configurations[0]];continue;
+  }
+  const supervisor=await readFile(join(directory,'weekly-run.json'),'utf8').then(JSON.parse,()=>null);
+  const gap=supervisor?.engines[engine];
+  if(['build-failed','qualification-failed'].includes(gap?.status)){
+   target.gaps??={};target.gaps[requested.configurations[0]]={source:requested,type:gap.status,reason:gap.reason,parity:{corpusSha256:calendar.weeks.find(w=>w.date===sharedSnapshot.date).capture.corpusSha256,recipeSha256:sharedSnapshot.captureSha256,harnessRevision:'9332ced5e59c0c3fd9c5aabc6ebc2ed991431eb9'}};
+   delete target.engines[requested.configurations[0]];continue;
+  }
   if(reuse?.reused.some(r=>r.engine===engine)){
-   const pin=pins.pins.find(p=>p.engine===engine),sourceDirectory=resolve(site,reuse.from),session=join(sourceDirectory,'sessions',engine);
+   const pin=pins.pins.find(p=>p.engine===engine),sourceDirectory=resolve(site,reuse.reused.find(r=>r.engine===engine).from??reuse.from),session=join(sourceDirectory,'sessions',engine);
    const plan=JSON.parse(await readFile(join(session,'plan.json'))),state=JSON.parse(await readFile(join(session,'state.json'))),receipt=JSON.parse(await readFile(join(sourceDirectory,engine+'-build.json')));
    assert(['completed','completed-with-failures'].includes(state.status),'Reuse requires completed corpus jobs');
    assert.equal(pin.revision,plan.sourcePin.revision,'Reuse source hash differs');
@@ -45,7 +58,7 @@ try {
    const origin=weekly.results.find(w=>new Date(w.targetWeek).toISOString()===new Date(plan.sourcePin.targetWeek).toISOString());
    const point=origin?.engines?.[receipt.runtime.id];assert(point?.reports?.length,'Reuse evidence has not been published');
    for(const ref of point.reports)assert(previous.reports.some(r=>r.runId===ref.runId&&r.sourceReportSha256===ref.reportSha256&&r.created===ref.collectedAt),'Reuse report reference differs');
-   target.engines[receipt.runtime.id]={...point,source:pin,reusedFrom:origin.targetWeek};
+   target.engines[receipt.runtime.id]={...point,source:pin,reusedFrom:origin.targetWeek,parity:assertCaptureParity(plan,receipt,calendar)};
    console.log(engine,machine,pin.revision.slice(0,12),'unchanged source: reused existing report and bundle references');
    continue;
   }
@@ -74,6 +87,7 @@ try {
   imported.reports.sort((a,b)=>b.created.localeCompare(a.created));
   for(const report of imported.reports){
    assert.equal(report.host.os,machine==='local'?'darwin':'linux');
+   assert.equal(report.host.arch,machine==='local'?'arm64':'amd64','Historical machine architecture differs');
    assert.equal(report.runtimes.length,1);assert.equal(report.runtimes[0].id,runtime);
    assert.equal(report.runtimes[0].description.runtime_version,description.runtime_version);
    for(const w of report.workloads)assert(plan.jobs.some(j=>j.workloads.some(expected=>expected.id===w.id&&expected.sha256===w.sha256)),'Artifact differs from pinned plan');
@@ -82,13 +96,14 @@ try {
   merged=appendReports(merged,imported.reports);
   for(const report of imported.reports)for(const name of [report.evidence,report.trialsEvidence,report.throughputEvidence])if(name)await cp(join(incoming,name),join(staged,name));
   target.engines[runtime]={revision:plan.sourcePin.revision,runtimeVersion:description.runtime_version,backend:description.backend,status:'measured',collectedAt:imported.reports[0].created,
-   source:plan.sourcePin,harnessRevision:receipt.harnessRevision,reports:imported.reports.map(r=>({runId:r.runId,collectedAt:r.created,reportSha256:r.sourceReportSha256}))};
+   source:plan.sourcePin,harnessRevision:receipt.harnessRevision,parity:assertCaptureParity(plan,receipt,calendar),reports:imported.reports.map(r=>({runId:r.runId,collectedAt:r.created,reportSha256:r.sourceReportSha256}))};
   const retained=join(site,'data/benchmark-runs',plan.id,machine);await mkdir(retained,{recursive:true});
   await cp(join(session,'bundle'),join(retained,'bundle'),{recursive:true});
   for(const [file,from] of [['plan.json',join(session,'plan.json')],['qualification.json',join(session,'qualification.json')],['build.json',join(directory,engine+'-build.json')],['state.json',join(session,'state.json')]])await cp(from,join(retained,file));
   console.log(engine,machine,plan.sourcePin.revision.slice(0,12),imported.reports.length,'sealed reports retained');
  }
  // Keep the legacy Wago fields useful to older consumers while exposing all six pins.
+ target.status=Object.keys(target.engines).length?'measured':'not-collected';
  if(target.engines.wago)Object.assign(target,{revision:target.engines.wago.revision,collectedAt:target.engines.wago.collectedAt,reports:target.engines.wago.reports});
  delete target.runId;delete target.reportSha256;
  for(const point of weekly.results)point.targetWeek=new Date(point.targetWeek).toISOString();

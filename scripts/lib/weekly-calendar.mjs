@@ -24,10 +24,11 @@ export function weeklyPinIdentity(set) {
   assert.equal(matches.length,1,'Expected one pin for '+engine);
   const p=matches[0];
   assert.equal(new Date(p.targetWeek).toISOString(),cutoff,'Engine date differs from shared cutoff: '+engine);
-  assert.equal(p.status,'planned','Missing exact source pin: '+engine);
-  assert(/^[a-f0-9]{40}$/.test(p.revision),'Missing exact source revision: '+engine);
-  assert(Number.isFinite(+new Date(p.committedAt)) && +new Date(p.committedAt)<=+new Date(cutoff),'Source commit is newer than cutoff: '+engine);
-  return {engine,repository:p.repository,revision:p.revision,configurations:p.configurations};
+  if(p.status==='planned'){
+   assert(/^[a-f0-9]{40}$/.test(p.revision),'Missing exact source revision: '+engine);
+   assert(Number.isFinite(+new Date(p.committedAt)) && +new Date(p.committedAt)<=+new Date(cutoff),'Source commit is newer than cutoff: '+engine);
+  } else assert(p.status==='unavailable' && typeof p.reason==='string' && p.reason.length,'Missing source pin or explicit upstream gap: '+engine);
+  return {engine,repository:p.repository,status:p.status,revision:p.revision??null,configurations:p.configurations};
  });
  return {date,cutoff,zone:weeklyZone,pins,identity:digest(JSON.stringify({cutoff,zone:weeklyZone,pins}))};
 }
@@ -39,5 +40,6 @@ export function sharedWeeklySnapshot(set,calendar) {
  const entry=calendar.weeks.find(w=>w.date===snapshot.date);
  assert(entry,'Register the shared date with just history-week-plan YYYY-MM-DD before collecting: '+snapshot.date);
  assert.equal(snapshot.identity,weeklyPinIdentity(entry).identity,'Host cutoff or source pins differ from shared calendar');
- return {date:snapshot.date,cutoff:snapshot.cutoff,zone:snapshot.zone,pinsSha256:snapshot.identity};
+ assert(entry.capture,'Shared historical week needs a frozen capture recipe');
+ return {date:snapshot.date,cutoff:snapshot.cutoff,zone:snapshot.zone,pinsSha256:snapshot.identity,captureSha256:digest(JSON.stringify(entry.capture))};
 }

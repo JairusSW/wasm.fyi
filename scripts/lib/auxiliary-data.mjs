@@ -1,3 +1,4 @@
+import {stageHistoryArchive} from './stage-history-archive.mjs';
 import {cloneCopy as cp} from './copy.mjs';
 import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile, readdir } from 'node:fs/promises';
@@ -82,7 +83,7 @@ export async function stageAuxiliary(destination) {
     assert(weekly.results.length===weekly.weeks.length,'Incomplete weekly inventory');
     for(const week of weekly.results) {
       if(week.engines){
-        assert(week.status==='measured' && Object.keys(week.engines).length,'Missing historical measured engines');
+        assert((week.status==='measured' && Object.keys(week.engines).length)||(week.status==='not-collected'&&Object.values(week.gaps??{}).every(g=>g.reason)),'Missing historical measured engines or explicit gaps');
         continue; // Per-engine receipts below also support points without Wago.
       }
       const receipts=week.reports||[week];
@@ -112,7 +113,7 @@ export async function stageAuxiliary(destination) {
     // Keep the comparison baseline with history; daily retention cannot remove it.
     assert(weekly.baseline && index.reports.some(r=>r.id===weekly.baseline.report && r.evidenceSha256===weekly.baseline.evidenceSha256),'Missing pinned historical comparison baseline');
     const target=join(destination,targetName);await mkdir(target,{recursive:true});
-    for(const name of [...datasetFiles(index),'weekly.json'])await cp(join(source,name),join(target,name));
+    if(!await stageHistoryArchive(source,target,index))for(const name of [...datasetFiles(index),'weekly.json'])await cp(join(source,name),join(target,name));
   }
   const source=join(site,'data/threads');
   if(await exists(source)) {

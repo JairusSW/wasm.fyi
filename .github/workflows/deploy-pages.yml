@@ -30,6 +30,7 @@ jobs:
         run: just verify
         env:
           BASE_PATH: ${{ steps.pages.outputs.base_path }}
+          WASMBENCH_THIN_HISTORY: "1"
       - uses: actions/upload-pages-artifact@v5
         with:
           path: build

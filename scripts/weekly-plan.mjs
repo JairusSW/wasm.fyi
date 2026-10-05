@@ -2,6 +2,9 @@
 import assert from 'node:assert/strict';
 import {readFile,mkdir} from 'node:fs/promises';
 import {join} from 'node:path';
+import {config} from './lib/wasmbench.mjs';
+import {readCache,portableWorkloads} from './lib/benchmark-plan.mjs';
+import {performanceCorpusIdentity} from './lib/performance-history.mjs';
 import {site} from './lib/wasmbench.mjs';
 import {atomicJSON} from './lib/benchmark-plan.mjs';
 import {pinMain} from './lib/engine-sources.mjs';
@@ -16,9 +19,13 @@ if(!entry){
  const pins=[];
  for(const engine of weeklyEngines){
   const [pin]=await pinMain(engine,[cutoff]);
+  assert(pin.status==='planned'||pin.reason==='No branch commit was available by this Saturday.','Could not resolve '+engine+': '+pin.reason);
   pins.push({...pin,configurations:configurations[engine]});
  }
- entry={date,cutoff,zone:weeklyZone,pins};
+ const settings=await config(),workloads=portableWorkloads(site,(await readCache(site)).filter(w=>!w.id.startsWith('features/')));
+ const {runtimes,...collection}={...settings.collection,includeFeatures:false,workers:1};
+ const capture={harnessRevision:'9332ced5e59c0c3fd9c5aabc6ebc2ed991431eb9',corpusSha256:performanceCorpusIdentity(workloads),collection,workers:'25%',corpora:new Set(workloads.map(w=>w.sha256)).size};
+ entry={date,cutoff,zone:weeklyZone,pins,capture};
  weeklyPinIdentity(entry);
  calendar.weeks.push(entry);calendar.weeks.sort((a,b)=>a.date.localeCompare(b.date));
  await atomicJSON(path,calendar);

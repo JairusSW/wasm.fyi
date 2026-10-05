@@ -58,11 +58,13 @@ if(engine==='wago') {
  for(const entry of await (await import('node:fs/promises')).readdir(join(root,'adapters/wasmtime/src')))if(entry.endsWith('.rs')){
   const file=join(root,'adapters/wasmtime/src',entry);await writeFile(file,(await readFile(file,'utf8')).replaceAll('46.0.1',pin.revision));
  }
- const commands=join(root,'adapters/wasmtime/src/commands.rs');
+ const commands=join(root,'adapters/wasmtime/src/commands.rs'),p2=join(root,'adapters/wasmtime/src/p2commands.rs');
+ const fsPerms=(await run('rg',['-l','pub (struct|enum) FsPerms',join(source,'crates/wasi/src')],{check:false})).code===0;
+ if(fsPerms){
  await writeFile(commands,(await readFile(commands,'utf8')).replace('DirPerms, FilePerms,','FsPerms,').replace('DirPerms::READ, FilePerms::READ','FsPerms::ReadOnly'));
- const p2=join(root,'adapters/wasmtime/src/p2commands.rs');
  await writeFile(p2,(await readFile(p2,'utf8')).replace('DirPerms, FilePerms,','FsPerms,').replace(/            let dir_perms = if writable \{[\s\S]*?builder\.preopened_dir\(staging\.path\(\), "\/", dir_perms, file_perms\)\?;/,'            let perms = if writable { FsPerms::ReadWrite } else { FsPerms::ReadOnly };\n            builder.preopened_dir(staging.path(), "/", perms)?;'));
- provenance.compatibility={api:'Wasmtime 50 FsPerms',sourceSha256:digest(await readFile(commands)),p2Sha256:digest(await readFile(p2))};
+ }
+ provenance.compatibility={api:fsPerms?'FsPerms':'DirPerms/FilePerms',sourceSha256:digest(await readFile(commands)),p2Sha256:digest(await readFile(p2))};
  await run('cargo',['build','--release','--manifest-path',cargo,'--bin','adapter-wasmtime']);
 } else if(engine==='wasmer') {
  provenance.sdkVersion=(await readFile(join(source,'Cargo.toml'),'utf8')).split('[workspace.package]')[1]?.split('\n[')[0].match(/^version\s*=\s*"([^"]+)"/m)?.[1];

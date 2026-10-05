@@ -19,3 +19,7 @@ test('source dates and pins are host independent and reject an AMD64-only date c
  assert.throws(()=>sharedWeeklySnapshot(changedSource,calendar),/source pins differ/);
  assert.throws(()=>weeklyPinIdentity({...original,pins:original.pins.slice(1)}),/all six/);
 });
+test('an upstream that did not exist at a cutoff is the same explicit gap on both hosts',()=>{
+ const entry=structuredClone(calendar.weeks[0]);entry.pins[0]={...entry.pins[0],status:'unavailable',reason:'No branch commit was available by this Saturday.'};delete entry.pins[0].revision;delete entry.pins[0].committedAt;
+ const shared={...calendar,weeks:[entry]};assert.deepEqual(sharedWeeklySnapshot(entry,shared),sharedWeeklySnapshot(structuredClone(entry),shared));
+});

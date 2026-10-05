@@ -103,3 +103,27 @@ corpus contracts and measurement recipe.
 
 Remote historical collection receives the coordinator's saved history plan;
 it does not resolve cutoffs or upstream revisions independently on AMD64.
+
+
+Run `just bench --history --deploy` to backfill the saved four-month window on
+both prepared native workspaces. It starts a durable background supervisor;
+`just bench-history-status` shows each machine's week, completed snapshots and
+explicit failures, and `just bench-history-stop` stops it at resumable corpus
+boundaries. Run the same command to resume. This is a finite historical queue;
+it does not schedule future Saturday runs.
+
+Both machines share one Eastern cutoff/source/corpus/recipe calendar. Each takes
+its next week independently. Unfinished machine/date pairs remain gaps on the
+shared chart timeline. After every two completed weekly snapshots per machine,
+the supervisor refreshes the local site and, with `--deploy`, publishes through
+an isolated main-based checkout and waits for Pages. A final smaller batch also
+publishes. Unavailable upstream commits and host build/qualification failures
+remain explicit gaps; they do not receive benchmark values. Logs and completed
+corpus evidence survive interruptions. Completed build caches are retired while
+native runners, analyzers, qualification receipts and sealed evidence remain.
+
+Production builds serve historical raw reports and projections through a small
+archive index with immutable GitHub commit URLs and SHA-256 digests. The original
+source index and weekly timeline are retained. Local unpublished evidence stays
+local. This keeps longer backfills within the Pages artifact limit without
+removing historical evidence or changing measured values.
