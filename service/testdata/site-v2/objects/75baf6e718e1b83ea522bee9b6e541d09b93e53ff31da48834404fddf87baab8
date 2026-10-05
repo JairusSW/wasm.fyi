@@ -1,0 +1,1 @@
+{"kind":"metric","id":"fc4690f21369bd137a410bd4844cf33294e19f20732929b275b677702784aa0f","data":{"name":"time.wall","version":1,"unit":"ns","scope":"embedding_api","boundary":"Monotonic elapsed time for the declared local operation batch; divide only by recorded operation count.","missing_policy":"unavailable"}}

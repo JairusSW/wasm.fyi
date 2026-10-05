@@ -1,0 +1,38 @@
+name: API service
+on:
+  push:
+    paths: ['service/**', 'schemas/**', 'src/lib/api/**', 'scripts/*api*', 'scripts/lib/api-publish.mjs', 'scripts/lib/corpus-collection.mjs', 'scripts/benchmark*.mjs', '.github/workflows/api-service.yml']
+  pull_request:
+    paths: ['service/**', 'schemas/**', 'src/lib/api/**', 'scripts/*api*', 'scripts/lib/api-publish.mjs', 'scripts/lib/corpus-collection.mjs', 'scripts/benchmark*.mjs', '.github/workflows/api-service.yml']
+jobs:
+  service:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: service/go.mod
+          cache-dependency-path: service/go.sum
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: go test -race ./... && go vet ./...
+        working-directory: service
+        env:
+          GOFLAGS: -mod=readonly
+          GOWORK: 'off'
+      - run: node scripts/check-api-dependencies.mjs
+      - run: node scripts/generate-api-types.mjs --check
+      - run: node --test scripts/api-publication.test.mjs scripts/benchmark-workflow.test.mjs
+  client:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec vitest run src/lib/api/client.test.ts
+      - run: pnpm exec tsc --ignoreConfig --noEmit --target es2022 --module esnext --moduleResolution bundler --skipLibCheck src/lib/api/client.ts

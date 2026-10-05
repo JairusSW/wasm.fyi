@@ -1,0 +1,1462 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "wasm.fyi experimental read/publication API",
+    "version": "0.1.0",
+    "description": "Development checkpoint; no cohort/overview/frontend cutover yet. Source summaries are producer-owned; import integrity is separate from source verification and operator qualification."
+  },
+  "paths": {
+    "/api/v1/results": {
+      "get": {
+        "summary": "Page results within one immutable revision",
+        "parameters": [
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 1,
+              "maximum": 1000
+            }
+          },
+          {
+            "name": "environment",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "runtime",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "configuration",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "contract",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "workload",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "metric",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "scenario",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "profile",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "statistic",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "selection",
+            "in": "query",
+            "schema": {
+              "enum": [
+                "current",
+                "previous",
+                "s1",
+                "s2"
+              ],
+              "default": "current"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "enum": [
+                "catalog",
+                "value",
+                "-value"
+              ],
+              "default": "catalog"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded revision-scoped response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Response400_1"
+          },
+          "404": {
+            "$ref": "#/components/responses/Response404_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/Response422_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/Response429_4"
+          }
+        }
+      }
+    },
+    "/api/v1/reports": {
+      "get": {
+        "summary": "Page reports within one immutable revision",
+        "parameters": [
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 1,
+              "maximum": 1000
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded revision-scoped response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Response400_1"
+          },
+          "404": {
+            "$ref": "#/components/responses/Response404_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/Response422_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/Response429_4"
+          }
+        }
+      }
+    },
+    "/api/v1/tracks": {
+      "get": {
+        "summary": "Page tracks within one immutable revision",
+        "parameters": [
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 1,
+              "maximum": 1000
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded revision-scoped response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Response400_1"
+          },
+          "404": {
+            "$ref": "#/components/responses/Response404_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/Response422_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/Response429_4"
+          }
+        }
+      }
+    },
+    "/api/v1/metrics": {
+      "get": {
+        "summary": "Page metrics within one immutable revision",
+        "parameters": [
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 1,
+              "maximum": 1000
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded revision-scoped response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Response400_1"
+          },
+          "404": {
+            "$ref": "#/components/responses/Response404_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/Response422_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/Response429_4"
+          }
+        }
+      }
+    },
+    "/api/v1/configurations": {
+      "get": {
+        "summary": "Page configurations within one immutable revision",
+        "parameters": [
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 1,
+              "maximum": 1000
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded revision-scoped response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Response400_1"
+          },
+          "404": {
+            "$ref": "#/components/responses/Response404_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/Response422_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/Response429_4"
+          }
+        }
+      }
+    },
+    "/api/v1/environments": {
+      "get": {
+        "summary": "Page environments within one immutable revision",
+        "parameters": [
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 1,
+              "maximum": 1000
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded revision-scoped response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Response400_1"
+          },
+          "404": {
+            "$ref": "#/components/responses/Response404_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/Response422_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/Response429_4"
+          }
+        }
+      }
+    },
+    "/api/v1/workloads": {
+      "get": {
+        "summary": "Page workloads within one immutable revision",
+        "parameters": [
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 1,
+              "maximum": 1000
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded revision-scoped response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Response400_1"
+          },
+          "404": {
+            "$ref": "#/components/responses/Response404_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/Response422_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/Response429_4"
+          }
+        }
+      }
+    },
+    "/api/v1/artifacts": {
+      "get": {
+        "summary": "Page artifacts within one immutable revision",
+        "parameters": [
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 1,
+              "maximum": 1000
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded revision-scoped response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Response400_1"
+          },
+          "404": {
+            "$ref": "#/components/responses/Response404_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/Response422_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/Response429_4"
+          }
+        }
+      }
+    },
+    "/api/v1/history": {
+      "get": {
+        "summary": "Page history within one immutable revision",
+        "parameters": [
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 1,
+              "maximum": 1000
+            }
+          },
+          {
+            "name": "environment",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "runtime",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "configuration",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "contract",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "workload",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "metric",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "scenario",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "profile",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "statistic",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "selection",
+            "in": "query",
+            "schema": {
+              "enum": [
+                "current",
+                "previous",
+                "s1",
+                "s2"
+              ],
+              "default": "current"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "enum": [
+                "catalog",
+                "value",
+                "-value"
+              ],
+              "default": "catalog"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded revision-scoped response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Response400_1"
+          },
+          "404": {
+            "$ref": "#/components/responses/Response404_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/Response422_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/Response429_4"
+          }
+        }
+      }
+    },
+    "/api/v1/revisions": {
+      "get": {
+        "summary": "Page revisions within one immutable revision",
+        "parameters": [
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 1,
+              "maximum": 1000
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded revision-scoped response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Response400_1"
+          },
+          "404": {
+            "$ref": "#/components/responses/Response404_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/Response422_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/Response429_4"
+          }
+        }
+      }
+    },
+    "/api/v1/results/{id}": {
+      "get": {
+        "summary": "Read one published results record",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./site-v2.schema.json#/$defs/Digest"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded revision-scoped response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Response400_1"
+          },
+          "404": {
+            "$ref": "#/components/responses/Response404_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/Response422_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/Response429_4"
+          }
+        }
+      }
+    },
+    "/api/v1/reports/{id}": {
+      "get": {
+        "summary": "Read one published reports record",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./site-v2.schema.json#/$defs/Digest"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded revision-scoped response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Response400_1"
+          },
+          "404": {
+            "$ref": "#/components/responses/Response404_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/Response422_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/Response429_4"
+          }
+        }
+      }
+    },
+    "/api/v1/tracks/{id}": {
+      "get": {
+        "summary": "Read one published tracks record",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./site-v2.schema.json#/$defs/Digest"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded revision-scoped response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Response400_1"
+          },
+          "404": {
+            "$ref": "#/components/responses/Response404_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/Response422_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/Response429_4"
+          }
+        }
+      }
+    },
+    "/api/v1/metrics/{id}": {
+      "get": {
+        "summary": "Read one published metrics record",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./site-v2.schema.json#/$defs/Digest"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded revision-scoped response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Response400_1"
+          },
+          "404": {
+            "$ref": "#/components/responses/Response404_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/Response422_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/Response429_4"
+          }
+        }
+      }
+    },
+    "/api/v1/configurations/{id}": {
+      "get": {
+        "summary": "Read one published configurations record",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./site-v2.schema.json#/$defs/Digest"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded revision-scoped response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Response400_1"
+          },
+          "404": {
+            "$ref": "#/components/responses/Response404_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/Response422_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/Response429_4"
+          }
+        }
+      }
+    },
+    "/api/v1/environments/{id}": {
+      "get": {
+        "summary": "Read one published environments record",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./site-v2.schema.json#/$defs/Digest"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded revision-scoped response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Response400_1"
+          },
+          "404": {
+            "$ref": "#/components/responses/Response404_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/Response422_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/Response429_4"
+          }
+        }
+      }
+    },
+    "/api/v1/workloads/{id}": {
+      "get": {
+        "summary": "Read one published workloads record",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./site-v2.schema.json#/$defs/Digest"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded revision-scoped response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Response400_1"
+          },
+          "404": {
+            "$ref": "#/components/responses/Response404_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/Response422_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/Response429_4"
+          }
+        }
+      }
+    },
+    "/api/v1/artifacts/{id}": {
+      "get": {
+        "summary": "Read one published artifacts record",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./site-v2.schema.json#/$defs/Digest"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded revision-scoped response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Response400_1"
+          },
+          "404": {
+            "$ref": "#/components/responses/Response404_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/Response422_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/Response429_4"
+          }
+        }
+      }
+    },
+    "/api/v1/revisions/{id}": {
+      "get": {
+        "summary": "Read one published revisions record",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./site-v2.schema.json#/$defs/Digest"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded revision-scoped response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Response400_1"
+          },
+          "404": {
+            "$ref": "#/components/responses/Response404_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/Response422_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/Response429_4"
+          }
+        }
+      }
+    },
+    "/api/v1/manifest": {
+      "get": {
+        "summary": "Resolve current revision without catalog or measurement preloads",
+        "responses": {
+          "200": {
+            "description": "Small manifest; revalidate current pointer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./site-v2.schema.json#/$defs/DatasetManifest"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/results/{id}/samples": {
+      "get": {
+        "summary": "List trial chunk references or read one reachable evidence chunk",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./site-v2.schema.json#/$defs/Digest"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "chunk",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded revision-scoped response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Response400_1"
+          },
+          "404": {
+            "$ref": "#/components/responses/Response404_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/Response422_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/Response429_4"
+          }
+        }
+      }
+    },
+    "/admin/v1/imports": {
+      "post": {
+        "security": [
+          {
+            "publisherToken": []
+          }
+        ],
+        "summary": "Stage one completed corpus job",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./site-v2.schema.json#/$defs/CompletedJob"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "$ref": "#/components/responses/Response201_5"
+          },
+          "400": {
+            "$ref": "#/components/responses/Response400_6"
+          },
+          "401": {
+            "$ref": "#/components/responses/Response401_7"
+          }
+        }
+      }
+    },
+    "/admin/v1/imports/{id}/missing": {
+      "get": {
+        "security": [
+          {
+            "publisherToken": []
+          }
+        ],
+        "summary": "Read at most 100 missing-object descriptors; re-request offset zero after uploads",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./site-v2.schema.json#/$defs/Digest"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Response200_8"
+          },
+          "401": {
+            "$ref": "#/components/responses/Response401_7"
+          }
+        }
+      }
+    },
+    "/admin/v1/imports/{id}/commit": {
+      "post": {
+        "security": [
+          {
+            "publisherToken": []
+          }
+        ],
+        "summary": "Validate references and publish atomically; duplicate delivery returns original revision",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./site-v2.schema.json#/$defs/Digest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Response200_9"
+          },
+          "400": {
+            "$ref": "#/components/responses/Response400_10"
+          },
+          "401": {
+            "$ref": "#/components/responses/Response401_7"
+          },
+          "503": {
+            "$ref": "#/components/responses/Response503_11"
+          }
+        }
+      }
+    },
+    "/admin/v1/objects/{digest}": {
+      "put": {
+        "security": [
+          {
+            "publisherToken": []
+          }
+        ],
+        "summary": "Install content by full SHA-256; maximum 256 KiB",
+        "parameters": [
+          {
+            "name": "digest",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./site-v2.schema.json#/$defs/Digest"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary",
+                "maxLength": 262144
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "$ref": "#/components/responses/Response201_12"
+          },
+          "400": {
+            "$ref": "#/components/responses/Response400_13"
+          },
+          "401": {
+            "$ref": "#/components/responses/Response401_7"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "publisherToken": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "responses": {
+      "Response400_1": {
+        "description": "Invalid query or cursor"
+      },
+      "Response404_2": {
+        "description": "Not reachable in the requested published revision"
+      },
+      "Response422_3": {
+        "description": "Scan or byte limit exceeded"
+      },
+      "Response429_4": {
+        "description": "Request admission limit reached"
+      },
+      "Response201_5": {
+        "description": "Import ID; nothing is public yet"
+      },
+      "Response400_6": {
+        "description": "Malformed/incomplete package"
+      },
+      "Response401_7": {
+        "description": "Authentication required"
+      },
+      "Response200_8": {
+        "description": "Bounded missing inventory"
+      },
+      "Response200_9": {
+        "description": "Published revision ID"
+      },
+      "Response400_10": {
+        "description": "Missing/corrupt/unresolved content"
+      },
+      "Response503_11": {
+        "description": "Durability uncertain; restart required"
+      },
+      "Response201_12": {
+        "description": "Verified content installed; not yet public"
+      },
+      "Response400_13": {
+        "description": "Digest/size mismatch"
+      }
+    }
+  }
+}

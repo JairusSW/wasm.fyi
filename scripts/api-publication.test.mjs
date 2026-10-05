@@ -1,0 +1,37 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtemp, mkdir, cp, readFile, rm, writeFile} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {spawn} from 'node:child_process';
+import {createServer} from 'node:net';
+import {fileURLToPath} from 'node:url';
+import {runCommand} from './lib/benchmark-process.mjs';
+import {digest} from './lib/wasmbench.mjs';
+import {publicationURL,publishCompletedJob} from './lib/api-publish.mjs';
+const site=fileURLToPath(new URL('..',import.meta.url));
+test('API origin requires HTTPS except loopback and excludes embedded secrets',()=>{
+ assert.equal(publicationURL('https://wasm.fyi/'),'https://wasm.fyi');
+ assert.equal(publicationURL('http://127.0.0.1:8090'),'http://127.0.0.1:8090');
+ for(const u of ['http://other.test','https://u:p@wasm.fyi','https://wasm.fyi?token=x','https://wasm.fyi/api'])assert.throws(()=>publicationURL(u));
+});
+test('completed corpus uploads only missing objects, publishes idempotently, retains failures',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'wasmfyi-api-'));let child;let exit;
+ try{
+  const binary=join(root,'wasmfyi');await runCommand('go',['build','-o',binary,'./cmd/wasmfyi'],{cwd:join(site,'service')});
+  const socket=createServer();await new Promise(r=>socket.listen(0,'127.0.0.1',r));const port=socket.address().port;await new Promise(r=>socket.close(r));
+  const token='fixture-token-'+ 'x'.repeat(32);child=spawn(binary,['--listen',`127.0.0.1:${port}`,'--data',join(root,'store')],{env:{...process.env,WASMFYI_ADMIN_TOKEN:token},stdio:'ignore'});exit=new Promise(r=>child.once('exit',r));const url=`http://127.0.0.1:${port}`;
+  let ready=false;for(let i=0;i<200;i++){if(child.exitCode!==null)throw Error('Service exited during startup');try{const r=await fetch(url+'/api/v1/manifest');if(r.ok){ready=true;break}}catch{}await new Promise(r=>setTimeout(r,25))};assert(ready,'Service readiness timed out');
+  const local=join(root,'local');const path='jobs/corpus-0001/exports/report/site-v2';await mkdir(join(local,path),{recursive:true});await cp(join(site,'service/testdata/site-v2'),join(local,path),{recursive:true});await mkdir(join(local,'bundle'));await writeFile(join(local,'bundle/index.json'),'{}');
+  const plan={id:'fixture-session',identity:digest(Buffer.from('plan')),configuredHarnessPin:'0509a0a323f41c58a2f2db15a372fb2e63c692bf'};
+  const result={corpus:'corpus-0001',plan:plan.identity,siteExports:[path],finished:'2026-10-05T00:00:00Z',verdict:'FAIL'};
+  let uploads=0;const request=(url,options)=>{if(options.method==='PUT')uploads++;return fetch(url,options)};
+  const args={url,local,plan,machine:'fixture-machine',result,token,request};
+  const revision=await publishCompletedJob(args);assert.match(revision,/^[a-f0-9]{64}$/);assert(uploads>0);uploads=0;assert.equal(await publishCompletedJob(args),revision);assert.equal(uploads,0,'Duplicate transferred existing evidence');
+  const manifest=await (await fetch(url+'/api/v1/manifest')).json();assert.equal(manifest.revision,revision);
+  const results=await (await fetch(url+'/api/v1/results?revision='+revision)).json();assert.equal(results.items.length,3);assert.equal(results.complete,true);
+  const artifacts=await (await fetch(url+'/api/v1/artifacts?revision='+revision)).json();assert.equal(artifacts.items[0].data.measurementAvailable,true);assert.equal(artifacts.items[0].data.content.status,'unavailable');
+  await assert.rejects(publishCompletedJob({...args,result:{...result,finished:null}}),/Incomplete/);
+  const exportManifest=JSON.parse(await readFile(join(local,path,'manifest.json')));const object=exportManifest.objects[0];await writeFile(join(local,path,'objects',object.sha256),'tampered');await assert.rejects(publishCompletedJob(args),/differs/);
+ }finally{if(child){child.kill('SIGTERM');await exit};await rm(root,{recursive:true,force:true})}
+});

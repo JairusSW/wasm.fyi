@@ -1,5 +1,5 @@
 import {mkdir,readFile,writeFile,rm,appendFile} from 'node:fs/promises';
-import {join,resolve} from 'node:path';
+import {join,resolve,dirname} from 'node:path';
 import {parseCorpusJSON} from './corpus.mjs';
 import {atomicJSON} from './benchmark-plan.mjs';
 import {exportWasmFyiReport} from './wasmfyi-export.mjs';
@@ -64,6 +64,7 @@ export async function collectCorpusByCorpus({directory,suite,runtimes,collection
     }
     const exported=await exportWasmFyiReport(report,join(directory,'exports'));
     const path=resolve(directory,'exports',exported.path);
+    if(collection.siteExportV2)await invoke('export-site','--report',report,'--out',join(dirname(path),'site-v2'));
     const extraReports=[],extraBundles=[];
     if(group.every(w=>w.id.startsWith('mechanisms/'))) {
       const callTiming=join(scratch,prefix+'-call-timing'),callReport=join(scratch,id+'-call-latency','report');
@@ -73,6 +74,7 @@ export async function collectCorpusByCorpus({directory,suite,runtimes,collection
       const callData=JSON.parse(await readFile(join(callReport,'data.json'))),mainData=JSON.parse(await readFile(join(report,'data.json')));
       if(JSON.stringify(callData.bundle.manifest.lock.runtime_configurations)!==JSON.stringify(mainData.bundle.manifest.lock.runtime_configurations))throw Error('Call adapters changed within corpus collection');
       const callExport=await exportWasmFyiReport(callReport,join(directory,'exports'));
+      if(collection.siteExportV2)await invoke('export-site','--report',callReport,'--out',join(dirname(resolve(directory,'exports',callExport.path)),'site-v2'));
       extraReports.push(resolve(directory,'exports',callExport.path));extraBundles.push(['calls',callTiming]);
     }
     reports.push(path,...extraReports);

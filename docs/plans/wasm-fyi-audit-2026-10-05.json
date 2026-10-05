@@ -1,0 +1,228 @@
+{
+  "source_commit": "101850b696fdfbb4a5c8926b188ba4947e111a3b",
+  "workflow_run": 37367026033,
+  "artifact_id": 11370115182,
+  "archive_bytes": 44572547,
+  "file_count": 2479,
+  "decoded_total_bytes": 454782714,
+  "largest_files": [
+    {
+      "path": "./_app/immutable/chunks/DQFjNAyD.js",
+      "bytes": 36019253
+    },
+    {
+      "path": "./data/llm/reports.json",
+      "bytes": 34565536
+    },
+    {
+      "path": "./wasmbench/history/index.json",
+      "bytes": 10659631
+    },
+    {
+      "path": "./wasmbench/index.json",
+      "bytes": 10383024
+    },
+    {
+      "path": "./wasmbench/history/source-index.json",
+      "bytes": 6308487
+    },
+    {
+      "path": "./llms-full.txt",
+      "bytes": 5419733
+    },
+    {
+      "path": "./wasmbench/history-hub/index.json",
+      "bytes": 4925881
+    },
+    {
+      "path": "./wasmbench/history/weekly.json",
+      "bytes": 3473208
+    },
+    {
+      "path": "./wasmbench/history-hub/source-index.json",
+      "bytes": 2975516
+    },
+    {
+      "path": "./wasmbench/runs/weekly-20261003-wazero/hub/state.json",
+      "bytes": 2409396
+    },
+    {
+      "path": "./wasmbench/runs/weekly-20260905-wazero/hub/state.json",
+      "bytes": 2409396
+    },
+    {
+      "path": "./wasmbench/runs/weekly-20260919-wazero/hub/state.json",
+      "bytes": 2409380
+    },
+    {
+      "path": "./wasmbench/runs/weekly-20260926-wazero/hub/state.json",
+      "bytes": 2409351
+    },
+    {
+      "path": "./wasmbench/runs/weekly-20261003-wazero/local/state.json",
+      "bytes": 2407821
+    },
+    {
+      "path": "./wasmbench/runs/weekly-20260926-wazero/local/state.json",
+      "bytes": 2407806
+    },
+    {
+      "path": "./wasmbench/runs/weekly-20260829-wazero/local/state.json",
+      "bytes": 2407803
+    },
+    {
+      "path": "./wasmbench/runs/weekly-20260905-wazero/local/state.json",
+      "bytes": 2407798
+    },
+    {
+      "path": "./wasmbench/runs/weekly-20260919-wazero/local/state.json",
+      "bytes": 2407792
+    },
+    {
+      "path": "./wasmbench/runs/weekly-20260822-wazero/local/state.json",
+      "bytes": 2407790
+    },
+    {
+      "path": "./wasmbench/runs/weekly-20260815-wazero/local/state.json",
+      "bytes": 2407774
+    },
+    {
+      "path": "./wasmbench/runs/weekly-20260725-wazero/local/state.json",
+      "bytes": 2407771
+    },
+    {
+      "path": "./wasmbench/runs/weekly-20260711-wazero/local/state.json",
+      "bytes": 2407771
+    },
+    {
+      "path": "./wasmbench/runs/weekly-20260808-wazero/local/state.json",
+      "bytes": 2407770
+    },
+    {
+      "path": "./wasmbench/runs/weekly-20260801-wazero/local/state.json",
+      "bytes": 2407749
+    },
+    {
+      "path": "./wasmbench/runs/weekly-20260926-wago/hub/state.json",
+      "bytes": 2351508
+    },
+    {
+      "path": "./wasmbench/runs/weekly-20261003-wago/hub/state.json",
+      "bytes": 2351371
+    },
+    {
+      "path": "./wasmbench/runs/weekly-20260926-wago/local/state.json",
+      "bytes": 2346994
+    },
+    {
+      "path": "./wasmbench/runs/weekly-20261003-wago/local/state.json",
+      "bytes": 2346932
+    },
+    {
+      "path": "./wasmbench/runs/weekly-20260919-wago/hub/state.json",
+      "bytes": 2345741
+    },
+    {
+      "path": "./wasmbench/runs/weekly-20260919-wago/local/state.json",
+      "bytes": 2341455
+    }
+  ],
+  "response_sizes": [
+    {
+      "path": "data/llm/reports.json",
+      "bytes": 34565536,
+      "gzip_6": 2126351,
+      "brotli_5": 1792653
+    },
+    {
+      "path": "wasmbench/index.json",
+      "bytes": 10383024,
+      "gzip_6": 875686,
+      "brotli_5": 51632
+    },
+    {
+      "path": "wasmbench/history/index.json",
+      "bytes": 10659631,
+      "gzip_6": 1592289,
+      "brotli_5": 1460654
+    },
+    {
+      "path": "_app/immutable/chunks/DQFjNAyD.js",
+      "bytes": 36019253,
+      "gzip_6": 3359878,
+      "brotli_5": 2955044
+    }
+  ],
+  "units": {
+    "MB": "1,000,000 bytes",
+    "kB": "1,000 bytes"
+  },
+  "methodology": {
+    "artifact": "Latest successful main-branch deployment returned by GitHub at inspection; not assumed identical to newer repository main.",
+    "sizes": "Extracted file byte sizes plus locally applied gzip level 6 and Brotli quality 5. Not live HTTP Content-Length, transfer, or browser-memory measurements.",
+    "live_access": "Initial requests failed. Later web reads succeeded for homepage, /benchmarks/, /llms.txt and /data/llm/index.json; /history/ remained unavailable through web. Deployed history HTML was inspected locally.",
+    "changes_made": "Read-only repository review and local documentation/prototype generation; no repository changes or benchmark execution."
+  },
+  "reviewed_refs": {
+    "site_main": "daf09f4810cd8229e521c462c93eae4292db306e",
+    "harness_main": "a017c56fef370a54ffa33ca49ad9b6827e127cc4",
+    "configured_harness_pin": "0509a0a323f41c58a2f2db15a372fb2e63c692bf"
+  },
+  "compact_experiment": {
+    "source_path": "data/llm/benchmarks-m1-s1-steady.json",
+    "original_results": 1008,
+    "original": {
+      "bytes": 394984,
+      "gzip_6": 29057,
+      "brotli_5": 22191
+    },
+    "preserved": [
+      "value",
+      "unit",
+      "interval",
+      "status",
+      "reason",
+      "report",
+      "workload",
+      "configuration",
+      "runtime"
+    ],
+    "excluded_from_summary": [
+      "launchMedians"
+    ],
+    "limitations": "Prototype encoder, not implemented API. Existing legacy scope IDs are retained for parity only. Compression is measured locally, not over the live host.",
+    "compact_100": {
+      "bytes": 5471,
+      "gzip_6": 2154,
+      "brotli_5": 1926,
+      "file": "wasm-fyi-compact-100-results-2026-10-05.json"
+    },
+    "compact_1008": {
+      "bytes": 47089,
+      "gzip_6": 16786,
+      "brotli_5": 14585,
+      "file": "wasm-fyi-compact-1008-results-2026-10-05.json"
+    },
+    "catalog_counts": {
+      "public_report_descriptors": 13474,
+      "distinct_run_ids_in_report_descriptors": 13474,
+      "current_report_index_entries": 370,
+      "history_report_index_entries": 9240,
+      "code_inspection_files_in_archive": 0
+    }
+  },
+  "interpretation_checks": [
+    {
+      "resource": "https://wasm.fyi/",
+      "observation": "Overview describes merged host-local reports."
+    },
+    {
+      "resource": "https://wasm.fyi/benchmarks/",
+      "observation": "Latency explanatory label still says successful shared contracts from one locked report."
+    },
+    {
+      "resource": "https://wasm.fyi/data/llm/index.json",
+      "observation": "Peak-RSS notes say separate matched memory pass; harness and current collection support timing-pass peak RSS too."
+    }
+  ]
+}

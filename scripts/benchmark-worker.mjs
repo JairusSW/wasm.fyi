@@ -9,7 +9,7 @@ import {
   readdir,
   stat,
 } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { join, resolve, dirname } from "node:path";
 import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { site, digest } from "./lib/wasmbench.mjs";
@@ -207,6 +207,7 @@ async function retainBundle({ bundle, profile }) {
 }
 try {
   const collection = { ...plan.collection };
+  collection.siteExportV2 = plan.publication?.type === "api-v1";
   const reports = await collectCorpusByCorpus({
     directory: dir,
     suite,
@@ -244,6 +245,7 @@ try {
     corpus: key,
     workloads: workloads.map((w) => w.id),
     reports: reports.map((p) => p.slice(root.length + 1)),
+    ...(collection.siteExportV2 ? {siteExports: reports.map(p=>join(dirname(p),'site-v2').slice(root.length+1))} : {}),
     plan: plan.identity,
     summaries: rows,
     memory,

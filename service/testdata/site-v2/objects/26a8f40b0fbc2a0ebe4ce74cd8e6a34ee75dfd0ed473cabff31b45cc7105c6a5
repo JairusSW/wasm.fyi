@@ -1,0 +1,1 @@
+{"kind":"workload","id":"94039db62c6c9969c14a5a9cdebfc0d54693f2b2e5fcf69eca5123a612464e06","data":{"schema":0,"id":"fixture/a","family":"","artifact":"","sha256":"","abi":"","features":null,"export":"","args":[],"work_unit":"","units_per_invocation":0,"reset":"","oracle":{"kind":"","expected":[]},"license":"","source":"","generator":""}}

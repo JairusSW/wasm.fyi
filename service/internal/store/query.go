@@ -1,0 +1,208 @@
+package store
+
+import (
+	"encoding/json"
+	"fmt"
+	"math/big"
+	"sort"
+
+	"github.com/JairusSW/wasm.fyi/service/internal/wire"
+)
+
+const ScanLimit = 100000
+
+type Query struct {
+	Revision      string `json:"revision"`
+	Selection     string `json:"selection"`
+	Environment   string `json:"environment,omitempty"`
+	Runtime       string `json:"runtime,omitempty"`
+	Configuration string `json:"configuration,omitempty"`
+	Contract      string `json:"contract,omitempty"`
+	Workload      string `json:"workload,omitempty"`
+	Metric        string `json:"metric,omitempty"`
+	Scenario      string `json:"scenario,omitempty"`
+	Profile       string `json:"profile,omitempty"`
+	Statistic     string `json:"statistic,omitempty"`
+	Sort          string `json:"sort"`
+	Limit         int    `json:"limit"`
+}
+
+func (q Query) Matches(r wire.Result) bool {
+	return (q.Environment == "" || q.Environment == r.EnvironmentID) && (q.Runtime == "" || q.Runtime == r.Runtime) && (q.Configuration == "" || q.Configuration == r.ConfigurationID) && (q.Contract == "" || q.Contract == r.ContractID) && (q.Workload == "" || q.Workload == r.Workload) && (q.Metric == "" || q.Metric == r.Metric) && (q.Scenario == "" || q.Scenario == r.Scenario) && (q.Profile == "" || q.Profile == r.Profile) && (q.Statistic == "" || q.Statistic == r.Statistic)
+}
+func value(r wire.Record) (*big.Rat, bool) {
+	var v wire.Result
+	if json.Unmarshal(r.Data, &v) != nil {
+		return nil, false
+	}
+	var summary map[string]json.RawMessage
+	if json.Unmarshal(v.Summary, &summary) != nil {
+		return nil, false
+	}
+	b := summary[v.Statistic]
+	if len(b) == 0 || string(b) == "null" {
+		return nil, false
+	}
+	text := string(b)
+	if b[0] == '"' {
+		if json.Unmarshal(b, &text) != nil {
+			return nil, false
+		}
+	}
+	f, ok := new(big.Rat).SetString(text)
+	return f, ok
+}
+func (s *Store) Results(q Query, historical bool) ([]wire.Record, error) {
+	rev, e := s.Revision(q.Revision)
+	if e != nil {
+		return nil, e
+	}
+	out := []wire.Record{}
+	budget := ScanLimit
+	add := func(id string) error {
+		budget--
+		if budget < 0 {
+			return ErrLimit
+		}
+		r, e := s.record(rev.Catalog, "result", id)
+		if e != nil {
+			return e
+		}
+		var v wire.Result
+		if e = json.Unmarshal(r.Data, &v); e != nil {
+			return e
+		}
+		if !q.Matches(v) {
+			return nil
+		}
+		v.Evidence = nil
+		b, e := wire.Encode(v)
+		if e != nil {
+			return e
+		}
+		r.Data = b
+		out = append(out, r)
+		return nil
+	}
+	e = s.walk(rev.Selection, &budget, func(_ string, digest string) error {
+		var c cell
+		if e := s.load(digest, &c); e != nil {
+			return e
+		}
+		if historical {
+			for h := c.History; h != ""; {
+				budget--
+				if budget < 0 {
+					return ErrLimit
+				}
+				var p history
+				if e := s.load(h, &p); e != nil {
+					return e
+				}
+				if e := add(p.Result); e != nil {
+					return e
+				}
+				h = p.Previous
+			}
+			return nil
+		}
+		id := c.Current
+		if q.Selection == "previous" {
+			id = c.Previous
+		}
+		if id == "" {
+			return nil
+		}
+		return add(id)
+	})
+	if e != nil {
+		return nil, e
+	}
+	if (q.Sort == "value" || q.Sort == "-value") && (q.Metric == "" || q.Statistic == "") {
+		return nil, fmt.Errorf("value sort requires metric and statistic")
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if q.Sort == "value" || q.Sort == "-value" {
+			a, okA := value(out[i])
+			b, okB := value(out[j])
+			if okA != okB {
+				return okA
+			}
+			if okA && a.Cmp(b) != 0 {
+				if q.Sort == "-value" {
+					return a.Cmp(b) > 0
+				}
+				return a.Cmp(b) < 0
+			}
+		}
+		var a, b wire.Result
+		_ = json.Unmarshal(out[i].Data, &a)
+		_ = json.Unmarshal(out[j].Data, &b)
+		if historical && !a.Created.Equal(b.Created) {
+			return a.Created.Before(b.Created)
+		}
+		if a.Workload != b.Workload {
+			return a.Workload < b.Workload
+		}
+		if a.Runtime != b.Runtime {
+			return a.Runtime < b.Runtime
+		}
+		return out[i].ID < out[j].ID
+	})
+	return out, nil
+}
+func (s *Store) Catalog(revision, kind string) ([]wire.Record, error) {
+	rev, e := s.Revision(revision)
+	if e != nil {
+		return nil, e
+	}
+	out := []wire.Record{}
+	budget := ScanLimit
+	e = s.walk(rev.Catalog, &budget, func(k, digest string) error {
+		if len(k) <= len(kind) || k[:len(kind)+1] != kind+":" {
+			return nil
+		}
+		var r wire.Record
+		if e := s.load(digest, &r); e != nil {
+			return e
+		}
+		out = append(out, r)
+		return nil
+	})
+	if e != nil {
+		return nil, e
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	return out, nil
+}
+func (s *Store) Evidence(revision, result, digest string) ([]byte, error) {
+	r, e := s.Record(revision, "result", result)
+	if e != nil {
+		return nil, e
+	}
+	var v wire.Result
+	if e = json.Unmarshal(r.Data, &v); e != nil {
+		return nil, e
+	}
+	for _, h := range v.Evidence {
+		if h == digest {
+			return s.content(h)
+		}
+		b, e := s.content(h)
+		if e != nil {
+			return nil, e
+		}
+		var refs struct {
+			Samples      []string `json:"samples"`
+			Observations []string `json:"observations"`
+		}
+		if json.Unmarshal(b, &refs) == nil {
+			for _, ref := range append(refs.Samples, refs.Observations...) {
+				if ref == digest {
+					return s.content(ref)
+				}
+			}
+		}
+	}
+	return nil, ErrNotFound
+}

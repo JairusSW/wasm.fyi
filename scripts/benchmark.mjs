@@ -28,6 +28,7 @@ import {
 import { corpusGroups } from "./lib/corpus-collection.mjs";
 import { runCommand, quote } from "./lib/benchmark-process.mjs";
 import { publishCorpus } from "./lib/benchmark-publish.mjs";
+import { publishCompletedJob, publicationURL } from "./lib/api-publish.mjs";
 import { benchmarkSource, sourceBundle } from "./lib/benchmark-source.mjs";
 import { verifyParentBundle } from "./lib/benchmark-bundle.mjs";
 import { verifySeal } from "./lib/verify-seal.mjs";
@@ -44,6 +45,7 @@ try {
   --id NAME --launches N --samples N --timeout 5m
   --no-live                             retain reports without changing site
   --deploy                              commit results, push branch, deploy Pages
+  --api-url URL                         publish completed jobs to Go API (requires export-site harness)
 just bench-resume ID                 same immutable plan; completed corpora skipped
 just bench-status [ID]               durable progress and outcomes
 just bench-stop ID                  stop local and SSH host supervisors
@@ -82,6 +84,7 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
         "launches",
         "samples",
         "timeout",
+        "api-url",
       ].includes(key)
     )
       throw Error("Unknown option: " + arg);
@@ -442,6 +445,10 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
       collection,
       live: !options["no-live"],
       deploy: !!options.deploy,
+      ...(options["api-url"] ? {
+        publication: { type: "api-v1", url: publicationURL(options["api-url"]) },
+        configuredHarnessPin: settings.harnessSource.revision,
+      } : {}),
       harnessRevision,
       harnessRoot,
       wagoRevision: wago
@@ -571,6 +578,18 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
     const marker = join(job, "published.json");
     if (await stat(marker).catch(() => false)) return;
     if (plan.live) {
+      if (plan.publication?.type === "api-v1") {
+        const revision = await publishCompletedJob({
+          url: plan.publication.url, local, plan, machine: host.name,
+          result, signal: abort.signal,
+        });
+        await atomicJSON(marker, {
+          published: new Date().toISOString(), live: true,
+          revision, destination: plan.publication.url,
+        });
+        console.log(`[${host.name} ${event.corpus}] API revision ${revision}`);
+        return;
+      }
       const target = join(site, "data/benchmark-runs", id, host.name);
       await mkdir(target, { recursive: true });
       await cp(join(local, "bundle"), join(target, "bundle"), {
@@ -887,7 +906,7 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
       throw Error("Interrupted; resume with the saved ID");
     if (failed)
       throw Error("Some hosts are incomplete; resume with the saved ID");
-    if (plan.deploy) {
+    if (plan.deploy && plan.publication?.type !== 'api-v1') {
       const dirty = command("git", ["diff", "--name-only", "HEAD"])
         .toString()
         .trim()

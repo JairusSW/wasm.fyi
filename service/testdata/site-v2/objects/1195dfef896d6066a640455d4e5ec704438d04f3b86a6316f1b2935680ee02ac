@@ -1,0 +1,1 @@
+{"kind":"metric","id":"e95378169c0dbb0dc31b3897c5cb189d7ab2557c5383b8f739bb8640bae55c2a","data":{"name":"native.code_size","reason":"code records use this metric but the source report registry omits its definition","status":"unregistered"}}
