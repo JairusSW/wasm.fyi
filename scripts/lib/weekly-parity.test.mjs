@@ -21,3 +21,12 @@ test('capture parity rejects a host changing samples before any measurement',()=
  const plan={sourcePin:pin,collection:{...week.capture.collection,runtimes:pin.configurations,samples:999},machines:[{workers:'25%'}],jobs:[]};
  assert.throws(()=>assertCaptureParity(plan,receipt,calendar),/measurement settings differ/);
 });
+test('partial engine publication requires an explicit source-matched pending gap',()=>{
+ const arm=timeline(),amd=timeline(),pin=week.pins.find(p=>p.engine==='v8');
+ const value=amd.results[0].engines.v8;delete amd.results[0].engines.v8;
+ amd.results[0].gaps={v8:{source:pin,type:'pending',reason:'Collection is running',parity:value.parity}};
+ assert.equal(assertWeeklyParity(arm,amd,calendar).length,1);
+ assert.throws(()=>assertWeeklyParity(arm,amd,calendar,{requireComplete:true}),/Incomplete paired week/);
+ amd.results[0].gaps.v8.source={...pin,revision:'a'.repeat(40)};
+ assert.throws(()=>assertWeeklyParity(arm,amd,calendar),/gap source hash differs/);
+});
