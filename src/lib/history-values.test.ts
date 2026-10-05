@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { viewCell, viewData } from './view-data';
-import { historyCell, historyChange, historySegments, historySeries, historyCallDetails } from './history-values';
+import { historyCell, historyChange, historySegments, historySeries, historyCallDetails, historyReusesEvidence } from './history-values';
 import { OTM_KEYS } from './data/snapshot';
 import { readFileSync } from 'node:fs';
 import type { Scope } from './model';
@@ -101,4 +101,10 @@ it('retains a newly recorded engine point without filling its older gap',()=>{
   expect(values).not.toBeNull();expect(values![0]).toBeNaN();expect(values![1]).toBeGreaterThan(0);
   expect(historySeries({...scope,baseline:'G'},'A','cov')![0]).toBeNaN();
  } finally {if(prior)h.cells[key]=prior;else delete h.cells[key];}
+});
+
+it('identifies reused WAVM evidence without treating equal version labels as proof',()=>{
+ const h=viewData.history.m2,a=h.points.findIndex(p=>p.date==='2026-09-26'),b=h.points.findIndex(p=>p.date==='2026-10-03');
+ if(a>=0){expect(historyReusesEvidence('m2','L','roundTrip',a,b)).toBe(true);expect(historyReusesEvidence('m2','G','roundTrip',a,b)).toBe(false);}
+ expect(historyReusesEvidence('m2','L','roundTrip',b,b)).toBe(false);
 });
