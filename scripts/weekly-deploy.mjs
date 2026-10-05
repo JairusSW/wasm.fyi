@@ -55,12 +55,20 @@ const revision=(await run('git',['rev-parse','HEAD'])).output.trim();
 await run('git',['update-ref','refs/wasm-fyi-history-publication/checkpoint',revision]);
 await run('git',['push','origin','HEAD:main']);
 // Report deployment completion separately from a successful push.
+let deploymentRevision=revision;
 for(let attempt=0;attempt<120;attempt++){
- const output=await run('gh',['run','list','--workflow','deploy-pages.yml','--commit',revision,'--limit','1','--json','databaseId,status,conclusion']);
+ const output=await run('gh',['run','list','--workflow','deploy-pages.yml','--commit',deploymentRevision,'--limit','1','--json','databaseId,status,conclusion']);
  const [workflow]=JSON.parse(output.output);
  if(workflow?.status==='completed'){
+  if(workflow.conclusion==='cancelled'){
+   // Another authorized push can supersede Pages without dropping this data.
+   await run('git',['fetch','origin','main']);
+   const head=(await run('git',['rev-parse','origin/main'])).output.trim();
+   const ancestor=await run('git',['merge-base','--is-ancestor',revision,head],{check:false});
+   if(head!==deploymentRevision&&ancestor.code===0){deploymentRevision=head;continue;}
+  }
   assert.equal(workflow.conclusion,'success','Pages deployment failed: '+workflow.databaseId);
-  console.log(`Historical checkpoint deployed: ${revision} (Pages ${workflow.databaseId})`);process.exit(0);
+  console.log(`Historical checkpoint ${revision} deployed through ${deploymentRevision} (Pages ${workflow.databaseId})`);process.exit(0);
  }
  await new Promise(r=>setTimeout(r,30000));
 }
