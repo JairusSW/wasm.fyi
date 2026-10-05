@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "id": "weekly-20261003-wavm",
+  "machine": "local",
+  "bytes": 38863496,
+  "sha256": "f2844181f75196b9a7898a075fe513c1c33345d673fd66109bfa5ab1ef9a6291",
+  "format": "tar+gzip concatenated parts",
+  "parts": [
+    {
+      "path": "bundle.tar.gz.part-000",
+      "bytes": 33554432,
+      "sha256": "3332c9645c06662961e419863557f438a0e502a50568634d492b82ffa73fbe79"
+    },
+    {
+      "path": "bundle.tar.gz.part-001",
+      "bytes": 5309064,
+      "sha256": "d075e0bd0adc1810444ff5c5b235c0cb1bb963c47a72ce8d053e0be299cf0436"
+    }
+  ],
+  "metadata": "metadata.json",
+  "metadataSha256": "05a91da2c30b5c049b26acd03cd01a9d14346815b183d17fb59f6ea5fe4404ee",
+  "download": "Concatenate parts in order, verify the full SHA-256, then tar -xzf bundle.tar.gz."
+}
