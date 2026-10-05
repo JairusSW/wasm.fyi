@@ -5,6 +5,7 @@ import { validateV8Description } from './lib/v8-preflight.mjs';
 import { digest, site, config } from './lib/wasmbench.mjs';
 import { validateData } from './lib/validate-data.mjs';
 import { bindCurrentReleaseHistory } from './lib/current-release-history.mjs';
+import { bindCapturedReleases } from './lib/captured-release-history.mjs';
 import { alignHistoryDates, historyDate } from './lib/history-align.mjs';
 import { workloadCategory, compareWorkloads } from './lib/workload-category.mjs';
 import { measuredTiming, measuredMemory, measuredCodeImage, measuredHistory, historicalRuntimePoint } from '../src/lib/measured.ts';
@@ -218,6 +219,7 @@ for(const [machine,name] of [['m1','history-hub'],['m2','history']]) {
   }
 }
 bindCurrentReleaseHistory(output,reports,settings.collection.wagoRelease,scenarios);
+bindCapturedReleases(output,reports,settings.historyReleases || [],[...Object.keys(scenarios),...Object.keys(memoryScenarios),'code']);
 alignHistoryDates(output.history);
 for(const [machine,name] of [['m1','linux-x64'],['m2','darwin-arm64']]) {
   if(!await access(join(site,'data/threads',name+'.json')).then(()=>true,()=>false)){output.threads[machine]={created:'',configuration:'not collected',node:'',v8:'',policy:'No thread measurements collected.',evidence:'',sha256:'',results:[]};continue;}

@@ -49,8 +49,8 @@ describe('recorded weekly history',()=>{
             const raw=JSON.parse(readFileSync(new URL(`../../data/${name}/weekly.json`,import.meta.url),'utf8'));
             for(const [i,point] of viewData.history[machine].points.entries()){
                 const source=raw.results.find((p:{targetWeek:string})=>new Date(p.targetWeek).toLocaleDateString('en-CA',{timeZone:'America/New_York'})===point.date);
-                expect(point.status).toBe(source?.status??'not-collected');
-                if(!source)expect(historyCell(machine,'applications/image-blur','G','steady',i).report).toBe('');
+                expect(point.status).toBe(point.releases?'measured':source?.status??'not-collected');
+                if(!source && !point.currentLatency?.G)expect(historyCell(machine,'applications/image-blur','G','steady',i).report).toBe('');
             }
         }
     });
@@ -128,15 +128,16 @@ it('uses one round-trip history tab while keeping directional measurements in it
 it('retains a newly recorded engine point without filling its older gap',()=>{
  const h=viewData.history.m1,last=h.points.length-1,beta=betaIndex('m1');
  const workload=h.workloads.find(w=>!w.startsWith('features/')&&historyCell('m1',w,'G','steady',last).st==='ok'&&historyCell('m1',w,'G','steady',beta).st==='ok')!;
- const prior=h.cells;
+ const prior=h.cells,priorPoints=h.points;
  try {
   h.cells={...prior};
+  h.points=priorPoints.map(p=>({...p,currentLatency:p.currentLatency?Object.fromEntries(Object.entries(p.currentLatency).filter(([cid])=>cid!=='A')):undefined}));
   for(const key of Object.keys(h.cells))if(key.endsWith('|A|steady'))h.cells[key]=h.points.map(()=>({st:'nm',report:'',role:'retrospective-revision'}));
   h.cells[`${workload}|A|steady`][last]={...historyCell('m1',workload,'G','steady',last),role:'retrospective-revision'};
   const values=historySeries({...scope,baseline:'G',hide:Object.fromEntries(viewData.applicationConfigurations.filter(c=>c!=='G'&&c!=='A').map(c=>[c,true]))},'A','exec');
   expect(values).not.toBeNull();expect(values!.slice(0,last).every(Number.isNaN)).toBe(true);expect(values![last]).toBeGreaterThan(0);
   expect(historySeries({...scope,baseline:'G'},'A','cov')![0]).toBeNaN();
- } finally {h.cells=prior;}
+ } finally {h.cells=prior;h.points=priorPoints;}
 });
 
 it('identifies reused WAVM evidence without treating equal version labels as proof',()=>{
@@ -151,7 +152,8 @@ it('anchors relative history to each machine first measured point while retainin
   expect(h.points[i].status).toBe('measured');
   expect(h.points.slice(0,i).every(p=>p.status!=='measured')).toBe(true);
  }
- expect(historyPin('m1')).toBeGreaterThan(historyPin('m2'));
+ expect(viewData.history.m1.points[historyPin('m1')].date).toBe('2026-04-05');
+ expect(viewData.history.m2.points[historyPin('m2')].date).toBe('2026-04-05');
 });
 
 
@@ -173,7 +175,7 @@ it('recalculates every sealed week from its own shared non-feature measurements'
   for(const [key,metric] of [['compile','compile'],['inst','inst'],['exec','steady']] as const){
    const series=new Map(viewData.applicationConfigurations.map(cid=>[cid,historySeries(selected,cid,key)]));
    for(const [i,point] of h.points.entries()){
-    if(point.status!=='measured'||point.currentLatency?.G)continue;
+    if(point.status!=='measured'||point.currentLatency)continue;
     const workloads=viewData.catalogue.filter(w=>!w.id.startsWith('features/')&&h.workloads.includes(w.id));
     const ok=(id:string,cid:typeof viewData.applicationConfigurations[number])=>{const c=historyCell(machine,id,cid,metric,i);return !!c.report&&c.st==='ok'&&c.v!=null&&Number.isFinite(c.v)&&c.v>0;};
     const engines=viewData.applicationConfigurations.filter(cid=>workloads.some(w=>ok(w.id,cid)));
@@ -206,6 +208,24 @@ it(`matches current and beta.11 history averages exactly on ${machine} with ${we
    expect(historical).toBe(current.v);
    expect(fmtU(historical,'ms')).toBe(fmtU(current.v,'ms'));
    expect(historyCohort(selected,'G',key,beta)).toHaveLength(current.count);
+  }
+ }
+});
+
+it('shows all captured engine releases at publication dates using their exact current evidence',()=>{
+ const releases=[['A','46.0.1','2026-06-24'],['D','7.5.0','2026-10-01'],['E','1.12.0','2026-05-29'],['F','14.6.202.34-node.21','2026-06-24'],['L','nightly-2026-04-05-4e82bb9','2026-04-05']] as const;
+ for(const machine of ['m1','m2'] as const)for(const [cid,version,date] of releases){
+  const h=viewData.history[machine],i=h.points.findIndex(p=>p.date===date);
+  expect(i).toBeGreaterThanOrEqual(0);expect(h.versions[cid][i]).toBe(version);
+  expect(h.points[i].releases?.[cid]?.version).toBe(version);
+  const selected:Scope={...scope,machine};
+  for(const [key,metric,col] of [['compile','compile',0],['inst','inst',1],['exec','steady',3]] as const){
+   expect(historySeries(selected,cid,key)![i]).toBe(aggregate(selected,'lat',cid,col)!.v);
+   for(const w of viewData.catalogue.filter(w=>!w.id.startsWith('features/'))){
+    const current=viewCell(machine,'s1',w.id,cid,metric);if(!current.report)continue;
+    const captured=historyCell(machine,w.id,cid,metric,i);
+    expect(captured.report).toBe(current.report);expect(captured.v).toBe(current.v);expect(captured.st).toBe(current.st);
+   }
   }
  }
 });

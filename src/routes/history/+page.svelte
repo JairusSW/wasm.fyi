@@ -4,7 +4,7 @@
 	import Swatch from '$lib/components/Swatch.svelte';
 	import Tabs from '$lib/components/Tabs.svelte';
 	import { CB, CFG } from '$lib/data/runtimes';
-	import { ALLB, EVENTS, HARNESS_BREAK, MET, OTM, OTM_KEYS, historyPin, SNAPS, verAt } from '$lib/data/snapshot';
+	import { ALLB, EVENTS, HARNESS_BREAK, MET, OTM, OTM_KEYS, SNAPS, verAt } from '$lib/data/snapshot';
 	import type { CfgId, MetricKey } from '$lib/data/types';
 	import { fmtU, n0, pc, pct, relative, workloadName } from '$lib/format';
 	import { benchVal, otSeries } from '$lib/model';
@@ -40,11 +40,11 @@ import HistoryMarker from '$lib/components/HistoryMarker.svelte';
 
 	const M = $derived(OTM[ui.otMetric]);
 	const isCov = $derived(M.g === 'cov');
-    const pin = $derived(historyPin(ui.machine));
 	const SER = $derived(Object.fromEntries(CFG.map((c) => [c.id, otSeries(ui.scope, c.id, M.key)])) as Record<CfgId, number[] | null>);
 	const val = (id: CfgId, i: number) => {
 		const s = SER[id]!;
-		return ui.histMode === 'ratio' ? s[i] : isCov ? (s[i] - s[pin]) / viewData.history[ui.machine].workloads.length : s[i] / s[pin] - 1;
+		const first=s.find(Number.isFinite)!;
+		return ui.histMode === 'ratio' ? s[i] : isCov ? (s[i] - first) / viewData.history[ui.machine].workloads.length : s[i] / first - 1;
 	};
 	const plotC = $derived(CFG.filter((c) => !ui.scope.hide[c.id] && SER[c.id]));
 	const fmtV = (v: number) => (isCov ? n0(v) : fmtU(v, M.u));
@@ -238,7 +238,7 @@ import HistoryMarker from '$lib/components/HistoryMarker.svelte';
 	<Seg
 		options={[
 			['ratio', 'Absolute'],
-			['change', `Change from pinned ${SNAPS[pin].short}`]
+			['change', 'Change from first measured']
 		]}
 		value={ui.histMode}
 		onselect={(v) => (ui.histMode = v as 'ratio' | 'change')}
