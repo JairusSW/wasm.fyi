@@ -71,7 +71,7 @@ test('mainline measurements stay pending until an exact-revision build binding i
  assert.equal(pendingBindingReason({targetType:'release',engine:'wago',tag:'v0.1.0-beta.11'}),null);
 });
 test('history policy records Saturday main tracking and distinct main/release chart styling',()=>{
- assert.match(weeklyPolicy,/Saturday 00:00 UTC/);
+ assert.match(weeklyPolicy,/Saturday 11:59 PM America\/New_York/);
  assert.match(weeklyPolicy,/default-branch commit for weekly main tracking/);
  assert.match(weeklyPolicy,/dimmed trend line; individually released versions are bold history points/);
 });
@@ -111,12 +111,12 @@ test('released Wago gets official WASI on Linux and an explicit Mac gap',()=>{
  assert.deepEqual(mac.lanes,['wago-core','wago-component']);assert.equal(mac.gaps[0].scope,'wasi');
  assert.equal(historyLanes(pins,'2025-10-01T00:00:00.000Z','linux').lanes.length,0);
 });
-test('Saturday boundaries are UTC, include the latest Saturday and catch every missed week',()=>{
-  assert.deepEqual(saturdays(new Date('2026-10-04T19:00:00Z'),2),['2026-09-26T00:00:00.000Z','2026-10-03T00:00:00.000Z']);
-  assert.equal(saturdays(new Date('2026-10-03T23:59:59Z'),1)[0],'2026-10-03T00:00:00.000Z');
-  assert.equal(saturdays(new Date('2026-10-02T23:59:59Z'),1)[0],'2026-09-26T00:00:00.000Z');
+test('Saturday boundaries are Eastern, include the latest completed Saturday and catch every missed week',()=>{
+  assert.deepEqual(saturdays(new Date('2026-10-04T19:00:00Z'),2),['2026-09-27T03:59:00.000Z','2026-10-04T03:59:00.000Z']);
+  assert.equal(saturdays(new Date('2026-10-03T23:59:59Z'),1)[0],'2026-09-27T03:59:00.000Z');
+  assert.equal(saturdays(new Date('2026-10-02T23:59:59Z'),1)[0],'2026-09-27T03:59:00.000Z');
   const dates=saturdays(new Date('2026-10-17T00:00:00Z'),2,[{targetWeek:'2026-09-26T00:00:00Z'}]);
-  assert.equal(dates.length,4);assert(dates.every(d=>new Date(d).getUTCDay()===6));
+  assert.deepEqual(dates,['2026-09-27T03:59:00.000Z','2026-10-04T03:59:00.000Z','2026-10-11T03:59:00.000Z']);
 });
 test('four-month release window uses calendar months and is independent of Saturday snapshots',()=>{
   assert.equal(monthsBefore(new Date('2026-10-03T12:00:00Z'),4),'2026-06-03T12:00:00.000Z');
@@ -144,8 +144,8 @@ test('default collection sample counts prioritize compile, instantiate and stead
  assert.equal(settings.collection.scenarioSamples['*'],1);
 });
 test('the four-month history window includes every Saturday and catches up weekly',()=>{
- const dates=saturdays(new Date('2026-10-03T00:00:00Z'),18);
- assert.equal(dates.length,18);assert.equal(dates[0],'2026-06-06T00:00:00.000Z');assert.equal(dates.at(-1),'2026-10-03T00:00:00.000Z');
+ const dates=saturdays(new Date('2026-10-04T19:00:00Z'),18);
+ assert.equal(dates.length,18);assert.equal(dates[0],'2026-06-07T03:59:00.000Z');assert.equal(dates.at(-1),'2026-10-04T03:59:00.000Z');
 });
 
 

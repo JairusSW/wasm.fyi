@@ -11,6 +11,11 @@ const directory=join(site,'.wasmbench/release-history');await mkdir(directory,{r
 const previous=await readFile(join(directory,'results.json'),'utf8').then(JSON.parse,()=>({results:[]}));
 const durable=join(site,'data/release-history');await mkdir(durable,{recursive:true});
 const priorPlan=await readFile(join(durable,'plan.json'),'utf8').then(JSON.parse,()=>({weeks:[]}));
+let plan;
+if(action==='collect' && process.env.WASMBENCH_HISTORY_PLAN_READY==='1') {
+  plan=priorPlan;
+  if(plan.schema!==4 || !plan.weeks?.length || !Array.isArray(plan.mainPins) || !Array.isArray(plan.releasePins) || !Array.isArray(plan.pins))throw Error('Missing shared history plan; resolve it on the coordinating host first');
+} else {
 const anchor=new Date(process.env.WASMBENCH_HISTORY_ANCHOR || Date.now()),historyWindowStart=monthsBefore(anchor,4);
 const historyWeeks=Number(process.env.WASMBENCH_HISTORY_WEEKS || 18);
 if(!Number.isSafeInteger(historyWeeks)||historyWeeks<1||historyWeeks>53)throw Error('History weeks must be 1..53');
@@ -22,7 +27,9 @@ const dates=saturdays(anchor,historyWeeks,prior);
 const pins=[];for(const engine of Object.keys(engineSources))pins.push(...await pinEngine(engine,dates));
 const mainPins=[];for(const engine of Object.keys(engineSources))mainPins.push(...await pinMain(engine,dates));
 const releasePins=[];for(const engine of Object.keys(engineSources))releasePins.push(...await pinEveryRelease(engine,historyWindowStart,anchor.toISOString()));
-const plan={schema:4,created:new Date().toISOString(),historyWindowStart,historyWindowEnd:anchor.toISOString(),policy:weeklyPolicy,seriesPresentation:{main:'dimmed-line',release:'bold-points'},weeks:dates,pins,mainPins,releasePins};
+plan={schema:4,created:new Date().toISOString(),historyWindowStart,historyWindowEnd:anchor.toISOString(),policy:weeklyPolicy,seriesPresentation:{main:'dimmed-line',release:'bold-points'},weeks:dates,pins,mainPins,releasePins};
+}
+const {weeks:dates,pins,releasePins}=plan;
 await writeFile(join(directory,'plan.json'),JSON.stringify(plan,null,2)+'\n');
 await writeFile(join(durable,'plan.json'),JSON.stringify(plan,null,2)+'\n');
 if(action==='plan')console.log(JSON.stringify(plan,null,2));

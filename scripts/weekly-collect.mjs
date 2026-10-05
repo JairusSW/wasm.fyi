@@ -6,6 +6,7 @@ import {readCache, portableWorkloads, verifyWorkloads, planIdentity, atomicJSON}
 import {corpusGroups} from './lib/corpus-collection.mjs';
 import {runCommand} from './lib/benchmark-process.mjs';
 import {validateV8Description} from './lib/v8-preflight.mjs';
+import {sharedWeeklySnapshot} from './lib/weekly-calendar.mjs';
 const [directoryArg,engine]=process.argv.slice(2), directory=resolve(directoryArg);
 const receipt=JSON.parse(await readFile(join(directory,engine+'-build.json')));
 const env={...process.env,...receipt.env,GOWORK:'off',GOFLAGS:'-buildvcs=false',NODE_OPTIONS:''};
@@ -17,6 +18,7 @@ if(!described)throw Error('Weekly adapter has no description');
 const version=described.runtime_version;
 const pin=receipt.pin;
 const pinSet=JSON.parse(await readFile(join(directory,'pins.json')));
+const sharedSnapshot=sharedWeeklySnapshot(pinSet,JSON.parse(await readFile(join(site,'data/history-calendar.json'))));
 const calendar=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:pinSet.zone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(pinSet.cutoff)).map(p=>[p.type,p.value]));
 const snapshotId=`weekly-${calendar.year}${calendar.month}${calendar.day}`;
 if(engine==='v8')validateV8Description(described,{version:receipt.provenance.versions.node,v8:receipt.provenance.versions.v8},'optimizing-only');
@@ -31,12 +33,15 @@ if(process.argv.includes('--qualify-only')){console.log(engine,'qualified',versi
 const workloads=(await readCache(site)).filter(w=>!w.id.startsWith('features/'));await verifyWorkloads(workloads);
 const settings=await config(), name=process.platform==='darwin'?'local':'hub';
 const session=join(directory,'sessions',engine);await mkdir(session,{recursive:true});
+const previous=await readFile(join(session,'plan.json'),'utf8').then(JSON.parse,()=>null);
 const plan={schema:1,id:snapshotId+'-'+engine,created:new Date().toISOString(),engines:pin.configurations,machines:[{name,workers:'25%'}],sourcePin:pin,
+ calendar:sharedSnapshot,
  collection:{...settings.collection,runtimes:pin.configurations,includeFeatures:false,workers:1},live:false,deploy:false,
  wagoRevision:engine==='wago'?pin.revision:null,sourceReceiptSha256:digest(await readFile(join(directory,engine+'-build.json'))),
  jobs:corpusGroups(portableWorkloads(site,workloads)).map((workloads,i)=>({id:'corpus-'+String(i+1).padStart(4,'0'),workloads}))};
+// Sealed legacy sessions already carry the exact source pin; retain their identity on resume.
+if(previous && !previous.calendar)delete plan.calendar;
 plan.identity=planIdentity(plan);
-const previous=await readFile(join(session,'plan.json'),'utf8').then(JSON.parse,()=>null);
 if(previous && previous.identity!==plan.identity)throw Error('Weekly session changed; use a new session');
 if(!previous)await atomicJSON(join(session,'plan.json'),plan);
 await atomicJSON(join(session,'host.json'),{name,workers:'25%',harness:receipt.root,controller:receipt.controller});

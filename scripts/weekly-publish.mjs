@@ -9,6 +9,7 @@ import {validateData} from './lib/validate-data.mjs';
 import {appendReports,writeIndex} from './lib/snapshot-index.mjs';
 import {verifyParentBundle} from './lib/benchmark-bundle.mjs';
 import {runCommand} from './lib/benchmark-process.mjs';
+import {sharedWeeklySnapshot} from './lib/weekly-calendar.mjs';
 const [directoryArg,machine,...selectedEngines]=process.argv.slice(2),directory=resolve(directoryArg);
 const engines=selectedEngines.length?selectedEngines:['wago','wazero','wasmtime','v8','wavm','wasmer'];
 assert(engines.every(e=>['wago','wazero','wasmtime','v8','wavm','wasmer'].includes(e)),'Unsupported engine');
@@ -16,8 +17,10 @@ assert(['local','hub'].includes(machine),'Expected local or hub');
 const dataset=join(site,'data',machine==='local'?'history':'history-hub');
 const previous=await validateData(dataset),weekly=JSON.parse(await readFile(join(dataset,'weekly.json')));
 const pins=JSON.parse(await readFile(join(directory,'pins.json'))),cutoff=new Date(pins.cutoff).toISOString();
+const sharedSnapshot=sharedWeeklySnapshot(pins,JSON.parse(await readFile(join(site,'data/history-calendar.json'))));
 let target=weekly.results.find(w=>new Date(w.targetWeek).toISOString()===cutoff);
 if(!target){target={targetWeek:pins.cutoff,revision:pins.pins.find(p=>p.engine==='wago').revision,status:'measured',engines:{}};weekly.results.push(target);}
+target.targetWeek=sharedSnapshot.cutoff;
 const reuse=await readFile(join(directory,'reuse.json'),'utf8').then(JSON.parse,()=>null);
 const staged=await mkdtemp(join(site,'data','.weekly-'));
 try {
@@ -49,6 +52,9 @@ try {
   const session=join(directory,'sessions',engine),plan=JSON.parse(await readFile(join(session,'plan.json')));
   const state=JSON.parse(await readFile(join(session,'state.json'))),receipt=JSON.parse(await readFile(join(directory,engine+'-build.json')));
   const qualification=JSON.parse(await readFile(join(session,'qualification.json')));
+  assert.equal(new Date(plan.sourcePin.targetWeek).toISOString(),sharedSnapshot.cutoff,'Collected source date differs from shared calendar');
+  assert.equal(plan.sourcePin.revision,pins.pins.find(p=>p.engine===engine).revision,'Collected source differs from shared calendar');
+  if(plan.calendar)assert.deepEqual(plan.calendar,sharedSnapshot,'Collected calendar differs from shared calendar');
   assert.equal(qualification.pin.revision,receipt.pin.revision);
   const description=qualification.description;
   assert.equal(plan.sourceReceiptSha256,digest(await readFile(join(directory,engine+'-build.json'))),'Build receipt changed during collection');
@@ -85,6 +91,7 @@ try {
  // Keep the legacy Wago fields useful to older consumers while exposing all six pins.
  if(target.engines.wago)Object.assign(target,{revision:target.engines.wago.revision,collectedAt:target.engines.wago.collectedAt,reports:target.engines.wago.reports});
  delete target.runId;delete target.reportSha256;
+ for(const point of weekly.results)point.targetWeek=new Date(point.targetWeek).toISOString();
  weekly.results.sort((a,b)=>+new Date(a.targetWeek)-+new Date(b.targetWeek));weekly.weeks=weekly.results.map(w=>w.targetWeek);
  weekly.policy='History is ordered by source snapshot or release publication date. Weekly engines are pinned to the last default-branch commit before Saturday 11:59 PM America/New_York. V8 uses the V8 vendored in the pinned Node source. Unchanged source hashes reuse existing evidence on the same machine with the same corpus and measurement recipe. Actual collection timestamps and all 168 non-feature artifact hashes are retained.';
  await writeIndex(staged,merged);await writeFile(join(staged,'weekly.json'),JSON.stringify(weekly,null,2)+'\n');await validateData(staged);

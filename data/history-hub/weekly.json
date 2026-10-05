@@ -2,8 +2,8 @@
   "schema": 3,
   "policy": "History is ordered by source snapshot or release publication date. Weekly engines are pinned to the last default-branch commit before Saturday 11:59 PM America/New_York. V8 uses the V8 vendored in the pinned Node source. Unchanged source hashes reuse existing evidence on the same machine with the same corpus and measurement recipe. Actual collection timestamps and all 168 non-feature artifact hashes are retained.",
   "weeks": [
-    "2026-09-29T14:07:11-04:00",
-    "2026-10-03T23:59:00-04:00"
+    "2026-09-29T18:07:11.000Z",
+    "2026-10-04T03:59:00.000Z"
   ],
   "baseline": {
     "report": "4117fad96a6813a8b6fc1e5e408d5c9d582ea33b13e91da9351078d307edfd8f",
@@ -183,7 +183,7 @@
   },
   "results": [
     {
-      "targetWeek": "2026-09-29T14:07:11-04:00",
+      "targetWeek": "2026-09-29T18:07:11.000Z",
       "revision": "9f01d145d54ac7ab458b6b2f6047db90a757410a",
       "version": "v0.1.0-beta.11",
       "status": "measured",
@@ -1033,7 +1033,7 @@
       "releasePublishedAt": "2026-09-29T18:07:11Z"
     },
     {
-      "targetWeek": "2026-10-03T23:59:00-04:00",
+      "targetWeek": "2026-10-04T03:59:00.000Z",
       "revision": "0ef007c70581bf56155a4daf6fce8bda3f2c5ff1",
       "commitTime": "2026-10-03T21:05:16-04:00",
       "status": "measured",
