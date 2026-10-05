@@ -200,11 +200,13 @@ for(const [machine,name] of [['m1','history-hub'],['m2','history']]) {
     for(const w of baselineWorkloads) {
       // History owns its frozen artifact identity, independently of new source builds.
       if(!catalogue.has(w.id))continue;
+      const workloadSnapshots=snapshots.filter(s=>s.runtimes.some(c=>c.id===runtime)&&s.workloads.some(item=>item.id===w.id&&item.sha256===w.sha256));
       for(const [metric,scenario] of Object.entries({...scenarios,rss:'steady',code:'compile'})) {
-        history.cells[`${w.id}|${slot}|${metric}`]=measuredHistory(weekly,snapshots,baseline.host,runtime,w.id,w.sha256,scenario).map((point,i)=>{
+        history.cells[`${w.id}|${slot}|${metric}`]=measuredHistory(weekly,workloadSnapshots,baseline.host,runtime,w.id,w.sha256,scenario).map((point,i)=>{
           const week=weekly.results[i];
           const pin=historicalRuntimePoint(week,runtime);
-          const report=pin?snapshots.find(s=>(pin.reports?.some(receipt=>receipt.runId===s.runId)||s.runId===pin.runId)&&s.workloads.some(item=>item.id===w.id&&item.sha256===w.sha256)&&(metric==='rss'?s.memory.some(m=>m.runtime===runtime&&m.workload===w.id&&m.scenario==='steady'&&m.metric==='process.peak_rss'):metric==='code'?s.codeRecords.some(c=>c.runtime===runtime&&c.workload===w.id):s.summaries.some(t=>t.runtime===runtime&&t.workload===w.id&&t.scenario===scenario))):week.engines?undefined:baselineReports.find(s=>s.runtimes.some(c=>c.id===runtime)&&s.workloads.some(item=>item.id===w.id&&item.sha256===w.sha256));
+          const receiptRuns=new Set(pin?.reports?.map(receipt=>receipt.runId)??[pin?.runId]);
+          const report=pin?workloadSnapshots.find(s=>(receiptRuns.has(s.runId))&&s.workloads.some(item=>item.id===w.id&&item.sha256===w.sha256)&&(metric==='rss'?s.memory.some(m=>m.runtime===runtime&&m.workload===w.id&&m.scenario==='steady'&&m.metric==='process.peak_rss'):metric==='code'?s.codeRecords.some(c=>c.runtime===runtime&&c.workload===w.id):s.summaries.some(t=>t.runtime===runtime&&t.workload===w.id&&t.scenario===scenario))):week.engines?undefined:baselineReports.find(s=>s.runtimes.some(c=>c.id===runtime)&&s.workloads.some(item=>item.id===w.id&&item.sha256===w.sha256));
           const cell=weekly.results[i].status!=='measured' || pin && pin.status!=='measured' || !report?point.cell:metric==='rss'?measuredMemory(report,runtime,w.id,w.sha256,'steady','process.peak_rss'):metric==='code'?measuredCodeImage(report,runtime,w.id,w.sha256):point.cell;
           const factor=metric==='rss'?1024**2:metric==='code'?1024:1e6;
           const summary=report?.summaries.find(s=>s.runtime===runtime && s.workload===w.id && s.scenario===scenario && s.profile==='timing');
