@@ -130,7 +130,10 @@ describe('measured view boundary', () => {
 			expect(cells).toHaveLength(history.results.length);
 			expect(cells.every(point => point.role === 'retrospective-revision' && point.cell.status === 'ok')).toBe(true);
 			const baseline = measuredHistory(history, snapshots, historical.host, 'wasmtime', workload.id, workload.sha256, 'steady');
-			expect(baseline.every(point => point.role === 'fixed-comparison-baseline' && point.revision === undefined)).toBe(true);
+			for(const [i,point] of baseline.entries()){
+                expect(point.role).toBe(history.results[i].engines?'retrospective-revision':'fixed-comparison-baseline');
+                expect(point.revision).toBe(history.results[i].engines?.wasmtime?.revision);
+            }
 			const gaps = measuredHistory(history, snapshots.filter(snapshot => snapshot.runId !== historical.runId), historical.host, 'wago', workload.id, workload.sha256, 'steady');
 			expect(gaps[0].cell.status).toBe('not-collected');
 			expect(gaps).toHaveLength(history.results.length);
@@ -161,4 +164,15 @@ it('uses each engine’s pinned weekly report and keeps missing engine snapshots
  expect(measuredHistory(history,[feature,historical],feature.host,'wazero',item.id,item.sha256,'steady')[0].cell.status).toBe('not-collected');
  pin.reports[0].reportSha256='changed';
  expect(()=>measuredHistory(history,[feature,historical],feature.host,'wasmtime',item.id,item.sha256,'steady')).toThrow('weekly manifest');
+});
+
+it('selects the newest pinned call report independently of receipt order',()=>{
+ const old=structuredClone(feature),precise=structuredClone(feature);
+ precise.id='million-operation-call';precise.runId=precise.id;precise.created='2026-10-04T12:01:00Z';
+ precise.summaries.forEach(row=>{row.median_ns_per_operation=9;});
+ const receipts=[old,precise].map(s=>({runId:s.runId,collectedAt:s.created,reportSha256:s.sourceReportSha256}));
+ const history:MeasuredWeeklyHistory={baseline:{report:old.id},results:[{targetWeek:'2026-10-03',revision:'a'.repeat(40),status:'measured',engines:{wasmtime:{revision:'a'.repeat(40),status:'measured',reports:receipts}}}]};
+ expect(measuredHistory(history,[old,precise],old.host,'wasmtime',item.id,item.sha256,'steady')[0].cell).toMatchObject({status:'ok',value:9,evidence:{report:precise.id}});
+ precise.summaries.forEach(row=>{row.outcomes={preflight_failed:3};row.median_ns_per_operation=null;});
+ expect(measuredHistory(history,[old,precise],old.host,'wasmtime',item.id,item.sha256,'steady')[0].cell.status).toBe('failed');
 });

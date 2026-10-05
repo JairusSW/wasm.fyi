@@ -108,8 +108,7 @@ export async function stageAuxiliary(destination) {
     // Keep the comparison baseline with history; daily retention cannot remove it.
     assert(weekly.baseline && index.reports.some(r=>r.id===weekly.baseline.report && r.evidenceSha256===weekly.baseline.evidenceSha256),'Missing pinned historical comparison baseline');
     const target=join(destination,targetName);await mkdir(target,{recursive:true});
-    const indexed=JSON.parse(await readFile(join(source,'index.json'),'utf8'));
-    for(const name of [...datasetFiles(indexed),'weekly.json'])await cp(join(source,name),join(target,name));
+    for(const name of [...datasetFiles(index),'weekly.json'])await cp(join(source,name),join(target,name));
   }
   const source=join(site,'data/threads');
   if(await exists(source)) {
