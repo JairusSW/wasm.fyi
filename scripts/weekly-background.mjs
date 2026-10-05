@@ -78,7 +78,7 @@ try{
  const work=async machine=>{
   const progress=state.machines[machine];
   for(const date of dates){
-   if(await measured(machine,date)||progress.failed.some(f=>f.date===date))continue;
+   if(progress.completed.includes(date)||await measured(machine,date)||progress.failed.some(f=>f.date===date))continue;
    const week='weekly-'+date.replaceAll('-',''),native=machine==='local'?resolve('.wasmbench/'+week):remoteRoot+'/'+week,local=machine==='local'?native:resolve('.wasmbench/'+week+'/hub');
    progress.date=date;progress.status='waiting';await save();
    try{
@@ -90,7 +90,11 @@ try{
      progress.status='collecting';await save();
      const remote=mode=>ssh('cd '+quote(remoteSite)+' && flock -w 60 '+quote(native+'/launch.lock')+' '+quote(remoteNode)+' scripts/weekly-remote.mjs '+quote(progress.previous)+' '+quote(native)+' '+mode);
      let current=JSON.parse((await remote('start')).output);
-     while(current.active){await sleep();current=JSON.parse((await remote(current.warming?'start':'status')).output);}
+     let lastLog='';
+     while(current.active){
+      if(current.log&&current.log!==lastLog){console.log(`AMD64 ${date}:\n${current.log}`);lastLog=current.log;}
+      await sleep();current=JSON.parse((await remote(current.warming?'start':'status')).output);
+     }
      assert.equal(current.state?.status,'collected','AMD native capture stopped: '+(current.state?.reason??current.state?.status));
     }else{
      await script('weekly-queue.mjs',[progress.previous,native]);progress.status='collecting';await save();
