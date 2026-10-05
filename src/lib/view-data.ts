@@ -21,7 +21,7 @@ interface ViewData {
 	configurations:Record<CfgId,string>;
 	statistics:{timingSamples:number};
 	history:Record<MachineId,{
-		points:{date:string;revision:string;collectedAt?:string;status:string}[];
+		points:{date:string;revision:string;collectedAt?:string;status:string;currentLatency?:Partial<Record<CfgId,'s1'>>}[];
 		workloads:string[];artifactSha256:Record<string,string>;versions:Record<CfgId,string[]>;
 		cells:Record<string,(ViewCell & {role:'retrospective-revision'|'fixed-comparison-baseline'})[]>;
 	}>;
