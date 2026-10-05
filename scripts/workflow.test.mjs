@@ -8,7 +8,7 @@ import { packEvidence, fileDigest } from './lib/evidence-archive.mjs';
 import { validateWasmFyiReceipt } from './lib/wasmfyi-export.mjs';
 import { writeIndex, datasetFiles } from './lib/snapshot-index.mjs';
 import { validateReport, validateData } from './lib/validate-data.mjs';
-import { threadEvidencePath, validateThreadEvidence } from './lib/auxiliary-data.mjs';
+import { threadEvidencePath, validateThreadEvidence, stageAuxiliary } from './lib/auxiliary-data.mjs';
 
 test('stages dual-tier worker evidence while rejecting unsafe paths and incomplete cohorts',()=>{
   for(const name of ['darwin-arm64.json','linux-x64-liftoff-only.json','darwin-arm64-optimizing-only.json','a'.repeat(64)+'.json'])assert(threadEvidencePath(name));
@@ -361,4 +361,12 @@ test('changed feature probes cannot inherit archived successes',async()=>{
   assert(matchesCurrentFeature({id,sha256},current));
   assert(!matchesCurrentFeature({id,sha256:'b'.repeat(64)},current));
   assert(!matchesCurrentFeature({id:'features/wasi-p1/retired-probe/64',sha256},current));
+});
+
+test('staged historical evidence includes the verified external trial and throughput dependencies',async()=>{
+ const directory=await mkdtemp(join(tmpdir(),'wasm-fyi-history-stage-'));
+ try {
+  await stageAuxiliary(directory);
+  for(const name of ['history','history-hub'])await validateData(join(directory,name));
+ } finally {await rm(directory,{recursive:true,force:true});}
 });

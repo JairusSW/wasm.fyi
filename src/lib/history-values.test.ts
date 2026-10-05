@@ -13,7 +13,7 @@ describe('recorded weekly history',()=>{
             ['2026-10-03','0ef007c70581bf56155a4daf6fce8bda3f2c5ff1']
         ]);
         expect(viewData.history.m2.points.map(p=>p.date)).toEqual(viewData.history.m1.points.map(p=>p.date));
-        for(const p of viewData.history.m1.points)expect(p.collectedAt!.slice(0,10)).toBe('2026-10-04');
+        for(const p of viewData.history.m1.points)expect(Date.parse(p.collectedAt!)).toBeGreaterThan(Date.parse(p.date+'T00:00:00Z'));
         for(const machine of ['m1','m2'] as const)expect(viewData.history[machine].versions.G[0]).toBe('v0.1.0-beta.11');
     });
     it('keeps unchanged beta.11 cells aligned while refreshed current evidence stays separate',()=>{
@@ -34,7 +34,7 @@ describe('recorded weekly history',()=>{
             for(const [metric,scenario] of [['compile','compile'],['inst','instantiate'],['first','first-call'],['steady','steady']] as const){
                 const historical=historyCell(machine,workload.id,'G',metric,0);
                 if(historical.st!=='ok')continue;
-                if(!reports.has(historical.report))reports.set(historical.report,JSON.parse(readFileSync(new URL(`../../data/wasmbench/${historical.report}.json`,import.meta.url),'utf8')));
+                if(!reports.has(historical.report))reports.set(historical.report,JSON.parse(readFileSync(new URL(`../../data/${viewData.reports[historical.report].evidence.includes('/')?viewData.reports[historical.report].evidence:'wasmbench/'+viewData.reports[historical.report].evidence}`,import.meta.url),'utf8')));
                 const report=reports.get(historical.report)!;
                 const summary=report.summaries.find((s:{runtime:string;workload:string;scenario:string;profile:string})=>s.runtime==='wago'&&s.workload===workload.id&&s.scenario===scenario&&s.profile==='timing');
                 expect(summary).toBeDefined();

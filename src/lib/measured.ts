@@ -50,8 +50,9 @@ export function measuredHistory(history: MeasuredWeeklyHistory, snapshots: Measu
 	return history.results.map(week => {
 		const pin=historicalRuntimePoint(week,runtime), retrospective=!!pin || !!week.engines || runtime==='wago';
 		const role = retrospective ? 'retrospective-revision' as const : 'fixed-comparison-baseline' as const;
-		const receipt=pin?.reports?.find(p=>snapshots.some(snapshot=>snapshot.runId===p.runId&&matches(snapshot))) || pin;
-		const snapshot = retrospective ? snapshots.find(snapshot => snapshot.runId === receipt?.runId&&matches(snapshot)) : baseline;
+		const receipts=pin?.reports || (pin?[pin]:[]);
+		const snapshot = retrospective ? snapshots.filter(snapshot=>receipts.some(receipt=>receipt.runId===snapshot.runId)&&matches(snapshot)).sort((a,b)=>b.created.localeCompare(a.created))[0] : baseline;
+		const receipt=receipts.find(receipt=>receipt.runId===snapshot?.runId);
 		let cell: MeasuredCell;
 		if (week.status !== 'measured' || pin && pin.status !== 'measured' || !snapshot) cell = { status: 'not-collected', reason: 'This historical point was not collected.' };
 		else if (measuredHostKey(snapshot.host) !== measuredHostKey(host)) cell = { status: 'not-collected', reason: 'This historical report belongs to a different host.' };
