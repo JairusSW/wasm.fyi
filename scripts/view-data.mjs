@@ -5,7 +5,7 @@ import { validateV8Description } from './lib/v8-preflight.mjs';
 import { digest, site, config } from './lib/wasmbench.mjs';
 import { validateData } from './lib/validate-data.mjs';
 import { workloadCategory, compareWorkloads } from './lib/workload-category.mjs';
-import { measuredTiming, measuredMemory, measuredCodeImage, measuredHistory } from '../src/lib/measured.ts';
+import { measuredTiming, measuredMemory, measuredCodeImage, measuredHistory, historicalRuntimePoint } from '../src/lib/measured.ts';
 
 // This is the view projection of verified evidence, never a source of measurements.
 const root = join(site, 'data/wasmbench');
@@ -195,15 +195,16 @@ for(const [machine,name] of [['m1','history-hub'],['m2','history']]) {
   output.history[machine]=history;
   for(const [slot,runtime] of Object.entries(configurations)) {
     const description=baseline.runtimes.find(c=>c.id===runtime)?.description;
-    history.versions[slot]=weekly.results.map(w=>slot==='G'?(w.version || w.revision):description?.runtime_version || 'not collected');
+    history.versions[slot]=weekly.results.map(w=>{const pin=historicalRuntimePoint(w,runtime);return pin?(pin.version || pin.revision):w.engines?'not collected':description?.runtime_version || 'not collected';});
     for(const w of baselineWorkloads) {
       // History owns its frozen artifact identity, independently of new source builds.
       if(!catalogue.has(w.id))continue;
       for(const [metric,scenario] of Object.entries({...scenarios,rss:'steady',code:'compile'})) {
         history.cells[`${w.id}|${slot}|${metric}`]=measuredHistory(weekly,snapshots,baseline.host,runtime,w.id,w.sha256,scenario).map((point,i)=>{
           const week=weekly.results[i];
-          const report=runtime==='wago'?snapshots.find(s=>(week.reports?.some(pin=>pin.runId===s.runId)||s.runId===week.runId)&&s.workloads.some(item=>item.id===w.id&&item.sha256===w.sha256)&&(metric==='rss'?s.memory.some(m=>m.runtime===runtime&&m.workload===w.id&&m.scenario==='steady'&&m.metric==='process.peak_rss'):metric==='code'?s.codeRecords.some(c=>c.runtime===runtime&&c.workload===w.id):s.summaries.some(t=>t.runtime===runtime&&t.workload===w.id&&t.scenario===scenario))):baselineReports.find(s=>s.workloads.some(item=>item.id===w.id&&item.sha256===w.sha256));
-          const cell=weekly.results[i].status!=='measured' || !report?point.cell:metric==='rss'?measuredMemory(report,runtime,w.id,w.sha256,'steady','process.peak_rss'):metric==='code'?measuredCodeImage(report,runtime,w.id,w.sha256):point.cell;
+          const pin=historicalRuntimePoint(week,runtime);
+          const report=pin?snapshots.find(s=>(pin.reports?.some(receipt=>receipt.runId===s.runId)||s.runId===pin.runId)&&s.workloads.some(item=>item.id===w.id&&item.sha256===w.sha256)&&(metric==='rss'?s.memory.some(m=>m.runtime===runtime&&m.workload===w.id&&m.scenario==='steady'&&m.metric==='process.peak_rss'):metric==='code'?s.codeRecords.some(c=>c.runtime===runtime&&c.workload===w.id):s.summaries.some(t=>t.runtime===runtime&&t.workload===w.id&&t.scenario===scenario))):week.engines?undefined:baselineReports.find(s=>s.runtimes.some(c=>c.id===runtime)&&s.workloads.some(item=>item.id===w.id&&item.sha256===w.sha256));
+          const cell=weekly.results[i].status!=='measured' || pin && pin.status!=='measured' || !report?point.cell:metric==='rss'?measuredMemory(report,runtime,w.id,w.sha256,'steady','process.peak_rss'):metric==='code'?measuredCodeImage(report,runtime,w.id,w.sha256):point.cell;
           const factor=metric==='rss'?1024**2:metric==='code'?1024:1e6;
           const summary=report?.summaries.find(s=>s.runtime===runtime && s.workload===w.id && s.scenario===scenario && s.profile==='timing');
           return {st:status[cell.status],...(cell.status==='ok'?{v:cell.value/factor,...(cell.interval?{interval:cell.interval.map(v=>v/factor)}:{})}:{reason:reasonId(cell.reason)}),report:cell.evidence?.report || '',role:point.role,launchMedians:metric==='rss'||metric==='code'?[]:Object.values(summary?.launch_medians || {}).map(v=>v/factor)};
@@ -250,7 +251,7 @@ for(const host of Object.values(output.hosts)) for(const snapshot of ['s1','s2']
 }
 for(const history of Object.values(output.history))for(const [key,cells] of Object.entries(history.cells)) {
   if(cells.every(c=>c.st==='nm'&&!c.report)){delete history.cells[key];continue;}
-  history.cells[key]=cells.map(c=>[output.statuses.indexOf(c.st),reportIndex.get(c.report) ?? -1,c.v ?? null,c.interval ?? null,c.launchMedians ?? null,c.reason ?? null]);
+  history.cells[key]=cells.map(c=>[output.statuses.indexOf(c.st),reportIndex.get(c.report) ?? -1,c.v ?? null,c.interval ?? null,c.launchMedians ?? null,c.reason ?? null,c.role]);
 }
 await writeFile(join(site,'src/lib/data/measurements.json'),JSON.stringify(output)+'\n');
 console.log(`Generated measured view catalogue: ${output.catalogue.length} contracts, ${Object.keys(output.hosts).length} hosts.`);

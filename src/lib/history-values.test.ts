@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { viewCell, viewData } from './view-data';
-import { historyCell, historyChange, historySegments, historySeries } from './history-values';
+import { historyCell, historyChange, historySegments, historySeries, historyCallDetails } from './history-values';
+import { OTM_KEYS } from './data/snapshot';
 import { readFileSync } from 'node:fs';
 import type { Scope } from './model';
 
@@ -50,13 +51,15 @@ describe('recorded weekly history',()=>{
                 expect(b[i]).toBe(historyCell(machine,'mechanisms/host-to-wasm-call','G','steady',i).v);
                 expect(round[i]).toBe(a[i]+b[i]);
             }
-            expect(historySeries(selected,'A','roundTrip')).toBeNull();
+            const other=historySeries(selected,'A','roundTrip');
+            expect(other == null || Number.isNaN(other[0])).toBe(true);
         }
     });
     it('does not reuse erased comparison-engine measurements',()=>{
         for(const machine of ['m1','m2'] as const)for(const cid of ['A','D'] as const){
             expect(historyCell(machine,'applications/image-blur',cid,'steady',0).st).toBe('nm');
-            expect(historySeries({...scope,machine},cid,'exec')).toBeNull();
+            const series=historySeries({...scope,machine},cid,'exec');
+            expect(series == null || Number.isNaN(series[0])).toBe(true);
         }
     });
 	it('retains a failed historical contract as a gap instead of interpolating it',()=>{
@@ -72,4 +75,22 @@ describe('recorded weekly history',()=>{
 		expect(historySeries(scope,'C','exec')).toBeNull();
 		expect(historyChange({st:'failed',report:''},{st:'ok',v:1,report:'other'})).toBeNull();
 	});
+});
+
+
+it('uses one round-trip history tab while keeping directional measurements in its details',()=>{
+ expect(OTM_KEYS).toContain('roundTrip');expect(OTM_KEYS).not.toContain('wasmHost');expect(OTM_KEYS).not.toContain('hostWasm');
+ expect(historyCallDetails({...scope,baseline:'G'},'G',0)).toContain('Wasm → host:');
+ expect(historyCallDetails({...scope,baseline:'G'},'G',0)).toContain('Host → Wasm:');
+ expect(historyCallDetails({...scope,baseline:'G'},'G',0)).toContain('not a measured nested round trip');
+});
+it('retains a newly recorded engine point without filling its older gap',()=>{
+ const h=viewData.history.m1;
+ const workload=h.workloads.find(w=>!w.startsWith('features/')&&historyCell('m1',w,'G','steady',1).st==='ok')!;
+ const key=`${workload}|A|steady`,prior=h.cells[key];
+ try {
+  h.cells[key]=[{st:'nm',report:'',role:'retrospective-revision'}, {...historyCell('m1',workload,'G','steady',1),role:'retrospective-revision'}];
+  const values=historySeries({...scope,baseline:'G',hide:Object.fromEntries(viewData.applicationConfigurations.filter(c=>c!=='G'&&c!=='A').map(c=>[c,true]))},'A','exec');
+  expect(values).not.toBeNull();expect(values![0]).toBeNaN();expect(values![1]).toBeGreaterThan(0);
+ } finally {if(prior)h.cells[key]=prior;else delete h.cells[key];}
 });

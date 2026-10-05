@@ -7,7 +7,7 @@
 	import { ALLB, EVENTS, HARNESS_BREAK, MET, OTM, OTM_KEYS, PIN, SNAPS, verAt } from '$lib/data/snapshot';
 	import type { CfgId, MetricKey } from '$lib/data/types';
 	import { fmtU, n0, pc, pct, relative, workloadName } from '$lib/format';
-	import { benchVal, isVisible, otSeries } from '$lib/model';
+	import { benchVal, otSeries } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 import { viewData } from '$lib/view-data';
 import { historyCell, historyChange, historySegments, historicalCallWorkloads, historyCallDetails } from '$lib/history-values';
@@ -44,7 +44,7 @@ import { historyCell, historyChange, historySegments, historicalCallWorkloads, h
 		const s = SER[id]!;
 		return ui.histMode === 'ratio' ? s[i] : isCov ? (s[i] - s[PIN]) / viewData.history[ui.machine].workloads.length : s[i] / s[PIN] - 1;
 	};
-	const plotC = $derived(CFG.filter((c) => isVisible(ui.scope, c) && SER[c.id]));
+	const plotC = $derived(CFG.filter((c) => !ui.scope.hide[c.id] && SER[c.id]));
 	const fmtV = (v: number) => (isCov ? n0(v) : fmtU(v, M.u));
 
 	const scale = $derived.by(() => {
@@ -85,7 +85,7 @@ import { historyCell, historyChange, historySegments, historicalCallWorkloads, h
 				width: sel ? 2.2 : 1.2,
 				op: sel ? 1 : 0.4,
                 segs:historySegments(SNAPS.map(p=>val(c.id,p.i)),X,Y),
-				bumps: SNAPS.filter((p) => p.i > 0 && verAt(c.id, p.i,ui.machine) !== verAt(c.id, p.i - 1,ui.machine)).map((p) => {
+				bumps: SNAPS.filter((p) => p.i > 0 && Number.isFinite(val(c.id,p.i)) && verAt(c.id, p.i,ui.machine) !== verAt(c.id, p.i - 1,ui.machine)).map((p) => {
 					const x = X(p.i);
 					const y = Y(val(c.id, p.i));
 					return { i: p.i, tf: `translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(45)`, bl: pc(x, W), bt: (((y - 8) / HC) * 100).toFixed(2) + '%', ver: verAt(c.id, p.i,ui.machine) };
@@ -121,7 +121,7 @@ import { historyCell, historyChange, historySegments, historicalCallWorkloads, h
 		const hi = hover;
 		if (hi == null || !plotC.length) return null;
 		const fmtH = (id: CfgId, i: number) => (ui.histMode === 'ratio' ? fmtV(val(id, i)) : isCov ? pct(val(id, i)) : relative(1+val(id,i),ui.deltaFormat));
-		const rows = plotC.filter(c=>Number.isFinite(SER[c.id]![hi]))
+		const rows = plotC.filter(c=>Number.isFinite(SER[c.id]![hi]) && Number.isFinite(val(c.id,hi)))
 			.map((c) => {
 				const s = SER[c.id]!;
 				const v = s[hi];
@@ -218,7 +218,7 @@ import { historyCell, historyChange, historySegments, historicalCallWorkloads, h
 
 <div class="head">
 	<h1>History</h1>
-	<span class="subtitle fg3">Retrospective Wago revisions · frozen cohort</span>
+	<span class="subtitle fg3">Retrospective engine revisions · frozen cohort</span>
 </div>
 <Tabs options={OTM_KEYS.map((k) => [k, OTM[k].l])} value={ui.otMetric} onselect={(k) => (ui.otMetric = k)} />
 <Carousel title="{M.l} History" sub="{oi + 1} / {OTM_KEYS.length} · {NOTE[M.key]}" onprev={() => step(-1)} onnext={() => step(1)} noun="metric" />
@@ -345,7 +345,7 @@ import { historyCell, historyChange, historySegments, historicalCallWorkloads, h
 			</button>
 		{/each}
 	</div>
-	<div class="note">Revision markers identify retrospectively measured Wago source. The corpus is frozen; current source rebuilds do not change these measurements.</div>
+	<div class="note">Revision markers identify retrospectively measured engine source. The corpus is frozen; current source rebuilds do not change these measurements.</div>
 </div>
 
 <div class="panel report">

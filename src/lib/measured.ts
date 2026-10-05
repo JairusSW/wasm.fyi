@@ -30,27 +30,36 @@ export interface MeasuredSnapshot {
 	codeRecords: { runtime: string; workload: string; status: string; image_bytes?: number; [key: string]: unknown }[];
 }
 
+export interface HistoricalEnginePoint {
+	revision: string; version?: string; collectedAt?: string; status: string; runId?: string; reportSha256?: string;
+	reports?: {runId:string;collectedAt:string;reportSha256:string}[];
+}
 export interface MeasuredWeeklyHistory {
 	baseline: { report: string; reports?: string[] };
-	results: { targetWeek: string; revision: string; version?: string; collectedAt?: string; status: string; runId?: string; reportSha256?: string; reports?: {runId:string;collectedAt:string;reportSha256:string}[] }[];
+	results: (HistoricalEnginePoint & {targetWeek:string; engines?:Record<string,HistoricalEnginePoint>})[];
 }
 
-/** Retrospective Wago measurements and fixed comparisons have different provenance. No interpolation. */
+export function historicalRuntimePoint(week:MeasuredWeeklyHistory['results'][number],runtime:string) {
+	return week.engines ? week.engines[runtime] ?? null : runtime === 'wago' ? week : null;
+}
+
+/** Exact per-engine weekly pins and explicitly fixed legacy baselines; no interpolation. */
 export function measuredHistory(history: MeasuredWeeklyHistory, snapshots: MeasuredSnapshot[], host: MeasuredHost, runtime: string, workload: string, artifactSha256: string, scenario: string) {
 	const matches=(snapshot:MeasuredSnapshot)=>snapshot.workloads.some(w=>w.id===workload&&w.sha256===artifactSha256)&&snapshot.runtimes.some(r=>r.id===runtime)&&snapshot.summaries.some(s=>s.runtime===runtime&&s.workload===workload&&s.scenario===scenario&&s.profile==='timing');
 	const baseline = snapshots.find(snapshot => (history.baseline.reports||[history.baseline.report]).includes(snapshot.id)&&matches(snapshot));
 	return history.results.map(week => {
-		const role = runtime === 'wago' ? 'retrospective-revision' as const : 'fixed-comparison-baseline' as const;
-		const receipt=week.reports?.find(pin=>snapshots.some(snapshot=>snapshot.runId===pin.runId&&matches(snapshot)))||week;
-		const snapshot = runtime === 'wago' ? snapshots.find(snapshot => snapshot.runId === receipt.runId&&matches(snapshot)) : baseline;
+		const pin=historicalRuntimePoint(week,runtime), retrospective=!!pin || !!week.engines || runtime==='wago';
+		const role = retrospective ? 'retrospective-revision' as const : 'fixed-comparison-baseline' as const;
+		const receipt=pin?.reports?.find(p=>snapshots.some(snapshot=>snapshot.runId===p.runId&&matches(snapshot))) || pin;
+		const snapshot = retrospective ? snapshots.find(snapshot => snapshot.runId === receipt?.runId&&matches(snapshot)) : baseline;
 		let cell: MeasuredCell;
-		if (week.status !== 'measured' || !snapshot) cell = { status: 'not-collected', reason: 'This historical point was not collected.' };
+		if (week.status !== 'measured' || pin && pin.status !== 'measured' || !snapshot) cell = { status: 'not-collected', reason: 'This historical point was not collected.' };
 		else if (measuredHostKey(snapshot.host) !== measuredHostKey(host)) cell = { status: 'not-collected', reason: 'This historical report belongs to a different host.' };
 		else {
-			if (runtime === 'wago' && (snapshot.created !== receipt.collectedAt || snapshot.sourceReportSha256 !== receipt.reportSha256)) throw new Error('Historical report differs from its weekly manifest');
+			if (retrospective && (snapshot.created !== receipt?.collectedAt || snapshot.sourceReportSha256 !== receipt?.reportSha256)) throw new Error('Historical report differs from its weekly manifest');
 			cell = measuredTiming(snapshot, runtime, workload, artifactSha256, scenario);
 		}
-		return { targetWeek: week.targetWeek, revision: runtime === 'wago' ? week.revision : undefined, role, cell };
+		return { targetWeek: week.targetWeek, revision: pin?.revision, role, cell };
 	});
 }
 export interface EvidenceReference { report: string; runId: string; collectedAt: string; evidence: string; sha256: string }

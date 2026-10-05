@@ -25,10 +25,12 @@ export const OTM_KEYS: OtMetricKey[] = (Object.keys(OTM) as OtMetricKey[]).filte
 export const SNAPS: Snap[] = (viewData.history.m1.points.length?viewData.history.m1.points:viewData.history.m2.points).map((p,i)=>({i,date:p.date,short:p.date.slice(5)}));
 export const HARNESS_BREAK=0;
 export const PIN=0;
-export const EVENTS:SnapEvent[]=(viewData.history.m1.points.length?viewData.history.m1.points:viewData.history.m2.points).map((p,i)=>({i,kind:'revision',label:`Retrospective Wago revision ${p.revision.slice(0,12)}`}));
+export const EVENTS:SnapEvent[]=(viewData.history.m1.points.length?viewData.history.m1.points:viewData.history.m2.points).map((p,i)=>({i,kind:'revision',label:`Retrospective source snapshot ${p.date}`}));
 export const verAt=(cid:CfgId,i:number,machine:'m1'|'m2'='m1')=>{
   const v=viewData.history[machine].versions[cid]?.[i];
-  return cid==='G'?(v && /^[a-f0-9]{40}$/.test(v)?v.slice(0,12):v || 'not collected'):v && v!=='not collected'?`fixed ${v}`:'not collected';
+  const h=viewData.history[machine];
+  const historical=h.workloads.some(w=>h.cells[`${w}|${cid}|steady`]?.[i]?.role==='retrospective-revision');
+  return historical?(v && /^[a-f0-9]{40}$/.test(v)?v.slice(0,12):v || 'not collected'):v && v!=='not collected'?`fixed ${v}`:'not collected';
 };
 export const BENCH: BenchGroup[] = [...new Set(viewData.catalogue.map(b=>b.group))].map(g=>({
   g, items:viewData.catalogue.filter(b=>b.group===g), total:viewData.catalogue.filter(b=>b.group===g).length
