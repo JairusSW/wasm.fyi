@@ -118,7 +118,7 @@ import HistoryMarker from '../HistoryMarker.svelte';
 			onnext={() => step(1)}
 			noun="metric"
 		/>
-		<span class="s12 fg3">{SNAPS.length} retrospective points · ◆ version · ● snapshot · hover to inspect</span>
+		<span class="s12 fg3">{SNAPS.length} retrospective points · ◆ release · ● source snapshot · hover to inspect</span>
 		<span class="s12 fg2">{spEvent}</span>
 		<a class="link-quiet push" href={siteHref(histHref(ui.histCfg))}>History</a>
 	</div>
