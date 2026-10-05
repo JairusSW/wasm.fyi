@@ -11,6 +11,18 @@ const cache=new Map<string,Aggregate|null>();
 const median=(xs:number[])=>{const s=[...xs].sort((a,b)=>a-b);return s.length%2?s[s.length>>1]:(s[(s.length>>1)-1]+s[s.length>>1])/2;};
 const quantile=(xs:number[],q:number)=>{const s=[...xs].sort((a,b)=>a-b);const p=(s.length-1)*q;return s[Math.floor(p)]+(s[Math.ceil(p)]-s[Math.floor(p)])*(p%1);};
 
+/** The exact current cohort, shared by headline and canonical release history. */
+export function aggregateCohort(s:Scope,group:PerfGroup,cid:CfgId,col:number) {
+ const metric=metrics[group][col];
+ const ids=viewData.applicationConfigurations;
+ const selected=[...new Set([...ids.filter(id=>!s.hide[id]),s.baseline])];
+ const workloads=group==='lat'?viewData.catalogue.filter(w=>!w.id.startsWith('features/')):viewData.catalogue;
+ const available=(w:string,c:CfgId)=>{const cell=viewCell(s.machine,s.snapshot || 's1',w,c,metric || '');return !!cell.report && cell.st==='ok' && cell.v!=null && Number.isFinite(cell.v) && cell.v>0;};
+ const participants=metric?selected.filter(c=>workloads.some(w=>available(w.id,c))):[];
+ const cohort=participants.includes(cid)?workloads.filter(w=>participants.every(c=>available(w.id,c))):[];
+ return {cohort,participants};
+}
+
 /** A host-local shared workload cohort merged from sealed reports; each cell retains its evidence. */
 export function aggregate(s:Scope,group:PerfGroup,cid:CfgId,col:number):Aggregate|null {
 	const metric=metrics[group][col];
@@ -38,16 +50,8 @@ export function aggregate(s:Scope,group:PerfGroup,cid:CfgId,col:number):Aggregat
 	const os=s.machine==='m1'?'linux':'darwin';
 	const snapshot=s.snapshot || 's1';
 	if(group==='lat' && (!ids.includes(cid)||!ids.includes(s.baseline)))return remember(null);
-	// Feature probes have separate views. Include every other contract in
-	// latency headlines; each cell retains its own evidence report.
-	const workloads=group==='lat'?viewData.catalogue.filter(w=>!w.id.startsWith('features/')):viewData.catalogue;
 	const cell=(w:string,c:CfgId)=>viewCell(s.machine,snapshot,w,c,metric);
-	const available=(c:ViewCell)=>!!c.report && c.st==='ok' && c.v!=null && Number.isFinite(c.v) && c.v>0;
-	// One host-local cohort keeps every runtime's headline directly comparable.
-	// Configurations without successful non-feature timings on this host are omitted.
-	const participants=selected.filter(c=>workloads.some(w=>available(cell(w.id,c))));
-	if(!participants.includes(cid))return remember(null);
-	const cohort=workloads.filter(w=>participants.every(c=>available(cell(w.id,c))));
+	const {cohort,participants}=aggregateCohort(s,group,cid,col);
 	if(!cohort.length)return remember(null);
 	const reports=[...new Set(cohort.flatMap(w=>participants.map(c=>cell(w.id,c).report)))];
 	if(!reports.length)return remember(null);

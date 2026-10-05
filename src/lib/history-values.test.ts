@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { aggregate } from './aggregates';
+import { fmtU } from './format';
 import { viewCell, viewData } from './view-data';
-import { historyCell, historyChange, historySegments, historyCurve, historySeries, historyCallDetails, historyReusesEvidence } from './history-values';
+import { historyCell, historyChange, historySegments, historyCurve, historySeries, historyCallDetails, historyReusesEvidence, historyCohort } from './history-values';
 import { OTM_KEYS, historyPin } from './data/snapshot';
 import { readFileSync } from 'node:fs';
 import type { Scope } from './model';
@@ -38,19 +40,20 @@ describe('recorded weekly history',()=>{
             }
         }
     });
-    it('keeps unchanged beta.11 cells aligned while refreshed current evidence stays separate',()=>{
+    it('uses the same verified beta.11 cells in current and release history',()=>{
         for(const machine of ['m1','m2'] as const)for(const workload of viewData.catalogue)
             for(const metric of ['compile','inst','first','steady'] as const){
                 const current=viewCell(machine,'s1',workload.id,'G',metric);
                 const historical=historyCell(machine,workload.id,'G',metric,betaIndex(machine));
-                if(historical.report===current.report){
+                if(current.report && !workload.id.startsWith('features/')){
+                    expect(historical.report).toBe(current.report);
                     expect(historical.st).toBe(current.st);
                     expect(historical.v).toBe(current.v);
                 }
                 if(historical.report)expect(viewData.reports[historical.report]).toBeDefined();
             }
     });
-    it('retains exact archived beta.11 timing values after current measurements are refreshed',()=>{
+    it('retains exact source-pinned beta.11 timing values in the canonical release capture',()=>{
         const reports=new Map<string,ReturnType<typeof JSON.parse>>();
         for(const machine of ['m1','m2'] as const)for(const workload of viewData.catalogue)
             for(const [metric,scenario] of [['compile','compile'],['inst','instantiate'],['first','first-call'],['steady','steady']] as const){
@@ -146,4 +149,21 @@ it('does not let an older failure change a later historical average',()=>{
  const workload=h.workloads.find(w=>historyCell('m2',w,'G','steady',older).st==='ok'&&historyCell('m2',w,'G','steady',beta).st==='ok')!;
  const cells=h.cells[`${workload}|G|steady`],original=cells[older];
  try{cells[older]={st:'failed',report:original.report,role:original.role};expect(historySeries(selected,'G','exec')![beta]).toBe(before);}finally{cells[older]=original;}
+});
+
+
+for(const machine of ['m1','m2'] as const)for(const weighting of ['corpus','workload'] as const)
+it(`matches current and beta.11 history averages exactly on ${machine} with ${weighting} weighting`,()=>{
+ for(const hide of [{},{A:true,D:true}])for(const baseline of ['A','G'] as const){
+  const selected:Scope={machine,weighting,hide,baseline};
+  const beta=betaIndex(machine);
+  expect(viewData.history[machine].points[beta].currentLatency?.G).toBe('s1');
+  for(const [key,col] of [['compile',0],['inst',1],['exec',3]] as const){
+   const current=aggregate(selected,'lat','G',col)!;
+   const historical=historySeries(selected,'G',key)![beta];
+   expect(historical).toBe(current.v);
+   expect(fmtU(historical,'ms')).toBe(fmtU(current.v,'ms'));
+   expect(historyCohort(selected,'G',key,beta)).toHaveLength(current.count);
+  }
+ }
 });
