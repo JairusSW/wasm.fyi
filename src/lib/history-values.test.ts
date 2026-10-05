@@ -92,5 +92,6 @@ it('retains a newly recorded engine point without filling its older gap',()=>{
   h.cells[key]=[{st:'nm',report:'',role:'retrospective-revision'}, {...historyCell('m1',workload,'G','steady',1),role:'retrospective-revision'}];
   const values=historySeries({...scope,baseline:'G',hide:Object.fromEntries(viewData.applicationConfigurations.filter(c=>c!=='G'&&c!=='A').map(c=>[c,true]))},'A','exec');
   expect(values).not.toBeNull();expect(values![0]).toBeNaN();expect(values![1]).toBeGreaterThan(0);
+  expect(historySeries({...scope,baseline:'G'},'A','cov')![0]).toBeNaN();
  } finally {if(prior)h.cells[key]=prior;else delete h.cells[key];}
 });
