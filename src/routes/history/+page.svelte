@@ -88,7 +88,7 @@ import HistoryMarker from '$lib/components/HistoryMarker.svelte';
 				width: sel ? 2.2 : 1.2,
 				op: sel ? 1 : 0.7,
                 points: SNAPS.filter(p=>Number.isFinite(val(c.id,p.i))).map(p=>({i:p.i,x:X(p.i),y:Y(val(c.id,p.i)),version:versions.has(p.i)?verAt(c.id,p.i,ui.machine):'',partial:!historyCoverage(ui.scope,c.id,M.key,p.i).complete})),
-                segs:historySegments(SNAPS.map(p=>ui.histMode==='ratio'&&!historyCoverage(ui.scope,c.id,M.key,p.i).complete?NaN:val(c.id,p.i)),X,Y,true),
+                segs:historySegments(SNAPS.map(p=>val(c.id,p.i)),X,Y,true),
 				bumps: SNAPS.filter((p) => versions.has(p.i)).map((p) => {
 					const x = X(p.i);
 					const y = Y(val(c.id, p.i));
@@ -347,7 +347,7 @@ import HistoryMarker from '$lib/components/HistoryMarker.svelte';
 	<div class="keys">
 		<span class="key"><span class="k-range"></span>Change-report range — click chart or use From / To</span>
 		<span class="key"><span class="k-diamond"></span>Release version · circle = source snapshot</span>
-		<span class="key">○ Partial workload coverage · excluded from absolute trend lines</span>
+		<span class="key">○ Partial workload coverage · changes use matched workloads</span>
 		<span class="key"><span class="k-event"></span>Retrospective source revision — hover for details</span>
 	</div>
 	<div class="report-for">
