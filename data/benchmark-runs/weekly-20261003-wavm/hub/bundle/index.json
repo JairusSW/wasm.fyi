@@ -1,0 +1,53 @@
+{
+  "schema": 1,
+  "id": "weekly-20261003-wavm",
+  "machine": "hub",
+  "bytes": 250945522,
+  "sha256": "9db424ec97a40958ef915dc3190281c021aaf577272222d49e621cfb26070935",
+  "format": "tar+gzip concatenated parts",
+  "parts": [
+    {
+      "path": "bundle.tar.gz.part-000",
+      "bytes": 33554432,
+      "sha256": "3d1498c4820b079b88bd95850bf70642725f1b42d7109c61eea7793df37f650f"
+    },
+    {
+      "path": "bundle.tar.gz.part-001",
+      "bytes": 33554432,
+      "sha256": "e6cadf712d86a56f71d83a6b02e52caa9ac7ca5290afb48d5626a376d62cf3a0"
+    },
+    {
+      "path": "bundle.tar.gz.part-002",
+      "bytes": 33554432,
+      "sha256": "3e98fdbf567a6c33efcb269b6cd886b33762e738566125efcfbf3a40f2004927"
+    },
+    {
+      "path": "bundle.tar.gz.part-003",
+      "bytes": 33554432,
+      "sha256": "b3213bb851af8b702eb2ea9bae085c6f7b2a0208db8033f31cbcd3413d1544f2"
+    },
+    {
+      "path": "bundle.tar.gz.part-004",
+      "bytes": 33554432,
+      "sha256": "92b2284458caec56e0ffa206aee54d1d1306a2b54c4e0f72ff8731a4e014dc5b"
+    },
+    {
+      "path": "bundle.tar.gz.part-005",
+      "bytes": 33554432,
+      "sha256": "6c1fdeed32fe62b3730b7967a84bf1630d84d23277c35882a6ba3b26780a4761"
+    },
+    {
+      "path": "bundle.tar.gz.part-006",
+      "bytes": 33554432,
+      "sha256": "abd62d54685acf5542934237ad41e64495e5b00e2ca13bf4411ef726152b992e"
+    },
+    {
+      "path": "bundle.tar.gz.part-007",
+      "bytes": 16064498,
+      "sha256": "525a8f2b95ce217d8f63abd04eeddcfcef6b4ccaeb08d6704c91d42cbf8c66ab"
+    }
+  ],
+  "metadata": "metadata.json",
+  "metadataSha256": "8cc3e8b542aa1e5ff72c4bf91547c31dd9889067c82c4214da02a3ed6852eb76",
+  "download": "Concatenate parts in order, verify the full SHA-256, then tar -xzf bundle.tar.gz."
+}

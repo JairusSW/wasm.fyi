@@ -1,0 +1,69 @@
+{
+  "pin": {
+    "engine": "wavm",
+    "targetType": "main",
+    "targetWeek": "2026-10-04T03:59:00Z",
+    "repository": "WAVM/WAVM",
+    "branch": "master",
+    "revision": "4e82bb9fecf9c1bdb4d00f96fa89063ee4382d09",
+    "committedAt": "2026-04-04T18:40:00Z",
+    "url": "https://github.com/WAVM/WAVM/commit/4e82bb9fecf9c1bdb4d00f96fa89063ee4382d09",
+    "status": "planned",
+    "configurations": [
+      "wavm"
+    ]
+  },
+  "description": {
+    "abis": [
+      "core",
+      "wasi-command"
+    ],
+    "backend": "llvm-jit",
+    "build": "adapter-native/0.1.0; wavm",
+    "capabilities": {
+      "can_command_compile_phases": true,
+      "can_command_first-call_phases": true,
+      "can_command_instantiate_phases": true,
+      "can_compile_separately": true,
+      "can_host_function_calls_v1": true,
+      "can_instantiate_separately": true,
+      "can_measure_native_code_size": true,
+      "can_run_commands": true,
+      "can_run_vectors": true,
+      "can_vector_compile_phases": true,
+      "can_vector_first-call_phases": true,
+      "can_vector_instantiate_phases": true
+    },
+    "effective_configuration": {
+      "assemblyscript_abort_policy": "Only env.abort with four i32 parameters and no results; imported callback creates a real guest trap; identity host imports use their separately validated profile",
+      "call_policy": "embedding export lookup, integer argument/result marshalling and result allocation included; every result verified outside timed batch",
+      "command_policy": "Public WAVM WASI embedding; fresh process and instance per operation; fixture staging excluded; instantiation includes compartment, context, WASI process/resolver and guest instantiation; call includes only _start invocation and exit capture; output verification excluded; bounded stdio; read-only verified fixture directory; networking disabled; missing sock_accept receives ENOTCAPABLE rather than success; engine clocks and random source retained",
+      "compile_policy": "eager module API; engine creation excluded",
+      "release_policy": "native instance/store disposal; no physical RSS reclamation claim",
+      "reset_policy": "fresh lifecycle instance; stateless steady retained instance; wasm3 recompiles outside first-call timing",
+      "vector_policy": "Fresh instance per ordered vector sequence; input writes and exact output verification excluded from sum of timed export lookups, integer marshalling and embedding calls; one operation per complete sequence; lifecycle windows match scalar API phases",
+      "wasmi_dispatch": "not applicable; external SDK build identity pinned"
+    },
+    "embedding": "standalone Rust/C embedding",
+    "features": [
+      "mvp"
+    ],
+    "phase_barrier_scenarios": [
+      "compile",
+      "instantiate",
+      "first-call",
+      "steady"
+    ],
+    "phase_release_policy": "release native instance; compiled module/engine retained except compile samples; no RSS reclamation claim",
+    "runtime": "wavm",
+    "runtime_version": "nightly-2026-04-05-4e82bb9",
+    "scenarios": [
+      "compile",
+      "instantiate",
+      "first-call",
+      "steady"
+    ]
+  },
+  "qualifiedAt": "2026-10-05T02:55:46.416Z",
+  "binarySha256": "53b8580f7e37d8551064305768a8b318b168fcff2f8422066b85733087f8e99d"
+}

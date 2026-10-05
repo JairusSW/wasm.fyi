@@ -1,0 +1,96 @@
+{
+  "schema": 1,
+  "root": "/home/hub/.cache/wasm-fyi/weekly-20261003/harness/wavm",
+  "controller": "/home/hub/.cache/wasm-fyi/weekly-20261003/controller",
+  "harnessRevision": "9332ced5e59c0c3fd9c5aabc6ebc2ed991431eb9",
+  "controllerSha256": "34741da126f5a73c2ae569f6a7fd5ef7d54a8e30198170566abed4011d6ad985",
+  "analyzerSha256": "649d645c5630c68c919394f381ccca528f14e946cc3c16adcdd07ea227440d65",
+  "pin": {
+    "engine": "wavm",
+    "targetType": "main",
+    "targetWeek": "2026-10-04T03:59:00Z",
+    "repository": "WAVM/WAVM",
+    "branch": "master",
+    "revision": "4e82bb9fecf9c1bdb4d00f96fa89063ee4382d09",
+    "committedAt": "2026-04-04T18:40:00Z",
+    "url": "https://github.com/WAVM/WAVM/commit/4e82bb9fecf9c1bdb4d00f96fa89063ee4382d09",
+    "status": "planned",
+    "configurations": [
+      "wavm"
+    ]
+  },
+  "provenance": {
+    "engine": "wavm",
+    "targetType": "main",
+    "targetWeek": "2026-10-04T03:59:00Z",
+    "repository": "WAVM/WAVM",
+    "branch": "master",
+    "revision": "4e82bb9fecf9c1bdb4d00f96fa89063ee4382d09",
+    "committedAt": "2026-04-04T18:40:00Z",
+    "url": "https://github.com/WAVM/WAVM/commit/4e82bb9fecf9c1bdb4d00f96fa89063ee4382d09",
+    "status": "planned",
+    "configurations": [
+      "wavm"
+    ],
+    "sdk": "/home/hub/.local/share/wasm-fyi/toolchains/wavm-nightly-2026-04-05/sdk",
+    "sdkSource": "/home/hub/.local/share/wasm-fyi/toolchains/wavm-nightly-2026-04-05/source"
+  },
+  "runtime": {
+    "elf_startup_dependencies": {
+      "version": "linux-glibc-startup-closure-v1",
+      "interpreter": {
+        "path": "/lib64/ld-linux-x86-64.so.2",
+        "sha256": "c20a2dc8917c755f02b94049356320fe1f62ac7d9f8994731f807d9df39302da"
+      },
+      "libraries": {
+        "libWAVM.so.0": {
+          "path": "/home/hub/.local/share/wasm-fyi/toolchains/wavm-nightly-2026-04-05/sdk/lib/libWAVM.so.0",
+          "sha256": "1d7a9141e4f3f25ced080114f57835f3c8bc3388dd2dfafbdadfefa33e1b4815"
+        },
+        "libc.so.6": {
+          "path": "/lib/x86_64-linux-gnu/libc.so.6",
+          "sha256": "3a15d66867d83762c7f2f1e37359cb8f6c5743edb369c65285cb0b1c4f7498bf"
+        },
+        "libgcc_s.so.1": {
+          "path": "/lib/x86_64-linux-gnu/libgcc_s.so.1",
+          "sha256": "d93224d2b0dab4247598be683adca02f5cf00586f99c187579cd7e92058fb7cb"
+        },
+        "libm.so.6": {
+          "path": "/lib/x86_64-linux-gnu/libm.so.6",
+          "sha256": "fce00b6f25f459cf4ae0b7fae4257909a1a8a86f9149e7c029a5d617baf1ccd0"
+        },
+        "libstdc++.so.6": {
+          "path": "/lib/x86_64-linux-gnu/libstdc++.so.6",
+          "sha256": "1fd75fe70354a416d75aef22bcae68c47bd25d20e2d0568c30b1a9838cf62f11"
+        }
+      },
+      "control_files": {
+        "/etc/ld.so.cache": "1b2ef9fe7da4550f7b4e998fe2e80e9d2163233f0c7f6ccf22b207e1763c6356",
+        "/etc/ld.so.preload": "absent"
+      }
+    },
+    "host_file_sha256": {
+      "/etc/ld.so.cache": "1b2ef9fe7da4550f7b4e998fe2e80e9d2163233f0c7f6ccf22b207e1763c6356",
+      "/lib64/ld-linux-x86-64.so.2": "c20a2dc8917c755f02b94049356320fe1f62ac7d9f8994731f807d9df39302da"
+    },
+    "native_dependency_policy": "linux-glibc-startup-closure-v1; explicit trusted loader --list; exact startup library hashes and loader controls; re-resolved before execution; excludes later dlopen and kernel vDSO",
+    "id": "wavm",
+    "command": [
+      "/home/hub/.cache/wasm-fyi/weekly-20261003/harness/wavm/bin/adapter-wavm"
+    ],
+    "file_sha256": {
+      "/home/hub/.cache/wasm-fyi/weekly-20261003/harness/wavm/bin/adapter-wavm": "53b8580f7e37d8551064305768a8b318b168fcff2f8422066b85733087f8e99d",
+      "/home/hub/.local/share/wasm-fyi/toolchains/wavm-nightly-2026-04-05/sdk/lib/libWAVM.so.0": "1d7a9141e4f3f25ced080114f57835f3c8bc3388dd2dfafbdadfefa33e1b4815",
+      "/lib/x86_64-linux-gnu/libc.so.6": "3a15d66867d83762c7f2f1e37359cb8f6c5743edb369c65285cb0b1c4f7498bf",
+      "/lib/x86_64-linux-gnu/libgcc_s.so.1": "d93224d2b0dab4247598be683adca02f5cf00586f99c187579cd7e92058fb7cb",
+      "/lib/x86_64-linux-gnu/libm.so.6": "fce00b6f25f459cf4ae0b7fae4257909a1a8a86f9149e7c029a5d617baf1ccd0",
+      "/lib/x86_64-linux-gnu/libstdc++.so.6": "1fd75fe70354a416d75aef22bcae68c47bd25d20e2d0568c30b1a9838cf62f11"
+    }
+  },
+  "env": {
+    "WASMBENCH_V8_COMPILER_MODE": "optimizing-only",
+    "WASMBENCH_WAVM_SDK": "/home/hub/.local/share/wasm-fyi/toolchains/wavm-nightly-2026-04-05/sdk",
+    "WASMBENCH_WAVM_VERSION": "nightly-2026-04-05-4e82bb9"
+  },
+  "builtAt": "2026-10-05T00:18:20.737Z"
+}
