@@ -104,6 +104,10 @@ try {
   for(const [file,from] of [['plan.json',join(session,'plan.json')],['qualification.json',join(session,'qualification.json')],['build.json',join(directory,engine+'-build.json')],['state.json',join(session,'state.json')]])await cp(from,join(retained,file));
   console.log(engine,machine,plan.sourcePin.revision.slice(0,12),imported.reports.length,'sealed reports retained');
  }
+ // Explicit pending gaps let sealed engines appear before the whole week ends.
+ for(const pin of pins.pins)if(!target.engines[pin.configurations[0]]&&!target.gaps?.[pin.configurations[0]]){
+  target.gaps??={};target.gaps[pin.configurations[0]]={source:pin,type:'pending',reason:'Native engine collection has not finished.',parity:{corpusSha256:calendar.weeks.find(w=>w.date===sharedSnapshot.date).capture.corpusSha256,recipeSha256:sharedSnapshot.captureSha256,harnessRevision:'9332ced5e59c0c3fd9c5aabc6ebc2ed991431eb9'}};
+ }
  // Keep the legacy Wago fields useful to older consumers while exposing all six pins.
  target.status=Object.keys(target.engines).length?'measured':'not-collected';
  if(target.engines.wago)Object.assign(target,{revision:target.engines.wago.revision,collectedAt:target.engines.wago.collectedAt,reports:target.engines.wago.reports});
