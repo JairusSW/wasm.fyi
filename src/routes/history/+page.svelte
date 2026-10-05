@@ -84,7 +84,8 @@ import { historyCell, historyChange, historySegments, historicalCallWorkloads, h
 				c,
 				sel,
 				width: sel ? 2.2 : 1.2,
-				op: sel ? 1 : 0.4,
+				op: sel ? 1 : 0.7,
+                points: SNAPS.filter(p=>Number.isFinite(val(c.id,p.i))).map(p=>({i:p.i,x:X(p.i),y:Y(val(c.id,p.i))})),
                 segs:historySegments(SNAPS.map(p=>val(c.id,p.i)),X,Y),
 				bumps: SNAPS.filter((p) => p.i > 0 && Number.isFinite(val(c.id,p.i)) && verAt(c.id, p.i,ui.machine) !== verAt(c.id, p.i - 1,ui.machine)).map((p) => {
 					const x = X(p.i);
@@ -286,9 +287,9 @@ import { historyCell, historyChange, historySegments, historicalCallWorkloads, h
 			{/each}
 			<line x1={X(f).toFixed(1)} x2={X(f).toFixed(1)} y1="38" y2="254" style="stroke:var(--fg)" />
 			<line x1={X(t).toFixed(1)} x2={X(t).toFixed(1)} y1="38" y2="254" style="stroke:var(--fg)" />
-			{#if SNAPS.length===1}
-                {#each plotC as c}<circle cx={X(0)} cy={scale.Y(val(c.id,0))} r="3" style:fill={c.col} />{/each}
-            {/if}
+			{#each lines as l (l.c.id)}
+                {#each l.points as p (p.i)}<circle class="history-point" cx={p.x} cy={p.y} r={l.sel ? 3.5 : 3} style:fill={l.c.col} style="stroke:var(--bg2);stroke-width:1" />{/each}
+            {/each}
             {#if tip}
 				<line x1={tip.x} x2={tip.x} y1="30" y2="254" style="stroke:var(--fg3)" />
 				{#each tip.rows as d (d.c.id)}<circle cx={tip.x} cy={d.y} r={d.r} style:stroke={d.c.col} style="fill:var(--bg2);stroke-width:2" />{/each}
