@@ -1,3 +1,5 @@
+import {readFile} from 'node:fs/promises';
+import {assertWeeklyParity} from './lib/weekly-parity.mjs';
 import {cloneCopy as cp} from './lib/copy.mjs';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
@@ -10,6 +12,7 @@ import { stageCollectionBundles, committedArchiveLocation } from './lib/stage-co
 const source = resolve(process.argv[2] || `${site}/data/wasmbench`);
 const destination = resolve(process.argv[3] || `${site}/static/wasmbench`);
 const index = await validateData(source);
+if(await exists(join(site,'data/history-calendar.json')))assertWeeklyParity(JSON.parse(await readFile(join(site,'data/history/weekly.json'))),JSON.parse(await readFile(join(site,'data/history-hub/weekly.json'))),JSON.parse(await readFile(join(site,'data/history-calendar.json'))));
 await mkdir(resolve(destination, '..'), { recursive: true });
 const staged = await mkdtemp(join(resolve(destination, '..'), '.static-data-'));
 try {

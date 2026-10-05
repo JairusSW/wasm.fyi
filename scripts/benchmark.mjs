@@ -34,6 +34,7 @@ import { verifySeal } from "./lib/verify-seal.mjs";
 import { releaseSource } from "./lib/release-policy.mjs";
 try {
   const help = `Usage: just bench [options]
+  --history [--deploy]                  background four-month Saturday backfill on both hosts
   --corpus qoi,applications/image-blur (repeatable; exact IDs or family prefixes)
   --kind non-feature|features|both       default: non-feature
   --engines wago,wazero,v8               default: all six supported engines
@@ -53,6 +54,9 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
   if (args.includes("--help") || action === "help" || action === "--help") {
     console.log(help);
     process.exit(0);
+  }
+  if(args.includes('--history')) {
+    await runCommand(process.execPath,[join(site,'scripts/weekly-background.mjs'),'start',...args.filter(a=>a!=='--history')],{cwd:site,onLine:line=>console.log(line)});process.exit(0);
   }
   const options = { corpus: [] };
   const positional = [];

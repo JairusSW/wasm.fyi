@@ -10,7 +10,7 @@ import {performanceCorpusIdentity} from './lib/performance-history.mjs';
 import {runCommand} from './lib/benchmark-process.mjs';
 import {sharedWeeklySnapshot} from './lib/weekly-calendar.mjs';
 const [previousArg,directoryArg]=process.argv.slice(2),previous=resolve(previousArg),directory=resolve(directoryArg);
-assert(['darwin','linux'].includes(process.platform),'Weekly collection requires a supported native host');
+assert((process.platform==='darwin'&&process.arch==='arm64')||(process.platform==='linux'&&process.arch==='x64'),'Weekly history requires native Apple ARM64 or Linux AMD64');
 const machine=process.platform==='darwin'?'local':'hub';
 const prior=await readFile(join(directory,'weekly-run.json'),'utf8').then(JSON.parse,()=>null);
 if(prior && prior.pid!==process.pid && !['collected','failed','incomplete','paused'].includes(prior.status)){
@@ -42,16 +42,17 @@ try{
  await writeFile(join(directory,'suite.json'),JSON.stringify(await readCache(site),null,2)+'\n');
  const reused=new Set(reuse.reused.map(r=>r.engine));
  const engines=['wago','wazero','wasmtime','v8','wavm','wasmer'];
- const changed=engines.filter(e=>!reused.has(e));
- for(const engine of reused)state.engines[engine]={status:'reused',revision:pins.pins.find(p=>p.engine===engine).revision,from:previous};
+ const changed=engines.filter(e=>!reused.has(e)&&pins.pins.find(p=>p.engine===e).status==='planned');
+ for(const pin of pins.pins.filter(p=>p.status==='unavailable'))state.engines[pin.engine]={status:'unavailable',reason:pin.reason};
+ for(const engine of reused)state.engines[engine]={status:'reused',revision:pins.pins.find(p=>p.engine===engine).revision,from:reuse.reused.find(r=>r.engine===engine).from??previous};
  const builds=await Promise.allSettled(changed.map(async engine=>{
   const pin=pins.pins.find(p=>p.engine===engine),source=join(directory,'sources',engine);
   if(!await stat(join(source,'.git')).catch(()=>null)){
-   await run('git',['clone','--filter=blob:none','--no-checkout','https://github.com/'+pin.repository+'.git',source]);
+   await run('git',['clone','--depth=1','--filter=blob:none','--no-checkout','https://github.com/'+pin.repository+'.git',source]);
   }
   const head=await run('git',['rev-parse','HEAD'],{cwd:source,check:false});
   if(head.code!==0 || head.output.trim()!==pin.revision){
-   await run('git',['fetch','origin',pin.revision],{cwd:source});
+   await run('git',['fetch','--depth=1','origin',pin.revision],{cwd:source});
    await run('git',['checkout','--detach',pin.revision],{cwd:source});
   }
   const built=await readFile(join(directory,engine+'-build.json'),'utf8').then(JSON.parse,()=>null);
@@ -63,9 +64,15 @@ try{
   }
   await script('weekly-build.mjs',[directory,engine,join(directory,'frozen-harness')],{env});
  }));
- const failures=builds.filter(r=>r.status==='rejected');if(failures.length)throw new AggregateError(failures.map(r=>r.reason),'Source builds failed; their caches are retained');
- for(const engine of changed)await script('weekly-collect.mjs',[directory,engine,'--qualify-only']);
- for(const engine of changed){
+ const ready=[];
+ for(const [i,result] of builds.entries()){
+  const engine=changed[i];
+  if(result.status==='rejected'){state.engines[engine]={status:'build-failed',reason:result.reason.message};await save();continue;}
+  try{await script('weekly-collect.mjs',[directory,engine,'--qualify-only']);ready.push(engine);}
+  catch(error){if(abort.signal.aborted)throw error;state.engines[engine]={status:'qualification-failed',reason:error.message};await save();}
+ }
+ if(abort.signal.aborted)throw Error('Interrupted');
+ for(const engine of ready){
   state.status='collecting';state.engine=engine;await save();
   await script('weekly-collect.mjs',[directory,engine]);
   const completed=JSON.parse(await readFile(join(directory,'sessions',engine,'state.json')));

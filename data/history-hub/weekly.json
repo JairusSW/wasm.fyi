@@ -1902,6 +1902,11 @@
             ]
           },
           "harnessRevision": "9332ced5e59c0c3fd9c5aabc6ebc2ed991431eb9",
+          "parity": {
+            "corpusSha256": "afcbad32be3ebff2dab9143a2b2307af8c7a1f2b0fdbc7a78d9882896bc2b44c",
+            "recipeSha256": "39d90cf25e06a57dd7a5c8ce95edad5fba11edbff54441cfa0253a70a045d72e",
+            "harnessRevision": "9332ced5e59c0c3fd9c5aabc6ebc2ed991431eb9"
+          },
           "reports": [
             {
               "runId": "corpus-0165-corpus-0001-1791163082622-call-timing-71ed977162ae8443",
@@ -2766,6 +2771,11 @@
             ]
           },
           "harnessRevision": "9332ced5e59c0c3fd9c5aabc6ebc2ed991431eb9",
+          "parity": {
+            "corpusSha256": "afcbad32be3ebff2dab9143a2b2307af8c7a1f2b0fdbc7a78d9882896bc2b44c",
+            "recipeSha256": "39d90cf25e06a57dd7a5c8ce95edad5fba11edbff54441cfa0253a70a045d72e",
+            "harnessRevision": "9332ced5e59c0c3fd9c5aabc6ebc2ed991431eb9"
+          },
           "reports": [
             {
               "runId": "corpus-0166-corpus-0001-1791164235112-call-timing-83e297652f63d546",
@@ -3630,6 +3640,11 @@
             ]
           },
           "harnessRevision": "9332ced5e59c0c3fd9c5aabc6ebc2ed991431eb9",
+          "parity": {
+            "corpusSha256": "afcbad32be3ebff2dab9143a2b2307af8c7a1f2b0fdbc7a78d9882896bc2b44c",
+            "recipeSha256": "39d90cf25e06a57dd7a5c8ce95edad5fba11edbff54441cfa0253a70a045d72e",
+            "harnessRevision": "9332ced5e59c0c3fd9c5aabc6ebc2ed991431eb9"
+          },
           "reports": [
             {
               "runId": "corpus-0166-corpus-0001-1791166290457-call-timing-5eff23316d38d4d2",
@@ -4494,6 +4509,11 @@
             ]
           },
           "harnessRevision": "9332ced5e59c0c3fd9c5aabc6ebc2ed991431eb9",
+          "parity": {
+            "corpusSha256": "afcbad32be3ebff2dab9143a2b2307af8c7a1f2b0fdbc7a78d9882896bc2b44c",
+            "recipeSha256": "39d90cf25e06a57dd7a5c8ce95edad5fba11edbff54441cfa0253a70a045d72e",
+            "harnessRevision": "9332ced5e59c0c3fd9c5aabc6ebc2ed991431eb9"
+          },
           "reports": [
             {
               "runId": "corpus-0166-corpus-0001-1791168931212-call-timing-bd8ac5c0a4b1e48f",
@@ -5358,6 +5378,11 @@
             ]
           },
           "harnessRevision": "9332ced5e59c0c3fd9c5aabc6ebc2ed991431eb9",
+          "parity": {
+            "corpusSha256": "afcbad32be3ebff2dab9143a2b2307af8c7a1f2b0fdbc7a78d9882896bc2b44c",
+            "recipeSha256": "39d90cf25e06a57dd7a5c8ce95edad5fba11edbff54441cfa0253a70a045d72e",
+            "harnessRevision": "9332ced5e59c0c3fd9c5aabc6ebc2ed991431eb9"
+          },
           "reports": [
             {
               "runId": "corpus-0166-corpus-0001-1791179137114-call-timing-6f62d8530485a741",
@@ -6222,6 +6247,11 @@
             ]
           },
           "harnessRevision": "9332ced5e59c0c3fd9c5aabc6ebc2ed991431eb9",
+          "parity": {
+            "corpusSha256": "afcbad32be3ebff2dab9143a2b2307af8c7a1f2b0fdbc7a78d9882896bc2b44c",
+            "recipeSha256": "39d90cf25e06a57dd7a5c8ce95edad5fba11edbff54441cfa0253a70a045d72e",
+            "harnessRevision": "9332ced5e59c0c3fd9c5aabc6ebc2ed991431eb9"
+          },
           "reports": [
             {
               "runId": "corpus-0166-corpus-0001-1791179784180-call-timing-104aeada880c2539",

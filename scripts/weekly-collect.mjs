@@ -6,6 +6,7 @@ import {readCache, portableWorkloads, verifyWorkloads, planIdentity, atomicJSON}
 import {corpusGroups} from './lib/corpus-collection.mjs';
 import {runCommand} from './lib/benchmark-process.mjs';
 import {validateV8Description} from './lib/v8-preflight.mjs';
+import {assertCaptureParity} from './lib/weekly-parity.mjs';
 import {sharedWeeklySnapshot} from './lib/weekly-calendar.mjs';
 const [directoryArg,engine]=process.argv.slice(2), directory=resolve(directoryArg);
 const receipt=JSON.parse(await readFile(join(directory,engine+'-build.json')));
@@ -41,6 +42,7 @@ const plan={schema:1,id:snapshotId+'-'+engine,created:new Date().toISOString(),e
  jobs:corpusGroups(portableWorkloads(site,workloads)).map((workloads,i)=>({id:'corpus-'+String(i+1).padStart(4,'0'),workloads}))};
 // Sealed legacy sessions already carry the exact source pin; retain their identity on resume.
 if(previous && !previous.calendar)delete plan.calendar;
+assertCaptureParity(plan,receipt,JSON.parse(await readFile(join(site,'data/history-calendar.json'))));
 plan.identity=planIdentity(plan);
 if(previous && previous.identity!==plan.identity)throw Error('Weekly session changed; use a new session');
 if(!previous)await atomicJSON(join(session,'plan.json'),plan);
