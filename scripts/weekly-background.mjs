@@ -32,7 +32,7 @@ for(const sig of ['SIGINT','SIGTERM'])process.on(sig,async()=>{
   const active=state.machines.hub.date;
   if(active){
    const native=remoteRoot+'/weekly-'+active.replaceAll('-','');
-   const stopCode='import {readFile} from "node:fs/promises";import {execFileSync} from "node:child_process";const s=JSON.parse(await readFile('+JSON.stringify(native+'/weekly-run.json')+'));if(s.status!=="collected")try{const command=execFileSync("ps",["-p",String(s.pid),"-o","args="],{encoding:"utf8"});if(command.includes("weekly-next.mjs")&&command.includes('+JSON.stringify(native)+'))process.kill(s.pid,"SIGTERM");}catch{}';
+   const stopCode='import {readFile} from "node:fs/promises";import {execFileSync} from "node:child_process";const s=await readFile('+JSON.stringify(native+'/weekly-run.json')+').then(JSON.parse,()=>null),l=await readFile('+JSON.stringify(native+'/remote-launch.json')+').then(JSON.parse,()=>null);if(s?.status!=="collected")for(const pid of new Set([s?.pid,l?.pid].filter(Boolean)))try{const command=execFileSync("ps",["-p",String(pid),"-o","args="],{encoding:"utf8"});if(command.includes("weekly-next.mjs")&&command.includes('+JSON.stringify(native)+'))process.kill(pid,"SIGTERM");}catch{}';
    await runCommand('ssh',[...sshFlags,host.ssh,quote(remoteNode)+' --input-type=module -e '+quote(stopCode)]);
   }
  }catch(error){console.error('Remote stop:',error.message);}finally{abort.abort();}
@@ -42,12 +42,18 @@ const settings=await config(),host=settings.hosts.hub;
 const remoteSite='/home/hub/.cache/wasm-fyi/weekly-20261003/site',remoteRoot='/home/hub/.cache/wasm-fyi',remoteNode='/home/hub/.cache/wasm-fyi/toolchains/node-v26.4.0-linux-x64/bin/node';
 const sshFlags=['-o','BatchMode=yes','-o','ConnectTimeout=10','-o','ControlMaster=no','-o','ControlPath=none','-o','ServerAliveInterval=5','-o','ServerAliveCountMax=2'];
 const transport='ssh '+sshFlags.join(' '),sleep=async()=>{for(let i=0;i<30&&!abort.signal.aborted;i++)await new Promise(r=>setTimeout(r,1000));if(abort.signal.aborted)throw Error('Interrupted');};
-const run=(program,argv,opts={})=>runCommand(program,argv,{cwd:site,signal:abort.signal,onLine:line=>console.log(line),...opts});
+const run=async(program,argv,opts={})=>{for(;;)try{return await runCommand(program,argv,{cwd:site,signal:abort.signal,onLine:line=>console.log(line),...opts});}catch(error){
+ if(abort.signal.aborted||!(['ssh','rsync'].includes(program)&&/exited (255|12|30|35);/.test(error.message)))throw error;
+ console.error('Transport interrupted; retaining the native job and retrying in 30 seconds:',error.message);await sleep();
+}};
 const ssh=(command,opts={})=>run('ssh',[...sshFlags,host.ssh,command],opts);
 const script=(name,argv,opts={})=>run(process.execPath,[join(site,'scripts',name),...argv],opts);
 const dates=prior?.dates??saturdays(new Date(),18).map(historyDate).reverse();
 const state={schema:1,pid:process.pid,status:'running',scope:'historical-only',started:prior?.started??new Date().toISOString(),dates,publishEvery:2,machines:prior?.machines??{local:{previous:resolve('.wasmbench/weekly-20260926'),completed:[],failed:[]},hub:{previous:remoteRoot+'/weekly-20261003',completed:[],failed:[]}}};
 const save=()=>atomicJSON(stateFile,{...state,updated:new Date().toISOString()});await save();
+if(process.platform==='darwin'){
+ const awake=spawn('caffeinate',['-i','-w',String(process.pid)],{stdio:'ignore'});awake.on('error',error=>console.error('Idle sleep prevention:',error.message));awake.unref();
+}
 const measured=async(machine,date)=>{const timeline=await read(join(site,'data',machine==='local'?'history':'history-hub','weekly.json'));const point=timeline.results.find(w=>historyDate(w.targetWeek)===date);const calendar=await read(join(site,'data/history-calendar.json'));const week=calendar.weeks.find(w=>w.date===date);return !!point&&week?.pins.every(p=>p.status==='unavailable'?point.gaps?.[p.configurations[0]]:point.engines?.[p.configurations[0]]?.status==='measured');};
 let publication=Promise.resolve();
 const publish=machine=>{
@@ -62,7 +68,7 @@ try{
  // Every host receives the same resolved pins, including explicit upstream gaps.
  for(const date of dates){await script('weekly-plan.mjs',[date]);}
  await ssh('mkdir -p '+quote(remoteSite+'/data')+' '+quote(remoteSite+'/scripts/lib'));
- await run('rsync',['-az','-e',transport,join(site,'scripts/weekly-next.mjs'),join(site,'scripts/weekly-queue.mjs'),join(site,'scripts/weekly-collect.mjs'),join(site,'scripts/weekly-build.mjs'),join(site,'scripts/weekly-retire.mjs'),join(site,'scripts/weekly-publish.mjs'),host.ssh+':'+remoteSite+'/scripts/']);
+ await run('rsync',['-az','-e',transport,join(site,'scripts/weekly-next.mjs'),join(site,'scripts/weekly-remote.mjs'),join(site,'scripts/weekly-queue.mjs'),join(site,'scripts/weekly-collect.mjs'),join(site,'scripts/weekly-build.mjs'),join(site,'scripts/weekly-retire.mjs'),join(site,'scripts/weekly-publish.mjs'),host.ssh+':'+remoteSite+'/scripts/']);
  await run('rsync',['-az','-e',transport,join(site,'scripts/lib/weekly-calendar.mjs'),join(site,'scripts/lib/weekly-parity.mjs'),join(site,'scripts/lib/snapshot-index.mjs'),join(site,'scripts/lib/validate-data.mjs'),host.ssh+':'+remoteSite+'/scripts/lib/']);
  await run('rsync',['-az','-e',transport,join(site,'data/history-calendar.json'),host.ssh+':'+remoteSite+'/data/']);
  const work=async machine=>{
@@ -72,30 +78,19 @@ try{
    const week='weekly-'+date.replaceAll('-',''),native=machine==='local'?resolve('.wasmbench/'+week):remoteRoot+'/'+week,local=machine==='local'?native:resolve('.wasmbench/'+week+'/hub');
    progress.date=date;progress.status='waiting';await save();
    try{
-    if(machine==='hub'&&date==='2026-09-26'){
-     // Adopt the existing supervised capture; never duplicate its measurements.
-     for(;;){const current=JSON.parse((await ssh('cat '+quote(native+'/weekly-run.json'))).output);
-      if(current.status==='collected')break;
-      if(['failed','incomplete'].includes(current.status))throw Error('Adopted AMD capture '+current.status+': '+current.reason);
-      if(current.status==='paused'){
-       const warming=JSON.parse((await ssh(quote(remoteNode)+' --input-type=module -e '+quote('import {readFile} from "node:fs/promises";import {execFileSync} from "node:child_process";const w=await readFile('+JSON.stringify(native+'/warming.json')+',"utf8").then(JSON.parse,()=>null);let active=false;if(w)try{active=execFileSync("ps",["-p",String(w.pid),"-o","args="],{encoding:"utf8"}).includes(w.argument);}catch{}console.log(JSON.stringify({active}));'))).output);
-       if(!warming.active){
-        progress.status='collecting';await save();
-        await ssh('cd '+quote(remoteSite)+' && flock -w 86400 '+quote(remoteRoot+'/measurement.lock')+' '+quote(remoteNode)+' scripts/weekly-next.mjs '+quote(progress.previous)+' '+quote(native),{log:join(local,'background-native.log')});break;
-       }
-      }
-      await sleep();
-     }
-    }else{
-     if(machine==='hub'){
+    if(machine==='hub'){
+     if(date!=='2026-09-26'){
       await ssh('mkdir -p '+quote(native));await run('rsync',['-az','-e',transport,join(local,'pins.json'),host.ssh+':'+native+'/pins.json']);
       await ssh('cd '+quote(remoteSite)+' && '+quote(remoteNode)+' scripts/weekly-queue.mjs '+quote(progress.previous)+' '+quote(native));
-      progress.status='collecting';await save();
-      await ssh('cd '+quote(remoteSite)+' && flock -w 86400 '+quote(remoteRoot+'/measurement.lock')+' '+quote(remoteNode)+' scripts/weekly-next.mjs '+quote(progress.previous)+' '+quote(native),{log:join(local,'background-native.log')});
-     }else{
-      await script('weekly-queue.mjs',[progress.previous,native]);progress.status='collecting';await save();
-      await script('weekly-next.mjs',[progress.previous,native],{log:join(native,'background-native.log')});
      }
+     progress.status='collecting';await save();
+     const remote=mode=>ssh('cd '+quote(remoteSite)+' && flock -w 60 '+quote(native+'/launch.lock')+' '+quote(remoteNode)+' scripts/weekly-remote.mjs '+quote(progress.previous)+' '+quote(native)+' '+mode);
+     let current=JSON.parse((await remote('start')).output);
+     while(current.active){await sleep();current=JSON.parse((await remote(current.warming?'start':'status')).output);}
+     assert.equal(current.state?.status,'collected','AMD native capture stopped: '+(current.state?.reason??current.state?.status));
+    }else{
+     await script('weekly-queue.mjs',[progress.previous,native]);progress.status='collecting';await save();
+     await script('weekly-next.mjs',[progress.previous,native],{log:join(native,'background-native.log')});
     }
     if(machine==='hub'){
      // Ship only sealed corpus reports, parent bundles and receipts, not SDK caches.

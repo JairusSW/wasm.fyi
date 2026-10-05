@@ -10,7 +10,7 @@ test('both native hosts share Eastern Saturday cutoffs across daylight saving ti
  assert.throws(()=>weeklyCutoff('2026-10-04'),/Saturday/);
 });
 test('source dates and pins are host independent and reject an AMD64-only date change',()=>{
- const original=calendar.weeks[0],equivalent=structuredClone(original);
+ const original=calendar.weeks.find(w=>w.date==='2026-09-26'),equivalent=structuredClone(original);
  equivalent.cutoff='2026-09-26T23:59:00-04:00';equivalent.pins.reverse();
  assert.deepEqual(sharedWeeklySnapshot(original,calendar),sharedWeeklySnapshot(equivalent,calendar));
  const changed=structuredClone(original);changed.pins[0].targetWeek='2026-10-04T03:59:00Z';
@@ -20,6 +20,6 @@ test('source dates and pins are host independent and reject an AMD64-only date c
  assert.throws(()=>weeklyPinIdentity({...original,pins:original.pins.slice(1)}),/all six/);
 });
 test('an upstream that did not exist at a cutoff is the same explicit gap on both hosts',()=>{
- const entry=structuredClone(calendar.weeks[0]);entry.pins[0]={...entry.pins[0],status:'unavailable',reason:'No branch commit was available by this Saturday.'};delete entry.pins[0].revision;delete entry.pins[0].committedAt;
+ const entry=structuredClone(calendar.weeks.find(w=>w.date==='2026-09-26'));entry.pins[0]={...entry.pins[0],status:'unavailable',reason:'No branch commit was available by this Saturday.'};delete entry.pins[0].revision;delete entry.pins[0].committedAt;
  const shared={...calendar,weeks:[entry]};assert.deepEqual(sharedWeeklySnapshot(entry,shared),sharedWeeklySnapshot(structuredClone(entry),shared));
 });
