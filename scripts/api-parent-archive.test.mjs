@@ -31,7 +31,14 @@ test('cancel parent materialization after a chunk leaves no partial transport or
   await writeFile(join(bundle,'index.json'),JSON.stringify(index));await writeFile(join(bundle,'metadata.json'),metadata);await writeFile(join(bundle,index.parts[0].path),original);
   const source=await readParentBundleMetadata(bundle),folder=join(cache,digest(source.indexBytes));await mkdir(folder,{recursive:true});
   const controller=new AbortController(),reason=new Error('stop parent materialization');
-  watcher=watch(folder,(_event,name)=>{if(name&&/^[a-f0-9]{64}$/.test(String(name)))controller.abort(reason)});
+  // macOS may report a rename before the destination is visible. Cancel only
+  // after observing an installed chunk, rather than an early filesystem event.
+  const firstChunk=digest(original.subarray(0,1024*1024));
+  watcher=watch(folder,async(_event,name)=>{
+   if(String(name)!==firstChunk)return;
+   try{const info=await stat(join(folder,firstChunk));if(info.isFile()&&info.size===1024*1024)controller.abort(reason)}
+   catch(error){if(error.code!=='ENOENT')controller.abort(error)}
+  });
   await assert.rejects(prepareParentArchive(bundle,source,{cache,signal:controller.signal}),error=>error===reason||error.name==='AbortError');
   watcher.close();watcher=undefined;
   const files=await readdir(folder);assert(controller.signal.aborted);assert(files.some(name=>/^[a-f0-9]{64}$/.test(name)),'No completed chunk reached cache');
