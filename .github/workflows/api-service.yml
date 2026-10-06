@@ -1,9 +1,9 @@
 name: API service
 on:
   push:
-    paths: ['service/**', 'schemas/**', 'src/lib/api/**', 'scripts/*api*', 'scripts/lib/api-publish.mjs', 'scripts/lib/corpus-collection.mjs', 'scripts/benchmark*.mjs', '.github/workflows/api-service.yml']
+    paths: ['service/**', 'schemas/**', 'src/lib/api/**', 'scripts/*api*', 'scripts/lib/api-publish.mjs', 'scripts/lib/corpus-collection.mjs', 'scripts/lib/benchmark-parent-bundle.mjs', 'scripts/lib/collection-verdict.mjs', 'scripts/lib/performance-history-api.mjs', 'scripts/performance-history-collect.mjs', 'scripts/pack-history-parent.py', 'scripts/benchmark*.mjs', '.github/workflows/api-service.yml']
   pull_request:
-    paths: ['service/**', 'schemas/**', 'src/lib/api/**', 'scripts/*api*', 'scripts/lib/api-publish.mjs', 'scripts/lib/corpus-collection.mjs', 'scripts/benchmark*.mjs', '.github/workflows/api-service.yml']
+    paths: ['service/**', 'schemas/**', 'src/lib/api/**', 'scripts/*api*', 'scripts/lib/api-publish.mjs', 'scripts/lib/corpus-collection.mjs', 'scripts/lib/benchmark-parent-bundle.mjs', 'scripts/lib/collection-verdict.mjs', 'scripts/lib/performance-history-api.mjs', 'scripts/performance-history-collect.mjs', 'scripts/pack-history-parent.py', 'scripts/benchmark*.mjs', '.github/workflows/api-service.yml']
 jobs:
   service:
     runs-on: ubuntu-latest
@@ -45,7 +45,7 @@ jobs:
           WASMFYI_CONTRACT_OUTPUT="$RUNNER_TEMP/api-contracts.jsonl" go test ./internal/api -run 'TestOverviewComplete|TestResultSummaries|TestNativeFunctionAPI|TestDisassemblyHTTP|TestCatalogAndRecordDetailContracts|TestImportStatusHTTPContractsAndCancellation|TestRegistrationHTTPBeforeMeasurements|TestHistoryContextHTTPPublicationAndCursor|TestConfigurationProjectionHTTPPolicyPinAndCanonicalDetail' -count=1
           python ../scripts/check-api-contracts.py --export testdata/site-v2 --responses "$RUNNER_TEMP/api-contracts.jsonl"
         working-directory: service
-      - run: node --test scripts/site-export-contract.test.mjs scripts/api-progress-process.test.mjs scripts/api-progress-delivery.test.mjs scripts/api-session-plan.test.mjs scripts/api-publication.test.mjs scripts/benchmark-workflow.test.mjs scripts/benchmark-bundle.test.mjs scripts/api-parent-archive.test.mjs scripts/api-large-publication.test.mjs
+      - run: node --test scripts/site-export-contract.test.mjs scripts/performance-history-api.test.mjs scripts/benchmark-parent-bundle.test.mjs scripts/api-progress-process.test.mjs scripts/api-progress-delivery.test.mjs scripts/api-session-plan.test.mjs scripts/api-publication.test.mjs scripts/benchmark-workflow.test.mjs scripts/benchmark-bundle.test.mjs scripts/api-parent-archive.test.mjs scripts/api-large-publication.test.mjs
   client:
     runs-on: ubuntu-latest
     steps:

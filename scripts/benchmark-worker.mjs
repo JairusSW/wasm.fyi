@@ -3,15 +3,9 @@ import {
   readFile,
   writeFile,
   mkdir,
-  cp,
   rm,
-  open,
-  readdir,
-  stat,
 } from "node:fs/promises";
 import { join, resolve, dirname } from "node:path";
-import { createHash } from "node:crypto";
-import { createReadStream } from "node:fs";
 import { site, digest } from "./lib/wasmbench.mjs";
 import {
   atomicJSON,
@@ -20,6 +14,8 @@ import {
 } from "./lib/benchmark-plan.mjs";
 import { collectCorpusByCorpus } from "./lib/corpus-collection.mjs";
 import { runCommand } from "./lib/benchmark-process.mjs";
+import { retainCollectionParent } from "./lib/benchmark-parent-bundle.mjs";
+import { collectionVerdict } from "./lib/collection-verdict.mjs";
 const [directory, key] = process.argv.slice(2);
 if (!directory || !/^corpus-\d+$/.test(key))
   throw Error("Internal worker requires a session directory and corpus ID");
@@ -86,125 +82,9 @@ const invoke = async (command, ...args) => {
   );
   return "";
 };
-async function hashFile(path) {
-  const hash = createHash("sha256");
-  for await (const b of createReadStream(path)) hash.update(b);
-  return hash.digest("hex");
-}
-async function retainBundle({ bundle, profile }) {
-  if (profile !== "timing") return;
-  const manifest = JSON.parse(await readFile(join(bundle, "manifest.json")));
-  const main = join(root, "bundle");
-  const checkIdentity = async () => {
-    const metadata = JSON.parse(await readFile(join(main, "metadata.json")));
-    if (
-      metadata.planSha256 !== plan.identity ||
-      JSON.stringify(metadata.runtimes) !==
-        JSON.stringify(manifest.lock.runtime_configurations)
-    )
-      throw Error("Runtime tools/configuration changed within this session");
-  };
-  await mkdir(main, { recursive: true });
-  let lock;
-  try {
-    lock = await open(join(root, "bundle.lock"), "wx");
-  } catch (e) {
-    if (e.code !== "EEXIST") throw e;
-    while (true) {
-      if (abort.signal.aborted) throw Error("Interrupted");
-      try {
-        await stat(join(main, "index.json"));
-        await checkIdentity();
-        return;
-      } catch (e) {
-        if (e.code !== "ENOENT") throw e;
-      }
-      try {
-        await stat(join(root, "bundle.lock"));
-      } catch (e) {
-        if (e.code === "ENOENT") return retainBundle({ bundle, profile });
-        throw e;
-      }
-      await new Promise((r) => setTimeout(r, 100));
-    }
-  }
-  try {
-    try {
-      await stat(join(main, "index.json"));
-      await checkIdentity();
-      return;
-    } catch (e) {
-      if (e.code !== "ENOENT") throw e;
-    }
-    for (const file of await readdir(main))
-      await rm(join(main, file), { recursive: true, force: true });
-    await cp(join(bundle, "tools"), join(main, "tools"), { recursive: true });
-    await atomicJSON(join(main, "metadata.json"), {
-      schema: 1,
-      id: plan.id,
-      planSha256: plan.identity,
-      host: manifest.host,
-      runner: {
-        version: manifest.lock.runner_version,
-        sha256: manifest.lock.runner_sha256,
-      },
-      analyzer: manifest.lock.analyzer,
-      runtimes: manifest.lock.runtime_configurations,
-      options: plan.collection,
-      workerPolicy: {
-        goThreads: 1,
-        rayonThreads: 1,
-        openmpThreads: 1,
-        nodeOptions: env.NODE_OPTIONS,
-        workers: host.workers,
-        cpuAffinity:
-          host.cpu != null
-            ? "one admitted Linux CPU per lane"
-            : "concurrency limit; no CPU affinity",
-      },
-      workloads: plan.jobs.flatMap((j) =>
-        j.workloads.map((w) => ({ id: w.id, sha256: w.sha256 })),
-      ),
-      scope:
-        "Exact archived runner, analyzer and adapters; unlisted system/native-library dependencies remain hash-verified host prerequisites. Corpus reports are transferred individually.",
-    });
-    const archive = join(root, "bundle.tar.gz");
-    await runCommand("tar", ["-czf", archive, "-C", main, "."], {
-      signal: abort.signal,
-      log: join(dir, "commands.log"),
-    });
-    const bytes = (await stat(archive)).size,
-      sha256 = await hashFile(archive);
-    const parts = [];
-    let index = 0;
-    // Keep each published file below GitHub's single-file size limit.
-    for await (const chunk of createReadStream(archive, {
-      highWaterMark: 32 * 1024 * 1024,
-    })) {
-      const name = `bundle.tar.gz.part-${String(index++).padStart(3, "0")}`;
-      await writeFile(join(main, name), chunk);
-      parts.push({ path: name, bytes: chunk.length, sha256: digest(chunk) });
-    }
-    await atomicJSON(join(main, "index.json"), {
-      schema: 1,
-      id: plan.id,
-      machine: host.name,
-      bytes,
-      sha256,
-      format: "tar+gzip concatenated parts",
-      parts,
-      metadata: "metadata.json",
-      metadataSha256: digest(await readFile(join(main, "metadata.json"))),
-      download:
-        "Concatenate parts in order, verify the full SHA-256, then tar -xzf bundle.tar.gz.",
-    });
-    await rm(archive);
-    await rm(join(main, "tools"), { recursive: true, force: true });
-  } finally {
-    await lock.close();
-    await rm(join(root, "bundle.lock"), { force: true });
-  }
-}
+const retainBundle = (event) => retainCollectionParent({
+  ...event, root, log: join(dir, "commands.log"), plan, host, env, signal: abort.signal,
+});
 try {
   const collection = { ...plan.collection };
   collection.siteExportV2 = plan.publication?.type === "api-v1";
@@ -239,7 +119,6 @@ try {
     checks["wasm-fyi-export.json"] = digest(bytes);
     await atomicJSON(join(report, "checksums.json"), checks);
   }
-  const measured = rows.filter((r) => r.scenario === "steady");
   const result = {
     schema: 1,
     corpus: key,
@@ -250,18 +129,7 @@ try {
     summaries: rows,
     memory,
     code,
-    verdict: rows.some((r) =>
-      Object.entries(r.outcomes || {}).some(
-        ([s, n]) => n > 0 && !["ok", "unsupported"].includes(s),
-      ),
-    )
-      ? "FAIL"
-      : measured.length &&
-          measured.every((r) => r.median_ns_per_operation != null)
-        ? "PASS"
-        : measured.length
-          ? "UNSUPPORTED"
-          : "NOT MEASURED",
+    verdict: collectionVerdict(rows),
     finished: new Date().toISOString(),
   };
   await atomicJSON(join(dir, "result.json"), result);

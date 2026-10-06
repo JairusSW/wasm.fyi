@@ -14,6 +14,19 @@ spec.loader.exec_module(contracts)
 
 
 class Contracts(unittest.TestCase):
+    def test_release_date_precision_is_explicit_and_consistent(self):
+        release = {"version": "v1.2.3", "publishedAt": "2026-01-01T00:00:00Z", "url": "https://example.test/release"}
+        contracts.validate(release, "HistoryRelease", "legacy unknown precision")
+        for precision in ["day", "second"]:
+            contracts.validate(dict(release, datePrecision=precision), "HistoryRelease", "recorded precision")
+        for changed in [dict(release, datePrecision=None), dict(release, datePrecision=""),
+                        dict(release, datePrecision="guess"),
+                        dict(release, datePrecision="day", publishedAt="2026-01-01T12:00:00Z"),
+                        dict(release, datePrecision="day", publishedAt="2026-01-01T01:00:00+01:00"),
+                        dict(release, datePrecision="second", publishedAt="2026-01-01T00:00:00.123Z")]:
+            with self.assertRaises(ValueError):
+                contracts.validate(changed, "HistoryRelease", "misleading precision")
+
     def test_configuration_summaries_exclude_invocation_and_host_paths(self):
         public = {"id": "engine", "description": {"runtime": "engine", "runtime_version": "1.2.3", "backend": "compiler", "capabilities": {"code-image": True}}}
         contracts.validate(public, "ConfigurationSummaryData", "public display facts")

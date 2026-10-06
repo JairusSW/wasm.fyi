@@ -80,3 +80,45 @@ func TestHistoryTargetAliasesAreBoundedCanonicalMetadata(t *testing.T) {
 		t.Fatal("ambiguous singular/plural targets admitted")
 	}
 }
+
+func TestHistoryReleaseRetainsRecordedDatePrecision(t *testing.T) {
+	base := HistoryBinding{ReportID: strings.Repeat("a", 64), ConfigurationID: strings.Repeat("b", 64), Policy: HistoryBindingPolicy, BuildRole: "release"}
+	release := HistoryRelease{Version: "v1.2.3", PublishedAt: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), URL: "https://example.test/release"}
+	legacy, err := Encode(release)
+	if err != nil || strings.Contains(string(legacy), "datePrecision") {
+		t.Fatal("legacy release identity changed", err)
+	}
+	for _, precision := range []string{"day", "second"} {
+		r := release
+		r.DatePrecision = precision
+		h := base
+		h.Release = &r
+		if err := h.Validate(); err != nil {
+			t.Fatal(err)
+		}
+		body, _ := Encode(h)
+		var decoded HistoryBinding
+		if err := Decode(body, &decoded); err != nil || decoded.Release.DatePrecision != precision {
+			t.Fatal("precision lost", err)
+		}
+	}
+	for _, change := range []HistoryRelease{
+		{Version: release.Version, PublishedAt: release.PublishedAt, URL: release.URL, DatePrecision: "guessed"},
+		{Version: release.Version, PublishedAt: release.PublishedAt.Add(time.Hour), URL: release.URL, DatePrecision: "day"},
+		{Version: release.Version, PublishedAt: release.PublishedAt.Add(time.Nanosecond), URL: release.URL, DatePrecision: "second"},
+		{Version: release.Version, PublishedAt: release.PublishedAt.In(time.FixedZone("source", 3600)), URL: release.URL, DatePrecision: "day"},
+	} {
+		h := base
+		h.Release = &change
+		if err := h.Validate(); err == nil {
+			t.Fatal("misleading release precision admitted", change)
+		}
+	}
+	for _, value := range []string{"null", `""`} {
+		var decoded HistoryRelease
+		body := []byte(`{"version":"v1.2.3","publishedAt":"2026-01-01T00:00:00Z","url":"https://example.test/release","datePrecision":` + value + `}`)
+		if err := Decode(body, &decoded); err == nil {
+			t.Fatal("ambiguous optional precision admitted", value)
+		}
+	}
+}

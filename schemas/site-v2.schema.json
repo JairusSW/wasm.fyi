@@ -3109,6 +3109,12 @@
           "maxLength": 2048,
           "pattern": "^https://",
           "format": "uri"
+        },
+        "datePrecision": {
+          "enum": [
+            "day",
+            "second"
+          ]
         }
       },
       "required": [
@@ -3116,7 +3122,47 @@
         "publishedAt",
         "url"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "datePrecision"
+            ],
+            "properties": {
+              "datePrecision": {
+                "const": "day"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "publishedAt": {
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}T00:00:00(?:\\.0+)?(?:Z|\\+00:00)$"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "datePrecision"
+            ],
+            "properties": {
+              "datePrecision": {
+                "const": "second"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "publishedAt": {
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.0+)?(?:Z|[+-]\\d{2}:\\d{2})$"
+              }
+            }
+          }
+        }
+      ]
     },
     "HistoryBinding": {
       "type": "object",

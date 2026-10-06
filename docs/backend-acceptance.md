@@ -5,6 +5,17 @@ fidelity, bounded serving work, crash-safe publication and recoverable operation
 Frontend migration is a separate consumer; backend completion does not mean merely
 passing the existing synthetic fixture tests.
 
+Latest review checkpoint (2026-10-06): the full backend race suite passed before
+the release-precision/history-publisher changes; selected history/API race tests,
+28 schema checks and generated-type consistency passed again afterward. The real
+history HTTP gate now exercises the existing collector in publication-only mode,
+exact release/source roles and reused aliases, cached tool/report delivery, and
+authentication-outage recovery without executing measurements. Parent packing
+is deterministic and publication uses the existing process lease. These fixtures
+use synthetic queue associations; migration of uncollected events and abrupt
+failure of the outer historical ledger remain pending. The large Wasmtime
+qualification was interrupted by a laptop crash and has been restarted below.
+
 | Requirement | Current evidence / remaining work |
 | --- | --- |
 | Verified producer, legacy compatibility, full producer identities | Verified exporter records exact binary/build identity and full pass manifest/admission; trial details, adapter/phase evidence, launch diagnostics and original derived report JSON sections preserved with tested selected-evidence/recovery closure; fresh verified Wasmer/Deno exports retain 24 analysis sections through HTTP; sealed Parquet files now export/import as exact bounded binaries with original digests, indexed selected-report metadata, membership-bound HTTP chunks and portable reconstruction; fresh verified Wasmer preserves six original files through HTTP; explicit preflight-verified whole-file streaming with bounded memory, two-slot admission, cancellation/deadlines and real HTTP corruption-abort tests now implemented; offline sealed report archives now stream deterministic packing into the same CAS/file transport, preserve the exact seal and every declared source file, reject altered/link/escaping inputs and bind the source seal at import/rebuild; a fresh Wasmer archive (48,886,252 bytes, 32 sealed files) passed selected/full HTTP serving, original-file hash checks, scientific parity and portable reconstruction; nine-resource boundary and late-corruption transport gates pass; wider file/archive/slow-client scale gates remain pending |
@@ -28,18 +39,21 @@ sealed producer fixtures, source-preserving conversions, scale tests and actual
 subprocess failures. Update this audit as evidence changes; keep unresolved rows
 explicit. Never infer methodological parity from storage tests alone.
 
-The current large Wasmtime recovery qualification resumes the published
+The interrupted large Wasmtime recovery qualification had resumed the published
 130,166-object store without retransfers. Before recovery it has checked 163
 images, 256 selected functions, nine original report/archive resources, 17
 selected analytical sections, 672 timing summaries, 835 memory summaries and
-five exact environment/track/method scopes. The detached backup has completed;
-DB-free rebuild is still running. These checks do not yet establish complete
-portable recovery at that scale.
+five exact environment/track/method scopes. Its backup completed, but the laptop
+crashed before a terminal DB-free rebuild result was recorded. Temporary artifacts
+were lost. A fresh qualification is now running with logs, diagnostics, exports
+and stores retained under the worktree's ignored `.wasmbench/api-qualification/`
+directory. Complete portable recovery at that scale remains unproven.
 The running binary's source oracle omitted image-extent measurements. A separate
 race-tested source/export gate now checks all 163 `native.code_image` results,
 including exact integer values and source/seal commitments; the updated full
 serving oracle covers both engine-reported sizes and materialized image extents.
-That updated HTTP oracle has not yet run against this large retained store.
+The fresh run uses that updated HTTP oracle and canonical-result/frozen-cursor
+recovery checks; its terminal result remains pending.
 
 Backup and restore now reuse one operation-owned 128 KiB copy buffer while
 retaining detached files, streamed digests, per-file synchronization and existing

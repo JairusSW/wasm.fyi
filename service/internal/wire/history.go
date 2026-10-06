@@ -55,9 +55,28 @@ func (h *HistoryBinding) UnmarshalJSON(data []byte) error {
 }
 
 type HistoryRelease struct {
-	Version     string    `json:"version"`
-	PublishedAt time.Time `json:"publishedAt"`
-	URL         string    `json:"url"`
+	Version       string    `json:"version"`
+	PublishedAt   time.Time `json:"publishedAt"`
+	URL           string    `json:"url"`
+	DatePrecision string    `json:"datePrecision,omitempty"`
+}
+
+func (r *HistoryRelease) UnmarshalJSON(data []byte) error {
+	type plain HistoryRelease
+	var decoded plain
+	if err := Decode(data, &decoded); err != nil {
+		return err
+	}
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return err
+	}
+	if value, present := fields["datePrecision"]; present &&
+		(bytes.Equal(bytes.TrimSpace(value), []byte("null")) || bytes.Equal(bytes.TrimSpace(value), []byte(`""`))) {
+		return Invalid("empty release date precision")
+	}
+	*r = HistoryRelease(decoded)
+	return nil
 }
 
 func (h HistoryBinding) Validate() error {
@@ -101,6 +120,12 @@ func (h HistoryBinding) Validate() error {
 	}
 	if h.Release != nil {
 		r := h.Release
+		_, offset := r.PublishedAt.Zone()
+		if r.DatePrecision != "" && r.DatePrecision != "day" && r.DatePrecision != "second" ||
+			r.DatePrecision == "second" && r.PublishedAt.Nanosecond() != 0 ||
+			r.DatePrecision == "day" && (offset != 0 || r.PublishedAt.Hour() != 0 || r.PublishedAt.Minute() != 0 || r.PublishedAt.Second() != 0 || r.PublishedAt.Nanosecond() != 0) {
+			return Invalid("invalid release date precision")
+		}
 		u, e := url.Parse(r.URL)
 		if len(r.Version) == 0 || strings.TrimSpace(r.Version) != r.Version || strings.ContainsAny(r.Version, "\n\r\x00") || len(r.Version) > 256 || (r.PublishedAt.IsZero() || r.PublishedAt.Year() < 1 || r.PublishedAt.Year() > 9999) || len(r.URL) > 2048 || e != nil || u.Scheme != "https" || u.Hostname() == "" || u.User != nil {
 			return Invalid("invalid history release association")

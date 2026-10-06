@@ -517,7 +517,7 @@ counts. It does not infer paired uncertainty or preload membership/evidence.
 Reused cells remain identified rather than counted as new observations. To inspect
 membership, use the two existing aggregate/cohort scopes. Comparisons are immutable
 at the pinned analysis version. This endpoint compares measurement selections;
-source-date/release-role history associations remain a separate unfinished gate.
+source-date/release-role history associations use separate publisher bindings.
 
 Completed-job manifests may include up to 256 optional `history` bindings with
 `policy=declared-build-history-v1`. Each binding identifies an exported report and
@@ -532,7 +532,9 @@ The coordinator publication helper accepts explicit `historyBindings`; normal
 collection omits them. Historical collection callers must supply qualified bindings
 from their existing pin/receipt policy. Changing bindings on a previously delivered
 attempt is rejected by immutable job identity rather than rewriting history.
-Existing retrospective capture/alias projection still needs migration integration.
+The existing performance-history collector now supplies these bindings from its
+retained queue and verified source receipts. Reused target dates remain aliases
+of one capture rather than independent measurements.
 
 `GET /api/v1/history/jobs/{id}?revision=...&limit=100` pages these bindings from
 the selected published job index, with signed revision/job/page-size cursors.
@@ -543,6 +545,37 @@ the binding count. The response reports actual job publication time and nullable
 a per-pass observation time; individual producer sampling groups retain their
 original `capturedAt`. No missing date is substituted with a target or release date.
 Bindings and their time/trust roles survive backup, restart and database-free rebuild.
+
+To publish completed configurations from an existing historical queue without
+executing measurements, run from the site checkout:
+
+```sh
+WASMFYI_HISTORY_API_URL=https://example.com \
+WASMFYI_HISTORY_PUBLISH_ONLY=1 \
+WASMFYI_ADMIN_TOKEN="$publisher_token" \
+node scripts/performance-history-collect.mjs
+```
+
+Without `WASMFYI_HISTORY_PUBLISH_ONLY`, the same API destination is optional on
+ordinary history collection. Failed publication retains the completed scientific
+entry for retry. Missing or invalid reports are never measured in publication-only
+mode. The exporter controller must pass the versioned capability check.
+
+Historical publication requires Python 3 for deterministic parent-tool packing.
+It preserves exact tool bytes while normalizing owners/timestamps to zero and
+tool permissions to 0755; metadata uses 0644. The packing format, Python/zlib
+versions and packer hash participate in the immutable publication plan. Existing
+current-collection archive behavior is unchanged. Historical session records
+explicitly describe retrospective completed-configuration publication scopes;
+they do not claim that an original pre-collection session plan was retained.
+Unrecorded thread settings remain unknown. Optional release `datePrecision`
+preserves recorded day/second precision; omission retains unknown precision.
+
+The real-report HTTP gate verifies publication, exact release/source associations,
+cached redelivery and authentication-failure recovery through the existing
+collector without measurement execution. Its queue associations are synthetic.
+Uncollected-event migration and abrupt interruption of the collector's outer
+history ledger still require qualification.
 
 Verified producer exports now include `report.tar.gz` as an explicit report-file
 resource alongside sealed Parquet files. `packingVersion=sealed-files-tar-gzip-v1`
