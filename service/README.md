@@ -203,3 +203,23 @@ ceilings still apply; an unknown or excessively deep/broad lookup can be rejecte
 Publication and portable rebuild retain and validate the complete indexed closure.
 The retained producer test uses 4,500 synthetic trials; the HTTP/recovery test uses
 512 synthetic 100 KB trial bodies. These are storage/transport scale fixtures.
+
+Run the existing coordinator's completed-job publisher against the built service:
+
+```sh
+node --test scripts/api-large-publication.test.mjs
+```
+
+This gate creates 4,500 synthetic trial references, interrupts a staged upload,
+resumes using missing-object admission, and verifies that installed objects are
+not uploaded again. It checks frozen values and selected first/last trial reads
+after restart and DB-free rebuild. Set `WASMFYI_LARGE_TRIAL_FIXTURE` to a producer
+export directory to exercise those exact bytes, and `WASMFYI_SERVICE_BINARY` to
+an existing native binary instead of building one. The supplied large producer
+fixture remains synthetic and carries no operator qualification claim.
+
+Publisher cancellation now stops local export validation as well as network
+requests. HTTP 429 responses use the API's integer `Retry-After` (1–30 seconds);
+all retries and waits share the request's original 30-second deadline. Cancellation
+also stops backoff. Other HTTP failures remain explicit so an operator can resume
+the immutable attempt after addressing the cause.
