@@ -44,21 +44,23 @@ type Revision struct {
 	Qualification       string    `json:"operatorQualification"`
 }
 type Store struct {
-	db           *pebble.DB
-	root         string
-	publish      publicationLock
-	mu           sync.RWMutex
-	published    map[string]Revision
-	current      string
-	publisher    string
-	fail         func(string) error
-	poisoned     atomic.Bool
-	objects      *os.Root
-	users        sync.RWMutex
-	closed       bool
-	limits       Limits
-	contentMu    sync.Mutex
-	contentBytes int64
+	db                *pebble.DB
+	root              string
+	publish           publicationLock
+	mu                sync.RWMutex
+	published         map[string]Revision
+	current           string
+	registrations     string
+	registrationCount int
+	publisher         string
+	fail              func(string) error
+	poisoned          atomic.Bool
+	objects           *os.Root
+	users             sync.RWMutex
+	closed            bool
+	limits            Limits
+	contentMu         sync.Mutex
+	contentBytes      int64
 }
 
 // Key fields are length-prefixed, versioned tuples, never slash concatenation.
@@ -154,6 +156,24 @@ func (s *Store) get(k []byte) ([]byte, error) {
 	return b, c.Close()
 }
 func (s *Store) restore() error {
+	if b, e := s.get(key("registrations")); e == nil {
+		s.registrations = string(b)
+		if !wire.IsHash(s.registrations) {
+			return wire.Invalid("invalid registration root")
+		}
+	} else if !errors.Is(e, pebble.ErrNotFound) {
+		return e
+	}
+
+	if s.registrations != "" {
+		budget := ScanLimit
+		if e := s.walk(s.registrations, &budget, func(string, string) error { s.registrationCount++; return nil }); e != nil {
+			return e
+		}
+		if s.registrationCount > RegistrationLimit {
+			return ErrLimit
+		}
+	}
 	prefix := key("revision")
 	it, e := s.db.NewIter(nil)
 	if e != nil {
@@ -185,6 +205,9 @@ func (s *Store) restore() error {
 	if errors.Is(e, pebble.ErrNotFound) {
 		if len(s.published) > 0 {
 			return fmt.Errorf("revision registry has no active pointer")
+		}
+		if _, e := s.reachable(false); e != nil {
+			return e
 		}
 		return s.portable("")
 	}
@@ -259,6 +282,9 @@ func (s *Store) Submit(j wire.Job) (string, error) {
 		return "", ErrNeedsRestart
 	}
 	if e := j.Validate(); e != nil {
+		return "", e
+	}
+	if e := s.checkRegisteredJob(j); e != nil {
 		return "", e
 	}
 	b, e := wire.Encode(j)
@@ -462,6 +488,9 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 		return "", e
 	}
 	if e = j.Validate(); e != nil {
+		return "", e
+	}
+	if e = s.checkRegisteredJob(j); e != nil {
 		return "", e
 	}
 	missing, e := s.MissingContext(ctx, id)

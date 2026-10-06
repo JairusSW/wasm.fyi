@@ -8,7 +8,7 @@ import {createServer} from 'node:net';
 import {fileURLToPath} from 'node:url';
 import {runCommand} from './lib/benchmark-process.mjs';
 import {digest} from './lib/wasmbench.mjs';
-import {publicationURL,publishCompletedJob} from './lib/api-publish.mjs';
+import {publicationURL,publishCompletedJob,registerSessionPlan} from './lib/api-publish.mjs';
 import {planIdentity} from './lib/benchmark-plan.mjs';
 const site=fileURLToPath(new URL('..',import.meta.url));
 test('API origin requires HTTPS except loopback and excludes embedded secrets',()=>{
@@ -43,6 +43,16 @@ test('completed corpus uploads only missing objects, publishes idempotently, ret
   await writeFile(join(resourceDirectory,'manifest.json'),JSON.stringify(resourceManifest));
   let uploads=0;const request=async(url,options)=>{if(options.method==='PUT')uploads++;const response=await fetch(url,options);assert(response.ok,`Unexpected API failure: ${response.status} ${await response.clone().text()}`);return response};
   const args={url,local,plan,machine:'fixture-machine',result,token,request};
+  const collectionURL=url+'/api/v1/collection/sessions/'+plan.id;
+  assert.equal((await fetch(collectionURL)).status,404,'Unregistered session visible');
+  const registered=await registerSessionPlan({url,plan,token,request});assert.match(registered,/^[a-f0-9]{64}$/);
+  const registeredScope=await(await fetch(collectionURL)).json();assert.equal(registeredScope.plannedJobs,2);assert.equal(registeredScope.members,1);assert.equal(registeredScope.status,'registered');
+  assert.equal((await(await fetch(url+'/api/v1/manifest')).json()).revision,'','Registration published measurement revision');
+  assert.equal((await fetch(collectionURL+'?revision='+ 'a'.repeat(64))).status,400,'Live registration accepted immutable revision scope');
+  uploads=0;assert.equal(await registerSessionPlan({url,plan,token,request}),registered);assert.equal(uploads,0,'Registered duplicate retransferred source');
+  const changed=structuredClone(plan);changed.jobs.push({id:'corpus-other'});changed.identity=planIdentity(changed);
+  await assert.rejects(registerSessionPlan({url,plan:changed,token}),/409/);
+
   await assert.rejects(publishCompletedJob({...args,machine:'other-machine',request:async()=>{throw Error('Wrong parent reached API')}}),/outside session plan|another plan or machine/);
   const parentPath=join(local,'bundle/index.json'),savedParent=await readFile(parentPath),uncommittedParent=JSON.parse(savedParent);delete uncommittedParent.metadataSha256;await writeFile(parentPath,JSON.stringify(uncommittedParent));await assert.rejects(publishCompletedJob({...args,request:async()=>{throw Error('Uncommitted metadata reached API')}}),/metadata digest required/);await writeFile(parentPath,savedParent);
   const revision=await publishCompletedJob(args);assert.match(revision,/^[a-f0-9]{64}$/);assert(uploads>0);uploads=0;assert.equal(await publishCompletedJob(args),revision);assert.equal(uploads,0,'Duplicate transferred existing evidence');

@@ -19,8 +19,9 @@ import (
 // and before acknowledgement. It makes a content-only rebuild unambiguous:
 // unpublished CAS roots cannot become public by being found in a directory.
 type portablePointer struct {
-	Schema  int    `json:"schema"`
-	Current string `json:"current"`
+	Schema        int    `json:"schema"`
+	Current       string `json:"current"`
+	Registrations string `json:"registrationRoot,omitempty"`
 }
 
 func atomicFile(path string, b []byte, mode os.FileMode) error {
@@ -50,7 +51,10 @@ func atomicFile(path string, b []byte, mode os.FileMode) error {
 	return syncDir(filepath.Dir(path))
 }
 func (s *Store) portable(current string) error {
-	b, e := wire.Encode(portablePointer{1, current})
+	return s.portableWithRegistrations(current, s.registrationRoot())
+}
+func (s *Store) portableWithRegistrations(current, registrations string) error {
+	b, e := wire.Encode(portablePointer{Schema: 1, Current: current, Registrations: registrations})
 	if e != nil {
 		return e
 	}
@@ -596,6 +600,9 @@ func (s *Store) reachableContext(ctx context.Context, includeStaging bool) (map[
 		if e := job.Validate(); e != nil {
 			return nil, e
 		}
+		if e := s.checkRegisteredJob(job); e != nil {
+			return nil, e
+		}
 		scope, e := s.sessionPlanScopeWithVerifier(ctx, r, job.Session, &plans)
 		if e != nil {
 			return nil, e
@@ -642,6 +649,9 @@ func (s *Store) reachableContext(ctx context.Context, includeStaging bool) (map[
 				marked[object.SHA256] = true
 			}
 		}
+	}
+	if e := s.markRegistrations(ctx, marked, includeStaging); e != nil {
+		return nil, e
 	}
 	if includeStaging {
 		prefix := key("import")
@@ -756,7 +766,7 @@ func Rebuild(source, destination, publisher string) error {
 	if e = wire.Decode(b, &pointer); e != nil {
 		return e
 	}
-	if pointer.Schema != 1 || pointer.Current != "" && !wire.IsHash(pointer.Current) {
+	if pointer.Schema != 1 || pointer.Current != "" && !wire.IsHash(pointer.Current) || pointer.Registrations != "" && !wire.IsHash(pointer.Registrations) {
 		return fmt.Errorf("invalid publication pointer")
 	}
 	objects, e := os.OpenRoot(filepath.Join(source, "objects"))
@@ -764,7 +774,7 @@ func Rebuild(source, destination, publisher string) error {
 		return e
 	}
 	defer objects.Close()
-	reader := &Store{root: source, objects: objects, published: map[string]Revision{}}
+	reader := &Store{root: source, objects: objects, published: map[string]Revision{}, registrations: pointer.Registrations}
 	chain := []string{}
 	for id := pointer.Current; id != ""; {
 		if len(chain) >= 1000000 {
@@ -852,6 +862,11 @@ func Rebuild(source, destination, publisher string) error {
 			return e
 		}
 	}
+	if pointer.Registrations != "" {
+		if e = target.restoreRegistrations(reader, pointer.Registrations); e != nil {
+			return e
+		}
+	}
 	if e = target.portable(pointer.Current); e != nil {
 		return e
 	}
@@ -894,7 +909,7 @@ func verifyPortable(source string) error {
 	if e = wire.Decode(b, &pointer); e != nil {
 		return e
 	}
-	if pointer.Schema != 1 || pointer.Current != "" && !wire.IsHash(pointer.Current) {
+	if pointer.Schema != 1 || pointer.Current != "" && !wire.IsHash(pointer.Current) || pointer.Registrations != "" && !wire.IsHash(pointer.Registrations) {
 		return fmt.Errorf("invalid portable pointer")
 	}
 	objects, e := os.OpenRoot(filepath.Join(source, "objects"))
@@ -902,7 +917,7 @@ func verifyPortable(source string) error {
 		return e
 	}
 	defer objects.Close()
-	reader := &Store{root: source, objects: objects, published: map[string]Revision{}, current: pointer.Current}
+	reader := &Store{root: source, objects: objects, published: map[string]Revision{}, current: pointer.Current, registrations: pointer.Registrations}
 	for id := pointer.Current; id != ""; {
 		if _, seen := reader.published[id]; seen {
 			return fmt.Errorf("portable revision cycle")

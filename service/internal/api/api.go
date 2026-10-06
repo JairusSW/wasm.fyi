@@ -303,8 +303,17 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 		problem(w, r, e)
 		return
 	}
+	if len(headParts) == 3 && headParts[0] == "collection" && headParts[1] == "sessions" {
+		out, e := a.Store.RegisteredSession(headParts[2])
+		if e != nil {
+			problem(w, r, e)
+			return
+		}
+		respond(w, r, 200, out, false)
+		return
+	}
 	if path == "manifest" {
-		respond(w, r, 200, map[string]any{"schema": 2, "revision": a.Store.Current(), "selectionAliases": map[string]string{"s1": "current", "s2": "previous"}, "limits": map[string]int{"defaultResults": 100, "maxResults": 1000, "jobManifestBytes": wire.JobBytes, "sessionPlanBytes": wire.SessionPlanBytes, "decodedResponseBytes": wire.ResponseBytes, "decodedChunkBytes": wire.ChunkBytes, "scanKeys": store.ScanLimit, "decodedEvidenceResourceBytes": wire.ResourceBytes, "maxEvidenceFragments": wire.ResourceFragments, "nativeFunctionShards": 4096, "nativeFunctions": 1000000, "cohortScopeBytes": 4096, "cohortComputations": 2, "resultComputations": 2, "resultCacheBytes": resultCacheBytes, "resultCacheEntries": resultCacheEntries, "cohortCells": 100000, "reportFileDownloads": 2, "reportFileDownloadSeconds": 300, "reportFileChunkBytes": wire.ReportFileChunkBytes, "reportFileBytes": wire.ReportFileBytes}, "endpoints": []string{"overview", "results", "reports", "metrics", "methods", "configurations", "environments", "workloads", "artifacts", "history", "aggregates", "cohorts", "sessions", "files", "archives"}}, false)
+		respond(w, r, 200, map[string]any{"schema": 2, "revision": a.Store.Current(), "selectionAliases": map[string]string{"s1": "current", "s2": "previous"}, "limits": map[string]int{"defaultResults": 100, "maxResults": 1000, "jobManifestBytes": wire.JobBytes, "sessionPlanBytes": wire.SessionPlanBytes, "registeredSessions": store.RegistrationLimit, "decodedResponseBytes": wire.ResponseBytes, "decodedChunkBytes": wire.ChunkBytes, "scanKeys": store.ScanLimit, "decodedEvidenceResourceBytes": wire.ResourceBytes, "maxEvidenceFragments": wire.ResourceFragments, "nativeFunctionShards": 4096, "nativeFunctions": 1000000, "cohortScopeBytes": 4096, "cohortComputations": 2, "resultComputations": 2, "resultCacheBytes": resultCacheBytes, "resultCacheEntries": resultCacheEntries, "cohortCells": 100000, "reportFileDownloads": 2, "reportFileDownloadSeconds": 300, "reportFileChunkBytes": wire.ReportFileChunkBytes, "reportFileBytes": wire.ReportFileBytes}, "endpoints": []string{"overview", "results", "reports", "metrics", "methods", "configurations", "environments", "workloads", "artifacts", "history", "aggregates", "cohorts", "sessions", "collection/sessions", "files", "archives"}}, false)
 		return
 	}
 	if path == "overview" || path == "aggregates" || strings.HasPrefix(path, "cohorts/") {
@@ -743,6 +752,47 @@ func (a *API) admin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(parts) == 1 && parts[0] == "plans" && r.Method == "POST" {
+		var plan wire.PlanRegistration
+		if e := decode(w, r, &plan); e != nil {
+			problem(w, r, e)
+			return
+		}
+		id, e := a.Store.SubmitPlan(r.Context(), plan)
+		if e != nil {
+			problem(w, r, e)
+			return
+		}
+		respond(w, r, 201, map[string]string{"id": id}, false)
+		return
+	}
+	if len(parts) == 3 && parts[0] == "plans" {
+		switch {
+		case parts[2] == "missing" && r.Method == "GET":
+			objects, e := a.Store.MissingPlan(r.Context(), parts[1])
+			if e != nil {
+				problem(w, r, e)
+				return
+			}
+			respond(w, r, 200, map[string]any{"items": objects, "complete": true}, false)
+			return
+		case parts[2] == "commit" && r.Method == "POST":
+			id, e := a.Store.CommitPlan(r.Context(), parts[1])
+			if e != nil {
+				problem(w, r, e)
+				return
+			}
+			respond(w, r, 200, map[string]string{"id": id}, false)
+			return
+		case parts[2] == "abort" && r.Method == "POST":
+			if e := a.Store.AbortPlan(r.Context(), parts[1]); e != nil {
+				problem(w, r, e)
+				return
+			}
+			respond(w, r, 200, map[string]string{"id": parts[1], "state": "aborted"}, false)
+			return
+		}
+	}
 	if len(parts) == 1 && parts[0] == "metrics" && r.Method == "GET" {
 		stats, e := a.Store.Stats()
 		if e != nil {

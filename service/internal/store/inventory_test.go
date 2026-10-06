@@ -309,7 +309,7 @@ func TestAdmissionOwnerMigration(t *testing.T) {
 	if err = batch.DeleteRange(prefix, append(append([]byte(nil), prefix...), 255), nil); err != nil {
 		t.Fatal(err)
 	}
-	if err = batch.Delete(key("admission-ready-v2"), nil); err != nil {
+	if err = batch.Delete(key("admission-ready-v3"), nil); err != nil {
 		t.Fatal(err)
 	}
 	if err = batch.Commit(nil); err != nil {

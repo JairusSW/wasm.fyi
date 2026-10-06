@@ -28,7 +28,7 @@ import {
 import { corpusGroups } from "./lib/corpus-collection.mjs";
 import { runCommand, quote } from "./lib/benchmark-process.mjs";
 import { publishCorpus } from "./lib/benchmark-publish.mjs";
-import { publishCompletedJob, publicationURL } from "./lib/api-publish.mjs";
+import { publishCompletedJob, publicationURL, registerSessionPlan } from "./lib/api-publish.mjs";
 import { benchmarkSource, sourceBundle } from "./lib/benchmark-source.mjs";
 import { verifyParentBundle } from "./lib/benchmark-bundle.mjs";
 import { verifySeal } from "./lib/verify-seal.mjs";
@@ -779,6 +779,9 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
     return host;
   }
   try {
+    if (plan.publication?.type === "api-v1") {
+      await registerSessionPlan({url:plan.publication.url,plan,signal:abort.signal});
+    }
     const hosts = [];
     for (const machine of plan.machines) {
       console.log(`[${machine.name}] preparing pinned tools`);

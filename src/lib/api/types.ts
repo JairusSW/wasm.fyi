@@ -58,3 +58,4 @@ export type AggregateSummary = { "scope": CohortScope; "cohort": string; "digest
 export type Health = { "ready": boolean; "datasetAvailable": boolean; "revision": "" | Digest; "restartRequired": boolean };
 export type RevisionPage = { "revision": Digest; "items": Array<Digest>; "total": number; "complete": boolean; "nextCursor": string };
 export type PlanRegistration = { "schema": 1; "session": string; "plan": Digest; "configuredHarnessPin": string; "sessionPlan": SessionPlan };
+export type RegisteredSession = { "id": string; "registrationId": Digest; "plan": Digest; "configuredHarnessPin": string; "members": number; "plannedJobs": number; "status": "registered" };

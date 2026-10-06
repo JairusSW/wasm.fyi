@@ -155,6 +155,18 @@ class Contracts(unittest.TestCase):
             with self.assertRaises(ValueError):
                 contracts.validate(bad, "PlanRegistration", "unbounded registration")
 
+    def test_registered_scope_does_not_preload_inventory(self):
+        scope = {"id": "before-work", "registrationId": "a" * 64, "plan": "b" * 64,
+                 "configuredHarnessPin": "c" * 40, "members": 2, "plannedJobs": 4,
+                 "status": "registered"}
+        contracts.validate(scope, "RegisteredSession", "small registered scope")
+        for key, value in [("jobs", []), ("chunks", []), ("reports", []),
+                           ("status", "completed"), ("members", 129), ("plannedJobs", 100001)]:
+            bad = copy.deepcopy(scope)
+            bad[key] = value
+            with self.assertRaises(ValueError):
+                contracts.validate(bad, "RegisteredSession", "unbounded or fabricated scope")
+
     def test_session_error_contracts(self):
         contracts.validate({"error": "request limit"}, "APIError", "admission error")
         contracts.validate({"error": "invalid request", "code": "invalid_request"},

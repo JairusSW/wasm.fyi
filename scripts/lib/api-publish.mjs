@@ -24,6 +24,40 @@ function inside(root,path){
   assert(typeof path==='string'&&!path.includes('\\')&&!path.split('/').some(p=>p==='.'||p==='..'||p===''), 'Unsafe export path');
   const absolute=resolve(root,path);assert(absolute.startsWith(resolve(root)+sep),'Export outside session member');return absolute;
 }
+function publicationClient({url,token,signal,request}){
+ url=publicationURL(url);assert(typeof token==='string'&&token.length>=32,'WASMFYI_ADMIN_TOKEN must contain at least 32 characters');
+  const call=async(path,method='GET',body)=>{
+    signal?.throwIfAborted();
+    // This deadline covers every retry, delay and response read together.
+    // The API rejects rate-limited requests before publication/upload work.
+    const requestSignal=AbortSignal.any([...(signal?[signal]:[]),AbortSignal.timeout(30000)]);
+    for(;;){
+      requestSignal.throwIfAborted();
+      const response=await request(url+path,{method,body,redirect:'error',signal:requestSignal,headers:{Authorization:'Bearer '+token,...(body?{'Content-Type':Buffer.isBuffer(body)?'application/octet-stream':'application/json'}:{})}});
+      if(response.status===429){
+        const retry=response.headers.get('Retry-After');
+        await response.body?.cancel();
+        assert(retry&&/^[0-9]+$/.test(retry)&&Number(retry)>=1&&Number(retry)<=30,'Invalid API publication retry delay');
+        await delay(Number(retry)*1000,undefined,{signal:requestSignal});
+        continue;
+      }
+      if(!response.ok)throw Error(`API publication failed (${response.status}) at ${path}`);
+      const chunks=[];let size=0;for await(const b of response.body){size+=b.length;assert(size<=1024*1024,'API response exceeds ceiling');chunks.push(b)};return JSON.parse(Buffer.concat(chunks).toString());
+    }
+  };
+ return call;
+}
+export async function registerSessionPlan({url,plan,signal,token=process.env.WASMFYI_ADMIN_TOKEN,request=fetch}){
+ signal?.throwIfAborted();
+ const {registration,objects}=prepareSessionPlan(plan,{signal}),call=publicationClient({url,token,signal,request});
+ const submitted=await call('/admin/v1/plans','POST',JSON.stringify(registration));assert(HASH.test(submitted.id),'Invalid registration identity');
+ const expected=digest(Buffer.from(JSON.stringify(registration)));assert.equal(submitted.id,expected,'Registration identity differs');
+ const local=new Map(objects.map(o=>[o.sha256,o]));
+ const missing=await call(`/admin/v1/plans/${submitted.id}/missing`);
+ assert(missing.complete===true&&Array.isArray(missing.items)&&missing.items.length<=16,'Unbounded plan inventory');
+ for(const object of missing.items){signal?.throwIfAborted();const source=local.get(object.sha256);assert(source&&source.bytes===object.bytes&&object.kind==='binary','API requested undeclared plan chunk');await call(`/admin/v1/objects/${object.sha256}`,'PUT',source.body);}
+ const committed=await call(`/admin/v1/plans/${submitted.id}/commit`,'POST');assert.equal(committed.id,expected,'Committed plan identity differs');return committed.id;
+}
 export async function publishCompletedJob({url,local,plan,machine,result,signal,token=process.env.WASMFYI_ADMIN_TOKEN,request=fetch}){
   signal?.throwIfAborted();
   url=publicationURL(url);assert(typeof token==='string'&&token.length>=32,'WASMFYI_ADMIN_TOKEN must contain at least 32 characters');
@@ -79,25 +113,7 @@ export async function publishCompletedJob({url,local,plan,machine,result,signal,
   for(const object of parentObjects){const previous=objects.get(object.sha256);assert(!previous||(previous.bytes===object.bytes&&previous.kind===object.kind),'Parent object conflicts with measurement export');objects.set(object.sha256,object);}
   const job={schema:2,session:plan.id,machine,corpus:result.corpus,attempt:digest(Buffer.from(JSON.stringify([exports.map(e=>e.sha256),digest(Buffer.from(JSON.stringify(parentArchive))),digest(Buffer.from(JSON.stringify(sessionPlan)))]))),plan:plan.identity,configuredHarnessPin:plan.configuredHarnessPin,parentBundleSha256:digest(parent),parentArchive,sessionPlan,status:'completed',exports};
   assert(typeof job.configuredHarnessPin==='string'&&job.configuredHarnessPin.length>0,'Missing configured harness identity');
-  const call=async(path,method='GET',body)=>{
-    signal?.throwIfAborted();
-    // This deadline covers every retry, delay and response read together.
-    // The API rejects rate-limited requests before publication/upload work.
-    const requestSignal=AbortSignal.any([...(signal?[signal]:[]),AbortSignal.timeout(30000)]);
-    for(;;){
-      requestSignal.throwIfAborted();
-      const response=await request(url+path,{method,body,redirect:'error',signal:requestSignal,headers:{Authorization:'Bearer '+token,...(body?{'Content-Type':Buffer.isBuffer(body)?'application/octet-stream':'application/json'}:{})}});
-      if(response.status===429){
-        const retry=response.headers.get('Retry-After');
-        await response.body?.cancel();
-        assert(retry&&/^[0-9]+$/.test(retry)&&Number(retry)>=1&&Number(retry)<=30,'Invalid API publication retry delay');
-        await delay(Number(retry)*1000,undefined,{signal:requestSignal});
-        continue;
-      }
-      if(!response.ok)throw Error(`API publication failed (${response.status}) at ${path}`);
-      const chunks=[];let size=0;for await(const b of response.body){size+=b.length;assert(size<=1024*1024,'API response exceeds ceiling');chunks.push(b)};return JSON.parse(Buffer.concat(chunks).toString());
-    }
-  };
+  const call=publicationClient({url,token,signal,request});
   const submitted=await call('/admin/v1/imports','POST',JSON.stringify(job));assert(HASH.test(submitted.id),'Invalid import identity');
   // The missing inventory shrinks as uploads arrive. Always request its first
   // page; using a moving offset would skip objects after the previous upload.

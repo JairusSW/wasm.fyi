@@ -2683,6 +2683,48 @@
         "sessionPlan"
       ],
       "additionalProperties": false
+    },
+    "RegisteredSession": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "registrationId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "plan": {
+          "$ref": "#/$defs/Digest"
+        },
+        "configuredHarnessPin": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "members": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128
+        },
+        "plannedJobs": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        },
+        "status": {
+          "const": "registered"
+        }
+      },
+      "required": [
+        "id",
+        "registrationId",
+        "plan",
+        "configuredHarnessPin",
+        "members",
+        "plannedJobs",
+        "status"
+      ],
+      "additionalProperties": false
     }
   },
   "$ref": "#/$defs/CompletedJob"

@@ -342,6 +342,27 @@ existing publisher prepares that scope without a completed attempt or export;
 completed-job publication uses the same preparation. Go verifies those exact
 bytes independently of job membership, while completed-job verification still
 requires membership. Verification accepts a cancellation context through reads
-and scope validation. The durable registration endpoint, coordinator call before
-work starts, and live attempt progress are still pending. This contract alone
-does not make a planned session publicly visible.
+and scope validation. Durable registration is available through authenticated `POST /admin/v1/plans`,
+`GET /admin/v1/plans/{id}/missing`, and `POST /admin/v1/plans/{id}/commit`.
+Chunks use the existing declared-object upload endpoint. An abort endpoint
+releases staging quota and permits. Plan registrations and measurement imports
+share the pending admission quota; the committed registration registry is bounded
+to 4,096 sessions. `pendingJobs` in admin metrics counts all pending admission
+units, including plan registrations.
+
+The existing coordinator registers the full immutable plan before preparing
+workers on both run and resume. Duplicate registration uploads only missing
+chunks and returns the same ID. Registration does not create a measurement
+revision. `GET /api/v1/collection/sessions/{id}` returns a small registered scope
+with planned machine/corpus count and source identities; it rejects revision,
+cursor and pagination queries. This live surface is separate from frozen
+published-job progress. Worker/attempt event progress remains pending.
+
+Registration uses synchronous Pebble publication plus the durable portable
+pointer. Its persistent membership maps and original plan chunks participate in
+backup, verification, cleanup and DB-free reconstruction. Restart reconciles a
+DB commit interrupted before pointer sync; unacknowledged state stays hidden in
+the running process. Tests cover registration before any measurement, missing
+source admission, cancellation/abort, shared quota migration, two publication
+fault checkpoints, restart, backup restore and DB-free rebuild. They do not yet
+prove physical crash durability or large multi-session operational load.

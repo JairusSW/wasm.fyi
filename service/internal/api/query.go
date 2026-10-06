@@ -48,6 +48,13 @@ func allowedQuery(values url.Values, keys ...string) error {
 }
 func routeQuery(path string, values url.Values) error {
 	parts := strings.Split(path, "/")
+	if len(parts) == 3 && parts[0] == "collection" && parts[1] == "sessions" {
+		if !wire.IsIdentity(parts[2]) {
+			return wire.Invalid("invalid session identity")
+		}
+		return allowedQuery(values)
+	}
+
 	if len(parts) >= 2 && parts[0] == "archives" {
 		if !wire.IsHash(parts[1]) {
 			return wire.Invalid("invalid archive job identity")

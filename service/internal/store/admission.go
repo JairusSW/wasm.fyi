@@ -330,7 +330,7 @@ func (s *Store) ImportStatus(id string) (ImportStatus, error) {
 	return status, nil
 }
 func (s *Store) initializeAdmission() error {
-	if _, e := s.get(key("admission-ready-v2")); e == nil {
+	if _, e := s.get(key("admission-ready-v3")); e == nil {
 		return nil
 	} else if !errors.Is(e, pebble.ErrNotFound) {
 		return e
@@ -391,7 +391,10 @@ func (s *Store) initializeAdmission() error {
 	if e = it.Error(); e != nil {
 		return e
 	}
-	return s.db.Set(key("admission-ready-v2"), []byte{1}, pebble.Sync)
+	if e = s.initializePlanAdmission(); e != nil {
+		return e
+	}
+	return s.db.Set(key("admission-ready-v3"), []byte{1}, pebble.Sync)
 }
 func mustQuota() []byte { b, _ := wire.Encode(admissionQuota{Schema: 1}); return b }
 func (s *Store) scanContentUsage() error {

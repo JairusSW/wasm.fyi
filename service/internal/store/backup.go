@@ -224,7 +224,7 @@ func (s *Store) Backup(ctx context.Context, destination string) (BackupManifest,
 		return manifest, e
 	}
 	defer source.Close()
-	pointer, _ := wire.Encode(portablePointer{1, manifest.Current})
+	pointer, _ := wire.Encode(portablePointer{Schema: 1, Current: manifest.Current, Registrations: s.registrationRoot()})
 	if e = atomicFile(filepath.Join(temp, "published.json"), pointer, 0600); e != nil {
 		return manifest, e
 	}
