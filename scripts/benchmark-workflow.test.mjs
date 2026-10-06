@@ -19,6 +19,24 @@ import {
 } from "./lib/benchmark-plan.mjs";
 import { digest } from "./lib/wasmbench.mjs";
 const site = fileURLToPath(new URL("..", import.meta.url));
+test("process leases preserve live legacy owners and migrate only stopped owners", async () => {
+  const {processLock}=await import('./lib/benchmark-lock.mjs');
+  const root=await mkdtemp(join(tmpdir(),'benchmark-legacy-lock-'));
+  try {
+    const path=join(root,'owner.lock');await writeFile(path,String(process.pid)+'\n');
+    await assert.rejects(processLock(path,()=>{}),/explicit migration/);
+    let entered=false;
+    const waiting=processLock(path,()=>{entered=true},{legacyPid:true});
+    await new Promise(resolve=>setTimeout(resolve,100));assert.equal(entered,false);
+    assert.equal(await readFile(path,'utf8'),String(process.pid)+'\n');
+    await rm(path);await waiting;assert.equal(entered,true);
+    await runCommand(process.execPath,['-e',`require('node:fs').writeFileSync(process.argv[1],String(process.pid)+'\\n')`,path]);
+    await processLock(path,()=>{entered=true},{legacyPid:true});
+    await writeFile(path,JSON.stringify({pid:0,token:'malformed',started:'unknown'}));
+    await assert.rejects(processLock(path,()=>{}),/Invalid process lock owner/);
+    assert.equal(JSON.parse(await readFile(path)).pid,0);
+  } finally {await rm(root,{recursive:true,force:true})}
+});
 test("host resumes completed corpora without launching or rewriting a result", async () => {
   const directory = await mkdtemp(join(tmpdir(), "benchmark-resume-"));
   try {

@@ -574,8 +574,12 @@ preserves recorded day/second precision; omission retains unknown precision.
 The real-report HTTP gate verifies publication, exact release/source associations,
 cached redelivery and authentication-failure recovery through the existing
 collector without measurement execution. Its queue associations are synthetic.
-Uncollected-event migration and abrupt interruption of the collector's outer
-history ledger still require qualification.
+The collector retains unvisited completed entries before replay and uses a
+process-start-bound lease at the existing history lock path. Live legacy PID
+owners remain protected; stopped legacy owners can migrate. A real collector
+SIGKILL/replay gate preserves two completed references and the original history
+row count. Uncollected-event migration and physical power-loss durability still
+require qualification.
 
 Verified producer exports now include `report.tar.gz` as an explicit report-file
 resource alongside sealed Parquet files. `packingVersion=sealed-files-tar-gzip-v1`

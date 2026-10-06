@@ -87,5 +87,22 @@ test('real completed history publication reuses its source, tools and API record
     env.WASMFYI_ADMIN_TOKEN=token;await run();ledger=JSON.parse(await readFile(join(historyRoot,'results.json')));assert.equal(ledger.phase,'collected');
     const commands=(await readFile(commandLog,'utf8')).trim().split('\n').map(JSON.parse);assert(commands.every(args=>['verify-report','export-site'].includes(args[0])));assert.equal(commands.filter(args=>args[0]==='export-site'&&args[1]!=='--describe').length,1);
     const current=await(await fetch(url+'/api/v1/manifest')).json(),replayed=await(await fetch(url+'/api/v1/history?revision='+current.revision)).json();assert.equal(replayed.total,4,'collector replay created independent measurements');
+    // Kill the real collector after its initial ledger save, before it has
+    // verified/revisited cached jobs. Both completed references must survive.
+    const secondJob={...job,id:digest(Buffer.from('second retrospective crash fixture'))};
+    await writeFile(join(historyRoot,'queue.json'),JSON.stringify({...queue,suite,recipeSha256:'fixture',jobs:[job,secondJob]}));
+    await writeFile(join(historyRoot,'results.json'),JSON.stringify({jobs:[{id:job.id,status:'collected',configurations:[entry]},{id:secondJob.id,status:'collected',configurations:[entry]}]}));
+    const marker=join(root,'interrupted-controller.json');
+    await writeFile(controller,'#!'+process.execPath+'\n'+`import {writeFileSync} from 'node:fs'; import {execFileSync} from 'node:child_process'; const args=process.argv.slice(2); if(args[0]==='verify-report'){writeFileSync(${JSON.stringify(marker)},JSON.stringify({pid:process.pid})); Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,60000);} if(!['verify-report','export-site'].includes(args[0]))process.exit(55); execFileSync(${JSON.stringify(process.env.WASMFYI_PRODUCER_BIN)},args,{stdio:'inherit'});\n`,{mode:0o700});
+    const interrupted=spawn(process.execPath,[join(isolated,'scripts/performance-history-collect.mjs')],{cwd:isolated,env,detached:true,stdio:'ignore'});
+    const interruptedExit=new Promise(resolve=>interrupted.once('exit',(code,signal)=>resolve({code,signal})));
+    try{
+      let blocked=false;for(let i=0;i<400;i++){assert.equal(interrupted.exitCode,null);try{await readFile(marker);blocked=true;break}catch(error){if(error.code!=='ENOENT')throw error}await new Promise(resolve=>setTimeout(resolve,25))}assert(blocked,'collector did not reach crash checkpoint');
+      process.kill(-interrupted.pid,'SIGKILL');assert.equal((await interruptedExit).signal,'SIGKILL');
+    }finally{try{process.kill(-interrupted.pid,'SIGKILL')}catch(error){if(error.code!=='ESRCH')throw error}}
+    ledger=JSON.parse(await readFile(join(historyRoot,'results.json')));assert.equal(ledger.jobs.length,2);assert(ledger.jobs.every(job=>job.configurations[0].status==='collected'&&job.configurations[0].sha256===entry.sha256),'crash lost an unvisited completed report');
+    await writeFile(controller,script,{mode:0o700});await run();
+    ledger=JSON.parse(await readFile(join(historyRoot,'results.json')));assert.equal(ledger.phase,'collected');assert.equal(ledger.jobs.length,2);assert(ledger.jobs.every(job=>job.configurations[0].apiPublication.status==='published'));
+    const recoveredManifest=await(await fetch(url+'/api/v1/manifest')).json();assert.equal((await(await fetch(url+'/api/v1/history?revision='+recoveredManifest.revision)).json()).total,4,'crash recovery invented measurements');
   } finally {if(child){child.kill('SIGTERM');await exit}await rm(root,{recursive:true,force:true})}
 });

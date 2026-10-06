@@ -3,7 +3,7 @@ import {join,resolve} from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
 import {homedir,availableParallelism} from 'node:os';
-import {site,harness,command,digest,exists,locked} from './lib/wasmbench.mjs';
+import {site,harness,command,digest,exists} from './lib/wasmbench.mjs';
 import {parseCorpusJSON} from './lib/corpus.mjs';
 import {performanceCorpusIdentity} from './lib/performance-history.mjs';
 import {copyHistoricalHarness,buildHistoricalBinding,assertHistoricalRuntime,pendingBindingReason} from './lib/historical-binding.mjs';
@@ -11,6 +11,7 @@ import {workersWithinCpuBudget} from './lib/worker-budget.mjs';
 import {publicationURL} from './lib/api-publish.mjs';
 import {verifySiteExportContract} from './lib/site-export-contract.mjs';
 import {publishPerformanceHistoryConfiguration} from './lib/performance-history-api.mjs';
+import {processLock} from './lib/benchmark-lock.mjs';
 
 const apiURL=process.env.WASMFYI_HISTORY_API_URL?publicationURL(process.env.WASMFYI_HISTORY_API_URL):null;
 const publishOnly=process.env.WASMFYI_HISTORY_PUBLISH_ONLY==='1';
@@ -57,7 +58,7 @@ for(const localPid of publishOnly?[]:localOwners.filter(Boolean)) {
   }
   catch(error){if(error.code!=='ESRCH')throw error;}
 }
-await locked(async()=>{
+await processLock(join(site,'.wasmbench/performance-history.lock'),async()=>{
   // Planning owns a fresh immutable corpus directory. The full-run and Hub
   // supervisors may perform that plan before starting this collector.
   if(!publishOnly&&process.env.WASMBENCH_HISTORY_PLAN_READY!=='1')
@@ -72,7 +73,7 @@ await locked(async()=>{
   if(!await exists(controller))command('go',['build','-trimpath','-o',controller,'./cmd/wasmbench'],{cwd:base,env,stdio:'inherit'});
   if(apiURL)await verifySiteExportContract(controller,{cwd:base,env});
   const previous=await readFile(join(directory,'results.json'),'utf8').then(JSON.parse,()=>({jobs:[]}));
-  const state={schema:1,pid:process.pid,startedAt:new Date().toISOString(),queue,phase:'collect',jobs:[]};
+  const state={schema:1,pid:process.pid,startedAt:new Date().toISOString(),queue,phase:'collect',jobs:structuredClone(previous.jobs)};
   async function save(){const path=join(directory,'results.json');await writeFile(path+'.tmp',JSON.stringify(state,null,2)+'\n');await rename(path+'.tmp',path);}
   async function publish(entry,job) {
     if(!apiURL||entry.status!=='collected')return;
@@ -89,13 +90,15 @@ await locked(async()=>{
   }
   await save();
   for(const job of queue.jobs.filter(job=>job.identity.configurations.some(id=>supported.has(id)))) {
-    const result={id:job.id,release:job.release,targetWeeks:job.targetWeeks,targetReleases:job.targetReleases||[],status:'running',configurations:[]};
-    state.jobs.push(result);await save();
+    const result={id:job.id,release:job.release,targetWeeks:job.targetWeeks,targetReleases:job.targetReleases||[],status:'running',configurations:structuredClone(previous.jobs.find(j=>j.id===job.id)?.configurations||[])};
+    const prior=state.jobs.findIndex(j=>j.id===job.id);
+    if(prior<0)state.jobs.push(result);else state.jobs[prior]=result;await save();
+    const retain=entry=>{const i=result.configurations.findIndex(c=>c.id===entry.id);if(i<0)result.configurations.push(entry);else result.configurations[i]=entry};
     for(const configuration of job.identity.configurations.filter(id=>supported.has(id))) {
       if(!/^[a-z0-9-]+$/.test(configuration))throw Error('Unsafe historical configuration ID');
       const pendingReason=pendingBindingReason(job.release);
       if(pendingReason&&!publishOnly) {
-        result.configurations.push({id:configuration,status:'pending-binding',reason:pendingReason});
+        retain({id:configuration,status:'pending-binding',reason:pendingReason});
         result.status='incomplete';await save();continue;
       }
       const cached=previous.jobs.find(j=>j.id===job.id)?.configurations.find(c=>c.id===configuration&&c.status==='collected');
@@ -115,16 +118,16 @@ await locked(async()=>{
           }
           reusable=true;
         } catch(error){verificationError=error;console.log('Historical cache rejected:',job.release.engine,job.release.tag,configuration,error.message);}
-        if(reusable){result.configurations.push(cached);await save();await publish(cached,job);continue;}
-        if(publishOnly){result.configurations.push({...cached,apiPublication:{status:'failed',reason:'Original source verification failed: '+verificationError.message}});await save();continue;}
+        if(reusable){retain(cached);await save();await publish(cached,job);continue;}
+        if(publishOnly){retain({...cached,apiPublication:{status:'failed',reason:'Original source verification failed: '+verificationError.message}});await save();continue;}
       }
-      if(publishOnly){result.configurations.push({id:configuration,status:'not-collected',reason:'No verified completed report is available for publication-only replay.'});await save();continue;}
+      if(publishOnly){retain({id:configuration,status:'not-collected',reason:'No verified completed report is available for publication-only replay.'});await save();continue;}
       const space=await statfs(directory);
       if(Number(space.bavail)*Number(space.bsize)<20*1024**3) {
         state.phase='paused-low-disk';state.reason='Less than 20 GiB available; collection stopped before another build.';await save();
         throw Error(state.reason);
       }
-      const entry={id:configuration,status:'building',startedAt:new Date().toISOString()};result.configurations.push(entry);await save();
+      const entry={id:configuration,status:'building',startedAt:new Date().toISOString()};retain(entry);await save();
       const attempt=join(directory,'jobs',job.id,configuration,new Date().toISOString().replace(/[:.]/g,'-')+'-'+randomUUID().slice(0,8));
       await mkdir(attempt,{recursive:true});entry.attempt=attempt;
       const root=join(attempt,'harness');
@@ -204,4 +207,4 @@ await locked(async()=>{
   state.phase=state.jobs.every(j=>j.status==='collected')?'collected':'incomplete';state.completedAt=new Date().toISOString();await save();
   if(state.jobs.some(job=>job.configurations.some(entry=>entry.apiPublication?.status==='failed'))){state.phase='publication-failed';await save();}
   if(state.phase!=='collected')process.exitCode=1;
-},'performance-history');
+},{legacyPid:true});
