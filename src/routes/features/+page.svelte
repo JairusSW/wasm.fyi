@@ -16,6 +16,10 @@
 	import { ui } from '$lib/state.svelte';
 	import { supportCell, engineFeatureVersions, runtimeFeatureTrack, pluginSupportEvidence } from '$lib/support';
 
+	// One accent per section so phase boundaries read at a glance.
+	const TONES:[string,string][]=[['Phase 5','var(--st-pass)'],['Phase 4','var(--good)'],['Phase 3','var(--rt-wasmtime)'],['Phase 2','var(--st-warn)'],['Phase 1','var(--rt-wazero)'],['Inactive','var(--fg3)']];
+	const toneOf=(g:string)=>TONES.find(([p])=>g.startsWith(p))?.[1] ?? 'var(--fg2)';
+
 	let evidence=$state<{feature:string;engine:string;track:FeatureTrack}|null>(null);
   const channels=['stable'] as const;
 	const propLinks = PROPOSAL_IDS.map((id) => ({ id, label: PROPS[id].title }));
@@ -25,7 +29,8 @@
 		...FEATURE_ENGINES.map((id) => ({ label: RTB[id].name, sub: RTB[id].lang, rt: id }))
 	];
 	const groups = $derived([...new Set(FEATS.map(f=>f.g))].map(g=>({g,rows:FEATS.filter(f=>f.g===g).map(f=>{
-    return {f,count:`${featureContracts(f.id).length} corpus tests`,cells:[...FEATURE_ENGINES.map(id=>({...supportCell('?'),detail:'',tracks:channels.map(channel=>runtimeFeatureTrack(id,f,ui.scope,channel,undefined))}))]};
+    const contracts=featureContracts(f.id).length;
+    return {f,contracts,count:contracts?`${contracts} corpus tests`:f.phase,cells:[...FEATURE_ENGINES.map(id=>({...supportCell('?'),detail:'',tracks:channels.map(channel=>runtimeFeatureTrack(id,f,ui.scope,channel,undefined))}))]};
   })})));
 
 	// ── Spec tests ─────────────────────────────────────────────────────────
@@ -127,16 +132,19 @@
 			</thead>
 			<tbody>
 				{#each groups as g (g.g)}
-					<tr class="sec">
-						<td class="stick secname">{g.g}</td>
-						{#each featCols as h (h.label)}<td></td>{/each}
+					<tr class="sec band" style:--tone={toneOf(g.g)}>
+						<td class="stick secname"><span class="sec-title">{g.g}</span><span class="sec-count mono">{g.rows.length}</span></td>
+						<td class="sec-fill" colspan={featCols.length}></td>
 					</tr>
 					{#each g.rows as r (r.f.id)}
 						<tr>
 							<td class="stick fname">
-								{#if r.f.page}<a class="link w5" href={siteHref(`/${r.f.page}`)}>{r.f.name}</a>{:else}<span class="w5">{r.f.name}</span>{/if}
+								{#if r.f.page}<a class="link w5" href={siteHref(`/${r.f.page}`)}>{r.f.name}</a>{:else if r.f.url}<a class="w5 ext" href={r.f.url} rel="noopener" data-tip="Open the proposal repository">{r.f.name}</a>{:else}<span class="w5">{r.f.name}</span>{/if}
 								<div class="mono micro fg3">{r.count}</div>
 							</td>
+							{#if !r.contracts && !featCols.some((h)=>h.rt==='wago' && pluginSupportEvidence(r.f.id,ui.scope.machine))}
+								<td class="nocorpus" colspan={featCols.length}><span class="micro fg3"><span class="long">No corpus contracts yet · </span>not measured</span></td>
+							{:else}
 							{#each r.cells as x, k (k)}
                   {@const supportedPlugin=featCols[k].rt==='wago'?pluginSupportEvidence(r.f.id,ui.scope.machine):undefined}
 								<td class="fcell">
@@ -159,6 +167,7 @@
                   {:else}<div class="mono small nowrap" style:color={x.color}><span class="micro">{x.glyph}</span> {x.text}</div>{/if}
 </td>
 							{/each}
+							{/if}
 						</tr>
 					{/each}
 				{/each}
@@ -291,6 +300,44 @@
 		padding: 2px 4px;
 		text-align: center;
 	}
+	/* Section bands: spacing above, a full-width tinted bar, and a coloured edge per phase. */
+	.band td {
+		border-top: 14px solid var(--bg2);
+		border-left: 0 !important;
+		background: color-mix(in oklab, var(--tone) 14%, var(--bg3)) !important;
+	}
+	.band:first-child td {
+		border-top-width: 0;
+	}
+	.band .secname {
+		padding: 9px 12px 9px 10px;
+		box-shadow: inset 3px 0 0 var(--tone);
+		white-space: nowrap;
+	}
+	.sec-title {
+		font-size: 13px;
+		font-weight: 600;
+		color: var(--fg);
+	}
+	.sec-count {
+		margin-left: 8px;
+		padding: 0 6px;
+		font-size: 10px;
+		line-height: 16px;
+		display: inline-block;
+		color: var(--fg2);
+		border: 1px solid color-mix(in oklab, var(--tone) 45%, var(--line2));
+	}
+	.nocorpus {
+		padding: 6px 12px;
+	}
+	.ext {
+		color: var(--fg);
+		text-decoration: none;
+	}
+	.ext:hover {
+		text-decoration: underline;
+	}
 	.ch {
 		padding: 6px 10px;
 		text-align: left;
@@ -332,6 +379,9 @@
 		}
 		.legend {
 			gap: 6px 12px;
+		}
+		.nocorpus .long {
+			display: none;
 		}
 	}
 
