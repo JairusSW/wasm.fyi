@@ -30,3 +30,11 @@ src/lib/data/plugin-tests.json
 
 # Parent archives are staged from their versioned data source.
 /static/wasmbench/runs/
+
+# Local Go API content, indexes and secrets.
+/.wasmfyi/
+/service/.wasmfyi/
+/service/wasmfyi
+
+# API transport chunks of existing parent archives.
+/.cache/collection-api-parent/

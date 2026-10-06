@@ -1,0 +1,66 @@
+{
+  "schema": 1,
+  "root": "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20260509/harness/wazero",
+  "controller": "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20260509/controller",
+  "harnessRevision": "9332ced5e59c0c3fd9c5aabc6ebc2ed991431eb9",
+  "controllerSha256": "da0848c6e403d2b9369c61f2afd30bcae9b66ffed96d241469aecbde5d6d4369",
+  "analyzerSha256": "57b025f2921ea1b21effc35f3d4e97393fc83256aa771ad068e7d7237d541811",
+  "pin": {
+    "engine": "wazero",
+    "targetType": "main",
+    "targetWeek": "2026-05-10T03:59:00.000Z",
+    "repository": "tetratelabs/wazero",
+    "branch": "main",
+    "revision": "e6dd6c0c144f288230f2f168bbc4b2ee63793bbd",
+    "committedAt": "2026-05-08T16:19:34Z",
+    "url": "https://github.com/wazero/wazero/commit/e6dd6c0c144f288230f2f168bbc4b2ee63793bbd",
+    "status": "planned",
+    "configurations": [
+      "wazero"
+    ]
+  },
+  "provenance": {
+    "engine": "wazero",
+    "targetType": "main",
+    "targetWeek": "2026-05-10T03:59:00.000Z",
+    "repository": "tetratelabs/wazero",
+    "branch": "main",
+    "revision": "e6dd6c0c144f288230f2f168bbc4b2ee63793bbd",
+    "committedAt": "2026-05-08T16:19:34Z",
+    "url": "https://github.com/wazero/wazero/commit/e6dd6c0c144f288230f2f168bbc4b2ee63793bbd",
+    "status": "planned",
+    "configurations": [
+      "wazero"
+    ],
+    "module": {
+      "Path": "github.com/tetratelabs/wazero",
+      "Version": "v1.11.1-0.20260508161934-e6dd6c0c144f",
+      "Query": "e6dd6c0c144f288230f2f168bbc4b2ee63793bbd",
+      "Info": "/Users/work/.gvm/pkgsets/go1.27.1/global/pkg/mod/cache/download/github.com/tetratelabs/wazero/@v/v1.11.1-0.20260508161934-e6dd6c0c144f.info",
+      "GoMod": "/Users/work/.gvm/pkgsets/go1.27.1/global/pkg/mod/cache/download/github.com/tetratelabs/wazero/@v/v1.11.1-0.20260508161934-e6dd6c0c144f.mod",
+      "Zip": "/Users/work/.gvm/pkgsets/go1.27.1/global/pkg/mod/cache/download/github.com/tetratelabs/wazero/@v/v1.11.1-0.20260508161934-e6dd6c0c144f.zip",
+      "Dir": "/Users/work/.gvm/pkgsets/go1.27.1/global/pkg/mod/github.com/tetratelabs/wazero@v1.11.1-0.20260508161934-e6dd6c0c144f",
+      "Sum": "h1:YvkWPpkXbc7IEuVfrnAO1gfW8DXn6c/WGckoRhXzBZI=",
+      "GoModSum": "h1:LvKtzl2RqO4gyF27BiXU+nKAjcV8f38U+kP/q2vgxh0=",
+      "Origin": {
+        "VCS": "git",
+        "URL": "https://github.com/tetratelabs/wazero",
+        "Hash": "e6dd6c0c144f288230f2f168bbc4b2ee63793bbd"
+      }
+    }
+  },
+  "runtime": {
+    "native_dependency_policy": "macho-third-party-closure-v1; system shared-cache libraries excluded; absolute loads remain exact host prerequisites",
+    "id": "wazero",
+    "command": [
+      "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20260509/harness/wazero/bin/adapter-wazero"
+    ],
+    "file_sha256": {
+      "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20260509/harness/wazero/bin/adapter-wazero": "d5b0ef79282595579c5b6d7e01e55b24bafdc153b1b6fe5907658f87e66290c1"
+    }
+  },
+  "env": {
+    "WASMBENCH_V8_COMPILER_MODE": "optimizing-only"
+  },
+  "builtAt": "2026-10-06T06:36:20.483Z"
+}

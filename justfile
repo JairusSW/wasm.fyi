@@ -13,6 +13,10 @@ setup:
 dev:
     pnpm dev
 
+# Run the website and API behind loopback-only Caddy at http://localhost:8080.
+dev-caddy:
+    bash scripts/dev-caddy.sh
+
 # Check Svelte and TypeScript.
 check:
     pnpm check

@@ -148,7 +148,7 @@
 </div>
 <div class="phase-note">{PHASE_NOTE[ui.metric]}</div>
 <div class="tbl-wrap scroll">
-	<table class="mx" style:min-width="980px">
+	<table class="mx wl-table">
 		<thead>
 			<tr>
 				<th class="stick th-label wl">Workload</th>
@@ -191,7 +191,7 @@
 										onclick={() => (ui.expanded = { ...ui.expanded, [r.b.id]: !r.expanded })}>{r.expanded ? '− ' : '+ '}{r.cases}</button
 									>
 								{/if}
-								<a class="mono name" href={siteHref(benchHref(r.b.id))}>{r.name}</a>
+								<a class="mono name" href={siteHref(benchHref(r.b.id))}>{#each r.name.split('/') as part, pi (pi)}{#if pi}/<wbr />{/if}{part}{/each}</a>
 								{#each r.tags as t (t)}
 									<button class="tag" onclick={() => tagClick(t)} data-tip={t === 'simd' ? 'Open the SIMD page' : `Filter benchmarks to #${t}`}>#{t}</button>
 								{/each}
@@ -256,8 +256,16 @@
 	.scroll {
 		max-height: 68vh;
 	}
+	.wl-table {
+		min-width: 980px;
+	}
 	.wl {
 		min-width: 250px;
+	}
+	@media (max-width: 720px) {
+		.wl-table {
+			min-width: 760px;
+		}
 	}
 	.colh {
 		padding: 6px 10px;
@@ -335,5 +343,51 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 4px 14px;
+	}
+	@media (max-width: 720px) {
+		.scroll {
+			max-height: 72svh;
+		}
+		.colh {
+			padding: 6px 8px;
+		}
+		.wcell {
+			padding: 3px 8px;
+			min-height: 30px;
+		}
+		.gcell {
+			padding: 4px 8px;
+		}
+		td.stick.grp {
+			padding: 5px 10px;
+		}
+		.grp-btn {
+			display: grid;
+			grid-template-columns: 10px minmax(0, 1fr);
+			column-gap: 6px;
+			text-align: left;
+		}
+		.grp-btn > :last-child {
+			display: none;
+		}
+		.item {
+			padding-top: 3px;
+			padding-bottom: 3px;
+			line-height: 1.3;
+		}
+		.item-line {
+			gap: 2px 6px;
+		}
+		.tag {
+			display: none;
+		}
+		.name {
+			overflow-wrap: break-word;
+			word-break: normal;
+			min-width: 0;
+		}
+		.cases {
+			padding: 2px 6px;
+		}
 	}
 </style>

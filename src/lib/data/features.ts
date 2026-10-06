@@ -1,34 +1,65 @@
 // Representative feature corpus identities; results come from sealed reports.
 import { viewData } from "../view-data";
 import type { CompatSection, FeatureRow, Proposal, ProposalId, SupportCode } from './types';
+import proposalSnapshot from './proposals.json';
 
 export const BROWSERS = ['Chrome', 'Firefox', 'Safari'];
-export const FEATS: FeatureRow[] = [
-  { g: 'Core instructions', id: 'core-num', name: 'Numeric instructions', phase: 'Core corpus', b: ['?', '?', '?'], r: '???????' },
-  { g: 'Core instructions', id: 'core-mem', name: 'Memory instructions', phase: 'Core corpus', b: ['?', '?', '?'], r: '???????' },
-  { g: 'Core instructions', id: 'core-ctl', name: 'Control flow', phase: 'Core corpus', b: ['?', '?', '?'], r: '???????' },
-  { g: 'Core instructions', id: 'core-tab', name: 'Tables', phase: 'Core corpus', b: ['?', '?', '?'], r: '???????' },
-  { g: 'Core instructions', id: 'core-val', name: 'Structural validation', phase: 'Compile / instantiate probes', b: ['?', '?', '?'], r: '???????' },
-  { g: 'System interfaces', id: 'cm-abi', name: 'Canonical ABI', phase: 'Component corpus', b: ['?', '?', '?'], r: '???????' },
-  { g: 'System interfaces', id: 'cm-res', name: 'Resources', phase: 'Component corpus', b: ['?', '?', '?'], r: '???????' },
-  { g: 'System interfaces', id: 'cm-async', name: 'Async components', phase: 'Compile-only probes', b: ['?', '?', '?'], r: '???????' },
-  { g: 'Wasm 2.0', id: 'bulk-memory', name: 'Bulk memory', phase: 'Phase 5 · Wasm 2.0', b: ['75', '79', '15'], r: 'yyy?yyp' },
-  { g: 'Wasm 2.0', id: 'reference-types', name: 'Reference types', phase: 'Phase 5 · Wasm 2.0', b: ['96', '79', '15'], r: 'yyy?yyn' },
-  { g: 'Wasm 2.0', id: 'multi-value', name: 'Multi-value', phase: 'Phase 5 · Wasm 2.0', b: ['85', '78', '13.1'], r: 'yyy?yyy' },
-  { g: 'Wasm 2.0', id: 'simd', name: 'Fixed-width SIMD', phase: 'Phase 5 · Wasm 2.0', b: ['91', '89', '16.4'], r: 'yyy?yyn', page: 'simd' },
-  { g: 'Wasm 3.0', id: 'gc', name: 'Garbage collection', phase: 'Phase 5 · Wasm 3.0', b: ['119', '120', '18.2'], r: 'ynn?npn', page: 'gc' },
-  { g: 'Wasm 3.0', id: 'memory64', name: 'Memory64', phase: 'Phase 5 · Wasm 3.0', b: ['133', '134', 'n'], r: 'ypn?ypn', page: 'memory64' },
-  { g: 'Wasm 3.0', id: 'exceptions', name: 'Exception handling (exnref)', phase: 'Phase 5 · Wasm 3.0', b: ['137', '131', '18.4'], r: 'ypn?npn' },
-  { g: 'Wasm 3.0', id: 'tail-call', name: 'Tail calls', phase: 'Phase 5 · Wasm 3.0', b: ['112', '121', '18.2'], r: 'yny?yyn' },
-  { g: 'Wasm 3.0', id: 'relaxed-simd', name: 'Relaxed SIMD', phase: 'Phase 5 · Wasm 3.0', b: ['114', 'f', 'n'], r: 'yfn?nnn' },
-  { g: 'Wasm 3.0', id: 'multi-memory', name: 'Multiple memories', phase: 'Phase 5 · Wasm 3.0', b: ['120', '125', 'n'], r: 'yyn?ypn' },
-  { g: 'Wasm 3.0', id: 'extended-const', name: 'Extended constant expressions', phase: 'Phase 5 · Wasm 3.0', b: ['114', '112', '17.4'], r: 'yyy?yyn' },
-  { g: 'Wasm 3.0', id: 'js-string-builtins', name: 'JS string builtins', phase: 'Phase 5 · Wasm 3.0', b: ['130', '134', 'n'], r: '-------' },
-  { g: 'In progress', id: 'threads', name: 'Threads & atomics', phase: 'Phase 4', b: ['74', '79', '14.1'], r: 'fyf?nyn', page: 'threads' },
-  { g: 'System interfaces', id: 'wasi-p1', name: 'WASI 0.1 (preview1)', phase: 'WASI 0.1', b: ['n', 'n', 'n'], r: 'yyy?yyp' },
-  { g: 'System interfaces', id: 'wasi-p2', name: 'WASI 0.2', phase: 'WASI 0.2', b: ['n', 'n', 'n'], r: 'ynn?nnn' },
-  { g: 'System interfaces', id: 'component-model', name: 'Component Model', phase: 'Phase 1', b: ['n', 'n', 'n'], r: 'ynn?nnn' },
+// Measured corpus families keyed by their corpus id. Phases come from the proposal
+// snapshot below; these rows only add naming and dedicated pages.
+const CORE: FeatureRow[] = [
+  { g: '', id: 'core-num', name: 'MVP · Numeric instructions', phase: 'Core corpus', b: [], r: '', url: 'https://webassembly.github.io/spec/core/syntax/instructions.html#numeric-instructions' },
+  { g: '', id: 'core-mem', name: 'MVP · Memory instructions', phase: 'Core corpus', b: [], r: '', url: 'https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions' },
+  { g: '', id: 'core-ctl', name: 'MVP · Control flow', phase: 'Core corpus', b: [], r: '', url: 'https://webassembly.github.io/spec/core/syntax/instructions.html#control-instructions' },
+  { g: '', id: 'core-tab', name: 'MVP · Tables', phase: 'Core corpus', b: [], r: '', url: 'https://webassembly.github.io/spec/core/syntax/instructions.html#table-instructions' },
+  { g: '', id: 'core-val', name: 'MVP · Structural validation', phase: 'Compile / instantiate probes', b: [], r: '', url: 'https://webassembly.github.io/spec/core/valid/index.html' },
 ];
+const SYSTEM: FeatureRow[] = [
+  { g: 'System interfaces', id: 'wasi-p1', name: 'WASI 0.1 (preview1)', phase: 'WASI 0.1', b: [], r: '', url: 'https://github.com/WebAssembly/WASI/tree/main/legacy/preview1' },
+  { g: 'System interfaces', id: 'wasi-p2', name: 'WASI 0.2', phase: 'WASI 0.2', b: [], r: '', url: 'https://github.com/WebAssembly/WASI/tree/main/wasip2' },
+  { g: 'System interfaces', id: 'cm-abi', name: 'Component Model · Canonical ABI', phase: 'Component corpus', b: [], r: '', url: 'https://github.com/WebAssembly/component-model/blob/main/design/mvp/CanonicalABI.md' },
+  { g: 'System interfaces', id: 'cm-res', name: 'Component Model · Resources', phase: 'Component corpus', b: [], r: '', url: 'https://github.com/WebAssembly/component-model/blob/main/design/mvp/Explainer.md#handle-types' },
+  { g: 'System interfaces', id: 'cm-async', name: 'Component Model · Async', phase: 'Compile-only probes', b: [], r: '', url: 'https://github.com/WebAssembly/component-model/blob/main/design/mvp/Async.md' },
+];
+/** webassembly.org feature key → existing corpus id and dedicated page. Names stay official. */
+const KNOWN: Record<string, { id: string; page?: ProposalId }> = {
+  bulkMemory: { id: 'bulk-memory' },
+  referenceTypes: { id: 'reference-types' },
+  multiValue: { id: 'multi-value' },
+  simd: { id: 'simd', page: 'simd' },
+  gc: { id: 'gc', page: 'gc' },
+  memory64: { id: 'memory64', page: 'memory64' },
+  exceptionsFinal: { id: 'exceptions' },
+  tailCall: { id: 'tail-call' },
+  relaxedSimd: { id: 'relaxed-simd' },
+  multiMemory: { id: 'multi-memory' },
+  extendedConst: { id: 'extended-const' },
+  jsStringBuiltins: { id: 'js-string-builtins' },
+  threads: { id: 'threads', page: 'threads' },
+  componentModel: { id: 'component-model' },
+};
+/** Group order follows webassembly.org/features: phase 5 → 1, then inactive. */
+export const PHASE_GROUPS = [
+  [5, 'Phase 5 · Standardized'],
+  [4, 'Phase 4 · Standardize the feature'],
+  [3, 'Phase 3 · Implementation'],
+  [2, 'Phase 2 · Proposed spec text'],
+  [1, 'Phase 1 · Feature proposal'],
+  ['inactive', 'Inactive'],
+] as const;
+const kebab = (key: string) => key.replace(/[A-Z]/g, (c) => '-' + c.toLowerCase());
+export const PROPOSALS_RETRIEVED = proposalSnapshot.retrieved;
+/** The features listed on webassembly.org/features, in its order. */
+export const FEATS: FeatureRow[] = PHASE_GROUPS.flatMap(([phase, g]) =>
+  proposalSnapshot.proposals
+    .filter((p) => p.phase === phase)
+    .map((p): FeatureRow => {
+      const known = KNOWN[p.key];
+      const label = phase === 'inactive' ? 'Inactive' : `Phase ${phase}` + (p.spec ? ` · Wasm ${p.spec}` : '');
+      return { g, id: known?.id ?? kebab(p.key), name: p.name, phase: label, b: [], r: '', page: known?.page, url: p.url };
+    }),
+);
+/** Measured corpus families outside the proposal list (core MVP, WASI, Component Model parts). Not listed on the features page. */
+export const CORPUS_FEATS: FeatureRow[] = [...CORE.map((f) => ({ ...f, g: 'Core' })), ...SYSTEM];
 export const SUPC: Record<SupportCode, [string, string]> = { y: ['●', 'yes'], f: ['⚑', 'flag'], p: ['◐', 'partial'], n: ['—', 'no'], '?': ['?', 'unknown'], '-': ['·', 'n/a'] };
 export const PROPS: Record<ProposalId, Proposal> = {
   simd: { title: 'SIMD', long: 'Fixed-width 128-bit SIMD', q: 'How much faster does SIMD actually make Wasm?', repo: 'github.com/WebAssembly/simd', ver: 'WebAssembly 2.0', hist: [['2017', 'Proposal repository created'], ['2020', 'Phase 3 — implementation'], ['2021', 'Phase 4 — standardize'], ['2022', 'Merged into WebAssembly 2.0 draft']], tools: [['Emscripten', 'y', '-msimd128'], ['clang / wasi-sdk', 'y', '-msimd128'], ['rustc', 'y', '-C target-feature=+simd128'], ['TinyGo', 'p', 'limited auto-vectorization'], ['Go (wasip1)', 'n', ''], ['Binaryen', 'y', '--enable-simd'], ['AssemblyScript', 'y', '--enable simd']] },
@@ -43,12 +74,12 @@ export const COMPAT: CompatSection[] = [
 ];
 for(const id of familyIds) {
   const workloads=viewData.catalogue.filter(w=>w.id.startsWith('features/'+id+'/') && !w.baseline);
-  const metadata=FEATS.find(f=>f.id===id);
+  const metadata=[...FEATS, ...CORPUS_FEATS].find(f=>f.id===id);
   COMPAT[id.startsWith('core-')?0:1].fams.push({id,name:metadata?.name || id,total:workloads.length,page:metadata?.page,
     kids:workloads.map(w=>[w.id,1]),r:[]});
 }
 // Browser release histories and uncollected engine defaults are not inferred
 // from a Node embedding or a configuration-specific corpus run.
-for(const f of FEATS){f.b=['?','?','?'];f.r='?????????';}
+for(const f of [...FEATS, ...CORPUS_FEATS]){f.b=['?','?','?'];f.r='?????????';}
 export const FLAGS: Record<string,string> = {};
 export const FT: Record<string,[string,string,string,string,string,string][]> = {};

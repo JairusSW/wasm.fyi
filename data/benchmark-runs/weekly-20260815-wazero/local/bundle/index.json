@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "id": "weekly-20260815-wazero",
+  "machine": "local",
+  "bytes": 21363538,
+  "sha256": "e99f4117fc833904b6a5a4a9fe5f7b42a031c817635f9c6bf85b9722df261b92",
+  "format": "tar+gzip concatenated parts",
+  "parts": [
+    {
+      "path": "bundle.tar.gz.part-000",
+      "bytes": 21363538,
+      "sha256": "e99f4117fc833904b6a5a4a9fe5f7b42a031c817635f9c6bf85b9722df261b92"
+    }
+  ],
+  "metadata": "metadata.json",
+  "metadataSha256": "509aa38fa5f9f201f501ea0105f69c771d3a2a29997d3c01f326af33d5f0dd31",
+  "download": "Concatenate parts in order, verify the full SHA-256, then tar -xzf bundle.tar.gz."
+}

@@ -59,6 +59,8 @@ export interface FeatureRow {
 	/** One support code per standalone runtime, in `SA` order. */
 	r: string;
 	page?: ProposalId;
+	/** Upstream proposal repository or overview. */
+	url?: string;
 }
 
 export interface Proposal {

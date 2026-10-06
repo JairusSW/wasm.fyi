@@ -1,0 +1,81 @@
+{
+  "pin": {
+    "engine": "wasmer",
+    "targetType": "main",
+    "targetWeek": "2026-08-09T03:59:00.000Z",
+    "repository": "wasmerio/wasmer",
+    "branch": "main",
+    "revision": "1276e8462a66a2a218ae1d1600de5fa6afd0be4a",
+    "committedAt": "2026-08-07T12:16:59Z",
+    "url": "https://github.com/wasmerio/wasmer/commit/1276e8462a66a2a218ae1d1600de5fa6afd0be4a",
+    "status": "planned",
+    "configurations": [
+      "wasmer-singlepass"
+    ]
+  },
+  "description": {
+    "abis": [
+      "core"
+    ],
+    "backend": "singlepass-jit",
+    "build": "adapter-native/0.1.0; wasmer-singlepass",
+    "capabilities": {
+      "can_code_profile": false,
+      "can_compile_separately": true,
+      "can_host_function_calls_v1": true,
+      "can_instantiate_separately": true,
+      "can_measure_native_code_size": false,
+      "can_run_vectors": true,
+      "can_vector_compile_phases": true,
+      "can_vector_first-call_phases": true,
+      "can_vector_instantiate_phases": true
+    },
+    "effective_configuration": {
+      "assemblyscript_abort_policy": "Only env.abort with four i32 parameters and no results; imported callback creates a real guest trap; identity host imports use their separately validated profile",
+      "call_policy": "embedding export lookup, integer argument/result marshalling and result allocation included; every result verified outside timed batch",
+      "compile_policy": "explicit Wasmer compiler; fresh compilation store and eager module compilation; engine creation excluded; instance creates a fresh store from the same engine",
+      "native_code_policy": "Optional SDK C ABI getter delegates to public sys_artifact/finished_function_extents; complete defined-function coverage required; excludes call trampolines; serialized artifact bytes are not reported as native code",
+      "native_sdk_receipt": "{\"features\":\"sys-default,cranelift,singlepass,wasi,wasmer-artifact-create,wasmer-artifact-load\",\"librarySha256\":\"c21f9327c290f0bae703844b1455112330ce990777895b446f2160d2389a2c56\",\"revision\":\"1276e8462a66a2a218ae1d1600de5fa6afd0be4a\"}",
+      "release_policy": "native instance/store disposal; no physical RSS reclamation claim",
+      "reset_policy": "fresh lifecycle instance; stateless steady retained instance; wasm3 recompiles outside first-call timing",
+      "vector_policy": "Fresh instance per ordered vector sequence; input writes and exact output verification excluded from sum of timed export lookups, integer marshalling and embedding calls; one operation per complete sequence; lifecycle windows match scalar API phases",
+      "wasmi_dispatch": "not applicable; external SDK build identity pinned"
+    },
+    "embedding": "standalone Rust/C embedding",
+    "features": [
+      "mvp"
+    ],
+    "phase_barrier_scenarios": [
+      "compile",
+      "instantiate",
+      "first-call",
+      "steady"
+    ],
+    "phase_release_policy": "release native instance; compiled module/engine retained except compile samples; no RSS reclamation claim",
+    "runtime": "wasmer-singlepass",
+    "runtime_version": "7.2.1",
+    "scenarios": [
+      "compile",
+      "instantiate",
+      "first-call",
+      "steady"
+    ],
+    "validator_features": {
+      "evidence": "Pinned Wasmer 7.3.0 compiler configuration and explicit C API feature subset; Singlepass SIMD disabled after corpus instruction lowering failures; enabled validation is not a guarantee of complete backend support",
+      "namespace": "wasmparser/0.251.0",
+      "supported": {
+        "EXCEPTIONS": false,
+        "FUNCTION_REFERENCES": false,
+        "GC": false,
+        "LEGACY_EXCEPTIONS": false,
+        "MEMORY64": false,
+        "RELAXED_SIMD": false,
+        "SIMD": false,
+        "STACK_SWITCHING": false,
+        "TAIL_CALL": false
+      }
+    }
+  },
+  "qualifiedAt": "2026-10-05T14:36:45.205Z",
+  "binarySha256": "1677c4ed44e2ea56adf595ba1d06468b7196cb2cbc5c11529852152984796010"
+}

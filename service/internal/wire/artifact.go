@@ -1,0 +1,79 @@
+package wire
+
+import "encoding/json"
+
+// Match the producer's reserved envelope allowance so ordinary descriptors
+// stay below the decoded 10 KiB target when wrapped by the API.
+const ArtifactDescriptorBytes = 10*1024 - 512
+
+type Artifact struct {
+	ReportID string `json:"reportId"`
+	Record   struct {
+		Runtime  string `json:"runtime"`
+		Workload string `json:"workload"`
+		Trial    string `json:"trial"`
+	} `json:"record"`
+	Content struct {
+		Status    string `json:"status"`
+		SHA256    string `json:"sha256"`
+		Bytes     int    `json:"bytes"`
+		MediaType string `json:"mediaType"`
+	} `json:"content"`
+	Inspection struct {
+		Status      string `json:"status"`
+		Metadata    string `json:"metadata"`
+		Disassembly *struct {
+			Status    string `json:"status"`
+			Version   string `json:"version,omitempty"`
+			Selection string `json:"selection,omitempty"`
+			Reason    string `json:"reason,omitempty"`
+		} `json:"disassembly,omitempty"`
+	} `json:"inspection"`
+}
+
+func ArtifactData(b []byte) (Artifact, error) {
+	var artifact Artifact
+	if len(b) > ArtifactDescriptorBytes {
+		return artifact, Invalid("artifact descriptor exceeds byte ceiling")
+	}
+	if err := json.Unmarshal(b, &artifact); err != nil {
+		return artifact, Invalid("invalid artifact descriptor")
+	}
+	var raw struct {
+		Content map[string]json.RawMessage `json:"content"`
+	}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return artifact, Invalid("invalid content fields")
+	}
+	if artifact.Content.Status == "available" {
+		if count, ok := raw.Content["bytes"]; !ok || string(count) == "null" {
+			return artifact, Invalid("missing original byte count")
+		}
+	}
+	if artifact.Inspection.Status == "available" && artifact.Content.Status != "available" {
+		return artifact, Invalid("inspection lacks exported content")
+	}
+	if artifact.Content.Status == "available" {
+		if !IsHash(artifact.Content.SHA256) || artifact.Content.Bytes < 0 || artifact.Content.Bytes > BlobBytes || artifact.Content.MediaType != "application/octet-stream" {
+			return artifact, Invalid("invalid artifact content")
+		}
+	} else if artifact.Content.Status != "unavailable" || artifact.Content.SHA256 != "" || artifact.Content.Bytes != 0 || artifact.Content.MediaType != "" {
+		return artifact, Invalid("unavailable artifact advertises content")
+	}
+	if artifact.Inspection.Status != "available" && artifact.Inspection.Status != "unavailable" || artifact.Inspection.Status == "available" && artifact.Inspection.Metadata == "" {
+		return artifact, Invalid("invalid inspection availability")
+	}
+	if artifact.Inspection.Metadata != "" && !IsHash(artifact.Inspection.Metadata) {
+		return artifact, Invalid("invalid inspection metadata")
+	}
+	if d := artifact.Inspection.Disassembly; d != nil {
+		if d.Status == "available" {
+			if artifact.Inspection.Status != "available" || d.Version != DisassemblyVersion || d.Selection != "producer-function-ordinal" || d.Reason != "" {
+				return artifact, Invalid("invalid disassembly availability")
+			}
+		} else if d.Status != "unavailable" || d.Version != "" || d.Selection != "" {
+			return artifact, Invalid("unavailable disassembly advertises derivative")
+		}
+	}
+	return artifact, nil
+}

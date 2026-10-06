@@ -228,7 +228,10 @@ export function restoreWorkloads(root, workloads) {
     return w;
   });
 }
-export function planIdentity(plan) {
+export function lockedPlanBytes(plan) {
   const { id, created, identity, ...locked } = plan;
-  return digest(JSON.stringify(locked));
+  return Buffer.from(JSON.stringify(locked));
+}
+export function planIdentity(plan) {
+  return digest(lockedPlanBytes(plan));
 }

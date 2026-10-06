@@ -1,0 +1,61 @@
+name: API service
+on:
+  push:
+    paths: ['service/**', 'schemas/**', 'src/lib/api/**', 'scripts/*api*', 'scripts/lib/api-publish.mjs', 'scripts/lib/corpus-collection.mjs', 'scripts/lib/benchmark-parent-bundle.mjs', 'scripts/lib/collection-verdict.mjs', 'scripts/lib/performance-history*.mjs', 'scripts/performance-history-collect.mjs', 'scripts/pack-history-parent.py', 'scripts/*conformance*.mjs', 'scripts/lib/conformance*.mjs', 'scripts/plugin-evidence.test.mjs', 'scripts/benchmark*.mjs', '.github/workflows/api-service.yml']
+  pull_request:
+    paths: ['service/**', 'schemas/**', 'src/lib/api/**', 'scripts/*api*', 'scripts/lib/api-publish.mjs', 'scripts/lib/corpus-collection.mjs', 'scripts/lib/benchmark-parent-bundle.mjs', 'scripts/lib/collection-verdict.mjs', 'scripts/lib/performance-history*.mjs', 'scripts/performance-history-collect.mjs', 'scripts/pack-history-parent.py', 'scripts/*conformance*.mjs', 'scripts/lib/conformance*.mjs', 'scripts/plugin-evidence.test.mjs', 'scripts/benchmark*.mjs', '.github/workflows/api-service.yml']
+jobs:
+  service:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: service/go.mod
+          cache-dependency-path: service/go.sum
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: go test -race ./... && go vet ./...
+        working-directory: service
+        env:
+          GOFLAGS: -mod=readonly
+          GOWORK: 'off'
+      - name: Qualify publication under kernel disk exhaustion
+        run: ./scripts/api-disk-full-test.sh
+        timeout-minutes: 5
+      - run: node scripts/check-api-dependencies.mjs
+      - run: node scripts/generate-api-types.mjs --check
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run Linux service lifecycle smoke test
+        run: |
+          go build -o "$RUNNER_TEMP/wasmfyi-smoke" ./cmd/wasmfyi
+          python ../scripts/api-service-smoke.py --binary "$RUNNER_TEMP/wasmfyi-smoke" --export "$RUNNER_TEMP/wasmfyi-portable-smoke"
+          python ../scripts/api-service-smoke.py --binary "$RUNNER_TEMP/wasmfyi-smoke" --recover "$RUNNER_TEMP/wasmfyi-portable-smoke"
+        working-directory: service
+        env:
+          GOFLAGS: -mod=readonly
+          GOWORK: 'off'
+      - run: python -m pip install 'jsonschema[format-nongpl]==4.26.0'
+      - run: python scripts/check-api-contracts.test.py
+      - name: Capture and validate schema contracts
+        run: |
+          WASMFYI_CONTRACT_OUTPUT="$RUNNER_TEMP/api-contracts.jsonl" go test ./internal/api -run 'TestHistoryCoverageWithoutMeasurementsFrozenRebuild|TestConformanceImportSourceHTTPAndRebuild|TestFeatureProbeHTTPAndPortableRecovery|TestOverviewComplete|TestResultSummaries|TestNativeFunctionAPI|TestDisassemblyHTTP|TestCatalogAndRecordDetailContracts|TestImportStatusHTTPContractsAndCancellation|TestRegistrationHTTPBeforeMeasurements|TestHistoryContextHTTPPublicationAndCursor|TestConfigurationProjectionHTTPPolicyPinAndCanonicalDetail' -count=1
+          python ../scripts/check-api-contracts.py --export testdata/site-v2 --responses "$RUNNER_TEMP/api-contracts.jsonl"
+        working-directory: service
+      - run: node --test scripts/performance-history-coverage-api.test.mjs scripts/conformance-api.test.mjs scripts/conformance-archive.test.mjs scripts/plugin-evidence.test.mjs scripts/site-export-contract.test.mjs scripts/performance-history-coverage.test.mjs scripts/performance-history-api.test.mjs scripts/benchmark-parent-bundle.test.mjs scripts/api-progress-process.test.mjs scripts/api-progress-delivery.test.mjs scripts/api-session-plan.test.mjs scripts/api-publication.test.mjs scripts/benchmark-workflow.test.mjs scripts/benchmark-bundle.test.mjs scripts/api-parent-archive.test.mjs scripts/api-large-publication.test.mjs
+  client:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec vitest run src/lib/api/client.test.ts src/lib/api/resource.test.ts
+      - run: pnpm exec tsc --ignoreConfig --noEmit --target es2022 --module esnext --moduleResolution bundler --skipLibCheck src/lib/api/client.ts
+      - run: pnpm exec tsc --ignoreConfig --noEmit --strict --target es2022 --module esnext --moduleResolution bundler --skipLibCheck src/lib/api/types.contract.ts

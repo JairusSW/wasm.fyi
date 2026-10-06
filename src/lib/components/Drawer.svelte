@@ -12,6 +12,7 @@
 	import { ui } from '$lib/state.svelte';
 	import Swatch from './Swatch.svelte';
 	import { viewCell, viewData, viewReason } from '$lib/view-data';
+	import { fade, fly } from 'svelte/transition';
 
 	const d = $derived(ui.drawer);
 	let copied = $state(false);
@@ -174,18 +175,41 @@
 	function onkeydown(e: KeyboardEvent) {
 		if (e.key === 'Escape' && ui.drawer) close();
 	}
+
+	// Move focus into the panel when it opens, return it to the opener when it closes,
+	// and keep the page underneath from scrolling while the panel covers it.
+	let panel = $state<HTMLDivElement>();
+	let opener: HTMLElement | null = null;
+	const isOpen = $derived(!!d);
+	$effect(() => {
+		if (!isOpen) return;
+		opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+		panel?.focus({ preventScroll: true });
+		const root = document.documentElement;
+		const prev = root.style.overflow;
+		if (matchMedia('(max-width: 720px)').matches) root.style.overflow = 'hidden';
+		return () => {
+			root.style.overflow = prev;
+			if (opener?.isConnected) opener.focus({ preventScroll: true });
+		};
+	});
 </script>
 
 <svelte:window {onkeydown} />
 
 {#if d}
-	<div class="drawer" role="dialog" aria-label={title}>
+	<div class="scrim" role="presentation" onclick={close} transition:fade={{ duration: 140 }}></div>
+	<div class="drawer" role="dialog" aria-modal="true" aria-label={title} tabindex="-1" bind:this={panel} transition:fly={{ x: 40, duration: 180, opacity: 0 }}>
 		<div class="top">
 			<div class="titles">
 				<div class="kicker">{kicker}</div>
 				<div class="mono title">{title}</div>
 			</div>
-			<button class="esc" onclick={close} aria-label="Close (Esc)">Esc</button>
+			<button class="esc" onclick={close} aria-label="Close" data-tip="Close · Esc">
+				<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
+					><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" /></svg
+				>
+			</button>
 		</div>
 		<div class="body">
 			{#if cell}
@@ -310,6 +334,12 @@
 {/if}
 
 <style>
+	.scrim {
+		position: fixed;
+		inset: 0;
+		z-index: 49;
+		background: rgba(0, 0, 0, 0.32);
+	}
 	.drawer {
 		position: fixed;
 		top: 0;
@@ -317,13 +347,39 @@
 		bottom: 0;
 		width: 460px;
 		max-width: 100vw;
+		box-sizing: border-box;
 		background: var(--bg2);
 		border-left: 1px solid var(--line2);
 		box-shadow: -12px 0 32px rgba(0, 0, 0, 0.28);
 		overflow: auto;
+		overscroll-behavior: contain;
+		-webkit-overflow-scrolling: touch;
 		z-index: 50;
 		display: flex;
 		flex-direction: column;
+		padding-bottom: env(safe-area-inset-bottom);
+		padding-right: env(safe-area-inset-right);
+	}
+	.drawer:focus {
+		outline: none;
+	}
+	@media (max-width: 720px) {
+		.drawer {
+			width: 100vw;
+			border-left: 0;
+		}
+		.top {
+			padding-top: max(12px, env(safe-area-inset-top));
+		}
+		.body {
+			padding-bottom: 32px;
+		}
+	}
+	/* Desktop keeps the page usable beside the panel, so other cells can be opened directly. */
+	@media (min-width: 721px) {
+		.scrim {
+			display: none;
+		}
 	}
 	.top {
 		position: sticky;
@@ -346,9 +402,25 @@
 		word-break: break-word;
 	}
 	.esc {
+		flex: none;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 32px;
+		height: 32px;
+		margin: -4px -6px 0 0;
 		border: 1px solid var(--line2);
-		padding: 2px 8px;
 		color: var(--fg2);
+	}
+	.esc:hover {
+		color: var(--fg);
+		border-color: var(--fg3);
+	}
+	@media (max-width: 720px) {
+		.esc {
+			width: 40px;
+			height: 40px;
+		}
 	}
 	.body {
 		padding: 14px 16px;
@@ -499,5 +571,10 @@
 		font-size: 12px;
 		border-bottom: 1px solid var(--line);
 		padding: 4px 0;
+	}
+	@media (max-width: 420px) {
+		.stats {
+			grid-template-columns: 1fr;
+		}
 	}
 </style>
