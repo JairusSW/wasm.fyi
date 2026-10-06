@@ -48,6 +48,12 @@ func allowedQuery(values url.Values, keys ...string) error {
 }
 func routeQuery(path string, values url.Values) error {
 	parts := strings.Split(path, "/")
+	if path == "aggregates" {
+		return allowedQuery(values, "scope")
+	}
+	if len(parts) == 2 && parts[0] == "cohorts" {
+		return allowedQuery(values, "limit", "cursor", "lane")
+	}
 	if path == "manifest" {
 		return allowedQuery(values)
 	}

@@ -4,6 +4,7 @@ package comparison
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math"
 	"sort"
@@ -21,11 +22,17 @@ type Row struct {
 	Cells    []Cell `json:"cells"`
 }
 type Cell struct {
-	Configuration string   `json:"configuration"`
-	Result        string   `json:"result"`
-	Report        string   `json:"report"`
-	Status        string   `json:"status"`
-	Value         *float64 `json:"value"`
+	Configuration      string          `json:"configuration"`
+	ExactConfiguration string          `json:"exactConfiguration,omitempty"`
+	Contract           string          `json:"contract,omitempty"`
+	Method             string          `json:"method,omitempty"`
+	Definition         string          `json:"definition,omitempty"`
+	SourceValue        json.RawMessage `json:"sourceValue,omitempty"`
+	ApproximateValue   bool            `json:"approximateValue,omitempty"`
+	Result             string          `json:"result"`
+	Report             string          `json:"report"`
+	Status             string          `json:"status"`
+	Value              *float64        `json:"value"`
 }
 type Input struct {
 	Configurations []string `json:"configurations"`
@@ -181,6 +188,7 @@ func Compute(ctx context.Context, input Input) (Output, error) {
 			row, cell := input.Rows[i], table[i][configuration]
 			v := *cell.Value
 			cell.Value = &v // Published membership must not alias mutable inputs.
+			cell.SourceValue = append(json.RawMessage(nil), cell.SourceValue...)
 			weight := 1 / float64(len(indices))
 			if input.Weighting == "corpus" {
 				weight = 1 / float64(len(groups)*groups[row.Group])

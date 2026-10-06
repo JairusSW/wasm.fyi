@@ -21,12 +21,14 @@ import (
 )
 
 type API struct {
-	Store     *store.Store
-	Token     string
-	CursorKey []byte
-	active    chan struct{}
-	limiter   *requestLimiter
-	frontend  http.Handler
+	Store       *store.Store
+	Token       string
+	CursorKey   []byte
+	active      chan struct{}
+	limiter     *requestLimiter
+	frontend    http.Handler
+	cohorts     *cohortCache
+	calculating chan struct{}
 }
 
 func New(s *store.Store, token string, key []byte) (http.Handler, error) {
@@ -47,6 +49,8 @@ func NewWithFrontend(s *store.Store, token string, key []byte, limits RequestLim
 		return nil, fmt.Errorf("admin token and at least 32 cursor-key bytes required")
 	}
 	a := &API{Store: s, Token: token, CursorKey: key, active: make(chan struct{}, 8), limiter: newRequestLimiter(limits), frontend: frontend}
+	a.cohorts = &cohortCache{entries: map[string]*store.Cohort{}}
+	a.calculating = make(chan struct{}, 2)
 	return http.HandlerFunc(a.serve), nil
 }
 
@@ -279,7 +283,11 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if path == "manifest" {
-		respond(w, r, 200, map[string]any{"schema": 2, "revision": a.Store.Current(), "selectionAliases": map[string]string{"s1": "current", "s2": "previous"}, "limits": map[string]int{"defaultResults": 100, "maxResults": 1000, "decodedResponseBytes": wire.ResponseBytes, "decodedChunkBytes": wire.ChunkBytes, "scanKeys": store.ScanLimit, "decodedEvidenceResourceBytes": wire.ResourceBytes, "maxEvidenceFragments": wire.ResourceFragments}, "endpoints": []string{"results", "reports", "metrics", "configurations", "environments", "workloads", "artifacts", "history"}}, false)
+		respond(w, r, 200, map[string]any{"schema": 2, "revision": a.Store.Current(), "selectionAliases": map[string]string{"s1": "current", "s2": "previous"}, "limits": map[string]int{"defaultResults": 100, "maxResults": 1000, "decodedResponseBytes": wire.ResponseBytes, "decodedChunkBytes": wire.ChunkBytes, "scanKeys": store.ScanLimit, "decodedEvidenceResourceBytes": wire.ResourceBytes, "maxEvidenceFragments": wire.ResourceFragments, "cohortScopeBytes": 4096, "cohortComputations": 2, "cohortCells": 100000}, "endpoints": []string{"results", "reports", "metrics", "configurations", "environments", "workloads", "artifacts", "history", "aggregates", "cohorts"}}, false)
+		return
+	}
+	if path == "aggregates" || strings.HasPrefix(path, "cohorts/") {
+		a.cohort(w, r, path, params)
 		return
 	}
 	n, e := limit(r)

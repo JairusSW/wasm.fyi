@@ -1,0 +1,690 @@
+{
+  "sourceSha256": "853372fb6bd9bf56659d17a57c6207d976da58ce6cade5c66db8e1de6607b26e",
+  "cases": [
+    {
+      "input": {
+        "id": "fixture/lcs-substrings"
+      },
+      "expected": "Bioinformatics"
+    },
+    {
+      "input": {
+        "id": "fixture/needleman-wunsch-dna"
+      },
+      "expected": "Bioinformatics"
+    },
+    {
+      "input": {
+        "id": "fixture/smith-waterman-dna"
+      },
+      "expected": "Bioinformatics"
+    },
+    {
+      "input": {
+        "id": "fixture/fasttree-phylogeny"
+      },
+      "expected": "Bioinformatics"
+    },
+    {
+      "input": {
+        "id": "fixture/seqtk-fastq-to-fasta"
+      },
+      "expected": "Bioinformatics"
+    },
+    {
+      "input": {
+        "id": "fixture/polybench-nussinov"
+      },
+      "expected": "Bioinformatics"
+    },
+    {
+      "input": {
+        "id": "fixture/wren"
+      },
+      "expected": "Language runtimes"
+    },
+    {
+      "input": {
+        "id": "fixture/wren-modulo"
+      },
+      "expected": "Language runtimes"
+    },
+    {
+      "input": {
+        "id": "fixture/lua"
+      },
+      "expected": "Language runtimes"
+    },
+    {
+      "input": {
+        "id": "fixture/cjson"
+      },
+      "expected": "JSON & serialization"
+    },
+    {
+      "input": {
+        "id": "fixture/sightglass-shootout-base64"
+      },
+      "expected": "Text & parsing"
+    },
+    {
+      "input": {
+        "id": "fixture/tinyxml2"
+      },
+      "expected": "Text & parsing"
+    },
+    {
+      "input": {
+        "id": "fixture/coreutils-sha256sum"
+      },
+      "expected": "Hashing & cryptography"
+    },
+    {
+      "input": {
+        "id": "fixture/embench-crc32"
+      },
+      "expected": "Hashing & cryptography"
+    },
+    {
+      "input": {
+        "id": "fixture/embench-nettle-aes"
+      },
+      "expected": "Hashing & cryptography"
+    },
+    {
+      "input": {
+        "id": "fixture/embench-nettle-sha256"
+      },
+      "expected": "Hashing & cryptography"
+    },
+    {
+      "input": {
+        "id": "fixture/sightglass-libsodium-hash"
+      },
+      "expected": "Hashing & cryptography"
+    },
+    {
+      "input": {
+        "id": "fixture/embench-huffbench"
+      },
+      "expected": "Compression"
+    },
+    {
+      "input": {
+        "id": "fixture/embench-matmult-int"
+      },
+      "expected": "Linear algebra"
+    },
+    {
+      "input": {
+        "id": "fixture/embench-qrduino"
+      },
+      "expected": "Graphics & images"
+    },
+    {
+      "input": {
+        "id": "fixture/tacle-bsort"
+      },
+      "expected": "Integer & graph algorithms"
+    },
+    {
+      "input": {
+        "id": "fixture/kissfft"
+      },
+      "expected": "Audio"
+    },
+    {
+      "input": {
+        "id": "fixture/raytrace"
+      },
+      "expected": "3D & rendering"
+    },
+    {
+      "input": {
+        "id": "fixture/tiny"
+      },
+      "expected": "Calls & memory"
+    },
+    {
+      "input": {
+        "id": "fixture/fib_rec"
+      },
+      "expected": "Calls & memory"
+    },
+    {
+      "input": {
+        "id": "fixture/memory"
+      },
+      "expected": "Calls & memory"
+    },
+    {
+      "input": {
+        "id": "fixture/memory_tree"
+      },
+      "expected": "Calls & memory"
+    },
+    {
+      "input": {
+        "id": "fixture/dispatch"
+      },
+      "expected": "Calls & memory"
+    },
+    {
+      "input": {
+        "id": "fixture/many_funcs"
+      },
+      "expected": "Calls & memory"
+    },
+    {
+      "input": {
+        "id": "fixture/linked_list"
+      },
+      "expected": "Calls & memory"
+    },
+    {
+      "input": {
+        "id": "fixture/json-as"
+      },
+      "expected": "JSON & serialization"
+    },
+    {
+      "input": {
+        "id": "fixture/json-as-simd"
+      },
+      "expected": "JSON & serialization"
+    },
+    {
+      "input": {
+        "id": "fixture/yyjson"
+      },
+      "expected": "JSON & serialization"
+    },
+    {
+      "input": {
+        "id": "fixture/utf-as"
+      },
+      "expected": "Text & parsing"
+    },
+    {
+      "input": {
+        "id": "fixture/utf-as-simd"
+      },
+      "expected": "Text & parsing"
+    },
+    {
+      "input": {
+        "id": "fixture/utf8proc"
+      },
+      "expected": "Text & parsing"
+    },
+    {
+      "input": {
+        "id": "fixture/fastfloat"
+      },
+      "expected": "Text & parsing"
+    },
+    {
+      "input": {
+        "id": "fixture/pcre2"
+      },
+      "expected": "Text & parsing"
+    },
+    {
+      "input": {
+        "id": "fixture/sha256"
+      },
+      "expected": "Hashing & cryptography"
+    },
+    {
+      "input": {
+        "id": "fixture/blake-as"
+      },
+      "expected": "Hashing & cryptography"
+    },
+    {
+      "input": {
+        "id": "fixture/blake-as-simd"
+      },
+      "expected": "Hashing & cryptography"
+    },
+    {
+      "input": {
+        "id": "fixture/matmul"
+      },
+      "expected": "Linear algebra"
+    },
+    {
+      "input": {
+        "id": "fixture/nbody"
+      },
+      "expected": "Numerical arithmetic"
+    },
+    {
+      "input": {
+        "id": "fixture/libtommath"
+      },
+      "expected": "Numerical arithmetic"
+    },
+    {
+      "input": {
+        "id": "fixture/fannkuch"
+      },
+      "expected": "Integer & graph algorithms"
+    },
+    {
+      "input": {
+        "id": "fixture/coremark"
+      },
+      "expected": "Integer & graph algorithms"
+    },
+    {
+      "input": {
+        "id": "fixture/unknown",
+        "original_contract": {
+          "tags": [
+            "bioinformatics"
+          ]
+        }
+      },
+      "expected": "Bioinformatics"
+    },
+    {
+      "input": {
+        "id": "fixture/unknown",
+        "original_contract": {
+          "tags": [
+            "fpga"
+          ]
+        }
+      },
+      "expected": "Hardware design"
+    },
+    {
+      "input": {
+        "id": "fixture/unknown",
+        "original_contract": {
+          "tags": [
+            "compiler"
+          ]
+        }
+      },
+      "expected": "Compilers & development tools"
+    },
+    {
+      "input": {
+        "id": "fixture/unknown",
+        "original_contract": {
+          "tags": [
+            "formatter"
+          ]
+        }
+      },
+      "expected": "Compilers & development tools"
+    },
+    {
+      "input": {
+        "id": "fixture/unknown",
+        "original_contract": {
+          "tags": [
+            "interpreter"
+          ]
+        }
+      },
+      "expected": "Language runtimes"
+    },
+    {
+      "input": {
+        "id": "fixture/unknown",
+        "original_contract": {
+          "tags": [
+            "database"
+          ]
+        }
+      },
+      "expected": "Databases & analytics"
+    },
+    {
+      "input": {
+        "id": "fixture/unknown",
+        "original_contract": {
+          "tags": [
+            "sql"
+          ]
+        }
+      },
+      "expected": "Databases & analytics"
+    },
+    {
+      "input": {
+        "id": "fixture/unknown",
+        "original_contract": {
+          "tags": [
+            "filesystem"
+          ]
+        }
+      },
+      "expected": "Files & directories"
+    },
+    {
+      "input": {
+        "id": "fixture/unknown",
+        "original_contract": {
+          "tags": [
+            "search"
+          ]
+        }
+      },
+      "expected": "Search & indexing"
+    },
+    {
+      "input": {
+        "id": "fixture/unknown",
+        "original_contract": {
+          "tags": [
+            "json"
+          ]
+        }
+      },
+      "expected": "JSON & serialization"
+    },
+    {
+      "input": {
+        "id": "fixture/unknown",
+        "original_contract": {
+          "tags": [
+            "xml"
+          ]
+        }
+      },
+      "expected": "Text & parsing"
+    },
+    {
+      "input": {
+        "id": "fixture/unknown",
+        "original_contract": {
+          "tags": [
+            "text"
+          ]
+        }
+      },
+      "expected": "Text & parsing"
+    },
+    {
+      "input": {
+        "id": "fixture/unknown",
+        "original_contract": {
+          "tags": [
+            "base64"
+          ]
+        }
+      },
+      "expected": "Text & parsing"
+    },
+    {
+      "input": {
+        "id": "fixture/unknown",
+        "original_contract": {
+          "tags": [
+            "encryption"
+          ]
+        }
+      },
+      "expected": "Hashing & cryptography"
+    },
+    {
+      "input": {
+        "id": "fixture/unknown",
+        "original_contract": {
+          "tags": [
+            "sort"
+          ]
+        }
+      },
+      "expected": "Integer & graph algorithms"
+    },
+    {
+      "input": {
+        "id": "fixture/unknown",
+        "original_contract": {
+          "tags": [
+            "hashing"
+          ]
+        }
+      },
+      "expected": "Hashing & cryptography"
+    },
+    {
+      "input": {
+        "id": "fixture/unknown",
+        "original_contract": {
+          "tags": [
+            "crypto"
+          ]
+        }
+      },
+      "expected": "Hashing & cryptography"
+    },
+    {
+      "input": {
+        "id": "fixture/unknown",
+        "original_contract": {
+          "tags": [
+            "compression"
+          ]
+        }
+      },
+      "expected": "Compression"
+    },
+    {
+      "input": {
+        "id": "fixture/unknown",
+        "original_contract": {
+          "tags": [
+            "audio"
+          ]
+        }
+      },
+      "expected": "Audio"
+    },
+    {
+      "input": {
+        "id": "fixture/unknown",
+        "original_contract": {
+          "tags": [
+            "image"
+          ]
+        }
+      },
+      "expected": "Graphics & images"
+    },
+    {
+      "input": {
+        "id": "fixture/unknown",
+        "original_contract": {
+          "tags": [
+            "graphics"
+          ]
+        }
+      },
+      "expected": "Graphics & images"
+    },
+    {
+      "input": {
+        "id": "fixture/unknown",
+        "original_contract": {
+          "tags": [
+            "image-processing"
+          ]
+        }
+      },
+      "expected": "Graphics & images"
+    },
+    {
+      "input": {
+        "id": "fixture/unknown",
+        "original_contract": {
+          "tags": [
+            "linear-algebra"
+          ]
+        }
+      },
+      "expected": "Linear algebra"
+    },
+    {
+      "input": {
+        "id": "fixture/unknown",
+        "original_contract": {
+          "tags": [
+            "blas"
+          ]
+        }
+      },
+      "expected": "Linear algebra"
+    },
+    {
+      "input": {
+        "id": "fixture/unknown",
+        "original_contract": {
+          "tags": [
+            "solver"
+          ]
+        }
+      },
+      "expected": "Linear algebra"
+    },
+    {
+      "input": {
+        "id": "fixture/unknown",
+        "original_contract": {
+          "tags": [
+            "stencil"
+          ]
+        }
+      },
+      "expected": "Stencils"
+    },
+    {
+      "input": {
+        "id": "fixture/unknown",
+        "original_contract": {
+          "tags": [
+            "statistics"
+          ]
+        }
+      },
+      "expected": "Statistics"
+    },
+    {
+      "input": {
+        "id": "fixture/unknown",
+        "original_contract": {
+          "tags": [
+            "numerical"
+          ]
+        }
+      },
+      "expected": "Numerical arithmetic"
+    },
+    {
+      "input": {
+        "id": "fixture/unknown",
+        "original_contract": {
+          "tags": [
+            "graph"
+          ]
+        }
+      },
+      "expected": "Integer & graph algorithms"
+    },
+    {
+      "input": {
+        "id": "fixture/unknown",
+        "original_contract": {
+          "tags": [
+            "dynamic-programming"
+          ]
+        }
+      },
+      "expected": "Integer & graph algorithms"
+    },
+    {
+      "input": {
+        "id": "mechanisms/host-to-wasm-call"
+      },
+      "expected": "Host calls"
+    },
+    {
+      "input": {
+        "id": "mechanisms/wasm-to-host-call"
+      },
+      "expected": "Host calls"
+    },
+    {
+      "input": {
+        "id": "features/probe",
+        "features": [
+          "simd"
+        ]
+      },
+      "expected": "Features · simd"
+    },
+    {
+      "input": {
+        "id": "features/probe",
+        "features": [
+          "simd"
+        ],
+        "provenance": {
+          "feature": "gc",
+          "category": "Override"
+        }
+      },
+      "expected": "Features · gc"
+    },
+    {
+      "input": {
+        "id": "features/probe"
+      },
+      "expected": "Features · baseline"
+    },
+    {
+      "input": {
+        "id": "fixture/lua",
+        "provenance": {
+          "category": "Recorded category"
+        }
+      },
+      "expected": "Recorded category"
+    },
+    {
+      "input": {
+        "id": "fixture/unknown"
+      },
+      "expected": null
+    },
+    {
+      "input": {
+        "id": "fixture/raytrace",
+        "original_contract": {
+          "tags": [
+            "image",
+            "audio"
+          ]
+        }
+      },
+      "expected": "3D & rendering"
+    },
+    {
+      "input": {
+        "id": "fixture/lua",
+        "original_contract": {
+          "tags": [
+            "compiler",
+            "database"
+          ]
+        }
+      },
+      "expected": "Compilers & development tools"
+    }
+  ]
+}

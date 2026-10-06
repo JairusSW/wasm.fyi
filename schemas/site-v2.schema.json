@@ -730,6 +730,131 @@
           }
         }
       ]
+    },
+    "CohortSelector": {
+      "type": "object",
+      "properties": {
+        "definition": {
+          "$ref": "#/$defs/Digest"
+        },
+        "method": {
+          "$ref": "#/$defs/Digest"
+        },
+        "analysis": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      },
+      "required": [
+        "definition",
+        "method",
+        "analysis"
+      ],
+      "additionalProperties": false
+    },
+    "CohortScope": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "environment": {
+          "$ref": "#/$defs/Digest"
+        },
+        "baseline": {
+          "$ref": "#/$defs/Digest"
+        },
+        "selection": {
+          "enum": [
+            "current",
+            "previous",
+            "s1",
+            "s2"
+          ]
+        },
+        "lanes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/$defs/Digest"
+          }
+        },
+        "selectors": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "items": {
+            "$ref": "#/$defs/CohortSelector"
+          }
+        },
+        "laneKind": {
+          "enum": [
+            "configuration",
+            "track"
+          ]
+        },
+        "policy": {
+          "enum": [
+            "shared-geometric-v1",
+            "available-rss-arithmetic-v1",
+            "matched-rss-arithmetic-v1"
+          ]
+        },
+        "weighting": {
+          "enum": [
+            "workload",
+            "corpus"
+          ]
+        },
+        "workloads": {
+          "enum": [
+            "applications",
+            "all"
+          ]
+        },
+        "mixedConfigurations": {
+          "enum": [
+            "reject",
+            "explicit-membership"
+          ]
+        },
+        "collectors": {
+          "enum": [
+            "require-recorded",
+            "allow-unrecorded-timing",
+            "allow-unrecorded-native-size"
+          ]
+        },
+        "definitions": {
+          "enum": [
+            "require-registered",
+            "allow-unregistered-native-size"
+          ]
+        },
+        "contracts": {
+          "enum": [
+            "latest-in-scope",
+            "all-exact-contracts"
+          ]
+        }
+      },
+      "required": [
+        "environment",
+        "baseline",
+        "lanes",
+        "selectors",
+        "laneKind",
+        "policy",
+        "weighting",
+        "workloads",
+        "mixedConfigurations",
+        "collectors",
+        "definitions",
+        "contracts"
+      ],
+      "additionalProperties": false
     }
   },
   "$ref": "#/$defs/CompletedJob"

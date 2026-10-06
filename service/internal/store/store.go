@@ -544,6 +544,15 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 		if configuration.ID != v.Runtime || workload.ID != v.Workload {
 			return "", wire.Invalid("logical identity differs from exact record")
 		}
+		if e = wire.ValidateMetricBinding(v, records["metric:"+v.MetricDefinitionID].Data); e != nil {
+			return "", e
+		}
+		var track struct {
+			SourceRuntimeID string `json:"sourceRuntimeId"`
+		}
+		if e = json.Unmarshal(records["track:"+v.TrackID].Data, &track); e != nil || track.SourceRuntimeID != v.Runtime {
+			return "", wire.Invalid("runtime track binding differs")
+		}
 		var summary struct {
 			Artifact string `json:"artifactId"`
 		}

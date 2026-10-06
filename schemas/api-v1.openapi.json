@@ -3,7 +3,7 @@
   "info": {
     "title": "wasm.fyi experimental read/publication API",
     "version": "0.1.0",
-    "description": "Development checkpoint; no cohort/overview/frontend cutover yet. Source summaries are producer-owned; import integrity is separate from source verification and operator qualification."
+    "description": "Development checkpoint: bounded result, evidence and cohort surfaces. Overview precomputation and frontend cutover remain open. Source summaries are producer-owned; import integrity is separate from source verification and operator qualification."
   },
   "paths": {
     "/api/v1/results": {
@@ -1923,6 +1923,95 @@
           },
           "404": {
             "description": "Artifact/content unavailable in this revision"
+          }
+        }
+      }
+    },
+    "/api/v1/aggregates": {
+      "get": {
+        "summary": "Compute a complete revision-scoped compatible cohort before pagination",
+        "description": "scope is bounded readable JSON. Policies explicitly select contracts, mixed configurations, collectors, definitions and populations. Membership is referenced by a signed reconstructible cohort identity. No trial evidence is fetched.",
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 4096
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Small aggregate summary and cohort reference; full membership and report inventories are omitted"
+          },
+          "400": {
+            "description": "Invalid or incompatible scope"
+          },
+          "404": {
+            "description": "Unknown published revision or selector"
+          },
+          "422": {
+            "description": "Bounded scope capacity exceeded"
+          },
+          "429": {
+            "description": "Request or cohort computation capacity exceeded"
+          }
+        }
+      }
+    },
+    "/api/v1/cohorts/{id}": {
+      "get": {
+        "summary": "Page exact immutable cohort membership",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 8192
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lane",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded result/report/configuration/contract/method references and weights; cursor binds revision, normalized scope, lane and page size"
+          },
+          "400": {
+            "description": "Invalid identity, scope or cursor"
+          },
+          "404": {
+            "description": "Frozen revision is unavailable"
+          },
+          "422": {
+            "description": "Bounded scope capacity exceeded"
           }
         }
       }

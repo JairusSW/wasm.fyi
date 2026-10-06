@@ -532,3 +532,54 @@ source statistics.
 The method descriptor is the compatibility input, not an implemented cohort API.
 Complete scientific compatibility policy, editorial workload groups, bounded
 cohort resources, caches and overview precomputation remain open backend gates.
+
+## Revision-scoped aggregate and cohort resources
+
+`/api/v1/aggregates?scope=<URL-encoded JSON>` now adapts complete producer result
+selections into the comparison policies before membership pagination. The typed
+scope pins an environment, revision, selection, exact configuration or track
+lanes, baseline, metric-definition/method digests and analysis versions. Explicit
+policies control editorial weighting, feature probes, contract revisions, mixed
+exact configurations, missing collectors and the source's unregistered native
+size marker. Unknown methods do not become empty "not measured" populations.
+RSS arithmetic views require current-RSS definitions and recorded observer
+identities; peaks and other memory domains cannot enter those views.
+
+The adapter preserves source headline timing eligibility, failed-launch exclusion,
+uncached compile admission and complete independent memory-launch coverage. It
+does not compute scientific summaries from samples. `latest-in-scope` chooses the
+newest exact contract per logical workload across the selected environment and
+methods before lane filtering; equal latest timestamps with different contracts
+are ambiguous and rejected. `all-exact-contracts` is a separately explicit policy.
+Track scopes reject mixed exact configurations unless the scope requests explicit
+membership. Members expose their actual configuration/contract/method/definition
+and result/report IDs; they retain the canonical source number/string alongside
+the floating approximation used for comparison calculations.
+
+Summaries omit full member/report inventories and expose population/coverage
+counts. `/api/v1/cohorts/{id}` returns selected membership pages, with signed
+cursors bound to the frozen revision, normalized scope, selected lane and page
+size. Cohort IDs carry an authenticated, versioned scope instead of depending on
+an ephemeral cache or a permanently held Pebble snapshot. The durable cursor key
+allows those IDs to reconstruct after restart, backup and DB-free rebuild.
+Persistent method/definition postings resolve descriptor metadata without global
+result/report loads; older indexed revisions have a bounded fallback.
+
+Scope JSON is limited to 4 KiB; two concurrent cohort computations share the
+existing outer request admission. Computation limits include four selectors,
+32 lanes, 10,000 exact rows, 100,000 cells and 32 MiB of decoded selected records.
+A method-aware cache holds at most 16 scopes under a conservative 32 MiB
+representation/structure charge. Oversized results remain reconstructible without
+cache retention. Member pagination slices references directly and enforces the
+ordinary 1 MiB decoded response ceiling. No requested subset uses the first page
+as its aggregate cohort.
+
+Tests cover merged reports, frozen scope across publication/cache loss/rebuild,
+cursor tampering and lane/page-size changes, incompatible analyses/collectors,
+mixed configurations, differing contracts, failed outcomes, unequal/matched RSS,
+unregistered native sizes and exact unsafe-integer membership. Editorial category
+classification matches 85 frozen cases from the existing JavaScript policy;
+unknown applications are never guessed for corpus weighting. Canonical metric
+and runtime-track bindings are now also checked during import. Representative
+sealed real-data serving parity, default overview precomputation, broader scale
+measurements and production cutover remain open.

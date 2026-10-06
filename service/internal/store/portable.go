@@ -221,7 +221,7 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 			return e
 		}
 		switch tuple[0] {
-		case "catalog":
+		case "catalog", "methods":
 			return markMap(set.Root, "posting-record", markRecord)
 		case "cells":
 			return markMap(set.Root, "posting-cell", func(_, _ string) error { return nil })

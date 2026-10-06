@@ -22,3 +22,18 @@ client still uses its bundled snapshot, so production cutover must wait for lazy
 API-backed rendering and crawler/reference-page validation. Builds with a nonempty
 `BASE_PATH` require matching proxy routing and are not handled by this root-path
 host. Treat the build directory as immutable while the process is running.
+
+`GET /api/v1/aggregates?scope=<URL-encoded JSON>` computes the whole selected
+cohort and returns a small summary. The `CohortScope` contract is in
+`schemas/site-v2.schema.json`. Scope policies explicitly select the environment,
+current/previous measurements, tracks or exact configurations, producer method
+and metric-definition digests, analysis version, weighting, workload population,
+contract policy, mixed builds and recorded/missing collector handling.
+
+The returned `cohort` identity is used at `GET /api/v1/cohorts/{id}` with optional
+`limit`, `cursor` and `lane`. It freezes the revision, is signed with the durable
+cursor key and reconstructs from stored summaries after cache loss or rebuild.
+Membership pages contain exact result/report/configuration/contract/method
+references and source values. Aggregates do not load trial evidence or invent
+cross-report confidence intervals. Scope JSON is limited to 4 KiB; calculations
+are bounded and admitted separately from ordinary API requests.

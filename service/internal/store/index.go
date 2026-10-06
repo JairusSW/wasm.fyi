@@ -148,6 +148,12 @@ func (s *Store) addRecordIndexes(rev *Revision, r wire.Record, digest string) er
 	if e = json.Unmarshal(r.Data, &v); e != nil {
 		return e
 	}
+	if v.MeasurementMethod != nil {
+		rev.Indexes, e = s.indexAdd(rev.Indexes, indexKey("methods", v.MeasurementMethodID, v.MetricDefinitionID), r.ID, digest)
+		if e != nil {
+			return e
+		}
+	}
 	for dimension, value := range dimensions(v) {
 		if dimension == "method" && value == "" {
 			continue
