@@ -72,6 +72,17 @@ class Contracts(unittest.TestCase):
             with self.assertRaises(ValueError):
                 contracts.transport_reference(reference)
 
+    def test_revision_pages_are_bounded_and_have_explicit_continuation(self):
+        page = {"revision": "a" * 64, "items": ["a" * 64], "total": 100005,
+                "complete": False, "nextCursor": "signed-successor"}
+        contracts.validate(page, "RevisionPage", "large frozen chain")
+        for key, value in [("items", []), ("items", [f"{i:064x}" for i in range(1001)]),
+                           ("total", 0), ("nextCursor", ""), ("complete", True)]:
+            changed = copy.deepcopy(page)
+            changed[key] = value
+            with self.assertRaises(ValueError):
+                contracts.validate(changed, "RevisionPage", "invalid revision page")
+
     def test_required_provenance_and_date(self):
         result = self.result()
         contracts.validate(result, "ResultData", "valid source")

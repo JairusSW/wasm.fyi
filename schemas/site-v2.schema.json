@@ -2592,6 +2592,67 @@
         "restartRequired"
       ],
       "additionalProperties": false
+    },
+    "RevisionPage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Digest"
+          },
+          "minItems": 1,
+          "maxItems": 1000,
+          "uniqueItems": true
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "nextCursor": {
+          "type": "string",
+          "maxLength": 2048
+        }
+      },
+      "required": [
+        "revision",
+        "items",
+        "total",
+        "complete",
+        "nextCursor"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "complete": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "nextCursor": {
+                "const": ""
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "nextCursor": {
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
     }
   },
   "$ref": "#/$defs/CompletedJob"

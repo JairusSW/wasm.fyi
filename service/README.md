@@ -302,3 +302,18 @@ floating-point aggregate. The v3 response version prevents immutable v2 URLs or
 tokens from silently serving a projection without the new required precision
 fields. Measurement identities, weighting, arithmetic and uncertainty policies
 remain unchanged.
+
+Revision discovery (`/api/v1/revisions`) now reads only the requested parent-chain
+page, newest first. The signed cursor carries the starting revision, page size,
+next revision and logical offset. Publishing newer jobs does not change the
+cursor's total or chain; restart and portable rebuild preserve its position.
+Counts come from derived chain positions maintained in the already validated
+revision registry. These positions never enter persisted JSON or revision hashes.
+
+The endpoint returns one to 1,000 revision IDs per page and a typed `RevisionPage`
+contract. Old offset-only revision cursors fail explicitly; begin at the first
+page to obtain a new successor cursor. Other endpoint cursors are unchanged.
+The retained synthetic gate crosses the former global scan ceiling and verifies
+that an ancestor outside the requested page is not read. This establishes bounded
+query work, not qualification of 100,000 real publications or startup/restore
+scale. Wider retention and physical storage gates remain open.

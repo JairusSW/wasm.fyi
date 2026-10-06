@@ -26,6 +26,7 @@ var ErrNeedsRestart = errors.New("publication durability uncertain; restart serv
 var ErrConflict = errors.New("immutable session or attempt conflicts with existing delivery")
 
 type Revision struct {
+	ordinal             int       // Derived chain position; never serialized or hashed.
 	Parent              string    `json:"parent,omitempty"`
 	Catalog             string    `json:"catalogRoot"`
 	Selection           string    `json:"selectionRoot"`
@@ -205,6 +206,16 @@ func (s *Store) restore() error {
 	}
 	if len(seen) != len(s.published) {
 		return fmt.Errorf("unreachable committed revision")
+	}
+	// Populate derived positions in the same validated linear chain. No
+	// persistent revision bytes or identities change.
+	position := len(seen)
+	for id := s.current; id != ""; {
+		r := s.published[id]
+		r.ordinal = position
+		s.published[id] = r
+		position--
+		id = r.Parent
 	}
 	// Shared persistent nodes are validated once across all retained revisions.
 	if _, e = s.reachable(false); e != nil {
@@ -958,6 +969,7 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 		return "", e
 	}
 	s.mu.Lock()
+	rev.ordinal = len(s.published) + 1
 	s.published[revID] = rev
 	s.current = revID
 	s.mu.Unlock()

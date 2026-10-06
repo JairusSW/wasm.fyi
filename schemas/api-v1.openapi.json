@@ -822,7 +822,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "site-v2.schema.json#/$defs/RevisionPage"
                 }
               }
             }
@@ -839,7 +839,8 @@
           "429": {
             "$ref": "#/components/responses/Response429_4"
           }
-        }
+        },
+        "description": "Bounded newest-to-oldest parent-chain pages. Signed successor cursors freeze the starting revision and page size; no complete chain is preloaded. Legacy offset-only revision cursors are rejected."
       }
     },
     "/api/v1/results/{id}": {

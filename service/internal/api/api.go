@@ -422,21 +422,7 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 			http.NotFound(w, r)
 			return
 		}
-		ids := []string{}
-		for id := revision; id != ""; {
-			if len(ids) >= store.ScanLimit {
-				problem(w, r, store.ErrLimit)
-				return
-			}
-			ids = append(ids, id)
-			v, e := a.Store.Revision(id)
-			if e != nil {
-				problem(w, r, e)
-				return
-			}
-			id = v.Parent
-		}
-		a.page(w, r, revision, "revisions:"+strconv.Itoa(n), ids, n, c, false)
+		a.revisions(w, r, revision, n, c)
 		return
 	}
 	kinds := map[string]string{"reports": "report", "metrics": "metric", "configurations": "configuration", "tracks": "track", "environments": "environment", "workloads": "workload", "artifacts": "artifact", "files": "report-file", "results": "result"}
