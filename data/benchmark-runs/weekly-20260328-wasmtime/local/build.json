@@ -1,0 +1,55 @@
+{
+  "schema": 1,
+  "root": "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20260328/harness/wasmtime",
+  "controller": "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20260328/controller",
+  "harnessRevision": "9332ced5e59c0c3fd9c5aabc6ebc2ed991431eb9",
+  "controllerSha256": "da0848c6e403d2b9369c61f2afd30bcae9b66ffed96d241469aecbde5d6d4369",
+  "analyzerSha256": "57b025f2921ea1b21effc35f3d4e97393fc83256aa771ad068e7d7237d541811",
+  "pin": {
+    "engine": "wasmtime",
+    "targetType": "main",
+    "targetWeek": "2026-03-29T03:59:00.000Z",
+    "repository": "bytecodealliance/wasmtime",
+    "branch": "main",
+    "revision": "856fb2721cb3bc8215eb6f135f40f456ff83825c",
+    "committedAt": "2026-03-27T19:38:06Z",
+    "url": "https://github.com/bytecodealliance/wasmtime/commit/856fb2721cb3bc8215eb6f135f40f456ff83825c",
+    "status": "planned",
+    "configurations": [
+      "wasmtime"
+    ]
+  },
+  "provenance": {
+    "engine": "wasmtime",
+    "targetType": "main",
+    "targetWeek": "2026-03-29T03:59:00.000Z",
+    "repository": "bytecodealliance/wasmtime",
+    "branch": "main",
+    "revision": "856fb2721cb3bc8215eb6f135f40f456ff83825c",
+    "committedAt": "2026-03-27T19:38:06Z",
+    "url": "https://github.com/bytecodealliance/wasmtime/commit/856fb2721cb3bc8215eb6f135f40f456ff83825c",
+    "status": "planned",
+    "configurations": [
+      "wasmtime"
+    ],
+    "compatibility": {
+      "api": "DirPerms/FilePerms",
+      "sourceSha256": "0c46d5c7e7bc7af83d871786cb10c69bcea2a75cea723edf6632d8214e4eba65",
+      "p2Sha256": "c2323576a56fe21f191876c4247b5ea25617627b9ddc9a3f2e933796e743d7e9"
+    }
+  },
+  "runtime": {
+    "native_dependency_policy": "macho-third-party-closure-v1; system shared-cache libraries excluded; absolute loads remain exact host prerequisites",
+    "id": "wasmtime",
+    "command": [
+      "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20260328/harness/wasmtime/adapters/wasmtime/target/release/adapter-wasmtime"
+    ],
+    "file_sha256": {
+      "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20260328/harness/wasmtime/adapters/wasmtime/target/release/adapter-wasmtime": "b236ee3afcb8c04f89c7ec10175a99d2b891eec84c4c067be1300853139e7c13"
+    }
+  },
+  "env": {
+    "WASMBENCH_V8_COMPILER_MODE": "optimizing-only"
+  },
+  "builtAt": "2026-10-06T13:26:57.500Z"
+}
