@@ -1325,3 +1325,29 @@ Both current indexed and older plan-reference formats must reject the actual
 `Rebuild` operation before a destination is installed. Existing valid frozen,
 legacy, large-plan, crash and portable-recovery checks remain in place. This fixes
 recovery/publication parity without changing measurement or comparison policies.
+
+## Job references prove publication and frozen ancestry
+
+A portable rebuild regression showed that a hash-consistent public job posting
+could reference fully uploaded staging content without any canonical publishing
+revision. Another regression shared a newer posting tree with an older revision;
+a generic shared-node validation memo could skip the older view's ancestry check.
+
+Typed closure validation now derives unique job publication origins from the
+active immutable revision chain. Public session/direct-job postings must name
+one of those jobs, retain its actual publication timestamp and belong to the
+requested revision or an ancestor. Uploaded content and a matching source job
+summary alone do not establish publication. Duplicate canonical job publications
+and unreachable registered revisions are rejected.
+
+Shared posting nodes and their directory retain a cached newest-origin bound.
+That bound is compared for every revision, even when structural/content validation
+was already performed in a newer view. This avoids scanning every historical job
+again for each revision. Radix depth and cycles are checked, including paths that
+reach already cached subtrees.
+
+Actual DB-free rebuild tests reject staging-only postings, future jobs in a shared
+frozen tree and invented publication times before installing a destination.
+Existing membership-drift tests now assert their specific rejection, preserving
+their coverage rather than passing on an unrelated ancestry error. Scientific
+exports, numerical values, collector policies and the frontend remain unchanged.

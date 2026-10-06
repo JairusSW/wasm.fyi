@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/JairusSW/wasm.fyi/service/internal/wire"
 )
@@ -157,15 +158,36 @@ func TestPortablePlanScopeRejectsAlteredMembership(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
+	child := j
+	child.Attempt = "membership-drift-child"
+	childID, e := s.put(child)
+	if e != nil {
+		t.Fatal(e)
+	}
+	rev.Job, rev.Parent, rev.Created = childID, revision, rev.Created.Add(time.Hour)
+	summary := jobSummary(child, childID, rev.Created)
+	summaryID, e := s.put(summary)
+	if e != nil {
+		t.Fatal(e)
+	}
+	rev.Indexes, e = s.indexAdd(rev.Indexes, indexKey("published-job", "", ""), childID, summaryID)
+	if e != nil {
+		t.Fatal(e)
+	}
+	rev.Indexes, e = s.indexAdd(rev.Indexes, indexKey("session-jobs", j.Session, ""), publishedJobKey(summary), summaryID)
+	if e != nil {
+		t.Fatal(e)
+	}
 	invalid, e := s.put(rev)
 	if e != nil {
 		t.Fatal(e)
 	}
 	s.mu.Lock()
 	s.published[invalid] = rev
+	s.current = invalid
 	s.mu.Unlock()
-	defer func() { s.mu.Lock(); delete(s.published, invalid); s.mu.Unlock() }()
-	if _, e := s.reachable(false); e == nil {
-		t.Fatal("derived membership drift survived portable verification")
+	defer func() { s.mu.Lock(); delete(s.published, invalid); s.current = revision; s.mu.Unlock() }()
+	if _, e := s.reachable(false); e == nil || !strings.Contains(e.Error(), "session plan membership differs") {
+		t.Fatal("derived membership drift survived portable verification", e)
 	}
 }

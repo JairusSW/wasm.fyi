@@ -79,6 +79,12 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 	}
 	plans := planVerifier{fetch: fetchProofObject}
 	archives := archiveVerifier{fetch: fetchProofObject}
+	origins, revisionRanks, e := s.publicationOrigins(read)
+	if e != nil {
+		return nil, e
+	}
+	postingOrigins := publicationPostingVerifier{read: read, origins: origins}
+	revisionRank := 0
 	var markMap func(string, string, func(string, string) error) error
 	markMap = func(id, kind string, entry func(string, string) error) error {
 		if id == "" {
@@ -354,6 +360,13 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 				return e
 			})
 		case "session-jobs", "published-job":
+			newest, e := postingOrigins.newest(set.Root)
+			if e != nil {
+				return e
+			}
+			if newest < revisionRank {
+				return wire.Invalid("job posting is newer than frozen revision")
+			}
 			return markMap(set.Root, "posting-"+tuple[0], func(k, id string) error {
 				var summary PublishedJob
 				if e := read(id, &summary); e != nil {
@@ -382,6 +395,7 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 	}
 	jobs := map[string]bool{}
 	for _, id := range s.Revisions() {
+		revisionRank = revisionRanks[id]
 		var r Revision
 		if e := read(id, &r); e != nil {
 			return nil, e
@@ -391,6 +405,13 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 		}
 		if r.SessionIndexVersion != "" && r.SessionIndexVersion != SessionIndexVersion {
 			return nil, wire.Invalid("unsupported session index")
+		}
+		newest, e := postingOrigins.newestDirectory(r.Indexes)
+		if e != nil {
+			return nil, e
+		}
+		if newest < revisionRank {
+			return nil, wire.Invalid("job posting is newer than frozen revision")
 		}
 		if e := markMap(r.Catalog, "catalog", markRecord); e != nil {
 			return nil, e
