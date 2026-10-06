@@ -1676,3 +1676,29 @@ that process finishes. Synthetic installed-LLVM external-source, v3 generation/
 regeneration, same-ID different-seal rejection and consumer provenance/range/hash
 checks pass; schema/type, vet and Linux-build checks pass. Actual remote CI and
 native Linux execution remain unqualified.
+
+## Native Linux preset and disassembly execution
+
+The current service's statically linked, trimmed test binaries now pass on a
+separate Linux x86_64 host, pinned to one allowed CPU with low scheduling priority
+and `GOMAXPROCS=1`. Only compiled binaries and synthetic fixture bytes were
+transferred; no benchmark, adapter or source-report execution occurred. Transfer
+SHA-256 checks preceded execution, and isolated test directories were used.
+
+The store gate covers disassembly windows, forged diagnostics, five actual
+publication process exits with missing-only repair and portable reconstruction,
+native inspection/function recovery, preset publication/failure/quota/atomic
+registration crashes/concurrent last-slot/cancellation and 4,096-projection
+capacity eviction/reconstruction. The API gate covers disassembly cursor scopes,
+native function scope freezing and preset automatic publication/quota behavior.
+Both return exit zero; these are native execution checks, alongside the existing
+macOS race gates, not native race detection or remote CI execution.
+
+Retained remote logs are under
+`/tmp/wasmfyi-real-crosshost-20261006-_tfb0gie/`. Store binary SHA-256:
+`8bd8823709f716defa1c8f3c0db3f3c3a5e8b54304bd42ecb73f10aed65a0a20`;
+API binary SHA-256:
+`a305b9b811398ed27086c2c2666ae62a01de69003799bf498c6a3c49f6bd63a2`.
+Docker is still unavailable locally, but these selected native Linux execution
+gates are now qualified on the separate host. Production isolation/proxy/device
+failure and actual CI remain distinct unfinished requirements.
