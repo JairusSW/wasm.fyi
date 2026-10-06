@@ -46,6 +46,9 @@ func declaredObjects(j wire.Job) map[string]wire.Object {
 		for _, o := range x.Manifest.Objects {
 			out[o.SHA256] = o
 		}
+		for _, page := range x.Manifest.InventoryPages {
+			out[page.SHA256] = page.Object()
+		}
 	}
 	return out
 }
@@ -78,6 +81,15 @@ func (s *Store) reserveImport(batch *pebble.Batch, id string, j wire.Job) error 
 	for _, o := range objects {
 		size += int64(o.Bytes)
 	}
+	pages := map[string]bool{}
+	for _, export := range j.Exports {
+		for _, page := range export.Manifest.InventoryPages {
+			if !pages[page.SHA256] {
+				size += page.ContentBytes
+				pages[page.SHA256] = true
+			}
+		}
+	}
 	if q.Jobs >= s.limits.PendingJobs || size > s.limits.PendingBytes-q.Bytes {
 		return ErrQuota
 	}
@@ -89,24 +101,12 @@ func (s *Store) reserveImport(batch *pebble.Batch, id string, j wire.Job) error 
 	if e = setJSON(batch, key("pending", id), pendingImport{size, time.Now().UTC()}); e != nil {
 		return e
 	}
-	for digest, o := range objects {
-		permit := objectPermit{Object: o}
-		b, e := s.get(key("permit", digest))
-		if e == nil {
-			if e = wire.Decode(b, &permit); e != nil {
-				return e
-			}
-			if permit.Object != o {
-				return ErrConflict
-			}
-		} else if !errors.Is(e, pebble.ErrNotFound) {
-			return e
-		}
-		permit.References++
-		if e = setJSON(batch, key("permit", digest), permit); e != nil {
+	for _, o := range objects {
+		if e = s.grantObject(batch, id, o); e != nil {
 			return e
 		}
 	}
+
 	return nil
 }
 func (s *Store) releaseImport(batch *pebble.Batch, id string, j wire.Job) error {
@@ -136,7 +136,21 @@ func (s *Store) releaseImport(batch *pebble.Batch, id string, j wire.Job) error 
 	if e = batch.Delete(key("pending", id), nil); e != nil {
 		return e
 	}
-	for digest := range declaredObjects(j) {
+	prefix := key("permit-owner", id)
+	it, e := s.db.NewIter(nil)
+	if e != nil {
+		return e
+	}
+	defer it.Close()
+	for it.SeekGE(prefix); it.Valid() && bytes.HasPrefix(it.Key(), prefix); it.Next() {
+		var object wire.Object
+		if e = wire.Decode(it.Value(), &object); e != nil {
+			return e
+		}
+		digest := object.SHA256
+		if e = batch.Delete(append([]byte(nil), it.Key()...), nil); e != nil {
+			return e
+		}
 		b, e := s.get(key("permit", digest))
 		if e != nil {
 			return e
@@ -158,7 +172,11 @@ func (s *Store) releaseImport(batch *pebble.Batch, id string, j wire.Job) error 
 			return e
 		}
 	}
-	return nil
+	if e = it.Error(); e != nil {
+		return e
+	}
+	expanded := key("expanded", id)
+	return batch.DeleteRange(expanded, append(append([]byte(nil), expanded...), 255), nil)
 }
 
 // HTTP upload admission is serialized with publication/abort and maintenance.
@@ -225,16 +243,18 @@ func (s *Store) Abort(id string) error {
 }
 
 type ImportStatus struct {
-	ID       string `json:"id"`
-	Session  string `json:"session"`
-	Machine  string `json:"machine"`
-	Corpus   string `json:"corpus"`
-	Attempt  string `json:"attempt"`
-	State    string `json:"state"`
-	Revision string `json:"revision,omitempty"`
-	Objects  int    `json:"objects"`
-	Missing  int    `json:"missing"`
-	Bytes    int64  `json:"declaredBytes"`
+	ID                 string `json:"id"`
+	Session            string `json:"session"`
+	Machine            string `json:"machine"`
+	Corpus             string `json:"corpus"`
+	Attempt            string `json:"attempt"`
+	State              string `json:"state"`
+	Revision           string `json:"revision,omitempty"`
+	Objects            int    `json:"objects"`
+	Missing            int    `json:"missing"`
+	Bytes              int64  `json:"declaredBytes"`
+	PendingInventories int    `json:"pendingInventories"`
+	MissingComplete    bool   `json:"missingComplete"`
 }
 
 func (s *Store) ImportStatus(id string) (ImportStatus, error) {
@@ -242,10 +262,20 @@ func (s *Store) ImportStatus(id string) (ImportStatus, error) {
 	if e != nil {
 		return ImportStatus{}, e
 	}
-	status := ImportStatus{ID: id, Session: j.Session, Machine: j.Machine, Corpus: j.Corpus, Attempt: j.Attempt, State: "staged"}
+	status := ImportStatus{ID: id, Session: j.Session, Machine: j.Machine, Corpus: j.Corpus, Attempt: j.Attempt, State: "staged", MissingComplete: true}
 	for _, o := range declaredObjects(j) {
 		status.Objects++
 		status.Bytes += int64(o.Bytes)
+	}
+	seenPages := map[string]bool{}
+	for _, export := range j.Exports {
+		for _, page := range export.Manifest.InventoryPages {
+			if !seenPages[page.SHA256] {
+				status.Objects += page.Objects
+				status.Bytes += page.ContentBytes
+				seenPages[page.SHA256] = true
+			}
+		}
 	}
 	if b, e := s.get(key("accepted", id)); e == nil {
 		revision := string(b)
@@ -264,6 +294,21 @@ func (s *Store) ImportStatus(id string) (ImportStatus, error) {
 	} else if !errors.Is(e, pebble.ErrNotFound) {
 		return status, e
 	}
+	clear(seenPages)
+	for _, export := range j.Exports {
+		for _, page := range export.Manifest.InventoryPages {
+			if seenPages[page.SHA256] {
+				continue
+			}
+			seenPages[page.SHA256] = true
+			if _, e = s.get(key("expanded", id, page.SHA256)); errors.Is(e, pebble.ErrNotFound) {
+				status.PendingInventories++
+			} else if e != nil {
+				return status, e
+			}
+		}
+	}
+	status.MissingComplete = status.PendingInventories == 0
 	missing, e := s.Missing(id)
 	if e != nil {
 		return status, e
@@ -272,7 +317,7 @@ func (s *Store) ImportStatus(id string) (ImportStatus, error) {
 	return status, nil
 }
 func (s *Store) initializeAdmission() error {
-	if _, e := s.get(key("admission-ready")); e == nil {
+	if _, e := s.get(key("admission-ready-v2")); e == nil {
 		return nil
 	} else if !errors.Is(e, pebble.ErrNotFound) {
 		return e
@@ -280,7 +325,7 @@ func (s *Store) initializeAdmission() error {
 	// A migration interrupted before its completion marker is rebuilt from the
 	// canonical imports, never resumed using partly updated counters.
 	reset := s.db.NewBatch()
-	for _, namespace := range []string{"pending", "permit"} {
+	for _, namespace := range []string{"pending", "permit", "permit-owner", "expanded"} {
 		prefix := key(namespace)
 		if e := reset.DeleteRange(prefix, append(append([]byte(nil), prefix...), 255), nil); e != nil {
 			reset.Close()
@@ -320,7 +365,7 @@ func (s *Store) initializeAdmission() error {
 		if e = wire.Decode(it.Value(), &j); e != nil {
 			return e
 		}
-		batch := s.db.NewBatch()
+		batch := s.db.NewIndexedBatch()
 		e = s.reserveImport(batch, id, j)
 		if e == nil {
 			e = batch.Commit(pebble.Sync)
@@ -333,7 +378,7 @@ func (s *Store) initializeAdmission() error {
 	if e = it.Error(); e != nil {
 		return e
 	}
-	return s.db.Set(key("admission-ready"), []byte{1}, pebble.Sync)
+	return s.db.Set(key("admission-ready-v2"), []byte{1}, pebble.Sync)
 }
 func mustQuota() []byte { b, _ := wire.Encode(admissionQuota{Schema: 1}); return b }
 func (s *Store) scanContentUsage() error {

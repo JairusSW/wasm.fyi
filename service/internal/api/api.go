@@ -479,6 +479,14 @@ func (a *API) admin(w http.ResponseWriter, r *http.Request) {
 		respond(w, r, 200, status, false)
 		return
 	}
+	if len(parts) == 4 && parts[0] == "imports" && parts[2] == "inventories" && r.Method == "POST" {
+		if e := a.Store.AttachInventoryContext(r.Context(), parts[1], parts[3]); e != nil {
+			problem(w, r, e)
+			return
+		}
+		respond(w, r, 200, map[string]string{"id": parts[1], "inventory": parts[3]}, false)
+		return
+	}
 	if len(parts) == 3 && parts[0] == "imports" && parts[2] == "abort" && r.Method == "POST" {
 		if e := a.Store.Abort(parts[1]); e != nil {
 			problem(w, r, e)
@@ -503,7 +511,7 @@ func (a *API) admin(w http.ResponseWriter, r *http.Request) {
 	}
 	if len(parts) == 3 && parts[0] == "imports" {
 		if parts[2] == "missing" && r.Method == "GET" {
-			items, e := a.Store.Missing(parts[1])
+			items, e := a.Store.MissingContext(r.Context(), parts[1])
 			if e != nil {
 				problem(w, r, e)
 				return

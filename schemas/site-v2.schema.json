@@ -61,6 +61,14 @@
           "items": {
             "$ref": "#/$defs/ObjectDescriptor"
           },
+          "minItems": 0,
+          "maxItems": 512
+        },
+        "inventoryPages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/InventoryDescriptor"
+          },
           "minItems": 1,
           "maxItems": 512
         }
@@ -75,7 +83,31 @@
         "verification",
         "objects"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "properties": {
+            "objects": {
+              "minItems": 1
+            }
+          },
+          "not": {
+            "required": [
+              "inventoryPages"
+            ]
+          }
+        },
+        {
+          "properties": {
+            "objects": {
+              "maxItems": 0
+            }
+          },
+          "required": [
+            "inventoryPages"
+          ]
+        }
+      ]
     },
     "ExportReference": {
       "type": "object",
@@ -352,6 +384,57 @@
           "pattern": "^[0-9]+$"
         }
       ]
+    },
+    "InventoryDescriptor": {
+      "type": "object",
+      "properties": {
+        "sha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 262144
+        },
+        "objects": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 512
+        },
+        "contentBytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 134217728
+        }
+      },
+      "required": [
+        "sha256",
+        "bytes",
+        "objects",
+        "contentBytes"
+      ],
+      "additionalProperties": false
+    },
+    "InventoryPage": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 1
+        },
+        "objects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ObjectDescriptor"
+          },
+          "minItems": 1,
+          "maxItems": 512
+        }
+      },
+      "required": [
+        "schema",
+        "objects"
+      ],
+      "additionalProperties": false
     }
   },
   "$ref": "#/$defs/CompletedJob"

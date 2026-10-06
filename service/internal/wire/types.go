@@ -16,6 +16,7 @@ import (
 const ChunkBytes = 256 * 1024
 const ResponseBytes = 1024 * 1024
 const MaxObjects = 512
+const MaxInventoryPages = 512
 
 var hashPattern = regexp.MustCompile(`^[a-f0-9]{64}$`)
 var identityPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$`)
@@ -93,15 +94,65 @@ type Object struct {
 	Kind   string `json:"kind"`
 }
 type Manifest struct {
-	Schema             int      `json:"schema"`
-	Format             string   `json:"format"`
-	ReportID           string   `json:"reportId"`
-	SourceReportSHA256 string   `json:"sourceReportSha256"`
-	SourceSealSHA256   string   `json:"sourceSealSha256"`
-	Exporter           string   `json:"exporter"`
-	Verification       string   `json:"verification"`
-	Objects            []Object `json:"objects"`
+	Schema             int         `json:"schema"`
+	Format             string      `json:"format"`
+	ReportID           string      `json:"reportId"`
+	SourceReportSHA256 string      `json:"sourceReportSha256"`
+	SourceSealSHA256   string      `json:"sourceSealSha256"`
+	Exporter           string      `json:"exporter"`
+	Verification       string      `json:"verification"`
+	Objects            []Object    `json:"objects"`
+	InventoryPages     []Inventory `json:"inventoryPages,omitempty"`
 }
+type Inventory struct {
+	SHA256       string `json:"sha256"`
+	Bytes        int    `json:"bytes"`
+	Objects      int    `json:"objects"`
+	ContentBytes int64  `json:"contentBytes"`
+}
+type InventoryPage struct {
+	Schema  int      `json:"schema"`
+	Objects []Object `json:"objects"`
+}
+
+func (p Inventory) Object() Object {
+	return Object{SHA256: p.SHA256, Bytes: p.Bytes, Kind: "inventory"}
+}
+func (p Inventory) Validate() error {
+	if !IsHash(p.SHA256) || p.Bytes < 1 || p.Bytes > ChunkBytes || p.Objects < 1 || p.Objects > MaxObjects || p.ContentBytes < int64(p.Objects) || p.ContentBytes > int64(p.Objects)*ChunkBytes {
+		return Invalid("invalid inventory descriptor")
+	}
+	return nil
+}
+func (p Inventory) Decode(b []byte) ([]Object, error) {
+	if err := p.Validate(); err != nil {
+		return nil, err
+	}
+	if len(b) != p.Bytes || Hash(b) != p.SHA256 {
+		return nil, Invalid("inventory bytes differ")
+	}
+	var page InventoryPage
+	if err := Decode(b, &page); err != nil {
+		return nil, err
+	}
+	if page.Schema != 1 || len(page.Objects) != p.Objects {
+		return nil, Invalid("inventory count differs")
+	}
+	var size int64
+	seen := map[string]bool{}
+	for _, o := range page.Objects {
+		if !IsHash(o.SHA256) || o.Bytes < 1 || o.Bytes > ChunkBytes || (o.Kind != "record" && o.Kind != "evidence") || seen[o.SHA256] {
+			return nil, Invalid("invalid inventory payload")
+		}
+		seen[o.SHA256] = true
+		size += int64(o.Bytes)
+	}
+	if size != p.ContentBytes {
+		return nil, Invalid("inventory payload bytes differ")
+	}
+	return page.Objects, nil
+}
+
 type Export struct {
 	SHA256   string   `json:"sha256"`
 	Manifest Manifest `json:"manifest"`
@@ -128,6 +179,7 @@ func (j Job) Validate() error {
 	}
 	reports := map[string]bool{}
 	objects := map[string]Object{}
+	inventories := map[string]Inventory{}
 	for _, e := range j.Exports {
 		m := e.Manifest
 		b, err := Encode(m)
@@ -136,11 +188,29 @@ func (j Job) Validate() error {
 		}
 		// The producer marshals the same field order. Export manifests use this
 		// canonical encoding; object payloads retain their exact original bytes.
-		if !IsHash(e.SHA256) || Hash(b) != e.SHA256 || m.Schema != 2 || m.Format != "site-v2" || !IsHash(m.ReportID) || !IsHash(m.SourceReportSHA256) || !IsHash(m.SourceSealSHA256) || m.Verification != "source-recomputed" || m.Exporter == "" || len(m.Objects) == 0 || len(m.Objects) > MaxObjects || reports[m.ReportID] {
+		if !IsHash(e.SHA256) || Hash(b) != e.SHA256 || m.Schema != 2 || m.Format != "site-v2" || !IsHash(m.ReportID) || !IsHash(m.SourceReportSHA256) || !IsHash(m.SourceSealSHA256) || m.Verification != "source-recomputed" || m.Exporter == "" || m.Objects == nil || (len(m.Objects) == 0 && len(m.InventoryPages) == 0) || (len(m.Objects) > 0 && len(m.InventoryPages) > 0) || len(m.Objects) > MaxObjects || len(m.InventoryPages) > MaxInventoryPages || reports[m.ReportID] {
 			return Invalid("invalid export manifest")
 		}
 		reports[m.ReportID] = true
 		seen := map[string]bool{}
+		for _, page := range m.InventoryPages {
+			if err := page.Validate(); err != nil {
+				return err
+			}
+			if seen[page.SHA256] {
+				return Invalid("duplicate inventory page")
+			}
+			if old, ok := inventories[page.SHA256]; ok && old != page {
+				return Invalid("conflicting inventory commitments")
+			}
+			inventories[page.SHA256] = page
+			seen[page.SHA256] = true
+			o := page.Object()
+			if old, ok := objects[o.SHA256]; ok && old != o {
+				return Invalid("conflicting inventory descriptor")
+			}
+			objects[o.SHA256] = o
+		}
 		for _, o := range m.Objects {
 			if !IsHash(o.SHA256) || o.Bytes <= 0 || o.Bytes > ChunkBytes || (o.Kind != "record" && o.Kind != "evidence") || seen[o.SHA256] {
 				return Invalid("invalid object descriptor")

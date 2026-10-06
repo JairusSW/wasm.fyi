@@ -1649,6 +1649,54 @@
           }
         }
       }
+    },
+    "/admin/v1/imports/{id}/inventories/{digest}": {
+      "post": {
+        "security": [
+          {
+            "publisherToken": []
+          }
+        ],
+        "summary": "Verify a declared inventory page and grant its payload uploads",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./site-v2.schema.json#/$defs/Digest"
+            }
+          },
+          {
+            "name": "digest",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./site-v2.schema.json#/$defs/Digest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Idempotently attached verified page"
+          },
+          "400": {
+            "description": "Inventory commitment mismatch"
+          },
+          "403": {
+            "description": "Page not declared by this import"
+          },
+          "404": {
+            "description": "Import or content not found"
+          },
+          "409": {
+            "description": "Aborted import or conflicting descriptor"
+          },
+          "503": {
+            "description": "Publication requires restart"
+          }
+        }
+      }
     }
   },
   "components": {

@@ -220,7 +220,14 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 		}
 		jobs[r.Job] = true
 		for _, export := range job.Exports {
-			for _, object := range export.Manifest.Objects {
+			payload, e := s.manifestObjects(export.Manifest, false)
+			if e != nil {
+				return nil, e
+			}
+			for _, page := range export.Manifest.InventoryPages {
+				payload = append(payload, page.Object())
+			}
+			for _, object := range payload {
 				b, e := s.content(object.SHA256)
 				if e != nil {
 					return nil, e
@@ -254,7 +261,14 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 				return nil, e
 			}
 			for _, export := range job.Exports {
-				for _, object := range export.Manifest.Objects {
+				payload, e := s.manifestObjects(export.Manifest, true)
+				if e != nil {
+					return nil, e
+				}
+				for _, page := range export.Manifest.InventoryPages {
+					payload = append(payload, page.Object())
+				}
+				for _, object := range payload {
 					marked[object.SHA256] = true
 					b, e := s.content(object.SHA256)
 					if os.IsNotExist(e) {

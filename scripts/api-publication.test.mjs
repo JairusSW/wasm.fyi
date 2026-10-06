@@ -31,6 +31,24 @@ test('completed corpus uploads only missing objects, publishes idempotently, ret
   const manifest=await (await fetch(url+'/api/v1/manifest')).json();assert.equal(manifest.revision,revision);
   const results=await (await fetch(url+'/api/v1/results?revision='+revision)).json();assert.equal(results.items.length,3);assert.equal(results.complete,true);
   const artifacts=await (await fetch(url+'/api/v1/artifacts?revision='+revision)).json();assert.equal(artifacts.items[0].data.measurementAvailable,true);assert.equal(artifacts.items[0].data.content.status,'unavailable');
+  const pagedPath='jobs/corpus-0001/exports/paged/site-v2',pagedDirectory=join(local,pagedPath);
+  await mkdir(pagedDirectory,{recursive:true});await cp(join(site,'service/testdata/site-v2'),pagedDirectory,{recursive:true});
+  const pagedManifest=JSON.parse(await readFile(join(pagedDirectory,'manifest.json'))),payload=pagedManifest.objects;
+  for(let ordinal=0;ordinal<600;ordinal++){
+    const b=Buffer.from(JSON.stringify({kind:'diagnostic',ordinal})),sha256=digest(b);
+    await writeFile(join(pagedDirectory,'objects',sha256),b);payload.push({sha256,bytes:b.length,kind:'evidence'});
+  }
+  pagedManifest.objects=[];pagedManifest.inventoryPages=[];
+  for(let start=0;start<payload.length;start+=512){
+    const entries=payload.slice(start,start+512),b=Buffer.from(JSON.stringify({schema:1,objects:entries})),sha256=digest(b);
+    await writeFile(join(pagedDirectory,'objects',sha256),b);
+    pagedManifest.inventoryPages.push({sha256,bytes:b.length,objects:entries.length,contentBytes:entries.reduce((total,o)=>total+o.bytes,0)});
+  }
+  await writeFile(join(pagedDirectory,'manifest.json'),JSON.stringify(pagedManifest));
+  const pagedArgs={...args,result:{...result,siteExports:[pagedPath]}};
+  const pagedRevision=await publishCompletedJob(pagedArgs);assert.notEqual(pagedRevision,revision);
+  uploads=0;assert.equal(await publishCompletedJob(pagedArgs),pagedRevision);assert.equal(uploads,0,'Paged duplicate uploaded existing content');
+  const history=await(await fetch(url+'/api/v1/history?revision='+pagedRevision)).json();assert.equal(history.items.length,3,'Repackaged evidence became new observations');
   await assert.rejects(publishCompletedJob({...args,result:{...result,finished:null}}),/Incomplete/);
   const exportManifest=JSON.parse(await readFile(join(local,path,'manifest.json')));const object=exportManifest.objects[0];await writeFile(join(local,path,'objects',object.sha256),'tampered');await assert.rejects(publishCompletedJob(args),/differs/);
  }finally{if(child){child.kill('SIGTERM');await exit};await rm(root,{recursive:true,force:true})}

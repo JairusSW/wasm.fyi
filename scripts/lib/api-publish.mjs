@@ -32,12 +32,28 @@ export async function publishCompletedJob({url,local,plan,machine,result,signal,
     assert(manifest.schema===2&&manifest.format==='site-v2'&&manifest.verification==='source-recomputed'&&Array.isArray(manifest.objects)&&manifest.objects.length<=512,'Invalid producer export');
     // Avoid normalizing source bytes or reconstructing scientific results.
     assert(Buffer.from(JSON.stringify(manifest)).equals(bytes),'Manifest must use canonical producer encoding');
-    for(const object of manifest.objects){
-      assert(HASH.test(object.sha256)&&Number.isSafeInteger(object.bytes)&&object.bytes>0&&object.bytes<=CHUNK&&['record','evidence'].includes(object.kind),'Invalid object reference');
+    const inventoryPages=manifest.inventoryPages??[];
+    assert(Array.isArray(inventoryPages)&&inventoryPages.length<=512&&!(manifest.objects.length&&inventoryPages.length)&&(manifest.objects.length||inventoryPages.length),'Invalid inventory shape');
+    const descriptors=[...manifest.objects],seen=new Set();
+    for(const page of inventoryPages){
+      assert(HASH.test(page.sha256)&&Number.isSafeInteger(page.bytes)&&page.bytes>0&&page.bytes<=CHUNK&&Number.isSafeInteger(page.objects)&&page.objects>0&&page.objects<=512&&Number.isSafeInteger(page.contentBytes)&&page.contentBytes>=page.objects&&page.contentBytes<=page.objects*CHUNK&&!seen.has(page.sha256),'Invalid inventory commitment');
+      seen.add(page.sha256);
+      assert(!(await lstat(join(directory,'objects'))).isSymbolicLink(),'Symlinked object directory');
+      const path=join(directory,'objects',page.sha256),bytes=await regularFile(path,CHUNK);
+      assert(bytes.length===page.bytes&&digest(bytes)===page.sha256,'Inventory differs from root');
+      const inventory=JSON.parse(bytes);
+      assert(inventory.schema===1&&Array.isArray(inventory.objects)&&inventory.objects.length===page.objects&&inventory.objects.reduce((total,o)=>total+o.bytes,0)===page.contentBytes,'Inventory totals differ');
+      const previous=objects.get(page.sha256);assert(!previous||(previous.bytes===page.bytes&&previous.kind==='inventory'),'Conflicting shared inventory');
+      objects.set(page.sha256,{path,bytes:page.bytes,kind:'inventory'});
+      descriptors.push(...inventory.objects);
+    }
+    for(const object of descriptors){
+      assert(HASH.test(object.sha256)&&Number.isSafeInteger(object.bytes)&&object.bytes>0&&object.bytes<=CHUNK&&['record','evidence'].includes(object.kind)&&!seen.has(object.sha256),'Invalid object reference');
+      seen.add(object.sha256);
       assert(!(await lstat(join(directory,'objects'))).isSymbolicLink(),'Symlinked object directory');
       const path=join(directory,'objects',object.sha256);const b=await regularFile(path,CHUNK);
       assert(b.length===object.bytes&&digest(b)===object.sha256,'Export content differs from producer manifest');
-      const previous=objects.get(object.sha256);assert(!previous||previous.bytes===object.bytes,'Conflicting shared object');objects.set(object.sha256,{path,bytes:object.bytes});
+      const previous=objects.get(object.sha256);assert(!previous||(previous.bytes===object.bytes&&previous.kind===object.kind),'Conflicting shared object');objects.set(object.sha256,{path,bytes:object.bytes,kind:object.kind});
     }
     exports.push({sha256:digest(bytes),manifest});
   }
@@ -52,11 +68,11 @@ export async function publishCompletedJob({url,local,plan,machine,result,signal,
   const submitted=await call('/admin/v1/imports','POST',JSON.stringify(job));assert(HASH.test(submitted.id),'Invalid import identity');
   // The missing inventory shrinks as uploads arrive. Always request its first
   // page; using a moving offset would skip objects after the previous upload.
-  for(let page=0;page<=42;page++){
+  for(let page=0;page<=objects.size+1;page++){
     const missing=await call(`/admin/v1/imports/${submitted.id}/missing`);
     assert(Array.isArray(missing.items)&&missing.items.length<=100,'Unbounded missing inventory');
     if(!missing.items.length){assert(missing.complete,'Incomplete empty inventory');const committed=await call(`/admin/v1/imports/${submitted.id}/commit`,'POST');assert(HASH.test(committed.revision),'Invalid published revision');return committed.revision;}
-    for(const o of missing.items){const localObject=objects.get(o.sha256);assert(localObject&&localObject.bytes===o.bytes,'API requested undeclared content');await call(`/admin/v1/objects/${o.sha256}`,'PUT',await regularFile(localObject.path,CHUNK));}
+    for(const o of missing.items){const localObject=objects.get(o.sha256);assert(localObject&&localObject.bytes===o.bytes,'API requested undeclared content');await call(`/admin/v1/objects/${o.sha256}`,'PUT',await regularFile(localObject.path,CHUNK));if(localObject.kind==='inventory')await call(`/admin/v1/imports/${submitted.id}/inventories/${o.sha256}`,'POST');}
   }
   throw Error('API missing inventory failed to converge');
 }

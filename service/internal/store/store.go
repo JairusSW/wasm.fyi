@@ -271,7 +271,7 @@ func (s *Store) Submit(j wire.Job) (string, error) {
 		{key("member", j.Session, j.Machine), []byte(j.ParentBundleSHA256)},
 		{key("attempt", j.Session, j.Machine, j.Corpus, j.Attempt), []byte(id)},
 	}
-	batch := s.db.NewBatch()
+	batch := s.db.NewIndexedBatch()
 	defer batch.Close()
 	if e = s.reserveImport(batch, id, j); e != nil {
 		return "", e
@@ -314,20 +314,57 @@ func (s *Store) Job(id string) (wire.Job, error) {
 	return j, e
 }
 func (s *Store) Missing(id string) ([]wire.Object, error) {
+	return s.MissingContext(context.Background(), id)
+}
+func (s *Store) MissingContext(ctx context.Context, id string) ([]wire.Object, error) {
 	j, e := s.Job(id)
 	if e != nil {
 		return nil, e
 	}
 	out := []wire.Object{}
 	seen := map[string]bool{}
+	_, pendingErr := s.get(key("pending", id))
+	if pendingErr != nil && !errors.Is(pendingErr, pebble.ErrNotFound) {
+		return nil, pendingErr
+	}
 	for _, x := range j.Exports {
-		for _, o := range x.Manifest.Objects {
+		if e := ctx.Err(); e != nil {
+			return nil, e
+		}
+		descriptors := append([]wire.Object{}, x.Manifest.Objects...)
+		for _, page := range x.Manifest.InventoryPages {
+			b, e := s.content(page.SHA256)
+			if os.IsNotExist(e) {
+				descriptors = append(descriptors, page.Object())
+				continue
+			}
+			if e != nil {
+				return nil, e
+			}
+			leaves, e := page.Decode(b)
+			if e != nil {
+				return nil, e
+			}
+			if pendingErr == nil {
+				if _, e = s.get(key("expanded", id, page.SHA256)); errors.Is(e, pebble.ErrNotFound) {
+					descriptors = append(descriptors, page.Object())
+					continue
+				} else if e != nil {
+					return nil, e
+				}
+			}
+			descriptors = append(descriptors, leaves...)
+		}
+		for _, o := range descriptors {
+			if e := ctx.Err(); e != nil {
+				return nil, e
+			}
 			if seen[o.SHA256] {
 				continue
 			}
 			seen[o.SHA256] = true
 			b, e := s.content(o.SHA256)
-			if os.IsNotExist(e) {
+			if os.IsNotExist(e) || (o.Kind == "inventory" && pendingErr == nil) {
 				out = append(out, o)
 			} else if e != nil {
 				return nil, e
@@ -385,7 +422,7 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 	if e = j.Validate(); e != nil {
 		return "", e
 	}
-	missing, e := s.Missing(id)
+	missing, e := s.MissingContext(ctx, id)
 	if e != nil {
 		return "", e
 	}
@@ -400,7 +437,11 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 		if e := ctx.Err(); e != nil {
 			return "", e
 		}
-		for _, o := range x.Manifest.Objects {
+		payload, e := s.manifestObjects(x.Manifest, false)
+		if e != nil {
+			return "", e
+		}
+		for _, o := range payload {
 			if e := ctx.Err(); e != nil {
 				return "", e
 			}

@@ -17,7 +17,7 @@ The recorded [payload audit](plans/wasm-fyi-audit-2026-10-05.json) is the suppli
 ## Implemented
 
 - Producer `wasmbench export-site --report REPORT --out NEW_DIR`: independently verifies with the installed builder, copies scientific summaries without recomputing statistics, exports exact catalog identities, and keeps samples/observations in independently decoded objects. Legacy reports are untouched. No archived executable is run.
-- Objects have full SHA-256 names, at most 256 KiB decoded; root inventories have at most 512 objects, and an import accepts at most eight report exports. Oversized records fail explicitly. Artifact descriptors are at most 10 KiB decoded. A large corpus must be split before this experimental exporter can handle it.
+- Objects have full SHA-256 names, at most 256 KiB decoded; small root inventories have at most 512 objects; larger inventories use at most 512 independently verified pages of 512 payload descriptors. An import accepts at most eight report exports and remains subject to the job-manifest and pending-byte budgets. Oversized individual records fail explicitly. Artifact descriptors are at most 10 KiB decoded.
 - Timing versus separate memory-pass provenance, original trial/block IDs, zero values, absent intervals, source report/seal hashes, actual controller hash, and separate analysis version fields survive conversion. Exact code-size integers outside JavaScript's safe range use decimal strings.
 - A size-only code record remains measurable. Native bytes and inspection are explicitly unavailable in this transport, even if the original report contains an image. No content hash or download is advertised for absent export bytes.
 - One Go service owns Pebble v2.1.7 and the local content directory. Publication installs/syncs objects and portable revision roots first, then synchronously commits the revision, idempotency record and current pointer, then exposes the revision to readers. A durability-uncertain commit prevents further publication until restart.
@@ -225,10 +225,25 @@ manifests retain their existing encoding. A 2,000-trial producer fixture verifie
 that the root stays below 50 KiB and that every trial, result and payload survives
 paging with exact hash/size/count commitments.
 
-This is the producer portion of large-inventory support. The current service
-rejects the additional manifest field; two-stage admission, coordinator page
-handling and recovery closure must be implemented together before publishing
-large completed corpus jobs. The existing 512-object service limit remains in
-force. Large individual pass contexts, diagnostic records and result reference
-lists also need their own chunking; inventory paging alone does not solve those
-limits.
+The service now admits these roots and reserves page plus payload bytes at
+submission. Page uploads have an `inventory` kind in the missing-object list.
+The coordinator uploads each page and posts
+`/admin/v1/imports/ID/inventories/DIGEST` before uploading its leaves. This verifies
+hash, byte size, payload count, total payload bytes and descriptor kinds before
+synchronously installing permissions. Cached pages also require attachment for
+each import; submission does not expand a whole large inventory in one request.
+Permissions have per-import owners, so shared pages and aborted imports cannot
+leak grants or revoke another import's uploads. Legacy permit accounting migrates
+from canonical staged jobs. `pendingInventories` and `missingComplete` qualify
+progress while the complete leaf inventory is still unknown.
+
+Publication requires all pages and payloads; startup validation, conservative
+cleanup, partial backups, restore and DB-free rebuild follow the page references.
+Tests publish more than 512 payloads through the real coordinator/service, confirm
+that repackaging does not duplicate history observations, and cover pre-page
+permission denial, full quota reservation, mismatched commitments, all-or-nothing
+permission batches, shared grants/abort, migration, restart and recovery. Existing
+small manifests remain compatible. Large individual pass contexts, diagnostic
+records and result reference lists still need their own chunking; inventory paging
+alone does not solve those limits. Broader scale and abrupt-process tests for this
+new admission path remain open.
