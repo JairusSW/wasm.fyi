@@ -71,6 +71,18 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 	return s.reachableContext(context.Background(), includeStaging)
 }
 func (s *Store) reachableContext(ctx context.Context, includeStaging bool) (map[string]bool, error) {
+	return s.reachableScopes(ctx, includeStaging, nil)
+}
+
+// Backup holds publication ownership while snapshotting both sets. Capture the
+// required published/registered closure before adding optional staged objects.
+func (s *Store) backupReachability(ctx context.Context) (map[string]bool, map[string]bool, error) {
+	required := map[string]bool{}
+	marked, err := s.reachableScopes(ctx, true, required)
+	return marked, required, err
+}
+
+func (s *Store) reachableScopes(ctx context.Context, includeStaging bool, required map[string]bool) (map[string]bool, error) {
 	var nativeProofs nativeValidationPass
 	if e := ctx.Err(); e != nil {
 		return nil, e
@@ -701,8 +713,25 @@ func (s *Store) reachableContext(ctx context.Context, includeStaging bool) (map[
 	if e := s.markOverviews(ctx, marked); e != nil {
 		return nil, e
 	}
-	if e := s.markRegistrations(ctx, marked, includeStaging); e != nil {
-		return nil, e
+	if required == nil {
+		if e := s.markRegistrations(ctx, marked, includeStaging); e != nil {
+			return nil, e
+		}
+	} else {
+		if e := s.markRegistrations(ctx, marked, false); e != nil {
+			return nil, e
+		}
+		for id, value := range marked {
+			if e := ctx.Err(); e != nil {
+				return nil, e
+			}
+			required[id] = value
+		}
+		if includeStaging {
+			if e := s.markRegistrations(ctx, marked, true); e != nil {
+				return nil, e
+			}
+		}
 	}
 	if includeStaging {
 		prefix := key("import")

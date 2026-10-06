@@ -142,11 +142,7 @@ func (s *Store) Backup(ctx context.Context, destination string) (BackupManifest,
 	} else if !os.IsNotExist(e) {
 		return manifest, e
 	}
-	marked, e := s.reachableContext(ctx, true)
-	if e != nil {
-		return manifest, e
-	}
-	required, e := s.reachableContext(ctx, false)
+	marked, required, e := s.backupReachability(ctx)
 	if e != nil {
 		return manifest, e
 	}

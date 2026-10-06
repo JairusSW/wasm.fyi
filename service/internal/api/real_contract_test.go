@@ -277,32 +277,6 @@ func TestRealProducerServingParity(t *testing.T) {
 		}
 	}
 	t.Logf("preserved %d original analytical/archive resources through HTTP", len(files))
-	if len(files) > 0 {
-		backup := filepath.Join(t.TempDir(), "backup")
-		if _, e = s.Backup(context.Background(), backup); e != nil {
-			t.Fatal(e)
-		}
-		rebuilt := filepath.Join(t.TempDir(), "rebuilt")
-		if e = store.Rebuild(backup, rebuilt, "real-source-parity"); e != nil {
-			t.Fatal(e)
-		}
-		recovered, e := store.Open(rebuilt, "real-source-parity")
-		if e != nil {
-			t.Fatal(e)
-		}
-		defer recovered.Close()
-		for _, record := range files {
-			descriptor, reader, e := recovered.OpenReportFile(context.Background(), revision, record.ID)
-			if e != nil {
-				t.Fatal(e)
-			}
-			digest := sha256.New()
-			n, e := io.Copy(digest, reader)
-			if e != nil || n != descriptor.Bytes || hex.EncodeToString(digest.Sum(nil)) != descriptor.SHA256 {
-				t.Fatal("portable original/archive resource drift", descriptor.Name, e)
-			}
-		}
-	}
 	analysisFields := 0
 	for reportID, source := range analysisExpected {
 		record, e := s.Record(revision, "report", reportID)
@@ -528,6 +502,35 @@ func TestRealProducerServingParity(t *testing.T) {
 		}
 	}
 	t.Logf("verified-source summaries retained: timing=%d memory=%d native-size=%d; exact environment/track/method scopes=%d", matched, memoryMatched, codeMatched, len(scopes))
+	if len(files) > 0 {
+		t.Log("starting real backup/rebuild qualification")
+		backup := filepath.Join(t.TempDir(), "backup")
+		if _, e = s.Backup(context.Background(), backup); e != nil {
+			t.Fatal(e)
+		}
+		t.Log("real backup completed; starting DB-free rebuild")
+		rebuilt := filepath.Join(t.TempDir(), "rebuilt")
+		if e = store.Rebuild(backup, rebuilt, "real-source-parity"); e != nil {
+			t.Fatal(e)
+		}
+		t.Log("real rebuild completed; opening recovered store")
+		recovered, e := store.Open(rebuilt, "real-source-parity")
+		if e != nil {
+			t.Fatal(e)
+		}
+		defer recovered.Close()
+		for _, record := range files {
+			descriptor, reader, e := recovered.OpenReportFile(context.Background(), revision, record.ID)
+			if e != nil {
+				t.Fatal(e)
+			}
+			digest := sha256.New()
+			n, e := io.Copy(digest, reader)
+			if e != nil || n != descriptor.Bytes || hex.EncodeToString(digest.Sum(nil)) != descriptor.SHA256 {
+				t.Fatal("portable original/archive resource drift", descriptor.Name, e)
+			}
+		}
+	}
 }
 
 func verifyRealReportArchive(t *testing.T, body []byte, source string, file wire.ReportFile) {

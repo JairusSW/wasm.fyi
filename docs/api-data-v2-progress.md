@@ -1973,3 +1973,33 @@ attributed images and 256 selected functions, then verified the exact
 444,970,172-byte original sealed report archive containing 4,765 files, alongside
 nine original analytical/archive resources. Its remaining scientific/recovery
 assertions are still running; these sub-gates do not establish final success.
+
+## Backup closure: one published graph traversal
+
+A one-second live sample at roughly 36 minutes places the real Wasmtime gate
+in `Backup` → `copyRegular`, after its serving sub-gates. Backup previously
+computed retention and required-file closures with two independent complete
+reachability validations. The new path validates the published graph once,
+marks durable registered scopes, snapshots a separate required set, then adds
+optional pending plans/imports. The ordinary reachability paths are unchanged.
+This removes duplicate scientific/native graph validation while retaining
+missing/corrupt published-content checks, staged missing-content tolerance and
+publication ownership for the entire backup. File copying and per-file sync
+barriers are unchanged.
+
+Differential set tests compare the combined result against the existing two-pass
+calculation for published native diagnostics and incomplete paged imports/plan
+registration. They require identical sets, verify no map aliasing, and check
+cancellation. The registered-plan source case and selected backup/portable/GC/native-proof/
+process-crash race gates pass (61.657 seconds); vet passes. The running
+large process retains its original binary and deadline; it is not restarted for
+this change. No end-to-end performance or large-recovery completion claim is made.
+
+The large race process subsequently exited at its 45-minute deadline in
+`copyRegular` → `File.Sync` while assembling the backup. It did not reach the
+scientific assertions, which were placed after recovery. The test now performs
+those assertions before backup/rebuild, retains every recovery assertion, and
+logs the backup/rebuild/open transitions. It is rerun natively (without race
+instrumentation) against the same published store, with `GOMAXPROCS=2` and an
+explicit 90-minute large-fixture deadline. Selected race/crash gates remain
+separately qualified. Large native scientific/recovery parity remains pending.
