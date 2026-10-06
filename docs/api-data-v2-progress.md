@@ -279,3 +279,22 @@ Exact exporter identity belongs to the export receipt/manifest, rather than the
 canonical scientific report record. Re-exporting the same sealed source with a
 different executable must not cause an immutable report collision. Legacy roots
 without this optional identity remain readable; new producer exports include it.
+
+
+## Native producer export
+
+The producer now exports admitted original native bytes under their complete hash,
+with a 16 MiB ceiling matching the existing harness code-image contract. It reuses
+native export admission and validates module/image identity, runtime/workload/trial
+bindings and reported image length. Withheld records and engine-size-only cases do
+not acquire byte downloads. Artifact descriptors link separate metadata and bounded
+function lists, preserving attribution and the harness's interpretation. Disassembly
+remains unavailable until an offline derivative is exported.
+
+Producer tests cover a binary larger than the ordinary JSON ceiling, exact bytes,
+function attribution, descriptor limits, hash/module/runtime/size mismatches, failed
+export cleanup and withheld-content rejection. This is producer-only support: the
+service and coordinator still reject binary inventory entries. Binary content
+storage/serving, recovery closure and history identity must land together before
+that publication path is enabled. Adding downloadable bytes or changing evidence
+encoding must not turn an existing capture into a new independent observation.
