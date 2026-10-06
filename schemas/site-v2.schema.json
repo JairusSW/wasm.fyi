@@ -2298,7 +2298,8 @@
             "undeclared_object",
             "invalid_request",
             "query_timeout",
-            "payload_too_large"
+            "payload_too_large",
+            "progress_changed"
           ]
         }
       },
@@ -2806,6 +2807,80 @@
         "recordedAt"
       ],
       "additionalProperties": false
+    },
+    "AttemptProgressPage": {
+      "type": "object",
+      "properties": {
+        "progressRoot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Digest"
+            },
+            {
+              "const": ""
+            }
+          ]
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/$defs/AttemptProgress"
+          }
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "nextCursor": {
+          "type": "string"
+        },
+        "sort": {
+          "const": "machine-corpus-attempt"
+        }
+      },
+      "required": [
+        "progressRoot",
+        "items",
+        "total",
+        "complete",
+        "nextCursor",
+        "sort"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "complete": {
+                "const": false
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "nextCursor": {
+                "type": "string",
+                "minLength": 1
+              },
+              "progressRoot": {
+                "$ref": "#/$defs/Digest"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "nextCursor": {
+                "const": ""
+              }
+            }
+          }
+        }
+      ]
     }
   },
   "$ref": "#/$defs/CompletedJob"

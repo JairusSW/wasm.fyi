@@ -413,5 +413,19 @@ resume instead of delaying stop for network retries. Progress delivery uses the
 existing publisher deadlines/backoff, and all delivery promises are joined before
 coordinator completion. Unit and actual-HTTP tests cover replay, lost replies,
 rollback, interruption, overflow, duplicate terminal events and scope conflicts.
-These tests run no benchmarks. Attempt discovery and paginated session progress
-remain pending, along with broader live remote-worker operational qualification.
+These tests run no benchmarks. Bounded attempt discovery is now available. Broader live remote-worker
+operational qualification remains pending.
+
+Attempt discovery uses `GET /api/v1/collection/sessions/{id}/attempts` with optional
+`machine`, `corpus`, `status`, `limit` and `cursor`. The default page contains at
+most 50 records; the maximum is 100. Filtering and global machine/corpus/attempt
+sorting precede pagination. `total` counts the complete filtered scope, while
+`complete` means the last page of that scope, not collection completion.
+
+A signed cursor binds the progress root, session, normalized filters and limit.
+An update changes the live generation; continuing its earlier cursor returns
+409 `progress_changed`, requiring a fresh first page. Unknown pages do not
+imply missing measurements. These operational pages accept no dataset revision
+and do not hold permanent Pebble snapshots. Reads serialize with updates and
+cleanup and honor cancellation. Status filtering scans at most 10,000 records
+with a 32 MiB decoded scan budget; responses never contain evidence inventories.

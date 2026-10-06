@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -89,6 +90,44 @@ func TestRegistrationHTTPBeforeMeasurements(t *testing.T) {
 	encoded, _ = wire.Encode(u)
 	if w = request(t, h, "POST", "/admin/v1/progress", encoded, auth); w.Code != 409 {
 		t.Fatal(w.Code, w.Body.String())
+	}
+	u.Sequence = 1
+	u.Attempt = "second"
+	encoded, _ = wire.Encode(u)
+	if w = request(t, h, "POST", "/admin/v1/progress", encoded, auth); w.Code != 200 {
+		t.Fatal(w.Code, w.Body.String())
+	}
+	pagePath := path + "/attempts?limit=1"
+	w = request(t, h, "GET", pagePath, nil, nil)
+	if w.Code != 200 {
+		t.Fatal(w.Code, w.Body.String())
+	}
+	var page struct {
+		Next  string `json:"nextCursor"`
+		Total int    `json:"total"`
+	}
+	if e = json.Unmarshal(w.Body.Bytes(), &page); e != nil || page.Total != 2 || page.Next == "" {
+		t.Fatal(page, e)
+	}
+	if w = request(t, h, "GET", pagePath+"&cursor="+url.QueryEscape(page.Next), nil, nil); w.Code != 200 {
+		t.Fatal(w.Code, w.Body.String())
+	}
+	if w = request(t, h, "GET", pagePath+"&status=completed&cursor="+url.QueryEscape(page.Next), nil, nil); w.Code != 400 {
+		t.Fatal("cursor filters changed", w.Code, w.Body.String())
+	}
+	u.Sequence = 2
+	u.Status = "completed"
+	encoded, _ = wire.Encode(u)
+	if w = request(t, h, "POST", "/admin/v1/progress", encoded, auth); w.Code != 200 {
+		t.Fatal(w.Code, w.Body.String())
+	}
+	if w = request(t, h, "GET", pagePath+"&cursor="+url.QueryEscape(page.Next), nil, nil); w.Code != 409 {
+		t.Fatal("changed view continued", w.Code, w.Body.String())
+	}
+	for _, query := range []string{"?limit=101", "?revision=" + strings.Repeat("b", 64), "?status=published"} {
+		if w = request(t, h, "GET", path+"/attempts"+query, nil, nil); w.Code != 400 {
+			t.Fatal(query, w.Code, w.Body.String())
+		}
 	}
 	if w = request(t, h, "POST", "/admin/v1/plans/"+id+"/abort", nil, auth); w.Code != http.StatusConflict {
 		t.Fatal(w.Code, w.Body.String())

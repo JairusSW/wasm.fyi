@@ -3751,6 +3751,131 @@
           }
         }
       }
+    },
+    "/api/v1/collection/sessions/{id}/attempts": {
+      "get": {
+        "summary": "Discover attempts within one live progress generation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "machine",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "corpus",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Globally sorted and filtered bounded live attempt page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./site-v2.schema.json#/$defs/AttemptProgressPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query or cursor scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./site-v2.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown registered session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./site-v2.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Progress generation changed; restart pagination",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./site-v2.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Scan budget exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./site-v2.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Admission limit reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./site-v2.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Canceled request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./site-v2.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {

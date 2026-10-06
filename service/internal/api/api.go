@@ -170,6 +170,10 @@ func problem(w http.ResponseWriter, r *http.Request, e error) {
 		status = 503
 		message = store.ErrNeedsRestart.Error()
 		code = "restart_required"
+	} else if errors.Is(e, store.ErrProgressChanged) {
+		status = 409
+		message = store.ErrProgressChanged.Error()
+		code = "progress_changed"
 	} else if errors.Is(e, store.ErrConflict) {
 		status = 409
 		message = store.ErrConflict.Error()
@@ -301,6 +305,44 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 	}
 	if e != nil {
 		problem(w, r, e)
+		return
+	}
+	if len(headParts) == 4 && headParts[0] == "collection" && headParts[1] == "sessions" && headParts[3] == "attempts" {
+		n := 50
+		if params.Has("limit") {
+			n, e = strconv.Atoi(params.Get("limit"))
+			if e != nil || n < 1 || n > 100 {
+				problem(w, r, wire.Invalid("invalid progress page limit"))
+				return
+			}
+		}
+		scope := store.ProgressScope{Session: headParts[2], Machine: params.Get("machine"), Corpus: params.Get("corpus"), Status: params.Get("status")}
+		encoded, _ := wire.Encode([]any{"progress-page-v1", scope.Session, scope.Machine, scope.Corpus, scope.Status, n})
+		query := string(encoded)
+		root := ""
+		offset := 0
+		if token := params.Get("cursor"); token != "" {
+			c, e := a.parse(token)
+			if e != nil {
+				problem(w, r, e)
+				return
+			}
+			if c.Query != query {
+				problem(w, r, wire.Invalid("progress cursor scope differs"))
+				return
+			}
+			root, offset = c.Revision, c.Offset
+		}
+		page, e := a.Store.ProgressPage(r.Context(), scope, root, offset, n)
+		if e != nil {
+			problem(w, r, e)
+			return
+		}
+		next := ""
+		if page.Next < page.Total {
+			next = a.sign(cursor{Revision: page.Root, Query: query, Offset: page.Next})
+		}
+		respond(w, r, 200, map[string]any{"progressRoot": page.Root, "items": page.Items, "total": page.Total, "complete": page.Next == page.Total, "nextCursor": next, "sort": "machine-corpus-attempt"}, false)
 		return
 	}
 	if len(headParts) == 7 && headParts[0] == "collection" && headParts[1] == "sessions" && headParts[3] == "attempts" {

@@ -180,6 +180,17 @@ class Contracts(unittest.TestCase):
             with self.assertRaises(ValueError):
                 contracts.validate(bad, "AttemptProgress", "invalid progress")
 
+    def test_attempt_page_is_bounded_and_marks_continuation(self):
+        page = {"progressRoot": "a" * 64, "items": [], "total": 2,
+                "complete": False, "nextCursor": "signed", "sort": "machine-corpus-attempt"}
+        contracts.validate(page, "AttemptProgressPage", "partial progress page")
+        for key, value in [("sort", "arrival"), ("total", 10001), ("samples", []),
+                           ("nextCursor", ""), ("progressRoot", ""), ("complete", True)]:
+            bad = copy.deepcopy(page)
+            bad[key] = value
+            with self.assertRaises(ValueError):
+                contracts.validate(bad, "AttemptProgressPage", "invalid progress page")
+
     def test_session_error_contracts(self):
         contracts.validate({"error": "request limit"}, "APIError", "admission error")
         contracts.validate({"error": "invalid request", "code": "invalid_request"},
