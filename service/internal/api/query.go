@@ -60,7 +60,7 @@ func routeQuery(path string, values url.Values) error {
 		}
 		return allowedQuery(values)
 	}
-	if path == "aggregates" {
+	if path == "aggregates" || path == "overview" {
 		return allowedQuery(values, "scope")
 	}
 	if len(parts) == 2 && parts[0] == "cohorts" {

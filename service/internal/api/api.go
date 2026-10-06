@@ -283,10 +283,10 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if path == "manifest" {
-		respond(w, r, 200, map[string]any{"schema": 2, "revision": a.Store.Current(), "selectionAliases": map[string]string{"s1": "current", "s2": "previous"}, "limits": map[string]int{"defaultResults": 100, "maxResults": 1000, "decodedResponseBytes": wire.ResponseBytes, "decodedChunkBytes": wire.ChunkBytes, "scanKeys": store.ScanLimit, "decodedEvidenceResourceBytes": wire.ResourceBytes, "maxEvidenceFragments": wire.ResourceFragments, "cohortScopeBytes": 4096, "cohortComputations": 2, "cohortCells": 100000}, "endpoints": []string{"results", "reports", "metrics", "configurations", "environments", "workloads", "artifacts", "history", "aggregates", "cohorts", "sessions"}}, false)
+		respond(w, r, 200, map[string]any{"schema": 2, "revision": a.Store.Current(), "selectionAliases": map[string]string{"s1": "current", "s2": "previous"}, "limits": map[string]int{"defaultResults": 100, "maxResults": 1000, "decodedResponseBytes": wire.ResponseBytes, "decodedChunkBytes": wire.ChunkBytes, "scanKeys": store.ScanLimit, "decodedEvidenceResourceBytes": wire.ResourceBytes, "maxEvidenceFragments": wire.ResourceFragments, "cohortScopeBytes": 4096, "cohortComputations": 2, "cohortCells": 100000}, "endpoints": []string{"overview", "results", "reports", "metrics", "configurations", "environments", "workloads", "artifacts", "history", "aggregates", "cohorts", "sessions"}}, false)
 		return
 	}
-	if path == "aggregates" || strings.HasPrefix(path, "cohorts/") {
+	if path == "overview" || path == "aggregates" || strings.HasPrefix(path, "cohorts/") {
 		a.cohort(w, r, path, params)
 		return
 	}

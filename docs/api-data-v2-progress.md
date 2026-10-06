@@ -710,3 +710,28 @@ rebuild its revision and cursor identity, reject unsafe socket paths, exercise
 busy admission and a blocked request during shutdown, and run the actual serve
 lifecycle. Larger backup inventories and concurrent publication/retention scale
 remain separate acceptance gates.
+
+### Complete-scope overview cards
+
+`GET /api/v1/overview?scope=<URL-encoded CohortScope JSON>` now projects the
+existing whole-cohort computation into small cards. Values, ratios, eligibility,
+coverage and counts use the same selected population as `/aggregates`; no result
+page or trial evidence contributes a substitute headline. Exact metric units and
+versions accompany method references, requested/participating/omitted lanes and a
+signed cohort link for paginated membership. The existing method-aware bounded
+cache and two calculation permits are shared across these surfaces.
+
+Interpretation text follows recorded policies: shared geometric workload/corpus
+weights, available current-RSS boundary populations or matched RSS populations.
+It reports source-report counts and unavailable aggregate uncertainty. Byte
+integrity, producer-asserted source verification and unchecked operator
+qualification appear separately as checks for the selected publication. A report
+reference does not claim independently verified source derivation.
+
+Tests use two report contributions and multiple workloads, check exact complete
+point estimates and counts, forbid evidence/recipe embedding, enforce a typical
+50 KiB decoded card-response budget, reconstruct a frozen scope after cache loss
+and later publication, resolve unpinned current once, and validate linked member
+pagination. Explicit scopes are required; popular preset selection and durable
+publication-time overview precomputation remain open. OpenAPI and JSON Schema
+record the new endpoint and response contract.

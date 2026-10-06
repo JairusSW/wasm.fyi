@@ -106,7 +106,7 @@ func (a *API) cohort(w http.ResponseWriter, r *http.Request, path string, params
 	var token string
 	var e error
 	immutable := true
-	if path == "aggregates" {
+	if path == "aggregates" || path == "overview" {
 		raw := params.Get("scope")
 		if raw == "" || len(raw) > 4096 {
 			problem(w, r, wire.Invalid("bounded cohort scope required"))
@@ -152,6 +152,10 @@ func (a *API) cohort(w http.ResponseWriter, r *http.Request, path string, params
 	}
 	if e = r.Context().Err(); e != nil {
 		problem(w, r, e)
+		return
+	}
+	if path == "overview" {
+		a.overview(w, r, c, token, immutable)
 		return
 	}
 	if path == "aggregates" {

@@ -276,6 +276,11 @@ func TestRealProducerServingParity(t *testing.T) {
 		if e = json.Unmarshal(w.Body.Bytes(), &response); e != nil || response.Digest != c.Digest || len(response.Comparison.Populations) != 1 || response.Comparison.Populations[0].Count != p.Count || response.Comparison.Populations[0].Value == nil || *response.Comparison.Populations[0].Value != *p.Value || response.Comparison.Populations[0].Ratio == nil || *response.Comparison.Populations[0].Ratio != 1 {
 			t.Fatal("HTTP aggregate/source parity drift", e)
 		}
+		w = request(t, h, "GET", "/api/v1/overview?scope="+url.QueryEscape(string(b)), nil, nil)
+		var overview overviewResponse
+		if w.Code != 200 || w.Body.Len() > 50*1024 || json.Unmarshal(w.Body.Bytes(), &overview) != nil || overview.Digest != c.Digest || len(overview.Cards) != 1 || overview.Cards[0].Count != p.Count || overview.Cards[0].Value == nil || *overview.Cards[0].Value != *p.Value || overview.Cards[0].Ratio == nil || *overview.Cards[0].Ratio != 1 {
+			t.Fatal("HTTP overview/source parity drift", w.Code, w.Body.String())
+		}
 		w = request(t, h, "GET", "/api/v1/cohorts/"+response.Cohort+"?limit=1", nil, nil)
 		if w.Code != 200 {
 			t.Fatal("real membership failed", w.Code, w.Body.String())

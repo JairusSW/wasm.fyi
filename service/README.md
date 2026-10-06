@@ -38,6 +38,16 @@ references and source values. Aggregates do not load trial evidence or invent
 cross-report confidence intervals. Scope JSON is limited to 4 KiB; calculations
 are bounded and admitted separately from ordinary API requests.
 
+`GET /api/v1/overview?scope=<URL-encoded JSON>` uses the same explicit cohort
+scope and returns small cards, unit/definition references, population counts and
+policy explanations. It computes the complete selected population, shares the
+bounded cohort cache and calculation admission, and links to paginated membership.
+Each response resolves one revision; explicitly pinned scopes are immutable.
+Trial evidence, recipes and report inventories are absent. Publication integrity,
+producer source assertions and operator qualification remain separate fields.
+No baseline or compatible method is selected implicitly. Popular overview presets
+and publication-time precomputation remain pending.
+
 `GET /api/v1/sessions/{id}?revision=...` reports the session's immutable plan/pin
 bindings and counts of jobs published in that revision. `/sessions/{id}/jobs`
 returns bounded pages of completed collection jobs, with small report and parent

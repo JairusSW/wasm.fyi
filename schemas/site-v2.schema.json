@@ -977,6 +977,247 @@
         "completenessReason"
       ],
       "additionalProperties": false
+    },
+    "OverviewCard": {
+      "type": "object",
+      "properties": {
+        "lane": {
+          "$ref": "#/$defs/Digest"
+        },
+        "status": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "ratio": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "ratioStatus": {
+          "type": "string"
+        },
+        "ratioReason": {
+          "type": "string"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "workloads": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sourceReports": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "actualConfigurations": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "lane",
+        "status",
+        "reason",
+        "value",
+        "ratio",
+        "ratioStatus",
+        "ratioReason",
+        "count",
+        "workloads",
+        "sourceReports",
+        "actualConfigurations"
+      ],
+      "additionalProperties": false
+    },
+    "OverviewDefinition": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "name": {
+          "type": "string"
+        },
+        "unit": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "unit",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "OverviewInterpretation": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": "wasmfyi-cohort-v1"
+        },
+        "population": {
+          "type": "string"
+        },
+        "weighting": {
+          "type": "string"
+        },
+        "reports": {
+          "type": "string"
+        },
+        "uncertainty": {
+          "const": "unavailable"
+        },
+        "uncertaintyReason": {
+          "type": "string"
+        },
+        "sourceReports": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "methods": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CohortSelector"
+          },
+          "maxItems": 4
+        }
+      },
+      "required": [
+        "version",
+        "population",
+        "weighting",
+        "reports",
+        "uncertainty",
+        "uncertaintyReason",
+        "sourceReports",
+        "methods"
+      ],
+      "additionalProperties": false
+    },
+    "Overview": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "scope": {
+          "$ref": "#/$defs/CohortScope"
+        },
+        "cohort": {
+          "type": "string",
+          "maxLength": 8192
+        },
+        "digest": {
+          "$ref": "#/$defs/Digest"
+        },
+        "categoryPolicy": {
+          "type": "string"
+        },
+        "eligibilityPolicy": {
+          "type": "string"
+        },
+        "excluded": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "definitions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/OverviewDefinition"
+          },
+          "maxItems": 4
+        },
+        "requested": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Digest"
+          },
+          "maxItems": 32
+        },
+        "participants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Digest"
+          },
+          "maxItems": 32
+        },
+        "omitted": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Digest"
+          },
+          "maxItems": 32
+        },
+        "cards": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/OverviewCard"
+          },
+          "maxItems": 32
+        },
+        "interpretation": {
+          "$ref": "#/$defs/OverviewInterpretation"
+        },
+        "publicationChecks": {
+          "$ref": "#/$defs/OverviewPublicationChecks"
+        }
+      },
+      "required": [
+        "revision",
+        "scope",
+        "cohort",
+        "digest",
+        "categoryPolicy",
+        "eligibilityPolicy",
+        "excluded",
+        "definitions",
+        "requested",
+        "participants",
+        "omitted",
+        "cards",
+        "interpretation",
+        "publicationChecks"
+      ],
+      "additionalProperties": false
+    },
+    "OverviewPublicationChecks": {
+      "type": "object",
+      "properties": {
+        "byteIntegrity": {
+          "type": "string"
+        },
+        "sourceVerification": {
+          "type": "string"
+        },
+        "operatorQualification": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "byteIntegrity",
+        "sourceVerification",
+        "operatorQualification"
+      ],
+      "additionalProperties": false
     }
   },
   "$ref": "#/$defs/CompletedJob"
