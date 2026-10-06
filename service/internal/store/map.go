@@ -27,7 +27,7 @@ func (s *Store) put(v any) (string, error) {
 	return id, s.installBytes(id, b)
 }
 func (s *Store) load(id string, v any) error {
-	b, e := s.content(id)
+	b, e := s.typedContent(id, v)
 	if e != nil {
 		return e
 	}

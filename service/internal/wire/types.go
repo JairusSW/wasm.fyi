@@ -17,6 +17,7 @@ import (
 const ChunkBytes = 256 * 1024
 const BlobBytes = 16 * 1024 * 1024
 const ResponseBytes = 1024 * 1024
+const JobBytes = ResponseBytes
 const MaxObjects = 512
 const MaxInventoryPages = 512
 

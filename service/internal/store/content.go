@@ -149,6 +149,13 @@ func (s *Store) installRepresentation(id string, b []byte, ceiling int) error {
 	}
 	return syncDir(directory)
 }
+func (s *Store) jobContent(id string) ([]byte, error) { return s.representation(id, wire.JobBytes) }
+func (s *Store) typedContent(id string, v any) ([]byte, error) {
+	if _, ok := v.(*wire.Job); ok {
+		return s.jobContent(id)
+	}
+	return s.content(id)
+}
 func (s *Store) content(id string) ([]byte, error) { return s.representation(id, wire.ChunkBytes) }
 func (s *Store) representation(id string, ceiling int) ([]byte, error) {
 	if !wire.IsHash(id) {

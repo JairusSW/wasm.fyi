@@ -254,7 +254,7 @@ func (s *Store) Submit(j wire.Job) (string, error) {
 	if e != nil {
 		return "", e
 	}
-	if len(b) > wire.ChunkBytes {
+	if len(b) > wire.JobBytes {
 		return "", wire.Invalid("job manifest exceeds ceiling")
 	}
 	id := wire.Hash(b)
@@ -898,7 +898,7 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 	}
 	// Portable job + revision roots are durable before the Pebble pointer.
 	jb, _ := wire.Encode(j)
-	if e = s.installBytes(id, jb); e != nil {
+	if e = s.installRepresentation(id, jb, wire.JobBytes); e != nil {
 		return "", e
 	}
 	if e = s.indexPublishedJobs(ctx, &rev, j); e != nil {

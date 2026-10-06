@@ -90,7 +90,7 @@ func (s *Store) indexPublishedJobs(ctx context.Context, rev *Revision, job wire.
 			if e != nil {
 				return e
 			}
-			b, e := s.content(parent.Job)
+			b, e := s.jobContent(parent.Job)
 			if e != nil {
 				return e
 			}
@@ -195,7 +195,7 @@ func (s *Store) sessionReferences(ctx context.Context, revision, session string)
 			if e != nil {
 				return rev, nil, e
 			}
-			b, e := s.content(r.Job)
+			b, e := s.jobContent(r.Job)
 			if e != nil {
 				return rev, nil, e
 			}

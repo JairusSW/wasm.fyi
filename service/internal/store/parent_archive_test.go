@@ -17,28 +17,7 @@ func TestParentArchiveAdmissionReuseAndRecovery(t *testing.T) {
 	dir := t.TempDir()
 	s := openTest(t, filepath.Join(dir, "live"))
 	defer s.Close()
-	job, objects, err := testutil.Fixture("parent-ingestion", time.Now().UTC())
-	if err != nil {
-		t.Fatal(err)
-	}
-	parts := [][]byte{bytes.Repeat([]byte{7}, wire.ReportFileChunkBytes+23), []byte("second original part")}
-	full := append(append([]byte{}, parts[0]...), parts[1]...)
-	metadata, _ := wire.Encode(map[string]any{"schema": 1, "id": job.Session, "planSha256": job.Plan, "scope": "source archive; no execution"})
-	indexParts := []any{}
-	for i, b := range parts {
-		indexParts = append(indexParts, map[string]any{"path": fmt.Sprintf("bundle.tar.gz.part-%03d", i), "bytes": len(b), "sha256": wire.Hash(b)})
-	}
-	index, _ := wire.Encode(map[string]any{"schema": 1, "id": job.Session, "machine": job.Machine, "metadata": "metadata.json", "metadataSha256": wire.Hash(metadata), "parts": indexParts, "bytes": len(full), "sha256": wire.Hash(full)})
-	parent := &wire.ParentArchive{Schema: 1, Index: wire.Object{SHA256: wire.Hash(index), Bytes: len(index), Kind: "evidence"}, Metadata: wire.Object{SHA256: wire.Hash(metadata), Bytes: len(metadata), Kind: "evidence"}, SHA256: wire.Hash(full), Bytes: int64(len(full)), Chunks: []wire.Object{}}
-	objects[wire.Hash(index)] = index
-	objects[wire.Hash(metadata)] = metadata
-	for start := 0; start < len(full); start += wire.ReportFileChunkBytes {
-		b := full[start:min(start+wire.ReportFileChunkBytes, len(full))]
-		objects[wire.Hash(b)] = b
-		parent.Chunks = append(parent.Chunks, wire.Object{SHA256: wire.Hash(b), Bytes: len(b), Kind: "binary"})
-	}
-	job.ParentBundleSHA256 = parent.Index.SHA256
-	job.ParentArchive = parent
+	job, objects := parentArchiveFixture(t, "parent-ingestion", time.Now().UTC())
 	id, err := s.Submit(job)
 	if err != nil {
 		t.Fatal(err)
@@ -174,4 +153,32 @@ func TestRealParentArchiveIngestion(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Logf("imported %d original parent bytes in %d chunks", parent.Bytes, len(parent.Chunks))
+}
+
+func parentArchiveFixture(t *testing.T, seed string, date time.Time) (wire.Job, map[string][]byte) {
+	t.Helper()
+	job, objects, err := testutil.Fixture(seed, date)
+	if err != nil {
+		t.Fatal(err)
+	}
+	job.Session = "parent-archive-session"
+	parts := [][]byte{bytes.Repeat([]byte{7}, wire.ReportFileChunkBytes+23), []byte("second original part")}
+	full := append(append([]byte{}, parts[0]...), parts[1]...)
+	metadata, _ := wire.Encode(map[string]any{"schema": 1, "id": job.Session, "planSha256": job.Plan, "scope": "source archive; no execution"})
+	indexParts := []any{}
+	for i, b := range parts {
+		indexParts = append(indexParts, map[string]any{"path": fmt.Sprintf("bundle.tar.gz.part-%03d", i), "bytes": len(b), "sha256": wire.Hash(b)})
+	}
+	index, _ := wire.Encode(map[string]any{"schema": 1, "id": job.Session, "machine": job.Machine, "metadata": "metadata.json", "metadataSha256": wire.Hash(metadata), "parts": indexParts, "bytes": len(full), "sha256": wire.Hash(full)})
+	parent := &wire.ParentArchive{Schema: 1, Index: wire.Object{SHA256: wire.Hash(index), Bytes: len(index), Kind: "evidence"}, Metadata: wire.Object{SHA256: wire.Hash(metadata), Bytes: len(metadata), Kind: "evidence"}, SHA256: wire.Hash(full), Bytes: int64(len(full)), Chunks: []wire.Object{}}
+	objects[wire.Hash(index)] = index
+	objects[wire.Hash(metadata)] = metadata
+	for start := 0; start < len(full); start += wire.ReportFileChunkBytes {
+		b := full[start:min(start+wire.ReportFileChunkBytes, len(full))]
+		objects[wire.Hash(b)] = b
+		parent.Chunks = append(parent.Chunks, wire.Object{SHA256: wire.Hash(b), Bytes: len(b), Kind: "binary"})
+	}
+	job.ParentBundleSHA256 = parent.Index.SHA256
+	job.ParentArchive = parent
+	return job, objects
 }

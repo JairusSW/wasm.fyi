@@ -1161,3 +1161,28 @@ Schemas/OpenAPI/generated types cover archive descriptors and chunk pages.
 Full race tests and vet pass; archive-specific schema capture and Linux cross-build
 are checked locally. Larger archive/slow-client/crash and broader real collection
 association gates remain open.
+
+
+### Archive process exits and bounded large completed jobs
+
+A new actual-subprocess archive gate exits at files, indexes, before-commit,
+after-commit and after-portable checkpoints. Reopening admits archive reads only
+after the durable commit. Before-commit cases then remove one original chunk;
+commit remains hidden, resume requests that missing content, and restoring it
+allows idempotent publication with exactly six retained measurement summaries.
+Every recovered case streams a complete verified archive, backs up and rebuilds
+without its DB, and preserves the original accepted-job receipt.
+
+Completed-job manifests now have a separate 1 MiB decoded/durable limit, matching
+the admin JSON request ceiling. The previous 256 KiB bound rejected legitimate
+multi-export jobs. Only typed job reads/writes use the larger limit; evidence,
+scientific records and radix/index objects retain their existing 256 KiB bound.
+Session compatibility, published archive lookup, portable marking and DB-free
+reconstruction use the same job-specific reader. Admission rejects oversize jobs
+before quota changes.
+
+An eight-export, 442,119-byte synthetic completed job published and survived
+restart, backup and DB-free rebuild with all 24 summaries preserved. This proves
+the bounded job container, not larger individual canonical measurement records.
+The archive gate uses multi-chunk synthetic original bytes; large real archive
+crash/slow-client/retention gates and production deployment remain open.

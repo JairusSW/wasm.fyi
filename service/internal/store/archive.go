@@ -38,7 +38,7 @@ func (s *Store) PublishedArchive(ctx context.Context, revision, id string) (wire
 		return job, job.Validate()
 	}
 	// Compatibility for immutable revisions published before the direct lookup.
-	raw, err := s.content(id)
+	raw, err := s.jobContent(id)
 	if err != nil {
 		return wire.Job{}, ErrNotFound
 	}

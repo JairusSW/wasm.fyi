@@ -62,7 +62,7 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 	marked := map[string]bool{}
 	visited := map[string]bool{}
 	read := func(id string, v any) error {
-		b, e := s.content(id)
+		b, e := s.typedContent(id, v)
 		if e != nil {
 			return e
 		}
