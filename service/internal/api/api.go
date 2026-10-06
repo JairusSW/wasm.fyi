@@ -417,7 +417,7 @@ func (a *API) serveRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if path == "manifest" {
-		respond(w, r, 200, map[string]any{"schema": 2, "revision": a.Store.Current(), "selectionAliases": map[string]string{"s1": "current", "s2": "previous"}, "limits": map[string]int{"defaultResults": 100, "maxResults": 1000, "jobManifestBytes": wire.JobBytes, "sessionPlanBytes": wire.SessionPlanBytes, "registeredSessions": store.RegistrationLimit, "decodedResponseBytes": wire.ResponseBytes, "decodedChunkBytes": wire.ChunkBytes, "scanKeys": store.ScanLimit, "decodedEvidenceResourceBytes": wire.ResourceBytes, "maxEvidenceFragments": wire.ResourceFragments, "nativeFunctionShards": 4096, "nativeFunctions": 1000000, "disassemblyLineChunks": 4096, "disassemblyChunkLines": 256, "disassemblyLineBytes": 16384, "cohortScopeBytes": 4096, "cohortComputations": 2, "resultComputations": 2, "resultCacheBytes": resultCacheBytes, "resultCacheEntries": resultCacheEntries, "cohortCells": 100000, "reportFileDownloads": 2, "reportFileDownloadSeconds": 300, "reportFileChunkBytes": wire.ReportFileChunkBytes, "reportFileBytes": wire.ReportFileBytes}, "endpoints": []string{"overview", "results", "reports", "features", "conformance", "conformance-contexts", "conformance-coverage", "metrics", "methods", "configurations", "environments", "workloads", "artifacts", "history", "aggregates", "cohorts", "sessions", "collection/sessions", "files", "archives"}}, false)
+		respond(w, r, 200, map[string]any{"schema": 2, "revision": a.Store.Current(), "selectionAliases": map[string]string{"s1": "current", "s2": "previous"}, "limits": map[string]int{"defaultResults": 100, "maxResults": 1000, "jobManifestBytes": wire.JobBytes, "sessionPlanBytes": wire.SessionPlanBytes, "registeredSessions": store.RegistrationLimit, "decodedResponseBytes": wire.ResponseBytes, "decodedChunkBytes": wire.ChunkBytes, "scanKeys": store.ScanLimit, "decodedEvidenceResourceBytes": wire.ResourceBytes, "maxEvidenceFragments": wire.ResourceFragments, "nativeFunctionShards": 4096, "nativeFunctions": 1000000, "disassemblyLineChunks": 4096, "disassemblyChunkLines": 256, "disassemblyLineBytes": 16384, "cohortScopeBytes": 4096, "cohortComputations": 2, "resultComputations": 2, "resultCacheBytes": resultCacheBytes, "resultCacheEntries": resultCacheEntries, "cohortCells": 100000, "reportFileDownloads": 2, "reportFileDownloadSeconds": 300, "reportFileChunkBytes": wire.ReportFileChunkBytes, "reportFileBytes": wire.ReportFileBytes}, "endpoints": []string{"overview", "results", "reports", "features", "conformance", "conformance-contexts", "conformance-coverage", "metrics", "methods", "configurations", "environments", "workloads", "artifacts", "history", "history/coverage", "aggregates", "cohorts", "sessions", "collection/sessions", "files", "archives"}}, false)
 		return
 	}
 	if path == "overview" || path == "aggregates" || strings.HasPrefix(path, "cohorts/") {
@@ -582,6 +582,38 @@ func (a *API) serveRequest(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		a.revisions(w, r, revision, n, c)
+		return
+	}
+	if path == "history/coverage" {
+		scope := params.Get("scope")
+		if params.Has("scope") && !wire.IsHash(scope) {
+			problem(w, r, wire.Invalid("invalid history coverage scope"))
+			return
+		}
+		query := "history-coverage:" + strconv.Itoa(n) + ":scope=" + scope
+		if c.Revision != "" && (c.Revision != revision || c.Query != query) {
+			problem(w, r, wire.Invalid("cursor scope differs"))
+			return
+		}
+		p, err := a.Store.HistoryCoveragePage(r.Context(), revision, scope, c.Offset, n)
+		if err != nil {
+			problem(w, r, err)
+			return
+		}
+		next := ""
+		if p.Next < p.Total {
+			next = a.sign(cursor{revision, query, p.Next})
+		}
+		respond(w, r, 200, map[string]any{"revision": revision, "scope": scope, "items": p.Items, "nextCursor": next, "complete": p.Next == p.Total, "total": p.Total}, immutable)
+		return
+	}
+	if len(parts) == 3 && parts[0] == "history" && parts[1] == "coverage" {
+		record, err := a.Store.Record(revision, "history-coverage", parts[2])
+		if err != nil {
+			problem(w, r, err)
+			return
+		}
+		respond(w, r, 200, map[string]any{"revision": revision, "record": record}, immutable)
 		return
 	}
 	if len(parts) >= 2 && parts[0] == "conformance" && parts[1] == "sources" {

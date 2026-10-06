@@ -517,6 +517,31 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 	evidence := map[string]bool{}
 	binaries := map[string]wire.Object{}
 	reportObjects := map[string]wire.Manifest{}
+	if j.Kind == "history-coverage" {
+		for _, data := range j.HistoryCoverage {
+			value, err := wire.HistoryCoverageData(data)
+			if err != nil {
+				return "", err
+			}
+			if value.PublishedRevision != nil {
+				if _, err = s.Revision(*value.PublishedRevision); err != nil {
+					return "", wire.Invalid("unknown history evidence publication")
+				}
+			}
+			normalized, err := wire.Encode(data)
+			if err != nil {
+				return "", err
+			}
+			record := wire.Record{Kind: "history-coverage", ID: wire.Hash(normalized), Data: normalized}
+			digest, err := s.put(record)
+			if err != nil {
+				return "", err
+			}
+			key := record.Kind + ":" + record.ID
+			records[key] = record
+			digests[key] = digest
+		}
+	}
 	if j.ParentArchive != nil {
 		if err := j.ParentArchive.Verify(j, func(o wire.Object) ([]byte, error) {
 			if err := ctx.Err(); err != nil {
@@ -557,6 +582,9 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 			}
 			if !wire.IsHash(r.ID) || len(r.Data) == 0 {
 				return "", wire.Invalid("invalid record")
+			}
+			if r.Kind == "history-coverage" {
+				return "", wire.Invalid("coverage records require metadata publication")
 			}
 			if j.Kind == "conformance" {
 				if !wire.IsConformanceKind(r.Kind) {
@@ -834,6 +862,9 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 	}
 	parent := s.Current()
 	rev := Revision{Parent: parent, Job: id, Publisher: s.publisher, Created: time.Now().UTC(), Integrity: "sha256-verified", SourceVerification: "producer-asserted", Qualification: "not-checked"}
+	if j.Kind == "history-coverage" {
+		rev.SourceVerification = "publisher-asserted-metadata"
+	}
 	if parent != "" {
 		old, e := s.Revision(parent)
 		if e != nil {

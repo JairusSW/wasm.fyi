@@ -160,7 +160,7 @@ func (s *Store) validateSelectionRoot(r Revision) error {
 	if err := s.load(r.Job, &job); err != nil {
 		return err
 	}
-	if err := job.Validate(); err != nil || job.Kind != "conformance" {
+	if err := job.Validate(); err != nil || job.Kind != "conformance" && job.Kind != "history-coverage" {
 		return fmt.Errorf("invalid empty revision selection")
 	}
 	if r.Parent != "" {

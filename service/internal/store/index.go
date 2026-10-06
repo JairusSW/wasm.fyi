@@ -149,6 +149,20 @@ func (s *Store) addRecordIndexes(rev *Revision, r wire.Record, digest string) er
 		rev.Indexes, err = s.indexAdd(rev.Indexes, indexKey("source-"+r.Kind, source, ""), r.ID, digest)
 		return err
 	}
+	if r.Kind == "history-coverage" {
+		value, err := wire.HistoryCoverageData(r.Data)
+		if err != nil {
+			return err
+		}
+		for _, scope := range []string{"", value.Scope()} {
+			rev.Indexes, err = s.indexAdd(rev.Indexes, indexKey("history-coverage", scope, ""), value.CoverageID, digest)
+			if err != nil {
+				return err
+			}
+		}
+		rev.Indexes, err = s.indexAdd(rev.Indexes, indexKey("history-coverage-origins", "", ""), r.ID, rev.Job)
+		return err
+	}
 	if r.Kind == "feature-probe" {
 		probe, err := wire.FeatureProbeData(r.Data)
 		if err != nil {

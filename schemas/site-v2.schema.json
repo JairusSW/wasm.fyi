@@ -194,6 +194,9 @@
         },
         {
           "$ref": "#/$defs/ConformanceCompletedJob"
+        },
+        {
+          "$ref": "#/$defs/HistoryCoverageJob"
         }
       ]
     },
@@ -327,7 +330,8 @@
             "conformance",
             "conformance-source",
             "conformance-context",
-            "conformance-coverage"
+            "conformance-coverage",
+            "history-coverage"
           ]
         },
         "id": {
@@ -436,6 +440,25 @@
             "properties": {
               "data": {
                 "$ref": "#/$defs/ConformanceCoverageData"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "history-coverage"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "data": {
+                "$ref": "#/$defs/HistoryCoverageData"
               }
             }
           }
@@ -986,6 +1009,9 @@
         },
         {
           "$ref": "#/$defs/ConformancePublishedJob"
+        },
+        {
+          "$ref": "#/$defs/HistoryCoveragePublishedJob"
         }
       ]
     },
@@ -7111,6 +7137,572 @@
       "required": [
         "revision",
         "record"
+      ],
+      "additionalProperties": false
+    },
+    "CoverageBuild": {
+      "type": "object",
+      "properties": {
+        "engine": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "role": {
+          "enum": [
+            "source",
+            "release"
+          ]
+        },
+        "repository": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "version": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}([a-f0-9]{24})?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sourceDate": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "releaseDate": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "datePrecision": {
+          "anyOf": [
+            {
+              "enum": [
+                "day",
+                "second"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uri",
+              "pattern": "^https://",
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "engine",
+        "role",
+        "repository",
+        "version",
+        "revision",
+        "sourceDate",
+        "releaseDate",
+        "datePrecision",
+        "url"
+      ],
+      "additionalProperties": false
+    },
+    "HistoryCoverageData": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 1
+        },
+        "coverageId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "policy": {
+          "const": "recorded-history-coverage-v1"
+        },
+        "host": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 128
+        },
+        "corpusSha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "recipeSha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "jobId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Digest"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "configuration": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "targetDates": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "date"
+          },
+          "maxItems": 256,
+          "uniqueItems": true
+        },
+        "targetRelease": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "targetType": {
+          "enum": [
+            "weekly",
+            "main",
+            "release"
+          ]
+        },
+        "desiredBuild": {
+          "$ref": "#/$defs/CoverageBuild"
+        },
+        "configured": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "enum": [
+            "collected",
+            "uncollected",
+            "pending-binding",
+            "unavailable",
+            "runner-error",
+            "building",
+            "running"
+          ]
+        },
+        "recordedStatus": {
+          "anyOf": [
+            {
+              "enum": [
+                "collected",
+                "not-collected",
+                "pending-binding",
+                "unavailable",
+                "runner-error",
+                "building",
+                "running"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "observedSourceRevision": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}([a-f0-9]{24})?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sourceReportSha256": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Digest"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "collectedAt": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "publishedRevision": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Digest"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "interpretationSource": {
+          "const": "trusted-publisher-assertion"
+        }
+      },
+      "required": [
+        "schema",
+        "coverageId",
+        "policy",
+        "host",
+        "corpusSha256",
+        "recipeSha256",
+        "jobId",
+        "configuration",
+        "targetDates",
+        "targetType",
+        "desiredBuild",
+        "configured",
+        "status",
+        "recordedStatus",
+        "reason",
+        "observedSourceRevision",
+        "sourceReportSha256",
+        "collectedAt",
+        "publishedRevision",
+        "interpretationSource"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "collected"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "sourceReportSha256": {
+                "$ref": "#/$defs/Digest"
+              },
+              "collectedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "jobId": {
+                "$ref": "#/$defs/Digest"
+              },
+              "configuration": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "sourceReportSha256": {
+                "type": "null"
+              },
+              "collectedAt": {
+                "type": "null"
+              },
+              "observedSourceRevision": {
+                "type": "null"
+              },
+              "publishedRevision": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "HistoryCoverageRecord": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "history-coverage"
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "data": {
+          "$ref": "#/$defs/HistoryCoverageData"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "HistoryCoveragePage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/HistoryCoverageRecord"
+          },
+          "maxItems": 1000
+        },
+        "nextCursor": {
+          "type": "string"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "scope": {
+          "type": "string",
+          "pattern": "^([a-f0-9]{64})?$"
+        }
+      },
+      "required": [
+        "revision",
+        "items",
+        "nextCursor",
+        "complete",
+        "total",
+        "scope"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "complete": {
+                "const": true
+              }
+            },
+            "required": [
+              "complete"
+            ]
+          },
+          "then": {
+            "properties": {
+              "nextCursor": {
+                "const": ""
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "nextCursor": {
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "HistoryCoverageDetail": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "record": {
+          "$ref": "#/$defs/HistoryCoverageRecord"
+        }
+      },
+      "required": [
+        "revision",
+        "record"
+      ],
+      "additionalProperties": false
+    },
+    "HistoryCoverageJob": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 3
+        },
+        "session": {
+          "type": "string"
+        },
+        "machine": {
+          "type": "string"
+        },
+        "corpus": {
+          "type": "string"
+        },
+        "attempt": {
+          "type": "string"
+        },
+        "plan": {
+          "$ref": "#/$defs/Digest"
+        },
+        "status": {
+          "const": "completed"
+        },
+        "exports": {
+          "const": []
+        },
+        "kind": {
+          "const": "history-coverage"
+        },
+        "historyCoverage": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/$defs/HistoryCoverageData"
+          }
+        }
+      },
+      "required": [
+        "schema",
+        "session",
+        "machine",
+        "corpus",
+        "attempt",
+        "plan",
+        "status",
+        "exports",
+        "kind",
+        "historyCoverage"
+      ],
+      "additionalProperties": false
+    },
+    "HistoryCoveragePublishedJob": {
+      "type": "object",
+      "properties": {
+        "session": {
+          "type": "string"
+        },
+        "machine": {
+          "type": "string"
+        },
+        "corpus": {
+          "type": "string"
+        },
+        "attempt": {
+          "type": "string"
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "plan": {
+          "$ref": "#/$defs/Digest"
+        },
+        "collectionStatus": {
+          "const": "completed"
+        },
+        "publicationStatus": {
+          "const": "published"
+        },
+        "publishedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reports": {
+          "type": "array",
+          "maxItems": 0,
+          "items": {
+            "$ref": "#/$defs/Digest"
+          }
+        },
+        "kind": {
+          "const": "history-coverage"
+        },
+        "historyCoverage": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      },
+      "required": [
+        "session",
+        "machine",
+        "corpus",
+        "attempt",
+        "id",
+        "plan",
+        "collectionStatus",
+        "publicationStatus",
+        "publishedAt",
+        "reports",
+        "kind",
+        "historyCoverage"
       ],
       "additionalProperties": false
     }

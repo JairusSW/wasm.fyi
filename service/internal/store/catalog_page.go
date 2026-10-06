@@ -27,6 +27,13 @@ func (s *Store) ConformancePage(ctx context.Context, revision, kind, source stri
 	return s.catalogPage(ctx, revision, kind, indexKey("source-"+kind, source, ""), offset, limit)
 }
 
+func (s *Store) HistoryCoveragePage(ctx context.Context, revision, scope string, offset, limit int) (Page, error) {
+	if scope != "" && !wire.IsHash(scope) {
+		return Page{}, wire.Invalid("invalid history coverage scope")
+	}
+	return s.catalogPage(ctx, revision, "history-coverage", indexKey("history-coverage", scope, ""), offset, limit)
+}
+
 func (s *Store) FeatureProbePage(ctx context.Context, revision, report string, offset, limit int) (Page, error) {
 	if _, err := s.Record(revision, "report", report); err != nil {
 		return Page{}, err
@@ -105,7 +112,15 @@ func (s *Store) catalogPage(ctx context.Context, revision, kind, scope string, o
 		if e = wire.Decode(b, &r); e != nil {
 			return page, e
 		}
-		if r.ID != id || r.Kind != kind {
+		identity := r.ID
+		if kind == "history-coverage" && scope != indexKey("catalog", kind, "") {
+			value, err := wire.HistoryCoverageData(r.Data)
+			if err != nil {
+				return page, err
+			}
+			identity = value.CoverageID
+		}
+		if identity != id || r.Kind != kind {
 			return page, fmt.Errorf("corrupt catalog reference")
 		}
 		size += len(b) + 1

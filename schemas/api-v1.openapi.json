@@ -5125,6 +5125,120 @@
           }
         }
       }
+    },
+    "/api/v1/history/coverage": {
+      "get": {
+        "summary": "Selected recorded history coverage; no measurement rows",
+        "parameters": [
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 1,
+              "maximum": 1000
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "description": "Exact logical queue host/corpus/recipe scope, filtered before pagination."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded revision-scoped response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "https://wasm.fyi/schemas/site-v2.schema.json#/$defs/HistoryCoveragePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Response400_1"
+          },
+          "404": {
+            "$ref": "#/components/responses/Response404_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/Response422_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/Response429_4"
+          }
+        }
+      }
+    },
+    "/api/v1/history/coverage/{id}": {
+      "get": {
+        "summary": "Immutable publisher-asserted history coverage descriptor",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./site-v2.schema.json#/$defs/Digest"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded revision-scoped response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "https://wasm.fyi/schemas/site-v2.schema.json#/$defs/HistoryCoverageDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Response400_1"
+          },
+          "404": {
+            "$ref": "#/components/responses/Response404_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/Response422_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/Response429_4"
+          }
+        }
+      }
     }
   },
   "components": {

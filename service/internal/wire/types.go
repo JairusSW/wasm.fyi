@@ -178,20 +178,21 @@ type Export struct {
 // Job is submitted only after the coordinator verifies every completed pass and
 // parent bundle. Producer assertions and authenticated delivery are separate.
 type Job struct {
-	Schema               int              `json:"schema"`
-	Kind                 string           `json:"kind,omitempty"`
-	Session              string           `json:"session"`
-	Machine              string           `json:"machine"`
-	Corpus               string           `json:"corpus"`
-	Attempt              string           `json:"attempt"`
-	Plan                 string           `json:"plan"`
-	ConfiguredHarnessPin string           `json:"configuredHarnessPin,omitempty"`
-	ParentBundleSHA256   string           `json:"parentBundleSha256,omitempty"`
-	ParentArchive        *ParentArchive   `json:"parentArchive,omitempty"`
-	SessionPlan          *SessionPlan     `json:"sessionPlan,omitempty"`
-	Status               string           `json:"status"`
-	Exports              []Export         `json:"exports"`
-	History              []HistoryBinding `json:"history,omitempty"`
+	Schema               int               `json:"schema"`
+	Kind                 string            `json:"kind,omitempty"`
+	Session              string            `json:"session"`
+	Machine              string            `json:"machine"`
+	Corpus               string            `json:"corpus"`
+	Attempt              string            `json:"attempt"`
+	Plan                 string            `json:"plan"`
+	ConfiguredHarnessPin string            `json:"configuredHarnessPin,omitempty"`
+	ParentBundleSHA256   string            `json:"parentBundleSha256,omitempty"`
+	ParentArchive        *ParentArchive    `json:"parentArchive,omitempty"`
+	SessionPlan          *SessionPlan      `json:"sessionPlan,omitempty"`
+	Status               string            `json:"status"`
+	Exports              []Export          `json:"exports"`
+	History              []HistoryBinding  `json:"history,omitempty"`
+	HistoryCoverage      []json.RawMessage `json:"historyCoverage,omitempty"`
 }
 
 func (j Job) Validate() error {
@@ -199,13 +200,35 @@ func (j Job) Validate() error {
 		return e
 	}
 	conformance := j.Schema == 3 && j.Kind == "conformance"
+	coverage := j.Schema == 3 && j.Kind == "history-coverage"
 	validProducer := j.Schema == 2 && j.Kind == "" && IsHash(j.ParentBundleSHA256) && revisionPattern.MatchString(j.ConfiguredHarnessPin)
-	if conformance {
+	if conformance || coverage {
 		validProducer = j.ParentBundleSHA256 == "" && j.ConfiguredHarnessPin == "" && j.ParentArchive == nil && j.SessionPlan == nil && len(j.History) == 0
 	}
-	if !validProducer || j.Status != "completed" || !identityPattern.MatchString(j.Session) || !identityPattern.MatchString(j.Machine) || !identityPattern.MatchString(j.Corpus) || !identityPattern.MatchString(j.Attempt) || !IsHash(j.Plan) || len(j.Exports) == 0 || len(j.Exports) > 8 {
+	if !coverage && len(j.HistoryCoverage) != 0 {
+		return Invalid("history coverage in measurement or suite job")
+	}
+	validExports := len(j.Exports) > 0 && len(j.Exports) <= 8
+	if coverage {
+		validExports = j.Exports != nil && len(j.Exports) == 0 && len(j.HistoryCoverage) > 0 && len(j.HistoryCoverage) <= 100
+	}
+	if !validProducer || j.Status != "completed" || !identityPattern.MatchString(j.Session) || !identityPattern.MatchString(j.Machine) || !identityPattern.MatchString(j.Corpus) || !identityPattern.MatchString(j.Attempt) || !IsHash(j.Plan) || !validExports {
 		return Invalid("invalid completed job")
 	}
+	if coverage {
+		seen := map[string]bool{}
+		for _, data := range j.HistoryCoverage {
+			v, err := HistoryCoverageData(data)
+			if err != nil {
+				return err
+			}
+			if seen[v.CoverageID] || v.Scope() != j.Plan {
+				return Invalid("duplicate or foreign coverage scope")
+			}
+			seen[v.CoverageID] = true
+		}
+	}
+
 	reports := map[string]bool{}
 	objects := map[string]Object{}
 	inventories := map[string]Inventory{}

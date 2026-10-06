@@ -119,6 +119,7 @@ func (s *Store) reachableScopes(ctx context.Context, includeStaging bool, requir
 	}
 	postingOrigins := publicationPostingVerifier{read: read, origins: origins}
 	revisionRank := 0
+	coverageRevisionIndexes := ""
 	var markMap func(string, string, func(string, string) error) error
 	markMap = func(id, kind string, entry func(string, string) error) error {
 		if e := ctx.Err(); e != nil {
@@ -203,6 +204,26 @@ func (s *Store) reachableScopes(ctx context.Context, includeStaging bool, requir
 		var r wire.Record
 		if e := read(id, &r); e != nil {
 			return e
+		}
+		if r.Kind == "history-coverage" {
+			set, err := s.indexGet(coverageRevisionIndexes, indexKey("history-coverage-origins", "", ""))
+			if err != nil {
+				return err
+			}
+			origin, err := s.mapGet(set.Root, r.ID)
+			if err != nil {
+				return err
+			}
+			if origin == "" {
+				return wire.Invalid("coverage lacks published source membership")
+			}
+
+			if wire.Hash(r.Data) != r.ID {
+				return wire.Invalid("history coverage identity differs")
+			}
+			if _, err := wire.HistoryCoverageData(r.Data); err != nil {
+				return err
+			}
 		}
 		if r.Kind == "report-file" {
 			if wire.Hash(r.Data) != r.ID {
@@ -423,6 +444,81 @@ func (s *Store) reachableScopes(ctx context.Context, includeStaging bool, requir
 				}
 				return markRecord("", id)
 			})
+		case "history-coverage-origins":
+			if tuple[1] != "" || tuple[2] != "" || set.Count < 0 || set.Count > ScanLimit {
+				return wire.Invalid("invalid coverage source index")
+			}
+			if err := markMap(set.Root, "coverage-source-index-nodes", func(string, string) error { return nil }); err != nil {
+				return err
+			}
+			count, budget := 0, ScanLimit
+			if err := s.walk(set.Root, &budget, func(recordID, jobID string) error {
+				origin, ok := origins[jobID]
+				if !ok || origin.rank < revisionRank {
+					return wire.Invalid("unknown or future coverage source")
+				}
+				var job wire.Job
+				if err := read(jobID, &job); err != nil {
+					return err
+				}
+				if err := job.Validate(); err != nil {
+					return err
+				}
+				if job.Kind != "history-coverage" {
+					return wire.Invalid("coverage source is not a metadata publication")
+				}
+				matched := false
+				for _, data := range job.HistoryCoverage {
+					normalized, err := wire.Encode(data)
+					if err != nil {
+						return err
+					}
+					if wire.Hash(normalized) == recordID {
+						matched = true
+						break
+					}
+				}
+				if !matched {
+					return wire.Invalid("coverage absent from publisher declaration")
+				}
+				count++
+				return nil
+			}); err != nil {
+				return err
+			}
+			if count != set.Count {
+				return wire.Invalid("coverage source population differs")
+			}
+			return nil
+		case "history-coverage":
+			if tuple[2] != "" || tuple[1] != "" && !wire.IsHash(tuple[1]) || set.Count < 0 || set.Count > ScanLimit {
+				return wire.Invalid("invalid history coverage index")
+			}
+			if err := markMap(set.Root, "history-coverage-index-nodes", func(string, string) error { return nil }); err != nil {
+				return err
+			}
+			count, budget := 0, ScanLimit
+			if err := s.walk(set.Root, &budget, func(key, id string) error {
+				var record wire.Record
+				if err := read(id, &record); err != nil {
+					return err
+				}
+				value, err := wire.HistoryCoverageData(record.Data)
+				if err != nil {
+					return err
+				}
+				if record.Kind != "history-coverage" || value.CoverageID != key || tuple[1] != "" && value.Scope() != tuple[1] {
+					return wire.Invalid("history coverage index membership differs")
+				}
+				count++
+				return markRecord(key, id)
+			}); err != nil {
+				return err
+			}
+			if count != set.Count {
+				return wire.Invalid("history coverage index count differs")
+			}
+			return nil
 		case "catalog", "methods":
 			return markMap(set.Root, "posting-record", markRecord)
 		case "history-month":
@@ -554,6 +650,7 @@ func (s *Store) reachableScopes(ctx context.Context, includeStaging bool, requir
 		if e := read(id, &r); e != nil {
 			return nil, e
 		}
+		coverageRevisionIndexes = r.Indexes
 		if r.HistoryIndexVersion != "" && r.HistoryIndexVersion != HistoryIndexVersion {
 			return nil, wire.Invalid("unsupported history index")
 		}
@@ -742,6 +839,27 @@ func (s *Store) reachableScopes(ctx context.Context, includeStaging bool, requir
 		if job.ParentArchive != nil {
 			if e := archives.verify(job); e != nil {
 				return nil, e
+			}
+		}
+		for _, data := range job.HistoryCoverage {
+			value, err := wire.HistoryCoverageData(data)
+			if err != nil {
+				return nil, err
+			}
+			if value.PublishedRevision != nil {
+				rank, ok := revisionRanks[*value.PublishedRevision]
+				if !ok || rank < revisionRank {
+					return nil, wire.Invalid("history coverage evidence is unknown or newer than its publication")
+				}
+			}
+			normalized, err := wire.Encode(data)
+			if err != nil {
+				return nil, err
+			}
+			expected := wire.Hash(normalized)
+			record, err := s.record(r.Catalog, "history-coverage", expected)
+			if err != nil || !bytes.Equal(record.Data, normalized) {
+				return nil, wire.Invalid("history coverage differs from publisher declaration")
 			}
 		}
 		jobs[r.Job] = true

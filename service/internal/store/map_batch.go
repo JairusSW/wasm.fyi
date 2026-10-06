@@ -96,6 +96,15 @@ func (s *Store) addRecordIndexBatch(ctx context.Context, rev *Revision, records 
 			}
 			add(indexKey("source-"+r.Kind, source, ""), r.ID, digest)
 		}
+		if r.Kind == "history-coverage" {
+			value, err := wire.HistoryCoverageData(r.Data)
+			if err != nil {
+				return err
+			}
+			add(indexKey("history-coverage", "", ""), value.CoverageID, digest)
+			add(indexKey("history-coverage", value.Scope(), ""), value.CoverageID, digest)
+			add(indexKey("history-coverage-origins", "", ""), r.ID, rev.Job)
+		}
 		if r.Kind == "feature-probe" {
 			probe, e := wire.FeatureProbeData(r.Data)
 			if e != nil {

@@ -12,6 +12,7 @@ import {publicationURL} from './lib/api-publish.mjs';
 import {verifySiteExportContract} from './lib/site-export-contract.mjs';
 import {publishPerformanceHistoryConfiguration} from './lib/performance-history-api.mjs';
 import {retainUncollectedHistoryConfiguration} from './lib/performance-history-coverage.mjs';
+import {publishHistoryCoverage} from './lib/performance-history-coverage-api.mjs';
 import {processLock} from './lib/benchmark-lock.mjs';
 
 const apiURL=process.env.WASMFYI_HISTORY_API_URL?publicationURL(process.env.WASMFYI_HISTORY_API_URL):null;
@@ -70,11 +71,14 @@ await processLock(join(site,'.wasmbench/performance-history.lock'),async()=>{
   const workloads=parseCorpusJSON(await readFile(queue.suite,'utf8'));
   if(performanceCorpusIdentity(workloads)!==queue.corpusSha256)throw Error('Historical corpus contracts changed');
   for(const w of workloads)if(digest(await readFile(resolve(w.artifact)))!==w.sha256)throw Error('Historical corpus artifact changed: '+w.id);
-  const controller=join(directory,'controller-'+queue.recipeSha256);
-  if(!await exists(controller))command('go',['build','-trimpath','-o',controller,'./cmd/wasmbench'],{cwd:base,env,stdio:'inherit'});
-  if(apiURL)await verifySiteExportContract(controller,{cwd:base,env});
   const previous=await readFile(join(directory,'results.json'),'utf8').then(JSON.parse,error=>{if(error.code!=='ENOENT')throw error;return {jobs:[]}});
   if(!Array.isArray(previous.jobs)||previous.jobs.some(job=>!Array.isArray(job.configurations)))throw Error('Invalid historical results ledger');
+  const controller=join(directory,'controller-'+queue.recipeSha256);
+  const needsController=!publishOnly||previous.jobs.some(job=>job.configurations.some(entry=>entry.status==='collected'));
+  if(needsController){
+    if(!await exists(controller))command('go',['build','-trimpath','-o',controller,'./cmd/wasmbench'],{cwd:base,env,stdio:'inherit'});
+    if(apiURL)await verifySiteExportContract(controller,{cwd:base,env});
+  }
   const state={schema:1,pid:process.pid,startedAt:new Date().toISOString(),queue,phase:'collect',jobs:structuredClone(previous.jobs)};
   async function save(){
     const path=join(directory,'results.json'),temp=path+'.tmp-'+randomUUID();
@@ -217,5 +221,10 @@ await processLock(join(site,'.wasmbench/performance-history.lock'),async()=>{
   }
   state.phase=state.jobs.every(j=>j.status==='collected')?'collected':'incomplete';state.completedAt=new Date().toISOString();await save();
   if(state.jobs.some(job=>job.configurations.some(entry=>entry.apiPublication?.status==='failed'))){state.phase='publication-failed';await save();}
+  if(apiURL){
+    try{const result=await publishHistoryCoverage({queue,ledger:state,configured:[...supported],url:apiURL});state.apiCoverage={status:result.imports?'published':'empty',...result}}
+    catch(error){state.apiCoverage={status:'failed',reason:error.message};state.phase='publication-failed';console.error('Historical coverage publication:',error.message)}
+    await save();
+  }
   if(state.phase!=='collected')process.exitCode=1;
 },{legacyPid:true});

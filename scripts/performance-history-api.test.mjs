@@ -71,11 +71,11 @@ test('real completed history publication reuses its source, tools and API record
     // producer, rejecting every measurement or tool-build command.
     const isolated=join(root,'site'),historyRoot=join(isolated,'.wasmbench/performance-history');
     await mkdir(historyRoot,{recursive:true});await cp(join(site,'scripts'),join(isolated,'scripts'),{recursive:true});
-    const controller=join(historyRoot,'controller-fixture'),commandLog=join(root,'history-commands.jsonl');
+    const fixtureRecipe=digest(Buffer.from('synthetic history recipe'));const controller=join(historyRoot,'controller-'+fixtureRecipe),commandLog=join(root,'history-commands.jsonl');
     const script='#!'+process.execPath+'\n'+`import {appendFileSync} from 'node:fs'; import {execFileSync} from 'node:child_process'; const args=process.argv.slice(2); appendFileSync(${JSON.stringify(commandLog)},JSON.stringify(args)+'\\n'); if(!['verify-report','export-site'].includes(args[0]))process.exit(55); execFileSync(${JSON.stringify(process.env.WASMFYI_PRODUCER_BIN)},args,{stdio:'inherit',env:{...process.env,GOMAXPROCS:'1'}});\n`;
     await writeFile(controller,script,{mode:0o700});
     const suite=join(historyRoot,'suite.json'),retainedWorkloads=workloads.map(workload=>({...workload,artifact:join(report,'raw',workload.artifact)}));await writeFile(suite,JSON.stringify(retainedWorkloads));
-    await writeFile(join(historyRoot,'queue.json'),JSON.stringify({...queue,suite,recipeSha256:'fixture',jobs:[job]}));
+    await writeFile(join(historyRoot,'queue.json'),JSON.stringify({...queue,suite,recipeSha256:fixtureRecipe,jobs:[job]}));
     await writeFile(join(historyRoot,'results.json'),JSON.stringify({jobs:[{id:job.id,configurations:[entry]}]}));
     await writeFile(join(isolated,'wasmbench.config.json'),JSON.stringify({root:process.env.WASMFYI_PRODUCER_ROOT,collection:{runtimes:[configuration]},harnessSource:{revision:input.configuredHarnessPin}}));
     const env={...process.env,WASMFYI_HISTORY_API_URL:url,WASMFYI_HISTORY_PUBLISH_ONLY:'1',WASMFYI_ADMIN_TOKEN:token,WASMBENCH_ROOT:process.env.WASMFYI_PRODUCER_ROOT};
@@ -90,7 +90,7 @@ test('real completed history publication reuses its source, tools and API record
     // Kill the real collector after its initial ledger save, before it has
     // verified/revisited cached jobs. Both completed references must survive.
     const secondJob={...job,id:digest(Buffer.from('second retrospective crash fixture'))};
-    await writeFile(join(historyRoot,'queue.json'),JSON.stringify({...queue,suite,recipeSha256:'fixture',jobs:[job,secondJob]}));
+    await writeFile(join(historyRoot,'queue.json'),JSON.stringify({...queue,suite,recipeSha256:fixtureRecipe,jobs:[job,secondJob]}));
     await writeFile(join(historyRoot,'results.json'),JSON.stringify({jobs:[{id:job.id,status:'collected',configurations:[entry]},{id:secondJob.id,status:'collected',configurations:[entry]}]}));
     const marker=join(root,'interrupted-controller.json');
     await writeFile(controller,'#!'+process.execPath+'\n'+`import {writeFileSync} from 'node:fs'; import {execFileSync} from 'node:child_process'; const args=process.argv.slice(2); if(args[0]==='verify-report'){writeFileSync(${JSON.stringify(marker)},JSON.stringify({pid:process.pid})); Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,60000);} if(!['verify-report','export-site'].includes(args[0]))process.exit(55); execFileSync(${JSON.stringify(process.env.WASMFYI_PRODUCER_BIN)},args,{stdio:'inherit'});\n`,{mode:0o700});
@@ -116,12 +116,14 @@ test('real completed history publication reuses its source, tools and API record
     // adapter or its reason while replaying the sibling sealed configuration.
     const missing={id:'wasmer-cranelift',status:'unavailable',reason:'Pinned adapter package unavailable',binding:{source:{revision:'a'.repeat(40)}}};
     const partialJob={...job,identity:{configurations:[configuration,missing.id]}};
-    await writeFile(join(historyRoot,'queue.json'),JSON.stringify({...queue,suite,recipeSha256:'fixture',jobs:[partialJob]}));
+    await writeFile(join(historyRoot,'queue.json'),JSON.stringify({...queue,suite,recipeSha256:fixtureRecipe,jobs:[partialJob]}));
     await writeFile(ledgerPath,JSON.stringify({jobs:[{id:job.id,configurations:[entry,missing]}]}));
     await writeFile(join(isolated,'wasmbench.config.json'),JSON.stringify({root:process.env.WASMFYI_PRODUCER_ROOT,collection:{runtimes:[configuration,missing.id]},harnessSource:{revision:input.configuredHarnessPin}}));
     await assert.rejects(run());
     ledger=JSON.parse(await readFile(ledgerPath));assert.equal(ledger.phase,'incomplete');assert.deepEqual(ledger.jobs[0].configurations.find(c=>c.id===missing.id),missing);
+    assert.equal(ledger.apiCoverage.status,'published');
     const preserved=await(await fetch(url+'/api/v1/manifest')).json();assert.equal((await(await fetch(url+'/api/v1/history?revision='+preserved.revision)).json()).total,4);
+    const coverage=await(await fetch(url+'/api/v1/history/coverage?revision='+preserved.revision)).json();assert.equal(coverage.items.find(row=>row.data.configuration===missing.id).data.status,'unavailable');assert.equal(coverage.items.find(row=>row.data.configuration===missing.id).data.reason,missing.reason);
     assert((await readFile(commandLog,'utf8')).trim().split('\n').map(JSON.parse).every(args=>['verify-report','export-site'].includes(args[0])));
 
   } finally {if(child){child.kill('SIGTERM');await exit}await rm(root,{recursive:true,force:true})}

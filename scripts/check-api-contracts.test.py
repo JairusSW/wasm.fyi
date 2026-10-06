@@ -46,6 +46,28 @@ class Contracts(unittest.TestCase):
         with self.assertRaises(ValueError):
             contracts.validate(changed, "ConformanceCoverageData", "missing reason availability")
 
+    def test_history_coverage_cannot_manufacture_measurement_evidence(self):
+        build = {"engine": "wago", "role": "source", "repository": None, "version": None,
+                 "revision": None, "sourceDate": None, "releaseDate": None, "datePrecision": None, "url": None}
+        value = {"schema": 1, "coverageId": "a" * 64, "policy": "recorded-history-coverage-v1",
+                 "host": "darwin/arm64", "corpusSha256": "b" * 64, "recipeSha256": "c" * 64,
+                 "jobId": "d" * 64, "configuration": "wago", "targetDates": ["2026-10-03"],
+                 "targetType": "main", "desiredBuild": build, "configured": True,
+                 "status": "uncollected", "recordedStatus": None, "reason": None,
+                 "observedSourceRevision": None, "sourceReportSha256": None, "collectedAt": None,
+                 "publishedRevision": None, "interpretationSource": "trusted-publisher-assertion"}
+        contracts.validate(value, "HistoryCoverageData", "recorded gap")
+        for field, replacement in [("sourceReportSha256", "e" * 64), ("publishedRevision", "f" * 64),
+                                   ("collectedAt", "2026-10-06T00:00:00Z"), ("status", "unsupported"),
+                                   ("summary", {"value": 0})]:
+            with self.assertRaises(ValueError):
+                contracts.validate(dict(value, **{field: replacement}), "HistoryCoverageData", "invented source")
+        for field in ["reason", "recordedStatus", "collectedAt", "sourceReportSha256", "configured"]:
+            changed = dict(value)
+            del changed[field]
+            with self.assertRaises(ValueError):
+                contracts.validate(changed, "HistoryCoverageData", "missing availability")
+
     def test_release_date_precision_is_explicit_and_consistent(self):
         release = {"version": "v1.2.3", "publishedAt": "2026-01-01T00:00:00Z", "url": "https://example.test/release"}
         contracts.validate(release, "HistoryRelease", "legacy unknown precision")

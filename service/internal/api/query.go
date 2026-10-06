@@ -63,6 +63,15 @@ func routeQuery(path string, values url.Values) error {
 	if path == "conformance" || path == "conformance-contexts" || path == "conformance-coverage" {
 		return allowedQuery(values, "revision", "limit", "cursor", "source")
 	}
+	if path == "history/coverage" {
+		return allowedQuery(values, "revision", "limit", "cursor", "scope")
+	}
+	if len(strings.Split(path, "/")) == 3 && strings.HasPrefix(path, "history/coverage/") {
+		if !wire.IsHash(strings.Split(path, "/")[2]) {
+			return wire.Invalid("invalid history coverage identity")
+		}
+		return allowedQuery(values, "revision")
+	}
 	if path == "features" {
 		return allowedQuery(values, "revision", "limit", "cursor", "report")
 	}

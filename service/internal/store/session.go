@@ -26,6 +26,7 @@ type PublishedJob struct {
 	PublishedAt          time.Time `json:"publishedAt"`
 	Reports              []string  `json:"reports"`
 	HistoryBindings      int       `json:"historyBindings,omitempty"`
+	HistoryCoverage      int       `json:"historyCoverage,omitempty"`
 }
 type Session struct {
 	ID                   string `json:"id"`
@@ -49,6 +50,7 @@ func jobSummary(job wire.Job, id string, created time.Time) PublishedJob {
 	out.Kind = job.Kind
 	out.ParentArchiveStored = job.ParentArchive != nil
 	out.HistoryBindings = len(job.History)
+	out.HistoryCoverage = len(job.HistoryCoverage)
 	for _, export := range job.Exports {
 		if export.Manifest.Format != "site-v2" {
 			continue

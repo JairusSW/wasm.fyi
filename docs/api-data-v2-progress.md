@@ -2076,8 +2076,8 @@ missing entries, and represents planner targets without a resolved build.
 Unknown release dates and configurations remain null/empty, while desired and
 recorded source revisions remain separate. These are trusted publisher assertions,
 not new result rows or an independent report verification. Projection/retention
-and real collector tests pass; the projected records are not yet published or
-served by the backend.
+and real collector tests pass. The projected records now publish through the
+metadata-only import path described below.
 
 
 ## Rebuild acknowledged imports independently of staging quota
@@ -2097,3 +2097,41 @@ and proves a genuinely new import is still rejected by that quota. Existing
 portable/corruption/future-publication/context gates pass under race detection.
 The real fixture can retain a backup through a failed recovery and verifies its
 revision before reusing it. The corrected large recovery is not yet qualified.
+
+
+## Revisioned history coverage publication
+
+The existing historical collector now publishes queue/ledger coverage to the same
+Go/Pebble revision transaction after completed-source publication. Coverage uses
+schema-3 `history-coverage` jobs with at most 100 inline descriptors and no
+benchmark exports, fabricated report/seal hashes, harness pin or parent tools.
+The canonical submitted job is the retained publisher attestation. These metadata
+claims do not independently verify a source report or create a measurement row.
+A recorded collected source and an acknowledged prior revision remain separate;
+unknown or future publication references are rejected. Host is the queue's
+recorded OS/architecture scope, not a scientific hardware-equivalence identity.
+
+`GET /api/v1/history/coverage?revision=<id>&scope=<digest>` returns the selected
+state of each logical coverage cell. Scope is the versioned host/corpus/recipe
+identity and filters before pagination. Updates replace only the affected indexed
+entries; prior revisions and signed cursors remain frozen. Descriptor details at
+`/api/v1/history/coverage/<id>` retain old states when explicitly referenced.
+Portable recovery validates canonical descriptor identities, publisher declaration
+membership and original publication ordering before reconstructing receipts.
+
+The publisher uses the existing authenticated client and retry deadlines. It
+returns the current dataset revision after all batches; an unchanged final batch
+cannot accidentally return a receipt for an obsolete revision. The actual
+collector's empty-source queue gate publishes uncollected coverage without
+building or probing a harness controller. Complete sources still use the existing
+verification/export and parent-tool workflow. Failed metadata delivery is recorded
+for resume without changing scientific collection state. No imports are generated
+for an empty target inventory.
+
+Synthetic HTTP gates cover 106 cells over two bounded imports, duplicates, retry,
+HTML/Unicode encoding parity, a changed first batch with an unchanged final batch,
+absence of new result/history observations, and a real collector with no source
+or controller. The verified Wasmer collector replay additionally retains an
+unavailable sibling's exact reason and the same four scientific observations.
+Selected race, strict DTO/schema/type, staging exclusion and portable corruption
+and reconstruction gates pass. Broader operator/scale qualification remains open.
