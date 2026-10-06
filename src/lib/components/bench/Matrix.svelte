@@ -184,8 +184,7 @@ import { viewCell, viewData } from '$lib/view-data';
 		.val,
 		.corr,
 		.colh {
-			padding-left: 10px;
-			padding-right: 10px;
+			padding: 4px 10px;
 		}
 	}
 	.colh {

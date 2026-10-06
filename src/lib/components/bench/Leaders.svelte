@@ -155,15 +155,53 @@
 		font-size: 18px;
 		font-weight: 500;
 	}
-	@media (max-width: 380px) {
+	/* Phones: a zoomed-out 2×2 grid — winner on top, runners-up as compact lines beneath. */
+	@media (max-width: 720px) {
+		.leaders {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+		.leader {
+			padding: 10px;
+			gap: 6px;
+		}
+		.leader .kicker {
+			font-size: 10px;
+			letter-spacing: 0.04em;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
 		.results {
 			grid-template-columns: minmax(0, 1fr);
-			gap: 10px;
+			gap: 8px;
 		}
-	}
-	@media (max-width: 720px) {
+		.value {
+			font-size: 18px;
+		}
+		.first {
+			gap: 3px;
+		}
+		.first .backend {
+			font-size: 10px;
+		}
+		.places {
+			gap: 3px;
+			padding-top: 6px;
+			border-top: 1px solid var(--line);
+		}
+		.place {
+			grid-template-columns: 22px minmax(0, 1fr) auto;
+			gap: 4px;
+			align-items: center;
+		}
+		.place > :global(*) {
+			font-size: 11px;
+		}
+		.entrant .backend {
+			display: none;
+		}
 		.expand-bar {
-			padding: 10px 14px;
+			padding: 9px 14px;
 		}
 	}
 </style>

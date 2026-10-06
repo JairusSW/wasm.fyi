@@ -352,14 +352,14 @@
 			padding: 6px 8px;
 		}
 		.wcell {
-			padding: 5px 8px;
-			min-height: 40px;
+			padding: 3px 8px;
+			min-height: 30px;
 		}
 		.gcell {
-			padding: 6px 8px;
+			padding: 4px 8px;
 		}
 		td.stick.grp {
-			padding: 8px 10px;
+			padding: 5px 10px;
 		}
 		.grp-btn {
 			display: grid;
@@ -368,14 +368,18 @@
 			text-align: left;
 		}
 		.grp-btn > :last-child {
-			grid-column: 2;
+			display: none;
 		}
 		.item {
-			padding-top: 6px;
-			padding-bottom: 6px;
+			padding-top: 3px;
+			padding-bottom: 3px;
+			line-height: 1.3;
 		}
 		.item-line {
 			gap: 2px 6px;
+		}
+		.tag {
+			display: none;
 		}
 		.name {
 			overflow-wrap: break-word;

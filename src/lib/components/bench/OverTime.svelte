@@ -312,8 +312,8 @@ import HistoryMarker from '../HistoryMarker.svelte';
 				'rt now delta'
 				'spark spark spark';
 			align-items: center;
-			gap: 2px 12px;
-			padding: 8px 12px 4px;
+			gap: 0 12px;
+			padding: 5px 12px 2px;
 			border-bottom: 1px solid var(--line);
 		}
 		.sp tr:last-child {
@@ -342,7 +342,7 @@ import HistoryMarker from '../HistoryMarker.svelte';
 		}
 		.spark {
 			min-width: 0;
-			height: 40px;
+			height: 30px;
 			margin: 0 6px;
 		}
 		.tip {

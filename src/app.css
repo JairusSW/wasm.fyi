@@ -425,15 +425,14 @@ table.mx tr.sec td {
 	.bar-row {
 		grid-template-columns: minmax(0, 10.5em) minmax(0, 1fr) auto !important;
 		gap: 10px;
-		min-height: 28px;
+		min-height: 22px;
 	}
 	.bar-row > :last-child {
 		white-space: nowrap;
 	}
 	table.t th,
 	table.t td {
-		padding-left: 10px;
-		padding-right: 10px;
+		padding: 4px 10px;
 	}
 	/* The sticky first column of a matrix may take at most ~40% of the phone. */
 	table.mx .stick {
@@ -445,6 +444,8 @@ table.mx tr.sec td {
 		box-shadow: 1px 0 0 var(--line2), 6px 0 8px -6px rgba(0, 0, 0, 0.35);
 	}
 	table.mx .stick .rl {
+		font-size: 13px;
+		line-height: 1.2;
 		display: grid;
 		grid-template-columns: auto minmax(0, 1fr);
 		column-gap: 6px;
@@ -453,7 +454,8 @@ table.mx tr.sec td {
 	}
 	table.mx .stick .rl > :last-child {
 		grid-column: 2;
-		line-height: 1.2;
+		font-size: 10px;
+		line-height: 1.1;
 	}
 	.th-label {
 		padding: 8px 10px;
