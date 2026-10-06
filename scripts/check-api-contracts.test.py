@@ -24,6 +24,16 @@ class Contracts(unittest.TestCase):
                     return record["data"]
         self.fail("result fixture missing")
 
+    def test_bounded_evidence_index(self):
+        index = {"kind": "evidence-index", "schema": 1, "references": ["a" * 64, "a" * 64]}
+        contracts.validate(index, "EvidenceIndex", "ordered index with repeated references")
+        for key, value in [("references", []), ("references", ["a" * 64] * 129),
+                           ("references", ["bad"]), ("schema", 2), ("trials", [])]:
+            changed = copy.deepcopy(index)
+            changed[key] = value
+            with self.assertRaises(ValueError):
+                contracts.validate(changed, "EvidenceIndex", "invalid index")
+
     def test_required_provenance_and_date(self):
         result = self.result()
         contracts.validate(result, "ResultData", "valid source")

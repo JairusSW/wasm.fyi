@@ -2283,6 +2283,31 @@
         "error"
       ],
       "additionalProperties": false
+    },
+    "EvidenceIndex": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "evidence-index"
+        },
+        "schema": {
+          "const": 1
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Digest"
+          },
+          "minItems": 1,
+          "maxItems": 128
+        }
+      },
+      "required": [
+        "kind",
+        "schema",
+        "references"
+      ],
+      "additionalProperties": false
     }
   },
   "$ref": "#/$defs/CompletedJob"

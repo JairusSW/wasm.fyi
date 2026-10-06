@@ -51,3 +51,4 @@ export type ArchiveChunkPage = { "revision": Digest; "job": Digest; "items": Arr
 export type SessionPlan = { "schema": 1; "bytes": number; "chunks": Array<ParentArchiveChunk> };
 export type SessionJobPage = { "revision": Digest; "items": Array<PublishedJob>; "total": number; "complete": boolean; "nextCursor": string; "sort": "machine-corpus-attempt-id" };
 export type APIError = { "error": string; "code"?: "internal_error" | "not_found" | "scope_limit" | "restart_required" | "immutable_conflict" | "storage_quota" | "undeclared_object" | "invalid_request" | "query_timeout" | "payload_too_large" };
+export type EvidenceIndex = { "kind": "evidence-index"; "schema": 1; "references": Array<Digest> };

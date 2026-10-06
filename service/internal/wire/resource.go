@@ -10,6 +10,14 @@ const ResourceBytes = 64 * 1024 * 1024
 const FragmentBytes = 120 * 1024
 const ResourceFragments = 1024
 
+const EvidenceIndexReferences = 128
+
+type EvidenceIndex struct {
+	Kind       string   `json:"kind"`
+	Schema     int      `json:"schema"`
+	References []string `json:"references"`
+}
+
 type JSONResource struct {
 	Kind       string   `json:"kind"`
 	Schema     int      `json:"schema"`
@@ -37,6 +45,19 @@ func Resource(b []byte) (*JSONResource, error) {
 		return nil, Invalid("invalid evidence envelope")
 	}
 	switch header.Kind {
+	case "evidence-index":
+		var index EvidenceIndex
+		if err := Decode(b, &index); err != nil {
+			return nil, err
+		}
+		if index.Schema != 1 || len(index.References) < 1 || len(index.References) > EvidenceIndexReferences {
+			return nil, Invalid("invalid evidence index")
+		}
+		for _, ref := range index.References {
+			if !IsHash(ref) {
+				return nil, Invalid("invalid evidence index reference")
+			}
+		}
 	case "json-fragment":
 		var fragment JSONFragment
 		if err := Decode(b, &fragment); err != nil {

@@ -35,3 +35,23 @@ func TestJSONResourceIntegrity(t *testing.T) {
 		}
 	}
 }
+
+func TestEvidenceIndexBoundsAndExactReferences(t *testing.T) {
+	refs := []string{Hash([]byte("first")), Hash([]byte("second")), Hash([]byte("first"))}
+	b, _ := Encode(EvidenceIndex{Kind: "evidence-index", Schema: 1, References: refs})
+	got, err := EvidenceReferences(b)
+	if err != nil || strings.Join(got, ",") != strings.Join(refs, ",") {
+		t.Fatal("index order or repetitions drifted", err)
+	}
+	for _, refs := range [][]string{nil, {}, {"invalid"}, make([]string, EvidenceIndexReferences+1)} {
+		b, _ := Encode(EvidenceIndex{Kind: "evidence-index", Schema: 1, References: refs})
+		if _, err := EvidenceReferences(b); err == nil {
+			t.Fatal("invalid index admitted")
+		}
+	}
+	for _, value := range []string{`{"kind":"evidence-index","schema":2,"references":[]}`, `{"kind":"evidence-index","schema":1,"references":[],"extra":true}`, `{"kind":"evidence-index","schema":1,"schema":1,"references":[]}`} {
+		if _, err := EvidenceReferences([]byte(value)); err == nil {
+			t.Fatal("ambiguous index admitted")
+		}
+	}
+}

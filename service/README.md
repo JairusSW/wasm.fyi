@@ -187,3 +187,19 @@ destination; relative CLI paths resolve on the caller before transmission.
 Shutdown cancels requests and removes the owned socket. After an abrupt process
 exit, operators must check that the old owner is gone before removing its stale
 socket. Verify backups and exercise restore/rebuild before relying on them.
+
+Large trial inventories use `evidence-index` schema 1 objects with one to 128
+ordered `references`. A result points to the root index; clients fetch an index
+page and then only the selected trial/sample chunks through the existing
+`results/{id}/samples?chunk=...` endpoint. Lists of at most 128 references retain
+the legacy representation. Repeated references and producer order are preserved.
+Indexes carry provenance navigation, not additional measurements or statistical
+samples. Every child still needs to be declared, hash-verified and reachable from
+the selected result in the requested revision.
+
+Authorization traverses evidence breadth first so a large sibling trial body does
+not prevent reaching a navigation page. The existing work and 32 MiB decoded-scan
+ceilings still apply; an unknown or excessively deep/broad lookup can be rejected.
+Publication and portable rebuild retain and validate the complete indexed closure.
+The retained producer test uses 4,500 synthetic trials; the HTTP/recovery test uses
+512 synthetic 100 KB trial bodies. These are storage/transport scale fixtures.

@@ -285,8 +285,11 @@ func (s *Store) evidenceContext(ctx context.Context, roots []string, digest stri
 		if processed > ScanLimit {
 			return nil, ErrLimit
 		}
-		h := pending[len(pending)-1]
-		pending = pending[:len(pending)-1]
+		// Breadth-first authorization reads the small navigation pages before
+		// trial bodies. Depth-first traversal could exhaust the byte budget on
+		// unrelated trial/sample siblings before finding a selected index page.
+		h := pending[0]
+		pending = pending[1:]
 		if seen[h] {
 			continue
 		}
