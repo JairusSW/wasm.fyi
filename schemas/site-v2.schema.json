@@ -1427,6 +1427,116 @@
         "$ref": "#/$defs/Digest"
       },
       "description": "Original derived source JSON fields, excluding core typed transports and separately recorded analysis versions. Version source-fields-v1. Each reference resolves to ReportAnalysis or a chunked JSONResource for that envelope."
+    },
+    "NativeFunction": {
+      "type": "object",
+      "properties": {
+        "module_index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "wasm_index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "name": {
+          "type": "string"
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16777216
+        },
+        "length": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16777216
+        },
+        "tier": {
+          "enum": [
+            "cranelift",
+            "winch"
+          ]
+        },
+        "generation": {
+          "const": 0
+        }
+      },
+      "required": [
+        "module_index",
+        "wasm_index",
+        "offset",
+        "length",
+        "tier",
+        "generation"
+      ],
+      "additionalProperties": false
+    },
+    "NativeFunctionPage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "artifact": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/NativeFunction"
+          }
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "nextCursor": {
+          "type": "string"
+        },
+        "order": {
+          "const": "producer-order"
+        },
+        "indexed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "revision",
+        "artifact",
+        "items",
+        "total",
+        "complete",
+        "nextCursor",
+        "order",
+        "indexed"
+      ],
+      "additionalProperties": false
+    },
+    "NativeFunctionShard": {
+      "type": "object",
+      "properties": {
+        "sha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        }
+      },
+      "required": [
+        "sha256",
+        "count"
+      ],
+      "additionalProperties": false
     }
   },
   "$ref": "#/$defs/CompletedJob"

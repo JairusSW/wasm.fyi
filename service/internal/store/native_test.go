@@ -56,6 +56,11 @@ func TestNativeInspectionAdmission(t *testing.T) {
 		func(m *wire.NativeMetadata, r *[]wire.NativeFunction) { (*r)[1].WasmIndex = 1 },
 		func(m *wire.NativeMetadata, r *[]wire.NativeFunction) { (*r)[0].Generation = 1 },
 		func(m *wire.NativeMetadata, r *[]wire.NativeFunction) { *r = nil },
+		func(m *wire.NativeMetadata, r *[]wire.NativeFunction) {
+			b, _ := wire.Encode(*r)
+			m.FunctionIndexVersion = "producer-order-v1"
+			m.FunctionShards = []wire.NativeFunctionShard{{SHA256: wire.Hash(b), Count: len(*r) + 1}}
+		},
 	} {
 		if err := verify(mutate); err == nil {
 			t.Fatal("accepted invalid native inspection")

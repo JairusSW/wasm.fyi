@@ -43,6 +43,10 @@ func (s *Store) validateNativeInspection(artifact wire.Artifact, module string, 
 	if len(metadata.Functions) != len(metadata.References) {
 		return wire.Invalid("function references differ")
 	}
+	counts, err := metadata.FunctionCounts()
+	if err != nil {
+		return err
+	}
 	seenPages := map[string]bool{}
 	functions := []wire.NativeFunction{}
 	seenIndices := map[uint32]bool{}
@@ -65,6 +69,9 @@ func (s *Store) validateNativeInspection(artifact wire.Artifact, module string, 
 		}
 		if len(rows) == 0 {
 			return wire.Invalid("empty function shard")
+		}
+		if counts != nil && counts[i] != len(rows) {
+			return wire.Invalid("native function shard count differs")
 		}
 		for _, f := range rows {
 			if f.ModuleIndex != 0 || seenIndices[f.WasmIndex] || f.Tier != image.Backend || f.Generation != 0 || f.Length == 0 || f.Offset > uint64(artifact.Content.Bytes) || f.Length > uint64(artifact.Content.Bytes)-f.Offset {

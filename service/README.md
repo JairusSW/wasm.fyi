@@ -84,6 +84,16 @@ Import and portable recovery check report/field identities and retain the entire
 content closure. Legacy report descriptors remain readable. External analytical
 files and archive downloads require separate resources.
 
+`GET /api/v1/artifacts/{id}/functions?revision=...&limit=...` returns bounded
+function attribution in producer order, with totals, completeness and a signed
+next cursor. Fresh native metadata records `producer-order-v1` shard counts,
+validated against actual rows at import and recovery, so pages skip unselected
+shards. Legacy exports use a bounded counting fallback. Cursors bind the artifact,
+revision and page limit; no native bytes or disassembly are fetched by this route.
+Unavailable attribution returns 404. Metadata supports at most 4,096 shards and
+one million functions; requests retain the existing work, response and decoded
+byte ceilings. Original inspection chunks remain accessible independently.
+
 For maintenance while serving, create a private directory (mode `0700`) and pass
 `--control-socket /private/run/wasmfyi.sock` to `serve`. The optional local Unix
 socket has mode `0600`; existing socket paths are rejected. Use

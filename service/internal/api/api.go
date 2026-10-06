@@ -289,7 +289,7 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if path == "manifest" {
-		respond(w, r, 200, map[string]any{"schema": 2, "revision": a.Store.Current(), "selectionAliases": map[string]string{"s1": "current", "s2": "previous"}, "limits": map[string]int{"defaultResults": 100, "maxResults": 1000, "decodedResponseBytes": wire.ResponseBytes, "decodedChunkBytes": wire.ChunkBytes, "scanKeys": store.ScanLimit, "decodedEvidenceResourceBytes": wire.ResourceBytes, "maxEvidenceFragments": wire.ResourceFragments, "cohortScopeBytes": 4096, "cohortComputations": 2, "resultComputations": 2, "resultCacheBytes": resultCacheBytes, "resultCacheEntries": resultCacheEntries, "cohortCells": 100000}, "endpoints": []string{"overview", "results", "reports", "metrics", "methods", "configurations", "environments", "workloads", "artifacts", "history", "aggregates", "cohorts", "sessions"}}, false)
+		respond(w, r, 200, map[string]any{"schema": 2, "revision": a.Store.Current(), "selectionAliases": map[string]string{"s1": "current", "s2": "previous"}, "limits": map[string]int{"defaultResults": 100, "maxResults": 1000, "decodedResponseBytes": wire.ResponseBytes, "decodedChunkBytes": wire.ChunkBytes, "scanKeys": store.ScanLimit, "decodedEvidenceResourceBytes": wire.ResourceBytes, "maxEvidenceFragments": wire.ResourceFragments, "nativeFunctionShards": 4096, "nativeFunctions": 1000000, "cohortScopeBytes": 4096, "cohortComputations": 2, "resultComputations": 2, "resultCacheBytes": resultCacheBytes, "resultCacheEntries": resultCacheEntries, "cohortCells": 100000}, "endpoints": []string{"overview", "results", "reports", "metrics", "methods", "configurations", "environments", "workloads", "artifacts", "history", "aggregates", "cohorts", "sessions"}}, false)
 		return
 	}
 	if path == "overview" || path == "aggregates" || strings.HasPrefix(path, "cohorts/") {
@@ -322,6 +322,24 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	parts := strings.Split(path, "/")
+	if len(parts) == 3 && parts[0] == "artifacts" && parts[2] == "functions" {
+		query := "artifact-functions:" + parts[1] + ":producer-order:" + strconv.Itoa(n)
+		if c.Revision != "" && (c.Revision != revision || c.Query != query) {
+			problem(w, r, wire.Invalid("cursor scope differs"))
+			return
+		}
+		page, e := a.Store.FunctionPage(r.Context(), revision, parts[1], c.Offset, n)
+		if e != nil {
+			problem(w, r, e)
+			return
+		}
+		next := ""
+		if page.Next < page.Total {
+			next = a.sign(cursor{revision, query, page.Next})
+		}
+		respond(w, r, 200, map[string]any{"revision": revision, "artifact": parts[1], "items": page.Items, "total": page.Total, "complete": page.Next == page.Total, "nextCursor": next, "order": "producer-order", "indexed": page.Indexed}, immutable)
+		return
+	}
 	if parts[0] == "methods" && len(parts) == 2 {
 		method, e := a.Store.MethodContext(r.Context(), revision, params.Get("definition"), parts[1])
 		if e != nil {

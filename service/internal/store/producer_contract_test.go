@@ -57,6 +57,10 @@ func TestFreshNativeProducerContract(t *testing.T) {
 	if _, err = s.ArtifactEvidence(context.Background(), revision, rows[0].ID, descriptor.Inspection.Metadata); err != nil {
 		t.Fatal("producer metadata inaccessible", err)
 	}
+	functions, err := s.FunctionPage(context.Background(), revision, rows[0].ID, 0, 1)
+	if err != nil || !functions.Indexed || functions.Total != 1 || len(functions.Items) != 1 || functions.Items[0].WasmIndex != 7 || functions.Items[0].Length != 32 {
+		t.Fatal("producer function index incompatible", functions, err)
+	}
 	results, err := s.Results(Query{Revision: revision}, false)
 	if err != nil || len(results) == 0 {
 		t.Fatal(err)

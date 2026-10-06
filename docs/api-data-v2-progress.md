@@ -794,3 +794,28 @@ call reports and emitted 105 objects each; the serving parity gate preserved all
 memory summaries and two exact cohort scopes. These remain archived report tests,
 not new measurements. Standalone Parquet/trace/profile files and parent/archive
 bulk resources are still separate pending work.
+
+### Indexed native function pages
+
+The producer's existing function shards now include `producer-order-v1` metadata:
+ordered shard digests and exact row counts, bounded to 4,096 shards and one million
+functions. Import and portable recovery validate each count against its source
+shard, retaining the original module/wasm indices, offsets, lengths, tier and
+generation. Existing shard references and legacy exports remain readable.
+
+`/api/v1/artifacts/{id}/functions` serves bounded pages in that recorded order.
+Cursors freeze revision, artifact and limit. Indexed reads skip all nonintersecting
+shards; older metadata uses an explicitly bounded counting fallback. Totals and
+completeness are independent of the returned page. Byte ceilings produce a next
+cursor without dropping remaining rows. The endpoint loads neither original
+native bytes nor disassembly, and unavailable attribution stays unavailable.
+
+Synthetic tests cover cross-shard boundaries, descending source indices,
+legacy/indexed parity, frozen cursor continuation after publication/handler
+recreation, invalid query scopes, count mismatch rejection and portable rebuild.
+A private test removes unselected earlier shards and the raw image after verified
+publication and still reads the later indexed page, proving selected access.
+A fresh separately emitted 400,000-byte native producer fixture imports and serves
+its exact attributed function (wasm index 7, length 32). This remains synthetic
+transport proof, not a measured performance claim. Offline disassembly, section
+resources and wider native scale/crash gates remain open.

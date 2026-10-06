@@ -2216,6 +2216,64 @@
           }
         }
       }
+    },
+    "/api/v1/artifacts/{id}/functions": {
+      "get": {
+        "summary": "Page selected native function attribution in immutable producer order",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "site-v2.schema.json#/$defs/Digest"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "site-v2.schema.json#/$defs/Digest"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded function page with completeness and exact attribution",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/NativeFunctionPage"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Inspection or linked resource unavailable"
+          }
+        },
+        "description": "Uses producer-validated shard counts to skip unselected function pages. Legacy metadata uses a bounded counting fallback. Cursors bind revision, artifact and limit. Unavailable function attribution returns 404; this route performs no disassembly and reads no native bytes."
+      }
     }
   },
   "components": {
