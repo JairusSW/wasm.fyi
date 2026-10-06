@@ -628,3 +628,30 @@ WASMFYI_REAL_REPORTS='[{"Source":"/absolute/report","Export":"/absolute/site-v2"
 The test skips without explicit inputs. Synthetic fixture association metadata is
 identified as such; this gate does not claim the original collection coordinator
 session/parent archive has already migrated into the API.
+
+## Published session progress
+
+Frozen `/sessions/{id}` and `/sessions/{id}/jobs` resources now expose the existing
+collection hierarchy without embedding export inventories or evidence arrays.
+Completed jobs gain small immutable summaries and per-session postings in the
+same synchronous publication as their dataset revision. Older revisions use a
+bounded ancestry fallback; the next publication builds the session index once.
+Session/member/attempt bindings still come from the existing authenticated submit
+path. Staged and aborted imports do not appear in these public views.
+
+The summary reports the source plan hash, configured harness pin, published-job
+count and observed member count. Because the completed-job sink does not receive
+the complete session plan or running-worker events, planned-job count and total
+collection completeness are null with a recorded reason. A publication count is
+not mislabeled as collection completion. Job pages show session/member/corpus/
+attempt identity, parent bundle hash, small report references, collection status
+and publication time. No archive download availability is inferred from a hash.
+
+Pagination sorts by machine/corpus/attempt/job identity before selecting a page;
+signed cursors bind session, dataset revision and page size. Short-lived reads
+have key/decoded-byte/response limits and cancellation. Portable closure verifies
+summary bindings against canonical source jobs; backup and DB-free rebuild retain
+the same progress. Tests cover old frozen views, staged/aborted exclusion, unknown
+sessions, cancellation, cursor scope changes and portable reconstruction. Full
+plan registration, live worker/attempt states and parent archive resources remain
+separate required coordinator/backend work.

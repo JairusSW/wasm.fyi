@@ -223,6 +223,27 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 		switch tuple[0] {
 		case "catalog", "methods":
 			return markMap(set.Root, "posting-record", markRecord)
+		case "session-jobs":
+			return markMap(set.Root, "posting-session-job", func(k, id string) error {
+				var summary PublishedJob
+				if e := read(id, &summary); e != nil {
+					return e
+				}
+				var job wire.Job
+				if e := read(summary.ID, &job); e != nil {
+					return e
+				}
+				if e := job.Validate(); e != nil {
+					return e
+				}
+				actual := jobSummary(job, summary.ID, summary.PublishedAt)
+				a, _ := wire.Encode(actual)
+				b, _ := wire.Encode(summary)
+				if string(a) != string(b) || summary.Session != tuple[1] || publishedJobKey(summary) != k {
+					return wire.Invalid("session job summary differs from source")
+				}
+				return nil
+			})
 		case "cells":
 			return markMap(set.Root, "posting-cell", func(_, _ string) error { return nil })
 		default:
@@ -234,6 +255,9 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 		var r Revision
 		if e := read(id, &r); e != nil {
 			return nil, e
+		}
+		if r.SessionIndexVersion != "" && r.SessionIndexVersion != SessionIndexVersion {
+			return nil, wire.Invalid("unsupported session index")
 		}
 		if e := markMap(r.Catalog, "catalog", markRecord); e != nil {
 			return nil, e

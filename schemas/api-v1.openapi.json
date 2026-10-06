@@ -2015,6 +2015,91 @@
           }
         }
       }
+    },
+    "/api/v1/sessions/{id}": {
+      "get": {
+        "summary": "Frozen progress from published completed jobs",
+        "description": "Does not infer full-session collection completeness or reveal staged evidence. Planned-job count and collectionComplete are null until the full session plan is available.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Small binding and count summary"
+          },
+          "404": {
+            "description": "No published jobs for this session in the requested revision"
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{id}/jobs": {
+      "get": {
+        "summary": "Page published jobs in a frozen session scope",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Small job/report references sorted by machine, corpus, attempt and job ID; cursor binds revision/session/page size"
+          },
+          "400": {
+            "description": "Invalid identity or mutated cursor"
+          },
+          "404": {
+            "description": "No published session"
+          }
+        }
+      }
     }
   },
   "components": {

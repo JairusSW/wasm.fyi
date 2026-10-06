@@ -37,3 +37,11 @@ Membership pages contain exact result/report/configuration/contract/method
 references and source values. Aggregates do not load trial evidence or invent
 cross-report confidence intervals. Scope JSON is limited to 4 KiB; calculations
 are bounded and admitted separately from ordinary API requests.
+
+`GET /api/v1/sessions/{id}?revision=...` reports the session's immutable plan/pin
+bindings and counts of jobs published in that revision. `/sessions/{id}/jobs`
+returns bounded pages of completed collection jobs, with small report and parent
+bundle references. Cursors freeze publication state. The service currently
+receives completed jobs; it does not have the full planned job inventory or live
+worker states. Therefore planned-job count and full-session completeness are
+explicitly null. Upload/abort details remain on authenticated admin endpoints.

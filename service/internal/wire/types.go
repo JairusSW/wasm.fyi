@@ -89,6 +89,8 @@ func IsHash(s string) bool         { return hashPattern.MatchString(s) }
 func Hash(b []byte) string         { h := sha256.Sum256(b); return hex.EncodeToString(h[:]) }
 func Encode(v any) ([]byte, error) { return json.Marshal(v) }
 
+func IsIdentity(value string) bool { return identityPattern.MatchString(value) }
+
 type ExporterIdentity struct {
 	Format        string            `json:"format"`
 	BinarySHA256  string            `json:"binarySha256"`

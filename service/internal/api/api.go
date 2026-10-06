@@ -283,7 +283,7 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if path == "manifest" {
-		respond(w, r, 200, map[string]any{"schema": 2, "revision": a.Store.Current(), "selectionAliases": map[string]string{"s1": "current", "s2": "previous"}, "limits": map[string]int{"defaultResults": 100, "maxResults": 1000, "decodedResponseBytes": wire.ResponseBytes, "decodedChunkBytes": wire.ChunkBytes, "scanKeys": store.ScanLimit, "decodedEvidenceResourceBytes": wire.ResourceBytes, "maxEvidenceFragments": wire.ResourceFragments, "cohortScopeBytes": 4096, "cohortComputations": 2, "cohortCells": 100000}, "endpoints": []string{"results", "reports", "metrics", "configurations", "environments", "workloads", "artifacts", "history", "aggregates", "cohorts"}}, false)
+		respond(w, r, 200, map[string]any{"schema": 2, "revision": a.Store.Current(), "selectionAliases": map[string]string{"s1": "current", "s2": "previous"}, "limits": map[string]int{"defaultResults": 100, "maxResults": 1000, "decodedResponseBytes": wire.ResponseBytes, "decodedChunkBytes": wire.ChunkBytes, "scanKeys": store.ScanLimit, "decodedEvidenceResourceBytes": wire.ResourceBytes, "maxEvidenceFragments": wire.ResourceFragments, "cohortScopeBytes": 4096, "cohortComputations": 2, "cohortCells": 100000}, "endpoints": []string{"results", "reports", "metrics", "configurations", "environments", "workloads", "artifacts", "history", "aggregates", "cohorts", "sessions"}}, false)
 		return
 	}
 	if path == "aggregates" || strings.HasPrefix(path, "cohorts/") {
@@ -316,6 +316,37 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	parts := strings.Split(path, "/")
+	if parts[0] == "sessions" && len(parts) >= 2 {
+		if len(parts) == 2 {
+			v, e := a.Store.SessionInfo(r.Context(), revision, parts[1])
+			if e != nil {
+				problem(w, r, e)
+				return
+			}
+			respond(w, r, 200, v, immutable)
+			return
+		}
+		if len(parts) == 3 && parts[2] == "jobs" {
+			query := "session-jobs:" + parts[1] + ":" + strconv.Itoa(n)
+			if c.Revision != "" && (c.Revision != revision || c.Query != query) {
+				problem(w, r, wire.Invalid("cursor scope differs"))
+				return
+			}
+			page, e := a.Store.SessionJobs(r.Context(), revision, parts[1], c.Offset, n)
+			if e != nil {
+				problem(w, r, e)
+				return
+			}
+			next := ""
+			if page.Next < page.Total {
+				next = a.sign(cursor{revision, query, page.Next})
+			}
+			respond(w, r, 200, map[string]any{"revision": revision, "items": page.Items, "total": page.Total, "complete": page.Next == page.Total, "nextCursor": next, "sort": "machine-corpus-attempt-id"}, immutable)
+			return
+		}
+		http.NotFound(w, r)
+		return
+	}
 	if parts[0] == "revisions" {
 		if len(parts) == 2 {
 			v, e := a.Store.Revision(parts[1])

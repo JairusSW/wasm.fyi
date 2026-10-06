@@ -26,18 +26,19 @@ var ErrNeedsRestart = errors.New("publication durability uncertain; restart serv
 var ErrConflict = errors.New("immutable session or attempt conflicts with existing delivery")
 
 type Revision struct {
-	Parent             string    `json:"parent,omitempty"`
-	Catalog            string    `json:"catalogRoot"`
-	Selection          string    `json:"selectionRoot"`
-	Indexes            string    `json:"indexRoot,omitempty"`
-	Observations       string    `json:"observationRoot,omitempty"`
-	ObservationPolicy  string    `json:"observationPolicy,omitempty"`
-	Job                string    `json:"job"`
-	Publisher          string    `json:"trustedPublisher"`
-	Created            time.Time `json:"publishedAt"`
-	Integrity          string    `json:"byteIntegrity"`
-	SourceVerification string    `json:"sourceVerification"`
-	Qualification      string    `json:"operatorQualification"`
+	Parent              string    `json:"parent,omitempty"`
+	Catalog             string    `json:"catalogRoot"`
+	Selection           string    `json:"selectionRoot"`
+	Indexes             string    `json:"indexRoot,omitempty"`
+	Observations        string    `json:"observationRoot,omitempty"`
+	ObservationPolicy   string    `json:"observationPolicy,omitempty"`
+	SessionIndexVersion string    `json:"sessionIndexVersion,omitempty"`
+	Job                 string    `json:"job"`
+	Publisher           string    `json:"trustedPublisher"`
+	Created             time.Time `json:"publishedAt"`
+	Integrity           string    `json:"byteIntegrity"`
+	SourceVerification  string    `json:"sourceVerification"`
+	Qualification       string    `json:"operatorQualification"`
 }
 type Store struct {
 	db           *pebble.DB
@@ -685,6 +686,7 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 			return "", e
 		}
 		rev.Catalog, rev.Selection, rev.Indexes, rev.Observations = old.Catalog, old.Selection, old.Indexes, old.Observations
+		rev.SessionIndexVersion = old.SessionIndexVersion
 		if old.Indexes == "" {
 			budget := 1000000
 			if e = s.walk(old.Catalog, &budget, func(_, digest string) error {
@@ -857,6 +859,9 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 	// Portable job + revision roots are durable before the Pebble pointer.
 	jb, _ := wire.Encode(j)
 	if e = s.installBytes(id, jb); e != nil {
+		return "", e
+	}
+	if e = s.indexPublishedJobs(ctx, &rev, j); e != nil {
 		return "", e
 	}
 	revID, e := s.put(rev)

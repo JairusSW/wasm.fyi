@@ -855,6 +855,128 @@
         "contracts"
       ],
       "additionalProperties": false
+    },
+    "PublishedJob": {
+      "type": "object",
+      "properties": {
+        "session": {
+          "type": "string"
+        },
+        "machine": {
+          "type": "string"
+        },
+        "corpus": {
+          "type": "string"
+        },
+        "attempt": {
+          "type": "string"
+        },
+        "configuredHarnessPin": {
+          "type": "string"
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "plan": {
+          "$ref": "#/$defs/Digest"
+        },
+        "parentBundleSha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "collectionStatus": {
+          "const": "completed"
+        },
+        "publicationStatus": {
+          "const": "published"
+        },
+        "publishedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reports": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/Digest"
+          }
+        }
+      },
+      "required": [
+        "session",
+        "machine",
+        "corpus",
+        "attempt",
+        "configuredHarnessPin",
+        "id",
+        "plan",
+        "parentBundleSha256",
+        "collectionStatus",
+        "publicationStatus",
+        "publishedAt",
+        "reports"
+      ],
+      "additionalProperties": false
+    },
+    "SessionProgress": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "plan": {
+          "$ref": "#/$defs/Digest"
+        },
+        "configuredHarnessPin": {
+          "type": "string"
+        },
+        "publishedJobs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "members": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "plannedJobs": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "collectionComplete": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "completenessReason": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "plan",
+        "configuredHarnessPin",
+        "publishedJobs",
+        "members",
+        "plannedJobs",
+        "collectionComplete",
+        "completenessReason"
+      ],
+      "additionalProperties": false
     }
   },
   "$ref": "#/$defs/CompletedJob"
