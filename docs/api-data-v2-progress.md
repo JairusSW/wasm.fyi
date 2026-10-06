@@ -1066,3 +1066,33 @@ The existing multi-chunk backup/rebuild test exercises the new full download as
 well. Verified Wasmer fixtures preserve all six original Parquet files through
 both chunk and whole-file HTTP reads. Report/tool archives and broader bulk-scale
 and slow-client operational gates remain pending.
+
+
+### Parent archive source-admission prerequisite
+
+Parent metadata reads now validate the index before opening a metadata path:
+only `metadata.json`, a regular 256 KiB file, is admitted. The index is itself
+bounded to 256 KiB and validates ordered original part names, hashes, integer
+sizes, at most 2048 parts of 32 MiB, and the exact total. Opened file identity is
+checked against lstat, symlinks/non-files are rejected, metadata reads detect
+size changes, and archive verification streams at 1 MiB while checking each
+part and the concatenated original digest. No archive extraction or execution
+is introduced.
+
+Completed-job API publication now checks parent session/plan/machine binding
+and requires recorded metadata integrity before contacting the service. It
+preserves the original index bytes/hash and does not rehash the full tools
+archive for every corpus. The coordinator's existing full parent verification
+remains responsible for that session-level check. Legacy static staging can
+still read manifests without a metadata hash; API publication fails closed for
+that uncommitted metadata case.
+
+The staging path uses the same admitted metadata reader instead of reading an
+unchecked index-provided path. A new regression suite covers unsafe paths,
+symlinks, size bounds, plan/machine mismatches and changed archive bytes. The
+existing publication, stop/resume and history suites pass (29 tests), including
+wrong-machine rejection before an HTTP import. A current V8 local parent archive
+verified its original two parts and 60,811,832 bytes with the new reader. CI now
+includes the parent-bundle regression suite. This closes source-admission checks;
+actual parent archive ingestion, availability descriptors and API downloads
+remain open.

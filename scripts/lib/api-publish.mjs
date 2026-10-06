@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {readFile, lstat} from 'node:fs/promises';
 import {join, resolve, sep} from 'node:path';
 import {digest} from './wasmbench.mjs';
+import {readParentBundleMetadata} from './benchmark-bundle.mjs';
 const HASH=/^[a-f0-9]{64}$/;
 const CHUNK=256*1024;
 const BLOB=16*1024*1024;
@@ -58,7 +59,8 @@ export async function publishCompletedJob({url,local,plan,machine,result,signal,
     }
     exports.push({sha256:digest(bytes),manifest});
   }
-  const parent=await regularFile(join(local,'bundle/index.json'),CHUNK);
+  const {index:parentIndex,indexBytes:parent}=await readParentBundleMetadata(join(local,'bundle'),{...plan,machine});
+  assert(HASH.test(parentIndex.metadataSha256),'Parent metadata digest required for API publication');
   const job={schema:2,session:plan.id,machine,corpus:result.corpus,attempt:digest(Buffer.from(JSON.stringify(exports.map(e=>e.sha256)))),plan:plan.identity,configuredHarnessPin:plan.configuredHarnessPin,parentBundleSha256:digest(parent),status:'completed',exports};
   assert(typeof job.configuredHarnessPin==='string'&&job.configuredHarnessPin.length>0,'Missing configured harness identity');
   const call=async(path,method='GET',body)=>{
