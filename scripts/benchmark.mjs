@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import {ProgressDelivery} from './lib/api-progress-delivery.mjs';
 import {
   readFile,
   writeFile,
@@ -28,7 +29,7 @@ import {
 import { corpusGroups } from "./lib/corpus-collection.mjs";
 import { runCommand, quote } from "./lib/benchmark-process.mjs";
 import { publishCorpus } from "./lib/benchmark-publish.mjs";
-import { publishCompletedJob, publicationURL, registerSessionPlan } from "./lib/api-publish.mjs";
+import { publishCompletedJob, publicationURL, registerSessionPlan, publishAttemptProgress, readAttemptProgress } from "./lib/api-publish.mjs";
 import { benchmarkSource, sourceBundle } from "./lib/benchmark-source.mjs";
 import { verifyParentBundle } from "./lib/benchmark-bundle.mjs";
 import { verifySeal } from "./lib/verify-seal.mjs";
@@ -490,6 +491,7 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
   console.log(
     `Run ${id}\n${plan.jobs.length} corpora · ${plan.engines.join(", ")} · ${plan.machines.map((m) => m.name + " " + m.workers).join(", ")}\nResume: just bench-resume ${id}\nStop: just bench-stop ${id}`,
   );
+  const progressDeliveries=[];
   let uploading = Promise.resolve(),
     uploadError,
     failed = false;
@@ -856,8 +858,9 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
     }
     await Promise.all(
       hosts.map(async (host) => {
-        const local = join(directory, "hosts", host.name),
-          onLine = (line) => {
+        const local = join(directory, "hosts", host.name);
+        let progress=null;
+        const onLine = (line) => {
             let event;
             try {
               event = JSON.parse(line);
@@ -866,15 +869,20 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
             }
             if (!event.benchmarkEvent) return;
             human(event);
+            if(progress){try{progress.record(event)}catch(e){uploadError??=e;abort.abort()}}
             if (event.status === "completed" && event.result)
               uploading = uploading
                 .then(() => publish(host, event))
                 .catch((e) => {
-                  uploadError = e;
+                  uploadError ??= e;
                   abort.abort();
                 });
           };
         try {
+          try {
+            progress = plan.publication?.type === 'api-v1' ? new ProgressDelivery({directory:join(local,'api-progress'),plan,onError:e=>{uploadError??=e;abort.abort()},readState:update=>readAttemptProgress({url:plan.publication.url,update,signal:abort.signal}),send:update=>publishAttemptProgress({url:plan.publication.url,update,signal:abort.signal})}) : null;
+            if(progress){progressDeliveries.push(progress);await progress.replay();await progress.interruptPrevious(host.name)}
+          }catch(e){uploadError??=e;abort.abort();throw e}
           if (host.ssh)
             await ssh(
               host,
@@ -903,8 +911,9 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
         }
       }),
     );
-    await uploading;
+    const delivered=await Promise.allSettled([uploading,...progressDeliveries.map(progress=>progress.flush())]);
     if (uploadError) throw uploadError;
+    const deliveryFailure=delivered.find(result=>result.status==='rejected');if(deliveryFailure)throw deliveryFailure.reason;
     if (abort.signal.aborted)
       throw Error("Interrupted; resume with the saved ID");
     if (failed)

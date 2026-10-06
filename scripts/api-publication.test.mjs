@@ -1,3 +1,4 @@
+import {ProgressDelivery} from './lib/api-progress-delivery.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtemp, mkdir, cp, readFile, rm, writeFile} from 'node:fs/promises';
@@ -8,7 +9,7 @@ import {createServer} from 'node:net';
 import {fileURLToPath} from 'node:url';
 import {runCommand} from './lib/benchmark-process.mjs';
 import {digest} from './lib/wasmbench.mjs';
-import {publicationURL,publishCompletedJob,registerSessionPlan,publishAttemptProgress} from './lib/api-publish.mjs';
+import {publicationURL,publishCompletedJob,registerSessionPlan,publishAttemptProgress,readAttemptProgress} from './lib/api-publish.mjs';
 import {planIdentity} from './lib/benchmark-plan.mjs';
 const site=fileURLToPath(new URL('..',import.meta.url));
 test('API origin requires HTTPS except loopback and excludes embedded secrets',()=>{
@@ -57,6 +58,12 @@ test('completed corpus uploads only missing objects, publishes idempotently, ret
   await publishAttemptProgress({url,update:{...update,sequence:2,status:'interrupted'},token});
   await assert.rejects(publishAttemptProgress({url,update:{...update,sequence:3},token}),/409/);
   assert.equal((await fetch(collectionURL+'?revision='+ 'a'.repeat(64))).status,400,'Live registration accepted immutable revision scope');
+  const journalArgs={directory:join(root,'progress-journal'),plan,send:update=>publishAttemptProgress({url,update,token}),readState:update=>readAttemptProgress({url,update,token})};
+  const delivery=new ProgressDelivery(journalArgs);const firstEvent=delivery.record({machine:'fixture-machine',corpus:'corpus-0001',status:'running',phase:'timing',time:'2026-10-06T00:00:00.000Z'});await delivery.flush();
+  const recoveredDelivery=new ProgressDelivery({...journalArgs,send:async()=>{throw Error('Already confirmed event resent')}});await recoveredDelivery.replay();
+  await new ProgressDelivery(journalArgs).interruptPrevious('fixture-machine');
+  assert.equal((await readAttemptProgress({url,update:firstEvent,token})).update.status,'interrupted');
+  assert.equal(await readAttemptProgress({url,update:{...firstEvent,attempt:'never-started'},token}),null);
   uploads=0;assert.equal(await registerSessionPlan({url,plan,token,request}),registered);assert.equal(uploads,0,'Registered duplicate retransferred source');
   const changed=structuredClone(plan);changed.jobs.push({id:'corpus-other'});changed.identity=planIdentity(changed);
   await assert.rejects(registerSessionPlan({url,plan:changed,token}),/409/);

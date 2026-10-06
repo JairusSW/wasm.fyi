@@ -391,6 +391,27 @@ regression coverage. Live reads share the maintenance lock with cancellation,
 so cleanup cannot remove a replaced index while a request follows it.
 
 `publishAttemptProgress` uses the existing bounded publisher transport, deadlines
-and rate-limit backoff. Durable coordinator event delivery, attempt discovery
-and paginated session progress remain pending; the running collector does not
-yet emit these updates to the API.
+and rate-limit backoff. The coordinator now journals small progress updates before sending them. Each
+host has a private `api-progress` directory in its local session member. Files
+are installed with file and directory sync, are limited to 2 KiB, and retain
+exact update bytes across retry. The journal permits at most 100,000 events and
+10,000 attempts; its delivery queue permits at most 128 pending updates. No
+trial arrays, result details or error-log text enter the journal.
+
+Resume asks the API for each attempt's current state, checks it against the
+journal and sends only subsequent sequences. This also repairs API state rolled
+back by a restore. Lost replies do not invent new attempts. After stopping prior
+workers, the coordinator replays saved updates and marks remaining running
+attempts interrupted at the `coordinator-restart` phase before launching new
+work. This closes an interrupted observation stream; saved sealed results still
+determine measurement completion and publication. Cached completed results and
+duplicate terminal worker/host events do not become new operational attempts.
+
+Delivery failure or queue overflow stops collection while retaining the source
+updates for resume. Cancellation leaves terminal events journaled for the next
+resume instead of delaying stop for network retries. Progress delivery uses the
+existing publisher deadlines/backoff, and all delivery promises are joined before
+coordinator completion. Unit and actual-HTTP tests cover replay, lost replies,
+rollback, interruption, overflow, duplicate terminal events and scope conflicts.
+These tests run no benchmarks. Attempt discovery and paginated session progress
+remain pending, along with broader live remote-worker operational qualification.

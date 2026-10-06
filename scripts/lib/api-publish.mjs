@@ -26,7 +26,7 @@ function inside(root,path){
 }
 function publicationClient({url,token,signal,request}){
  url=publicationURL(url);assert(typeof token==='string'&&token.length>=32,'WASMFYI_ADMIN_TOKEN must contain at least 32 characters');
-  const call=async(path,method='GET',body)=>{
+  const call=async(path,method='GET',body,allowMissing=false)=>{
     signal?.throwIfAborted();
     // This deadline covers every retry, delay and response read together.
     // The API rejects rate-limited requests before publication/upload work.
@@ -41,11 +41,16 @@ function publicationClient({url,token,signal,request}){
         await delay(Number(retry)*1000,undefined,{signal:requestSignal});
         continue;
       }
+      if(response.status===404&&allowMissing){await response.body?.cancel();return null}
       if(!response.ok)throw Error(`API publication failed (${response.status}) at ${path}`);
       const chunks=[];let size=0;for await(const b of response.body){size+=b.length;assert(size<=1024*1024,'API response exceeds ceiling');chunks.push(b)};return JSON.parse(Buffer.concat(chunks).toString());
     }
   };
  return call;
+}
+export async function readAttemptProgress({url,update,signal,token=process.env.WASMFYI_ADMIN_TOKEN,request=fetch}){
+ signal?.throwIfAborted();const call=publicationClient({url,token,signal,request});
+ return call('/api/v1/collection/sessions/'+[update.session,'attempts',update.machine,update.corpus,update.attempt].map(encodeURIComponent).join('/'),'GET',undefined,true);
 }
 export async function publishAttemptProgress({url,update,signal,token=process.env.WASMFYI_ADMIN_TOKEN,request=fetch}){
  signal?.throwIfAborted();

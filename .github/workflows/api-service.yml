@@ -42,7 +42,7 @@ jobs:
           WASMFYI_CONTRACT_OUTPUT="$RUNNER_TEMP/api-contracts.jsonl" go test ./internal/api -run 'TestOverviewComplete|TestResultSummaries|TestNativeFunctionAPI' -count=1
           python ../scripts/check-api-contracts.py --export testdata/site-v2 --responses "$RUNNER_TEMP/api-contracts.jsonl"
         working-directory: service
-      - run: node --test scripts/api-session-plan.test.mjs scripts/api-publication.test.mjs scripts/benchmark-workflow.test.mjs scripts/benchmark-bundle.test.mjs scripts/api-parent-archive.test.mjs scripts/api-large-publication.test.mjs
+      - run: node --test scripts/api-progress-delivery.test.mjs scripts/api-session-plan.test.mjs scripts/api-publication.test.mjs scripts/benchmark-workflow.test.mjs scripts/benchmark-bundle.test.mjs scripts/api-parent-archive.test.mjs scripts/api-large-publication.test.mjs
   client:
     runs-on: ubuntu-latest
     steps:
