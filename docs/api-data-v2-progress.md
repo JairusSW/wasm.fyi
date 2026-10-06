@@ -1404,3 +1404,18 @@ holds a declared upload in its reader, disconnects a queued cleanup client, then
 proves control admission is available to another request before the upload ends.
 Existing live backup/cleanup, admission and shutdown tests remain applicable.
 This closes the queue-cancellation gap left after integrity scans became cancelable.
+
+## Strict local maintenance requests
+
+The local control socket now uses the same strict wire JSON validation as import
+transport, with exact `output`/`apply` keys and explicit string/boolean fields.
+Duplicate keys (including escaped duplicates), case-folded aliases, null documents
+or fields, malformed Unicode, unknown keys, trailing documents and bodies beyond
+8 KiB are rejected before backup or cleanup starts. This replaces a permissive
+standard decoder that accepted ambiguous `apply` values and null defaults.
+
+Real Unix-socket regressions reproduce the old acceptance and verify rejection,
+unchanged publication, absent applied-cleanup mutation and released control
+admission. Typed Unicode paths and true/false flags remain supported. Existing
+live backup/cleanup, queue cancellation, socket safety and shutdown tests pass.
+No scientific inputs, measurement methods or public frontend behavior change.

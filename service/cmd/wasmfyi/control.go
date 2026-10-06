@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/JairusSW/wasm.fyi/service/internal/store"
+	"github.com/JairusSW/wasm.fyi/service/internal/wire"
 )
 
 // The control plane is local filesystem authority, separate from publisher HTTP.
@@ -31,6 +32,35 @@ type controlServer struct {
 type maintenanceRequest struct {
 	Output string `json:"output,omitempty"`
 	Apply  bool   `json:"apply,omitempty"`
+}
+
+func decodeMaintenanceRequest(data []byte) (maintenanceRequest, error) {
+	var request maintenanceRequest
+	var fields map[string]json.RawMessage
+	if e := wire.Decode(data, &fields); e != nil {
+		return request, e
+	}
+	if fields == nil {
+		return request, wire.Invalid("maintenance request must be an object")
+	}
+	for key, value := range fields {
+		if bytes.Equal(bytes.TrimSpace(value), []byte("null")) {
+			return request, wire.Invalid("null maintenance field")
+		}
+		switch key {
+		case "output":
+			if e := wire.Decode(value, &request.Output); e != nil {
+				return request, e
+			}
+		case "apply":
+			if e := wire.Decode(value, &request.Apply); e != nil {
+				return request, e
+			}
+		default:
+			return request, wire.Invalid("unknown maintenance field")
+		}
+	}
+	return request, nil
 }
 
 func startControl(ctx context.Context, path string, s *store.Store) (*controlServer, error) {
@@ -90,14 +120,12 @@ func startControl(ctx context.Context, path string, s *store.Store) (*controlSer
 			return
 		}
 		defer release()
+		data, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 8192))
 		var request maintenanceRequest
-		decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 8192))
-		decoder.DisallowUnknownFields()
-		if err = decoder.Decode(&request); err != nil {
-			http.Error(w, "invalid maintenance request", http.StatusBadRequest)
-			return
+		if err == nil {
+			request, err = decodeMaintenanceRequest(data)
 		}
-		if err = decoder.Decode(new(any)); err != io.EOF {
+		if err != nil {
 			http.Error(w, "invalid maintenance request", http.StatusBadRequest)
 			return
 		}
