@@ -583,3 +583,48 @@ unknown applications are never guessed for corpus weighting. Canonical metric
 and runtime-track bindings are now also checked during import. Representative
 sealed real-data serving parity, default overview precomputation, broader scale
 measurements and production cutover remain open.
+
+## Real-source parity and batched immutable indexes
+
+Three existing complete harness reports were verified and exported with the
+installed producer built from the development worktree: Wasmer call probes,
+Deno call probes and Wasmer native-size coverage. Transport-only directories in
+the website workspace lack `raw/checksums.json` and cannot establish this gate.
+The original evidence was read-only; no collection, archived verifier execution,
+or benchmark-method change occurred. Wasmer and Deno record different environment
+identities (`GOMAXPROCS` differs), and the gate preserves that distinction.
+
+The opt-in `TestRealProducerServingParity` imports these exports through declared
+objects and paged inventories into a temporary service database. It compares
+source timing/memory summary JSON after removing only detailed diagnostic arrays,
+retains exact integer native sizes and verifies unavailable bytes cannot acquire
+hashes/downloads. It checks selected exact environment/track/method cohorts and
+their HTTP summary/member surfaces. The three-report run passed with 592 timing,
+729 memory and 145 native-size measurements, across six timing scopes. The native
+report contributes 7,453 objects and 147 artifact descriptors with unavailable
+content/inspection. These records prove source-value transport/serving fidelity,
+not a new performance claim or deployment qualification.
+
+That gate first hit the ten-minute test timeout while writing intermediate
+catalog/posting roots. Publication now applies grouped radix-map updates, writing
+only final changed branches and retaining shared old branches. The canonical
+roots match sequential construction exactly. A 200-entry regression requires
+over four times fewer files and checks immutable old roots, incremental updates,
+idempotency and cancellation. Real import/serving subsequently completed in
+253.95 seconds on this host. This is a local gate duration, not a general ingest
+throughput guarantee; broader load/memory bounds remain open. File synchronization
+and synchronous publication barriers were retained, and abrupt-process crash,
+disk-failure and retry tests pass with the batched builder.
+
+To repeat the external-data gate, independently verify/export complete reports,
+then set `WASMFYI_REAL_REPORTS` to a JSON array of objects with `Source` (complete
+report directory) and `Export` (fresh site-v2 directory) paths:
+
+```sh
+WASMFYI_REAL_REPORTS='[{"Source":"/absolute/report","Export":"/absolute/site-v2"}]' \
+  go test ./internal/api -run TestRealProducerServingParity -count=1 -v -timeout=20m
+```
+
+The test skips without explicit inputs. Synthetic fixture association metadata is
+identified as such; this gate does not claim the original collection coordinator
+session/parent archive has already migrated into the API.

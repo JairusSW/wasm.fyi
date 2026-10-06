@@ -737,13 +737,13 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 		if existing != "" && existing != digests[k] {
 			return "", wire.Invalid("immutable record collision")
 		}
-		rev.Catalog, e = s.mapSet(rev.Catalog, k, digests[k], 0)
-		if e != nil {
-			return "", e
-		}
-		if e = s.addRecordIndexes(&rev, records[k], digests[k]); e != nil {
-			return "", e
-		}
+	}
+	rev.Catalog, e = s.mapSetMany(ctx, rev.Catalog, digests, 0)
+	if e != nil {
+		return "", e
+	}
+	if e = s.addRecordIndexBatch(ctx, &rev, records, digests); e != nil {
+		return "", e
 	}
 	for _, k := range keys {
 		if e := ctx.Err(); e != nil {
