@@ -39,6 +39,7 @@ func Fixture(seed string, created time.Time) (wire.Job, map[string][]byte, error
 	changed := map[string][]byte{}
 	remap := map[string]string{}
 	artifactIDs := map[string]string{}
+	contracts := map[string]string{}
 	for _, o := range original {
 		b := objects[o.SHA256]
 		if o.Kind == "evidence" {
@@ -50,6 +51,25 @@ func Fixture(seed string, created time.Time) (wire.Job, map[string][]byte, error
 			changed[o.SHA256] = b
 			remap[o.SHA256] = wire.Hash(b)
 		}
+	}
+	for _, o := range original {
+		if o.Kind != "record" {
+			continue
+		}
+		var record wire.Record
+		_ = json.Unmarshal(objects[o.SHA256], &record)
+		if record.Kind != "workload" {
+			continue
+		}
+		var data map[string]json.RawMessage
+		_ = json.Unmarshal(record.Data, &data)
+		data["sha256"], _ = wire.Encode(wire.Hash([]byte("synthetic-module")))
+		record.Data, _ = wire.Encode(data)
+		old := record.ID
+		record.ID = wire.Hash(record.Data)
+		contracts[old] = record.ID
+		b, _ := wire.Encode(record)
+		changed[o.SHA256] = b
 	}
 	for _, o := range original {
 		if o.Kind != "record" {
@@ -92,6 +112,12 @@ func Fixture(seed string, created time.Time) (wire.Job, map[string][]byte, error
 				_ = json.Unmarshal(r.Data, &d)
 				d["reportId"], _ = wire.Encode(m.ReportID)
 				d["created"], _ = wire.Encode(created)
+				var contract string
+				_ = json.Unmarshal(d["contractId"], &contract)
+				if mapped := contracts[contract]; mapped != "" {
+					d["contractId"], _ = wire.Encode(mapped)
+				}
+
 				var refs []string
 				_ = json.Unmarshal(d["evidence"], &refs)
 				for i, ref := range refs {

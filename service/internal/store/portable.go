@@ -144,6 +144,9 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 			if e != nil {
 				return e
 			}
+			if e = s.validateNativeInspection(artifact, "", s.content); e != nil {
+				return e
+			}
 			if artifact.Content.Status == "available" {
 				object := wire.Object{SHA256: artifact.Content.SHA256, Bytes: artifact.Content.Bytes, Kind: "binary"}
 				if _, e = s.objectRepresentation(object); e != nil {

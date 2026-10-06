@@ -553,6 +553,23 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 				if err != nil {
 					return "", err
 				}
+				var contract struct {
+					SHA256 string `json:"sha256"`
+				}
+				if e = json.Unmarshal(records["workload:"+v.ContractID].Data, &contract); e != nil {
+					return "", e
+				}
+				if artifact.Inspection.Metadata != "" && !wire.IsHash(contract.SHA256) {
+					return "", wire.Invalid("inspection lacks locked module identity")
+				}
+				if e = s.validateNativeInspection(artifact, contract.SHA256, func(id string) ([]byte, error) {
+					if !evidence[id] {
+						return nil, wire.Invalid("undeclared inspection resource")
+					}
+					return s.content(id)
+				}); e != nil {
+					return "", e
+				}
 				if artifact.ReportID != v.ReportID || artifact.Record.Runtime != v.Runtime || artifact.Record.Workload != v.Workload {
 					return "", wire.Invalid("artifact result identity differs")
 				}
@@ -599,6 +616,18 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 		if artifact.Inspection.Metadata != "" && !evidence[artifact.Inspection.Metadata] {
 			return "", wire.Invalid("unresolved inspection metadata")
 		}
+		if err = s.validateNativeInspection(artifact, "", func(id string) ([]byte, error) {
+			if e := ctx.Err(); e != nil {
+				return nil, e
+			}
+			if !evidence[id] {
+				return nil, wire.Invalid("undeclared inspection resource")
+			}
+			return s.content(id)
+		}); err != nil {
+			return "", err
+		}
+
 	}
 	// Evidence chunks may reference only declared evidence objects; never paths.
 	for id := range evidence {

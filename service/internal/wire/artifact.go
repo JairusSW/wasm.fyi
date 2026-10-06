@@ -26,6 +26,20 @@ func ArtifactData(b []byte) (Artifact, error) {
 	if err := json.Unmarshal(b, &artifact); err != nil {
 		return artifact, Invalid("invalid artifact descriptor")
 	}
+	var raw struct {
+		Content map[string]json.RawMessage `json:"content"`
+	}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return artifact, Invalid("invalid content fields")
+	}
+	if artifact.Content.Status == "available" {
+		if count, ok := raw.Content["bytes"]; !ok || string(count) == "null" {
+			return artifact, Invalid("missing original byte count")
+		}
+	}
+	if artifact.Inspection.Status == "available" && artifact.Content.Status != "available" {
+		return artifact, Invalid("inspection lacks exported content")
+	}
 	if artifact.Content.Status == "available" {
 		if !IsHash(artifact.Content.SHA256) || artifact.Content.Bytes < 0 || artifact.Content.Bytes > BlobBytes || artifact.Content.MediaType != "application/octet-stream" {
 			return artifact, Invalid("invalid artifact content")

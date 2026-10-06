@@ -354,3 +354,34 @@ binary and verifies duplicate redelivery transfers nothing. Whole selected image
 are bounded to 16 MiB and verified in memory before byte reads; streaming larger
 artifacts, offline disassembly derivatives and broader native scale/crash tests
 remain future gates.
+
+
+## Native inspection admission
+
+Inspection metadata is now checked against the artifact's source report, trial,
+image hash, architecture and version/attribution contract. Result-linked inspection
+also matches the exact workload module SHA-256. Function shard references must
+agree with their declared order, exist as evidence, and decode to actual functions.
+Ranges must fit the original image, use unique Wasm indices and generation zero,
+match the attributed backend, and not overlap. An available inspection needs actual
+functions and exported content. Metadata and oversized function rows may use the
+verified JSON resource representation. A missing/null byte count cannot silently
+become an available empty original.
+
+Service fixtures now include coherent module identities and full native metadata.
+A fresh fixture emitted by the separate producer's native-export test imported
+through the service, and its 400,000-byte original and function metadata remained
+accessible. This is synthetic transport validation, not a real benchmark capture.
+Reproduce that cross-repository gate with:
+
+```sh
+# Producer worktree: use a new output directory.
+WASMFYI_NATIVE_FIXTURE_OUT=/tmp/new-native-export go test ./publish -run TestSiteExportNativeBinaryAndFunctionResources -count=1
+# Service module:
+WASMFYI_NATIVE_PRODUCER_EXPORT=/tmp/new-native-export go test ./internal/store -run TestFreshNativeProducerContract -count=1
+```
+
+Malformed metadata tests cover report/trial/module/image mismatches, absent
+functions, overlapping/out-of-bounds ranges, duplicate indices and generations.
+Materialization remains recorded producer evidence; the service does not rerun
+compilation or infer instruction-only sizes or lifetime observations.

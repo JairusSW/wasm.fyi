@@ -66,43 +66,47 @@ func Resource(b []byte) (*JSONResource, error) {
 // VerifyResource verifies the original JSON, not only the fragment files. The
 // maximum allocation is explicit; HTTP reads return fragments without assembly.
 func VerifyResource(resource JSONResource, fetch func(string) ([]byte, error)) error {
+	_, err := AssembleResource(resource, fetch)
+	return err
+}
+func AssembleResource(resource JSONResource, fetch func(string) ([]byte, error)) ([]byte, error) {
 	if resource.Kind != "json-resource" || resource.Schema != 1 || resource.Encoding != "json-utf8" || resource.Bytes < 1 || resource.Bytes > ResourceBytes || !IsHash(resource.SHA256) || len(resource.References) < 1 || len(resource.References) > ResourceFragments {
-		return Invalid("invalid JSON resource")
+		return nil, Invalid("invalid JSON resource")
 	}
 	for _, digest := range resource.References {
 		if !IsHash(digest) {
-			return Invalid("invalid fragment reference")
+			return nil, Invalid("invalid fragment reference")
 		}
 	}
 	value := make([]byte, 0, resource.Bytes)
 	for _, digest := range resource.References {
 		b, err := fetch(digest)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if len(b) > ChunkBytes {
-			return Invalid("oversized fragment representation")
+			return nil, Invalid("oversized fragment representation")
 		}
 		if Hash(b) != digest {
-			return Invalid("fragment hash differs")
+			return nil, Invalid("fragment hash differs")
 		}
 		var fragment JSONFragment
 		if err = Decode(b, &fragment); err != nil {
-			return err
+			return nil, err
 		}
 		if fragment.Kind != "json-fragment" || fragment.Schema != 1 || fragment.Text == "" || len(fragment.Text) > FragmentBytes || !utf8.Valid(b) {
-			return Invalid("resource references invalid fragment")
+			return nil, Invalid("resource references invalid fragment")
 		}
 		if len(fragment.Text) > resource.Bytes-len(value) {
-			return Invalid("resource exceeds declared bytes")
+			return nil, Invalid("resource exceeds declared bytes")
 		}
 		value = append(value, fragment.Text...)
 	}
 	if len(value) != resource.Bytes || Hash(value) != resource.SHA256 || !utf8.Valid(value) || !json.Valid(bytes.TrimSpace(value)) {
-		return Invalid("reassembled JSON differs")
+		return nil, Invalid("reassembled JSON differs")
 	}
 	if err := uniqueKeys(json.NewDecoder(bytes.NewReader(value))); err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return value, nil
 }

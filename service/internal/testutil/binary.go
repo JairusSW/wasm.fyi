@@ -16,7 +16,7 @@ func BinaryFixture(seed string, created time.Time, data []byte) (wire.Job, map[s
 	digest := wire.Hash(data)
 	objects[digest] = data
 	manifest.Objects = append(manifest.Objects, wire.Object{SHA256: digest, Bytes: len(data), Kind: "binary"})
-	metadata, _ := wire.Encode(map[string]any{"kind": "native-image-metadata", "references": []string{}, "image": map[string]string{"sha256": digest, "architecture": "amd64"}})
+	metadata, _ := wire.Encode(map[string]any{"kind": "native-image-metadata", "reportId": manifest.ReportID, "passId": "code-pass", "trialId": "code-0", "functions": []string{}, "references": []string{}, "image": map[string]any{"version": 1, "module_sha256": wire.Hash([]byte("synthetic-module")), "sha256": digest, "architecture": "amd64", "backend": "fixture", "format": "raw-native-image", "section_kind": "mixed_code_and_embedded_data", "event": "compiled_snapshot", "function_attribution": "unavailable"}})
 	metaID := wire.Hash(metadata)
 	objects[metaID] = metadata
 	manifest.Objects = append(manifest.Objects, wire.Object{SHA256: metaID, Bytes: len(metadata), Kind: "evidence"})
@@ -34,7 +34,7 @@ func BinaryFixture(seed string, created time.Time, data []byte) (wire.Job, map[s
 		var value map[string]json.RawMessage
 		_ = json.Unmarshal(record.Data, &value)
 		value["content"], _ = wire.Encode(map[string]any{"status": "available", "sha256": digest, "bytes": len(data), "mediaType": "application/octet-stream"})
-		value["inspection"], _ = wire.Encode(map[string]string{"status": "available", "metadata": metaID})
+		value["inspection"], _ = wire.Encode(map[string]string{"status": "unavailable", "metadata": metaID})
 		record.Data, _ = wire.Encode(value)
 		record.ID = wire.Hash(record.Data)
 		newArtifact = record.ID
