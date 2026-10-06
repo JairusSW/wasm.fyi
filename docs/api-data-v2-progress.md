@@ -819,3 +819,27 @@ A fresh separately emitted 400,000-byte native producer fixture imports and serv
 its exact attributed function (wasm index 7, length 32). This remains synthetic
 transport proof, not a measured performance claim. Offline disassembly, section
 resources and wider native scale/crash gates remain open.
+
+### Ingress fuzzing and lossless text validation
+
+Transport decoding now rejects malformed UTF-8 and unpaired UTF-16 escape units.
+Go's standard JSON decoder otherwise replaces those with U+FFFD, which can change
+producer identities or evidence text silently. Valid Unicode, paired surrogate
+escapes, escaped literal backslashes and raw scientific JSON remain unchanged.
+Duplicate-key scanning uses number tokens rather than float64 conversion, avoiding
+rejection or interpretation of an otherwise valid large raw numeric literal.
+
+Fuzz targets cover JSON decoding plus typed job/method validation and resources,
+query normalization and route restrictions, signed cursor round trips, native
+ranges and compression negotiation. Two-worker 20-second campaigns completed
+1,376,849 transport executions and 136,209 query/cursor executions without a crash
+or invariant failure. This is bounded evidence, not exhaustive ingress coverage.
+Fresh sealed Wasmer/Deno export serving parity still preserves 24 analysis fields,
+four timing and four memory summaries through the stricter decoder.
+
+A regression test also demonstrated that joining a public storage sentinel with
+a filesystem error exposed the private path in public JSON. Known error classes
+now emit only their fixed public message and code, retaining HTTP status while
+omitting wrapped implementation details. Unknown/internal errors remain generic.
+Stateful upload/publication fuzzing, proxy end-user rate policy and wider ingress
+load measurements remain open.

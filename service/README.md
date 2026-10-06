@@ -4,6 +4,23 @@ Experimental Go/Pebble/local-content service for the existing collector. See the
 [implementation checkpoint](../docs/api-data-v2-progress.md) for commands,
 wire contracts, validation and remaining production gates.
 
+Wire decoding rejects malformed UTF-8 and unpaired UTF-16 escapes instead of
+silently replacing source text. Duplicate keys, unknown typed fields and trailing
+documents remain rejected. Numeric token validation preserves original JSON
+number spelling, including values held as raw producer evidence. Public errors
+expose stable messages and codes; wrapped filesystem details stay internal.
+
+Run bounded ingress fuzz checks from `service/` with:
+
+```sh
+go test ./internal/wire -run '^$' -fuzz '^FuzzDecodeTransport$' -fuzztime=20s -parallel=2
+go test ./internal/api -run '^$' -fuzz '^FuzzQueryAndCursor$' -fuzztime=20s -parallel=2
+```
+
+These cover transport validation, query normalization, signed cursors, byte-range
+parsing and encoding negotiation. They complement the stateful import/recovery
+tests; they do not establish unlimited load capacity or exhaustive fuzz coverage.
+
 The serving module imports no harness code and no SQLite. It does not execute
 benchmarks, archived verifiers or on-demand native disassembly. The current
 frontend is still served through the existing Pages workflow.

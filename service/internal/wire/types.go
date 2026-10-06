@@ -11,6 +11,7 @@ import (
 	"io"
 	"regexp"
 	"time"
+	"unicode/utf8"
 )
 
 const ChunkBytes = 256 * 1024
@@ -29,10 +30,12 @@ func Invalid(message string) error { return fmt.Errorf("%w: %s", ErrInvalid, mes
 // Decode rejects unknown fields, duplicate object keys and trailing documents.
 // json.Unmarshal alone accepts ambiguous packages with duplicate identities.
 func Decode(b []byte, v any) error {
-	if !json.Valid(b) {
+	if !utf8.Valid(b) || !json.Valid(b) || !pairedSurrogates(b) {
 		return Invalid("malformed JSON")
 	}
-	if err := uniqueKeys(json.NewDecoder(bytes.NewReader(b))); err != nil {
+	validation := json.NewDecoder(bytes.NewReader(b))
+	validation.UseNumber()
+	if err := uniqueKeys(validation); err != nil {
 		return err
 	}
 	d := json.NewDecoder(bytes.NewReader(b))

@@ -158,27 +158,27 @@ func problem(w http.ResponseWriter, r *http.Request, e error) {
 	code := "internal_error"
 	if errors.Is(e, store.ErrNotFound) {
 		status = 404
-		message = e.Error()
+		message = store.ErrNotFound.Error()
 		code = "not_found"
 	} else if errors.Is(e, store.ErrLimit) {
 		status = 422
-		message = e.Error()
+		message = store.ErrLimit.Error()
 		code = "scope_limit"
 	} else if errors.Is(e, store.ErrNeedsRestart) {
 		status = 503
-		message = e.Error()
+		message = store.ErrNeedsRestart.Error()
 		code = "restart_required"
 	} else if errors.Is(e, store.ErrConflict) {
 		status = 409
-		message = e.Error()
+		message = store.ErrConflict.Error()
 		code = "immutable_conflict"
 	} else if errors.Is(e, store.ErrQuota) {
 		status = 507
-		message = e.Error()
+		message = store.ErrQuota.Error()
 		code = "storage_quota"
 	} else if errors.Is(e, store.ErrUndeclared) {
 		status = 403
-		message = e.Error()
+		message = store.ErrUndeclared.Error()
 		code = "undeclared_object"
 	} else if errors.Is(e, wire.ErrInvalid) {
 		status = 400
