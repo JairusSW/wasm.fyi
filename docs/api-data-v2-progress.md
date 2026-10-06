@@ -1282,3 +1282,26 @@ exact identity isolation, eviction, oversized-scope admission without retention,
 and missing-source rejection in a fresh pass. Existing large-plan, membership
 projection, crash and portable recovery tests pass. These checks do not establish
 throughput, physical RSS or wider retention-scale budgets.
+
+## Parent archive proof reuse during recovery
+
+The typed startup/backup/cleanup/rebuild closure now keeps at most 128 fixed-size
+parent archive verification receipts within one pass, under conservative 32 KiB
+accounting. Keys include the session, machine, locked plan, configured harness
+pin, parent index hash and exact ordered transport descriptor. Different bindings
+cannot reuse a receipt; changed configured pins require another byte verification
+without claiming the archive independently establishes that pin.
+
+Receipts retain no archive bytes or descriptor arrays and do not survive the pass.
+Eviction clears old keys and requires verification again. Original index,
+metadata and binary chunks stay in the marked portable content closure. Import
+publication and HTTP downloads continue their existing independent verification.
+
+Race checks cover reuse across 100 corpus-job associations, source/transport
+mismatches, fresh-pass missing and corrupt content, repeated receipt eviction,
+parent admission/recovery and actual archive/session-plan crash checkpoints. The
+retained V8 parent also verifies 60,811,832 original bytes through 60 source reads;
+100 reused synthetic associations make no further archive reads, and a fresh pass
+rejects a simulated missing chunk. This is real-byte verification evidence with
+synthetic job associations, not a new measurement, throughput claim or qualification.
+Larger retention, serving load and deployment timeout gates remain open.

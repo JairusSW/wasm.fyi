@@ -69,13 +69,15 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 		marked[id] = true
 		return wire.Decode(b, v)
 	}
-	plans := planVerifier{fetch: func(o wire.Object) ([]byte, error) {
+	fetchProofObject := func(o wire.Object) ([]byte, error) {
 		b, e := s.objectRepresentation(o)
 		if e == nil {
 			marked[o.SHA256] = true
 		}
 		return b, e
-	}}
+	}
+	plans := planVerifier{fetch: fetchProofObject}
+	archives := archiveVerifier{fetch: fetchProofObject}
 	var markMap func(string, string, func(string, string) error) error
 	markMap = func(id, kind string, entry func(string, string) error) error {
 		if id == "" {
@@ -543,13 +545,7 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 			}
 		}
 		if job.ParentArchive != nil {
-			if e := job.ParentArchive.Verify(job, func(o wire.Object) ([]byte, error) {
-				b, e := s.objectRepresentation(o)
-				if e == nil {
-					marked[o.SHA256] = true
-				}
-				return b, e
-			}); e != nil {
+			if e := archives.verify(job); e != nil {
 				return nil, e
 			}
 		}
