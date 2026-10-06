@@ -1579,3 +1579,27 @@ redelivers into a retained isolated store, appends service logs and never remove
 that supplied store automatically. A synthetic lifecycle passes with this mode
 and confirms the supplied store survives success. Real-report redelivery starts
 with zero missing-object uploads; publication and portable recovery remain pending.
+
+### Large real-report recovery result
+
+The retained-store redelivery and complete local native lifecycle now pass for
+1,458 Wasmer summaries: 588 timing, 725 memory and 145 native-size results. Frozen
+results and history each span 15 pages of 100 records (final page partial), with
+all 1,458 records, totals, revision and signed cursors preserved after restart,
+restore and DB-free rebuild. The source report was independently reverified by
+the producer CLI; its report/seal/verifier hashes are recorded in the bundle.
+
+Redelivery required zero missing-object uploads and completed publication plus
+initial checks in 31.0 seconds. Backup took 107.2 seconds, backup verification
+3.3 seconds, restore 117.6 seconds and DB-free rebuild 283.1 seconds; every phase
+finished under the explicit runner limit. These are diagnostic durations on this
+local host, not performance guarantees. The first attempt timed out without
+publishing; safe redelivery then completed against its retained content.
+
+The portable bundle is `/tmp/wasmfyi-paged-real-recovery-20261006-v3`, revision
+`bfbe146dfed88598400cfdd3367f8a078c6f75a8778698b82f4d60f0ea9cd3bd`.
+This export contains no original report-file resources, so original-download
+byte/hash qualification remains the separate seven-resource Wasmer call gate.
+Associations remain synthetic session/job metadata. The larger cross-machine
+real-evidence restore, fresh full-import deadline under wider load, physical
+machine-loss durability and operator qualification remain pending.
