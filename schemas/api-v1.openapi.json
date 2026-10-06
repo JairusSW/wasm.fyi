@@ -2046,7 +2046,7 @@
     "/api/v1/sessions/{id}": {
       "get": {
         "summary": "Frozen progress from published completed jobs",
-        "description": "Does not infer full-session collection completeness or reveal staged evidence. Planned-job count and collectionComplete are null until the full session plan is available.",
+        "description": "Does not infer full-session collection completeness or reveal staged evidence. Planned-job count and collectionComplete are null until the full session plan is available. publishedJobs counts attempt records; publishedCorpusJobs counts distinct machine/corpus pairs, including completed failed and unsupported outcomes.",
         "parameters": [
           {
             "name": "id",
@@ -2068,7 +2068,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Small binding and count summary"
+            "description": "Small binding and count summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/SessionProgress"
+                }
+              }
+            }
           },
           "404": {
             "description": "No published jobs for this session in the requested revision"

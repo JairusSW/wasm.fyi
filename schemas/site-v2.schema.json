@@ -944,7 +944,8 @@
         },
         "publishedJobs": {
           "type": "integer",
-          "minimum": 0
+          "minimum": 0,
+          "description": "Number of published attempt records, including retries of a machine/corpus job."
         },
         "members": {
           "type": "integer",
@@ -973,6 +974,11 @@
         },
         "completenessReason": {
           "type": "string"
+        },
+        "publishedCorpusJobs": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Distinct machine/corpus pairs with at least one published completed attempt. Includes failed and unsupported outcomes; does not establish full session completion."
         }
       },
       "required": [
@@ -984,7 +990,8 @@
         "members",
         "plannedJobs",
         "collectionComplete",
-        "completenessReason"
+        "completenessReason",
+        "publishedCorpusJobs"
       ],
       "additionalProperties": false
     },

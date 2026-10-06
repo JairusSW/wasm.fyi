@@ -25,12 +25,17 @@ func TestSessionAPIRequiresPublishedScopeAndPinsPagination(t *testing.T) {
 	second := importFixture(t, s, "two", time.Now().UTC().Add(time.Hour))
 	w := request(t, h, "GET", "/api/v1/sessions/synthetic-session?revision="+first, nil, nil)
 	var info struct {
-		PublishedJobs      int
-		CollectionComplete *bool
-		PlannedJobs        *int
+		PublishedJobs       int
+		PublishedCorpusJobs int
+		CollectionComplete  *bool
+		PlannedJobs         *int
 	}
-	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &info) != nil || info.PublishedJobs != 1 || info.CollectionComplete != nil || info.PlannedJobs != nil {
+	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &info) != nil || info.PublishedJobs != 1 || info.PublishedCorpusJobs != 1 || info.CollectionComplete != nil || info.PlannedJobs != nil {
 		t.Fatal("session completeness manufactured", w.Code, w.Body.String())
+	}
+	w = request(t, h, "GET", "/api/v1/sessions/synthetic-session?revision="+second, nil, nil)
+	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &info) != nil || info.PublishedJobs != 2 || info.PublishedCorpusJobs != 1 {
+		t.Fatal("retry inflated completed corpus count", w.Code, w.Body.String())
 	}
 	path := "/api/v1/sessions/synthetic-session/jobs"
 	w = request(t, h, "GET", path+"?revision="+second+"&limit=1", nil, nil)

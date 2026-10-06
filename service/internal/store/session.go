@@ -31,6 +31,7 @@ type Session struct {
 	Plan                 string `json:"plan"`
 	ConfiguredHarnessPin string `json:"configuredHarnessPin"`
 	PublishedJobs        int    `json:"publishedJobs"`
+	PublishedCorpusJobs  int    `json:"publishedCorpusJobs"`
 	Members              int    `json:"members"`
 	PlannedJobs          *int   `json:"plannedJobs"`
 	CollectionComplete   *bool  `json:"collectionComplete"`
@@ -282,8 +283,10 @@ func (s *Store) SessionInfo(ctx context.Context, revision, session string) (Sess
 		return out, e
 	}
 	members := map[string]bool{}
+	// Publications identify attempts; retries can belong to the same corpus job.
+	corpusJobs := map[struct{ machine, corpus string }]bool{}
 	decoded := 0
-	for _, id := range refs {
+	for key, id := range refs {
 		if e := ctx.Err(); e != nil {
 			return out, e
 		}
@@ -296,7 +299,7 @@ func (s *Store) SessionInfo(ctx context.Context, revision, session string) (Sess
 		if decoded > 32<<20 {
 			return out, ErrLimit
 		}
-		if summary.Session != session {
+		if summary.Session != session || publishedJobKey(summary) != key {
 			return out, wire.Invalid("corrupt session summary")
 		}
 		if out.Plan != "" && (out.Plan != summary.Plan || out.ConfiguredHarnessPin != summary.ConfiguredHarnessPin) {
@@ -304,8 +307,10 @@ func (s *Store) SessionInfo(ctx context.Context, revision, session string) (Sess
 		}
 		out.Plan, out.ConfiguredHarnessPin = summary.Plan, summary.ConfiguredHarnessPin
 		members[summary.Machine] = true
+		corpusJobs[struct{ machine, corpus string }{summary.Machine, summary.Corpus}] = true
 		out.PublishedJobs++
 	}
 	out.Members = len(members)
+	out.PublishedCorpusJobs = len(corpusJobs)
 	return out, nil
 }

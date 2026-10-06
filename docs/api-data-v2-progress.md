@@ -640,7 +640,11 @@ Session/member/attempt bindings still come from the existing authenticated submi
 path. Staged and aborted imports do not appear in these public views.
 
 The summary reports the source plan hash, configured harness pin, published-job
-count and observed member count. Because the completed-job sink does not receive
+count, distinct published machine/corpus count and observed member count.
+`publishedJobs` counts attempt records; `publishedCorpusJobs` counts each
+machine/corpus pair once, including completed failed or unsupported outcomes.
+Retries and repackaged evidence do not inflate corpus coverage. Neither count
+implies that the full planned collection finished. Because the completed-job sink does not receive
 the complete session plan or running-worker events, planned-job count and total
 collection completeness are null with a recorded reason. A publication count is
 not mislabeled as collection completion. Job pages show session/member/corpus/
@@ -652,7 +656,9 @@ signed cursors bind session, dataset revision and page size. Short-lived reads
 have key/decoded-byte/response limits and cancellation. Portable closure verifies
 summary bindings against canonical source jobs; backup and DB-free rebuild retain
 the same progress. Tests cover old frozen views, staged/aborted exclusion, unknown
-sessions, cancellation, cursor scope changes and portable reconstruction. Full
+sessions, cancellation, cursor scope changes and portable reconstruction. Distinct
+corpus counts are also checked across retries, multiple machines, restart and
+DB-free reconstruction. Full
 plan registration, live worker/attempt states and parent archive resources remain
 separate required coordinator/backend work.
 
