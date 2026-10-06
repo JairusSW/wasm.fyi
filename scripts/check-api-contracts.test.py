@@ -131,6 +131,20 @@ class Contracts(unittest.TestCase):
             with self.assertRaises(ValueError):
                 contracts.validate(changed, "ReportFile", "missing archive provenance")
 
+    def test_request_telemetry_is_bounded_and_has_no_identity_labels(self):
+        value = {"class": "summary", "active": 0, "completed": 1,
+                 "statuses": [0, 0, 1, 0, 0, 0], "latency": [1, 0, 0, 0, 0, 0, 0, 0],
+                 "writtenBytes": 10, "decodedJSONBytes": 100, "canceled": 0,
+                 "deadlines": 0, "writeErrors": 0, "streamAborts": 0, "panics": 0}
+        contracts.validate(value, "RequestRouteStats", "fixed route telemetry")
+        for key, invalid in [("class", "/results/private-id"), ("path", "/secret"),
+                             ("client", "192.0.2.1"), ("token", "secret"),
+                             ("active", -1), ("statuses", [0] * 7), ("latency", [0] * 9)]:
+            changed = copy.deepcopy(value)
+            changed[key] = invalid
+            with self.assertRaises(ValueError):
+                contracts.validate(changed, "RequestRouteStats", "unbounded or identifying telemetry")
+
     def test_transport_reference_aliases_resolve_only_local_schema(self):
         for root in ("site-v2.schema.json", "./site-v2.schema.json", contracts.SCHEMA["$id"]):
             reference = contracts.transport_reference(root + "#/$defs/Digest")

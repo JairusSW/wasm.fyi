@@ -22,6 +22,7 @@ import (
 )
 
 type API struct {
+	requests    requestTelemetry
 	Store       *store.Store
 	Token       string
 	CursorKey   []byte
@@ -144,6 +145,9 @@ func respond(w http.ResponseWriter, r *http.Request, status int, v any, immutabl
 		w.WriteHeader(304)
 		return
 	}
+	if observed, ok := w.(interface{ decodedJSON(int) }); ok {
+		observed.decodedJSON(len(b))
+	}
 	if encoding == "gzip" {
 		w.Header().Set("Content-Encoding", "gzip")
 		w.WriteHeader(status)
@@ -223,7 +227,7 @@ func limit(r *http.Request) (int, error) {
 	}
 	return n, nil
 }
-func (a *API) serve(w http.ResponseWriter, r *http.Request) {
+func (a *API) serveRequest(w http.ResponseWriter, r *http.Request) {
 	finish, e := a.Store.Lease()
 	if e != nil {
 		problem(w, r, e)
@@ -238,6 +242,11 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), timeout)
 	defer cancel()
+	defer func() {
+		if observed, ok := w.(*observedWriter); ok {
+			observed.contextError = ctx.Err()
+		}
+	}()
 	r = r.WithContext(ctx)
 	publisher := strings.HasPrefix(r.URL.Path, "/admin/v1/") && hmac.Equal([]byte(r.Header.Get("Authorization")), []byte("Bearer "+a.Token))
 	client, e := a.limiter.clientIdentity(r, publisher)
@@ -995,7 +1004,10 @@ func (a *API) admin(w http.ResponseWriter, r *http.Request) {
 			problem(w, r, e)
 			return
 		}
-		respond(w, r, 200, stats, false)
+		respond(w, r, 200, struct {
+			store.Stats
+			Requests RequestStats `json:"requests"`
+		}{stats, a.requestStats()}, false)
 		return
 	}
 	if len(parts) == 2 && parts[0] == "objects" && r.Method == "PUT" {

@@ -1588,7 +1588,7 @@
     },
     "/admin/v1/metrics": {
       "get": {
-        "summary": "Authenticated storage and compaction metrics",
+        "summary": "Authenticated storage, compaction and bounded HTTP telemetry",
         "security": [
           {
             "publisherToken": []
@@ -1596,7 +1596,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Bounded metadata"
+            "description": "Bounded metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/OperationalStats"
+                }
+              }
+            }
           },
           "401": {
             "description": "Authentication required"
@@ -1607,7 +1614,8 @@
           "507": {
             "description": "Configured storage or pending-import quota exceeded"
           }
-        }
+        },
+        "description": "Fixed route classes retain no request identities. Process-handler counters reset on restart; startedAt identifies the first observed request. Histograms use disjoint latency buckets. Written bytes are successfully accepted by ResponseWriter; decodedJSONBytes excludes 304/no-body responses. Handler completion includes failures, cancellation and aborted streams. HTTP status alone does not prove complete delivery. Concurrent counter snapshots are approximate and exclude the collecting request from terminal totals."
       }
     },
     "/healthz": {

@@ -539,3 +539,22 @@ never unpacks or executes archive content. Existing selected chunks and explicit
 whole-file GET/HEAD downloads retain preflight integrity, two-slot admission,
 write deadlines and cancellation. A selected report contains at most nine file
 descriptors. Legacy exports without archive bytes remain readable.
+
+Authenticated `/admin/v1/metrics` adds `requests` telemetry alongside existing
+storage/compaction fields. `http-requests-v1` uses ten fixed route classes and
+retains no request URLs, queries, client addresses, credentials or dataset IDs.
+`startedAt` identifies the first request seen by this handler; counters reset on
+restart. Snapshot fields are independent atomic reads and can briefly disagree
+under concurrent traffic. The metrics request itself is active in its snapshot.
+
+`completed` counts handler exits, including rejections, cancellation and panic.
+`statuses` contains counts for no response before abort, then 1xx through 5xx.
+`latency` has disjoint buckets with inclusive upper bounds of 5, 25, 100, 500,
+2500, 15000 and 300000 milliseconds, followed by an overflow bucket. Timings use
+Go's monotonic elapsed clock. `writtenBytes` counts bytes accepted by the response
+writer, including compressed output; it does not prove remote delivery.
+`decodedJSONBytes` counts JSON emitted by the core API responder before compression and excludes
+304/no-body responses. Cancellation, deadlines, write errors, stream aborts and
+panics are separate handler counts (one per affected request); a 200 header on an aborted download is not a complete
+transfer. `admission` exposes occupancy of request/result/cohort/download slots.
+The response wrapper preserves streaming copies and ResponseController operations.

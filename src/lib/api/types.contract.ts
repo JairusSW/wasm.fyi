@@ -1,5 +1,5 @@
 // Compile-time contract checks. This file has no runtime imports or UI effects.
-import type {OverviewCard, CohortCell, NativeFunctionPage, ResultSummaryData, SessionJobPage, APIError, PlanRegistration, RegisteredSession, ProgressUpdate, AttemptProgressPage, HistoryChange, HistoryBinding, HistoryContext} from './types';
+import type {OverviewCard, CohortCell, NativeFunctionPage, ResultSummaryData, SessionJobPage, APIError, PlanRegistration, RegisteredSession, ProgressUpdate, AttemptProgressPage, HistoryChange, HistoryBinding, HistoryContext, RequestStats} from './types';
 
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
 type Assert<T extends true> = T;
@@ -31,3 +31,6 @@ export type HistoryChangeUncertainty = Assert<Equal<HistoryChange['uncertainty']
 export type HistoryBuildRole = Assert<Equal<HistoryBinding['buildRole'], 'source' | 'release' | 'unknown'>>;
 export type HistoryCollectionTime = Assert<Equal<HistoryContext['collectedAt'], string | null>>;
 export type HistoryInterpretationTrust = Assert<Equal<HistoryContext['interpretationSource'], 'trusted-publisher-assertion'>>;
+
+export type RequestTelemetryVersion = Assert<Equal<RequestStats['version'], 'http-requests-v1'>>;
+export type RequestTelemetryNoIdentity = Assert<Equal<Extract<keyof RequestStats['routes'][number], 'path' | 'query' | 'client' | 'token'>, never>>;

@@ -3228,6 +3228,226 @@
         "nextCursor"
       ],
       "additionalProperties": false
+    },
+    "RequestRouteStats": {
+      "type": "object",
+      "properties": {
+        "active": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "completed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "writtenBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "decodedJSONBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "canceled": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "deadlines": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "writeErrors": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "streamAborts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "panics": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "class": {
+          "enum": [
+            "probe",
+            "admin-import",
+            "admin-upload",
+            "admin-plan",
+            "admin-progress",
+            "admin-other",
+            "summary",
+            "evidence",
+            "frontend",
+            "other"
+          ]
+        },
+        "statuses": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "latency": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "required": [
+        "active",
+        "completed",
+        "writtenBytes",
+        "decodedJSONBytes",
+        "canceled",
+        "deadlines",
+        "writeErrors",
+        "streamAborts",
+        "panics",
+        "class",
+        "statuses",
+        "latency"
+      ],
+      "additionalProperties": false
+    },
+    "RequestStats": {
+      "type": "object",
+      "properties": {
+        "startedAt": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "format": "date-time"
+            }
+          ]
+        },
+        "version": {
+          "const": "http-requests-v1"
+        },
+        "latencyUpperBoundsMs": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 7,
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "routes": {
+          "type": "array",
+          "minItems": 10,
+          "maxItems": 10,
+          "items": {
+            "$ref": "#/$defs/RequestRouteStats"
+          }
+        },
+        "admission": {
+          "type": "object",
+          "properties": {
+            "requests": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 8
+            },
+            "results": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2
+            },
+            "cohorts": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2
+            },
+            "downloads": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2
+            }
+          },
+          "required": [
+            "requests",
+            "results",
+            "cohorts",
+            "downloads"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "startedAt",
+        "version",
+        "latencyUpperBoundsMs",
+        "routes",
+        "admission"
+      ],
+      "additionalProperties": false
+    },
+    "OperationalStats": {
+      "type": "object",
+      "properties": {
+        "pendingJobs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pendingBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "contentBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "contentLimitBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "databaseBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "compactionDebtBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "compactionsActive": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "health": {
+          "$ref": "#/$defs/Health"
+        },
+        "collectedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "requests": {
+          "$ref": "#/$defs/RequestStats"
+        }
+      },
+      "required": [
+        "pendingJobs",
+        "pendingBytes",
+        "contentBytes",
+        "contentLimitBytes",
+        "databaseBytes",
+        "compactionDebtBytes",
+        "compactionsActive",
+        "health",
+        "collectedAt",
+        "requests"
+      ],
+      "additionalProperties": false
     }
   },
   "$ref": "#/$defs/CompletedJob"
