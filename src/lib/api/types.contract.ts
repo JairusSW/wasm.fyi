@@ -1,5 +1,5 @@
 // Compile-time contract checks. This file has no runtime imports or UI effects.
-import type {OverviewCard, CohortCell, NativeFunctionPage, ResultSummaryData} from './types';
+import type {OverviewCard, CohortCell, NativeFunctionPage, ResultSummaryData, SessionJobPage, APIError} from './types';
 
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
 type Assert<T extends true> = T;
@@ -8,3 +8,7 @@ export type CohortValue = Assert<Equal<CohortCell['value'], number | null>>;
 export type ExactSourceValue = Assert<Equal<CohortCell['sourceValue'], number | string | null | undefined>>;
 export type ProducerOrder = Assert<Equal<NativeFunctionPage['order'], 'producer-order'>>;
 export type ReferencedMethod = Assert<Equal<ResultSummaryData['measurementMethodId'], string | undefined>>;
+
+export type SessionJobSort = Assert<Equal<SessionJobPage['sort'], 'machine-corpus-attempt-id'>>;
+export type SessionReportReferences = Assert<Equal<SessionJobPage['items'][number]['reports'], Array<string>>>;
+export type OptionalErrorCode = Assert<Equal<APIError['code'], APIError['code'] | undefined>>;

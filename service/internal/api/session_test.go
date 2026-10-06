@@ -42,6 +42,7 @@ func TestSessionAPIRequiresPublishedScopeAndPinsPagination(t *testing.T) {
 	var page struct {
 		Revision, NextCursor string
 		Total                int
+		Complete             bool
 		Items                []json.RawMessage
 	}
 	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &page) != nil || page.Total != 2 || len(page.Items) != 1 || page.NextCursor == "" {
@@ -53,11 +54,18 @@ func TestSessionAPIRequiresPublishedScopeAndPinsPagination(t *testing.T) {
 	cursor := page.NextCursor
 	importFixture(t, s, "three", time.Now().UTC().Add(2*time.Hour))
 	w = request(t, h, "GET", path+"?limit=1&cursor="+url.QueryEscape(cursor), nil, nil)
-	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &page) != nil || page.Revision != second || page.Total != 2 {
+	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &page) != nil || page.Revision != second || page.Total != 2 || !page.Complete || page.NextCursor != "" {
 		t.Fatal("session cursor moved with publication", w.Code, w.Body.String())
 	}
 	if w = request(t, h, "GET", path+"?limit=2&cursor="+url.QueryEscape(cursor), nil, nil); w.Code != 400 {
 		t.Fatal("page size cursor mutation accepted")
+	}
+	for _, missing := range []string{"/api/v1/sessions/unknown-session", "/api/v1/sessions/unknown-session/jobs"} {
+		w = request(t, h, "GET", missing+"?revision="+second, nil, nil)
+		var errorBody struct{ Error, Code string }
+		if w.Code != 404 || json.Unmarshal(w.Body.Bytes(), &errorBody) != nil || errorBody.Code != "not_found" || errorBody.Error == "" {
+			t.Fatal("unknown session error contract", w.Code, w.Body.String())
+		}
 	}
 	for _, path := range []string{"/api/v1/sessions/synthetic-session?limit=1", "/api/v1/sessions/synthetic-session/jobs?machine=test", "/api/v1/sessions/."} {
 		if w = request(t, h, "GET", path, nil, nil); w.Code != 400 {

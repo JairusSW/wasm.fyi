@@ -53,6 +53,39 @@ class Contracts(unittest.TestCase):
         with self.assertRaises(ValueError):
             contracts.validate({"items": []}, "CohortMemberPage", "missing frozen scope")
 
+    def test_session_page_boundaries_and_no_evidence_preload(self):
+        job = {"id": "a" * 64, "session": "session", "machine": "local",
+               "corpus": "corpus-0001", "attempt": "attempt-1",
+               "configuredHarnessPin": "pinned-source", "plan": "b" * 64,
+               "parentBundleSha256": "c" * 64, "collectionStatus": "completed",
+               "publicationStatus": "published", "publishedAt": "2026-10-06T00:00:00Z",
+               "reports": ["d" * 64]}
+        page = {"revision": "e" * 64, "items": [job], "total": 2,
+                "complete": False, "nextCursor": "signed-cursor",
+                "sort": "machine-corpus-attempt-id"}
+        contracts.validate(page, "SessionJobPage", "valid partial frozen page")
+        for key, value in [("total", -1), ("items", [job] * 1001),
+                           ("sort", "arrival-order"), ("objects", []), ("nextCursor", ""), ("complete", True)]:
+            changed = copy.deepcopy(page)
+            changed[key] = value
+            with self.assertRaises(ValueError):
+                contracts.validate(changed, "SessionJobPage", "invalid page")
+        for key, value in [("publicationStatus", "staged"), ("publishedAt", "today"),
+                           ("reports", ["d" * 64] * 9), ("exports", [])]:
+            changed = copy.deepcopy(page)
+            changed["items"][0][key] = value
+            with self.assertRaises(ValueError):
+                contracts.validate(changed, "SessionJobPage", "invalid job reference")
+
+    def test_session_error_contracts(self):
+        contracts.validate({"error": "request limit"}, "APIError", "admission error")
+        contracts.validate({"error": "invalid request", "code": "invalid_request"},
+                           "APIError", "classified error")
+        for value in [{}, {"error": ""}, {"error": "failure", "code": "invented"},
+                      {"error": "failure", "rawEvidence": {}}]:
+            with self.assertRaises(ValueError):
+                contracts.validate(value, "APIError", "invalid error")
+
 
 if __name__ == "__main__":
     unittest.main()

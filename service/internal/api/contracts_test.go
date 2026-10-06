@@ -18,7 +18,8 @@ var captureMu sync.Mutex
 func captureResponse(t *testing.T, method, path string, w *httptest.ResponseRecorder) {
 	t.Helper()
 	output := os.Getenv("WASMFYI_CONTRACT_OUTPUT")
-	if output == "" || method != "GET" || w.Code != 200 || !strings.HasPrefix(w.Header().Get("Content-Type"), "application/json") {
+	captureStatus := w.Code == 200 || (os.Getenv("WASMFYI_CONTRACT_ERRORS") == "1" && w.Code >= 400)
+	if output == "" || method != "GET" || !captureStatus || !strings.HasPrefix(w.Header().Get("Content-Type"), "application/json") {
 		return
 	}
 	body := w.Body.Bytes()

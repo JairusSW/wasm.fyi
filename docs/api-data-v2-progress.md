@@ -1351,3 +1351,22 @@ frozen tree and invented publication times before installing a destination.
 Existing membership-drift tests now assert their specific rejection, preserving
 their coverage rather than passing on an unrelated ancestry error. Scientific
 exports, numerical values, collector policies and the frontend remain unchanged.
+
+## Executable session-page and error contracts
+
+The public session jobs endpoint now references `SessionJobPage` in OpenAPI and
+in generated consumer types. The strict page schema retains frozen revision,
+global total, declared sort, completion flag, cursor and small `PublishedJob`
+references. It bounds the returned page at 1,000 items and eight reports per job,
+and forbids inline export inventories. Complete pages require an empty cursor;
+incomplete pages require a nonempty cursor. Session endpoints also document their
+JSON error payloads, including optional classified codes and admission errors.
+
+Opt-in test response capture can include JSON rejection responses through
+`WASMFYI_CONTRACT_ERRORS=1`; normal captures remain success-only. The local external
+validator checks ten actual session/page responses covering pinned pagination,
+complete final pages, invalid cursors/queries and unknown sessions. Negative
+schema tests reject staged status, invalid dates, excess reports/items, embedded
+evidence, invalid cursor/completion combinations and malformed error payloads.
+Generated types compile without runtime imports. No serving behavior, scientific
+values, collection workflow or UI layout changes are part of this contract update.

@@ -49,3 +49,5 @@ export type ParentArchiveChunk = { "sha256": Digest; "bytes": number; "kind": "b
 export type ArchiveDescriptor = { "schema": 1; "revision": Digest; "job": Digest; "session": string; "machine": string; "plan": Digest; "sourceIndexSha256": Digest; "content": unknown; "qualification": "not_checked"; "replayStatus": "conditional"; "replayReason": string; "chunkCount"?: number; "metadataSha256"?: Digest; "integrity"?: "original-part-and-full-sha256-verified" };
 export type ArchiveChunkPage = { "revision": Digest; "job": Digest; "items": Array<ParentArchiveChunk>; "total": number; "complete": boolean; "nextCursor": string };
 export type SessionPlan = { "schema": 1; "bytes": number; "chunks": Array<ParentArchiveChunk> };
+export type SessionJobPage = { "revision": Digest; "items": Array<PublishedJob>; "total": number; "complete": boolean; "nextCursor": string; "sort": "machine-corpus-attempt-id" };
+export type APIError = { "error": string; "code"?: "internal_error" | "not_found" | "scope_limit" | "restart_required" | "immutable_conflict" | "storage_quota" | "undeclared_object" | "invalid_request" | "query_timeout" | "payload_too_large" };

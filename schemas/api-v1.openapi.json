@@ -2078,7 +2078,64 @@
             }
           },
           "404": {
-            "description": "No published jobs for this session in the requested revision"
+            "description": "No published session in the selected revision",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid identity, query or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Selected scope exceeds serving bounds",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request admission limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal service error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Request cancellation, timeout or restart required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/APIError"
+                }
+              }
+            }
           }
         }
       }
@@ -2124,13 +2181,74 @@
         ],
         "responses": {
           "200": {
-            "description": "Small job/report references sorted by machine, corpus, attempt and job ID; cursor binds revision/session/page size"
+            "description": "Small job/report references sorted by machine, corpus, attempt and job ID; cursor binds revision/session/page size",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/SessionJobPage"
+                }
+              }
+            }
           },
           "400": {
-            "description": "Invalid identity or mutated cursor"
+            "description": "Invalid identity, query or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/APIError"
+                }
+              }
+            }
           },
           "404": {
-            "description": "No published session"
+            "description": "No published session in the selected revision",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Selected scope exceeds serving bounds",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request admission limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal service error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Request cancellation, timeout or restart required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/APIError"
+                }
+              }
+            }
           }
         }
       }
