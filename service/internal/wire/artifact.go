@@ -16,8 +16,14 @@ type Artifact struct {
 		MediaType string `json:"mediaType"`
 	} `json:"content"`
 	Inspection struct {
-		Status   string `json:"status"`
-		Metadata string `json:"metadata"`
+		Status      string `json:"status"`
+		Metadata    string `json:"metadata"`
+		Disassembly *struct {
+			Status    string `json:"status"`
+			Version   string `json:"version,omitempty"`
+			Selection string `json:"selection,omitempty"`
+			Reason    string `json:"reason,omitempty"`
+		} `json:"disassembly,omitempty"`
 	} `json:"inspection"`
 }
 
@@ -52,6 +58,15 @@ func ArtifactData(b []byte) (Artifact, error) {
 	}
 	if artifact.Inspection.Metadata != "" && !IsHash(artifact.Inspection.Metadata) {
 		return artifact, Invalid("invalid inspection metadata")
+	}
+	if d := artifact.Inspection.Disassembly; d != nil {
+		if d.Status == "available" {
+			if artifact.Inspection.Status != "available" || d.Version != DisassemblyVersion || d.Selection != "producer-function-ordinal" || d.Reason != "" {
+				return artifact, Invalid("invalid disassembly availability")
+			}
+		} else if d.Status != "unavailable" || d.Version != "" || d.Selection != "" {
+			return artifact, Invalid("unavailable disassembly advertises derivative")
+		}
 	}
 	return artifact, nil
 }

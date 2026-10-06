@@ -55,6 +55,7 @@ func (m NativeMetadata) FunctionCounts() ([]int, error) {
 }
 
 type NativeFunction struct {
+	Disassembly string `json:"disassembly,omitempty"`
 	ModuleIndex uint32 `json:"module_index"`
 	WasmIndex   uint32 `json:"wasm_index"`
 	Name        string `json:"name,omitempty"`

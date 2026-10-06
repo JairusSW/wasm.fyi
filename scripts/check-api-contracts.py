@@ -64,7 +64,7 @@ def export(directory):
             elif value["kind"] == "report" and "analysisSections" in value["data"]:
                 validate(value["data"]["analysisSections"], "ReportAnalysisReferences", context)
         elif isinstance(value, dict):
-            definitions = {"evidence-index": "EvidenceIndex", "json-resource": "JSONResource", "json-fragment": "JSONFragment", "report-analysis": "ReportAnalysis"}
+            definitions = {"evidence-index": "EvidenceIndex", "json-resource": "JSONResource", "json-fragment": "JSONFragment", "report-analysis": "ReportAnalysis", "native-functions-v2": "NativeFunctionsV2", "native-function-disassembly": "NativeDisassembly", "native-disassembly-lines": "NativeDisassemblyLines"}
             if value.get("kind") in definitions:
                 validate(value, definitions[value["kind"]], context)
             if value.get("kind") == "native-image-metadata":

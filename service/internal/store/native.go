@@ -63,8 +63,8 @@ func (s *Store) validateNativeInspection(artifact wire.Artifact, module string, 
 		if err != nil {
 			return err
 		}
-		var rows []wire.NativeFunction
-		if err = wire.Decode(b, &rows); err != nil {
+		rows, err := wire.NativeFunctions(b)
+		if err != nil {
 			return err
 		}
 		if len(rows) == 0 {
@@ -94,6 +94,15 @@ func (s *Store) validateNativeInspection(artifact wire.Artifact, module string, 
 	for i := 1; i < len(functions); i++ {
 		if functions[i].Offset < functions[i-1].Offset+functions[i-1].Length {
 			return wire.Invalid("overlapping native function ranges")
+		}
+	}
+	availableDerivative := artifact.Inspection.Disassembly != nil && artifact.Inspection.Disassembly.Status == "available"
+	for _, function := range functions {
+		if (function.Disassembly != "") != availableDerivative {
+			return wire.Invalid("disassembly availability differs from functions")
+		}
+		if err := validateDisassembly(function, metadata, fetch); err != nil {
+			return err
 		}
 	}
 	if artifact.Inspection.Status == "available" && len(functions) == 0 {

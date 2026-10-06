@@ -4416,6 +4416,75 @@
           }
         }
       }
+    },
+    "/api/v1/artifacts/{id}/disassembly": {
+      "get": {
+        "summary": "Read an offline per-function disassembly line window",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "site-v2.schema.json#/$defs/Digest"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "site-v2.schema.json#/$defs/Digest"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "function",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 999999
+            },
+            "description": "Ordinal in the immutable producer-order function index."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded original diagnostic lines with exact source and tool identities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/NativeDisassemblyPage"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Inspection or linked resource unavailable"
+          }
+        },
+        "description": "Reads only the selected producer function and intersecting offline line chunks. Signed cursors bind revision, artifact, function ordinal, derivative version and page limit. Listings are producer tool diagnostics, not independent instruction-only measurements. No disassembler or native image executes during serving."
+      }
     }
   },
   "components": {

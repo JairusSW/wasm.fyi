@@ -1603,3 +1603,45 @@ byte/hash qualification remains the separate seven-resource Wasmer call gate.
 Associations remain synthetic session/job metadata. The larger cross-machine
 real-evidence restore, fresh full-import deadline under wider load, physical
 machine-loss durability and operator qualification remain pending.
+
+## Offline function disassembly transport
+
+The harness already owns sealed LLVM extraction and per-function range listings.
+The site exporter now reuses verified `native-image-disassembly-v2` outputs and
+transports each function as `llvm-function-listing-v1`, preserving exact original
+text, source image/module/range, tool hashes/versions, argv and interpretation.
+It neither invokes a tool during site export nor changes a measurement value.
+Explicit function-shard references authorize independently decoded line chunks;
+legacy arrays remain readable. Missing content or listings retain unavailable
+status. Tool output is sealed producer diagnostics, not independently decoded
+scientific proof; dynamic libraries remain unpinned as the recorded policy says.
+
+The service checks availability against function evidence, source/range argument
+identity, declared chunk/line counts, exact text bytes/digest and line boundaries.
+A selected ordinal/line-window endpoint reads only its function and intersecting
+chunks, reports exact provenance and binds signed cursors to revision, artifact,
+ordinal, transport version and limit. Schema/OpenAPI/generated types and CI HTTP
+capture now cover the surface. Descriptor/query summaries do not preload text.
+
+Local macOS arm64 gates pass under race detection: legacy/native compatibility,
+10,001-line producer chunk bounds and exact-text roundtrip, forged mapping/source/
+arguments/count/digest rejection, explicit derivative references, unavailable and
+invalid request handling, cursor isolation, selected-read independence from
+missing sibling chunks, backup/DB-free reconstruction and five actual process
+exits at publication checkpoints with hidden staging, missing-only repair and
+idempotent receipt recovery. Installed LLVM produced the fresh sealed diagnostic
+fixture from synthetic attributed bytes; its site export passes cross-repository
+consumer function/line/text-hash parity and 38 schema checks, including two HTTP
+captures. No benchmark or native image executed. Producer/site vet and Linux
+amd64 serving builds pass; native Linux execution remains pending while Docker
+is unavailable. Representative real-runtime derivative archives and wider native
+scale qualification are still needed.
+
+Producer commits: `8095c96` adds offline derivative export and `96f0172` retains
+unchanged legacy function packing for artifacts without derivatives. The fresh
+installed-LLVM compatibility export is retained at
+`/tmp/wasmfyi-llvm-disassembly-producer-20261006-v2`; the fixture's bytes and
+measurement association are explicitly synthetic. Serving code contains no LLVM
+or harness execution dependency; the dependency closure remains 409 packages,
+without SQLite. CI configuration includes the new HTTP contract capture, but
+actual remote CI has not been run or claimed.

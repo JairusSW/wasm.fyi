@@ -74,8 +74,8 @@ func (s *Store) FunctionPage(ctx context.Context, revision, id string, offset, l
 		if err != nil {
 			return nil, err
 		}
-		var rows []wire.NativeFunction
-		if err = wire.Decode(b, &rows); err != nil {
+		rows, err := wire.NativeFunctions(b)
+		if err != nil {
 			return nil, err
 		}
 		reads += len(rows)

@@ -742,3 +742,33 @@ redeliver the same fixture into that isolated store. This mode appends service
 logs and keeps the supplied store after success as well as failure. It cannot be
 combined with `--recover`, and it does not overwrite existing backup/restore
 outputs. Transport failures identify the method, path and request budget.
+
+
+Offline function disassembly uses the producer's existing sealed LLVM outputs.
+`export-site` discovers `native-image-disassembly-v2` records in the verified
+report's `code/` export and retains each attributed function's exact original
+listing, image/module/range identity, tool executable hashes/versions, argv and
+interpretation. `llvm-function-listing-v1` denotes the transport policy. It does
+not imply independent redisassembly or pinned tool dynamic libraries.
+
+Function shards explicitly reference their diagnostic resources. Original text
+is split into independently readable chunks of at most 256 lines and 128 KiB
+encoded payload; each line is at most 16 KiB, and each function has at most 4,096
+chunks. Import/rebuild validate exact range/source identities, line counts and
+the concatenated original text digest. Legacy function arrays remain readable;
+missing bytes, unattributed images or absent sealed listings stay unavailable.
+
+```text
+GET /api/v1/artifacts/{id}/functions?revision={revision}&limit=100
+GET /api/v1/artifacts/{id}/disassembly?revision={revision}&function=0&limit=100
+```
+
+`function` is the zero-based ordinal in the same immutable producer-order function
+index. Follow the signed `nextCursor` to read subsequent line windows; it binds
+revision, artifact, ordinal, derivative version and page limit. The response
+includes exact function identity, tools, original text hash and recorded
+interpretation. Lines retain newline bytes and original image-relative addresses.
+Only the selected function and intersecting chunks are decoded. Ordinary JSON
+still has the 1 MiB ceiling, and the endpoint never runs LLVM or native bytes.
+Unavailable listings return 404. Descriptor and function pages advertise the
+available derivative without fetching its body.

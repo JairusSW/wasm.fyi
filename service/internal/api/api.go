@@ -416,7 +416,7 @@ func (a *API) serveRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if path == "manifest" {
-		respond(w, r, 200, map[string]any{"schema": 2, "revision": a.Store.Current(), "selectionAliases": map[string]string{"s1": "current", "s2": "previous"}, "limits": map[string]int{"defaultResults": 100, "maxResults": 1000, "jobManifestBytes": wire.JobBytes, "sessionPlanBytes": wire.SessionPlanBytes, "registeredSessions": store.RegistrationLimit, "decodedResponseBytes": wire.ResponseBytes, "decodedChunkBytes": wire.ChunkBytes, "scanKeys": store.ScanLimit, "decodedEvidenceResourceBytes": wire.ResourceBytes, "maxEvidenceFragments": wire.ResourceFragments, "nativeFunctionShards": 4096, "nativeFunctions": 1000000, "cohortScopeBytes": 4096, "cohortComputations": 2, "resultComputations": 2, "resultCacheBytes": resultCacheBytes, "resultCacheEntries": resultCacheEntries, "cohortCells": 100000, "reportFileDownloads": 2, "reportFileDownloadSeconds": 300, "reportFileChunkBytes": wire.ReportFileChunkBytes, "reportFileBytes": wire.ReportFileBytes}, "endpoints": []string{"overview", "results", "reports", "metrics", "methods", "configurations", "environments", "workloads", "artifacts", "history", "aggregates", "cohorts", "sessions", "collection/sessions", "files", "archives"}}, false)
+		respond(w, r, 200, map[string]any{"schema": 2, "revision": a.Store.Current(), "selectionAliases": map[string]string{"s1": "current", "s2": "previous"}, "limits": map[string]int{"defaultResults": 100, "maxResults": 1000, "jobManifestBytes": wire.JobBytes, "sessionPlanBytes": wire.SessionPlanBytes, "registeredSessions": store.RegistrationLimit, "decodedResponseBytes": wire.ResponseBytes, "decodedChunkBytes": wire.ChunkBytes, "scanKeys": store.ScanLimit, "decodedEvidenceResourceBytes": wire.ResourceBytes, "maxEvidenceFragments": wire.ResourceFragments, "nativeFunctionShards": 4096, "nativeFunctions": 1000000, "disassemblyLineChunks": 4096, "disassemblyChunkLines": 256, "disassemblyLineBytes": 16384, "cohortScopeBytes": 4096, "cohortComputations": 2, "resultComputations": 2, "resultCacheBytes": resultCacheBytes, "resultCacheEntries": resultCacheEntries, "cohortCells": 100000, "reportFileDownloads": 2, "reportFileDownloadSeconds": 300, "reportFileChunkBytes": wire.ReportFileChunkBytes, "reportFileBytes": wire.ReportFileBytes}, "endpoints": []string{"overview", "results", "reports", "metrics", "methods", "configurations", "environments", "workloads", "artifacts", "history", "aggregates", "cohorts", "sessions", "collection/sessions", "files", "archives"}}, false)
 		return
 	}
 	if path == "overview" || path == "aggregates" || strings.HasPrefix(path, "cohorts/") {
@@ -483,6 +483,29 @@ func (a *API) serveRequest(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		respond(w, r, 200, map[string]any{"revision": revision, "items": rows, "nextCursor": "", "complete": true, "total": len(rows)}, immutable)
+		return
+	}
+	if len(parts) == 3 && parts[0] == "artifacts" && parts[2] == "disassembly" {
+		ordinal, err := strconv.Atoi(params.Get("function"))
+		if err != nil || ordinal < 0 || ordinal >= 1000000 {
+			problem(w, r, wire.Invalid("invalid producer function ordinal"))
+			return
+		}
+		query := "artifact-disassembly:" + parts[1] + ":" + strconv.Itoa(ordinal) + ":" + wire.DisassemblyVersion + ":" + strconv.Itoa(n)
+		if c.Revision != "" && (c.Revision != revision || c.Query != query) {
+			problem(w, r, wire.Invalid("cursor scope differs"))
+			return
+		}
+		page, err := a.Store.DisassemblyPage(r.Context(), revision, parts[1], ordinal, c.Offset, n)
+		if err != nil {
+			problem(w, r, err)
+			return
+		}
+		next := ""
+		if page.Next < page.Total {
+			next = a.sign(cursor{revision, query, page.Next})
+		}
+		respond(w, r, 200, map[string]any{"revision": revision, "artifact": parts[1], "ordinal": ordinal, "window": page, "complete": page.Next == page.Total, "nextCursor": next, "offset": c.Offset}, immutable)
 		return
 	}
 	if len(parts) == 3 && parts[0] == "artifacts" && parts[2] == "functions" {

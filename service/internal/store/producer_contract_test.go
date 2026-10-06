@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/JairusSW/wasm.fyi/service/internal/wire"
@@ -60,6 +61,28 @@ func TestFreshNativeProducerContract(t *testing.T) {
 	functions, err := s.FunctionPage(context.Background(), revision, rows[0].ID, 0, 1)
 	if err != nil || !functions.Indexed || functions.Total != 1 || len(functions.Items) != 1 || functions.Items[0].WasmIndex != 7 || functions.Items[0].Length != 32 {
 		t.Fatal("producer function index incompatible", functions, err)
+	}
+	if functions.Items[0].Disassembly != "" {
+		var listing strings.Builder
+		offset := 0
+		expectedHash := ""
+		for {
+			page, err := s.DisassemblyPage(context.Background(), revision, rows[0].ID, 0, offset, 10)
+			if err != nil || page.Version != wire.DisassemblyVersion || page.Function.WasmIndex != 7 || len(page.Tools) != 2 {
+				t.Fatal("fresh producer derivative incompatible", page, err)
+			}
+			expectedHash = page.TextSHA256
+			for _, line := range page.Items {
+				listing.WriteString(line)
+			}
+			if page.Next == page.Total {
+				break
+			}
+			offset = page.Next
+		}
+		if wire.Hash([]byte(listing.String())) != expectedHash || !strings.Contains(listing.String(), "ret") {
+			t.Fatal("fresh LLVM listing changed")
+		}
 	}
 	results, err := s.Results(Query{Revision: revision}, false)
 	if err != nil || len(results) == 0 {

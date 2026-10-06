@@ -159,6 +159,9 @@ func routeQuery(path string, values url.Values) error {
 		if !wire.IsHash(parts[1]) {
 			return wire.Invalid("invalid record identity")
 		}
+		if parts[0] == "artifacts" && parts[2] == "disassembly" {
+			return allowedQuery(values, "revision", "function", "limit", "cursor")
+		}
 		if parts[0] == "artifacts" && parts[2] == "functions" {
 			return allowedQuery(values, "revision", "limit", "cursor")
 		}
