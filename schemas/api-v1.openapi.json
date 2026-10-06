@@ -4511,6 +4511,175 @@
         },
         "description": "Reads only the selected producer function and intersecting offline line chunks. Signed cursors bind revision, artifact, function ordinal, derivative version and page limit. Listings are producer tool diagnostics, not independent instruction-only measurements. No disassembler or native image executes during serving."
       }
+    },
+    "/api/v1/features": {
+      "get": {
+        "summary": "Recorded feature probe catalog",
+        "parameters": [
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 1,
+              "maximum": 1000
+            }
+          },
+          {
+            "name": "report",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "description": "Restrict to one exact published report before pagination."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded revision-scoped response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "https://wasm.fyi/schemas/site-v2.schema.json#/$defs/FeatureProbePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Response400_1"
+          },
+          "404": {
+            "$ref": "#/components/responses/Response404_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/Response422_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/Response429_4"
+          }
+        }
+      }
+    },
+    "/api/v1/features/{id}": {
+      "get": {
+        "summary": "Recorded feature probe detail",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./site-v2.schema.json#/$defs/Digest"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded revision-scoped response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "https://wasm.fyi/schemas/site-v2.schema.json#/$defs/FeatureProbeDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Response400_1"
+          },
+          "404": {
+            "$ref": "#/components/responses/Response404_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/Response422_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/Response429_4"
+          }
+        }
+      }
+    },
+    "/api/v1/features/{id}/evidence": {
+      "get": {
+        "summary": "Recorded feature probe evidence",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./site-v2.schema.json#/$defs/Digest"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "chunk",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded revision-scoped response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Response400_1"
+          },
+          "404": {
+            "$ref": "#/components/responses/Response404_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/Response422_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/Response429_4"
+          }
+        }
+      }
     }
   },
   "components": {

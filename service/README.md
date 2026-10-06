@@ -1,5 +1,20 @@
 # wasm.fyi API service
 
+`GET /api/v1/features?revision=REV&report=REPORT&limit=100` returns bounded
+recorded feature-probe descriptors. The optional report filter uses an immutable
+report index before pagination; cursors retain that scope. Each probe preserves
+exact environment/configuration/workload-contract IDs and raw trial outcome counts
+by pass, profile and scenario. Counts describe trials, not independent launches
+or passing specification assertions. Scalar baselines are excluded. A locked
+probe with zero recorded trials has empty evidence; it does not become unsupported
+or passed by inference.
+
+Descriptors have a 10 KiB ceiling and at most 16 evidence roots. Selected trial
+evidence loads through `/api/v1/features/{id}/evidence?revision=REV&chunk=DIGEST`;
+foreign digests are rejected. Interpretation into current UI feature-support cells
+remains a separate website policy. Official suite conformance receipts remain a
+separate unfinished transport and cannot be inferred from these probe outcomes.
+
 Experimental Go/Pebble/local-content service for the existing collector. See the
 [implementation checkpoint](../docs/api-data-v2-progress.md) for commands,
 wire contracts, validation and remaining production gates.

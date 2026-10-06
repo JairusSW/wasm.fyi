@@ -256,6 +256,20 @@ func (s *Store) reachableScopes(ctx context.Context, includeStaging bool, requir
 				}
 			}
 		}
+		if r.Kind == "feature-probe" {
+			if wire.Hash(r.Data) != r.ID {
+				return wire.Invalid("feature probe identity differs")
+			}
+			probe, err := wire.FeatureProbeData(r.Data)
+			if err != nil {
+				return err
+			}
+			for _, ref := range probe.Evidence {
+				if err = markEvidence(ref); err != nil {
+					return err
+				}
+			}
+		}
 		if r.Kind == "report" {
 			report, err := wire.ReportEvidenceData(r.Data)
 			if err != nil {
@@ -308,6 +322,7 @@ func (s *Store) reachableScopes(ctx context.Context, includeStaging bool, requir
 		}
 		return markHistory(c.History)
 	}
+	featureIndexProofs := map[string]int{}
 	markIndexes := func(k, id string) error {
 		var tuple []string
 		if e := json.Unmarshal([]byte(k), &tuple); e != nil || len(tuple) != 3 {
@@ -318,6 +333,44 @@ func (s *Store) reachableScopes(ctx context.Context, includeStaging bool, requir
 			return e
 		}
 		switch tuple[0] {
+		case "report-features":
+			if !wire.IsHash(tuple[1]) || tuple[2] != "" || set.Count < 0 || set.Count > ScanLimit {
+				return wire.Invalid("invalid report feature index")
+			}
+			proof := tuple[1] + ":" + set.Root
+			if count, ok := featureIndexProofs[proof]; ok {
+				if count != set.Count {
+					return wire.Invalid("report feature index count differs")
+				}
+				return nil
+			}
+			if err := markMap(set.Root, "feature-index-nodes", func(string, string) error { return nil }); err != nil {
+				return err
+			}
+			count, budget := 0, ScanLimit
+			err := s.walk(set.Root, &budget, func(key, id string) error {
+				var record wire.Record
+				if err := read(id, &record); err != nil {
+					return err
+				}
+				probe, err := wire.FeatureProbeData(record.Data)
+				if err != nil {
+					return err
+				}
+				if record.Kind != "feature-probe" || record.ID != key || probe.ReportID != tuple[1] {
+					return wire.Invalid("report feature posting differs")
+				}
+				count++
+				return markRecord(key, id)
+			})
+			if err != nil {
+				return err
+			}
+			if count != set.Count {
+				return wire.Invalid("report feature index count differs")
+			}
+			featureIndexProofs[proof] = count
+			return nil
 		case "report-files":
 			if set.Count > 9 {
 				return ErrLimit

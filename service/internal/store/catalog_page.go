@@ -17,6 +17,17 @@ type Page struct {
 // Catalog pages enumerate small IDs/references first, then open only the
 // requested descriptors. A page of reports never decodes all report metadata.
 func (s *Store) CatalogPage(ctx context.Context, revision, kind string, offset, limit int) (Page, error) {
+	return s.catalogPage(ctx, revision, kind, indexKey("catalog", kind, ""), offset, limit)
+}
+
+func (s *Store) FeatureProbePage(ctx context.Context, revision, report string, offset, limit int) (Page, error) {
+	if _, err := s.Record(revision, "report", report); err != nil {
+		return Page{}, err
+	}
+	return s.catalogPage(ctx, revision, "feature-probe", indexKey("report-features", report, ""), offset, limit)
+}
+
+func (s *Store) catalogPage(ctx context.Context, revision, kind, scope string, offset, limit int) (Page, error) {
 	page := Page{Items: []wire.Record{}}
 	if offset < 0 || limit < 1 || limit > 1000 {
 		return page, wire.Invalid("invalid page bounds")
@@ -28,7 +39,7 @@ func (s *Store) CatalogPage(ctx context.Context, revision, kind string, offset, 
 	refs := map[string]string{}
 	budget := ScanLimit
 	if rev.Indexes != "" {
-		set, e := s.indexGet(rev.Indexes, indexKey("catalog", kind, ""))
+		set, e := s.indexGet(rev.Indexes, scope)
 		if e != nil {
 			return page, e
 		}
@@ -43,6 +54,9 @@ func (s *Store) CatalogPage(ctx context.Context, revision, kind string, offset, 
 			return page, e
 		}
 	} else {
+		if scope != indexKey("catalog", kind, "") {
+			return page, wire.Invalid("feature scope requires indexed revision")
+		}
 		prefix := kind + ":"
 		e = s.walk(rev.Catalog, &budget, func(k, digest string) error {
 			if e := ctx.Err(); e != nil {

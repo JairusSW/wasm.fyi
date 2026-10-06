@@ -141,6 +141,14 @@ func (s *Store) addRecordIndexes(rev *Revision, r wire.Record, digest string) er
 	if e != nil {
 		return e
 	}
+	if r.Kind == "feature-probe" {
+		probe, err := wire.FeatureProbeData(r.Data)
+		if err != nil {
+			return err
+		}
+		rev.Indexes, err = s.indexAdd(rev.Indexes, indexKey("report-features", probe.ReportID, ""), r.ID, digest)
+		return err
+	}
 	if r.Kind == "report-file" {
 		file, e := wire.ReportFileData(r.Data)
 		if e != nil {

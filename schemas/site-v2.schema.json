@@ -347,7 +347,8 @@
             "metric",
             "artifact",
             "track",
-            "report-file"
+            "report-file",
+            "feature-probe"
           ]
         },
         "id": {
@@ -363,7 +364,28 @@
         "id",
         "data"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "feature-probe"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "data": {
+                "$ref": "#/$defs/FeatureProbeData"
+              }
+            }
+          }
+        }
+      ]
     },
     "RecordPage": {
       "type": "object",
@@ -5801,6 +5823,232 @@
         "kind",
         "id",
         "data"
+      ],
+      "additionalProperties": false
+    },
+    "FeatureScenario": {
+      "type": "object",
+      "properties": {
+        "passId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "profile": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "scenario": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "trialCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        },
+        "outcomes": {
+          "type": "object",
+          "minProperties": 1,
+          "maxProperties": 32,
+          "propertyNames": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "passId",
+        "profile",
+        "scenario",
+        "trialCount",
+        "outcomes"
+      ]
+    },
+    "FeatureProbeData": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 1
+        },
+        "policy": {
+          "const": "recorded-feature-trials-v1"
+        },
+        "reportId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "environmentId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "configurationId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "trackId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "contractId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "runtime": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "workload": {
+          "type": "string",
+          "pattern": "^features/[^/]+(?:/.*)?$",
+          "maxLength": 512
+        },
+        "feature": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "created": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "trialCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "scenarios": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/FeatureScenario"
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "$ref": "#/$defs/Digest"
+          }
+        }
+      },
+      "required": [
+        "schema",
+        "policy",
+        "reportId",
+        "environmentId",
+        "configurationId",
+        "trackId",
+        "contractId",
+        "runtime",
+        "workload",
+        "feature",
+        "created",
+        "trialCount",
+        "scenarios",
+        "evidence"
+      ],
+      "additionalProperties": false
+    },
+    "FeatureProbeRecord": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "feature-probe"
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "data": {
+          "$ref": "#/$defs/FeatureProbeData"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "FeatureProbePage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FeatureProbeRecord"
+          },
+          "maxItems": 1000
+        },
+        "nextCursor": {
+          "type": "string"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "revision",
+        "items",
+        "nextCursor",
+        "complete",
+        "total"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "complete": {
+                "const": true
+              }
+            },
+            "required": [
+              "complete"
+            ]
+          },
+          "then": {
+            "properties": {
+              "nextCursor": {
+                "const": ""
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "nextCursor": {
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "FeatureProbeDetail": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "record": {
+          "$ref": "#/$defs/FeatureProbeRecord"
+        }
+      },
+      "required": [
+        "revision",
+        "record"
       ],
       "additionalProperties": false
     }

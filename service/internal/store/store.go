@@ -559,7 +559,7 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 				return "", wire.Invalid("artifact descriptor exceeds budget")
 			}
 			switch r.Kind {
-			case "environment", "configuration", "track", "workload", "metric", "result", "artifact", "report-file":
+			case "environment", "configuration", "track", "workload", "metric", "result", "artifact", "report-file", "feature-probe":
 				if wire.Hash(r.Data) != r.ID {
 					return "", wire.Invalid("record identity mismatch")
 				}
@@ -593,6 +593,23 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 	}
 	if e = s.validateHistoryBindings(ctx, j, records); e != nil {
 		return "", e
+	}
+	for _, record := range records {
+		if record.Kind != "feature-probe" {
+			continue
+		}
+		probe, err := wire.FeatureProbeData(record.Data)
+		if err != nil {
+			return "", err
+		}
+		if err = probe.CheckCatalog(records); err != nil {
+			return "", err
+		}
+		for _, ref := range probe.Evidence {
+			if !evidence[ref] {
+				return "", wire.Invalid("unresolved feature evidence")
+			}
+		}
 	}
 	for _, x := range j.Exports {
 		if _, ok := reportObjects[x.Manifest.ReportID]; !ok {

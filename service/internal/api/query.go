@@ -47,6 +47,9 @@ func allowedQuery(values url.Values, keys ...string) error {
 	return nil
 }
 func routeQuery(path string, values url.Values) error {
+	if path == "features" {
+		return allowedQuery(values, "revision", "limit", "cursor", "report")
+	}
 	parts := strings.Split(path, "/")
 	if path == "configurations" {
 		return allowedQuery(values, "revision", "limit", "cursor", "projection")

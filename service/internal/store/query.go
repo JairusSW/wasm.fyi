@@ -287,6 +287,18 @@ func (s *Store) ReportEvidenceContext(ctx context.Context, revision, report, dig
 	return s.evidenceContext(ctx, descriptor.Roots(), digest)
 }
 
+func (s *Store) FeatureEvidenceContext(ctx context.Context, revision, probeID, digest string) ([]byte, error) {
+	record, err := s.Record(revision, "feature-probe", probeID)
+	if err != nil {
+		return nil, err
+	}
+	probe, err := wire.FeatureProbeData(record.Data)
+	if err != nil {
+		return nil, err
+	}
+	return s.evidenceContext(ctx, probe.Evidence, digest)
+}
+
 func (s *Store) evidenceContext(ctx context.Context, roots []string, digest string) ([]byte, error) {
 	if !wire.IsHash(digest) {
 		return nil, wire.Invalid("invalid evidence digest")
