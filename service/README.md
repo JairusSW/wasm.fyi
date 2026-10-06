@@ -15,11 +15,20 @@ Run bounded ingress fuzz checks from `service/` with:
 ```sh
 go test ./internal/wire -run '^$' -fuzz '^FuzzDecodeTransport$' -fuzztime=20s -parallel=2
 go test ./internal/api -run '^$' -fuzz '^FuzzQueryAndCursor$' -fuzztime=20s -parallel=2
+go test ./internal/store -run '^$' -fuzz '^FuzzImportLifecycle$' -fuzztime=50x -parallel=2
 ```
 
 These cover transport validation, query normalization, signed cursors, byte-range
 parsing and encoding negotiation. They complement the stateful import/recovery
 tests; they do not establish unlimited load capacity or exhaustive fuzz coverage.
+
+The lifecycle target uses real Pebble/CAS stores and an independent model for
+two imports with shared objects. It checks staged/published/aborted state, missing
+objects, quota release, immutable plan conflicts, corrupt uploads, duplicate
+publication, restart and consistent backups after each operation. Runs are capped
+at 24 operations per input and two backups, so this slower target uses a fixed
+execution count. HTTP tests separately check that rejected ingress does not read
+the request body or publish data.
 
 The serving module imports no harness code and no SQLite. It does not execute
 benchmarks, archived verifiers or on-demand native disassembly. The current

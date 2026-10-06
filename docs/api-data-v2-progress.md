@@ -843,3 +843,28 @@ now emit only their fixed public message and code, retaining HTTP status while
 omitting wrapped implementation details. Unknown/internal errors remain generic.
 Stateful upload/publication fuzzing, proxy end-user rate policy and wider ingress
 load measurements remain open.
+
+### Stateful import lifecycle validation
+
+`FuzzImportLifecycle` now generates bounded sequences over two real fixture
+imports with shared CAS objects. An independent expected-state model checks
+submission/idempotency, active-owner upload grants, partial and corrupt uploads,
+commit retries, abort tombstones, immutable plan conflicts, pending count/byte
+accounting, publication identity and restart. Verification runs after every
+operation, including exact staged missing-object counts and persistent cursor
+identity. Sequences also assemble and verify consistent backups while imports may
+be incomplete. Inputs contain at most 24 operations and two backups.
+
+The five explicit seed scenarios pass under the race detector. A two-worker
+30-second exploratory run completed 10 generated executions; a fixed-count
+campaign then completed 50 executions in 17.13 seconds without an invariant
+failure. These are limited stateful test campaigns, not claims of exhaustive
+coverage or service throughput. Existing abrupt-exit/failure injection tests cover
+publication durability separately; concurrent and larger multi-inventory fuzzing
+remain open.
+
+HTTP rejection tests use a reader that records every body read. Unauthorized
+publication, undeclared object uploads and unsupported upload query scopes return
+the expected status without consuming the body or publishing a revision. The
+backend's real lifecycle behavior passes these gates; no measurement or collector
+methodology changes were needed.
