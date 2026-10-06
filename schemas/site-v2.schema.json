@@ -1537,6 +1537,126 @@
         "count"
       ],
       "additionalProperties": false
+    },
+    "CohortCell": {
+      "type": "object",
+      "properties": {
+        "configuration": {
+          "$ref": "#/$defs/Digest"
+        },
+        "exactConfiguration": {
+          "$ref": "#/$defs/Digest"
+        },
+        "contract": {
+          "$ref": "#/$defs/Digest"
+        },
+        "method": {
+          "$ref": "#/$defs/Digest"
+        },
+        "definition": {
+          "$ref": "#/$defs/Digest"
+        },
+        "result": {
+          "$ref": "#/$defs/Digest"
+        },
+        "report": {
+          "$ref": "#/$defs/Digest"
+        },
+        "status": {
+          "type": "string"
+        },
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "sourceValue": {
+          "type": [
+            "number",
+            "string",
+            "null"
+          ]
+        },
+        "approximateValue": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "configuration",
+        "result",
+        "report",
+        "status",
+        "value"
+      ],
+      "additionalProperties": false
+    },
+    "CohortMember": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/Digest"
+        },
+        "workload": {
+          "type": "string"
+        },
+        "group": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "weight": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "cell": {
+          "$ref": "#/$defs/CohortCell"
+        }
+      },
+      "required": [
+        "key",
+        "workload",
+        "group",
+        "weight",
+        "cell"
+      ],
+      "additionalProperties": false
+    },
+    "CohortMemberPage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "digest": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/CohortMember"
+          }
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "nextCursor": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "revision",
+        "digest",
+        "items",
+        "total",
+        "complete",
+        "nextCursor"
+      ],
+      "additionalProperties": false
     }
   },
   "$ref": "#/$defs/CompletedJob"

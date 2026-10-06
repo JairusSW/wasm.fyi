@@ -34,6 +34,24 @@ The serving module imports no harness code and no SQLite. It does not execute
 benchmarks, archived verifiers or on-demand native disassembly. The current
 frontend is still served through the existing Pages workflow.
 
+Executable wire-contract checks use a pinned test-only JSON Schema validator:
+
+```sh
+uv run scripts/check-api-contracts.py --export service/testdata/site-v2
+(cd service && WASMFYI_CONTRACT_OUTPUT=/tmp/new-api-contracts.jsonl go test ./internal/api -run 'TestOverviewComplete|TestResultSummaries|TestNativeFunctionAPI' -count=1)
+uv run scripts/check-api-contracts.py --responses /tmp/new-api-contracts.jsonl
+```
+
+Run these commands from the site root.
+Use a new capture path; successful JSON GET responses append to that file.
+Export checks verify payload hashes/sizes, inventories, detailed results, derived
+analysis resources and function rows. Response checks resolve local OpenAPI/JSON
+Schema references without fetching remote schemas. Negative tests cover missing
+provenance, invalid dates, recipe preloading and invalid function ranges. The
+existing API CI workflow runs this gate and generated-type checks. These checks
+complement producer verification and Go validation rather than establish scientific
+derivation or full coverage of all endpoint schemas.
+
 To host a fixed root-path SvelteKit build alongside the API, pass
 `--frontend /absolute/path/to/build` to `wasmfyi serve`. The directory must contain
 the adapter-static application shell `404.html`; missing or symlinked shells fail

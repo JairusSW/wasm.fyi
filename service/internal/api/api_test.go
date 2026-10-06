@@ -25,6 +25,7 @@ func request(t *testing.T, h http.Handler, method, path string, body []byte, hea
 	}
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, r)
+	captureResponse(t, method, path, w)
 	return w
 }
 func importFixture(t *testing.T, s *store.Store, seed string, date time.Time) string {

@@ -7,6 +7,7 @@ function type(s){
  if(s.enum)return s.enum.map(v=>JSON.stringify(v)).join(' | ');
  if(s.const!==undefined)return JSON.stringify(s.const);
  if(s.anyOf)return s.anyOf.map(type).join(' | ');
+ if(Array.isArray(s.type))return s.type.map(t=>type({...s,type:t})).join(' | ');
  if(s.type==='string')return 'string';if(s.type==='integer'||s.type==='number')return 'number';if(s.type==='boolean')return 'boolean';if(s.type==='null')return 'null';
  if(s.type==='array')return `Array<${type(s.items)}>`;
  if(s.type==='object'){

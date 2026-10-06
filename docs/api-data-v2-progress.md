@@ -868,3 +868,30 @@ publication, undeclared object uploads and unsupported upload query scopes retur
 the expected status without consuming the body or publishing a revision. The
 backend's real lifecycle behavior passes these gates; no measurement or collector
 methodology changes were needed.
+
+### Executable schema and generated-type gates
+
+A pinned, test-only Draft 2020-12 validator now checks emitted producer exports and
+captured successful API JSON responses against local schemas. Export checks verify
+object/inventory byte commitments and hashes, then validate result data, analysis
+resources and native function rows. API tests optionally append actual responses
+to a new `WASMFYI_CONTRACT_OUTPUT` JSONL file; the validator resolves their documented
+OpenAPI responses with no remote schema retrieval. Format validation dependencies
+are included, and negative tests reject missing provenance, invalid dates, recipes
+inside summary responses and invalid native ranges.
+
+This exposed a missing `/cohorts/{id}` success-body schema. Explicit cell/member/
+page types now describe exact provenance, source values, weights and frozen scope.
+The generated frontend types were also stale, and the generator converted nullable
+numeric union types to `unknown`. Union generation now preserves number/null and
+number/string/null types, with strict compile-time consumer checks. Existing client
+and evidence-resource tests continue to pass; no UI layouts or controls changed.
+
+Local validation checked 153 instances across legacy/fresh analytical/native
+exports and captured API responses, including 12 responses with detailed endpoint
+contracts. The larger existing native-size export plus Deno analytical export
+added 3,402 schema checks. The existing API workflow now runs negative schema
+checks, captures and validates selected endpoint fixtures, verifies generated types
+and type-checks their nullable/exact-value contract. This workflow change is local;
+no GitHub run, push or deployment is claimed. Scientific verification, admission,
+reference closure and broader endpoint-schema coverage remain separate gates.

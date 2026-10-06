@@ -2022,7 +2022,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Bounded result/report/configuration/contract/method references and weights; cursor binds revision, normalized scope, lane and page size"
+            "description": "Bounded result/report/configuration/contract/method references and weights; cursor binds revision, normalized scope, lane and page size",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/CohortMemberPage"
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid identity, scope or cursor"
