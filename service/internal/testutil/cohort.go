@@ -9,7 +9,7 @@ import (
 
 type CohortCell struct {
 	Runtime, Version, Workload, ContractRevision, Group string
-	Metric, Scenario, ExactValue                        string
+	Metric, Scenario, SourceProfile, ExactValue         string
 	Value                                               float64
 	Failed                                              bool
 }
@@ -78,6 +78,9 @@ func CohortFixture(seed string, date time.Time, cells []CohortCell) (wire.Job, m
 			statistic = "size_bytes"
 			definitionStatus = "unregistered"
 			metricDefinition = add("metric", "", map[string]string{"name": metric, "status": "unregistered", "reason": "synthetic size record fixture"})
+		}
+		if cell.SourceProfile != "" {
+			profile = cell.SourceProfile
 		}
 		configuration := add("configuration", "", map[string]any{"id": cell.Runtime, "description": map[string]string{"runtime": cell.Runtime, "runtime_version": cell.Version, "backend": "fixture"}})
 		track := add("track", "", map[string]string{"runtime": cell.Runtime, "sourceRuntimeId": cell.Runtime, "backend": "fixture"})

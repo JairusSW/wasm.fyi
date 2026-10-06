@@ -14,6 +14,25 @@ spec.loader.exec_module(contracts)
 
 
 class Contracts(unittest.TestCase):
+    def test_overview_preset_inventory_is_bounded_and_unpinned(self):
+        scope = {"revision": "", "selection": "current", "environment": "a" * 64,
+                 "baseline": "b" * 64, "lanes": ["b" * 64], "selectors": [{"definition": "c" * 64, "method": "d" * 64, "analysis": "fixture"}],
+                 "laneKind": "track", "policy": "shared-geometric-v1", "weighting": "workload", "workloads": "all",
+                 "mixedConfigurations": "reject", "collectors": "allow-unrecorded-timing", "definitions": "require-registered", "contracts": "latest-in-scope"}
+        preset = {"name": "execution", "version": "wasmfyi-cohort-v4", "seedRevision": "e" * 64, "scope": scope}
+        contracts.validate({"items": [preset]}, "OverviewPresetList", "preset")
+        old = copy.deepcopy(preset)
+        old["version"] = "wasmfyi-cohort-v3"
+        contracts.validate({"items": [old]}, "OverviewPresetList", "retained old preset")
+        for mutation in [lambda p: p.update(name="../escape"), lambda p: p["scope"].update(revision="f" * 64),
+                         lambda p: p.update(evidence=[]), lambda p: p["scope"].update(selection="s1")]:
+            invalid = copy.deepcopy(preset)
+            mutation(invalid)
+            with self.assertRaises(Exception):
+                contracts.validate({"items": [invalid]}, "OverviewPresetList", "invalid preset")
+        with self.assertRaises(Exception):
+            contracts.validate({"items": [preset] * 9}, "OverviewPresetList", "oversized inventory")
+
     def result(self):
         directory = contracts.ROOT / "service/testdata/site-v2"
         manifest = json.loads((directory / "manifest.json").read_text())
@@ -45,7 +64,7 @@ class Contracts(unittest.TestCase):
         population = {"configuration": lane, "status": "available", "reason": "", "value": 4,
                       "ratio": 1, "ratioStatus": "available", "ratioReason": "", "count": 1,
                       "workloads": 1, "members": None, "reports": None, "approximateInputs": 0, "ratioUsesApproximateInputs": False}
-        comparison = {"version": "wasmfyi-cohort-v3", "valueRepresentation": "float64", "baseline": lane, "policy": scope["policy"],
+        comparison = {"version": "wasmfyi-cohort-v4", "valueRepresentation": "float64", "baseline": lane, "policy": scope["policy"],
                       "weighting": "workload", "requested": [lane], "participants": [lane], "omitted": [],
                       "populations": [population], "uncertainty": "unavailable", "uncertaintyReason": "policy unavailable"}
         summary = {"scope": scope, "cohort": "fixture-token", "digest": "f" * 64,

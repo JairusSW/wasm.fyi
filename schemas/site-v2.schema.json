@@ -1114,7 +1114,7 @@
       "type": "object",
       "properties": {
         "version": {
-          "const": "wasmfyi-cohort-v3"
+          "const": "wasmfyi-cohort-v4"
         },
         "population": {
           "type": "string"
@@ -2490,7 +2490,7 @@
       "type": "object",
       "properties": {
         "version": {
-          "const": "wasmfyi-cohort-v3"
+          "const": "wasmfyi-cohort-v4"
         },
         "baseline": {
           "$ref": "#/$defs/Digest"
@@ -3855,6 +3855,153 @@
         "gapPolicy",
         "rawCount",
         "maxPoints",
+        "items"
+      ],
+      "additionalProperties": false
+    },
+    "OverviewPresetScope": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "const": ""
+        },
+        "environment": {
+          "$ref": "#/$defs/Digest"
+        },
+        "baseline": {
+          "$ref": "#/$defs/Digest"
+        },
+        "selection": {
+          "enum": [
+            "current",
+            "previous"
+          ]
+        },
+        "lanes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/$defs/Digest"
+          }
+        },
+        "selectors": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "items": {
+            "$ref": "#/$defs/CohortSelector"
+          }
+        },
+        "laneKind": {
+          "enum": [
+            "configuration",
+            "track"
+          ]
+        },
+        "policy": {
+          "enum": [
+            "shared-geometric-v1",
+            "available-rss-arithmetic-v1",
+            "matched-rss-arithmetic-v1"
+          ]
+        },
+        "weighting": {
+          "enum": [
+            "workload",
+            "corpus"
+          ]
+        },
+        "workloads": {
+          "enum": [
+            "applications",
+            "all"
+          ]
+        },
+        "mixedConfigurations": {
+          "enum": [
+            "reject",
+            "explicit-membership"
+          ]
+        },
+        "collectors": {
+          "enum": [
+            "require-recorded",
+            "allow-unrecorded-timing",
+            "allow-unrecorded-native-size"
+          ]
+        },
+        "definitions": {
+          "enum": [
+            "require-registered",
+            "allow-unregistered-native-size"
+          ]
+        },
+        "contracts": {
+          "enum": [
+            "latest-in-scope",
+            "all-exact-contracts"
+          ]
+        }
+      },
+      "required": [
+        "revision",
+        "environment",
+        "baseline",
+        "selection",
+        "lanes",
+        "selectors",
+        "laneKind",
+        "policy",
+        "weighting",
+        "workloads",
+        "mixedConfigurations",
+        "collectors",
+        "definitions",
+        "contracts"
+      ],
+      "additionalProperties": false
+    },
+    "OverviewPreset": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+          "maxLength": 128
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+          "maxLength": 128
+        },
+        "seedRevision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "scope": {
+          "$ref": "#/$defs/OverviewPresetScope"
+        }
+      },
+      "required": [
+        "name",
+        "version",
+        "seedRevision",
+        "scope"
+      ],
+      "additionalProperties": false
+    },
+    "OverviewPresetList": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/OverviewPreset"
+          }
+        }
+      },
+      "required": [
         "items"
       ],
       "additionalProperties": false

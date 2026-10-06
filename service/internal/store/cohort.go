@@ -154,9 +154,9 @@ func (s *Store) ComputeCohort(ctx context.Context, scope CohortScope) (Cohort, e
 			return c, e
 		}
 		var metric struct {
-			Name, Unit string
-			Status     string
-			Version    int
+			Name, Unit, Scope string
+			Status            string
+			Version           int
 		}
 		if e = json.Unmarshal(definition.Data, &metric); e != nil {
 			return c, e
@@ -178,8 +178,18 @@ func (s *Store) ComputeCohort(ctx context.Context, scope CohortScope) (Cohort, e
 			return c, wire.Invalid("cohort collector not recorded")
 		}
 		for _, o := range method.Observations {
-			if o.DefinitionVersion <= 0 || o.DefinitionVersion != metric.Version || o.Unit != metric.Unit || o.Scope == "" || o.Phase == "" || o.Collector == "" || o.CollectorVersion == "" || o.Quality == "" || o.Profile == "" || o.Denominator == "" {
+			if o.DefinitionVersion <= 0 || o.DefinitionVersion != metric.Version || o.Unit != metric.Unit || o.Scope != metric.Scope || o.Phase == "" || o.Collector == "" || o.CollectorVersion == "" || o.Quality == "" || o.Profile != method.Profile || o.Denominator == "" {
 				return c, wire.Invalid("cohort observer identity incomplete or inconsistent")
+			}
+		}
+		if metric.Name == "process.rss" {
+			if metric.Scope != "adapter_process" || metric.Unit != "bytes" || method.CollectorStatus != "recorded" {
+				return c, wire.Invalid("RSS comparison requires recorded process boundary observations")
+			}
+			for _, o := range method.Observations {
+				if o.Phase != method.Scenario+"/after_batch" || o.Quality != "boundary_snapshot_only" || o.Denominator != "process" {
+					return c, wire.Invalid("RSS comparison observation boundary or denominator differs")
+				}
 			}
 		}
 		if scope.Policy != "shared-geometric-v1" && (metric.Name != "process.rss" || metric.Unit != "bytes") {

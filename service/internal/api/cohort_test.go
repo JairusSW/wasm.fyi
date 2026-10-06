@@ -211,7 +211,7 @@ func TestCohortVersionChangeRejectsAuthenticOlderTokens(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, version := range []string{"wasmfyi-cohort-v1", "wasmfyi-cohort-v2"} {
+	for _, version := range []string{"wasmfyi-cohort-v1", "wasmfyi-cohort-v2", "wasmfyi-cohort-v3"} {
 		old, _ := wire.Encode(cohortCapsule{version, comparison.CategoryVersion, scope})
 		mac := hmac.New(sha256.New, key)
 		mac.Write([]byte("cohort-v1:"))
@@ -243,15 +243,17 @@ func TestCohortVersionChangeRejectsAuthenticOlderTokens(t *testing.T) {
 		if pinned.Code != 200 || !strings.Contains(pinned.Header().Get("Cache-Control"), "immutable") {
 			t.Fatal("pinned comparison not immutable", endpoint, pinned.Code)
 		}
-		if request(t, h, "GET", base+"&version=wasmfyi-cohort-v1", nil, nil).Code != 400 {
-			t.Fatal("older policy silently reinterpreted", endpoint)
+		for _, version := range []string{"wasmfyi-cohort-v1", "wasmfyi-cohort-v2", "wasmfyi-cohort-v3"} {
+			if request(t, h, "GET", base+"&version="+version, nil, nil).Code != 400 {
+				t.Fatal("older policy silently reinterpreted", endpoint, version)
+			}
 		}
 	}
 	if overview.Interpretation.Version != comparison.Version || overview.Interpretation.ContractSelection == "" {
 		t.Fatal("current scope interpretation missing")
 	}
 
-	if comparison.Version != "wasmfyi-cohort-v3" {
+	if comparison.Version != "wasmfyi-cohort-v4" {
 		t.Fatal("unversioned contract-selection fix")
 	}
 }

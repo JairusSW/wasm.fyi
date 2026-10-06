@@ -287,6 +287,7 @@ func TestRealProducerServingParity(t *testing.T) {
 	}
 	t.Logf("selected producer analysis sections retained: %d", analysisFields)
 	matched, scopes := 0, map[string]store.CohortScope{}
+	rssEligible := map[string]int{}
 	memoryMatched, codeMatched := 0, 0
 	for _, record := range rows {
 		var r wire.Result
@@ -304,6 +305,20 @@ func TestRealProducerServingParity(t *testing.T) {
 					t.Fatal("memory source summary drift", r.Workload, r.Metric)
 				}
 				memoryMatched++
+				if r.Metric == "process.rss" && r.MeasurementMethod != nil && r.MeasurementMethod.Status == "available" && r.MeasurementMethod.CollectorStatus == "recorded" {
+					id := r.EnvironmentID + "|" + r.TrackID + "|" + r.MeasurementMethodID
+					var summary struct {
+						Value    float64 `json:"median_bytes"`
+						Launches int     `json:"independent_launches"`
+					}
+					var recipe struct{ Options struct{ Launches int } }
+					_ = json.Unmarshal(a, &summary)
+					_ = json.Unmarshal(r.MeasurementMethod.Recipe, &recipe)
+					if summary.Value > 0 && summary.Launches > 0 && summary.Launches == recipe.Options.Launches {
+						rssEligible[id]++
+					}
+					scopes[id] = store.CohortScope{Revision: revision, Environment: r.EnvironmentID, Lanes: []string{r.TrackID}, LaneKind: "track", Baseline: r.TrackID, Selectors: []store.CohortSelector{{Definition: r.MetricDefinitionID, Method: r.MeasurementMethodID, Analysis: r.AnalysisVersion}}, Policy: "available-rss-arithmetic-v1", Weighting: "workload", Workloads: "all", MixedConfigurations: "explicit-membership", Collectors: "require-recorded", Definitions: "require-registered", Contracts: "latest-in-scope"}
+				}
 			}
 			if r.Metric == "native.code_size" {
 				var summary struct {
@@ -366,7 +381,7 @@ func TestRealProducerServingParity(t *testing.T) {
 	if memoryMatched != len(memoryExpected) || codeMatched != len(codeExpected) {
 		t.Fatal("memory/code source results disappeared", memoryMatched, len(memoryExpected), codeMatched, len(codeExpected))
 	}
-	for _, scope := range scopes {
+	for id, scope := range scopes {
 		c, e := s.ComputeCohort(context.Background(), scope)
 		if e != nil {
 			t.Fatal("real cohort incompatible", e)
@@ -375,10 +390,13 @@ func TestRealProducerServingParity(t *testing.T) {
 			t.Fatal("unexpected scope population")
 		}
 		p := c.Comparison.Populations[0]
+		if scope.Policy == "available-rss-arithmetic-v1" && p.Count != rssEligible[id] {
+			t.Fatal("RSS cohort source population drift", p.Count, rssEligible[id])
+		}
 		if p.Count == 0 {
 			continue
 		}
-		logSum := 0.0
+		sum := 0.0
 		for _, m := range p.Members {
 			var r wire.Result
 			record, e := s.Record(revision, "result", m.Cell.Result)
@@ -386,13 +404,22 @@ func TestRealProducerServingParity(t *testing.T) {
 				t.Fatal(e)
 			}
 			_ = wire.Decode(record.Data, &r)
-			var summary struct {
-				Value float64 `json:"median_ns_per_operation"`
-			}
+			var summary map[string]json.RawMessage
 			_ = json.Unmarshal(r.Summary, &summary)
-			logSum += math.Log(summary.Value)
+			var value float64
+			if e = json.Unmarshal(summary[r.Statistic], &value); e != nil {
+				t.Fatal("source aggregate value", e)
+			}
+			if scope.Policy == "available-rss-arithmetic-v1" {
+				sum += value
+			} else {
+				sum += math.Log(value)
+			}
 		}
-		want := math.Exp(logSum / float64(p.Count))
+		want := sum / float64(p.Count)
+		if scope.Policy == "shared-geometric-v1" {
+			want = math.Exp(want)
+		}
 		if math.Abs(*p.Value-want) > want*1e-12 || *p.Ratio != 1 {
 			t.Fatal("source-derived point estimate drift")
 		}

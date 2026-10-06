@@ -1419,3 +1419,35 @@ unchanged publication, absent applied-cleanup mutation and released control
 admission. Typed Unicode paths and true/false flags remain supported. Existing
 live backup/cleanup, queue cancellation, socket safety and shutdown tests pass.
 No scientific inputs, measurement methods or public frontend behavior change.
+
+## Comparison v4 observation compatibility
+
+A synthetic source-preserving import regression demonstrated that comparison v3
+accepted current-RSS records with contradictory observation scope, source
+profile, lifetime boundary, peak quality or per-operation denominator. Those
+claims remain readable in raw records; comparison v4 rejects their cohort scope.
+All recorded observations must match the selected metric's scope, unit and
+version and their method's source profile. Current RSS additionally requires
+adapter-process scope, the scenario's after-batch boundary, boundary-snapshot
+quality and a process denominator. The policy accepts explicitly selected timing
+and memory source passes without merging their identities or inventing intervals.
+
+The version change binds summaries, overview projections, signed membership
+capsules and immutable URL caching to v4. Authentic v1/v2/v3 capsules and older
+version-pinned URLs are rejected. A stored v3 overview remains portable but cannot
+serve a v4 request; valid point estimates remain equal after separate v4
+preparation and DB-free rebuild. Schemas and generated consumer types use v4.
+
+Targeted cohort, projection, API and comparison race gates pass. All 27 captured
+HTTP responses validate against the updated typed contracts, and 21 negative
+schema tests pass. This includes two admin preset inventories: their new strict
+contract bounds lists to eight entries, preserves retained older policy versions,
+requires unpinned normalized scopes and rejects extra evidence fields. Client
+tests and strict generated-type checks pass, along with Go vet and a Linux amd64
+CLI build. The existing Wasmer native-size report verifies with the producer, and
+its 7,453-object export passes the extended real-source race gate: all 588 timing,
+725 memory and 145 native-size summaries survive conversion/serving; five exact
+comparison scopes include the complete 145-cell current-RSS population. Its
+arithmetic result, overview and paged membership HTTP surfaces match source
+records. The gate performs no benchmark execution or source modification. Full metric-policy coverage, operator qualification and production
+cutover remain pending.

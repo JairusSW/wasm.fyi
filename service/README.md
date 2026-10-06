@@ -277,18 +277,28 @@ benchmark or archived executable. The 60,811,832-byte V8 parent passed this gate
 on macOS and native Linux aarch64; durable disk and off-machine restore remain
 separate gates.
 
-Website comparison analysis is now `wasmfyi-cohort-v3`. The `latest-in-scope`
+Website comparison analysis is now `wasmfyi-cohort-v4`. The `latest-in-scope`
 contract policy finds the latest capture only within the requested lanes and
 workload population. Unrequested runtimes cannot supersede selected contracts;
 excluded feature probes cannot introduce timestamp ambiguity. Conflicting exact
 contracts at the latest timestamp within the selected population still fail
 explicitly. The `all-exact-contracts` policy remains available.
 
+Comparison v4 requires recorded observation scope, unit and definition version
+to match the selected metric, and observation profile to match its source method.
+Current RSS additionally requires process scope, an `after_batch` boundary,
+`boundary_snapshot_only` quality and a `process` denominator. Contradictory
+producer claims remain available in raw records but cannot form a cohort. Timing
+and memory source passes remain distinct and may both contribute explicitly
+selected current-RSS boundary cells. No collector implementation is inferred.
+
 The overview exposes `interpretation.contractSelection` from the requested policy.
 Cohort digests, cache keys and signed tokens bind the comparison version. Existing
-v1/v2 cohort tokens are rejected; resolve the selected overview/aggregate again to
-obtain a v3 token. Result/history records, producer analysis versions, scientific
-values, unavailable uncertainty, and the `s1`/`s2` selection aliases are preserved.
+v1/v2/v3 cohort tokens are rejected; resolve the selected overview/aggregate again
+to obtain a v4 token. Registered older-version presets remain listed and portable,
+but must be explicitly re-registered with v4 to prepare future publications.
+Result/history records, producer analysis versions, scientific values, unavailable
+uncertainty, and the `s1`/`s2` selection aliases are preserved.
 This fixes comparison membership; it does not qualify the wider cohort/history
 methodology or complete production cutover.
 
@@ -296,16 +306,16 @@ Aggregate summary responses now have the executable `AggregateSummary` contract:
 at most 32 lane populations, versioned comparison policy, reference counts, and
 explicitly null member/report inventories. Complete cohort membership remains a
 paged subresource. Schema checks reject evidence preloads and manufactured
-uncertainty; generated TypeScript types share the contract. Comparison v3 HTTP
+uncertainty; generated TypeScript types share the contract. Comparison v4 HTTP
 captures cover overview, aggregate summaries and member pages.
 
-Pin analysis in overview/aggregate URLs with `version=wasmfyi-cohort-v3` as well
+Pin analysis in overview/aggregate URLs with `version=wasmfyi-cohort-v4` as well
 as an explicit `scope.revision` for immutable caching. Without the version,
 responses use `no-cache` and revalidate so a policy upgrade cannot leave a stale
 cohort token in a long-lived browser cache. Unsupported versions fail explicitly.
 Signed cohort member URLs already bind the analysis version and remain immutable.
 
-Cohort response v3 exposes `approximateInputs` for each population/card: the number
+Cohort response v4 exposes `approximateInputs` for each population/card: the number
 of contributing source values that lost precision when converted for calculation.
 `ratioUsesApproximateInputs` includes conversion loss in either the numerator or
 baseline and is null when the ratio is unavailable. Failed/excluded cells do not
@@ -447,7 +457,7 @@ remain separate gates. The test is included in CI, whose execution is not claime
 by local validation.
 
 Authenticated `POST /admin/v1/overviews` accepts a comparison `scope` and
-`version: "wasmfyi-cohort-v3"`. It resolves an immutable revision and computes
+`version: "wasmfyi-cohort-v4"`. It resolves an immutable revision and computes
 the complete cohort with the existing comparison implementation, then stores
 the compact projection through synchronous commit and a durable pointer.
 Preparation does not change the measurement revision. The registry retains at
@@ -487,7 +497,7 @@ fallback, preserving its immutable numerical meaning. The eviction path rebuilds
 only bounded key/reference metadata, not historical result datasets.
 
 `GET /api/v1/history/changes` compares two explicit JSON `before` and `after`
-CohortScope parameters with `version=wasmfyi-cohort-v3`. Both scopes must pin
+CohortScope parameters with `version=wasmfyi-cohort-v4`. Both scopes must pin
 a dataset revision and one identical runtime track, environment, metric/method
 selectors and population policy. The service intersects exact contract cells and
 recalculates the existing geometric or RSS arithmetic policy over that population.

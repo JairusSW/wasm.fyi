@@ -7,7 +7,9 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/JairusSW/wasm.fyi/service/internal/comparison"
 	"github.com/JairusSW/wasm.fyi/service/internal/testutil"
+	"github.com/cockroachdb/pebble/v2"
 )
 
 func TestPreparedOverviewParityAndPortable(t *testing.T) {
@@ -103,5 +105,65 @@ func TestPreparedOverviewFaultVisibility(t *testing.T) {
 				t.Fatal(e)
 			}
 		})
+	}
+}
+
+func TestPreparedOverviewDoesNotReuseOlderCompatibilityPolicy(t *testing.T) {
+	ctx := context.Background()
+	s := openTest(t, t.TempDir())
+	defer s.Close()
+	revision := publishCohort(t, s, "compatibility-projection", []testutil.CohortCell{{Runtime: "a", Workload: "fixture/one", Value: 4}})
+	scope, e := s.NormalizeCohort(cohortScope(t, s, revision))
+	if e != nil {
+		t.Fatal(e)
+	}
+	cohort, e := s.ComputeCohort(ctx, scope)
+	if e != nil {
+		t.Fatal(e)
+	}
+	old, e := s.BuildOverview(&cohort)
+	if e != nil {
+		t.Fatal(e)
+	}
+	old.Interpretation.Version = "wasmfyi-cohort-v3"
+	object, e := s.put(old)
+	if e != nil {
+		t.Fatal(e)
+	}
+	root, e := s.mapSet(s.overviewRoot(), overviewVersionKey(scope, old.Interpretation.Version, comparison.CategoryVersion), object, 0)
+	if e != nil {
+		t.Fatal(e)
+	}
+	if e = s.db.Set(key("overviews"), []byte(root), pebble.Sync); e != nil {
+		t.Fatal(e)
+	}
+	s.overviews = root
+	s.overviewCount = 1
+	if e = s.portableRoots(s.Current(), s.registrationRoot(), root); e != nil {
+		t.Fatal(e)
+	}
+	if _, e = s.PreparedOverview(ctx, scope); !errors.Is(e, ErrNotFound) {
+		t.Fatal("older compatibility projection reused", e)
+	}
+	current, e := s.PrepareOverview(ctx, scope)
+	if e != nil || current.Interpretation.Version != comparison.Version || s.overviewCount != 2 {
+		t.Fatal("new policy projection not prepared separately", e)
+	}
+	if !reflect.DeepEqual(current.Cards, old.Cards) {
+		t.Fatal("valid point estimates drifted")
+	}
+	backup := filepath.Join(t.TempDir(), "backup")
+	if _, e = s.Backup(ctx, backup); e != nil {
+		t.Fatal(e)
+	}
+	rebuilt := filepath.Join(t.TempDir(), "rebuilt")
+	if e = Rebuild(backup, rebuilt, "fixture"); e != nil {
+		t.Fatal(e)
+	}
+	recovered := openTest(t, rebuilt)
+	defer recovered.Close()
+	got, e := recovered.PreparedOverview(ctx, scope)
+	if e != nil || !reflect.DeepEqual(got, current) {
+		t.Fatal("version-separated projections not portable", e)
 	}
 }

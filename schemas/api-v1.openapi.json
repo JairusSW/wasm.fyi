@@ -2005,7 +2005,7 @@
             "schema": {
               "type": "string",
               "enum": [
-                "wasmfyi-cohort-v3"
+                "wasmfyi-cohort-v4"
               ]
             },
             "description": "Pin comparison analysis as well as scope.revision for immutable caching. Unversioned analysis resolves the current policy and must revalidate."
@@ -2330,7 +2330,7 @@
             "schema": {
               "type": "string",
               "enum": [
-                "wasmfyi-cohort-v3"
+                "wasmfyi-cohort-v4"
               ]
             },
             "description": "Pin comparison analysis as well as scope.revision for immutable caching. Unversioned analysis resolves the current policy and must revalidate."
@@ -3907,7 +3907,7 @@
                 "type": "object",
                 "properties": {
                   "version": {
-                    "const": "wasmfyi-cohort-v3"
+                    "const": "wasmfyi-cohort-v4"
                   },
                   "scope": {
                     "$ref": "./site-v2.schema.json#/$defs/CohortScope"
@@ -3983,7 +3983,7 @@
                     "type": "string"
                   },
                   "version": {
-                    "const": "wasmfyi-cohort-v3"
+                    "const": "wasmfyi-cohort-v4"
                   },
                   "scope": {
                     "$ref": "./site-v2.schema.json#/$defs/CohortScope"
@@ -4023,7 +4023,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Small preset inventory"
+            "description": "Small preset inventory",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./site-v2.schema.json#/$defs/OverviewPresetList"
+                }
+              }
+            }
           },
           "401": {
             "description": "Publisher authentication required"
@@ -4091,7 +4098,7 @@
             "required": true,
             "schema": {
               "enum": [
-                "wasmfyi-cohort-v3"
+                "wasmfyi-cohort-v4"
               ]
             }
           }
