@@ -306,6 +306,110 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 			problem(w, r, e)
 			return
 		}
+		if kind == "artifact" && len(parts) == 3 && (parts[2] == "bytes" || parts[2] == "content") {
+			for key, values := range params {
+				if (key != "revision" && key != "download" && key != "offset" && key != "length") || len(values) != 1 {
+					problem(w, r, wire.Invalid("unsupported byte query"))
+					return
+				}
+			}
+			download := params.Get("download") == "1"
+			if params.Get("download") != "" && !download || download && (params.Has("offset") || params.Has("length")) {
+				problem(w, r, wire.Invalid("invalid download query"))
+				return
+			}
+			artifact, data, e := a.Store.ArtifactBytes(r.Context(), revision, parts[1])
+			if e != nil {
+				problem(w, r, e)
+				return
+			}
+			offset, length := 0, len(data)
+			if !download {
+				length = min(length, wire.ResponseBytes)
+				if params.Has("offset") {
+					offset, e = strconv.Atoi(params.Get("offset"))
+					if e != nil || offset < 0 || offset > len(data) {
+						problem(w, r, wire.Invalid("invalid byte offset"))
+						return
+					}
+				}
+				length = min(length, len(data)-offset)
+				if params.Has("length") {
+					length, e = strconv.Atoi(params.Get("length"))
+					if e != nil || length < 0 || length > wire.ResponseBytes || length > len(data)-offset {
+						problem(w, r, wire.Invalid("invalid byte length"))
+						return
+					}
+				}
+			}
+			if header := r.Header.Get("Range"); header != "" {
+				if len(r.Header.Values("Range")) != 1 || download || params.Has("offset") || params.Has("length") {
+					problem(w, r, wire.Invalid("ambiguous range request"))
+					return
+				}
+				var valid bool
+				offset, length, valid = nativeRange(header, len(data))
+				if !valid {
+					w.Header().Set("Content-Range", "bytes */"+strconv.Itoa(len(data)))
+					w.WriteHeader(416)
+					return
+				}
+			}
+			w.Header().Set("Content-Type", "application/octet-stream")
+			w.Header().Set("Content-Length", strconv.Itoa(length))
+			w.Header().Set("ETag", `"`+artifact.Content.SHA256+":"+strconv.Itoa(offset)+":"+strconv.Itoa(length)+`"`)
+			if immutable {
+				w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+			} else {
+				w.Header().Set("Cache-Control", "no-cache")
+			}
+			w.Header().Set("X-Content-SHA256", artifact.Content.SHA256)
+			if download {
+				w.Header().Set("Content-Disposition", `attachment; filename="`+artifact.Content.SHA256+`.bin"`)
+			}
+			if r.Header.Get("If-None-Match") == w.Header().Get("ETag") {
+				w.Header().Del("Content-Length")
+				w.WriteHeader(304)
+				return
+			}
+			if !download && length > 0 {
+				w.Header().Set("Content-Range", "bytes "+strconv.Itoa(offset)+"-"+strconv.Itoa(offset+length-1)+"/"+strconv.Itoa(len(data)))
+				w.WriteHeader(206)
+			} else {
+				w.WriteHeader(200)
+			}
+			_, _ = w.Write(data[offset : offset+length])
+			return
+		}
+		if kind == "artifact" && len(parts) == 3 && parts[2] == "inspection" {
+			for key, values := range params {
+				if (key != "revision" && key != "chunk") || len(values) != 1 {
+					problem(w, r, wire.Invalid("unsupported inspection query"))
+					return
+				}
+			}
+			var artifact wire.Artifact
+			artifact, e = wire.ArtifactData(record.Data)
+			if e != nil {
+				problem(w, r, e)
+				return
+			}
+			digest := params.Get("chunk")
+			if digest == "" {
+				digest = artifact.Inspection.Metadata
+			}
+			if digest == "" {
+				problem(w, r, store.ErrNotFound)
+				return
+			}
+			b, e := a.Store.ArtifactEvidence(r.Context(), revision, parts[1], digest)
+			if e != nil {
+				problem(w, r, e)
+				return
+			}
+			respond(w, r, 200, json.RawMessage(b), immutable)
+			return
+		}
 		if len(parts) == 2 {
 			respond(w, r, 200, map[string]any{"revision": revision, "record": record}, immutable)
 			return
@@ -462,7 +566,7 @@ func (a *API) admin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(parts) == 2 && parts[0] == "objects" && r.Method == "PUT" {
-		r.Body = http.MaxBytesReader(w, r.Body, wire.ChunkBytes)
+		r.Body = http.MaxBytesReader(w, r.Body, wire.BlobBytes)
 		if e := a.Store.InstallDeclared(parts[1], r.Body); e != nil {
 			problem(w, r, e)
 			return
@@ -542,4 +646,40 @@ func (a *API) admin(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	http.NotFound(w, r)
+}
+
+func nativeRange(header string, size int) (int, int, bool) {
+	if !strings.HasPrefix(header, "bytes=") || strings.Contains(header, ",") {
+		return 0, 0, false
+	}
+	parts := strings.Split(strings.TrimPrefix(header, "bytes="), "-")
+	if len(parts) != 2 || size == 0 {
+		return 0, 0, false
+	}
+	start, end := 0, size-1
+	var err error
+	if parts[0] == "" {
+		length, e := strconv.Atoi(parts[1])
+		if e != nil || length <= 0 || length > wire.ResponseBytes {
+			return 0, 0, false
+		}
+		start = max(0, size-length)
+	} else {
+		start, err = strconv.Atoi(parts[0])
+		if err != nil || start < 0 || start >= size {
+			return 0, 0, false
+		}
+		if parts[1] != "" {
+			end, err = strconv.Atoi(parts[1])
+			if err != nil || end < start {
+				return 0, 0, false
+			}
+			end = min(end, size-1)
+		}
+	}
+	length := end - start + 1
+	if length < 1 || length > wire.ResponseBytes {
+		return 0, 0, false
+	}
+	return start, length, true
 }

@@ -272,7 +272,7 @@ A directly linked fragment is authorized without scanning all sibling fragments.
 This resolves oversized evidence values, not oversized canonical catalog/result
 records. Those records still have the original decoded ceiling; large result
 reference lists and larger-than-64-MiB evidence need additional representations.
-Native bytes remain a separate, unimplemented binary transport.
+Native bytes use the separate binary path described below.
 
 
 Exact exporter identity belongs to the export receipt/manifest, rather than the
@@ -293,10 +293,8 @@ remains unavailable until an offline derivative is exported.
 
 Producer tests cover a binary larger than the ordinary JSON ceiling, exact bytes,
 function attribution, descriptor limits, hash/module/runtime/size mismatches, failed
-export cleanup and withheld-content rejection. This is producer-only support: the
-service and coordinator still reject binary inventory entries. Binary content
-storage/serving, recovery closure and history identity must land together before
-that publication path is enabled. Adding downloadable bytes or changing evidence
+export cleanup and withheld-content rejection. Consumer storage, serving, recovery and observation identity are described in the
+following sections. Adding downloadable bytes or changing evidence
 encoding must not turn an existing capture into a new independent observation.
 
 
@@ -324,5 +322,35 @@ counts and selection populations, immutable older views, poorer redelivery,
 DB-free rebuild, legacy-index migration and distinct scientific identities. This
 identity policy applies to the same exact sealed report; reuse across separately
 rebuilt source reports and retrospective history/cohort policies still need their
-explicit source-pass/sampling-group work. Binary publication remains disabled until
-its storage, serving and recovery checks are implemented.
+explicit source-pass/sampling-group work. Binary publication uses this policy and the storage/serving path below.
+
+
+## Native binary service path
+
+The service/coordinator now admit `binary` objects up to 16 MiB; JSON evidence,
+records and inventory pages retain the 256 KiB decoded ceiling. Declared sizes,
+full hashes, upload permits and pending/content quotas apply to binaries too.
+Available artifact content must reference a declared binary of the recorded size;
+unavailable descriptors may not advertise hashes/downloads. Artifact/result
+report, runtime and workload bindings are checked. Metadata references must be
+present evidence. Empty binary originals remain available content, distinct from
+missing bytes. JSON APIs cannot read a large binary through an evidence reference.
+
+`/artifacts/ID/content` (also `/bytes`) with a single validated HTTP Range or
+`?offset=N&length=N` returns at most 1 MiB of a selected image;
+`?download=1` explicitly returns the original with attachment headers. Every read
+checks revision membership and full original integrity before serving. Byte-window
+ETags include offset/length; raw bytes are never JSON/base64 or disassembled on a
+request. `/artifacts/ID/inspection` loads referenced image metadata, with `chunk`
+for a linked function/evidence resource. Unavailable content and unrelated hashes
+return errors. Descriptor and normal result reads do not fetch binaries.
+
+Recovery/cleanup paths retain binary ceilings separately from metadata ceilings.
+Tests cover declared-object upload, content completeness, binary sizes above the
+JSON ceiling, exact selected/full reads, caching/query errors, corrupt originals,
+empty originals, restart, backup/restore, DB-free rebuild and unchanged history
+when bytes are added. The real-service coordinator test publishes/downloads a
+binary and verifies duplicate redelivery transfers nothing. Whole selected images
+are bounded to 16 MiB and verified in memory before byte reads; streaming larger
+artifacts, offline disassembly derivatives and broader native scale/crash tests
+remain future gates.

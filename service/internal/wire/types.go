@@ -14,6 +14,7 @@ import (
 )
 
 const ChunkBytes = 256 * 1024
+const BlobBytes = 16 * 1024 * 1024
 const ResponseBytes = 1024 * 1024
 const MaxObjects = 512
 const MaxInventoryPages = 512
@@ -129,7 +130,7 @@ func (p Inventory) Object() Object {
 	return Object{SHA256: p.SHA256, Bytes: p.Bytes, Kind: "inventory"}
 }
 func (p Inventory) Validate() error {
-	if !IsHash(p.SHA256) || p.Bytes < 1 || p.Bytes > ChunkBytes || p.Objects < 1 || p.Objects > MaxObjects || p.ContentBytes < int64(p.Objects) || p.ContentBytes > int64(p.Objects)*ChunkBytes {
+	if !IsHash(p.SHA256) || p.Bytes < 1 || p.Bytes > ChunkBytes || p.Objects < 1 || p.Objects > MaxObjects || p.ContentBytes < 0 || p.ContentBytes > int64(p.Objects)*BlobBytes {
 		return Invalid("invalid inventory descriptor")
 	}
 	return nil
@@ -151,7 +152,7 @@ func (p Inventory) Decode(b []byte) ([]Object, error) {
 	var size int64
 	seen := map[string]bool{}
 	for _, o := range page.Objects {
-		if !IsHash(o.SHA256) || o.Bytes < 1 || o.Bytes > ChunkBytes || (o.Kind != "record" && o.Kind != "evidence") || seen[o.SHA256] {
+		if !ValidPayload(o) || seen[o.SHA256] {
 			return nil, Invalid("invalid inventory payload")
 		}
 		seen[o.SHA256] = true
@@ -227,7 +228,7 @@ func (j Job) Validate() error {
 			objects[o.SHA256] = o
 		}
 		for _, o := range m.Objects {
-			if !IsHash(o.SHA256) || o.Bytes <= 0 || o.Bytes > ChunkBytes || (o.Kind != "record" && o.Kind != "evidence") || seen[o.SHA256] {
+			if !ValidPayload(o) || seen[o.SHA256] {
 				return Invalid("invalid object descriptor")
 			}
 			if old, ok := objects[o.SHA256]; ok && old != o {
@@ -298,4 +299,18 @@ func EvidenceReferences(b []byte) ([]string, error) {
 		}
 	}
 	return refs, nil
+}
+
+func ValidPayload(o Object) bool {
+	ceiling := ChunkBytes
+	if o.Kind == "binary" {
+		ceiling = BlobBytes
+	} else if o.Kind != "record" && o.Kind != "evidence" {
+		return false
+	}
+	minimum := 1
+	if o.Kind == "binary" {
+		minimum = 0
+	}
+	return IsHash(o.SHA256) && o.Bytes >= minimum && o.Bytes <= ceiling
 }

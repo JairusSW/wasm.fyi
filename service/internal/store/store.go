@@ -365,7 +365,7 @@ func (s *Store) MissingContext(ctx context.Context, id string) ([]wire.Object, e
 				continue
 			}
 			seen[o.SHA256] = true
-			b, e := s.content(o.SHA256)
+			b, e := s.objectRepresentation(o)
 			if os.IsNotExist(e) || (o.Kind == "inventory" && pendingErr == nil) {
 				out = append(out, o)
 			} else if e != nil {
@@ -434,6 +434,7 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 	records := map[string]wire.Record{}
 	digests := map[string]string{}
 	evidence := map[string]bool{}
+	binaries := map[string]wire.Object{}
 	reportObjects := map[string]wire.Manifest{}
 	for _, x := range j.Exports {
 		if e := ctx.Err(); e != nil {
@@ -447,11 +448,15 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 			if e := ctx.Err(); e != nil {
 				return "", e
 			}
+			if o.Kind == "binary" {
+				binaries[o.SHA256] = o
+				continue
+			}
 			if o.Kind == "evidence" {
 				evidence[o.SHA256] = true
 				continue
 			}
-			b, e := s.content(o.SHA256)
+			b, e := s.objectRepresentation(o)
 			if e != nil {
 				return "", e
 			}
@@ -543,6 +548,15 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 			return "", e
 		}
 		if summary.Artifact != "" {
+			if record, ok := records["artifact:"+summary.Artifact]; ok {
+				artifact, err := wire.ArtifactData(record.Data)
+				if err != nil {
+					return "", err
+				}
+				if artifact.ReportID != v.ReportID || artifact.Record.Runtime != v.Runtime || artifact.Record.Workload != v.Workload {
+					return "", wire.Invalid("artifact result identity differs")
+				}
+			}
 			if _, ok := records["artifact:"+summary.Artifact]; !ok {
 				return "", wire.Invalid("unresolved artifact reference")
 			}
@@ -563,6 +577,27 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 			if !evidence[ref] {
 				return "", wire.Invalid("unresolved pass context")
 			}
+		}
+	}
+	for _, record := range records {
+		if record.Kind != "artifact" {
+			continue
+		}
+		artifact, err := wire.ArtifactData(record.Data)
+		if err != nil {
+			return "", err
+		}
+		if _, ok := records["report:"+artifact.ReportID]; !ok {
+			return "", wire.Invalid("unresolved artifact report")
+		}
+		if artifact.Content.Status == "available" {
+			object, ok := binaries[artifact.Content.SHA256]
+			if !ok || object.Bytes != artifact.Content.Bytes {
+				return "", wire.Invalid("unresolved native binary")
+			}
+		}
+		if artifact.Inspection.Metadata != "" && !evidence[artifact.Inspection.Metadata] {
+			return "", wire.Invalid("unresolved inspection metadata")
 		}
 	}
 	// Evidence chunks may reference only declared evidence objects; never paths.

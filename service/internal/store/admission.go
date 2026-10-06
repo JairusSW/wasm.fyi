@@ -211,6 +211,9 @@ func (s *Store) InstallDeclared(id string, r io.Reader) error {
 	if len(data) != permit.Object.Bytes || wire.Hash(data) != id {
 		return wire.Invalid("object differs from declared digest/size")
 	}
+	if permit.Object.Kind == "binary" {
+		return s.installRepresentation(id, data, wire.BlobBytes)
+	}
 	return s.installBytes(id, data)
 }
 func (s *Store) Abort(id string) error {

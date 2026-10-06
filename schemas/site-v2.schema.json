@@ -15,13 +15,14 @@
         },
         "bytes": {
           "type": "integer",
-          "minimum": 1,
-          "maximum": 262144
+          "minimum": 0,
+          "maximum": 16777216
         },
         "kind": {
           "enum": [
             "record",
-            "evidence"
+            "evidence",
+            "binary"
           ]
         }
       },
@@ -30,7 +31,34 @@
         "bytes",
         "kind"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "properties": {
+            "kind": {
+              "const": "binary"
+            },
+            "bytes": {
+              "minimum": 0,
+              "maximum": 16777216
+            }
+          }
+        },
+        {
+          "properties": {
+            "kind": {
+              "enum": [
+                "record",
+                "evidence"
+              ]
+            },
+            "bytes": {
+              "minimum": 1,
+              "maximum": 262144
+            }
+          }
+        }
+      ]
     },
     "ExportManifest": {
       "type": "object",
@@ -406,8 +434,8 @@
         },
         "contentBytes": {
           "type": "integer",
-          "minimum": 1,
-          "maximum": 134217728
+          "minimum": 0,
+          "maximum": 8589934592
         }
       },
       "required": [

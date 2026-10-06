@@ -139,6 +139,24 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 		if e := read(id, &r); e != nil {
 			return e
 		}
+		if r.Kind == "artifact" {
+			artifact, e := wire.ArtifactData(r.Data)
+			if e != nil {
+				return e
+			}
+			if artifact.Content.Status == "available" {
+				object := wire.Object{SHA256: artifact.Content.SHA256, Bytes: artifact.Content.Bytes, Kind: "binary"}
+				if _, e = s.objectRepresentation(object); e != nil {
+					return e
+				}
+				marked[object.SHA256] = true
+			}
+			if artifact.Inspection.Metadata != "" {
+				if e := markEvidence(artifact.Inspection.Metadata); e != nil {
+					return e
+				}
+			}
+		}
 		if r.Kind == "report" {
 			var report struct {
 				PassContexts []string `json:"passContexts"`
@@ -258,7 +276,7 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 				payload = append(payload, page.Object())
 			}
 			for _, object := range payload {
-				b, e := s.content(object.SHA256)
+				b, e := s.objectRepresentation(object)
 				if e != nil {
 					return nil, e
 				}
@@ -300,7 +318,7 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 				}
 				for _, object := range payload {
 					marked[object.SHA256] = true
-					b, e := s.content(object.SHA256)
+					b, e := s.objectRepresentation(object)
 					if os.IsNotExist(e) {
 						continue
 					}
@@ -411,11 +429,11 @@ func Rebuild(source, destination, publisher string) error {
 	}
 	sort.Strings(ids)
 	for _, id := range ids {
-		b, e := reader.content(id)
+		b, e := reader.representation(id, wire.BlobBytes)
 		if e != nil {
 			return e
 		}
-		if e = target.installBytes(id, b); e != nil {
+		if e = target.installRepresentation(id, b, wire.BlobBytes); e != nil {
 			return e
 		}
 	}

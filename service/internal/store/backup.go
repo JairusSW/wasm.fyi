@@ -200,7 +200,7 @@ func (s *Store) Backup(ctx context.Context, destination string) (BackupManifest,
 	}
 	sort.Strings(objects)
 	for _, id := range objects {
-		record, e := copyRegular(ctx, s.objects, id, filepath.Join(temp, "objects", id), wire.ChunkBytes)
+		record, e := copyRegular(ctx, s.objects, id, filepath.Join(temp, "objects", id), wire.BlobBytes)
 		if e != nil {
 			if os.IsNotExist(e) && !required[id] {
 				continue

@@ -4,6 +4,7 @@ import {join, resolve, sep} from 'node:path';
 import {digest} from './wasmbench.mjs';
 const HASH=/^[a-f0-9]{64}$/;
 const CHUNK=256*1024;
+const BLOB=16*1024*1024;
 export function publicationURL(value){
   const url=new URL(value);
   assert(!url.username&&!url.password&&!url.search&&!url.hash&&url.pathname==='/', 'API URL must be an origin without credentials');
@@ -36,7 +37,7 @@ export async function publishCompletedJob({url,local,plan,machine,result,signal,
     assert(Array.isArray(inventoryPages)&&inventoryPages.length<=512&&!(manifest.objects.length&&inventoryPages.length)&&(manifest.objects.length||inventoryPages.length),'Invalid inventory shape');
     const descriptors=[...manifest.objects],seen=new Set();
     for(const page of inventoryPages){
-      assert(HASH.test(page.sha256)&&Number.isSafeInteger(page.bytes)&&page.bytes>0&&page.bytes<=CHUNK&&Number.isSafeInteger(page.objects)&&page.objects>0&&page.objects<=512&&Number.isSafeInteger(page.contentBytes)&&page.contentBytes>=page.objects&&page.contentBytes<=page.objects*CHUNK&&!seen.has(page.sha256),'Invalid inventory commitment');
+      assert(HASH.test(page.sha256)&&Number.isSafeInteger(page.bytes)&&page.bytes>0&&page.bytes<=CHUNK&&Number.isSafeInteger(page.objects)&&page.objects>0&&page.objects<=512&&Number.isSafeInteger(page.contentBytes)&&page.contentBytes>=0&&page.contentBytes<=page.objects*BLOB&&!seen.has(page.sha256),'Invalid inventory commitment');
       seen.add(page.sha256);
       assert(!(await lstat(join(directory,'objects'))).isSymbolicLink(),'Symlinked object directory');
       const path=join(directory,'objects',page.sha256),bytes=await regularFile(path,CHUNK);
@@ -48,10 +49,10 @@ export async function publishCompletedJob({url,local,plan,machine,result,signal,
       descriptors.push(...inventory.objects);
     }
     for(const object of descriptors){
-      assert(HASH.test(object.sha256)&&Number.isSafeInteger(object.bytes)&&object.bytes>0&&object.bytes<=CHUNK&&['record','evidence'].includes(object.kind)&&!seen.has(object.sha256),'Invalid object reference');
+      assert(HASH.test(object.sha256)&&Number.isSafeInteger(object.bytes)&&object.bytes>=(object.kind==='binary'?0:1)&&object.bytes<=(object.kind==='binary'?BLOB:CHUNK)&&['record','evidence','binary'].includes(object.kind)&&!seen.has(object.sha256),'Invalid object reference');
       seen.add(object.sha256);
       assert(!(await lstat(join(directory,'objects'))).isSymbolicLink(),'Symlinked object directory');
-      const path=join(directory,'objects',object.sha256);const b=await regularFile(path,CHUNK);
+      const path=join(directory,'objects',object.sha256);const b=await regularFile(path,object.kind==='binary'?BLOB:CHUNK);
       assert(b.length===object.bytes&&digest(b)===object.sha256,'Export content differs from producer manifest');
       const previous=objects.get(object.sha256);assert(!previous||(previous.bytes===object.bytes&&previous.kind===object.kind),'Conflicting shared object');objects.set(object.sha256,{path,bytes:object.bytes,kind:object.kind});
     }
@@ -72,7 +73,7 @@ export async function publishCompletedJob({url,local,plan,machine,result,signal,
     const missing=await call(`/admin/v1/imports/${submitted.id}/missing`);
     assert(Array.isArray(missing.items)&&missing.items.length<=100,'Unbounded missing inventory');
     if(!missing.items.length){assert(missing.complete,'Incomplete empty inventory');const committed=await call(`/admin/v1/imports/${submitted.id}/commit`,'POST');assert(HASH.test(committed.revision),'Invalid published revision');return committed.revision;}
-    for(const o of missing.items){const localObject=objects.get(o.sha256);assert(localObject&&localObject.bytes===o.bytes,'API requested undeclared content');await call(`/admin/v1/objects/${o.sha256}`,'PUT',await regularFile(localObject.path,CHUNK));if(localObject.kind==='inventory')await call(`/admin/v1/imports/${submitted.id}/inventories/${o.sha256}`,'POST');}
+    for(const o of missing.items){const localObject=objects.get(o.sha256);assert(localObject&&localObject.bytes===o.bytes,'API requested undeclared content');await call(`/admin/v1/objects/${o.sha256}`,'PUT',await regularFile(localObject.path,localObject.kind==='binary'?BLOB:CHUNK));if(localObject.kind==='inventory')await call(`/admin/v1/imports/${submitted.id}/inventories/${o.sha256}`,'POST');}
   }
   throw Error('API missing inventory failed to converge');
 }

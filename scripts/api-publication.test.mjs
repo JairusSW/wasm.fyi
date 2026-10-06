@@ -67,6 +67,27 @@ test('completed corpus uploads only missing objects, publishes idempotently, ret
   const descriptor=await(await fetch(evidenceURL+'&chunk='+resourceHash)).json();assert.equal(descriptor.bytes,original.length);
   const firstFragment=await(await fetch(evidenceURL+'&chunk='+references[0])).json();assert.equal(firstFragment.kind,'json-fragment');assert(firstFragment.text.length<=120*1024);
 
+  const binaryPath='jobs/corpus-0001/exports/binary/site-v2',binaryDirectory=join(local,binaryPath);
+  await mkdir(binaryDirectory,{recursive:true});await cp(resourceDirectory,binaryDirectory,{recursive:true});
+  const binaryManifest=JSON.parse(await readFile(join(binaryDirectory,'manifest.json'))),native=Buffer.alloc(1234,0x90),nativeHash=digest(native);
+  await writeFile(join(binaryDirectory,'objects',nativeHash),native);binaryManifest.objects.push({sha256:nativeHash,bytes:native.length,kind:'binary'});
+  let oldArtifact,newArtifact;
+  for(let i=0;i<binaryManifest.objects.length;i++){
+    const o=binaryManifest.objects[i];if(o.kind!=='record')continue;const record=JSON.parse(await readFile(join(binaryDirectory,'objects',o.sha256)));if(record.kind!=='artifact')continue;
+    oldArtifact=record.id;record.data.content={status:'available',sha256:nativeHash,bytes:native.length,mediaType:'application/octet-stream'};
+    record.id=digest(Buffer.from(JSON.stringify(record.data)));newArtifact=record.id;
+    const b=Buffer.from(JSON.stringify(record)),sha256=digest(b);await writeFile(join(binaryDirectory,'objects',sha256),b);binaryManifest.objects[i]={sha256,bytes:b.length,kind:'record'};
+  }
+  for(let i=0;i<binaryManifest.objects.length;i++){
+    const o=binaryManifest.objects[i];if(o.kind!=='record')continue;const record=JSON.parse(await readFile(join(binaryDirectory,'objects',o.sha256)));if(record.kind!=='result'||record.data.summary.artifactId!==oldArtifact)continue;
+    record.data.summary.artifactId=newArtifact;record.id=digest(Buffer.from(JSON.stringify(record.data)));
+    const b=Buffer.from(JSON.stringify(record)),sha256=digest(b);await writeFile(join(binaryDirectory,'objects',sha256),b);binaryManifest.objects[i]={sha256,bytes:b.length,kind:'record'};
+  }
+  await writeFile(join(binaryDirectory,'manifest.json'),JSON.stringify(binaryManifest));
+  const binaryArgs={...args,result:{...result,siteExports:[binaryPath]}},binaryRevision=await publishCompletedJob(binaryArgs);
+  const download=await fetch(url+'/api/v1/artifacts/'+newArtifact+'/bytes?revision='+binaryRevision+'&download=1');assert.equal(download.status,200);assert(Buffer.from(await download.arrayBuffer()).equals(native));
+  const binaryHistory=await(await fetch(url+'/api/v1/history?revision='+binaryRevision)).json();assert.equal(binaryHistory.items.length,3,'Adding native bytes created independent observations');
+  uploads=0;assert.equal(await publishCompletedJob(binaryArgs),binaryRevision);assert.equal(uploads,0);
   await assert.rejects(publishCompletedJob({...args,result:{...result,finished:null}}),/Incomplete/);
   const exportManifest=JSON.parse(await readFile(join(local,path,'manifest.json')));const object=exportManifest.objects[0];await writeFile(join(local,path,'objects',object.sha256),'tampered');await assert.rejects(publishCompletedJob(args),/differs/);
  }finally{if(child){child.kill('SIGTERM');await exit};await rm(root,{recursive:true,force:true})}

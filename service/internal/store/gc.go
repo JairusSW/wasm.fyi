@@ -94,7 +94,7 @@ func (s *Store) GC(ctx context.Context, options GCOptions) (GCReport, error) {
 		if options.Now.Sub(info.ModTime()) < options.Grace {
 			continue
 		}
-		data, e := s.content(id)
+		data, e := s.representation(id, wire.BlobBytes)
 		if e != nil {
 			return report, e
 		}
@@ -110,7 +110,7 @@ func (s *Store) GC(ctx context.Context, options GCOptions) (GCReport, error) {
 			if e != nil {
 				return report, e
 			}
-			old, e := readRegular(fs, id, wire.ChunkBytes)
+			old, e := readRegular(fs, id, wire.BlobBytes)
 			if e != nil {
 				fs.Close()
 				return report, e
@@ -187,12 +187,12 @@ func (s *Store) GC(ctx context.Context, options GCOptions) (GCReport, error) {
 		if e = wire.Decode(b, &receipt); e != nil {
 			return report, e
 		}
-		if receipt.Schema != 1 || receipt.Digest != id || receipt.Bytes < 0 || receipt.Bytes > wire.ChunkBytes {
+		if receipt.Schema != 1 || receipt.Digest != id || receipt.Bytes < 0 || receipt.Bytes > wire.BlobBytes {
 			return report, fmt.Errorf("invalid quarantine receipt")
 		}
 		// Missing files can result from a crash after unlink; retain the receipt
 		// until cleanup runs in apply mode, then finish the idempotent removal.
-		b, e = readRegular(quarantine, id, wire.ChunkBytes)
+		b, e = readRegular(quarantine, id, wire.BlobBytes)
 		if os.IsNotExist(e) {
 			if options.Apply {
 				if e = quarantine.Remove(name); e != nil {
@@ -209,7 +209,7 @@ func (s *Store) GC(ctx context.Context, options GCOptions) (GCReport, error) {
 		}
 		if marked[id] {
 			if options.Apply {
-				if _, e = s.content(id); os.IsNotExist(e) {
+				if _, e = s.representation(id, wire.BlobBytes); os.IsNotExist(e) {
 					if e = os.Link(filepath.Join(directory, id), filepath.Join(s.root, "objects", id)); e != nil {
 						return report, e
 					}

@@ -29,7 +29,7 @@ func (s *Store) openObject(id string) (*os.File, error) {
 	if e != nil {
 		return nil, e
 	}
-	if !info.Mode().IsRegular() || info.Size() > wire.ChunkBytes {
+	if !info.Mode().IsRegular() || info.Size() > wire.BlobBytes {
 		return nil, fmt.Errorf("invalid content object %s", id)
 	}
 	f, e := s.objects.Open(id)
@@ -41,7 +41,7 @@ func (s *Store) openObject(id string) (*os.File, error) {
 		f.Close()
 		return nil, e
 	}
-	if !os.SameFile(info, opened) || !opened.Mode().IsRegular() || opened.Size() > wire.ChunkBytes {
+	if !os.SameFile(info, opened) || !opened.Mode().IsRegular() || opened.Size() > wire.BlobBytes {
 		f.Close()
 		return nil, fmt.Errorf("content object changed while opening")
 	}
@@ -61,12 +61,25 @@ func (s *Store) Install(id string, r io.Reader) error {
 	return s.installBytes(id, b)
 }
 func (s *Store) installBytes(id string, b []byte) error {
+	return s.installRepresentation(id, b, wire.ChunkBytes)
+}
+func (s *Store) InstallBinary(id string, r io.Reader) error {
+	if !wire.IsHash(id) {
+		return wire.Invalid("invalid binary digest")
+	}
+	b, err := io.ReadAll(io.LimitReader(r, wire.BlobBytes+1))
+	if err != nil {
+		return err
+	}
+	return s.installRepresentation(id, b, wire.BlobBytes)
+}
+func (s *Store) installRepresentation(id string, b []byte, ceiling int) error {
 	s.contentMu.Lock()
 	defer s.contentMu.Unlock()
-	if !wire.IsHash(id) || len(b) > wire.ChunkBytes || wire.Hash(b) != id {
+	if !wire.IsHash(id) || len(b) > ceiling || wire.Hash(b) != id {
 		return wire.Invalid("invalid content")
 	}
-	if old, e := s.content(id); e == nil {
+	if old, e := s.representation(id, ceiling); e == nil {
 		if !bytes.Equal(old, b) {
 			return fmt.Errorf("corrupt existing content")
 		}
@@ -118,7 +131,7 @@ func (s *Store) installBytes(id string, b []byte) error {
 		if !os.IsExist(e) {
 			return e
 		}
-		existing, e := s.content(id)
+		existing, e := s.representation(id, ceiling)
 		if e != nil {
 			return e
 		}
@@ -136,7 +149,8 @@ func (s *Store) installBytes(id string, b []byte) error {
 	}
 	return syncDir(directory)
 }
-func (s *Store) content(id string) ([]byte, error) {
+func (s *Store) content(id string) ([]byte, error) { return s.representation(id, wire.ChunkBytes) }
+func (s *Store) representation(id string, ceiling int) ([]byte, error) {
 	if !wire.IsHash(id) {
 		return nil, ErrNotFound
 	}
@@ -145,12 +159,34 @@ func (s *Store) content(id string) ([]byte, error) {
 		return nil, e
 	}
 	defer f.Close()
-	b, e := io.ReadAll(io.LimitReader(f, wire.ChunkBytes+1))
+	info, e := f.Stat()
 	if e != nil {
 		return nil, e
 	}
-	if len(b) > wire.ChunkBytes || wire.Hash(b) != id {
+	if info.Size() > int64(ceiling) {
+		return nil, fmt.Errorf("content exceeds decoded ceiling")
+	}
+	b, e := io.ReadAll(io.LimitReader(f, int64(ceiling)+1))
+	if e != nil {
+		return nil, e
+	}
+	if len(b) > ceiling || wire.Hash(b) != id {
 		return nil, fmt.Errorf("corrupt content %s", id)
+	}
+	return b, nil
+}
+
+func (s *Store) objectRepresentation(o wire.Object) ([]byte, error) {
+	ceiling := wire.ChunkBytes
+	if o.Kind == "binary" {
+		ceiling = wire.BlobBytes
+	}
+	b, err := s.representation(o.SHA256, ceiling)
+	if err != nil {
+		return nil, err
+	}
+	if len(b) != o.Bytes {
+		return nil, wire.Invalid("object size differs")
 	}
 	return b, nil
 }
