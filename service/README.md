@@ -234,3 +234,28 @@ verification. An abort concurrent with the final atomic rename may leave a valid
 complete cache descriptor; it cannot install a partial descriptor or publish a
 website revision. Real stream/write cancellation and subsequent retries are
 checked on macOS and Linux by the parent-bundle tests.
+
+Parent transport cache entries now verify the index/metadata objects, each chunk
+hash and the concatenated original archive digest. Missing or damaged cache files
+are rebuilt from the original archive and checked again; damaged content without
+its source fails explicitly. Reordered internal cache JSON preserves the canonical
+transport encoding used for completed-job identity.
+
+A process-local receipt cache retains at most eight entries and 2 MiB of accounted
+metadata. Every reuse checks file identity, size, mode and nanosecond modification
+and change times. Changed files and evicted receipts require fresh byte checks.
+Reads allocate at most one 1 MiB chunk plus a sentinel; descriptor reads are also
+bounded and checked through an opened file handle. These receipts attest cache
+integrity and do not replace source verification or operator qualification.
+
+The optional archived-byte gate uses read-only source files and temporary caches:
+
+```sh
+WASMFYI_REAL_PARENT_BUNDLE=/path/to/session/bundle node --test scripts/api-parent-archive.test.mjs
+```
+
+It verifies the archived parent, checks 100 warm calls without rereading chunk
+bodies, corrupts a temporary cached tail, and verifies exact repair. It runs no
+benchmark or archived executable. The 60,811,832-byte V8 parent passed this gate
+on macOS and native Linux aarch64; durable disk and off-machine restore remain
+separate gates.
