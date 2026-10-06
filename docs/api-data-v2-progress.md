@@ -403,3 +403,24 @@ cursor scope. Tests cover malformed and ambiguous requests across routes, valid
 aliases and page-size cursor tampering. This completes consistent parameter-set
 validation for the implemented routes; additional endpoint contracts and per-caller
 rate limits remain separate gates.
+
+
+## Bounded peer request budgets
+
+HTTP admission now uses bounded token buckets in addition to the existing eight
+concurrent-request limit. Defaults are 60 public requests/second with a burst of
+120, and 100 authenticated publication requests/second with a burst of 400.
+Publication credentials select their separate budget; unauthenticated admin URLs
+use the public budget. Transport IPs are normalized across ports and IPv4-mapped
+addresses. Forwarding headers are ignored, preventing callers from minting budgets
+with arbitrary headers. Behind a reverse proxy, its transport peer shares one
+budget; configure suitable service limits and use the proxy's client limiter for
+end-user separation. This service does not implicitly trust forwarded identities.
+
+At most 4,096 peer/budget pairs are tracked, with five-minute idle expiration and
+reserved publisher capacity. New public identities cannot evict active buckets or
+consume the reserved slots. Rejections return 429 and Retry-After. CLI flags tune
+public/publisher rates and bursts and `--max-request-clients`; invalid limits fail
+startup. Tests cover bursts/refill, port/address normalization, state capacity,
+idle reclamation, forwarding-header attempts, separate publication budgets and
+reserved publisher capacity. The real coordinator/resume workflow remains passing.

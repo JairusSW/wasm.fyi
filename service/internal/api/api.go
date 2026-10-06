@@ -25,13 +25,21 @@ type API struct {
 	Token     string
 	CursorKey []byte
 	active    chan struct{}
+	limiter   *requestLimiter
 }
 
 func New(s *store.Store, token string, key []byte) (http.Handler, error) {
+	return NewWithRequestLimits(s, token, key, DefaultRequestLimits())
+}
+func NewWithRequestLimits(s *store.Store, token string, key []byte, limits RequestLimits) (http.Handler, error) {
+	if !limits.valid() {
+		return nil, fmt.Errorf("invalid request limits")
+	}
+
 	if len(token) < 32 || len(key) < 32 {
 		return nil, fmt.Errorf("admin token and at least 32 cursor-key bytes required")
 	}
-	a := &API{Store: s, Token: token, CursorKey: key, active: make(chan struct{}, 8)}
+	a := &API{Store: s, Token: token, CursorKey: key, active: make(chan struct{}, 8), limiter: newRequestLimiter(limits)}
 	return http.HandlerFunc(a.serve), nil
 }
 
@@ -201,6 +209,12 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 	defer cancel()
 	r = r.WithContext(ctx)
+	publisher := strings.HasPrefix(r.URL.Path, "/admin/v1/") && hmac.Equal([]byte(r.Header.Get("Authorization")), []byte("Bearer "+a.Token))
+	if allowed, retry := a.limiter.allow(r.RemoteAddr, publisher, time.Now()); !allowed {
+		w.Header().Set("Retry-After", strconv.Itoa(retry))
+		respond(w, r, 429, map[string]string{"error": "client request limit"}, false)
+		return
+	}
 	select {
 	case a.active <- struct{}{}:
 		defer func() { <-a.active }()

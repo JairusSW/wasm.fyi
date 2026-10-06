@@ -37,6 +37,12 @@ func run(ctx context.Context, args []string) error {
 	flags.IntVar(&limits.PendingJobs, "max-pending-jobs", limits.PendingJobs, "maximum staged imports")
 	flags.Int64Var(&limits.PendingBytes, "max-pending-bytes", limits.PendingBytes, "maximum declared bytes across staged imports")
 	flags.Int64Var(&limits.ContentBytes, "max-content-bytes", limits.ContentBytes, "maximum bytes in content storage")
+	requestLimits := api.DefaultRequestLimits()
+	flags.Float64Var(&requestLimits.PublicRate, "public-requests-per-second", requestLimits.PublicRate, "request rate per transport peer")
+	flags.IntVar(&requestLimits.PublicBurst, "public-request-burst", requestLimits.PublicBurst, "public request burst per transport peer")
+	flags.Float64Var(&requestLimits.PublisherRate, "publisher-requests-per-second", requestLimits.PublisherRate, "authenticated publication rate per transport peer")
+	flags.IntVar(&requestLimits.PublisherBurst, "publisher-request-burst", requestLimits.PublisherBurst, "publication request burst per transport peer")
+	flags.IntVar(&requestLimits.Clients, "max-request-clients", requestLimits.Clients, "maximum tracked peer/budget pairs")
 	cert := flags.String("tls-cert", "", "TLS certificate for direct non-loopback serving")
 	key := flags.String("tls-key", "", "TLS key for direct non-loopback serving")
 	if e := flags.Parse(args); e != nil {
@@ -107,7 +113,7 @@ func run(ctx context.Context, args []string) error {
 	if e != nil {
 		return e
 	}
-	handler, e := api.New(s, token, cursorKey)
+	handler, e := api.NewWithRequestLimits(s, token, cursorKey, requestLimits)
 	if e != nil {
 		return e
 	}
