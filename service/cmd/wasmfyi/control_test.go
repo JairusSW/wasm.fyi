@@ -1,12 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -127,20 +129,26 @@ func TestControlAdmissionAndShutdown(t *testing.T) {
 	}
 	defer connection.Close()
 	// Hold the admitted request in bounded body decoding, without touching storage.
-	_, err = fmt.Fprint(connection, "POST /gc HTTP/1.1\r\nHost: local\r\nContent-Length: 100\r\n\r\n{")
+	// The 100 response proves the handler owns admission and has reached
+	// body decoding. Merely writing headers races a competing GC request.
+	if err = connection.SetDeadline(time.Now().Add(3 * time.Second)); err != nil {
+		t.Fatal(err)
+	}
+	_, err = fmt.Fprint(connection, "POST /gc HTTP/1.1\r\nHost: local\r\nContent-Length: 100\r\nExpect: 100-continue\r\n\r\n")
 	if err != nil {
 		t.Fatal(err)
 	}
-	deadline := time.Now().Add(2 * time.Second)
-	for {
-		var output bytes.Buffer
-		err = callControl(context.Background(), socket, "gc", "", false, &output)
-		if err != nil && strings.Contains(err.Error(), "409") {
-			break
-		}
-		if time.Now().After(deadline) {
-			t.Fatalf("maintenance admission not held: %v", err)
-		}
+	response, err := http.ReadResponse(bufio.NewReader(connection), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	response.Body.Close()
+	if response.StatusCode != http.StatusContinue {
+		t.Fatalf("maintenance request was not admitted: %d", response.StatusCode)
+	}
+	var output bytes.Buffer
+	if err = callControl(context.Background(), socket, "gc", "", false, &output); err == nil || !strings.Contains(err.Error(), "409") {
+		t.Fatalf("maintenance admission not held: %v", err)
 	}
 	closed := make(chan error, 1)
 	c.Close()
