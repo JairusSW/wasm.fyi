@@ -14,6 +14,40 @@ spec.loader.exec_module(contracts)
 
 
 class Contracts(unittest.TestCase):
+    def test_import_status_distinguishes_staging_publication_and_inventory(self):
+        status = {"id": "a" * 64, "session": "s", "machine": "local", "corpus": "c",
+                  "attempt": "first", "state": "staged", "objects": 1000, "missing": 2,
+                  "declaredBytes": 10000, "pendingInventories": 2, "missingComplete": False}
+        contracts.validate(status, "ImportStatus", "staged inventory discovery")
+        for key, value in [("state", "published"), ("state", "completed"),
+                           ("revision", "b" * 64), ("missingComplete", True),
+                           ("missing", -1), ("pendingInventories", 0), ("reports", [])]:
+            bad = copy.deepcopy(status)
+            bad[key] = value
+            with self.assertRaises(ValueError):
+                contracts.validate(bad, "ImportStatus", "invalid import status")
+        published = dict(status, state="published", revision="b" * 64,
+                         missing=0, pendingInventories=0, missingComplete=True)
+        contracts.validate(published, "ImportStatus", "published receipt")
+        for key, value in [("missing", 1), ("pendingInventories", 1), ("missingComplete", False)]:
+            bad = dict(published, **{key: value})
+            with self.assertRaises(ValueError):
+                contracts.validate(bad, "ImportStatus", "incomplete publication")
+
+    def test_missing_pages_include_inventory_but_remain_bounded(self):
+        inventory = {"sha256": "a" * 64, "bytes": 12, "kind": "inventory"}
+        page = {"items": [inventory], "nextOffset": 1, "complete": True}
+        contracts.validate(page, "ImportMissingPage", "inventory discovery")
+        for key, value in [("items", [inventory] * 101), ("nextOffset", -1), ("samples", [])]:
+            bad = dict(page, **{key: value})
+            with self.assertRaises(ValueError):
+                contracts.validate(bad, "ImportMissingPage", "invalid missing page")
+        plan = {"items": [{"sha256": "a" * 64, "bytes": 1, "kind": "binary"}], "complete": True}
+        contracts.validate(plan, "PlanMissingObjects", "bounded plan chunks")
+        for key, value in [("items", plan["items"] * 17), ("complete", False)]:
+            with self.assertRaises(ValueError):
+                contracts.validate(dict(plan, **{key: value}), "PlanMissingObjects", "invalid plan chunks")
+
     def test_catalog_pages_and_details_bind_record_kind_and_bounds(self):
         for name, kind in [("Report", "report"), ("Track", "track"),
                            ("Metric", "metric"), ("Configuration", "configuration"),

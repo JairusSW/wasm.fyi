@@ -805,3 +805,13 @@ HTTP writer. Captured HTTP tests validate all eight kinds, selected successors
 and pinned page/detail bytes after another publication; negative schema tests
 reject wrong kinds, unbounded pages, misleading continuation and extra preload
 fields. The workflow includes these captures in its executable contract gate.
+
+Authenticated import status observes the HTTP request cancellation while counting
+declared inventories and finding missing objects. Canceled reads leave staging
+and publication unchanged. Status responses expose `staged`, `published` or
+`aborted`; only published receipts carry a revision. Missing-object pages contain
+at most 100 descriptors and may include `kind: "inventory"` until that page is
+installed and attached. Pending inventories make `missingComplete` false, so
+the returned missing count is not a complete evidence census until discovery
+finishes. Plan discovery returns at most 16 chunks. These responses have explicit
+OpenAPI schemas, generated types and captured HTTP contract checks.

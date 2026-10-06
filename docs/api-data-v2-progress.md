@@ -1812,3 +1812,25 @@ Negative tests reject wrong kind, oversized/negative-count pages, false
 continuation, unpinned revisions and extra preload fields. Generated consumer
 types and the workflow capture list are updated. The extended frozen-scope race gate and all 34 typed captured responses pass,
 along with 22 Python contract tests and generated-type consistency checks. Actual remote CI remains unqualified.
+
+## Import status cancellation and bounded discovery contracts
+
+Authenticated import-status reads previously called the context-free compatibility
+method, allowing declared/inventory counting and missing-object discovery to
+continue after the HTTP request stopped. `ImportStatusContext` now checks the
+caller context before job access, while counting declarations/inventories and
+before receipt lookup, then propagates it into `MissingContext`. The old method
+remains a background-context wrapper. The API passes its request context.
+
+Deterministic cancellation at four traversal positions preserves staged state
+and the empty public pointer; selected HTTP cancellation returns the existing
+503 timeout response and allows an ordinary retry. Published/aborted receipts
+remain distinct. New executable schemas bind published receipts to a revision
+and zero missing/pending counts, distinguish incomplete inventory discovery,
+limit missing pages to 100 descriptors (including inventory objects), and limit
+plan discovery to 16 chunks. They preserve existing publisher wire fields.
+The workflow captures the import/registration GET routes; generated types are
+updated. Selected race tests, nine typed HTTP captures and all 24 negative
+contract tests pass. Existing paged-inventory admission/recovery, pending-byte
+quota/partial-backup and admission checks also pass under race detection; vet
+and generated-type consistency pass.

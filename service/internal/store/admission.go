@@ -2,6 +2,7 @@ package store
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -271,24 +272,40 @@ type ImportStatus struct {
 }
 
 func (s *Store) ImportStatus(id string) (ImportStatus, error) {
+	return s.ImportStatusContext(context.Background(), id)
+}
+
+func (s *Store) ImportStatusContext(ctx context.Context, id string) (ImportStatus, error) {
+	if err := ctx.Err(); err != nil {
+		return ImportStatus{}, err
+	}
 	j, e := s.Job(id)
 	if e != nil {
 		return ImportStatus{}, e
 	}
 	status := ImportStatus{ID: id, Session: j.Session, Machine: j.Machine, Corpus: j.Corpus, Attempt: j.Attempt, State: "staged", MissingComplete: true}
 	for _, o := range declaredObjects(j) {
+		if err := ctx.Err(); err != nil {
+			return status, err
+		}
 		status.Objects++
 		status.Bytes += int64(o.Bytes)
 	}
 	seenPages := map[string]bool{}
 	for _, export := range j.Exports {
 		for _, page := range export.Manifest.InventoryPages {
+			if err := ctx.Err(); err != nil {
+				return status, err
+			}
 			if !seenPages[page.SHA256] {
 				status.Objects += page.Objects
 				status.Bytes += page.ContentBytes
 				seenPages[page.SHA256] = true
 			}
 		}
+	}
+	if err := ctx.Err(); err != nil {
+		return status, err
 	}
 	if b, e := s.get(key("accepted", id)); e == nil {
 		revision := string(b)
@@ -310,6 +327,9 @@ func (s *Store) ImportStatus(id string) (ImportStatus, error) {
 	clear(seenPages)
 	for _, export := range j.Exports {
 		for _, page := range export.Manifest.InventoryPages {
+			if err := ctx.Err(); err != nil {
+				return status, err
+			}
 			if seenPages[page.SHA256] {
 				continue
 			}
@@ -322,7 +342,7 @@ func (s *Store) ImportStatus(id string) (ImportStatus, error) {
 		}
 	}
 	status.MissingComplete = status.PendingInventories == 0
-	missing, e := s.Missing(id)
+	missing, e := s.MissingContext(ctx, id)
 	if e != nil {
 		return status, e
 	}

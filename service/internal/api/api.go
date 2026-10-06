@@ -1067,7 +1067,7 @@ func (a *API) admin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(parts) == 2 && parts[0] == "imports" && r.Method == "GET" {
-		status, e := a.Store.ImportStatus(parts[1])
+		status, e := a.Store.ImportStatusContext(r.Context(), parts[1])
 		if e != nil {
 			problem(w, r, e)
 			return

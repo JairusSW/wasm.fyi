@@ -109,3 +109,7 @@ export type ArtifactDetail = { "revision": Digest; "record": ArtifactRecord };
 export type ArtifactPage = { "revision": Digest; "items": Array<ArtifactRecord>; "nextCursor": string; "complete": boolean; "total": number };
 export type ResultRecord = { "kind": "result"; "id": Digest; "data": ResultData };
 export type ResultDetail = { "revision": Digest; "record": ResultRecord };
+export type ImportStatus = { "session": string; "machine": string; "corpus": string; "attempt": string; "id": Digest; "state": "staged" | "published" | "aborted"; "revision"?: Digest; "objects": number; "missing": number; "declaredBytes": number; "pendingInventories": number; "missingComplete": boolean };
+export type MissingObject = ObjectDescriptor | { "sha256": Digest; "bytes": number; "kind": "inventory" };
+export type ImportMissingPage = { "items": Array<MissingObject>; "nextOffset": number; "complete": boolean };
+export type PlanMissingObjects = { "items": Array<ObjectDescriptor>; "complete": true };

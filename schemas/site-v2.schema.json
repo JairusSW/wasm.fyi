@@ -5099,6 +5099,214 @@
         "record"
       ],
       "additionalProperties": false
+    },
+    "ImportStatus": {
+      "type": "object",
+      "properties": {
+        "session": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "machine": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "corpus": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "attempt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "state": {
+          "enum": [
+            "staged",
+            "published",
+            "aborted"
+          ]
+        },
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "objects": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "missing": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "declaredBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pendingInventories": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "missingComplete": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "session",
+        "machine",
+        "corpus",
+        "attempt",
+        "id",
+        "state",
+        "objects",
+        "missing",
+        "declaredBytes",
+        "pendingInventories",
+        "missingComplete"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "published"
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "required": [
+              "revision"
+            ],
+            "properties": {
+              "missing": {
+                "const": 0
+              },
+              "pendingInventories": {
+                "const": 0
+              },
+              "missingComplete": {
+                "const": true
+              }
+            }
+          },
+          "else": {
+            "not": {
+              "required": [
+                "revision"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "pendingInventories": {
+                "const": 0
+              }
+            },
+            "required": [
+              "pendingInventories"
+            ]
+          },
+          "then": {
+            "properties": {
+              "missingComplete": {
+                "const": true
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "missingComplete": {
+                "const": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "MissingObject": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ObjectDescriptor"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "sha256": {
+              "$ref": "#/$defs/Digest"
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 262144
+            },
+            "kind": {
+              "const": "inventory"
+            }
+          },
+          "required": [
+            "sha256",
+            "bytes",
+            "kind"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ImportMissingPage": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MissingObject"
+          },
+          "maxItems": 100
+        },
+        "nextOffset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "complete": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "items",
+        "nextOffset",
+        "complete"
+      ],
+      "additionalProperties": false
+    },
+    "PlanMissingObjects": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ObjectDescriptor"
+          },
+          "maxItems": 16
+        },
+        "complete": {
+          "const": true
+        }
+      },
+      "required": [
+        "items",
+        "complete"
+      ],
+      "additionalProperties": false
     }
   },
   "$ref": "#/$defs/CompletedJob"

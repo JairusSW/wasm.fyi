@@ -1406,7 +1406,14 @@
         ],
         "responses": {
           "200": {
-            "$ref": "#/components/responses/Response200_8"
+            "description": "Bounded authenticated metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/ImportMissingPage"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Response401_7"
@@ -1528,7 +1535,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Bounded metadata"
+            "description": "Bounded authenticated metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/ImportStatus"
+                }
+              }
+            }
           },
           "401": {
             "description": "Authentication required"
@@ -3486,11 +3500,11 @@
         ],
         "responses": {
           "200": {
-            "description": "Bounded registration outcome",
+            "description": "Bounded authenticated metadata",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "site-v2.schema.json#/$defs/PlanMissingObjects"
                 }
               }
             }
