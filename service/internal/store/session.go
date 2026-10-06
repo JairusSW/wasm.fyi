@@ -12,13 +12,14 @@ const SessionIndexVersion = "published-session-jobs-v1"
 
 type PublishedJob struct {
 	ID                   string    `json:"id"`
+	Kind                 string    `json:"kind,omitempty"`
 	Session              string    `json:"session"`
 	Machine              string    `json:"machine"`
 	Corpus               string    `json:"corpus"`
 	Attempt              string    `json:"attempt"`
 	Plan                 string    `json:"plan"`
-	ConfiguredHarnessPin string    `json:"configuredHarnessPin"`
-	ParentBundleSHA256   string    `json:"parentBundleSha256"`
+	ConfiguredHarnessPin string    `json:"configuredHarnessPin,omitempty"`
+	ParentBundleSHA256   string    `json:"parentBundleSha256,omitempty"`
 	ParentArchiveStored  bool      `json:"parentArchiveStored,omitempty"`
 	CollectionStatus     string    `json:"collectionStatus"`
 	PublicationStatus    string    `json:"publicationStatus"`
@@ -45,9 +46,13 @@ type JobPage struct {
 
 func jobSummary(job wire.Job, id string, created time.Time) PublishedJob {
 	out := PublishedJob{ID: id, Session: job.Session, Machine: job.Machine, Corpus: job.Corpus, Attempt: job.Attempt, Plan: job.Plan, ConfiguredHarnessPin: job.ConfiguredHarnessPin, ParentBundleSHA256: job.ParentBundleSHA256, CollectionStatus: job.Status, PublicationStatus: "published", PublishedAt: created, Reports: []string{}}
+	out.Kind = job.Kind
 	out.ParentArchiveStored = job.ParentArchive != nil
 	out.HistoryBindings = len(job.History)
 	for _, export := range job.Exports {
+		if export.Manifest.Format != "site-v2" {
+			continue
+		}
 		out.Reports = append(out.Reports, export.Manifest.ReportID)
 	}
 	sort.Strings(out.Reports)

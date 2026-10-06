@@ -47,6 +47,22 @@ func allowedQuery(values url.Values, keys ...string) error {
 	return nil
 }
 func routeQuery(path string, values url.Values) error {
+	if strings.HasPrefix(path, "conformance/sources/") {
+		parts := strings.Split(path, "/")
+		if len(parts) < 3 || !wire.IsHash(parts[2]) {
+			return wire.Invalid("invalid conformance source identity")
+		}
+		if len(parts) == 3 {
+			return allowedQuery(values, "revision")
+		}
+		if len(parts) == 4 && parts[3] == "chunks" {
+			return allowedQuery(values, "revision", "chunk")
+		}
+		return allowedQuery(values)
+	}
+	if path == "conformance" {
+		return allowedQuery(values, "revision", "limit", "cursor", "source")
+	}
 	if path == "features" {
 		return allowedQuery(values, "revision", "limit", "cursor", "report")
 	}

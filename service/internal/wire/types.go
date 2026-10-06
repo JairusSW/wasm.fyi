@@ -179,13 +179,14 @@ type Export struct {
 // parent bundle. Producer assertions and authenticated delivery are separate.
 type Job struct {
 	Schema               int              `json:"schema"`
+	Kind                 string           `json:"kind,omitempty"`
 	Session              string           `json:"session"`
 	Machine              string           `json:"machine"`
 	Corpus               string           `json:"corpus"`
 	Attempt              string           `json:"attempt"`
 	Plan                 string           `json:"plan"`
-	ConfiguredHarnessPin string           `json:"configuredHarnessPin"`
-	ParentBundleSHA256   string           `json:"parentBundleSha256"`
+	ConfiguredHarnessPin string           `json:"configuredHarnessPin,omitempty"`
+	ParentBundleSHA256   string           `json:"parentBundleSha256,omitempty"`
 	ParentArchive        *ParentArchive   `json:"parentArchive,omitempty"`
 	SessionPlan          *SessionPlan     `json:"sessionPlan,omitempty"`
 	Status               string           `json:"status"`
@@ -197,7 +198,12 @@ func (j Job) Validate() error {
 	if e := j.ValidateHistory(); e != nil {
 		return e
 	}
-	if j.Schema != 2 || j.Status != "completed" || !identityPattern.MatchString(j.Session) || !identityPattern.MatchString(j.Machine) || !identityPattern.MatchString(j.Corpus) || !identityPattern.MatchString(j.Attempt) || !IsHash(j.Plan) || !IsHash(j.ParentBundleSHA256) || !revisionPattern.MatchString(j.ConfiguredHarnessPin) || len(j.Exports) == 0 || len(j.Exports) > 8 {
+	conformance := j.Schema == 3 && j.Kind == "conformance"
+	validProducer := j.Schema == 2 && j.Kind == "" && IsHash(j.ParentBundleSHA256) && revisionPattern.MatchString(j.ConfiguredHarnessPin)
+	if conformance {
+		validProducer = j.ParentBundleSHA256 == "" && j.ConfiguredHarnessPin == "" && j.ParentArchive == nil && j.SessionPlan == nil && len(j.History) == 0
+	}
+	if !validProducer || j.Status != "completed" || !identityPattern.MatchString(j.Session) || !identityPattern.MatchString(j.Machine) || !identityPattern.MatchString(j.Corpus) || !identityPattern.MatchString(j.Attempt) || !IsHash(j.Plan) || len(j.Exports) == 0 || len(j.Exports) > 8 {
 		return Invalid("invalid completed job")
 	}
 	reports := map[string]bool{}
@@ -229,13 +235,17 @@ func (j Job) Validate() error {
 
 	for _, e := range j.Exports {
 		m := e.Manifest
+		validFormat := m.Format == "site-v2" && m.Verification == "source-recomputed"
+		if conformance {
+			validFormat = m.Format == "conformance-v1" && m.Verification == "source-integrity-checked"
+		}
 		b, err := Encode(m)
 		if err != nil {
 			return err
 		}
 		// The producer marshals the same field order. Export manifests use this
 		// canonical encoding; object payloads retain their exact original bytes.
-		if !IsHash(e.SHA256) || Hash(b) != e.SHA256 || m.Schema != 2 || m.Format != "site-v2" || !IsHash(m.ReportID) || !IsHash(m.SourceReportSHA256) || !IsHash(m.SourceSealSHA256) || m.Verification != "source-recomputed" || m.Exporter == "" || m.Objects == nil || (len(m.Objects) == 0 && len(m.InventoryPages) == 0) || (len(m.Objects) > 0 && len(m.InventoryPages) > 0) || len(m.Objects) > MaxObjects || len(m.InventoryPages) > MaxInventoryPages || reports[m.ReportID] {
+		if !IsHash(e.SHA256) || Hash(b) != e.SHA256 || m.Schema != 2 || !validFormat || !IsHash(m.ReportID) || !IsHash(m.SourceReportSHA256) || !IsHash(m.SourceSealSHA256) || m.Exporter == "" || m.Objects == nil || (len(m.Objects) == 0 && len(m.InventoryPages) == 0) || (len(m.Objects) > 0 && len(m.InventoryPages) > 0) || len(m.Objects) > MaxObjects || len(m.InventoryPages) > MaxInventoryPages || reports[m.ReportID] {
 			return Invalid("invalid export manifest")
 		}
 		if identity := m.ExporterIdentity; identity != nil {

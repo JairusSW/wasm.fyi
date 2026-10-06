@@ -67,7 +67,10 @@
           "const": 2
         },
         "format": {
-          "const": "site-v2"
+          "enum": [
+            "site-v2",
+            "conformance-v1"
+          ]
         },
         "reportId": {
           "$ref": "#/$defs/Digest"
@@ -82,7 +85,10 @@
           "type": "string"
         },
         "verification": {
-          "const": "source-recomputed"
+          "enum": [
+            "source-recomputed",
+            "source-integrity-checked"
+          ]
         },
         "objects": {
           "type": "array",
@@ -138,6 +144,31 @@
             "inventoryPages"
           ]
         }
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "format": {
+                "const": "site-v2"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "verification": {
+                "const": "source-recomputed"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "verification": {
+                "const": "source-integrity-checked"
+              }
+            }
+          }
+        }
       ]
     },
     "ExportReference": {
@@ -157,70 +188,14 @@
       "additionalProperties": false
     },
     "CompletedJob": {
-      "type": "object",
-      "properties": {
-        "schema": {
-          "const": 2
+      "anyOf": [
+        {
+          "$ref": "#/$defs/MeasurementCompletedJob"
         },
-        "session": {
-          "type": "string"
-        },
-        "machine": {
-          "type": "string"
-        },
-        "corpus": {
-          "type": "string"
-        },
-        "attempt": {
-          "type": "string"
-        },
-        "plan": {
-          "$ref": "#/$defs/Digest"
-        },
-        "configuredHarnessPin": {
-          "type": "string"
-        },
-        "parentBundleSha256": {
-          "$ref": "#/$defs/Digest"
-        },
-        "status": {
-          "const": "completed"
-        },
-        "exports": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/ExportReference"
-          },
-          "minItems": 1,
-          "maxItems": 8
-        },
-        "parentArchive": {
-          "$ref": "#/$defs/ParentArchive"
-        },
-        "sessionPlan": {
-          "$ref": "#/$defs/SessionPlan"
-        },
-        "history": {
-          "type": "array",
-          "maxItems": 256,
-          "items": {
-            "$ref": "#/$defs/HistoryBinding"
-          }
+        {
+          "$ref": "#/$defs/ConformanceCompletedJob"
         }
-      },
-      "required": [
-        "schema",
-        "session",
-        "machine",
-        "corpus",
-        "attempt",
-        "plan",
-        "configuredHarnessPin",
-        "parentBundleSha256",
-        "status",
-        "exports"
-      ],
-      "additionalProperties": false
+      ]
     },
     "ProducerSummary": {
       "type": "object",
@@ -348,7 +323,9 @@
             "artifact",
             "track",
             "report-file",
-            "feature-probe"
+            "feature-probe",
+            "conformance",
+            "conformance-source"
           ]
         },
         "id": {
@@ -381,6 +358,44 @@
             "properties": {
               "data": {
                 "$ref": "#/$defs/FeatureProbeData"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "conformance"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "data": {
+                "$ref": "#/$defs/ConformanceLaneData"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "conformance-source"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "data": {
+                "$ref": "#/$defs/ConformanceSourceData"
               }
             }
           }
@@ -925,73 +940,14 @@
       "additionalProperties": false
     },
     "PublishedJob": {
-      "type": "object",
-      "properties": {
-        "session": {
-          "type": "string"
+      "anyOf": [
+        {
+          "$ref": "#/$defs/MeasurementPublishedJob"
         },
-        "machine": {
-          "type": "string"
-        },
-        "corpus": {
-          "type": "string"
-        },
-        "attempt": {
-          "type": "string"
-        },
-        "configuredHarnessPin": {
-          "type": "string"
-        },
-        "id": {
-          "$ref": "#/$defs/Digest"
-        },
-        "plan": {
-          "$ref": "#/$defs/Digest"
-        },
-        "parentBundleSha256": {
-          "$ref": "#/$defs/Digest"
-        },
-        "collectionStatus": {
-          "const": "completed"
-        },
-        "publicationStatus": {
-          "const": "published"
-        },
-        "publishedAt": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "reports": {
-          "type": "array",
-          "maxItems": 8,
-          "items": {
-            "$ref": "#/$defs/Digest"
-          }
-        },
-        "parentArchiveStored": {
-          "const": true
-        },
-        "historyBindings": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 256
+        {
+          "$ref": "#/$defs/ConformancePublishedJob"
         }
-      },
-      "required": [
-        "session",
-        "machine",
-        "corpus",
-        "attempt",
-        "configuredHarnessPin",
-        "id",
-        "plan",
-        "parentBundleSha256",
-        "collectionStatus",
-        "publicationStatus",
-        "publishedAt",
-        "reports"
-      ],
-      "additionalProperties": false
+      ]
     },
     "SessionProgress": {
       "type": "object",
@@ -6049,6 +6005,760 @@
       "required": [
         "revision",
         "record"
+      ],
+      "additionalProperties": false
+    },
+    "MeasurementCompletedJob": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 2
+        },
+        "session": {
+          "type": "string"
+        },
+        "machine": {
+          "type": "string"
+        },
+        "corpus": {
+          "type": "string"
+        },
+        "attempt": {
+          "type": "string"
+        },
+        "plan": {
+          "$ref": "#/$defs/Digest"
+        },
+        "configuredHarnessPin": {
+          "type": "string"
+        },
+        "parentBundleSha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "status": {
+          "const": "completed"
+        },
+        "exports": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/ExportReference"
+              },
+              {
+                "properties": {
+                  "manifest": {
+                    "properties": {
+                      "format": {
+                        "const": "site-v2"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 8
+        },
+        "parentArchive": {
+          "$ref": "#/$defs/ParentArchive"
+        },
+        "sessionPlan": {
+          "$ref": "#/$defs/SessionPlan"
+        },
+        "history": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "$ref": "#/$defs/HistoryBinding"
+          }
+        }
+      },
+      "required": [
+        "schema",
+        "session",
+        "machine",
+        "corpus",
+        "attempt",
+        "plan",
+        "configuredHarnessPin",
+        "parentBundleSha256",
+        "status",
+        "exports"
+      ],
+      "additionalProperties": false
+    },
+    "ConformanceCompletedJob": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 3
+        },
+        "session": {
+          "type": "string"
+        },
+        "machine": {
+          "type": "string"
+        },
+        "corpus": {
+          "type": "string"
+        },
+        "attempt": {
+          "type": "string"
+        },
+        "plan": {
+          "$ref": "#/$defs/Digest"
+        },
+        "status": {
+          "const": "completed"
+        },
+        "exports": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/ExportReference"
+              },
+              {
+                "properties": {
+                  "manifest": {
+                    "properties": {
+                      "format": {
+                        "const": "conformance-v1"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 8
+        },
+        "kind": {
+          "const": "conformance"
+        }
+      },
+      "required": [
+        "schema",
+        "session",
+        "machine",
+        "corpus",
+        "attempt",
+        "plan",
+        "status",
+        "exports",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "ConformanceSourceData": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 1
+        },
+        "reportId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "sha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1073741824
+        },
+        "chunks": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1024,
+          "items": {
+            "type": "object",
+            "properties": {
+              "sha256": {
+                "$ref": "#/$defs/Digest"
+              },
+              "bytes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1048576
+              }
+            },
+            "required": [
+              "sha256",
+              "bytes"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "receipt": {
+          "type": "object",
+          "properties": {
+            "sha256": {
+              "$ref": "#/$defs/Digest"
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 64,
+              "maximum": 256
+            }
+          },
+          "required": [
+            "sha256",
+            "bytes"
+          ],
+          "additionalProperties": false
+        },
+        "integrity": {
+          "const": "content-hash-verified"
+        },
+        "collectionVerification": {
+          "const": "publisher-asserted"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "reportId",
+        "sha256",
+        "bytes",
+        "chunks",
+        "receipt",
+        "integrity",
+        "collectionVerification"
+      ]
+    },
+    "ConformanceLaneData": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 1
+        },
+        "policy": {
+          "const": "reported-suite-lanes-v1"
+        },
+        "sourceId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "lane": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "created": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "anyOf": [
+            {
+              "enum": [
+                "passed",
+                "failed",
+                "unsupported",
+                "skipped",
+                "runner-error",
+                "crashed"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "totals": {
+          "anyOf": [
+            {
+              "type": "object",
+              "maxProperties": 8,
+              "propertyNames": {
+                "enum": [
+                  "passed",
+                  "failed",
+                  "unsupported",
+                  "skipped",
+                  "runner-error",
+                  "crashed",
+                  "xfailed",
+                  "xpassed"
+                ]
+              },
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "engine": {
+          "anyOf": [
+            {
+              "type": "object",
+              "minProperties": 1,
+              "properties": {
+                "repository": {
+                  "type": "string",
+                  "maxLength": 2048
+                },
+                "revision": {
+                  "type": "string",
+                  "maxLength": 2048
+                },
+                "tag": {
+                  "type": "string",
+                  "maxLength": 2048
+                },
+                "version": {
+                  "type": "string",
+                  "maxLength": 2048
+                },
+                "sha256": {
+                  "type": "string",
+                  "maxLength": 2048
+                },
+                "assetSha256": {
+                  "type": "string",
+                  "maxLength": 2048
+                },
+                "url": {
+                  "type": "string",
+                  "maxLength": 2048
+                },
+                "label": {
+                  "type": "string",
+                  "maxLength": 2048
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "suite": {
+          "anyOf": [
+            {
+              "type": "object",
+              "minProperties": 1,
+              "properties": {
+                "repository": {
+                  "type": "string",
+                  "maxLength": 2048
+                },
+                "revision": {
+                  "type": "string",
+                  "maxLength": 2048
+                },
+                "tag": {
+                  "type": "string",
+                  "maxLength": 2048
+                },
+                "version": {
+                  "type": "string",
+                  "maxLength": 2048
+                },
+                "sha256": {
+                  "type": "string",
+                  "maxLength": 2048
+                },
+                "assetSha256": {
+                  "type": "string",
+                  "maxLength": 2048
+                },
+                "url": {
+                  "type": "string",
+                  "maxLength": 2048
+                },
+                "label": {
+                  "type": "string",
+                  "maxLength": 2048
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "parserVersion": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "interpretationSource": {
+          "const": "publisher-asserted"
+        }
+      },
+      "required": [
+        "schema",
+        "policy",
+        "sourceId",
+        "lane",
+        "created",
+        "unit",
+        "status",
+        "totals",
+        "engine",
+        "suite",
+        "reason",
+        "parserVersion",
+        "interpretationSource"
+      ],
+      "additionalProperties": false
+    },
+    "ConformanceLaneRecord": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "conformance"
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "data": {
+          "$ref": "#/$defs/ConformanceLaneData"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "ConformanceLaneDetail": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "record": {
+          "$ref": "#/$defs/ConformanceLaneRecord"
+        }
+      },
+      "required": [
+        "revision",
+        "record"
+      ],
+      "additionalProperties": false
+    },
+    "ConformanceLanePage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ConformanceLaneRecord"
+          },
+          "maxItems": 1000
+        },
+        "nextCursor": {
+          "type": "string"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "revision",
+        "items",
+        "nextCursor",
+        "complete",
+        "total"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "complete": {
+                "const": true
+              }
+            },
+            "required": [
+              "complete"
+            ]
+          },
+          "then": {
+            "properties": {
+              "nextCursor": {
+                "const": ""
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "nextCursor": {
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ConformanceSourceRecord": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "conformance-source"
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "data": {
+          "$ref": "#/$defs/ConformanceSourceData"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "ConformanceSourceDetail": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "record": {
+          "$ref": "#/$defs/ConformanceSourceRecord"
+        }
+      },
+      "required": [
+        "revision",
+        "record"
+      ],
+      "additionalProperties": false
+    },
+    "ConformanceSourcePage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ConformanceSourceRecord"
+          },
+          "maxItems": 1000
+        },
+        "nextCursor": {
+          "type": "string"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "revision",
+        "items",
+        "nextCursor",
+        "complete",
+        "total"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "complete": {
+                "const": true
+              }
+            },
+            "required": [
+              "complete"
+            ]
+          },
+          "then": {
+            "properties": {
+              "nextCursor": {
+                "const": ""
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "nextCursor": {
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "MeasurementPublishedJob": {
+      "type": "object",
+      "properties": {
+        "session": {
+          "type": "string"
+        },
+        "machine": {
+          "type": "string"
+        },
+        "corpus": {
+          "type": "string"
+        },
+        "attempt": {
+          "type": "string"
+        },
+        "configuredHarnessPin": {
+          "type": "string"
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "plan": {
+          "$ref": "#/$defs/Digest"
+        },
+        "parentBundleSha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "collectionStatus": {
+          "const": "completed"
+        },
+        "publicationStatus": {
+          "const": "published"
+        },
+        "publishedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reports": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/Digest"
+          }
+        },
+        "parentArchiveStored": {
+          "const": true
+        },
+        "historyBindings": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 256
+        }
+      },
+      "required": [
+        "session",
+        "machine",
+        "corpus",
+        "attempt",
+        "configuredHarnessPin",
+        "id",
+        "plan",
+        "parentBundleSha256",
+        "collectionStatus",
+        "publicationStatus",
+        "publishedAt",
+        "reports"
+      ],
+      "additionalProperties": false
+    },
+    "ConformancePublishedJob": {
+      "type": "object",
+      "properties": {
+        "session": {
+          "type": "string"
+        },
+        "machine": {
+          "type": "string"
+        },
+        "corpus": {
+          "type": "string"
+        },
+        "attempt": {
+          "type": "string"
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "plan": {
+          "$ref": "#/$defs/Digest"
+        },
+        "collectionStatus": {
+          "const": "completed"
+        },
+        "publicationStatus": {
+          "const": "published"
+        },
+        "publishedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reports": {
+          "type": "array",
+          "maxItems": 0,
+          "items": {
+            "$ref": "#/$defs/Digest"
+          }
+        },
+        "kind": {
+          "const": "conformance"
+        }
+      },
+      "required": [
+        "session",
+        "machine",
+        "corpus",
+        "attempt",
+        "id",
+        "plan",
+        "collectionStatus",
+        "publicationStatus",
+        "publishedAt",
+        "reports",
+        "kind"
       ],
       "additionalProperties": false
     }

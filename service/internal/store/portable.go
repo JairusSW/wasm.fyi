@@ -230,6 +230,28 @@ func (s *Store) reachableScopes(ctx context.Context, includeStaging bool, requir
 				return e
 			}
 		}
+		if r.Kind == "conformance-source" {
+			if wire.Hash(r.Data) != r.ID {
+				return wire.Invalid("conformance source record identity differs")
+			}
+			source, err := wire.ConformanceSourceData(r.Data)
+			if err != nil {
+				return err
+			}
+			if err = source.Verify(func(chunk wire.FileChunk) ([]byte, error) {
+				return fetchProofObject(wire.Object{SHA256: chunk.SHA256, Bytes: chunk.Bytes, Kind: "binary"})
+			}); err != nil {
+				return err
+			}
+		}
+		if r.Kind == "conformance" {
+			if wire.Hash(r.Data) != r.ID {
+				return wire.Invalid("conformance lane identity differs")
+			}
+			if _, err := wire.ConformanceLaneData(r.Data); err != nil {
+				return err
+			}
+		}
 		if r.Kind == "artifact" {
 			artifact, e := wire.ArtifactData(r.Data)
 			if e != nil {
@@ -333,11 +355,11 @@ func (s *Store) reachableScopes(ctx context.Context, includeStaging bool, requir
 			return e
 		}
 		switch tuple[0] {
-		case "report-features":
+		case "report-features", "source-conformance":
 			if !wire.IsHash(tuple[1]) || tuple[2] != "" || set.Count < 0 || set.Count > ScanLimit {
 				return wire.Invalid("invalid report feature index")
 			}
-			proof := tuple[1] + ":" + set.Root
+			proof := tuple[0] + ":" + tuple[1] + ":" + set.Root
 			if count, ok := featureIndexProofs[proof]; ok {
 				if count != set.Count {
 					return wire.Invalid("report feature index count differs")
@@ -353,12 +375,23 @@ func (s *Store) reachableScopes(ctx context.Context, includeStaging bool, requir
 				if err := read(id, &record); err != nil {
 					return err
 				}
-				probe, err := wire.FeatureProbeData(record.Data)
-				if err != nil {
-					return err
+				kind, source := "feature-probe", ""
+				if tuple[0] == "report-features" {
+					probe, err := wire.FeatureProbeData(record.Data)
+					if err != nil {
+						return err
+					}
+					source = probe.ReportID
+				} else {
+					kind = "conformance"
+					lane, err := wire.ConformanceLaneData(record.Data)
+					if err != nil {
+						return err
+					}
+					source = lane.SourceID
 				}
-				if record.Kind != "feature-probe" || record.ID != key || probe.ReportID != tuple[1] {
-					return wire.Invalid("report feature posting differs")
+				if record.Kind != kind || record.ID != key || source != tuple[1] {
+					return wire.Invalid("source-scoped posting differs")
 				}
 				count++
 				return markRecord(key, id)
@@ -711,6 +744,8 @@ func (s *Store) reachableScopes(ctx context.Context, includeStaging bool, requir
 			}
 		}
 		jobs[r.Job] = true
+		conformanceRecords := map[string]wire.Record{}
+		conformanceBinaries := map[string]wire.Object{}
 		historyRecords := map[string]wire.Record{}
 		wantedHistory := map[string]bool{}
 		wantedHistoryReports := map[string]bool{}
@@ -738,6 +773,21 @@ func (s *Store) reachableScopes(ctx context.Context, includeStaging bool, requir
 					return nil, fmt.Errorf("content size differs")
 				}
 				marked[object.SHA256] = true
+				if job.Kind == "conformance" {
+					if object.Kind == "binary" {
+						conformanceBinaries[object.SHA256] = object
+					}
+					if object.Kind == "record" {
+						var record wire.Record
+						if e := wire.Decode(b, &record); e != nil {
+							return nil, e
+						}
+						if (record.Kind != "conformance" && record.Kind != "conformance-source") || wire.Hash(record.Data) != record.ID {
+							return nil, wire.Invalid("invalid portable conformance record")
+						}
+						conformanceRecords[record.Kind+":"+record.ID] = record
+					}
+				}
 				if len(wantedHistory) > 0 && object.Kind == "record" {
 					var record wire.Record
 					if e := wire.Decode(b, &record); e != nil {
@@ -758,6 +808,9 @@ func (s *Store) reachableScopes(ctx context.Context, includeStaging bool, requir
 					}
 				}
 			}
+		}
+		if e := s.validateConformance(ctx, job, conformanceRecords, conformanceBinaries); e != nil {
+			return nil, e
 		}
 		if e := s.validateHistoryBindings(ctx, job, historyRecords); e != nil {
 			return nil, e
@@ -1068,8 +1121,11 @@ func verifyPortable(source string) error {
 		if e = reader.load(id, &r); e != nil {
 			return e
 		}
-		if !wire.IsHash(r.Job) || !wire.IsHash(r.Catalog) || !wire.IsHash(r.Selection) || r.Parent != "" && !wire.IsHash(r.Parent) || r.Observations != "" && !wire.IsHash(r.Observations) || r.SourceBindings != "" && !wire.IsHash(r.SourceBindings) {
+		if !wire.IsHash(r.Job) || !wire.IsHash(r.Catalog) || r.Selection != "" && !wire.IsHash(r.Selection) || r.Parent != "" && !wire.IsHash(r.Parent) || r.Observations != "" && !wire.IsHash(r.Observations) || r.SourceBindings != "" && !wire.IsHash(r.SourceBindings) {
 			return fmt.Errorf("invalid portable revision")
+		}
+		if e = reader.validateSelectionRoot(r); e != nil {
+			return e
 		}
 		reader.published[id] = r
 		id = r.Parent

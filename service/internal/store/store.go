@@ -194,7 +194,7 @@ func (s *Store) restore() error {
 			return e
 		}
 		id := wire.Hash(it.Value())
-		if !bytes.Equal(it.Key(), key("revision", id)) || !wire.IsHash(r.Catalog) || !wire.IsHash(r.Selection) || !wire.IsHash(r.Job) || r.Indexes != "" && !wire.IsHash(r.Indexes) || r.Parent != "" && !wire.IsHash(r.Parent) {
+		if !bytes.Equal(it.Key(), key("revision", id)) || !wire.IsHash(r.Catalog) || r.Selection != "" && !wire.IsHash(r.Selection) || !wire.IsHash(r.Job) || r.Indexes != "" && !wire.IsHash(r.Indexes) || r.Parent != "" && !wire.IsHash(r.Parent) {
 			return fmt.Errorf("invalid committed revision")
 		}
 		b, e := s.content(id)
@@ -203,6 +203,9 @@ func (s *Store) restore() error {
 		}
 		if !bytes.Equal(b, it.Value()) {
 			return fmt.Errorf("portable revision differs")
+		}
+		if e = s.validateSelectionRoot(r); e != nil {
+			return e
 		}
 		s.published[id] = r
 	}
@@ -555,11 +558,18 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 			if !wire.IsHash(r.ID) || len(r.Data) == 0 {
 				return "", wire.Invalid("invalid record")
 			}
+			if j.Kind == "conformance" {
+				if r.Kind != "conformance" && r.Kind != "conformance-source" {
+					return "", wire.Invalid("measurement record in conformance export")
+				}
+			} else if r.Kind == "conformance" || r.Kind == "conformance-source" {
+				return "", wire.Invalid("conformance record in measurement export")
+			}
 			if r.Kind == "artifact" && len(r.Data)+512 > 10*1024 {
 				return "", wire.Invalid("artifact descriptor exceeds budget")
 			}
 			switch r.Kind {
-			case "environment", "configuration", "track", "workload", "metric", "result", "artifact", "report-file", "feature-probe":
+			case "environment", "configuration", "track", "workload", "metric", "result", "artifact", "report-file", "feature-probe", "conformance", "conformance-source":
 				if wire.Hash(r.Data) != r.ID {
 					return "", wire.Invalid("record identity mismatch")
 				}
@@ -612,9 +622,15 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 		}
 	}
 	for _, x := range j.Exports {
+		if x.Manifest.Format == "conformance-v1" {
+			continue
+		}
 		if _, ok := reportObjects[x.Manifest.ReportID]; !ok {
 			return "", wire.Invalid("missing report descriptor")
 		}
+	}
+	if err := s.validateConformance(ctx, j, records, binaries); err != nil {
+		return "", err
 	}
 	for _, r := range records {
 		if r.Kind != "result" {

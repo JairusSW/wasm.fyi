@@ -2003,3 +2003,39 @@ logs the backup/rebuild/open transitions. It is rerun natively (without race
 instrumentation) against the same published store, with `GOMAXPROCS=2` and an
 explicit 90-minute large-fixture deadline. Selected race/crash gates remain
 separately qualified. Large native scientific/recovery parity remains pending.
+
+
+## Completed conformance publication to the API
+
+`WASMFYI_CONFORMANCE_API_URL=https://your-api.example WASMFYI_ADMIN_TOKEN=... node scripts/publish-conformance.mjs <completed-capture-directory>`
+
+This optional destination uses the existing completed conformance archive and
+checksum receipt. The command does not execute a suite or benchmark, build a
+runtime, or rebuild the frontend. Without the API variable the existing file
+publication path remains available. Exports are cached under
+`.wasmbench/conformance-api`; an interrupted upload can be retried from the same
+verified capture. Existing immutable content is uploaded only when missing.
+
+Suite captures use a separate schema-3 `conformance` job and `conformance-v1`
+manifest in the same import transaction and CAS store. They cannot introduce
+benchmark result records or claim an original harness pin or parent tool bundle.
+The original source checksum is verified independently of the publisher's lane
+interpretation. Neither checksum verification nor structural validation proves
+that a suite was independently rerun or that its operator is qualified.
+
+`GET /api/v1/conformance?revision=<digest>&source=<source-id>` filters before
+pagination. Each lane preserves its recorded unit, failed/skipped outcomes,
+availability, producer parser version and source identity. Descriptor fields
+project engine/suite metadata; original output, input inventories and coverage
+remain in the explicit source chunks. `GET /api/v1/conformance/sources/<id>`
+returns the descriptor; its `/chunks?chunk=<digest>` subresource returns only
+member source or checksum bytes, at most 1 MiB. An archive alone never creates a
+benchmark observation. Conformance-only initial revisions support backup,
+verification, database-free rebuild and reopen; later suite publications cannot
+erase an inherited benchmark selection.
+
+Synthetic gates cover the actual Node exporter and publisher against a built Go
+server, a forced 429 retry, duplicate publication, selected original byte parity,
+corrupted local payload rejection, source-scoped cursors, and portable recovery
+under race detection. Real completed suite archives and compact uncollected
+coverage projections still need qualification.

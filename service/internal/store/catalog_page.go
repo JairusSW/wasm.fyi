@@ -20,6 +20,13 @@ func (s *Store) CatalogPage(ctx context.Context, revision, kind string, offset, 
 	return s.catalogPage(ctx, revision, kind, indexKey("catalog", kind, ""), offset, limit)
 }
 
+func (s *Store) ConformancePage(ctx context.Context, revision, source string, offset, limit int) (Page, error) {
+	if _, err := s.Record(revision, "conformance-source", source); err != nil {
+		return Page{}, err
+	}
+	return s.catalogPage(ctx, revision, "conformance", indexKey("source-conformance", source, ""), offset, limit)
+}
+
 func (s *Store) FeatureProbePage(ctx context.Context, revision, report string, offset, limit int) (Page, error) {
 	if _, err := s.Record(revision, "report", report); err != nil {
 		return Page{}, err

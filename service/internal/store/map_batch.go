@@ -89,6 +89,13 @@ func (s *Store) addRecordIndexBatch(ctx context.Context, rev *Revision, records 
 		}
 		digest := digests[key]
 		add(indexKey("catalog", r.Kind, ""), r.ID, digest)
+		if r.Kind == "conformance" {
+			lane, e := wire.ConformanceLaneData(r.Data)
+			if e != nil {
+				return e
+			}
+			add(indexKey("source-conformance", lane.SourceID, ""), r.ID, digest)
+		}
 		if r.Kind == "feature-probe" {
 			probe, e := wire.FeatureProbeData(r.Data)
 			if e != nil {

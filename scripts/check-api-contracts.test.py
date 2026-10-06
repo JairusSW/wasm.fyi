@@ -14,6 +14,24 @@ spec.loader.exec_module(contracts)
 
 
 class Contracts(unittest.TestCase):
+    def test_conformance_availability_and_trust_are_explicit(self):
+        lane = {"schema": 1, "policy": "reported-suite-lanes-v1", "sourceId": "a" * 64,
+                "lane": "fixture", "created": "2026-10-06T00:00:00Z", "unit": "cases",
+                "status": "failed", "totals": {"failed": 1, "skipped": 2},
+                "engine": None, "suite": None, "reason": None, "parserVersion": None,
+                "interpretationSource": "publisher-asserted"}
+        contracts.validate(lane, "ConformanceLaneData", "reported outcomes")
+        for field in ["unit", "status", "totals", "engine", "suite", "reason", "parserVersion"]:
+            changed = copy.deepcopy(lane)
+            del changed[field]
+            with self.assertRaises(ValueError):
+                contracts.validate(changed, "ConformanceLaneData", "missing availability")
+        for field, value in [("status", "qualified"), ("totals", {"passed": -1}),
+                             ("engine", {"path": "/private/tool"}), ("suite", {}),
+                             ("interpretationSource", "source-recomputed")]:
+            with self.assertRaises(ValueError):
+                contracts.validate(dict(lane, **{field: value}), "ConformanceLaneData", "invalid trust")
+
     def test_release_date_precision_is_explicit_and_consistent(self):
         release = {"version": "v1.2.3", "publishedAt": "2026-01-01T00:00:00Z", "url": "https://example.test/release"}
         contracts.validate(release, "HistoryRelease", "legacy unknown precision")

@@ -24,7 +24,7 @@ function inside(root,path){
   assert(typeof path==='string'&&!path.includes('\\')&&!path.split('/').some(p=>p==='.'||p==='..'||p===''), 'Unsafe export path');
   const absolute=resolve(root,path);assert(absolute.startsWith(resolve(root)+sep),'Export outside session member');return absolute;
 }
-function publicationClient({url,token,signal,request}){
+export function publicationClient({url,token,signal,request=fetch}){
  url=publicationURL(url);assert(typeof token==='string'&&token.length>=32,'WASMFYI_ADMIN_TOKEN must contain at least 32 characters');
   const call=async(path,method='GET',body,allowMissing=false)=>{
     signal?.throwIfAborted();

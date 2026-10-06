@@ -309,6 +309,7 @@ func (a *API) serveRequest(w http.ResponseWriter, r *http.Request) {
 	headParts := strings.Split(path, "/")
 	fileHead := r.Method == "HEAD" && (headParts[0] == "files" || headParts[0] == "archives") && (len(headParts) == 4 && headParts[2] == "chunks" || len(headParts) == 3 && headParts[2] == "download")
 	fileHead = fileHead || r.Method == "HEAD" && len(headParts) == 3 && headParts[0] == "artifacts" && (headParts[2] == "bytes" || headParts[2] == "content")
+	fileHead = fileHead || r.Method == "HEAD" && len(headParts) == 4 && headParts[0] == "conformance" && headParts[1] == "sources" && headParts[3] == "chunks"
 	if r.Method != "GET" && !fileHead {
 		w.Header().Set("Allow", "GET")
 		w.WriteHeader(405)
@@ -416,7 +417,7 @@ func (a *API) serveRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if path == "manifest" {
-		respond(w, r, 200, map[string]any{"schema": 2, "revision": a.Store.Current(), "selectionAliases": map[string]string{"s1": "current", "s2": "previous"}, "limits": map[string]int{"defaultResults": 100, "maxResults": 1000, "jobManifestBytes": wire.JobBytes, "sessionPlanBytes": wire.SessionPlanBytes, "registeredSessions": store.RegistrationLimit, "decodedResponseBytes": wire.ResponseBytes, "decodedChunkBytes": wire.ChunkBytes, "scanKeys": store.ScanLimit, "decodedEvidenceResourceBytes": wire.ResourceBytes, "maxEvidenceFragments": wire.ResourceFragments, "nativeFunctionShards": 4096, "nativeFunctions": 1000000, "disassemblyLineChunks": 4096, "disassemblyChunkLines": 256, "disassemblyLineBytes": 16384, "cohortScopeBytes": 4096, "cohortComputations": 2, "resultComputations": 2, "resultCacheBytes": resultCacheBytes, "resultCacheEntries": resultCacheEntries, "cohortCells": 100000, "reportFileDownloads": 2, "reportFileDownloadSeconds": 300, "reportFileChunkBytes": wire.ReportFileChunkBytes, "reportFileBytes": wire.ReportFileBytes}, "endpoints": []string{"overview", "results", "reports", "features", "metrics", "methods", "configurations", "environments", "workloads", "artifacts", "history", "aggregates", "cohorts", "sessions", "collection/sessions", "files", "archives"}}, false)
+		respond(w, r, 200, map[string]any{"schema": 2, "revision": a.Store.Current(), "selectionAliases": map[string]string{"s1": "current", "s2": "previous"}, "limits": map[string]int{"defaultResults": 100, "maxResults": 1000, "jobManifestBytes": wire.JobBytes, "sessionPlanBytes": wire.SessionPlanBytes, "registeredSessions": store.RegistrationLimit, "decodedResponseBytes": wire.ResponseBytes, "decodedChunkBytes": wire.ChunkBytes, "scanKeys": store.ScanLimit, "decodedEvidenceResourceBytes": wire.ResourceBytes, "maxEvidenceFragments": wire.ResourceFragments, "nativeFunctionShards": 4096, "nativeFunctions": 1000000, "disassemblyLineChunks": 4096, "disassemblyChunkLines": 256, "disassemblyLineBytes": 16384, "cohortScopeBytes": 4096, "cohortComputations": 2, "resultComputations": 2, "resultCacheBytes": resultCacheBytes, "resultCacheEntries": resultCacheEntries, "cohortCells": 100000, "reportFileDownloads": 2, "reportFileDownloadSeconds": 300, "reportFileChunkBytes": wire.ReportFileChunkBytes, "reportFileBytes": wire.ReportFileBytes}, "endpoints": []string{"overview", "results", "reports", "features", "conformance", "metrics", "methods", "configurations", "environments", "workloads", "artifacts", "history", "aggregates", "cohorts", "sessions", "collection/sessions", "files", "archives"}}, false)
 		return
 	}
 	if path == "overview" || path == "aggregates" || strings.HasPrefix(path, "cohorts/") {
@@ -583,7 +584,44 @@ func (a *API) serveRequest(w http.ResponseWriter, r *http.Request) {
 		a.revisions(w, r, revision, n, c)
 		return
 	}
-	kinds := map[string]string{"reports": "report", "metrics": "metric", "configurations": "configuration", "tracks": "track", "environments": "environment", "workloads": "workload", "artifacts": "artifact", "files": "report-file", "results": "result", "features": "feature-probe"}
+	if len(parts) >= 2 && parts[0] == "conformance" && parts[1] == "sources" {
+		if len(parts) == 4 && parts[3] == "chunks" {
+			digest := params.Get("chunk")
+			body, err := a.Store.ConformanceSourceChunk(r.Context(), revision, parts[2], digest)
+			if err != nil {
+				problem(w, r, err)
+				return
+			}
+			w.Header().Set("Content-Type", "application/octet-stream")
+			w.Header().Set("Content-Length", strconv.Itoa(len(body)))
+			w.Header().Set("ETag", `"`+digest+`"`)
+			if immutable {
+				w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+			} else {
+				w.Header().Set("Cache-Control", "no-cache")
+			}
+			if r.Header.Get("If-None-Match") == w.Header().Get("ETag") {
+				w.WriteHeader(304)
+				return
+			}
+			if r.Method != "HEAD" {
+				_, _ = w.Write(body)
+			}
+			return
+		}
+		if len(parts) == 3 {
+			record, err := a.Store.Record(revision, "conformance-source", parts[2])
+			if err != nil {
+				problem(w, r, err)
+				return
+			}
+			respond(w, r, 200, map[string]any{"revision": revision, "record": record}, immutable)
+			return
+		}
+		http.NotFound(w, r)
+		return
+	}
+	kinds := map[string]string{"reports": "report", "metrics": "metric", "configurations": "configuration", "tracks": "track", "environments": "environment", "workloads": "workload", "artifacts": "artifact", "files": "report-file", "results": "result", "features": "feature-probe", "conformance": "conformance"}
 	if len(parts) == 3 && parts[0] == "files" && parts[2] == "download" {
 		a.reportFileDownload(w, r, revision, parts[1])
 		return
@@ -837,12 +875,19 @@ func (a *API) serveRequest(w http.ResponseWriter, r *http.Request) {
 	}
 	if kind, ok := kinds[path]; ok && kind != "result" {
 		for k, v := range params {
-			if (k != "revision" && k != "limit" && k != "cursor" && !(kind == "configuration" && k == "projection") && !(kind == "feature-probe" && k == "report")) || len(v) != 1 {
+			if (k != "revision" && k != "limit" && k != "cursor" && !(kind == "configuration" && k == "projection") && !(kind == "feature-probe" && k == "report") && !(kind == "conformance" && k == "source")) || len(v) != 1 {
 				problem(w, r, wire.Invalid("unsupported query"))
 				return
 			}
 		}
 		query := path + ":" + strconv.Itoa(n)
+		if kind == "conformance" {
+			if params.Has("source") && !wire.IsHash(params.Get("source")) {
+				problem(w, r, wire.Invalid("invalid conformance source scope"))
+				return
+			}
+			query += ":source=" + params.Get("source")
+		}
 		if kind == "feature-probe" {
 			if params.Has("report") && !wire.IsHash(params.Get("report")) {
 				problem(w, r, wire.Invalid("invalid feature report scope"))
@@ -865,6 +910,8 @@ func (a *API) serveRequest(w http.ResponseWriter, r *http.Request) {
 		var p store.Page
 		if kind == "feature-probe" && params.Has("report") {
 			p, e = a.Store.FeatureProbePage(r.Context(), revision, params.Get("report"), c.Offset, n)
+		} else if kind == "conformance" && params.Has("source") {
+			p, e = a.Store.ConformancePage(r.Context(), revision, params.Get("source"), c.Offset, n)
 		} else {
 			p, e = a.Store.CatalogPage(r.Context(), revision, kind, c.Offset, n)
 		}

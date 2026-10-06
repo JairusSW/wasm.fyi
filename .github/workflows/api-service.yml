@@ -42,10 +42,10 @@ jobs:
       - run: python scripts/check-api-contracts.test.py
       - name: Capture and validate schema contracts
         run: |
-          WASMFYI_CONTRACT_OUTPUT="$RUNNER_TEMP/api-contracts.jsonl" go test ./internal/api -run 'TestFeatureProbeHTTPAndPortableRecovery|TestOverviewComplete|TestResultSummaries|TestNativeFunctionAPI|TestDisassemblyHTTP|TestCatalogAndRecordDetailContracts|TestImportStatusHTTPContractsAndCancellation|TestRegistrationHTTPBeforeMeasurements|TestHistoryContextHTTPPublicationAndCursor|TestConfigurationProjectionHTTPPolicyPinAndCanonicalDetail' -count=1
+          WASMFYI_CONTRACT_OUTPUT="$RUNNER_TEMP/api-contracts.jsonl" go test ./internal/api -run 'TestConformanceImportSourceHTTPAndRebuild|TestFeatureProbeHTTPAndPortableRecovery|TestOverviewComplete|TestResultSummaries|TestNativeFunctionAPI|TestDisassemblyHTTP|TestCatalogAndRecordDetailContracts|TestImportStatusHTTPContractsAndCancellation|TestRegistrationHTTPBeforeMeasurements|TestHistoryContextHTTPPublicationAndCursor|TestConfigurationProjectionHTTPPolicyPinAndCanonicalDetail' -count=1
           python ../scripts/check-api-contracts.py --export testdata/site-v2 --responses "$RUNNER_TEMP/api-contracts.jsonl"
         working-directory: service
-      - run: node --test scripts/conformance-archive.test.mjs scripts/plugin-evidence.test.mjs scripts/site-export-contract.test.mjs scripts/performance-history-api.test.mjs scripts/benchmark-parent-bundle.test.mjs scripts/api-progress-process.test.mjs scripts/api-progress-delivery.test.mjs scripts/api-session-plan.test.mjs scripts/api-publication.test.mjs scripts/benchmark-workflow.test.mjs scripts/benchmark-bundle.test.mjs scripts/api-parent-archive.test.mjs scripts/api-large-publication.test.mjs
+      - run: node --test scripts/conformance-api.test.mjs scripts/conformance-archive.test.mjs scripts/plugin-evidence.test.mjs scripts/site-export-contract.test.mjs scripts/performance-history-api.test.mjs scripts/benchmark-parent-bundle.test.mjs scripts/api-progress-process.test.mjs scripts/api-progress-delivery.test.mjs scripts/api-session-plan.test.mjs scripts/api-publication.test.mjs scripts/benchmark-workflow.test.mjs scripts/benchmark-bundle.test.mjs scripts/api-parent-archive.test.mjs scripts/api-large-publication.test.mjs
   client:
     runs-on: ubuntu-latest
     steps:
