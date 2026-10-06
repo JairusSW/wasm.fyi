@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "id": "weekly-20260718-wasmer",
+  "machine": "hub",
+  "bytes": 37469922,
+  "sha256": "856d639a674ab1c24d73d3650cd5d8eb74e08709c9d68ef98a58bcbbd490a8a3",
+  "format": "tar+gzip concatenated parts",
+  "parts": [
+    {
+      "path": "bundle.tar.gz.part-000",
+      "bytes": 33554432,
+      "sha256": "f9646bd3af032b557dd5795f68177d24281cbbe2600a612a11f6126cd0714b97"
+    },
+    {
+      "path": "bundle.tar.gz.part-001",
+      "bytes": 3915490,
+      "sha256": "1c84b24a8a8d3cfe16a86382908b3c83dc774c572f3b31275ca09d67b7e7e12f"
+    }
+  ],
+  "metadata": "metadata.json",
+  "metadataSha256": "d179bc8daf9721e53b4bc788fe2e42ca88f0e4b7f56c987cf52db07f16d4c93b",
+  "download": "Concatenate parts in order, verify the full SHA-256, then tar -xzf bundle.tar.gz."
+}
