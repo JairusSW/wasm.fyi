@@ -132,6 +132,21 @@ func TestKernelDiskExhaustionPreservesPublicationAndRecovery(t *testing.T) {
 // requires an empty volume before creating its own store.
 func assertSmallTmpfs(t *testing.T, volume string) {
 	t.Helper()
+	abs, e := filepath.Abs(volume)
+	if e != nil {
+		t.Fatal(e)
+	}
+	info, e := os.Lstat(abs)
+	if e != nil || !info.IsDir() {
+		t.Fatal("exhaustion root must be a real directory", e)
+	}
+	parent, e := os.Stat(filepath.Dir(abs))
+	if e != nil {
+		t.Fatal(e)
+	}
+	if info.Sys().(*syscall.Stat_t).Dev == parent.Sys().(*syscall.Stat_t).Dev {
+		t.Fatal("exhaustion root must be a dedicated tmpfs mount")
+	}
 	var fs unix.Statfs_t
 	if e := unix.Statfs(volume, &fs); e != nil {
 		t.Fatal(e)
@@ -293,5 +308,35 @@ func TestKernelWALExhaustionRecovery(t *testing.T) {
 	after, e = recovered.Results(Query{Revision: second}, true)
 	if e != nil || !reflect.DeepEqual(after, rows) {
 		t.Fatal("WAL portable rebuild changed captures", e)
+	}
+}
+
+func TestKernelDiskExhaustionRefusesNestedDirectory(t *testing.T) {
+	volume := os.Getenv("WASMFYI_ENOSPC_ROOT")
+	if volume == "" {
+		t.Skip("set WASMFYI_ENOSPC_ROOT to an isolated empty tmpfs")
+	}
+	assertExhaustionVolume(t, volume)
+	nested := filepath.Join(volume, "empty-shared-subdirectory")
+	if e := os.Mkdir(nested, 0700); e != nil {
+		t.Fatal(e)
+	}
+	defer os.Remove(nested)
+	binary, e := os.Executable()
+	if e != nil {
+		t.Fatal(e)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	child := exec.CommandContext(ctx, binary, "-test.run=^TestKernelWALExhaustionHelper$")
+	child.Env = append(os.Environ(), "WASMFYI_WAL_EXHAUSTION_HELPER="+nested)
+	output, e := child.CombinedOutput()
+	exit, ok := e.(*exec.ExitError)
+	if !ok || exit.ExitCode() != 1 || !strings.Contains(string(output), "exhaustion root must be a dedicated tmpfs mount") {
+		t.Fatalf("shared tmpfs directory was not refused: %v\n%s", e, output)
+	}
+	entries, e := os.ReadDir(nested)
+	if e != nil || len(entries) != 0 {
+		t.Fatal("refused target was modified", e)
 	}
 }

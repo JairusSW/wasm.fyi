@@ -21,6 +21,9 @@ jobs:
         env:
           GOFLAGS: -mod=readonly
           GOWORK: 'off'
+      - name: Qualify publication under kernel disk exhaustion
+        run: ./scripts/api-disk-full-test.sh
+        timeout-minutes: 5
       - run: node scripts/check-api-dependencies.mjs
       - run: node scripts/generate-api-types.mjs --check
       - uses: actions/setup-python@v5

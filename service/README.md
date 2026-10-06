@@ -637,16 +637,18 @@ operator's reverse-proxy/firewall configuration or a deployed TLS certificate.
 The production proxy must overwrite the header and restrict direct API access.
 
 Actual kernel disk exhaustion has a separate opt-in Linux gate. From the site
-root, with the runner's pinned image already installed, run:
+root, with Go and a native Linux Docker engine available, run:
 
 ```sh
 ./scripts/api-disk-full-test.sh
 ```
 
-The runner compiles for the native Linux Docker engine and requires a matching
-image architecture. It runs as a non-root user with networking disabled, a
+The runner compiles a static test binary for the native Linux Docker engine,
+using `-trimpath` so fixture paths do not depend on the checkout location. It
+builds a `FROM scratch` image containing only that binary and synthetic fixtures;
+no preinstalled image, image pull or host-path mount is required. It runs as a non-root user with networking disabled, a
 read-only root filesystem and a fresh 32 MiB tmpfs. The test refuses non-tmpfs,
-nonempty or larger-than-64-MiB exhaustion targets; ordinary Go test runs skip it.
+nonempty, non-mount-root or larger-than-64-MiB exhaustion targets; ordinary Go test runs skip it.
 
 Real kernel ENOSPC during a declared upload leaves no canonical partial object.
 ENOSPC during publication leaves the previous revision readable. Freeing space
@@ -662,7 +664,11 @@ new head and exact captures. The runner passes both gates on native Linux arm64.
 
 Operators must free space before restarting a service terminated by a fatal WAL
 write. These tmpfs tests do not qualify physical disk/device failures or power
-loss. CI execution remains pending.
+loss. The API service workflow now runs the same script with a five-minute gate
+limit. The scratch runner passes locally on native Linux arm64; actual GitHub
+Actions execution and native amd64 exhaustion remain unqualified. Cleanup tracks
+only this invocation's containers and image tag; it does not prune shared images
+or builder caches.
 
 
 Native byte `/bytes` and `/content` routes now support GET and HEAD with the same

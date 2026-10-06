@@ -1479,3 +1479,23 @@ and recovery race gates pass. The broad service test run passes every package
 checked separately under the race detector after the HEAD error-response fix.
 Go vet and a Linux CLI build pass. A blocked kernel filesystem
 syscall remains noninterruptible; this does not qualify device failure behavior.
+
+
+## Portable CI runner for real disk exhaustion
+
+The ENOSPC runner no longer depends on a preinstalled arm64 Python image or an
+absolute host-path mount for fixtures. It builds a static, trimmed native-Linux
+store test binary and a scratch image containing only that binary and synthetic
+fixtures at module-relative paths. Docker build disables networking and base-image
+pulls. Each upload/index and WAL gate receives its own fresh bounded tmpfs,
+non-root process, read-only root, disabled network and 1 CPU/512 MiB limit.
+
+The API workflow now invokes this runner with a five-minute gate timeout. The
+scratch runner passes both actual kernel exhaustion/recovery cases locally on
+native Linux arm64, including the fatal-WAL subprocess and exact restart/rebuild
+checks. It tracks only its own container IDs and unique image tag for interruption
+cleanup; shared images, caches and workloads remain outside cleanup scope.
+A subprocess refusal gate also proves an empty nested directory on a shared
+tmpfs is rejected before creating storage files; only a real dedicated mount root
+is admissible. Shell syntax, workflow YAML and Linux store vet checks pass.
+Actual GitHub Actions execution and native amd64 exhaustion remain pending.
