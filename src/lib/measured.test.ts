@@ -133,7 +133,18 @@ describe('measured view boundary', () => {
 			expect(cells).toHaveLength(history.results.length);
 			for(const [i,point] of cells.entries()){
                 expect(point.role).toBe('retrospective-revision');
-                expect(point.cell.status).toBe(history.results[i].engines && !history.results[i].engines?.wago ? 'not-collected' : 'ok');
+                const week=history.results[i];
+                const pin=week.engines ? week.engines.wago : week;
+                const refs=pin?.reports || (pin ? [pin] : []);
+                const report=snapshots.filter(snapshot=>refs.some(ref=>ref.runId===snapshot.runId)
+                    && snapshot.workloads.some(w=>w.id===workload.id && w.sha256===workload.sha256)
+                    && snapshot.summaries.some(summary=>summary.runtime==='wago' && summary.workload===workload.id && summary.scenario==='steady'))
+                    .sort((a,b)=>b.created.localeCompare(a.created))[0];
+                if(week.status==='measured' && pin?.status==='measured' && report){
+                    expect(point.cell).toEqual(measuredTiming(report,'wago',workload.id,workload.sha256,'steady'));
+                }else{
+                    expect(point.cell.status,`${name} ${week.targetWeek}: absent workload stays uncollected`).toBe('not-collected');
+                }
             }
 			const baseline = measuredHistory(history, snapshots, historical.host, 'wasmtime', workload.id, workload.sha256, 'steady');
 			for(const [i,point] of baseline.entries()){
