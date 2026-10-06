@@ -607,3 +607,21 @@ and unavailable intervals remain in original records. `rawCount`, `reduction` an
 created. Gap-heavy or oversized responses require a narrower window or raw paged
 `/api/v1/history` access with the same filters. This display policy changes no
 measurement analysis, uncertainty or matched-workload comparison calculation.
+
+The proxy trust boundary has a retained real-socket integration gate:
+
+```sh
+GOFLAGS=-mod=readonly GOWORK=off go test -race ./internal/api \
+  -run 'TestTLSProxy|TestRealHTTPDefault|TestTrustedProxy|TestProxyAddress'
+```
+
+The reference proxy terminates TLS, replaces all incoming `X-Real-IP` values
+with the connecting socket peer, and forwards to the loopback API. Tests prove
+that spoofing cannot create another public budget, exhausted public traffic does
+not exhaust publisher access, trusted requests without a client header fail
+closed, and the default policy ignores forwarding headers. Native Linux also
+requires two real connecting loopback addresses to receive separate budgets
+through one proxy hop. macOS can omit only that secondary-address subcase when
+the OS has no loopback alias. These tests qualify the reference path, not an
+operator's reverse-proxy/firewall configuration or a deployed TLS certificate.
+The production proxy must overwrite the header and restrict direct API access.
