@@ -14,6 +14,35 @@ spec.loader.exec_module(contracts)
 
 
 class Contracts(unittest.TestCase):
+    def test_artifact_size_content_and_inspection_are_independent(self):
+        artifact = {"reportId": "a" * 64, "measurementAvailable": True,
+                    "record": {"runtime": "engine", "workload": "w", "trial": "code-1", "size_bytes": "9007199254740993"},
+                    "content": {"status": "unavailable", "reason": "engine reports size only"},
+                    "inspection": {"status": "unavailable"}}
+        contracts.validate(artifact, "ArtifactDescriptor", "size without downloadable bytes")
+        for key, value in [("sha256", "b" * 64), ("bytes", 12), ("mediaType", "application/octet-stream")]:
+            bad = copy.deepcopy(artifact)
+            bad["content"][key] = value
+            with self.assertRaises(ValueError):
+                contracts.validate(bad, "ArtifactDescriptor", "invented content")
+        bad = copy.deepcopy(artifact)
+        bad["inspection"] = {"status": "available", "metadata": "b" * 64}
+        with self.assertRaises(ValueError):
+            contracts.validate(bad, "ArtifactDescriptor", "inspection without bytes")
+        native = copy.deepcopy(artifact)
+        native["content"] = {"status": "available", "sha256": "b" * 64, "bytes": 12, "mediaType": "application/octet-stream"}
+        native["inspection"] = {"status": "available", "metadata": "c" * 64,
+                                "disassembly": {"status": "available", "version": "llvm-function-listing-v1", "selection": "producer-function-ordinal"}}
+        contracts.validate(native, "ArtifactDescriptor", "selected offline inspection")
+        for mutate in [lambda x: x["content"].pop("bytes"),
+                       lambda x: x["inspection"].pop("metadata"),
+                       lambda x: x["inspection"]["disassembly"].update(version="invented"),
+                       lambda x: x.update(functions=[]), lambda x: x.update(nativeBytes="base64")]:
+            bad = copy.deepcopy(native)
+            mutate(bad)
+            with self.assertRaises(ValueError):
+                contracts.validate(bad, "ArtifactDescriptor", "invalid native descriptor")
+
     def test_import_status_distinguishes_staging_publication_and_inventory(self):
         status = {"id": "a" * 64, "session": "s", "machine": "local", "corpus": "c",
                   "attempt": "first", "state": "staged", "objects": 1000, "missing": 2,
@@ -54,6 +83,10 @@ class Contracts(unittest.TestCase):
                            ("Environment", "environment"), ("Workload", "workload"),
                            ("Artifact", "artifact")]:
             record = {"kind": kind, "id": "a" * 64, "data": {"producerField": "retained"}}
+            if kind == "artifact":
+                record["data"] = {"reportId": "c" * 64, "measurementAvailable": True,
+                                  "record": {"runtime": "engine", "workload": "w", "trial": "code-1", "size_bytes": 1234},
+                                  "content": {"status": "unavailable"}, "inspection": {"status": "unavailable"}}
             page = {"revision": "b" * 64, "items": [record], "total": 2,
                     "complete": False, "nextCursor": "signed"}
             detail = {"revision": "b" * 64, "record": record}

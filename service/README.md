@@ -822,3 +822,11 @@ Import abort acquires publication ownership cancelably and preserves pending
 state on cancellation; plan commit/abort use the same release checks. A final
 context check precedes synchronous publication. Kernel filesystem/database
 syscalls already in progress still have their existing interruption limits.
+
+Artifact descriptors have a decoded 10 KiB response target enforced at producer
+export and consumer admission, reserving 512 bytes for the record/API envelope.
+Their typed response contract separates measured size from original content and
+inspection. A valid size-only code record retains its original size while raw
+content and inspection remain unavailable. Downloadable content requires a
+hash, original byte count and media type; offline inspection binds metadata and
+a versioned derivative. Function indexes and listings remain selected resources.

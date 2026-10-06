@@ -2,6 +2,10 @@ package wire
 
 import "encoding/json"
 
+// Match the producer's reserved envelope allowance so ordinary descriptors
+// stay below the decoded 10 KiB target when wrapped by the API.
+const ArtifactDescriptorBytes = 10*1024 - 512
+
 type Artifact struct {
 	ReportID string `json:"reportId"`
 	Record   struct {
@@ -29,6 +33,9 @@ type Artifact struct {
 
 func ArtifactData(b []byte) (Artifact, error) {
 	var artifact Artifact
+	if len(b) > ArtifactDescriptorBytes {
+		return artifact, Invalid("artifact descriptor exceeds byte ceiling")
+	}
 	if err := json.Unmarshal(b, &artifact); err != nil {
 		return artifact, Invalid("invalid artifact descriptor")
 	}

@@ -147,17 +147,24 @@ func TestRealProducerServingParity(t *testing.T) {
 		if e != nil {
 			t.Fatal(e)
 		}
+		status, e := s.ImportStatus(id)
+		if e != nil {
+			t.Fatal(e)
+		}
+		published := status.State == "published"
 		objects := append([]wire.Object{}, manifest.Objects...)
 		for _, page := range manifest.InventoryPages {
 			data, e := os.ReadFile(filepath.Join(input.Export, "objects", page.SHA256))
 			if e != nil {
 				t.Fatal(e)
 			}
-			if e = s.InstallDeclared(page.SHA256, bytes.NewReader(data)); e != nil {
-				t.Fatal(e)
-			}
-			if e = s.AttachInventory(id, page.SHA256); e != nil {
-				t.Fatal(e)
+			if !published {
+				if e = s.InstallDeclared(page.SHA256, bytes.NewReader(data)); e != nil {
+					t.Fatal(e)
+				}
+				if e = s.AttachInventory(id, page.SHA256); e != nil {
+					t.Fatal(e)
+				}
 			}
 			var inventory wire.InventoryPage
 			if e = wire.Decode(data, &inventory); e != nil {
@@ -174,7 +181,7 @@ func TestRealProducerServingParity(t *testing.T) {
 				t.Fatal(err)
 			}
 		}
-		if resume == "" {
+		if resume == "" && !published {
 			for n, object := range objects {
 				install(object)
 				if (n+1)%10000 == 0 {
@@ -190,6 +197,9 @@ func TestRealProducerServingParity(t *testing.T) {
 				}
 				if len(missing) == 0 {
 					break
+				}
+				if published {
+					t.Fatal("published real fixture has missing content")
 				}
 				if pages == len(objects) {
 					t.Fatal("resumed missing-object import did not converge")

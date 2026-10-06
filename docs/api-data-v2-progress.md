@@ -1874,3 +1874,36 @@ minutes places it in `OpenWithLimits` → `restore` → `reachableContext` →
 It has not reached idempotent import or serving replay yet. This is startup
 integrity validation, not another permit-release stall. No validation is
 skipped and the process is left running for its original deadline.
+
+## Bounded artifact descriptor contracts and published-store test replay
+
+Consumer artifact admission now matches the producer's 10 KiB descriptor target
+with the same 512-byte reserved envelope allowance. A boundary fixture accepts
+9,728 bytes of descriptor JSON, proves the ordinary detail envelope remains
+below 10 KiB, and rejects one additional byte. Existing native/binary/selected
+function store gates pass under race detection.
+
+Artifact catalog/detail records now use `ArtifactDescriptor` rather than a
+generic data object: exported content requires an original hash, count and
+media type; unavailable content cannot advertise them; inspection requires
+exported bytes and a metadata identity; available disassembly requires its
+version and function-order selection. Engine-reported sizes and unsafe integer
+strings remain producer-owned fields, independent of raw bytes. Legacy absence
+of the measurement-availability annotation remains readable. Descriptor bodies
+cannot preload function lists or native base64 at the top level.
+
+All 168 artifact descriptors in the real Wasmtime export pass the new schema;
+the largest canonical record is 1,512 bytes. All 34 captured catalog/detail
+responses and 25 negative contract tests pass, along with generated types.
+
+The first published-store retry completed startup validation in its 484.81-second
+race run, then correctly failed because the test attempted an inventory upload
+without an active import permit. The test now reads the publication receipt,
+leaves published inventory/content untouched, requires zero missing content and
+checks idempotent commit. A fresh real Wasmer call-report run and published-store
+replay both pass: 165 objects, two timing/two memory results, 12 selected analysis
+sections, seven original resources and byte-exact 48,886,252-byte sealed archive
+with 32 files, plus HTTP and portable reconstruction. Replay uploads zero objects.
+The larger Wasmtime scientific/selected-disassembly gate is now restarted only
+after the prior process was terminal, against the same published store; final
+qualification remains pending. Production import/startup latency is unqualified.
