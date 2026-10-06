@@ -294,7 +294,7 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 			return nil, e
 		}
 		if r.Observations != "" {
-			if r.ObservationPolicy != "source-summary-v1" && r.ObservationPolicy != ObservationPolicy {
+			if r.ObservationPolicy != "source-summary-v1" && r.ObservationPolicy != previousObservationPolicy && r.ObservationPolicy != ObservationPolicy {
 				return nil, fmt.Errorf("unsupported observation policy")
 			}
 			if e := markMap(r.Observations, "observations", func(id, result string) error {
@@ -308,9 +308,73 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 				}
 				if actual != id {
 					legacy, e := observationID(record)
-					if e != nil || r.ObservationPolicy != ObservationPolicy || legacy != id {
+					if e != nil {
+						return e
+					}
+					if legacy != id {
+						if r.ObservationPolicy != ObservationPolicy {
+							return fmt.Errorf("observation identity differs")
+						}
+						proofID, e := s.mapGet(r.SourceBindings, legacy)
+						if e != nil {
+							return e
+						}
+						if proofID == "" {
+							return fmt.Errorf("missing source binding proof")
+						}
+						proof, e := s.record(r.Catalog, "result", proofID)
+						if e != nil {
+							return e
+						}
+						if e := compatibleSourceProof(record, proof); e != nil {
+							return e
+						}
+						bound, e := observationIdentity(proof, ObservationPolicy)
+						if e != nil || bound != id {
+							return fmt.Errorf("observation source binding differs")
+						}
+					} else if r.ObservationPolicy != ObservationPolicy && r.ObservationPolicy != previousObservationPolicy {
 						return fmt.Errorf("observation identity differs")
 					}
+				}
+				return nil
+			}); e != nil {
+				return nil, e
+			}
+		}
+		if r.SourceBindings != "" {
+			if r.ObservationPolicy != ObservationPolicy {
+				return nil, wire.Invalid("unexpected source bindings")
+			}
+			if e := markMap(r.SourceBindings, "source-bindings", func(legacy, result string) error {
+				record, e := s.record(r.Catalog, "result", result)
+				if e != nil {
+					return e
+				}
+				actual, e := observationID(record)
+				if e != nil || actual != legacy {
+					return fmt.Errorf("source proof report binding differs")
+				}
+				var value wire.Result
+				if e = wire.Decode(record.Data, &value); e != nil {
+					return e
+				}
+				if value.SamplingGroup == nil {
+					return fmt.Errorf("source proof lacks sampling provenance")
+				}
+				if e = value.ValidateMethod(); e != nil {
+					return e
+				}
+				shared, e := observationIdentity(record, ObservationPolicy)
+				if e != nil {
+					return e
+				}
+				preferred, e := s.mapGet(r.Observations, shared)
+				if e != nil {
+					return e
+				}
+				if preferred == "" {
+					return fmt.Errorf("source proof lacks preferred representation")
 				}
 				return nil
 			}); e != nil {
@@ -593,7 +657,7 @@ func verifyPortable(source string) error {
 		if e = reader.load(id, &r); e != nil {
 			return e
 		}
-		if !wire.IsHash(r.Job) || !wire.IsHash(r.Catalog) || !wire.IsHash(r.Selection) || r.Parent != "" && !wire.IsHash(r.Parent) || r.Observations != "" && !wire.IsHash(r.Observations) {
+		if !wire.IsHash(r.Job) || !wire.IsHash(r.Catalog) || !wire.IsHash(r.Selection) || r.Parent != "" && !wire.IsHash(r.Parent) || r.Observations != "" && !wire.IsHash(r.Observations) || r.SourceBindings != "" && !wire.IsHash(r.SourceBindings) {
 			return fmt.Errorf("invalid portable revision")
 		}
 		reader.published[id] = r

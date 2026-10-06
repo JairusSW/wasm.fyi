@@ -121,6 +121,9 @@ func (s *Store) ResultsContext(ctx context.Context, q Query, historical bool) ([
 		if e = json.Unmarshal(r.Data, &v); e != nil {
 			return e
 		}
+		if e = s.enrichObservation(rev, r, &v); e != nil {
+			return e
+		}
 		if !q.Matches(v) {
 			return nil
 		}

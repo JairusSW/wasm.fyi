@@ -91,6 +91,90 @@ func TestEvidenceRepresentationPreservesCapturesAndSelections(t *testing.T) {
 	if !found {
 		t.Fatal("richer representation disappeared")
 	}
+	// Provenance enrichment has less evidence than the selected representation.
+	// Its proof must survive independently without replacing the native record.
+	proofJob, proofObjects, err := testutil.Fixture("capture", date)
+	if err != nil {
+		t.Fatal(err)
+	}
+	proofJob.Attempt = "source-proof-only"
+	proofManifest := &proofJob.Exports[0].Manifest
+	for i, object := range proofManifest.Objects {
+		if object.Kind != "record" {
+			continue
+		}
+		var record wire.Record
+		_ = wire.Decode(proofObjects[object.SHA256], &record)
+		if record.Kind != "result" {
+			continue
+		}
+		var value wire.Result
+		_ = wire.Decode(record.Data, &value)
+		if value.Metric != "native.code_size" {
+			continue
+		}
+		group := wire.SamplingGroup{Schema: 1, PassID: "same-code-source", CapturedAt: date, Runtime: value.Runtime, Workload: value.Workload, Scenario: value.Scenario, Profile: value.Profile, ManifestSHA256: wire.Hash([]byte("source-manifest")), TrialsSHA256: wire.Hash([]byte("source-trials")), TrialCount: 1}
+		group.ID = group.Digest()
+		value.SamplingGroup = &group
+		value.Evidence = nil
+		record.Data, _ = wire.Encode(value)
+		record.ID = wire.Hash(record.Data)
+		b, _ := wire.Encode(record)
+		delete(proofObjects, object.SHA256)
+		object.SHA256, object.Bytes = wire.Hash(b), len(b)
+		proofObjects[object.SHA256] = b
+		proofManifest.Objects[i] = object
+	}
+	b, _ = wire.Encode(proofManifest)
+	proofJob.Exports[0].SHA256 = wire.Hash(b)
+	for hash, b := range proofObjects {
+		if err = s.Install(hash, bytes.NewReader(b)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	proofID, err := s.Submit(proofJob)
+	if err != nil {
+		t.Fatal(err)
+	}
+	revision, err = s.Commit(proofID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rows, err = s.Results(Query{Revision: revision}, true)
+	if err != nil || len(rows) != 6 {
+		t.Fatal("proof split full history", len(rows), err)
+	}
+	window, err := s.Results(Query{Revision: revision, From: date.Format(time.RFC3339), Until: date.Add(2 * time.Hour).Format(time.RFC3339)}, true)
+	if err != nil || len(window) != 6 {
+		t.Fatal("proof split window history", len(window), err)
+	}
+	found = false
+	for _, row := range rows {
+		if row.ID == newCode {
+			var value wire.Result
+			_ = wire.Decode(row.Data, &value)
+			if value.SamplingGroup == nil {
+				t.Fatal("selected evidence lost source proof")
+			}
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("source proof downgraded selected evidence")
+	}
+	rev, err := s.Revision(revision)
+	if err != nil {
+		t.Fatal(err)
+	}
+	canonical, err := s.record(rev.Catalog, "result", newCode)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var unchanged wire.Result
+	_ = wire.Decode(canonical.Data, &unchanged)
+	if unchanged.SamplingGroup != nil || len(unchanged.Evidence) != 1 || wire.Hash(canonical.Data) != canonical.ID {
+		t.Fatal("enrichment rewrote canonical bytes")
+	}
 	previous, err := s.Results(Query{Revision: revision, Selection: "previous"}, false)
 	if err != nil || len(previous) != 3 {
 		t.Fatal("previous selection changed population", err)
@@ -114,6 +198,59 @@ func TestEvidenceRepresentationPreservesCapturesAndSelections(t *testing.T) {
 				t.Fatal("modified an older immutable revision")
 			}
 		}
+	}
+	// A conflicting producer attestation must leave the published revision intact.
+	jobBytes, _ := wire.Encode(proofJob)
+	var conflicting wire.Job
+	_ = wire.Decode(jobBytes, &conflicting)
+	conflicting.Attempt = "conflicting-source-proof"
+	conflictObjects := map[string][]byte{}
+	for hash, b := range proofObjects {
+		conflictObjects[hash] = b
+	}
+	for i, object := range conflicting.Exports[0].Manifest.Objects {
+		if object.Kind != "record" {
+			continue
+		}
+		var record wire.Record
+		_ = wire.Decode(conflictObjects[object.SHA256], &record)
+		if record.Kind != "result" {
+			continue
+		}
+		var value wire.Result
+		_ = wire.Decode(record.Data, &value)
+		if value.SamplingGroup == nil {
+			continue
+		}
+		value.SamplingGroup.PassID = "conflicting-source"
+		value.SamplingGroup.ID = value.SamplingGroup.Digest()
+		record.Data, _ = wire.Encode(value)
+		record.ID = wire.Hash(record.Data)
+		b, _ := wire.Encode(record)
+		delete(conflictObjects, object.SHA256)
+		object.SHA256, object.Bytes = wire.Hash(b), len(b)
+		conflictObjects[object.SHA256] = b
+		conflicting.Exports[0].Manifest.Objects[i] = object
+	}
+	jobBytes, _ = wire.Encode(conflicting.Exports[0].Manifest)
+	conflicting.Exports[0].SHA256 = wire.Hash(jobBytes)
+	for hash, b := range conflictObjects {
+		if err = s.Install(hash, bytes.NewReader(b)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	conflictID, err := s.Submit(conflicting)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = s.Commit(conflictID); err == nil {
+		t.Fatal("conflicting source proof published")
+	}
+	if s.Current() != revision {
+		t.Fatal("conflicting proof changed current revision")
+	}
+	if err = s.Abort(conflictID); err != nil {
+		t.Fatal(err)
 	}
 	// Redelivering the poorer representation does not downgrade available evidence.
 	plain, _, err := testutil.Fixture("capture", date)
@@ -156,6 +293,22 @@ func TestEvidenceRepresentationPreservesCapturesAndSelections(t *testing.T) {
 	if err != nil || len(rows) != 6 {
 		t.Fatal("rebuild lost observation identities", err)
 	}
+	found = false
+	for _, row := range rows {
+		if row.ID == newCode {
+			var value wire.Result
+			if err := wire.Decode(row.Data, &value); err != nil {
+				t.Fatal(err)
+			}
+			if value.SamplingGroup == nil || value.SamplingGroup.PassID != "same-code-source" {
+				t.Fatal("rebuild lost independent source proof")
+			}
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("rebuild downgraded native evidence")
+	}
 }
 
 func TestScientificIdentityDoesNotCollapseDifferentResults(t *testing.T) {
@@ -194,11 +347,12 @@ func TestScientificIdentityDoesNotCollapseDifferentResults(t *testing.T) {
 }
 
 func TestLegacyRevisionObservationIndexMigration(t *testing.T) {
-	t.Run("unindexed", func(t *testing.T) { testLegacyObservationMigration(t, false) })
-	t.Run("v1-indexed", func(t *testing.T) { testLegacyObservationMigration(t, true) })
+	t.Run("unindexed", func(t *testing.T) { testLegacyObservationMigration(t, "") })
+	t.Run("v1-indexed", func(t *testing.T) { testLegacyObservationMigration(t, "source-summary-v1") })
+	t.Run("v2-indexed", func(t *testing.T) { testLegacyObservationMigration(t, previousObservationPolicy) })
 }
 
-func testLegacyObservationMigration(t *testing.T, indexed bool) {
+func testLegacyObservationMigration(t *testing.T, policy string) {
 	root := t.TempDir()
 	s := openTest(t, root)
 	date := time.Date(2026, 10, 5, 0, 0, 0, 0, time.UTC)
@@ -207,8 +361,8 @@ func testLegacyObservationMigration(t *testing.T, indexed bool) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	revision.ObservationPolicy = "source-summary-v1"
-	if !indexed {
+	revision.ObservationPolicy = policy
+	if policy == "" {
 		revision.Observations = ""
 		revision.ObservationPolicy = ""
 	}
@@ -504,5 +658,38 @@ func TestSourceSamplingIdentityRequiresExactScience(t *testing.T) {
 	}
 	if _, err := observationIdentity(record(value), "unknown"); err == nil {
 		t.Fatal("unknown observation policy accepted")
+	}
+}
+
+func TestSourceProofRejectsScientificMismatch(t *testing.T) {
+	date := time.Date(2026, 10, 5, 0, 0, 0, 0, time.UTC)
+	value := wire.Result{ReportID: wire.Hash([]byte("report")), Runtime: "engine", Workload: "fixture/a", Scenario: "steady", Profile: "timing", Created: date, Summary: json.RawMessage(`{"median_ns_per_operation":4}`)}
+	group := wire.SamplingGroup{Schema: 1, PassID: "pass", CapturedAt: date, Runtime: value.Runtime, Workload: value.Workload, Scenario: value.Scenario, Profile: value.Profile, ManifestSHA256: wire.Hash([]byte("manifest")), TrialsSHA256: wire.Hash([]byte("trials")), TrialCount: 1}
+	group.ID = group.Digest()
+	source := value
+	source.SamplingGroup = &group
+	record := func(v wire.Result) wire.Record {
+		b, _ := wire.Encode(v)
+		return wire.Record{Kind: "result", ID: wire.Hash(b), Data: b}
+	}
+	if err := compatibleSourceProof(record(value), record(source)); err != nil {
+		t.Fatal(err)
+	}
+	for name, change := range map[string]func(*wire.Result){
+		"report":     func(v *wire.Result) { v.ReportID = wire.Hash([]byte("other")) },
+		"summary":    func(v *wire.Result) { v.Summary = json.RawMessage(`{"median_ns_per_operation":5}`) },
+		"method":     func(v *wire.Result) { v.MeasurementMethodID = wire.Hash([]byte("other-method")) },
+		"population": func(v *wire.Result) { g := group; g.PassID = "other-pass"; g.ID = g.Digest(); v.SamplingGroup = &g },
+	} {
+		t.Run(name, func(t *testing.T) {
+			v := value
+			change(&v)
+			if err := compatibleSourceProof(record(v), record(source)); err == nil {
+				t.Fatal("mismatched source proof accepted")
+			}
+		})
+	}
+	if err := compatibleSourceProof(record(value), record(value)); err == nil {
+		t.Fatal("missing provenance accepted as proof")
 	}
 }

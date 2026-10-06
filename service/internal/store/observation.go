@@ -10,13 +10,14 @@ import (
 	"github.com/JairusSW/wasm.fyi/service/internal/wire"
 )
 
-const ObservationPolicy = "source-sampling-summary-v2"
+const ObservationPolicy = "source-sampling-summary-v3"
+const previousObservationPolicy = "source-sampling-summary-v2"
 
 func observationIdentity(record wire.Record, policy string) (string, error) {
 	if policy == "" || policy == "source-summary-v1" {
 		return observationID(record)
 	}
-	if policy != ObservationPolicy {
+	if policy != ObservationPolicy && policy != previousObservationPolicy {
 		return "", wire.Invalid("unsupported observation policy")
 	}
 	var value wire.Result
@@ -51,6 +52,7 @@ func (s *Store) upgradeObservations(ctx context.Context, rev *Revision) error {
 		return nil
 	}
 	rev.Observations = ""
+	rev.SourceBindings = ""
 	rev.ObservationPolicy = ObservationPolicy
 	budget := ScanLimit
 	if err := s.walk(rev.Catalog, &budget, func(_, digest string) error {
@@ -178,9 +180,6 @@ func (s *Store) representationRank(revision Revision, record wire.Record) (int, 
 	if value.MeasurementMethod != nil && value.MeasurementMethod.Status == "available" {
 		rank++
 	}
-	if value.SamplingGroup != nil {
-		rank++
-	}
 	var summary struct {
 		Artifact string `json:"artifactId"`
 	}
@@ -220,30 +219,95 @@ func (s *Store) registerObservation(revision *Revision, record wire.Record) (boo
 	if err != nil {
 		return false, err
 	}
-	legacyCapture := false
+	if revision.ObservationPolicy != ObservationPolicy {
+		return s.registerObservationIdentity(revision, record, id)
+	}
+	// Source binding and evidence ranking are separate: a descriptor need not
+	// replace a richer same-report representation to prove its source identity.
 	if id != legacy {
-		prior, err := s.mapGet(revision.Observations, legacy)
+		priorProof, err := s.mapGet(revision.SourceBindings, legacy)
 		if err != nil {
 			return false, err
 		}
-		if prior != "" {
-			old, err := s.record(revision.Catalog, "result", prior)
+		if priorProof != "" {
+			proof, err := s.record(revision.Catalog, "result", priorProof)
 			if err != nil {
 				return false, err
 			}
-			var value wire.Result
-			if err := wire.Decode(old.Data, &value); err != nil {
+			bound, err := observationIdentity(proof, ObservationPolicy)
+			if err != nil {
 				return false, err
 			}
-			legacyCapture = value.SamplingGroup == nil
+			if bound != id {
+				return false, wire.Invalid("conflicting same-report source binding")
+			}
+		} else {
+			revision.SourceBindings, err = s.mapSet(revision.SourceBindings, legacy, record.ID, 0)
+			if err != nil {
+				return false, err
+			}
 		}
 	}
 	existed, err := s.registerObservationIdentity(revision, record, legacy)
-	if err != nil || legacy == id {
+	if err != nil {
+		return false, err
+	}
+	proofID, err := s.mapGet(revision.SourceBindings, legacy)
+	if err != nil || proofID == "" {
 		return existed, err
 	}
-	shared, err := s.registerObservationIdentity(revision, record, id)
-	return legacyCapture || shared, err
+	proof, err := s.record(revision.Catalog, "result", proofID)
+	if err != nil {
+		return false, err
+	}
+	sharedID, err := observationIdentity(proof, ObservationPolicy)
+	if err != nil {
+		return false, err
+	}
+	preferred, err := s.mapGet(revision.Observations, legacy)
+	if err != nil {
+		return false, err
+	}
+	rich, err := s.record(revision.Catalog, "result", preferred)
+	if err != nil {
+		return false, err
+	}
+	if err := compatibleSourceProof(rich, proof); err != nil {
+		return false, err
+	}
+	shared, err := s.registerObservationIdentity(revision, rich, sharedID)
+	return existed || shared, err
+}
+
+func compatibleSourceProof(record, proof wire.Record) error {
+	legacy, err := observationID(record)
+	if err != nil {
+		return err
+	}
+	bound, err := observationID(proof)
+	if err != nil {
+		return err
+	}
+	if legacy != bound {
+		return wire.Invalid("source proof scientific binding differs")
+	}
+	var value, source wire.Result
+	if err := wire.Decode(record.Data, &value); err != nil {
+		return err
+	}
+	if err := wire.Decode(proof.Data, &source); err != nil {
+		return err
+	}
+	if source.SamplingGroup == nil {
+		return wire.Invalid("source proof lacks sampling provenance")
+	}
+	if value.MeasurementMethodID != "" && value.MeasurementMethodID != source.MeasurementMethodID {
+		return wire.Invalid("source proof method differs")
+	}
+	if value.SamplingGroup != nil && value.SamplingGroup.ID != source.SamplingGroup.ID {
+		return wire.Invalid("source proof population differs")
+	}
+	return source.ValidateMethod()
 }
 
 func (s *Store) registerObservationIdentity(revision *Revision, record wire.Record, id string) (bool, error) {
@@ -282,6 +346,35 @@ func (s *Store) resolveObservation(revision Revision, result string) (string, er
 	if err != nil {
 		return "", err
 	}
+	if revision.ObservationPolicy == ObservationPolicy {
+		legacy, err := observationID(record)
+		if err != nil {
+			return "", err
+		}
+		proofID, err := s.mapGet(revision.SourceBindings, legacy)
+		if err != nil {
+			return "", err
+		}
+		id := legacy
+		if proofID != "" {
+			proof, err := s.record(revision.Catalog, "result", proofID)
+			if err != nil {
+				return "", err
+			}
+			id, err = observationIdentity(proof, ObservationPolicy)
+			if err != nil {
+				return "", err
+			}
+		}
+		preferred, err := s.mapGet(revision.Observations, id)
+		if err != nil {
+			return "", err
+		}
+		if preferred == "" {
+			return "", fmt.Errorf("missing observation representation")
+		}
+		return preferred, nil
+	}
 	id, err := observationIdentity(record, revision.ObservationPolicy)
 	if err != nil {
 		return "", err
@@ -295,7 +388,7 @@ func (s *Store) resolveObservation(revision Revision, result string) (string, er
 	}
 	// A legacy record can resolve to same-report provenance enrichment, then
 	// to the preferred representation of that source population across reports.
-	if revision.ObservationPolicy == ObservationPolicy && resolved != result {
+	if revision.ObservationPolicy == previousObservationPolicy && resolved != result {
 		record, err := s.record(revision.Catalog, "result", resolved)
 		if err != nil {
 			return "", err
@@ -314,4 +407,37 @@ func (s *Store) resolveObservation(revision Revision, result string) (string, er
 		resolved = preferred
 	}
 	return resolved, nil
+}
+
+// API summaries can expose verified same-report provenance alongside the richer
+// canonical record. Persisted record bytes and evidence links remain untouched.
+func (s *Store) enrichObservation(rev Revision, record wire.Record, value *wire.Result) error {
+	if rev.ObservationPolicy != ObservationPolicy || value.SamplingGroup != nil {
+		return nil
+	}
+	legacy, err := observationID(record)
+	if err != nil {
+		return err
+	}
+	proofID, err := s.mapGet(rev.SourceBindings, legacy)
+	if err != nil || proofID == "" {
+		return err
+	}
+	proof, err := s.record(rev.Catalog, "result", proofID)
+	if err != nil {
+		return err
+	}
+	if err := compatibleSourceProof(record, proof); err != nil {
+		return err
+	}
+	var source wire.Result
+	if err = wire.Decode(proof.Data, &source); err != nil {
+		return err
+	}
+	value.SamplingGroup = source.SamplingGroup
+	if value.MeasurementMethodID == "" {
+		value.MeasurementMethodID = source.MeasurementMethodID
+		value.MeasurementMethod = source.MeasurementMethod
+	}
+	return value.ValidateMethod()
 }

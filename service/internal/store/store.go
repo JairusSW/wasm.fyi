@@ -31,6 +31,7 @@ type Revision struct {
 	Selection           string    `json:"selectionRoot"`
 	Indexes             string    `json:"indexRoot,omitempty"`
 	Observations        string    `json:"observationRoot,omitempty"`
+	SourceBindings      string    `json:"sourceBindingRoot,omitempty"`
 	ObservationPolicy   string    `json:"observationPolicy,omitempty"`
 	SessionIndexVersion string    `json:"sessionIndexVersion,omitempty"`
 	HistoryIndexVersion string    `json:"historyIndexVersion,omitempty"`
@@ -688,6 +689,7 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 			return "", e
 		}
 		rev.Catalog, rev.Selection, rev.Indexes, rev.Observations = old.Catalog, old.Selection, old.Indexes, old.Observations
+		rev.SourceBindings = old.SourceBindings
 		rev.ObservationPolicy = old.ObservationPolicy
 		rev.SessionIndexVersion = old.SessionIndexVersion
 		rev.HistoryIndexVersion = old.HistoryIndexVersion

@@ -979,3 +979,29 @@ change policies remain open.
 Mixed legacy records whose richer evidence competes with newly supplied source
 provenance still need an explicit combined-representation policy and regression
 gates; this change does not claim that migration case complete.
+
+
+### Independent source proof and evidence preference
+
+New revisions use `source-sampling-summary-v3` and a reusable
+`sourceBindingRoot`. Each binding associates one exact report-scoped scientific
+capture with the canonical record that supplies its sampling descriptor. Evidence
+ranking is independent of the descriptor: a poorer provenance-only export can
+establish source reuse without replacing the original evidence-rich result.
+Summary reads enrich that selected record from the same-report proof; immutable
+canonical bytes, result IDs and evidence links remain unchanged.
+
+Publication rejects conflicting source populations or known method identities
+for the same report-scoped capture. Portable verification checks the proof's
+report/scientific binding, descriptor and method, its shared source identity and
+preferred representation. v1/v2 revisions remain readable; migration rebuilds
+only the new revision's maps and selections. Missing proof never creates an
+inferred source match.
+
+Regression tests publish an evidence-rich native result, then a poorer descriptor
+export. Full and windowed history remain equal, selected evidence keeps its ID,
+summary provenance is available, canonical bytes remain unchanged, and redelivery,
+restart and backup/rebuild preserve both. Legacy unindexed/v1/v2 recovery and
+negative report/summary/method/population proof bindings are covered. This closes
+the previously recorded competing legacy evidence/provenance case. Historical
+role/timestamp interpretation and aggregate resampling remain separate open gates.
