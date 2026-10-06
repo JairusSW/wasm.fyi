@@ -1005,3 +1005,39 @@ restart and backup/rebuild preserve both. Legacy unindexed/v1/v2 recovery and
 negative report/summary/method/population proof bindings are covered. This closes
 the previously recorded competing legacy evidence/provenance case. Historical
 role/timestamp interpretation and aggregate resampling remain separate open gates.
+
+
+### Sealed analytical-file transport
+
+The installed harness exporter now projects the existing sealed Parquet outputs
+as `report-file` canonical records plus 1 MiB binary chunks. It does not invoke
+analytical writers or archived builders. A descriptor carries report identity,
+original filename/media type, identity encoding, total bytes/full SHA-256 and
+ordered chunk sizes/hashes. Only files actually present in the verified seal are
+exported; absent memory exports are not inferred. Files are bounded to 1 GiB and
+1024 chunks. Export checks regular-file identity, streamed length and the original
+seal hash again while writing the bounded chunks, rejecting changed files.
+
+The service checks descriptor identity, source report membership, declared binary
+chunk sizes/hashes, original-file digest and filename collisions before publishing.
+Portable backup/rebuild verifies and retains every binary part. Immutable report
+records keep their existing encoding; adding a file does not collide with legacy
+report metadata or create additional measurement captures.
+
+`GET /api/v1/reports/{id}/files?revision=...` uses a report-owned persistent posting
+set and returns at most eight descriptors. Global `/files` remains paginated.
+`/files/{id}` reads selected metadata; `/files/{id}/chunks/{digest}` downloads
+exact bounded original bytes with GET/HEAD. Chunk access requires selected file
+and revision membership, never a bare content hash. Clients reconstruct an
+original file in descriptor order and verify its full SHA-256. No bulk bytes are
+part of ordinary result/report bootstrap data. Single-response bulk streaming
+and report/tool archives remain separate open work.
+
+Producer tests cover binary preservation, absent/unsealed files, changed seals
+and symlink rejection. API tests cover multi-chunk byte reconstruction, scoped
+file indexes, HEAD, forged chunk access and backup/rebuild. Wire tests reject
+bad names, encoding, byte/count bounds and chunk/original digest drift. A fresh
+installed producer verified an existing Wasmer call report, imported 117 objects,
+and preserved six original Parquet files plus its timing/memory and twelve
+analysis sections through HTTP. Schema/OpenAPI and generated consumer types
+include the new resources.

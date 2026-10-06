@@ -37,6 +37,7 @@ func TestRealProducerServingParity(t *testing.T) {
 	memoryExpected := map[string]map[string]json.RawMessage{}
 	codeExpected := map[string]string{}
 	analysisExpected := map[string]map[string]json.RawMessage{}
+	reportSources := map[string]string{}
 	for i, input := range inputs {
 		b, e := os.ReadFile(filepath.Join(input.Source, "data.json"))
 		if e != nil {
@@ -141,6 +142,7 @@ func TestRealProducerServingParity(t *testing.T) {
 		if _, e = s.Commit(id); e != nil {
 			t.Fatal("real producer import", e)
 		}
+		reportSources[manifest.ReportID] = input.Source
 		t.Logf("imported verified export %s (%d objects)", filepath.Base(input.Export), len(objects))
 	}
 	revision := s.Current()
@@ -156,6 +158,32 @@ func TestRealProducerServingParity(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
+	files, e := s.Catalog(revision, "report-file")
+	if e != nil {
+		t.Fatal(e)
+	}
+	for _, record := range files {
+		file, e := wire.ReportFileData(record.Data)
+		if e != nil {
+			t.Fatal(e)
+		}
+		original, e := os.ReadFile(filepath.Join(reportSources[file.ReportID], file.Name))
+		if e != nil {
+			t.Fatal(e)
+		}
+		var assembled []byte
+		for _, chunk := range file.Chunks {
+			response := request(t, h, "GET", "/api/v1/files/"+record.ID+"/chunks/"+chunk.SHA256+"?revision="+revision, nil, nil)
+			if response.Code != 200 {
+				t.Fatal("original file chunk unavailable", response.Code, response.Body.String())
+			}
+			assembled = append(assembled, response.Body.Bytes()...)
+		}
+		if !bytes.Equal(assembled, original) || wire.Hash(original) != file.SHA256 {
+			t.Fatal("analytical file drift", file.Name)
+		}
+	}
+	t.Logf("preserved %d original analytical files through HTTP", len(files))
 	analysisFields := 0
 	for reportID, source := range analysisExpected {
 		record, e := s.Record(revision, "report", reportID)

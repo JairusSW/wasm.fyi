@@ -59,6 +59,8 @@ def export(directory):
             validate(value, "WireRecord", context)
             if value["kind"] == "result":
                 validate(value["data"], "ResultData", context)
+            elif value["kind"] == "report-file":
+                validate(value["data"], "ReportFile", context)
             elif value["kind"] == "report" and "analysisSections" in value["data"]:
                 validate(value["data"]["analysisSections"], "ReportAnalysisReferences", context)
         elif isinstance(value, dict):

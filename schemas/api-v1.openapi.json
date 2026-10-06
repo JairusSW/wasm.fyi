@@ -2281,6 +2281,207 @@
         },
         "description": "Uses producer-validated shard counts to skip unselected function pages. Legacy metadata uses a bounded counting fallback. Cursors bind revision, artifact and limit. Unavailable function attribution returns 404; this route performs no disassembly and reads no native bytes."
       }
+    },
+    "/api/v1/files": {
+      "get": {
+        "summary": "Read immutable report file descriptors",
+        "parameters": [
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 1,
+              "maximum": 1000
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded immutable report file metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/ReportFilePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Response400_1"
+          },
+          "404": {
+            "$ref": "#/components/responses/Response404_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/Response422_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/Response429_4"
+          }
+        }
+      }
+    },
+    "/api/v1/files/{id}": {
+      "get": {
+        "summary": "Read immutable report file descriptors",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./site-v2.schema.json#/$defs/Digest"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded immutable report file metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/ReportFileDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Response400_1"
+          },
+          "404": {
+            "$ref": "#/components/responses/Response404_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/Response422_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/Response429_4"
+          }
+        }
+      }
+    },
+    "/api/v1/files/{id}/chunks/{digest}": {
+      "get": {
+        "summary": "Download one original report-file chunk",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          {
+            "name": "digest",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Exact binary chunk, at most 1 MiB",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "File or chunk is not in this revision"
+          }
+        }
+      }
+    },
+    "/api/v1/reports/{id}/files": {
+      "get": {
+        "summary": "List at most eight files for one selected report",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded immutable report file metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/ReportFilePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Response400_1"
+          },
+          "404": {
+            "$ref": "#/components/responses/Response404_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/Response422_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/Response429_4"
+          }
+        }
+      }
     }
   },
   "components": {

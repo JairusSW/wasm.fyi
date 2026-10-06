@@ -89,6 +89,28 @@ func (s *Store) addRecordIndexBatch(ctx context.Context, rev *Revision, records 
 		}
 		digest := digests[key]
 		add(indexKey("catalog", r.Kind, ""), r.ID, digest)
+		if r.Kind == "report-file" {
+			file, e := wire.ReportFileData(r.Data)
+			if e != nil {
+				return e
+			}
+			set, e := s.indexGet(rev.Indexes, indexKey("report-files", file.ReportID, ""))
+			if e != nil {
+				return e
+			}
+			prior, e := s.mapGet(set.Root, file.Name)
+			if e != nil {
+				return e
+			}
+			if prior != "" && prior != digest {
+				return wire.Invalid("immutable report file collision")
+			}
+			fileKey := indexKey("report-files", file.ReportID, "")
+			if other := updates[fileKey][file.Name]; other != "" && other != digest {
+				return wire.Invalid("duplicate report file name")
+			}
+			add(fileKey, file.Name, digest)
+		}
 		if r.Kind != "result" {
 			continue
 		}

@@ -279,12 +279,14 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	if r.Method != "GET" {
+	path := strings.Trim(strings.TrimPrefix(r.URL.Path, "/api/v1/"), "/")
+	headParts := strings.Split(path, "/")
+	fileHead := r.Method == "HEAD" && len(headParts) == 4 && headParts[0] == "files" && headParts[2] == "chunks"
+	if r.Method != "GET" && !fileHead {
 		w.Header().Set("Allow", "GET")
 		w.WriteHeader(405)
 		return
 	}
-	path := strings.Trim(strings.TrimPrefix(r.URL.Path, "/api/v1/"), "/")
 	params, e := strictQuery(r.URL.RawQuery)
 	if e == nil {
 		e = routeQuery(path, params)
@@ -294,7 +296,7 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if path == "manifest" {
-		respond(w, r, 200, map[string]any{"schema": 2, "revision": a.Store.Current(), "selectionAliases": map[string]string{"s1": "current", "s2": "previous"}, "limits": map[string]int{"defaultResults": 100, "maxResults": 1000, "decodedResponseBytes": wire.ResponseBytes, "decodedChunkBytes": wire.ChunkBytes, "scanKeys": store.ScanLimit, "decodedEvidenceResourceBytes": wire.ResourceBytes, "maxEvidenceFragments": wire.ResourceFragments, "nativeFunctionShards": 4096, "nativeFunctions": 1000000, "cohortScopeBytes": 4096, "cohortComputations": 2, "resultComputations": 2, "resultCacheBytes": resultCacheBytes, "resultCacheEntries": resultCacheEntries, "cohortCells": 100000}, "endpoints": []string{"overview", "results", "reports", "metrics", "methods", "configurations", "environments", "workloads", "artifacts", "history", "aggregates", "cohorts", "sessions"}}, false)
+		respond(w, r, 200, map[string]any{"schema": 2, "revision": a.Store.Current(), "selectionAliases": map[string]string{"s1": "current", "s2": "previous"}, "limits": map[string]int{"defaultResults": 100, "maxResults": 1000, "decodedResponseBytes": wire.ResponseBytes, "decodedChunkBytes": wire.ChunkBytes, "scanKeys": store.ScanLimit, "decodedEvidenceResourceBytes": wire.ResourceBytes, "maxEvidenceFragments": wire.ResourceFragments, "nativeFunctionShards": 4096, "nativeFunctions": 1000000, "cohortScopeBytes": 4096, "cohortComputations": 2, "resultComputations": 2, "resultCacheBytes": resultCacheBytes, "resultCacheEntries": resultCacheEntries, "cohortCells": 100000, "reportFileChunkBytes": wire.ReportFileChunkBytes, "reportFileBytes": wire.ReportFileBytes}, "endpoints": []string{"overview", "results", "reports", "metrics", "methods", "configurations", "environments", "workloads", "artifacts", "history", "aggregates", "cohorts", "sessions", "files"}}, false)
 		return
 	}
 	if path == "overview" || path == "aggregates" || strings.HasPrefix(path, "cohorts/") {
@@ -327,6 +329,15 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	parts := strings.Split(path, "/")
+	if len(parts) == 3 && parts[0] == "reports" && parts[2] == "files" {
+		rows, e := a.Store.ReportFiles(r.Context(), revision, parts[1])
+		if e != nil {
+			problem(w, r, e)
+			return
+		}
+		respond(w, r, 200, map[string]any{"revision": revision, "items": rows, "nextCursor": "", "complete": true, "total": len(rows)}, immutable)
+		return
+	}
 	if len(parts) == 3 && parts[0] == "artifacts" && parts[2] == "functions" {
 		query := "artifact-functions:" + parts[1] + ":producer-order:" + strconv.Itoa(n)
 		if c.Revision != "" && (c.Revision != revision || c.Query != query) {
@@ -416,7 +427,29 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 		a.page(w, r, revision, "revisions:"+strconv.Itoa(n), ids, n, c, false)
 		return
 	}
-	kinds := map[string]string{"reports": "report", "metrics": "metric", "configurations": "configuration", "tracks": "track", "environments": "environment", "workloads": "workload", "artifacts": "artifact", "results": "result"}
+	kinds := map[string]string{"reports": "report", "metrics": "metric", "configurations": "configuration", "tracks": "track", "environments": "environment", "workloads": "workload", "artifacts": "artifact", "files": "report-file", "results": "result"}
+	if len(parts) == 4 && parts[0] == "files" && parts[2] == "chunks" {
+		for key, values := range params {
+			if key != "revision" || len(values) != 1 {
+				problem(w, r, wire.Invalid("unsupported file query"))
+				return
+			}
+		}
+		file, data, e := a.Store.ReportFileChunk(r.Context(), revision, parts[1], parts[3])
+		if e != nil {
+			problem(w, r, e)
+			return
+		}
+		w.Header().Set("Content-Type", "application/octet-stream")
+		w.Header().Set("Content-Disposition", `attachment; filename="`+file.Name+`.part"`)
+		w.Header().Set("ETag", `"`+parts[3]+`"`)
+		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+		w.Header().Set("Content-Length", strconv.Itoa(len(data)))
+		if r.Method != "HEAD" {
+			_, _ = w.Write(data)
+		}
+		return
+	}
 	if kind, ok := kinds[parts[0]]; ok && len(parts) >= 2 {
 		record, e := a.Store.Record(revision, kind, parts[1])
 		if e != nil {

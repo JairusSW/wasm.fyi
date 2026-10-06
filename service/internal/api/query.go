@@ -48,6 +48,12 @@ func allowedQuery(values url.Values, keys ...string) error {
 }
 func routeQuery(path string, values url.Values) error {
 	parts := strings.Split(path, "/")
+	if len(parts) == 4 && parts[0] == "files" && parts[2] == "chunks" {
+		if !wire.IsHash(parts[1]) || !wire.IsHash(parts[3]) {
+			return wire.Invalid("invalid file identity")
+		}
+		return allowedQuery(values, "revision")
+	}
 	if len(parts) == 2 && parts[0] == "methods" {
 		if !wire.IsHash(parts[1]) || !wire.IsHash(values.Get("definition")) {
 			return wire.Invalid("exact definition and method digests required")
@@ -90,6 +96,12 @@ func routeQuery(path string, values url.Values) error {
 		}
 		if parts[0] == "revisions" {
 			return allowedQuery(values)
+		}
+		return allowedQuery(values, "revision")
+	}
+	if len(parts) == 3 && parts[0] == "reports" && parts[2] == "files" {
+		if !wire.IsHash(parts[1]) {
+			return wire.Invalid("invalid report identity")
 		}
 		return allowedQuery(values, "revision")
 	}

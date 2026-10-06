@@ -140,6 +140,24 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 		if e := read(id, &r); e != nil {
 			return e
 		}
+		if r.Kind == "report-file" {
+			if wire.Hash(r.Data) != r.ID {
+				return wire.Invalid("report file identity differs")
+			}
+			file, e := wire.ReportFileData(r.Data)
+			if e != nil {
+				return e
+			}
+			if e = wire.VerifyReportFile(file, func(chunk wire.FileChunk) ([]byte, error) {
+				b, e := s.objectRepresentation(wire.Object{SHA256: chunk.SHA256, Bytes: chunk.Bytes, Kind: "binary"})
+				if e == nil {
+					marked[chunk.SHA256] = true
+				}
+				return b, e
+			}); e != nil {
+				return e
+			}
+		}
 		if r.Kind == "artifact" {
 			artifact, e := wire.ArtifactData(r.Data)
 			if e != nil {
@@ -223,6 +241,24 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 			return e
 		}
 		switch tuple[0] {
+		case "report-files":
+			if set.Count > 8 {
+				return ErrLimit
+			}
+			return markMap(set.Root, "posting-report-file", func(name, id string) error {
+				var record wire.Record
+				if e := read(id, &record); e != nil {
+					return e
+				}
+				file, e := wire.ReportFileData(record.Data)
+				if e != nil {
+					return e
+				}
+				if record.Kind != "report-file" || file.Name != name || file.ReportID != tuple[1] {
+					return wire.Invalid("report file posting differs")
+				}
+				return markRecord("", id)
+			})
 		case "catalog", "methods":
 			return markMap(set.Root, "posting-record", markRecord)
 		case "history-month":

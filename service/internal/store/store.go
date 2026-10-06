@@ -474,7 +474,7 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 				return "", wire.Invalid("artifact descriptor exceeds budget")
 			}
 			switch r.Kind {
-			case "environment", "configuration", "track", "workload", "metric", "result", "artifact":
+			case "environment", "configuration", "track", "workload", "metric", "result", "artifact", "report-file":
 				if wire.Hash(r.Data) != r.ID {
 					return "", wire.Invalid("record identity mismatch")
 				}
@@ -644,6 +644,30 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 			return "", err
 		}
 
+	}
+	for _, record := range records {
+		if record.Kind != "report-file" {
+			continue
+		}
+		file, err := wire.ReportFileData(record.Data)
+		if err != nil {
+			return "", err
+		}
+		if _, ok := records["report:"+file.ReportID]; !ok {
+			return "", wire.Invalid("unresolved report file source")
+		}
+		if err = wire.VerifyReportFile(file, func(chunk wire.FileChunk) ([]byte, error) {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+			object, ok := binaries[chunk.SHA256]
+			if !ok || object.Bytes != chunk.Bytes {
+				return nil, wire.Invalid("undeclared report file chunk")
+			}
+			return s.objectRepresentation(object)
+		}); err != nil {
+			return "", err
+		}
 	}
 	// Evidence chunks may reference only declared evidence objects; never paths.
 	for id := range evidence {
