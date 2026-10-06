@@ -424,3 +424,30 @@ public/publisher rates and bursts and `--max-request-clients`; invalid limits fa
 startup. Tests cover bursts/refill, port/address normalization, state capacity,
 idle reclamation, forwarding-header attempts, separate publication budgets and
 reserved publisher capacity. The real coordinator/resume workflow remains passing.
+
+## Backend application hosting
+
+`wasmfyi serve --frontend DIR` optionally serves a fixed root-path application
+build through the API's existing request budgets, concurrency admission and store
+shutdown leases. Startup loads the regular, nonsymlink `404.html` application shell
+(2 MiB maximum). Known top-level and proposal routes use that shell; measured
+workload routes resolve through immutable revision postings without decoding
+results or the global catalog. New data therefore does not select stale
+prerendered measurement HTML. Unknown workload routes and missing assets return
+404; lookup failures return 503. Legacy unindexed dataset generations require
+indexed republication before workload routing.
+
+Static assets use an `os.Root`-confined directory with ancestor symlink rejection,
+regular-file/inode checks, a 64 MiB file ceiling and no directory listing or HTML
+fallthrough. `_app/immutable` assets have immutable caching; application shell and
+other files revalidate. GET/HEAD, conditional shell requests and selected static
+ranges use standard HTTP serving. API/admin namespaces retain their API routing.
+The build directory must stay immutable during service lifetime.
+
+Tests cover routes containing spaces and nested workload names, new known routes,
+missing assets/workloads, traversal, symlink files/directories/shells, stale HTML,
+method/HEAD/cache behavior, reserved namespaces and shared rate admission. This is
+backend hosting evidence only: current Svelte components still load the bundled
+snapshot and do not yet resolve newly imported workloads through the API. Crawler
+reference pages, lazy client rendering and production cutover remain separate
+acceptance gates.

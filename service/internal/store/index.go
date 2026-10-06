@@ -152,3 +152,23 @@ func (s *Store) addRecordIndexes(rev *Revision, r wire.Record, digest string) er
 	}
 	return nil
 }
+
+// HasMeasuredWorkload resolves a logical workload through the revision's
+// persisted postings, without loading the catalog or any measurement records.
+func (s *Store) HasMeasuredWorkload(ctx context.Context, revision, workload string) (bool, error) {
+	if e := ctx.Err(); e != nil {
+		return false, e
+	}
+	if workload == "" || len(workload) > 4096 {
+		return false, nil
+	}
+	rev, e := s.Revision(revision)
+	if e != nil {
+		return false, e
+	}
+	if rev.Indexes == "" {
+		return false, ErrLimit // Legacy generations need indexed republication.
+	}
+	set, e := s.indexGet(rev.Indexes, indexKey("cells", "workload", workload))
+	return set.Count > 0, e
+}

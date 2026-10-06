@@ -26,12 +26,19 @@ type API struct {
 	CursorKey []byte
 	active    chan struct{}
 	limiter   *requestLimiter
+	frontend  http.Handler
 }
 
 func New(s *store.Store, token string, key []byte) (http.Handler, error) {
 	return NewWithRequestLimits(s, token, key, DefaultRequestLimits())
 }
 func NewWithRequestLimits(s *store.Store, token string, key []byte, limits RequestLimits) (http.Handler, error) {
+	return NewWithFrontend(s, token, key, limits, nil)
+}
+
+// NewWithFrontend keeps static requests under the same bounded admission and
+// shutdown leases as API requests. A nil frontend retains API-only behavior.
+func NewWithFrontend(s *store.Store, token string, key []byte, limits RequestLimits, frontend http.Handler) (http.Handler, error) {
 	if !limits.valid() {
 		return nil, fmt.Errorf("invalid request limits")
 	}
@@ -39,7 +46,7 @@ func NewWithRequestLimits(s *store.Store, token string, key []byte, limits Reque
 	if len(token) < 32 || len(key) < 32 {
 		return nil, fmt.Errorf("admin token and at least 32 cursor-key bytes required")
 	}
-	a := &API{Store: s, Token: token, CursorKey: key, active: make(chan struct{}, 8), limiter: newRequestLimiter(limits)}
+	a := &API{Store: s, Token: token, CursorKey: key, active: make(chan struct{}, 8), limiter: newRequestLimiter(limits), frontend: frontend}
 	return http.HandlerFunc(a.serve), nil
 }
 
@@ -250,6 +257,10 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !strings.HasPrefix(r.URL.Path, "/api/v1/") {
+		if a.frontend != nil && !strings.HasPrefix(r.URL.Path, "/api/") && !strings.HasPrefix(r.URL.Path, "/admin/") && r.URL.Path != "/api" && r.URL.Path != "/admin" {
+			a.frontend.ServeHTTP(w, r)
+			return
+		}
 		http.NotFound(w, r)
 		return
 	}

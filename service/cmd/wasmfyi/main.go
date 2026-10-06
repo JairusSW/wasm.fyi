@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/JairusSW/wasm.fyi/service/internal/api"
+	"github.com/JairusSW/wasm.fyi/service/internal/frontend"
 	"github.com/JairusSW/wasm.fyi/service/internal/store"
 )
 
@@ -30,6 +31,7 @@ func run(ctx context.Context, args []string) error {
 	flags := flag.NewFlagSet("wasmfyi "+action, flag.ContinueOnError)
 	root := flags.String("data", ".wasmfyi", "private Pebble and content directory")
 	addr := flags.String("listen", "127.0.0.1:8090", "HTTP listen address")
+	frontendDirectory := flags.String("frontend", "", "optional fixed static build directory with 404.html application shell")
 	publisher := flags.String("publisher", "local-coordinator", "authenticated publisher identity")
 	output := flags.String("output", "", "new backup/restore/rebuild destination")
 	apply := flags.Bool("apply", false, "apply orphan quarantine/cleanup; gc defaults to preview")
@@ -113,7 +115,21 @@ func run(ctx context.Context, args []string) error {
 	if e != nil {
 		return e
 	}
-	handler, e := api.NewWithRequestLimits(s, token, cursorKey, requestLimits)
+	var static http.Handler
+	if *frontendDirectory != "" {
+		host, e := frontend.Open(*frontendDirectory, func(ctx context.Context, workload string) (bool, error) {
+			if s.Current() == "" {
+				return false, nil
+			}
+			return s.HasMeasuredWorkload(ctx, "", workload)
+		})
+		if e != nil {
+			return e
+		}
+		defer host.Close()
+		static = host
+	}
+	handler, e := api.NewWithFrontend(s, token, cursorKey, requestLimits, static)
 	if e != nil {
 		return e
 	}
