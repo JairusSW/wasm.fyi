@@ -5,6 +5,7 @@
 	import Swatch from '../Swatch.svelte';
 
 	let { onmetric, onoverview }: { onmetric: (m: MetricKey) => void; onoverview: (group: OvKey) => void } = $props();
+	let expanded = $state(false);
 
 	const rankingNote = 'Places rank measured means; overlapping uncertainty does not establish a clear lead.';
 	const leaders = $derived([
@@ -16,7 +17,8 @@
 	]);
 </script>
 
-<div class="tiles leaders">
+<div class="leader-panel">
+<div class="tiles leaders" id="benchmark-leader-results">
 	{#each leaders as l (l.label)}
 		<button
 			class="leader hoverbg"
@@ -36,9 +38,9 @@
 						</span>
 					</span>
 					<span class="places" aria-label="Next places by measured mean">
-						{#each l.places.slice(1, 3) as p (p.cfg.id)}
+						{#each l.places.slice(1, expanded ? undefined : 3) as p (p.cfg.id)}
 							<span class="place" title={`${p.cfg.rt} ${p.cfg.be} · ${p.value}`}>
-								<span class="mono small fg3">{p.place === 2 ? '2nd' : '3rd'}</span>
+								<span class="mono small fg3">{p.place === 2 ? '2nd' : p.place === 3 ? '3rd' : `${p.place}th`}</span>
 								<span class="entrant"><span class="who small"><Swatch color={p.cfg.col} bg={p.cfg.hollow ? 'transparent' : p.cfg.col} size={6} /><span>{p.cfg.rt}</span></span><span class="mono micro fg3 backend">{p.cfg.be}</span></span>
 								<span class="mono small result-value">{p.value}</span>
 							</span>
@@ -52,8 +54,28 @@
 		</button>
 	{/each}
 </div>
+<button class="expand-bar hoverbg small" aria-expanded={expanded} aria-controls="benchmark-leader-results" onclick={() => expanded = !expanded}>
+	{expanded ? 'Show top three' : 'Show all results'} <span aria-hidden="true">{expanded ? '▴' : '▾'}</span>
+</button>
+</div>
 
 <style>
+	.leader-panel {
+		min-width: 0;
+	}
+	.expand-bar {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 7px;
+		width: 100%;
+		padding: 5px 14px;
+		border: 1px solid var(--line);
+		border-top: 0;
+		border-radius: 0 0 4px 4px;
+		background: var(--bg2);
+		color: var(--fg3);
+	}
 	.leaders {
 		grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
 	}
