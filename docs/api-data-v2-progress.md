@@ -1702,3 +1702,39 @@ API binary SHA-256:
 Docker is still unavailable locally, but these selected native Linux execution
 gates are now qualified on the separate host. Production isolation/proxy/device
 failure and actual CI remain distinct unfinished requirements.
+
+## Real-evidence macOS to Linux portable recovery
+
+Two frozen, producer-verified portable bundles now pass source-independent
+recovery on native Linux x86_64 from macOS arm64 exports. The Wasmer native-size
+bundle preserves all 1,458 result rows and 1,458 history rows across 15 pages each,
+including exact totals, values, revision and signed cursors. The Wasmer call bundle
+preserves four result/history rows plus all seven original resources totaling
+48,910,768 bytes, including the sealed archive; original HTTP downloads match
+frozen SHA-256 and byte counts after restore and DB-free rebuild. Both runners
+finish with exit zero, graceful shutdown and backup verification checks.
+
+Only the current static serving binary, retained runner and 116,858,880-byte
+portable transfer archive were sent. SHA-256 verification preceded unpacking.
+No source-report/fixture directories or producer executable were transferred;
+the supplied fixture path was explicitly nonexistent. Execution used one CPU
+with low priority on the existing Linux host and ordinary filesystem-backed
+isolated data roots. Associations remain synthetic session/job metadata, with no
+benchmark execution or operator qualification claim.
+
+Strict backup verification initially rejected macOS AppleDouble transfer metadata
+as unlisted files. A fresh transport staging directory excluded those exact
+metadata entries; the backup verifier and its complete inventories were unchanged.
+The failed staging/logs remain retained. Clean recovery logs/results are under
+`/tmp/wasmfyi-real-crosshost-20261006-_tfb0gie/` on the Linux host.
+Transfer archive SHA-256:
+`80c3f03962b3c28fda1325c1a9d1da17be9470053c74805af57fe068a7785454`;
+serving binary SHA-256:
+`ed5691ac05ac4f5edfdc072d9591c34b9c87f9409890c1dfd24111e0fe889f41`;
+runner SHA-256:
+`8588e34870a3a31db22256b68e96f9f7957305e12d699396db8cf53a3897a024`.
+
+These gates establish selected real-evidence cross-architecture portable recovery.
+They do not establish physical power-loss/device-failure durability, production
+backup/restore operations, wider retention scale or actual remote CI. The larger
+Wasmtime function-export scientific/serving parity gate remains active separately.
