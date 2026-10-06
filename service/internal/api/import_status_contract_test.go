@@ -53,6 +53,13 @@ func TestImportStatusHTTPContractsAndCancellation(t *testing.T) {
 	if w.Code != 503 || check("staged").Missing == 0 {
 		t.Fatal("canceled status ignored or changed import", w.Code)
 	}
+	req = httptest.NewRequest("POST", path+"/abort", nil).WithContext(ctx)
+	req.Header.Set("Authorization", "Bearer "+a.Token)
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Code != 503 || check("staged").Missing == 0 {
+		t.Fatal("canceled abort ignored or changed import", w.Code)
+	}
 	for hash, data := range objects {
 		if err := a.Store.Install(hash, bytes.NewReader(data)); err != nil {
 			t.Fatal(err)

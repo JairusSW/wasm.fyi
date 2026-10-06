@@ -4,15 +4,37 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/JairusSW/wasm.fyi/service/internal/store"
 	"github.com/JairusSW/wasm.fyi/service/internal/wire"
 )
+
+// Real fixture qualification preserves production admission. A selected read
+// can retry a bounded rate-limit response without changing its revision/cursor.
+func realFixtureGET(t *testing.T, h http.Handler, path string) *httptest.ResponseRecorder {
+	t.Helper()
+	for retries := 0; retries < 4; retries++ {
+		response := request(t, h, "GET", path, nil, nil)
+		if response.Code != http.StatusTooManyRequests {
+			return response
+		}
+		delay, err := strconv.Atoi(response.Header().Get("Retry-After"))
+		if err != nil || delay < 1 || delay > 30 {
+			t.Fatal("invalid real-fixture Retry-After", response.Header())
+		}
+		time.Sleep(time.Duration(delay) * time.Second)
+	}
+	t.Fatal("real-fixture rate-limit retries exhausted")
+	return nil
+}
 
 // Read archive records one at a time; retain only first/middle/last attributed
 // function paths per image. Text is loaded only for each selected comparison.
@@ -146,7 +168,7 @@ func verifyRealDisassembly(t *testing.T, s *store.Store, h http.Handler, revisio
 				if cursor != "" {
 					path += "&cursor=" + url.QueryEscape(cursor)
 				}
-				response := request(t, h, "GET", path, nil, nil)
+				response := realFixtureGET(t, h, path)
 				if response.Code != 200 || response.Body.Len() > wire.ResponseBytes {
 					t.Fatal("real disassembly HTTP", response.Code, response.Body.Len())
 				}
@@ -187,6 +209,9 @@ func verifyRealDisassembly(t *testing.T, s *store.Store, h http.Handler, revisio
 				t.Fatal("original LLVM diagnostic changed")
 			}
 			functions++
+		}
+		if images%25 == 0 {
+			t.Logf("verified real disassembly images=%d selected-functions=%d", images, functions)
 		}
 	}
 	if images != len(expected) {

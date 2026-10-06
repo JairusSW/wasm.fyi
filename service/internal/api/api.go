@@ -1084,7 +1084,7 @@ func (a *API) admin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(parts) == 3 && parts[0] == "imports" && parts[2] == "abort" && r.Method == "POST" {
-		if e := a.Store.Abort(parts[1]); e != nil {
+		if e := a.Store.AbortContext(r.Context(), parts[1]); e != nil {
 			problem(w, r, e)
 			return
 		}

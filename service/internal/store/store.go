@@ -1022,7 +1022,7 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 	rb, _ := wire.Encode(rev)
 	batch := s.db.NewBatch()
 	defer batch.Close()
-	if e = s.releaseImport(batch, id, j); e != nil {
+	if e = s.releaseImportContext(ctx, batch, id); e != nil {
 		return "", e
 	}
 	for _, pair := range []struct{ k, v []byte }{{key("revision", revID), rb}, {key("accepted", id), []byte(revID)}, {key("current"), []byte(revID)}} {

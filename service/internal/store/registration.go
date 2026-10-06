@@ -203,7 +203,7 @@ func (s *Store) AbortPlan(ctx context.Context, id string) error {
 	}
 	batch := s.db.NewBatch()
 	defer batch.Close()
-	if e = s.releaseImport(batch, id, wire.Job{}); e != nil {
+	if e = s.releaseImportContext(ctx, batch, id); e != nil {
 		return e
 	}
 	if e = batch.Set(key("plan-aborted", id), []byte{1}, nil); e != nil {
@@ -309,10 +309,13 @@ func (s *Store) CommitPlan(ctx context.Context, id string) (string, error) {
 	}
 	batch := s.db.NewBatch()
 	defer batch.Close()
-	if e = s.releaseImport(batch, id, wire.Job{}); e != nil {
+	if e = s.releaseImportContext(ctx, batch, id); e != nil {
 		return "", e
 	}
 	if e = batch.Set(key("registrations"), []byte(root), nil); e != nil {
+		return "", e
+	}
+	if e = ctx.Err(); e != nil {
 		return "", e
 	}
 	if e = batch.Commit(pebble.Sync); e != nil {

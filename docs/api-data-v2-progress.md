@@ -1834,3 +1834,36 @@ updated. Selected race tests, nine typed HTTP captures and all 24 negative
 contract tests pass. Existing paged-inventory admission/recovery, pending-byte
 quota/partial-backup and admission checks also pass under race detection; vet
 and generated-type consistency pass.
+
+## Real publication completed; admission-aware serving qualification
+
+The retained Wasmtime retry published revision
+`2d98875001055a48dae19ba3097133f0b93760114f4b323306f48e6c3f6531af`
+from all 130,166 payloads. The race parity process then exited at 685.14 seconds
+with HTTP 429 in its first selected disassembly burst. This proves publication
+completed, not the remaining scientific/serving assertions. It does not qualify
+the production five-minute commit budget: race instrumentation and already
+installed fixture content differ from a production HTTP import.
+
+A one-second live sample, symbolized against the exact running Go binary, found
+`releaseImport` → Pebble point reads and race-only iterator stack recording.
+Admission release lacked caller cancellation between permit reads. It now uses
+a prefix-bounded iterator and checks context before release, per owner row and
+before the final range deletion. Commit, import abort and plan commit/abort pass
+their contexts; import abort also acquires publication ownership cancelably.
+Plan commit checks cancellation again before its synchronous batch. Portable
+rebuild retains its context-free compatibility path.
+
+A deterministic cancellation after preparing candidate permit removals leaves
+quota, owner/shared permits, pending state and public revision untouched. A
+canceled abort also leaves no abort marker; ordinary retry decrements only its
+share. Existing admission/shared-grant/plan-abort race gates pass. Selected actual publication and plan process-crash cases also pass under race
+detection, along with HTTP canceled-abort behavior and vet.
+
+The real fixture GET helper now honors bounded `Retry-After` responses while
+retaining production rate admission, exact revision and cursor scope. It has a
+four-request ceiling per read and rejects malformed/excessive retry delays.
+The terminal failed process was resumed against the now-published store; missing
+objects, idempotent publication and all original scientific/text assertions are
+still checked. Selected image progress is logged every 25 images. Final real
+qualification remains pending.

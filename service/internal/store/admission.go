@@ -121,6 +121,13 @@ func (s *Store) reserveImport(batch *pebble.Batch, id string, j wire.Job) error 
 	return nil
 }
 func (s *Store) releaseImport(batch *pebble.Batch, id string, j wire.Job) error {
+	return s.releaseImportContext(context.Background(), batch, id)
+}
+
+func (s *Store) releaseImportContext(ctx context.Context, batch *pebble.Batch, id string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	b, e := s.get(key("pending", id))
 	if errors.Is(e, pebble.ErrNotFound) {
 		return nil
@@ -148,12 +155,15 @@ func (s *Store) releaseImport(batch *pebble.Batch, id string, j wire.Job) error 
 		return e
 	}
 	prefix := key("permit-owner", id)
-	it, e := s.db.NewIter(nil)
+	it, e := s.db.NewIter(&pebble.IterOptions{LowerBound: prefix, UpperBound: append(append([]byte(nil), prefix...), 255)})
 	if e != nil {
 		return e
 	}
 	defer it.Close()
 	for it.SeekGE(prefix); it.Valid() && bytes.HasPrefix(it.Key(), prefix); it.Next() {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		var object wire.Object
 		if e = wire.Decode(it.Value(), &object); e != nil {
 			return e
@@ -185,6 +195,9 @@ func (s *Store) releaseImport(batch *pebble.Batch, id string, j wire.Job) error 
 	}
 	if e = it.Error(); e != nil {
 		return e
+	}
+	if err := ctx.Err(); err != nil {
+		return err
 	}
 	expanded := key("expanded", id)
 	return batch.DeleteRange(expanded, append(append([]byte(nil), expanded...), 255), nil)
@@ -228,12 +241,18 @@ func (s *Store) InstallDeclared(id string, r io.Reader) error {
 	return s.installBytes(id, data)
 }
 func (s *Store) Abort(id string) error {
-	s.publish.Lock()
+	return s.AbortContext(context.Background(), id)
+}
+
+func (s *Store) AbortContext(ctx context.Context, id string) error {
+	if err := s.publish.LockContext(ctx); err != nil {
+		return err
+	}
 	defer s.publish.Unlock()
 	if s.poisoned.Load() {
 		return ErrNeedsRestart
 	}
-	j, e := s.Job(id)
+	_, e := s.Job(id)
 	if e != nil {
 		return e
 	}
@@ -244,11 +263,14 @@ func (s *Store) Abort(id string) error {
 	}
 	batch := s.db.NewBatch()
 	defer batch.Close()
-	if e = s.releaseImport(batch, id, j); e != nil {
+	if e = s.releaseImportContext(ctx, batch, id); e != nil {
 		return e
 	}
 	if e = batch.Set(key("aborted", id), []byte("operator-aborted"), nil); e != nil {
 		return e
+	}
+	if err := ctx.Err(); err != nil {
+		return err
 	}
 	if e = batch.Commit(pebble.Sync); e != nil {
 		s.poisoned.Store(true)

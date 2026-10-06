@@ -815,3 +815,10 @@ installed and attached. Pending inventories make `missingComplete` false, so
 the returned missing count is not a complete evidence census until discovery
 finishes. Plan discovery returns at most 16 chunks. These responses have explicit
 OpenAPI schemas, generated types and captured HTTP contract checks.
+
+Publication permit release observes caller cancellation between owner records.
+Canceled candidate batches do not release quotas or shared upload permissions.
+Import abort acquires publication ownership cancelably and preserves pending
+state on cancellation; plan commit/abort use the same release checks. A final
+context check precedes synchronous publication. Kernel filesystem/database
+syscalls already in progress still have their existing interruption limits.
