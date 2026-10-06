@@ -152,8 +152,15 @@ it('anchors relative history to each machine first measured point while retainin
   expect(h.points[i].status).toBe('measured');
   expect(h.points.slice(0,i).every(p=>p.status!=='measured')).toBe(true);
  }
- expect(viewData.history.m1.points[historyPin('m1')].date).toBe('2026-04-05');
- expect(viewData.history.m2.points[historyPin('m2')].date).toBe('2026-04-05');
+ const h=viewData.history.m1,original=h.points;
+ try{
+  const measured=original[historyPin('m1')];
+  h.points=[{...measured,date:'2025-10-04',status:'not-collected'},{...measured,date:'2025-10-11'},{...measured,date:'2025-10-18'}];
+  expect(historyPin('m1')).toBe(1);
+  h.points.unshift({...measured,date:'2025-09-27'});
+  expect(historyPin('m1')).toBe(0);
+  expect(h.points[historyPin('m1')].date).toBe('2025-09-27');
+ }finally{h.points=original;}
 });
 
 
