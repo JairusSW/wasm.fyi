@@ -3,6 +3,7 @@ package store
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -55,5 +56,24 @@ func TestFreshNativeProducerContract(t *testing.T) {
 	}
 	if _, err = s.ArtifactEvidence(context.Background(), revision, rows[0].ID, descriptor.Inspection.Metadata); err != nil {
 		t.Fatal("producer metadata inaccessible", err)
+	}
+	results, err := s.Results(Query{Revision: revision}, false)
+	if err != nil || len(results) == 0 {
+		t.Fatal(err)
+	}
+	for _, record := range results {
+		var result wire.Result
+		if err = wire.Decode(record.Data, &result); err != nil || result.MeasurementMethod == nil || result.ValidateMethod() != nil {
+			t.Fatal("fresh producer method incompatible", err)
+		}
+		selected, err := s.Results(Query{Revision: revision, Method: result.MeasurementMethodID}, false)
+		if err != nil || len(selected) != 1 || selected[0].ID != record.ID {
+			t.Fatal("producer method filter lost scope", err)
+		}
+		// Recipes remain source metadata; this boundary does not infer collectors.
+		var recipe map[string]json.RawMessage
+		if result.MeasurementMethod.Status == "available" && json.Unmarshal(result.MeasurementMethod.Recipe, &recipe) != nil {
+			t.Fatal("recipe changed")
+		}
 	}
 }

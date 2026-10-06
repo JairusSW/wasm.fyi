@@ -22,6 +22,7 @@ type Query struct {
 	Runtime       string `json:"runtime,omitempty"`
 	Track         string `json:"track,omitempty"`
 	Definition    string `json:"definition,omitempty"`
+	Method        string `json:"method,omitempty"`
 	Configuration string `json:"configuration,omitempty"`
 	Contract      string `json:"contract,omitempty"`
 	Workload      string `json:"workload,omitempty"`
@@ -34,6 +35,9 @@ type Query struct {
 }
 
 func (q Query) Matches(r wire.Result) bool {
+	if q.Method != "" && (r.MeasurementMethod == nil || r.MeasurementMethod.ID() != q.Method) {
+		return false
+	}
 	return (q.Environment == "" || q.Environment == r.EnvironmentID) && (q.Runtime == "" || q.Runtime == r.Runtime) && (q.Configuration == "" || q.Configuration == r.ConfigurationID) && (q.Contract == "" || q.Contract == r.ContractID) && (q.Workload == "" || q.Workload == r.Workload) && (q.Metric == "" || q.Metric == r.Metric) && (q.Scenario == "" || q.Scenario == r.Scenario) && (q.Profile == "" || q.Profile == r.Profile) && (q.Statistic == "" || q.Statistic == r.Statistic) && (q.Track == "" || q.Track == r.TrackID) && (q.Definition == "" || q.Definition == r.MetricDefinitionID)
 }
 

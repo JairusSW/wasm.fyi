@@ -28,7 +28,7 @@ func strictQuery(raw string) (url.Values, error) {
 				return nil, wire.Invalid("empty scope parameter")
 			}
 		}
-		if (key == "revision" || key == "chunk") && !wire.IsHash(list[0]) {
+		if (key == "revision" || key == "chunk" || key == "method") && !wire.IsHash(list[0]) {
 			return nil, wire.Invalid("invalid query digest")
 		}
 	}
@@ -52,7 +52,7 @@ func routeQuery(path string, values url.Values) error {
 		return allowedQuery(values)
 	}
 	if path == "results" || path == "history" {
-		return allowedQuery(values, "revision", "selection", "environment", "runtime", "track", "definition", "configuration", "contract", "workload", "metric", "scenario", "profile", "statistic", "sort", "limit", "cursor")
+		return allowedQuery(values, "revision", "selection", "environment", "runtime", "track", "definition", "method", "configuration", "contract", "workload", "metric", "scenario", "profile", "statistic", "sort", "limit", "cursor")
 	}
 	if len(parts) == 1 {
 		return allowedQuery(values, "revision", "limit", "cursor")

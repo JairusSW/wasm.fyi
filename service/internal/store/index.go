@@ -54,10 +54,14 @@ func (s *Store) indexAdd(directory, k, entry, value string) (string, error) {
 	return s.mapSet(directory, k, id, 0)
 }
 func dimensions(v wire.Result) map[string]string {
-	return map[string]string{"environment": v.EnvironmentID, "runtime": v.Runtime, "track": v.TrackID, "configuration": v.ConfigurationID, "contract": v.ContractID, "workload": v.Workload, "metric": v.Metric, "definition": v.MetricDefinitionID, "scenario": v.Scenario, "profile": v.Profile, "statistic": v.Statistic}
+	method := ""
+	if v.MeasurementMethod != nil {
+		method = v.MeasurementMethod.ID()
+	}
+	return map[string]string{"environment": v.EnvironmentID, "runtime": v.Runtime, "track": v.TrackID, "configuration": v.ConfigurationID, "contract": v.ContractID, "workload": v.Workload, "metric": v.Metric, "definition": v.MetricDefinitionID, "method": method, "scenario": v.Scenario, "profile": v.Profile, "statistic": v.Statistic}
 }
 func filters(q Query) map[string]string {
-	return map[string]string{"environment": q.Environment, "runtime": q.Runtime, "track": q.Track, "configuration": q.Configuration, "contract": q.Contract, "workload": q.Workload, "metric": q.Metric, "definition": q.Definition, "scenario": q.Scenario, "profile": q.Profile, "statistic": q.Statistic}
+	return map[string]string{"environment": q.Environment, "runtime": q.Runtime, "track": q.Track, "configuration": q.Configuration, "contract": q.Contract, "workload": q.Workload, "metric": q.Metric, "definition": q.Definition, "method": q.Method, "scenario": q.Scenario, "profile": q.Profile, "statistic": q.Statistic}
 }
 
 // Match against the smallest persisted posting set. Unrelated records do not
@@ -145,6 +149,9 @@ func (s *Store) addRecordIndexes(rev *Revision, r wire.Record, digest string) er
 		return e
 	}
 	for dimension, value := range dimensions(v) {
+		if dimension == "method" && value == "" {
+			continue
+		}
 		rev.Indexes, e = s.indexAdd(rev.Indexes, indexKey("cells", dimension, value), v.Cell(), v.Cell())
 		if e != nil {
 			return e

@@ -178,6 +178,9 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 			if e := wire.Decode(r.Data, &v); e != nil {
 				return e
 			}
+			if e := v.ValidateMethod(); e != nil {
+				return e
+			}
 			for _, ref := range v.Evidence {
 				if e := markEvidence(ref); e != nil {
 					return e

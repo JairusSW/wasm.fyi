@@ -148,6 +148,16 @@
               "type": "string"
             },
             "required": false
+          },
+          {
+            "name": "method",
+            "in": "query",
+            "required": false,
+            "description": "Exact producer-owned measurement method digest. Legacy results without a descriptor do not match.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
           }
         ],
         "responses": {
@@ -717,6 +727,16 @@
               "type": "string"
             },
             "required": false
+          },
+          {
+            "name": "method",
+            "in": "query",
+            "required": false,
+            "description": "Exact producer-owned measurement method digest. Legacy results without a descriptor do not match.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
           }
         ],
         "responses": {

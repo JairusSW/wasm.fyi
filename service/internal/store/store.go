@@ -519,6 +519,9 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 		if v.Runtime == "" || v.Workload == "" || v.Scenario == "" || v.Profile == "" || v.Metric == "" || v.Statistic == "" || v.AnalysisVersion == "" || v.Created.IsZero() || len(v.Summary) == 0 {
 			return "", wire.Invalid("incomplete result identity")
 		}
+		if e = v.ValidateMethod(); e != nil {
+			return "", e
+		}
 		for _, k := range []string{"report:" + v.ReportID, "environment:" + v.EnvironmentID, "configuration:" + v.ConfigurationID, "workload:" + v.ContractID, "track:" + v.TrackID, "metric:" + v.MetricDefinitionID} {
 			if _, ok := records[k]; !ok {
 				return "", wire.Invalid("unresolved result reference")

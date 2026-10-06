@@ -21,6 +21,10 @@ func observationID(record wire.Record) (string, error) {
 	}
 	delete(summary, "artifactId")
 	value.Evidence = nil
+	// A bounded selector extracted from the same sealed report enriches its
+	// representation; it does not create another independent measurement.
+	value.MeasurementMethod = nil
+	value.MeasurementMethodID = ""
 	value.Summary, _ = wire.Encode(summary)
 	b, err := wire.Encode(value)
 	if err != nil {
@@ -37,6 +41,9 @@ func (s *Store) representationRank(revision Revision, record wire.Record) (int, 
 	rank := 0
 	if len(value.Evidence) > 0 {
 		rank = 1
+	}
+	if value.MeasurementMethod != nil && value.MeasurementMethod.Status == "available" {
+		rank++
 	}
 	var summary struct {
 		Artifact string `json:"artifactId"`

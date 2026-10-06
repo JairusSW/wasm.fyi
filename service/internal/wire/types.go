@@ -247,23 +247,25 @@ type Record struct {
 	Data json.RawMessage `json:"data"`
 }
 type Result struct {
-	ReportID               string          `json:"reportId"`
-	EnvironmentID          string          `json:"environmentId"`
-	ConfigurationID        string          `json:"configurationId"`
-	TrackID                string          `json:"trackId"`
-	MetricDefinitionID     string          `json:"metricDefinitionId"`
-	MetricDefinitionStatus string          `json:"metricDefinitionStatus"`
-	Runtime                string          `json:"runtime"`
-	ContractID             string          `json:"contractId"`
-	Workload               string          `json:"workload"`
-	Scenario               string          `json:"scenario"`
-	Profile                string          `json:"profile"`
-	Metric                 string          `json:"metric"`
-	Statistic              string          `json:"statistic"`
-	Created                time.Time       `json:"created"`
-	AnalysisVersion        string          `json:"analysisVersion"`
-	Summary                json.RawMessage `json:"summary"`
-	Evidence               []string        `json:"evidence"`
+	ReportID               string             `json:"reportId"`
+	EnvironmentID          string             `json:"environmentId"`
+	ConfigurationID        string             `json:"configurationId"`
+	TrackID                string             `json:"trackId"`
+	MetricDefinitionID     string             `json:"metricDefinitionId"`
+	MetricDefinitionStatus string             `json:"metricDefinitionStatus"`
+	Runtime                string             `json:"runtime"`
+	ContractID             string             `json:"contractId"`
+	Workload               string             `json:"workload"`
+	Scenario               string             `json:"scenario"`
+	Profile                string             `json:"profile"`
+	Metric                 string             `json:"metric"`
+	Statistic              string             `json:"statistic"`
+	Created                time.Time          `json:"created"`
+	AnalysisVersion        string             `json:"analysisVersion"`
+	Summary                json.RawMessage    `json:"summary"`
+	Evidence               []string           `json:"evidence"`
+	MeasurementMethod      *MeasurementMethod `json:"measurementMethod,omitempty"`
+	MeasurementMethodID    string             `json:"measurementMethodId,omitempty"`
 }
 
 func (r Result) Cell() string {

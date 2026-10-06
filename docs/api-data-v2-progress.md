@@ -497,3 +497,38 @@ This is the comparison policy layer, not an implemented `/aggregates` or
 `/cohorts/{id}` endpoint: canonical producer-summary selectors, compatibility
 checks, bounded membership pagination, method-aware caching and precomputed
 overview scopes remain required before those serving gates are complete.
+
+## Producer-owned measurement selectors
+
+Results optionally expose `measurementMethod` and `measurementMethodId`; new
+exports always provide them, while legacy records remain readable. The producer
+projects the actual source pass's locked recipe and contributing memory
+observation identities, including collector/version, phase, quality, profile and
+normalization denominator. It reuses the report builder's observation eligibility
+function and contributing trial set; it does not recompute values or intervals.
+Trial-scoped RSS remains one observation per timing trial. Timing/native collectors
+absent from the source are explicitly `not_recorded`, never inferred. Missing pass
+contexts produce unavailable descriptors.
+
+The normalized recipe removes suite labels and unrelated scenario selections,
+retains this scenario's sample override, protocol, runner, resource/host policy
+and budgets, and preserves unsafe integer seeds/durations as decimal strings.
+Descriptors are capped at 64 KiB, recipes at 32 KiB and observation identities at
+32. The service checks field/digest/profile/scenario bindings at import and during
+portable closure verification. `/results` and `/history` accept an exact full
+`method` digest, backed by persistent postings and query-bound pagination. Legacy
+records do not silently acquire matching methods.
+
+The source-summary observation policy excludes this extracted representation
+metadata from capture identity and prefers available method enrichment. Tests
+prove a reexport preserves six historical captures, current/previous selection
+and old revisions through restart, backup and DB-free rebuild. A fresh separately
+emitted native producer fixture also imports with method descriptors and exact
+method-filtered result membership. This fixture is synthetic transport evidence.
+Producer tests cover source collector changes, recipe scheduling independence,
+exact seeds, profile mismatches, missing/duplicate passes and unchanged verified
+source statistics.
+
+The method descriptor is the compatibility input, not an implemented cohort API.
+Complete scientific compatibility policy, editorial workload groups, bounded
+cohort resources, caches and overview precomputation remain open backend gates.

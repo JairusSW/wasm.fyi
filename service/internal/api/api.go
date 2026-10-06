@@ -491,7 +491,7 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 	}
 	if path == "results" || path == "history" {
 		allowed := map[string]bool{}
-		for _, k := range []string{"revision", "selection", "environment", "runtime", "track", "definition", "configuration", "contract", "workload", "metric", "scenario", "profile", "statistic", "sort", "limit", "cursor"} {
+		for _, k := range []string{"revision", "selection", "environment", "runtime", "track", "definition", "method", "configuration", "contract", "workload", "metric", "scenario", "profile", "statistic", "sort", "limit", "cursor"} {
 			allowed[k] = true
 		}
 		for k, v := range params {
@@ -519,7 +519,7 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 			problem(w, r, wire.Invalid("unsupported sort"))
 			return
 		}
-		q := store.Query{Revision: revision, Selection: selection, Environment: params.Get("environment"), Runtime: params.Get("runtime"), Track: params.Get("track"), Definition: params.Get("definition"), Configuration: params.Get("configuration"), Contract: params.Get("contract"), Workload: params.Get("workload"), Metric: params.Get("metric"), Scenario: params.Get("scenario"), Profile: params.Get("profile"), Statistic: params.Get("statistic"), Sort: sortOrder, Limit: n}
+		q := store.Query{Revision: revision, Selection: selection, Environment: params.Get("environment"), Runtime: params.Get("runtime"), Track: params.Get("track"), Definition: params.Get("definition"), Method: params.Get("method"), Configuration: params.Get("configuration"), Contract: params.Get("contract"), Workload: params.Get("workload"), Metric: params.Get("metric"), Scenario: params.Get("scenario"), Profile: params.Get("profile"), Statistic: params.Get("statistic"), Sort: sortOrder, Limit: n}
 		qb, _ := wire.Encode(q)
 		queryHash := wire.Hash(append([]byte(path+":"), qb...))
 		rows, e := a.Store.ResultsContext(r.Context(), q, path == "history")
