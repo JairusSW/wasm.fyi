@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {readFile, lstat} from 'node:fs/promises';
 import {join, resolve, sep} from 'node:path';
 import {digest} from './wasmbench.mjs';
+import {lockedPlanBytes} from './benchmark-plan.mjs';
 import {prepareParentArchive} from './api-parent-archive.mjs';
 import {readParentBundleMetadata} from './benchmark-bundle.mjs';
 const HASH=/^[a-f0-9]{64}$/;
@@ -26,6 +27,14 @@ export async function publishCompletedJob({url,local,plan,machine,result,signal,
   assert(result.plan===plan.identity&&HASH.test(plan.identity)&&Array.isArray(result.siteExports)&&result.siteExports.length>0&&result.siteExports.length<=8,'Missing completed-job exports');
   assert(result.finished&&['PASS','FAIL','UNSUPPORTED','NOT MEASURED'].includes(result.verdict),'Incomplete attempt cannot publish');
   const exports=[],objects=new Map();
+  const lockedPlan=lockedPlanBytes(plan);
+  assert(lockedPlan.length>0&&lockedPlan.length<=16*1024*1024&&digest(lockedPlan)===plan.identity,'Session plan differs from locked identity or exceeds ceiling');
+  assert(plan.schema===1&&Array.isArray(plan.machines)&&Array.isArray(plan.jobs)&&plan.machines.some(m=>m.name===machine)&&plan.jobs.some(j=>j.id===result.corpus),'Completed job outside session plan');
+  const sessionPlan={schema:1,bytes:lockedPlan.length,chunks:[]};
+  for(let offset=0;offset<lockedPlan.length;offset+=1024*1024){
+    const body=lockedPlan.subarray(offset,offset+1024*1024),object={sha256:digest(body),bytes:body.length,kind:'binary'};
+    sessionPlan.chunks.push(object);objects.set(object.sha256,{...object,body});
+  }
   for(const path of result.siteExports){
     assert(path.startsWith(`jobs/${result.corpus}/exports/`),'Wrong completed corpus export');
     const directory=inside(local,path);
@@ -65,7 +74,7 @@ export async function publishCompletedJob({url,local,plan,machine,result,signal,
   assert(HASH.test(parentIndex.metadataSha256),'Parent metadata digest required for API publication');
   const {parent:parentArchive,objects:parentObjects}=await prepareParentArchive(join(local,'bundle'),parentSource,{signal});
   for(const object of parentObjects){const previous=objects.get(object.sha256);assert(!previous||(previous.bytes===object.bytes&&previous.kind===object.kind),'Parent object conflicts with measurement export');objects.set(object.sha256,object);}
-  const job={schema:2,session:plan.id,machine,corpus:result.corpus,attempt:digest(Buffer.from(JSON.stringify([exports.map(e=>e.sha256),digest(Buffer.from(JSON.stringify(parentArchive)))]))),plan:plan.identity,configuredHarnessPin:plan.configuredHarnessPin,parentBundleSha256:digest(parent),parentArchive,status:'completed',exports};
+  const job={schema:2,session:plan.id,machine,corpus:result.corpus,attempt:digest(Buffer.from(JSON.stringify([exports.map(e=>e.sha256),digest(Buffer.from(JSON.stringify(parentArchive))),digest(Buffer.from(JSON.stringify(sessionPlan)))]))),plan:plan.identity,configuredHarnessPin:plan.configuredHarnessPin,parentBundleSha256:digest(parent),parentArchive,sessionPlan,status:'completed',exports};
   assert(typeof job.configuredHarnessPin==='string'&&job.configuredHarnessPin.length>0,'Missing configured harness identity');
   const call=async(path,method='GET',body)=>{
     const response=await request(url+path,{method,body,redirect:'error',signal:AbortSignal.any([...(signal?[signal]:[]),AbortSignal.timeout(30000)]),headers:{Authorization:'Bearer '+token,...(body?{'Content-Type':Buffer.isBuffer(body)?'application/octet-stream':'application/json'}:{})}});
@@ -79,7 +88,7 @@ export async function publishCompletedJob({url,local,plan,machine,result,signal,
     const missing=await call(`/admin/v1/imports/${submitted.id}/missing`);
     assert(Array.isArray(missing.items)&&missing.items.length<=100,'Unbounded missing inventory');
     if(!missing.items.length){assert(missing.complete,'Incomplete empty inventory');const committed=await call(`/admin/v1/imports/${submitted.id}/commit`,'POST');assert(HASH.test(committed.revision),'Invalid published revision');return committed.revision;}
-    for(const o of missing.items){const localObject=objects.get(o.sha256);assert(localObject&&localObject.bytes===o.bytes,'API requested undeclared content');await call(`/admin/v1/objects/${o.sha256}`,'PUT',await regularFile(localObject.path,localObject.kind==='binary'?BLOB:CHUNK));if(localObject.kind==='inventory')await call(`/admin/v1/imports/${submitted.id}/inventories/${o.sha256}`,'POST');}
+    for(const o of missing.items){const localObject=objects.get(o.sha256);assert(localObject&&localObject.bytes===o.bytes,'API requested undeclared content');await call(`/admin/v1/objects/${o.sha256}`,'PUT',localObject.body??await regularFile(localObject.path,localObject.kind==='binary'?BLOB:CHUNK));if(localObject.kind==='inventory')await call(`/admin/v1/imports/${submitted.id}/inventories/${o.sha256}`,'POST');}
   }
   throw Error('API missing inventory failed to converge');
 }

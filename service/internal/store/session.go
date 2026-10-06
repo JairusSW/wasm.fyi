@@ -57,6 +57,9 @@ func publishedJobKey(j PublishedJob) string {
 }
 
 func (s *Store) indexPublishedJobs(ctx context.Context, rev *Revision, job wire.Job) error {
+	if e := s.indexSessionPlan(ctx, rev, job); e != nil {
+		return e
+	}
 	updates := map[string]map[string]string{}
 	add := func(j wire.Job, id string, created time.Time) error {
 		if e := ctx.Err(); e != nil {
@@ -282,6 +285,10 @@ func (s *Store) SessionInfo(ctx context.Context, revision, session string) (Sess
 	if e != nil {
 		return out, e
 	}
+	scope, e := s.sessionPlanScope(ctx, rev, session)
+	if e != nil {
+		return out, e
+	}
 	members := map[string]bool{}
 	// Publications identify attempts; retries can belong to the same corpus job.
 	corpusJobs := map[struct{ machine, corpus string }]bool{}
@@ -306,11 +313,23 @@ func (s *Store) SessionInfo(ctx context.Context, revision, session string) (Sess
 			return out, wire.Invalid("session immutable bindings differ")
 		}
 		out.Plan, out.ConfiguredHarnessPin = summary.Plan, summary.ConfiguredHarnessPin
+		if scope != nil && (scope.Plan != summary.Plan || scope.ConfiguredHarnessPin != summary.ConfiguredHarnessPin || !scope.Contains(summary.Machine, summary.Corpus)) {
+			return out, wire.Invalid("published job outside session plan")
+		}
 		members[summary.Machine] = true
 		corpusJobs[struct{ machine, corpus string }{summary.Machine, summary.Corpus}] = true
 		out.PublishedJobs++
 	}
 	out.Members = len(members)
 	out.PublishedCorpusJobs = len(corpusJobs)
+	if scope != nil {
+		planned := len(scope.Members) * len(scope.Corpora)
+		complete := planned == out.PublishedCorpusJobs
+		out.PlannedJobs, out.CollectionComplete = &planned, &complete
+		out.CompletenessReason = "published completed attempts cover only part of the immutable session plan"
+		if complete {
+			out.CompletenessReason = "every planned machine/corpus job has a published completed attempt; outcomes may include failures or unsupported measurements"
+		}
+	}
 	return out, nil
 }

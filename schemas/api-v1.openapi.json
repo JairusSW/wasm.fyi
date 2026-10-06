@@ -2046,7 +2046,7 @@
     "/api/v1/sessions/{id}": {
       "get": {
         "summary": "Frozen progress from published completed jobs",
-        "description": "Does not infer full-session collection completeness or reveal staged evidence. Planned-job count and collectionComplete are null until the full session plan is available. publishedJobs counts attempt records; publishedCorpusJobs counts distinct machine/corpus pairs, including completed failed and unsupported outcomes.",
+        "description": "Frozen scope from published completed attempts. Without original locked plan content, plannedJobs and collectionComplete remain null. With verified content, plannedJobs is the machine/corpus Cartesian scope and collectionComplete means each pair has at least one published completed attempt, including failed or unsupported outcomes. publishedJobs counts attempts; publishedCorpusJobs counts distinct machine/corpus pairs. Staged imports never contribute.",
         "parameters": [
           {
             "name": "id",

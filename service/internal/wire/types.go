@@ -187,6 +187,7 @@ type Job struct {
 	ConfiguredHarnessPin string         `json:"configuredHarnessPin"`
 	ParentBundleSHA256   string         `json:"parentBundleSha256"`
 	ParentArchive        *ParentArchive `json:"parentArchive,omitempty"`
+	SessionPlan          *SessionPlan   `json:"sessionPlan,omitempty"`
 	Status               string         `json:"status"`
 	Exports              []Export       `json:"exports"`
 }
@@ -205,6 +206,18 @@ func (j Job) Validate() error {
 		for _, o := range j.ParentArchive.Objects() {
 			if old, ok := objects[o.SHA256]; ok && old != o {
 				return Invalid("conflicting parent archive objects")
+			}
+			objects[o.SHA256] = o
+		}
+	}
+
+	if j.SessionPlan != nil {
+		if err := j.SessionPlan.Validate(); err != nil {
+			return err
+		}
+		for _, o := range j.SessionPlan.Chunks {
+			if old, ok := objects[o.SHA256]; ok && old != o {
+				return Invalid("conflicting session plan objects")
 			}
 			objects[o.SHA256] = o
 		}

@@ -281,6 +281,24 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 				}
 				return markRecord("", id)
 			})
+		case "session-plan":
+			return markMap(set.Root, "posting-session-plan", func(k, id string) error {
+				var job wire.Job
+				if e := read(id, &job); e != nil {
+					return e
+				}
+				if job.Session != k || job.SessionPlan == nil || tuple[1] != "" || tuple[2] != "" {
+					return wire.Invalid("invalid session plan reference")
+				}
+				_, e := job.SessionPlan.Verify(job, func(o wire.Object) ([]byte, error) {
+					b, e := s.objectRepresentation(o)
+					if e == nil {
+						marked[o.SHA256] = true
+					}
+					return b, e
+				})
+				return e
+			})
 		case "session-jobs", "published-job":
 			return markMap(set.Root, "posting-"+tuple[0], func(k, id string) error {
 				var summary PublishedJob
@@ -325,6 +343,41 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 		}
 		if e := markMap(r.Selection, "selection", markSelection); e != nil {
 			return nil, e
+		}
+		planSet, e := s.indexGet(r.Indexes, indexKey("session-plan", "", ""))
+		if e != nil {
+			return nil, e
+		}
+		if planSet.Count > 0 {
+			published, e := s.indexGet(r.Indexes, indexKey("published-job", "", ""))
+			if e != nil {
+				return nil, e
+			}
+			referenceKey := "session-plan-publications:" + planSet.Root + ":" + published.Root
+			if !visited[referenceKey] {
+				budget := ScanLimit
+				e := s.walk(planSet.Root, &budget, func(session, jobID string) error {
+					summaryID, e := s.mapGet(published.Root, jobID)
+					if e != nil {
+						return e
+					}
+					if summaryID == "" {
+						return wire.Invalid("session plan source is unpublished")
+					}
+					var summary PublishedJob
+					if e := read(summaryID, &summary); e != nil {
+						return e
+					}
+					if summary.ID != jobID || summary.Session != session {
+						return wire.Invalid("session plan publication binding differs")
+					}
+					return nil
+				})
+				if e != nil {
+					return nil, e
+				}
+				visited[referenceKey] = true
+			}
 		}
 		if e := markMap(r.Indexes, "indexes", markIndexes); e != nil {
 			return nil, e
@@ -424,6 +477,17 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 		if e := job.Validate(); e != nil {
 			return nil, e
 		}
+		if job.SessionPlan != nil {
+			if _, e := job.SessionPlan.Verify(job, func(o wire.Object) ([]byte, error) {
+				b, e := s.objectRepresentation(o)
+				if e == nil {
+					marked[o.SHA256] = true
+				}
+				return b, e
+			}); e != nil {
+				return nil, e
+			}
+		}
 		if job.ParentArchive != nil {
 			if e := job.ParentArchive.Verify(job, func(o wire.Object) ([]byte, error) {
 				b, e := s.objectRepresentation(o)
@@ -476,6 +540,14 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 				continue
 			} else if !errors.Is(e, pebble.ErrNotFound) {
 				return nil, e
+			}
+			if job.SessionPlan != nil {
+				for _, o := range job.SessionPlan.Chunks {
+					marked[o.SHA256] = true
+					if _, e := s.objectRepresentation(o); e != nil && !os.IsNotExist(e) {
+						return nil, e
+					}
+				}
 			}
 			if job.ParentArchive != nil {
 				for _, o := range job.ParentArchive.Objects() {

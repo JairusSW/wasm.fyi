@@ -9,6 +9,7 @@ import {fileURLToPath} from 'node:url';
 import {runCommand} from './lib/benchmark-process.mjs';
 import {digest} from './lib/wasmbench.mjs';
 import {publicationURL,publishCompletedJob} from './lib/api-publish.mjs';
+import {planIdentity} from './lib/benchmark-plan.mjs';
 const site=fileURLToPath(new URL('..',import.meta.url));
 test('API origin requires HTTPS except loopback and excludes embedded secrets',()=>{
  assert.equal(publicationURL('https://wasm.fyi/'),'https://wasm.fyi');
@@ -23,7 +24,7 @@ test('completed corpus uploads only missing objects, publishes idempotently, ret
   const token='fixture-token-'+ 'x'.repeat(32);child=spawn(binary,['--listen',`127.0.0.1:${port}`,'--data',join(root,'store')],{env:{...process.env,WASMFYI_ADMIN_TOKEN:token},stdio:'ignore'});exit=new Promise(r=>child.once('exit',r));const url=`http://127.0.0.1:${port}`;
   let ready=false;for(let i=0;i<200;i++){if(child.exitCode!==null)throw Error('Service exited during startup');try{const r=await fetch(url+'/api/v1/manifest');if(r.ok){ready=true;break}}catch{}await new Promise(r=>setTimeout(r,25))};assert(ready,'Service readiness timed out');
   const local=join(root,'local');const path='jobs/corpus-0001/exports/report/site-v2';await mkdir(join(local,path),{recursive:true});await cp(join(site,'service/testdata/site-v2'),join(local,path),{recursive:true});await mkdir(join(local,'bundle'));
-  const plan={id:'fixture-session',identity:digest(Buffer.from('plan')),configuredHarnessPin:'0509a0a323f41c58a2f2db15a372fb2e63c692bf'};
+  const plan={schema:1,id:'fixture-session',machines:[{name:'fixture-machine'}],jobs:[{id:'corpus-0001'},{id:'corpus-0002'}],configuredHarnessPin:'0509a0a323f41c58a2f2db15a372fb2e63c692bf'};plan.identity=planIdentity(plan);
   const parentBytes=Buffer.from('synthetic parent archive'),parentMetadata=Buffer.from(JSON.stringify({planSha256:plan.identity}));await writeFile(join(local,'bundle/metadata.json'),parentMetadata);await writeFile(join(local,'bundle/bundle.tar.gz.part-000'),parentBytes);await writeFile(join(local,'bundle/index.json'),JSON.stringify({schema:1,id:plan.id,machine:'fixture-machine',metadata:'metadata.json',metadataSha256:digest(parentMetadata),bytes:parentBytes.length,sha256:digest(parentBytes),parts:[{path:'bundle.tar.gz.part-000',bytes:parentBytes.length,sha256:digest(parentBytes)}]}));
   const result={corpus:'corpus-0001',plan:plan.identity,siteExports:[path],finished:'2026-10-05T00:00:00Z',verdict:'FAIL'};
   const resourceDirectory=join(local,path),resourceManifest=JSON.parse(await readFile(join(resourceDirectory,'manifest.json'))),resourcePayload=resourceManifest.objects;
@@ -42,7 +43,7 @@ test('completed corpus uploads only missing objects, publishes idempotently, ret
   await writeFile(join(resourceDirectory,'manifest.json'),JSON.stringify(resourceManifest));
   let uploads=0;const request=async(url,options)=>{if(options.method==='PUT')uploads++;const response=await fetch(url,options);assert(response.ok,`Unexpected API failure: ${response.status} ${await response.clone().text()}`);return response};
   const args={url,local,plan,machine:'fixture-machine',result,token,request};
-  await assert.rejects(publishCompletedJob({...args,machine:'other-machine',request:async()=>{throw Error('Wrong parent reached API')}}),/another plan or machine/);
+  await assert.rejects(publishCompletedJob({...args,machine:'other-machine',request:async()=>{throw Error('Wrong parent reached API')}}),/outside session plan|another plan or machine/);
   const parentPath=join(local,'bundle/index.json'),savedParent=await readFile(parentPath),uncommittedParent=JSON.parse(savedParent);delete uncommittedParent.metadataSha256;await writeFile(parentPath,JSON.stringify(uncommittedParent));await assert.rejects(publishCompletedJob({...args,request:async()=>{throw Error('Uncommitted metadata reached API')}}),/metadata digest required/);await writeFile(parentPath,savedParent);
   const revision=await publishCompletedJob(args);assert.match(revision,/^[a-f0-9]{64}$/);assert(uploads>0);uploads=0;assert.equal(await publishCompletedJob(args),revision);assert.equal(uploads,0,'Duplicate transferred existing evidence');
   const manifest=await (await fetch(url+'/api/v1/manifest')).json();assert.equal(manifest.revision,revision);
@@ -65,6 +66,7 @@ test('completed corpus uploads only missing objects, publishes idempotently, ret
   const pagedArgs={...args,result:{...result,siteExports:[pagedPath]}};
   const pagedRevision=await publishCompletedJob(pagedArgs);assert.notEqual(pagedRevision,revision);
   uploads=0;assert.equal(await publishCompletedJob(pagedArgs),pagedRevision);assert.equal(uploads,0,'Paged duplicate uploaded existing content');
+  const progress=await(await fetch(url+'/api/v1/sessions/'+plan.id+'?revision='+pagedRevision)).json();assert.equal(progress.plannedJobs,2);assert.equal(progress.publishedCorpusJobs,1);assert.equal(progress.publishedJobs,2);assert.equal(progress.collectionComplete,false);
   const history=await(await fetch(url+'/api/v1/history?revision='+pagedRevision)).json();assert.equal(history.items.length,3,'Repackaged evidence became new observations');
   const evidenceURL=url+'/api/v1/reports/'+pagedManifest.reportId+'/evidence?revision='+pagedRevision;
   const descriptor=await(await fetch(evidenceURL+'&chunk='+resourceHash)).json();assert.equal(descriptor.bytes,original.length);

@@ -644,9 +644,10 @@ count, distinct published machine/corpus count and observed member count.
 `publishedJobs` counts attempt records; `publishedCorpusJobs` counts each
 machine/corpus pair once, including completed failed or unsupported outcomes.
 Retries and repackaged evidence do not inflate corpus coverage. Neither count
-implies that the full planned collection finished. Because the completed-job sink does not receive
-the complete session plan or running-worker events, planned-job count and total
-collection completeness are null with a recorded reason. A publication count is
+implies that the full planned collection finished. Legacy deliveries without
+locked plan content retain null planned-job count and collection completeness,
+with a recorded reason. Verified plan content enables published-coverage counts
+as described below; live worker events are not yet indexed. A publication count is
 not mislabeled as collection completion. Job pages show session/member/corpus/
 attempt identity, parent bundle hash, small report references, collection status
 and publication time. No archive download availability is inferred from a hash.
@@ -659,8 +660,9 @@ the same progress. Tests cover old frozen views, staged/aborted exclusion, unkno
 sessions, cancellation, cursor scope changes and portable reconstruction. Distinct
 corpus counts are also checked across retries, multiple machines, restart and
 DB-free reconstruction. Full
-plan registration, live worker/attempt states and parent archive resources remain
-separate required coordinator/backend work.
+pre-job plan registration and live worker/attempt states remain required
+coordinator/backend work. Parent archive resources are now available as described
+below.
 
 ## Bounded historical time windows
 
@@ -1209,3 +1211,35 @@ through real sockets. The stream source is synthetic transport stress, not
 benchmark evidence or a claim about measured throughput/RSS. Repeated race runs
 include archive/report-file reads and corruption handling. Wider multi-client
 scale, long-duration timeout and production proxy operation remain open gates.
+
+## Locked session plan content and published coverage
+
+The completed-job API sink now attaches the exact bytes used by the existing
+coordinator's plan identity function: `JSON.stringify` after removing `id`,
+`created` and `identity`. These bytes are stored in the shared content store as
+1 MiB binary chunks, with a 16 MiB total ceiling. The service validates each
+chunk, the original full plan hash, strict JSON, unique machine/corpus identities,
+configured harness pin and the submitted job's membership. Unknown locked fields
+remain in the source bytes; Go never re-encodes those bytes to compute identity.
+
+The revision's persistent session-plan posting references a published canonical
+job with this verified content. Publication verifies existing legacy deliveries
+before first attaching a scope, and checks subsequent deliveries against it even
+when they omit plan content. Plan references cannot point to staging or future
+jobs. Content participates in missing-object admission, publisher quotas, pending
+cleanup protection, portable closure and DB-free reconstruction.
+
+For a revision with plan content, `plannedJobs` is the Cartesian product of the
+plan's machines and corpus jobs. `collectionComplete` means every pair has at
+least one **published completed attempt**, including failed or unsupported
+outcomes. Retries count once. This describes published coverage, not scientific
+success or an observed worker shutdown. Earlier immutable revisions without plan
+content continue to return unknown completeness. The response records the reason.
+
+Tests cover exact ordering/Unicode, source identity mismatch, duplicate identities,
+unlocked fields, multi-chunk plans, missing content, legacy jobs outside scope,
+retry counts, multiple members, frozen views, restart and backup/rebuild. Actual
+process exits at five publication checkpoints exercise hidden plan indexes,
+missing-chunk retry and portable recovery. The existing coordinator's resume and
+failed-outcome tests still pass. Registering an empty session before its first
+completed corpus and live worker/attempt state remain separate open requirements.

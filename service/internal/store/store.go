@@ -332,8 +332,15 @@ func (s *Store) MissingContext(ctx context.Context, id string) ([]wire.Object, e
 	if pendingErr != nil && !errors.Is(pendingErr, pebble.ErrNotFound) {
 		return nil, pendingErr
 	}
-	if j.ParentArchive != nil {
-		for _, o := range j.ParentArchive.Objects() {
+	if j.ParentArchive != nil || j.SessionPlan != nil {
+		extra := []wire.Object{}
+		if j.ParentArchive != nil {
+			extra = append(extra, j.ParentArchive.Objects()...)
+		}
+		if j.SessionPlan != nil {
+			extra = append(extra, j.SessionPlan.Chunks...)
+		}
+		for _, o := range extra {
 			if err := ctx.Err(); err != nil {
 				return nil, err
 			}
