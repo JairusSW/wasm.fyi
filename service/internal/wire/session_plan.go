@@ -1,6 +1,9 @@
 package wire
 
-import "encoding/json"
+import (
+	"context"
+	"encoding/json"
+)
 
 const SessionPlanBytes = 16 << 20
 
@@ -8,6 +11,32 @@ type SessionPlan struct {
 	Schema int      `json:"schema"`
 	Bytes  int      `json:"bytes"`
 	Chunks []Object `json:"chunks"`
+}
+
+// PlanRegistration binds an immutable collection scope before any attempt exists.
+// It carries bounded references to exact locked bytes, never measurement exports.
+type PlanRegistration struct {
+	Schema               int         `json:"schema"`
+	Session              string      `json:"session"`
+	Plan                 string      `json:"plan"`
+	ConfiguredHarnessPin string      `json:"configuredHarnessPin"`
+	SessionPlan          SessionPlan `json:"sessionPlan"`
+}
+
+func (r PlanRegistration) Validate() error {
+	if r.Schema != 1 || !identityPattern.MatchString(r.Session) || !IsHash(r.Plan) || !revisionPattern.MatchString(r.ConfiguredHarnessPin) {
+		return Invalid("invalid session plan registration")
+	}
+	return r.SessionPlan.Validate()
+}
+func (r PlanRegistration) Verify(ctx context.Context, fetch func(Object) ([]byte, error)) (PlanScope, error) {
+	if e := ctx.Err(); e != nil {
+		return PlanScope{}, e
+	}
+	if e := r.Validate(); e != nil {
+		return PlanScope{}, e
+	}
+	return r.SessionPlan.verifyScope(ctx, r.Plan, r.ConfiguredHarnessPin, fetch)
 }
 
 type PlanScope struct {
@@ -39,12 +68,34 @@ func (p SessionPlan) Validate() error {
 // Verify preserves the coordinator's JSON.stringify identity. It does not
 // reconstruct the locked JSON with Go's different ordering or escaping rules.
 func (p SessionPlan) Verify(job Job, fetch func(Object) ([]byte, error)) (PlanScope, error) {
+	return p.VerifyContext(context.Background(), job, fetch)
+}
+func (p SessionPlan) VerifyContext(ctx context.Context, job Job, fetch func(Object) ([]byte, error)) (PlanScope, error) {
+	out, e := p.verifyScope(ctx, job.Plan, job.ConfiguredHarnessPin, fetch)
+	if e != nil {
+		return out, e
+	}
+	if !out.Contains(job.Machine, job.Corpus) {
+		return PlanScope{}, Invalid("job outside session plan")
+	}
+	return out, nil
+}
+func (p SessionPlan) verifyScope(ctx context.Context, plan, pin string, fetch func(Object) ([]byte, error)) (PlanScope, error) {
 	var out PlanScope
+	if e := ctx.Err(); e != nil {
+		return out, e
+	}
+	if !IsHash(plan) || pin == "" {
+		return out, Invalid("invalid session plan binding")
+	}
 	if e := p.Validate(); e != nil {
 		return out, e
 	}
 	raw := make([]byte, 0, p.Bytes)
 	for _, o := range p.Chunks {
+		if e := ctx.Err(); e != nil {
+			return out, e
+		}
 		b, e := fetch(o)
 		if e != nil {
 			return out, e
@@ -54,7 +105,10 @@ func (p SessionPlan) Verify(job Job, fetch func(Object) ([]byte, error)) (PlanSc
 		}
 		raw = append(raw, b...)
 	}
-	if Hash(raw) != job.Plan {
+	if e := ctx.Err(); e != nil {
+		return out, e
+	}
+	if Hash(raw) != plan {
 		return out, Invalid("session plan identity differs")
 	}
 	var fields map[string]json.RawMessage
@@ -79,11 +133,14 @@ func (p SessionPlan) Verify(job Job, fetch func(Object) ([]byte, error)) (PlanSc
 	if e := json.Unmarshal(raw, &source); e != nil {
 		return out, e
 	}
-	if source.Schema != 1 || source.ConfiguredHarnessPin != job.ConfiguredHarnessPin || len(source.Machines) < 1 || len(source.Machines) > 128 || len(source.Jobs) < 1 || len(source.Jobs) > 10000 || len(source.Machines)*len(source.Jobs) > 100000 {
+	if source.Schema != 1 || source.ConfiguredHarnessPin != pin || len(source.Machines) < 1 || len(source.Machines) > 128 || len(source.Jobs) < 1 || len(source.Jobs) > 10000 || len(source.Machines)*len(source.Jobs) > 100000 {
 		return out, Invalid("invalid session plan scope")
 	}
 	members, corpora := map[string]bool{}, map[string]bool{}
 	for _, m := range source.Machines {
+		if e := ctx.Err(); e != nil {
+			return PlanScope{}, e
+		}
 		if !identityPattern.MatchString(m.Name) || members[m.Name] {
 			return out, Invalid("invalid session plan member")
 		}
@@ -91,17 +148,17 @@ func (p SessionPlan) Verify(job Job, fetch func(Object) ([]byte, error)) (PlanSc
 		out.Members = append(out.Members, m.Name)
 	}
 	for _, j := range source.Jobs {
+		if e := ctx.Err(); e != nil {
+			return PlanScope{}, e
+		}
 		if !identityPattern.MatchString(j.ID) || corpora[j.ID] {
 			return out, Invalid("invalid session plan corpus")
 		}
 		corpora[j.ID] = true
 		out.Corpora = append(out.Corpora, j.ID)
 	}
-	if !members[job.Machine] || !corpora[job.Corpus] {
-		return out, Invalid("job outside session plan")
-	}
 	out.members, out.corpora = members, corpora
-	out.Plan, out.ConfiguredHarnessPin = job.Plan, job.ConfiguredHarnessPin
+	out.Plan, out.ConfiguredHarnessPin = plan, pin
 	return out, nil
 }
 func (p PlanScope) Contains(machine, corpus string) bool {

@@ -334,3 +334,14 @@ The retained synthetic gate crosses the former global scan ceiling and verifies
 that an ancestor outside the requested page is not read. This establishes bounded
 query work, not qualification of 100,000 real publications or startup/restore
 scale. Wider retention and physical storage gates remain open.
+
+Session-plan registration preparation now has its own `PlanRegistration` wire
+contract (schema 1): session name, exact locked-plan digest, configured harness
+pin and at most sixteen 1 MiB chunk descriptors. `prepareSessionPlan` in the
+existing publisher prepares that scope without a completed attempt or export;
+completed-job publication uses the same preparation. Go verifies those exact
+bytes independently of job membership, while completed-job verification still
+requires membership. Verification accepts a cancellation context through reads
+and scope validation. The durable registration endpoint, coordinator call before
+work starts, and live attempt progress are still pending. This contract alone
+does not make a planned session publicly visible.

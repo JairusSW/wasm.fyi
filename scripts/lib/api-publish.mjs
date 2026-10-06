@@ -3,7 +3,7 @@ import {setTimeout as delay} from 'node:timers/promises';
 import {readFile, lstat} from 'node:fs/promises';
 import {join, resolve, sep} from 'node:path';
 import {digest} from './wasmbench.mjs';
-import {lockedPlanBytes} from './benchmark-plan.mjs';
+import {prepareSessionPlan} from './api-session-plan.mjs';
 import {prepareParentArchive} from './api-parent-archive.mjs';
 import {readParentBundleMetadata} from './benchmark-bundle.mjs';
 const HASH=/^[a-f0-9]{64}$/;
@@ -30,14 +30,10 @@ export async function publishCompletedJob({url,local,plan,machine,result,signal,
   assert(result.plan===plan.identity&&HASH.test(plan.identity)&&Array.isArray(result.siteExports)&&result.siteExports.length>0&&result.siteExports.length<=8,'Missing completed-job exports');
   assert(result.finished&&['PASS','FAIL','UNSUPPORTED','NOT MEASURED'].includes(result.verdict),'Incomplete attempt cannot publish');
   const exports=[],objects=new Map();
-  const lockedPlan=lockedPlanBytes(plan);
-  assert(lockedPlan.length>0&&lockedPlan.length<=16*1024*1024&&digest(lockedPlan)===plan.identity,'Session plan differs from locked identity or exceeds ceiling');
-  assert(plan.schema===1&&Array.isArray(plan.machines)&&Array.isArray(plan.jobs)&&plan.machines.some(m=>m.name===machine)&&plan.jobs.some(j=>j.id===result.corpus),'Completed job outside session plan');
-  const sessionPlan={schema:1,bytes:lockedPlan.length,chunks:[]};
-  for(let offset=0;offset<lockedPlan.length;offset+=1024*1024){
-    const body=lockedPlan.subarray(offset,offset+1024*1024),object={sha256:digest(body),bytes:body.length,kind:'binary'};
-    sessionPlan.chunks.push(object);objects.set(object.sha256,{...object,body});
-  }
+  const {registration,objects:planObjects}=prepareSessionPlan(plan,{signal});
+  assert(plan.machines.some(m=>m.name===machine)&&plan.jobs.some(j=>j.id===result.corpus),'Completed job outside session plan');
+  const sessionPlan=registration.sessionPlan;
+  for(const object of planObjects)objects.set(object.sha256,object);
   for(const path of result.siteExports){
     signal?.throwIfAborted();
     assert(path.startsWith(`jobs/${result.corpus}/exports/`),'Wrong completed corpus export');

@@ -136,6 +136,25 @@ class Contracts(unittest.TestCase):
             with self.assertRaises(ValueError):
                 contracts.validate(changed, "SessionJobPage", "invalid job reference")
 
+    def test_plan_registration_has_no_attempt_or_evidence(self):
+        registration = {"schema": 1, "session": "planned-session", "plan": "a" * 64,
+                        "configuredHarnessPin": "b" * 40,
+                        "sessionPlan": {"schema": 1, "bytes": 10,
+                                        "chunks": [{"sha256": "c" * 64, "bytes": 10, "kind": "binary"}]}}
+        contracts.validate(registration, "PlanRegistration", "pre-job scope")
+        for key, value in [("attempt", "invented"), ("exports", []), ("machine", "local"),
+                           ("session", "../escape"), ("configuredHarnessPin", "short"), ("schema", 2)]:
+            bad = copy.deepcopy(registration)
+            bad[key] = value
+            with self.assertRaises(ValueError):
+                contracts.validate(bad, "PlanRegistration", "invalid registration")
+        for key, value in [("bytes", 16777217), ("chunks", []),
+                           ("chunks", registration["sessionPlan"]["chunks"] * 17)]:
+            bad = copy.deepcopy(registration)
+            bad["sessionPlan"][key] = value
+            with self.assertRaises(ValueError):
+                contracts.validate(bad, "PlanRegistration", "unbounded registration")
+
     def test_session_error_contracts(self):
         contracts.validate({"error": "request limit"}, "APIError", "admission error")
         contracts.validate({"error": "invalid request", "code": "invalid_request"},

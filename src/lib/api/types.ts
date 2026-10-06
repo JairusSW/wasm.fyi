@@ -57,3 +57,4 @@ export type ComparisonSummary = { "version": "wasmfyi-cohort-v3"; "baseline": Di
 export type AggregateSummary = { "scope": CohortScope; "cohort": string; "digest": Digest; "categoryPolicy": string; "eligibilityPolicy": string; "excluded": { [key: string]: number }; "comparison": ComparisonSummary; "reportCounts": { [key: string]: number }; "configurationCounts": { [key: string]: number } };
 export type Health = { "ready": boolean; "datasetAvailable": boolean; "revision": "" | Digest; "restartRequired": boolean };
 export type RevisionPage = { "revision": Digest; "items": Array<Digest>; "total": number; "complete": boolean; "nextCursor": string };
+export type PlanRegistration = { "schema": 1; "session": string; "plan": Digest; "configuredHarnessPin": string; "sessionPlan": SessionPlan };

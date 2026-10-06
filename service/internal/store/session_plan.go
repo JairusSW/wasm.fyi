@@ -119,7 +119,7 @@ func (s *Store) sessionPlanScopeWithVerifier(ctx context.Context, rev Revision, 
 	if verifier != nil {
 		scope, e = verifier.verify(source)
 	} else {
-		scope, e = source.SessionPlan.Verify(source, func(o wire.Object) ([]byte, error) {
+		scope, e = source.SessionPlan.VerifyContext(ctx, source, func(o wire.Object) ([]byte, error) {
 			if e := ctx.Err(); e != nil {
 				return nil, e
 			}
@@ -165,7 +165,7 @@ func (s *Store) indexSessionPlan(ctx context.Context, rev *Revision, job wire.Jo
 	}
 	hadScope := scope != nil
 	if job.SessionPlan != nil {
-		verified, e := job.SessionPlan.Verify(job, func(o wire.Object) ([]byte, error) {
+		verified, e := job.SessionPlan.VerifyContext(ctx, job, func(o wire.Object) ([]byte, error) {
 			if e := ctx.Err(); e != nil {
 				return nil, e
 			}

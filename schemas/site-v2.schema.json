@@ -2653,6 +2653,36 @@
           }
         }
       ]
+    },
+    "PlanRegistration": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 1
+        },
+        "session": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "plan": {
+          "$ref": "#/$defs/Digest"
+        },
+        "configuredHarnessPin": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "sessionPlan": {
+          "$ref": "#/$defs/SessionPlan"
+        }
+      },
+      "required": [
+        "schema",
+        "session",
+        "plan",
+        "configuredHarnessPin",
+        "sessionPlan"
+      ],
+      "additionalProperties": false
     }
   },
   "$ref": "#/$defs/CompletedJob"
