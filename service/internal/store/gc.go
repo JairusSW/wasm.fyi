@@ -43,6 +43,9 @@ func (s *Store) GC(ctx context.Context, options GCOptions) (GCReport, error) {
 	}
 	s.publish.Lock()
 	defer s.publish.Unlock()
+	if e := ctx.Err(); e != nil {
+		return report, e
+	}
 	if s.poisoned.Load() {
 		return report, ErrNeedsRestart
 	}

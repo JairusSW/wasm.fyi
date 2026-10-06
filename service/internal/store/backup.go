@@ -128,6 +128,9 @@ func (s *Store) Backup(ctx context.Context, destination string) (BackupManifest,
 	s.publish.Lock()
 	defer s.publish.Unlock()
 	manifest := BackupManifest{Schema: 1, Current: s.Current(), Files: []wire.Object{}}
+	if e := ctx.Err(); e != nil {
+		return manifest, e
+	}
 	if s.poisoned.Load() {
 		return manifest, ErrNeedsRestart
 	}
@@ -285,6 +288,9 @@ func (s *Store) Backup(ctx context.Context, destination string) (BackupManifest,
 		if e = syncDir(directories[i]); e != nil {
 			return manifest, e
 		}
+	}
+	if e = ctx.Err(); e != nil {
+		return manifest, e
 	}
 	if e = installDirectory(temp, destination); e != nil {
 		return manifest, e

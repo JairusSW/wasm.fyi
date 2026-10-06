@@ -682,3 +682,31 @@ revision with an unreadable old chain still serves the indexed selected month,
 demonstrating that the window path does not depend on older chain objects. This
 does not complete retrospective history roles or cross-report reused-evidence
 policy; those remain distinct backend requirements.
+
+### Online maintenance through the database owner
+
+An optional `serve --control-socket /private/run/wasmfyi.sock` local Unix socket
+allows backup and cleanup while the API owns Pebble. Its directory must already
+exist with private permissions; the socket is `0600`, symlinked parents and
+existing paths are rejected, and shutdown removes only its own inode. Filesystem
+maintenance remains separate from public HTTP and publisher bearer credentials.
+
+```sh
+wasmfyi backup --control /private/run/wasmfyi.sock --output /private/new-backup
+wasmfyi gc --control /private/run/wasmfyi.sock
+wasmfyi gc --control /private/run/wasmfyi.sock --apply
+```
+
+The CLI takes this path before opening any database. Requests and responses are
+bounded, only one maintenance request is admitted, and operations use the existing
+serialized backup/cleanup algorithms with store shutdown leases and cancellation.
+Backup checks cancellation before installing the completed directory. There is no
+short response timeout for a large backup; caller cancellation and service shutdown
+cancel the operation. Grace/quarantine policy remains 24 hours/seven days.
+An abrupt exit may leave a stale socket; startup refuses to replace it automatically.
+
+Tests keep the owner open while invoking CLI backup/cleanup, verify the backup,
+rebuild its revision and cursor identity, reject unsafe socket paths, exercise
+busy admission and a blocked request during shutdown, and run the actual serve
+lifecycle. Larger backup inventories and concurrent publication/retention scale
+remain separate acceptance gates.

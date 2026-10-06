@@ -52,3 +52,17 @@ buckets. Equivalent timezone representations normalize to the same cursor scope.
 Published month indexes let a selected window skip older linked history objects;
 older dataset revisions remain readable through a bounded fallback. Historical
 evidence enrichment still resolves to the same capture.
+
+For maintenance while serving, create a private directory (mode `0700`) and pass
+`--control-socket /private/run/wasmfyi.sock` to `serve`. The optional local Unix
+socket has mode `0600`; existing socket paths are rejected. Use
+`wasmfyi backup --control /private/run/wasmfyi.sock --output /private/new-backup`
+or `wasmfyi gc --control /private/run/wasmfyi.sock` (add `--apply` for cleanup).
+These commands use the live database owner; they never open a second Pebble
+instance. Network publisher credentials cannot call these operations. Maintenance
+admits one request at a time, shares publication serialization and holds a shutdown
+lease. Cleanup retains its 24-hour/7-day grace periods. Backup output must be a new
+destination; relative CLI paths resolve on the caller before transmission.
+Shutdown cancels requests and removes the owned socket. After an abrupt process
+exit, operators must check that the old owner is gone before removing its stale
+socket. Verify backups and exercise restore/rebuild before relying on them.

@@ -35,6 +35,8 @@ func run(ctx context.Context, args []string) error {
 	publisher := flags.String("publisher", "local-coordinator", "authenticated publisher identity")
 	output := flags.String("output", "", "new backup/restore/rebuild destination")
 	apply := flags.Bool("apply", false, "apply orphan quarantine/cleanup; gc defaults to preview")
+	controlSocket := flags.String("control-socket", "", "optional local maintenance socket in a private directory (serve)")
+	control := flags.String("control", "", "live owner's local maintenance socket (backup/gc)")
 	limits := store.DefaultLimits()
 	flags.IntVar(&limits.PendingJobs, "max-pending-jobs", limits.PendingJobs, "maximum staged imports")
 	flags.Int64Var(&limits.PendingBytes, "max-pending-bytes", limits.PendingBytes, "maximum declared bytes across staged imports")
@@ -52,6 +54,12 @@ func run(ctx context.Context, args []string) error {
 	}
 	if flags.NArg() != 0 {
 		return fmt.Errorf("unexpected positional arguments")
+	}
+	if *control != "" {
+		return callControl(ctx, *control, action, *output, *apply, os.Stdout)
+	}
+	if *controlSocket != "" && action != "serve" {
+		return fmt.Errorf("--control-socket is only valid for serve")
 	}
 	switch action {
 	case "verify-backup":
@@ -138,6 +146,13 @@ func run(ctx context.Context, args []string) error {
 		return e
 	}
 	defer listener.Close()
+	if *controlSocket != "" {
+		controlServer, err := startControl(ctx, *controlSocket, s)
+		if err != nil {
+			return err
+		}
+		defer controlServer.Close()
+	}
 	server := &http.Server{Handler: handler, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 * 1024, BaseContext: func(net.Listener) context.Context { return ctx }}
 	done := make(chan error, 1)
 	go func() {
