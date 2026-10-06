@@ -1,10 +1,15 @@
 package api
 
 import (
+	"archive/tar"
 	"bytes"
+	"compress/gzip"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
 	"math/big"
 	"net/url"
@@ -167,9 +172,12 @@ func TestRealProducerServingParity(t *testing.T) {
 		if e != nil {
 			t.Fatal(e)
 		}
-		original, e := os.ReadFile(filepath.Join(reportSources[file.ReportID], file.Name))
-		if e != nil {
-			t.Fatal(e)
+		var original []byte
+		if file.Name != "report.tar.gz" {
+			original, e = os.ReadFile(filepath.Join(reportSources[file.ReportID], file.Name))
+			if e != nil {
+				t.Fatal(e)
+			}
 		}
 		var assembled []byte
 		for _, chunk := range file.Chunks {
@@ -179,6 +187,10 @@ func TestRealProducerServingParity(t *testing.T) {
 			}
 			assembled = append(assembled, response.Body.Bytes()...)
 		}
+		if file.Name == "report.tar.gz" {
+			original = assembled
+			verifyRealReportArchive(t, assembled, reportSources[file.ReportID], file)
+		}
 		whole := request(t, h, "GET", "/api/v1/files/"+record.ID+"/download?revision="+revision, nil, nil)
 		if whole.Code != 200 || !bytes.Equal(whole.Body.Bytes(), original) {
 			t.Fatal("whole analytical-file download drift", file.Name, whole.Code)
@@ -187,7 +199,33 @@ func TestRealProducerServingParity(t *testing.T) {
 			t.Fatal("analytical file drift", file.Name)
 		}
 	}
-	t.Logf("preserved %d original analytical files through HTTP", len(files))
+	t.Logf("preserved %d original analytical/archive resources through HTTP", len(files))
+	if len(files) > 0 {
+		backup := filepath.Join(t.TempDir(), "backup")
+		if _, e = s.Backup(context.Background(), backup); e != nil {
+			t.Fatal(e)
+		}
+		rebuilt := filepath.Join(t.TempDir(), "rebuilt")
+		if e = store.Rebuild(backup, rebuilt, "real-source-parity"); e != nil {
+			t.Fatal(e)
+		}
+		recovered, e := store.Open(rebuilt, "real-source-parity")
+		if e != nil {
+			t.Fatal(e)
+		}
+		defer recovered.Close()
+		for _, record := range files {
+			descriptor, reader, e := recovered.OpenReportFile(context.Background(), revision, record.ID)
+			if e != nil {
+				t.Fatal(e)
+			}
+			digest := sha256.New()
+			n, e := io.Copy(digest, reader)
+			if e != nil || n != descriptor.Bytes || hex.EncodeToString(digest.Sum(nil)) != descriptor.SHA256 {
+				t.Fatal("portable original/archive resource drift", descriptor.Name, e)
+			}
+		}
+	}
 	analysisFields := 0
 	for reportID, source := range analysisExpected {
 		record, e := s.Record(revision, "report", reportID)
@@ -386,4 +424,52 @@ func TestRealProducerServingParity(t *testing.T) {
 		}
 	}
 	t.Logf("verified-source summaries retained: timing=%d memory=%d native-size=%d; exact environment/track/method scopes=%d", matched, memoryMatched, codeMatched, len(scopes))
+}
+
+func verifyRealReportArchive(t *testing.T, body []byte, source string, file wire.ReportFile) {
+	t.Helper()
+	seal, e := os.ReadFile(filepath.Join(source, "checksums.json"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	if wire.Hash(seal) != file.SourceSealSHA256 {
+		t.Fatal("archive source seal differs")
+	}
+	var expected map[string]string
+	if e = json.Unmarshal(seal, &expected); e != nil {
+		t.Fatal(e)
+	}
+	expected["checksums.json"] = wire.Hash(seal)
+	gz, e := gzip.NewReader(bytes.NewReader(body))
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer gz.Close()
+	reader := tar.NewReader(gz)
+	seen := map[string]bool{}
+	for {
+		entry, e := reader.Next()
+		if e == io.EOF {
+			break
+		}
+		if e != nil {
+			t.Fatal(e)
+		}
+		want, ok := expected[entry.Name]
+		if !ok || seen[entry.Name] || entry.Typeflag != tar.TypeReg {
+			t.Fatal("archive contains unsealed or duplicate entry", entry.Name)
+		}
+		seen[entry.Name] = true
+		hash := sha256.New()
+		if _, e = io.Copy(hash, reader); e != nil {
+			t.Fatal(e)
+		}
+		if hex.EncodeToString(hash.Sum(nil)) != want {
+			t.Fatal("archived original file differs", entry.Name)
+		}
+	}
+	if len(seen) != len(expected) {
+		t.Fatal("archive lost sealed files", len(seen), len(expected))
+	}
+	t.Logf("verified %d original sealed files in %d-byte report archive", len(seen), len(body))
 }

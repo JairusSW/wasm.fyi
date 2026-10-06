@@ -740,6 +740,9 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 		if _, ok := records["report:"+file.ReportID]; !ok {
 			return "", wire.Invalid("unresolved report file source")
 		}
+		if err = file.ValidateSource(records["report:"+file.ReportID].Data); err != nil {
+			return "", err
+		}
 		if err = wire.VerifyReportFile(file, func(chunk wire.FileChunk) ([]byte, error) {
 			if err := ctx.Err(); err != nil {
 				return nil, err

@@ -112,6 +112,25 @@ class Contracts(unittest.TestCase):
         with self.assertRaises(ValueError):
             contracts.validate(context, "HistoryContext", "publisher role is not source verification")
 
+    def test_report_archive_requires_packing_and_source_seal(self):
+        value = {"schema": 1, "kind": "report-file", "reportId": "a" * 64,
+                 "name": "report.tar.gz", "mediaType": "application/gzip", "encoding": "identity",
+                 "sha256": "b" * 64, "bytes": 1, "chunks": [{"sha256": "b" * 64, "bytes": 1}],
+                 "packingVersion": "sealed-files-tar-gzip-v1", "sourceSealSha256": "c" * 64}
+        contracts.validate(value, "ReportFile", "bounded archive derivative")
+        for key, invalid in [("packingVersion", "unknown"), ("name", "../report.tar.gz"),
+                             ("mediaType", "application/vnd.apache.parquet"), ("bytes", 0),
+                             ("chunks", []), ("sourceSealSha256", "missing")]:
+            changed = copy.deepcopy(value)
+            changed[key] = invalid
+            with self.assertRaises(ValueError):
+                contracts.validate(changed, "ReportFile", "invalid archive")
+        for key in ("packingVersion", "sourceSealSha256"):
+            changed = copy.deepcopy(value)
+            del changed[key]
+            with self.assertRaises(ValueError):
+                contracts.validate(changed, "ReportFile", "missing archive provenance")
+
     def test_transport_reference_aliases_resolve_only_local_schema(self):
         for root in ("site-v2.schema.json", "./site-v2.schema.json", contracts.SCHEMA["$id"]):
             reference = contracts.transport_reference(root + "#/$defs/Digest")

@@ -2671,7 +2671,7 @@
     "/api/v1/files/{id}/download": {
       "get": {
         "summary": "Explicit whole original Parquet download",
-        "description": "At most 1 GiB; verified preflight and chunk-by-chunk streaming. Two concurrent downloads, five-minute timeout. Late corruption terminates the connection. Ranges are rejected; selected chunk URLs remain available.",
+        "description": "At most 1 GiB; verified preflight and chunk-by-chunk streaming. Two concurrent downloads, five-minute timeout. Late corruption terminates the connection. Ranges are rejected; selected chunk URLs remain available. Sealed report archives use application/gzip without HTTP Content-Encoding; packing/source-seal provenance is available in the selected file descriptor. The API does not unpack or execute archives.",
         "parameters": [
           {
             "name": "id",
@@ -2700,9 +2700,15 @@
         ],
         "responses": {
           "200": {
-            "description": "Exact original file bytes",
+            "description": "Original analytical file or offline sealed report archive bytes",
             "content": {
               "application/vnd.apache.parquet": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/gzip": {
                 "schema": {
                   "type": "string",
                   "format": "binary"

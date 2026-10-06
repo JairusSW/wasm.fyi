@@ -198,6 +198,15 @@ func (s *Store) reachableContext(ctx context.Context, includeStaging bool) (map[
 			if e != nil {
 				return e
 			}
+			if file.Name == "report.tar.gz" {
+				source, e := s.Record(s.Current(), "report", file.ReportID)
+				if e != nil {
+					return e
+				}
+				if e = file.ValidateSource(source.Data); e != nil {
+					return e
+				}
+			}
 			if e = wire.VerifyReportFile(file, func(chunk wire.FileChunk) ([]byte, error) {
 				b, e := fetchProofObject(wire.Object{SHA256: chunk.SHA256, Bytes: chunk.Bytes, Kind: "binary"})
 				if e == nil {
@@ -292,7 +301,7 @@ func (s *Store) reachableContext(ctx context.Context, includeStaging bool) (map[
 		}
 		switch tuple[0] {
 		case "report-files":
-			if set.Count > 8 {
+			if set.Count > 9 {
 				return ErrLimit
 			}
 			return markMap(set.Root, "posting-report-file", func(name, id string) error {

@@ -33,3 +33,26 @@ func TestReportFileIntegrityAndBounds(t *testing.T) {
 		})
 	}
 }
+
+func TestReportArchiveDescriptorAndSourceSeal(t *testing.T) {
+	file := ReportFile{Schema: 1, Kind: "report-file", ReportID: Hash([]byte("report")), Name: "report.tar.gz", MediaType: "application/gzip", Encoding: "identity", SHA256: Hash([]byte("opaque archive")), Bytes: 14, Chunks: []FileChunk{{Hash([]byte("opaque archive")), 14}}, PackingVersion: "sealed-files-tar-gzip-v1", SourceSealSHA256: Hash([]byte("seal"))}
+	body, _ := Encode(file)
+	if _, e := ReportFileData(body); e != nil {
+		t.Fatal(e)
+	}
+	source, _ := Encode(map[string]string{"sourceSealSha256": file.SourceSealSHA256})
+	if e := file.ValidateSource(source); e != nil {
+		t.Fatal(e)
+	}
+	if e := file.ValidateSource([]byte(`{"sourceSealSha256":"different"}`)); e == nil {
+		t.Fatal("foreign source seal accepted")
+	}
+	for _, change := range []func(*ReportFile){func(f *ReportFile) { f.PackingVersion = "" }, func(f *ReportFile) { f.MediaType = "application/vnd.apache.parquet" }, func(f *ReportFile) { f.SourceSealSHA256 = "" }, func(f *ReportFile) { f.Name = "samples.parquet" }, func(f *ReportFile) { f.Bytes = 0; f.Chunks = []FileChunk{} }} {
+		invalid := file
+		change(&invalid)
+		body, _ := Encode(invalid)
+		if _, e := ReportFileData(body); e == nil {
+			t.Fatal("invalid archive accepted", invalid)
+		}
+	}
+}

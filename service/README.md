@@ -523,3 +523,19 @@ the binding count. The response reports actual job publication time and nullable
 a per-pass observation time; individual producer sampling groups retain their
 original `capturedAt`. No missing date is substituted with a target or release date.
 Bindings and their time/trust roles survive backup, restart and database-free rebuild.
+
+Verified producer exports now include `report.tar.gz` as an explicit report-file
+resource alongside sealed Parquet files. `packingVersion=sealed-files-tar-gzip-v1`
+identifies an offline archive derivative: sorted sealed files, fixed tar ownership/
+permissions/timestamps and gzip level 1, with the exact original `checksums.json`.
+The archive preserves original file bytes, including any builder bytes already
+sealed in the report. It does not imply hermetic replay or replace the session's
+shared parent tool archive. `sourceSealSha256` must match the exported report.
+
+The producer rechecks each original file while streaming into 1 MiB CAS chunks,
+rejects links/escaping paths and limits archive input to 100,000 sealed files,
+16 MiB of seal metadata, 8 GiB raw input and 1 GiB compressed output. The API
+never unpacks or executes archive content. Existing selected chunks and explicit
+whole-file GET/HEAD downloads retain preflight integrity, two-slot admission,
+write deadlines and cancellation. A selected report contains at most nine file
+descriptors. Legacy exports without archive bytes remain readable.

@@ -3,6 +3,7 @@ package wire
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 )
 
 const ReportFileChunkBytes = 1024 * 1024
@@ -13,15 +14,17 @@ type FileChunk struct {
 	Bytes  int    `json:"bytes"`
 }
 type ReportFile struct {
-	Schema    int         `json:"schema"`
-	Kind      string      `json:"kind"`
-	ReportID  string      `json:"reportId"`
-	Name      string      `json:"name"`
-	MediaType string      `json:"mediaType"`
-	Encoding  string      `json:"encoding"`
-	SHA256    string      `json:"sha256"`
-	Bytes     int64       `json:"bytes"`
-	Chunks    []FileChunk `json:"chunks"`
+	Schema           int         `json:"schema"`
+	Kind             string      `json:"kind"`
+	ReportID         string      `json:"reportId"`
+	Name             string      `json:"name"`
+	MediaType        string      `json:"mediaType"`
+	Encoding         string      `json:"encoding"`
+	SHA256           string      `json:"sha256"`
+	Bytes            int64       `json:"bytes"`
+	Chunks           []FileChunk `json:"chunks"`
+	PackingVersion   string      `json:"packingVersion,omitempty"`
+	SourceSealSHA256 string      `json:"sourceSealSha256,omitempty"`
 }
 
 func ReportFileData(data []byte) (ReportFile, error) {
@@ -30,8 +33,15 @@ func ReportFileData(data []byte) (ReportFile, error) {
 		return file, err
 	}
 	names := map[string]bool{"samples.parquet": true, "throughput.parquet": true, "observations.parquet": true, "counters.parquet": true, "engine-events.parquet": true, "code-lifetimes.parquet": true, "memory-samples.parquet": true, "memory-observations.parquet": true}
-	if file.Schema != 1 || file.Kind != "report-file" || !IsHash(file.ReportID) || !names[file.Name] || file.MediaType != "application/vnd.apache.parquet" || file.Encoding != "identity" || !IsHash(file.SHA256) || file.Bytes < 0 || file.Bytes > ReportFileBytes || file.Chunks == nil || len(file.Chunks) > 1024 {
+	if file.Schema != 1 || file.Kind != "report-file" || !IsHash(file.ReportID) || file.Encoding != "identity" || !IsHash(file.SHA256) || file.Bytes < 0 || file.Bytes > ReportFileBytes || file.Chunks == nil || len(file.Chunks) > 1024 {
 		return file, Invalid("invalid report file descriptor")
+	}
+	if file.Name == "report.tar.gz" {
+		if file.MediaType != "application/gzip" || file.PackingVersion != "sealed-files-tar-gzip-v1" || !IsHash(file.SourceSealSHA256) || file.Bytes == 0 {
+			return file, Invalid("invalid report archive descriptor")
+		}
+	} else if !names[file.Name] || file.MediaType != "application/vnd.apache.parquet" || file.PackingVersion != "" || file.SourceSealSHA256 != "" {
+		return file, Invalid("invalid analytical file descriptor")
 	}
 	var total int64
 	for i, chunk := range file.Chunks {
@@ -59,6 +69,19 @@ func VerifyReportFile(file ReportFile, fetch func(FileChunk) ([]byte, error)) er
 	}
 	if hex.EncodeToString(hash.Sum(nil)) != file.SHA256 {
 		return Invalid("report file digest differs")
+	}
+	return nil
+}
+
+func (f ReportFile) ValidateSource(data []byte) error {
+	if f.Name != "report.tar.gz" {
+		return nil
+	}
+	var report struct {
+		Seal string `json:"sourceSealSha256"`
+	}
+	if e := json.Unmarshal(data, &report); e != nil || report.Seal != f.SourceSealSHA256 {
+		return Invalid("report archive source seal differs")
 	}
 	return nil
 }

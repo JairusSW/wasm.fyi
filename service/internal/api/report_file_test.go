@@ -17,7 +17,9 @@ import (
 	"time"
 )
 
-func TestReportFileChunksAndRecovery(t *testing.T) {
+func TestReportFileChunksAndRecovery(t *testing.T)    { testReportFileChunksAndRecovery(t, false) }
+func TestReportArchiveChunksAndRecovery(t *testing.T) { testReportFileChunksAndRecovery(t, true) }
+func testReportFileChunksAndRecovery(t *testing.T, archive bool) {
 	dir := t.TempDir()
 	s, err := store.Open(filepath.Join(dir, "live"), "test")
 	if err != nil {
@@ -30,6 +32,12 @@ func TestReportFileChunksAndRecovery(t *testing.T) {
 	}
 	content := append(bytes.Repeat([]byte{17}, wire.ReportFileChunkBytes), []byte("tail")...)
 	file := wire.ReportFile{Schema: 1, Kind: "report-file", ReportID: job.Exports[0].Manifest.ReportID, Name: "samples.parquet", MediaType: "application/vnd.apache.parquet", Encoding: "identity", SHA256: wire.Hash(content), Bytes: int64(len(content)), Chunks: []wire.FileChunk{}}
+	if archive {
+		file.Name = "report.tar.gz"
+		file.MediaType = "application/gzip"
+		file.PackingVersion = "sealed-files-tar-gzip-v1"
+		file.SourceSealSHA256 = job.Exports[0].Manifest.SourceSealSHA256
+	}
 	for start := 0; start < len(content); start += wire.ReportFileChunkBytes {
 		b := content[start:min(start+wire.ReportFileChunkBytes, len(content))]
 		id := wire.Hash(b)
