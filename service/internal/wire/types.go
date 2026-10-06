@@ -271,6 +271,7 @@ type Result struct {
 	Evidence               []string           `json:"evidence"`
 	MeasurementMethod      *MeasurementMethod `json:"measurementMethod,omitempty"`
 	MeasurementMethodID    string             `json:"measurementMethodId,omitempty"`
+	SamplingGroup          *SamplingGroup     `json:"samplingGroup,omitempty"`
 }
 
 func (r Result) Cell() string {

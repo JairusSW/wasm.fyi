@@ -919,3 +919,32 @@ addresses, health probes, immutable constructor policy and rejected CLI trust
 flags. This completes an explicit proxy policy implementation; real proxy
 configuration/deployment, wider ingress load and distributed identity policy are
 not claimed by these local tests.
+
+### Source-owned sampling identities
+
+Fresh producer results now carry optional, bounded `samplingGroup` provenance:
+source pass ID/timestamp, source manifest hash, canonical trial-ID/trial-hash
+population digest, trial-record count and runtime/workload/scenario/profile
+binding. Report metadata, report-analysis version and exporter identity do not
+create this group. Distinct pass identities or changed trial records produce
+distinct group hashes, even when block numbers coincide. Missing source pass or
+timestamp yields no inferred group. Timing includes its source outcome population;
+memory uses the explicit contributing trial set. Trial-record count is not an
+assertion about independent launch count.
+
+The service validates descriptor digest/bindings on import and recovery, preserves
+it in selected result summaries and carries its ID in cohort membership. Schemas
+and generated types describe the field. Same-report observation identity strips
+this provenance enrichment so adding it cannot manufacture another measurement;
+representation selection prefers the enriched record when other evidence quality
+is equal. Tests cover stable group identity across report-analysis changes,
+different source passes with equal blocks, changed trial bytes, missing context,
+invalid descriptor bindings and unchanged same-report observation identity.
+
+A fresh installed producer verified and exported the existing Wasmer/Deno call
+reports. Serving parity retains 24 source analysis fields, four timing and four
+memory summaries with the new descriptors; external schema validation checked
+184 instances. Full race tests and vet pass. These source identities establish the
+input contract for the next versioned cross-report history policy; current history
+remains report-scoped and aggregate uncertainty remains unavailable. Cross-report
+capture aliasing and resampling compatibility are not claimed complete here.

@@ -92,6 +92,11 @@ func (m MeasurementMethod) Validate(result Result) error {
 func (m MeasurementMethod) ID() string { b, _ := Encode(m); return Hash(b) }
 
 func (r Result) ValidateMethod() error {
+	if r.SamplingGroup != nil {
+		if err := r.SamplingGroup.Validate(r); err != nil {
+			return err
+		}
+	}
 	if r.MeasurementMethod == nil {
 		if r.MeasurementMethodID != "" {
 			return Invalid("method digest has no descriptor")

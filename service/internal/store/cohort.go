@@ -301,7 +301,11 @@ func (s *Store) ComputeCohort(ctx context.Context, scope CohortScope) (Cohort, e
 			if status != "ok" {
 				c.Excluded[reason]++
 			}
-			row.Cells = append(row.Cells, comparison.Cell{Configuration: lane, ExactConfiguration: v.ConfigurationID, Contract: v.ContractID, Definition: v.MetricDefinitionID, Method: v.MeasurementMethodID, Result: record.ID, Report: v.ReportID, Status: status, Value: number, SourceValue: sourceSummary[v.Statistic], ApproximateValue: approximate})
+			groupID := ""
+			if v.SamplingGroup != nil {
+				groupID = v.SamplingGroup.ID
+			}
+			row.Cells = append(row.Cells, comparison.Cell{Configuration: lane, ExactConfiguration: v.ConfigurationID, Contract: v.ContractID, Definition: v.MetricDefinitionID, Method: v.MeasurementMethodID, SamplingGroup: groupID, Result: record.ID, Report: v.ReportID, Status: status, Value: number, SourceValue: sourceSummary[v.Statistic], ApproximateValue: approximate})
 			total++
 			if total > comparison.MaxCells || len(rows) > 10000 {
 				return c, ErrLimit

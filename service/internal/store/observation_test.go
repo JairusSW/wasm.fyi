@@ -249,3 +249,24 @@ func TestLegacyRevisionObservationIndexMigration(t *testing.T) {
 		t.Fatal("migration changed an immutable legacy revision", err)
 	}
 }
+
+func TestSamplingProvenanceEnrichmentKeepsSameReportObservation(t *testing.T) {
+	date := time.Date(2026, 10, 5, 0, 0, 0, 0, time.UTC)
+	value := wire.Result{ReportID: wire.Hash([]byte("report")), Runtime: "engine", Workload: "fixture/a", Scenario: "steady", Profile: "timing", Created: date, Summary: json.RawMessage(`{"median_ns_per_operation":4}`)}
+	raw, _ := wire.Encode(value)
+	record := wire.Record{Kind: "result", ID: wire.Hash(raw), Data: raw}
+	before, err := observationID(record)
+	if err != nil {
+		t.Fatal(err)
+	}
+	group := wire.SamplingGroup{Schema: 1, PassID: "pass", CapturedAt: date, Runtime: value.Runtime, Workload: value.Workload, Scenario: value.Scenario, Profile: value.Profile, ManifestSHA256: wire.Hash([]byte("manifest")), TrialsSHA256: wire.Hash([]byte("trials")), TrialCount: 1}
+	group.ID = group.Digest()
+	value.SamplingGroup = &group
+	raw, _ = wire.Encode(value)
+	record.ID = wire.Hash(raw)
+	record.Data = raw
+	after, err := observationID(record)
+	if err != nil || before != after {
+		t.Fatal("sampling provenance became a new measurement", err)
+	}
+}

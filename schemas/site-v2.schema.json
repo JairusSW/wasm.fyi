@@ -287,6 +287,9 @@
         },
         "measurementMethodId": {
           "$ref": "#/$defs/Digest"
+        },
+        "samplingGroup": {
+          "$ref": "#/$defs/SamplingGroup"
         }
       },
       "required": [
@@ -1289,6 +1292,9 @@
         },
         "measurementMethodId": {
           "$ref": "#/$defs/Digest"
+        },
+        "samplingGroup": {
+          "$ref": "#/$defs/SamplingGroup"
         }
       },
       "required": [
@@ -1580,6 +1586,9 @@
         },
         "approximateValue": {
           "type": "boolean"
+        },
+        "samplingGroup": {
+          "$ref": "#/$defs/Digest"
         }
       },
       "required": [
@@ -1655,6 +1664,63 @@
         "total",
         "complete",
         "nextCursor"
+      ],
+      "additionalProperties": false
+    },
+    "SamplingGroup": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 1
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "passId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "capturedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "runtime": {
+          "type": "string"
+        },
+        "workload": {
+          "type": "string"
+        },
+        "scenario": {
+          "type": "string"
+        },
+        "profile": {
+          "type": "string"
+        },
+        "manifestSha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "trialsSha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "trialCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        }
+      },
+      "required": [
+        "schema",
+        "id",
+        "passId",
+        "capturedAt",
+        "runtime",
+        "workload",
+        "scenario",
+        "profile",
+        "manifestSha256",
+        "trialsSha256",
+        "trialCount"
       ],
       "additionalProperties": false
     }

@@ -26,6 +26,7 @@ type Cell struct {
 	ExactConfiguration string          `json:"exactConfiguration,omitempty"`
 	Contract           string          `json:"contract,omitempty"`
 	Method             string          `json:"method,omitempty"`
+	SamplingGroup      string          `json:"samplingGroup,omitempty"`
 	Definition         string          `json:"definition,omitempty"`
 	SourceValue        json.RawMessage `json:"sourceValue,omitempty"`
 	ApproximateValue   bool            `json:"approximateValue,omitempty"`

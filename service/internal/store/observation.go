@@ -25,6 +25,9 @@ func observationID(record wire.Record) (string, error) {
 	// representation; it does not create another independent measurement.
 	value.MeasurementMethod = nil
 	value.MeasurementMethodID = ""
+	// Sampling provenance is enrichment until a versioned history policy can
+	// connect equivalent captures across reports. Preserve same-report identity.
+	value.SamplingGroup = nil
 	value.Summary, _ = wire.Encode(summary)
 	b, err := wire.Encode(value)
 	if err != nil {
@@ -43,6 +46,9 @@ func (s *Store) representationRank(revision Revision, record wire.Record) (int, 
 		rank = 1
 	}
 	if value.MeasurementMethod != nil && value.MeasurementMethod.Status == "available" {
+		rank++
+	}
+	if value.SamplingGroup != nil {
 		rank++
 	}
 	var summary struct {
