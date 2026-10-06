@@ -125,9 +125,12 @@ func copyRegular(ctx context.Context, src *os.Root, name, destination string, ce
 	return out, nil
 }
 func (s *Store) Backup(ctx context.Context, destination string) (BackupManifest, error) {
-	s.publish.Lock()
+	manifest := BackupManifest{Schema: 1, Files: []wire.Object{}}
+	if e := s.publish.LockContext(ctx); e != nil {
+		return manifest, e
+	}
 	defer s.publish.Unlock()
-	manifest := BackupManifest{Schema: 1, Current: s.Current(), Files: []wire.Object{}}
+	manifest.Current = s.Current()
 	if e := ctx.Err(); e != nil {
 		return manifest, e
 	}

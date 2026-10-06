@@ -69,7 +69,9 @@ func (s *Store) AttachInventory(job, digest string) error {
 	return s.AttachInventoryContext(context.Background(), job, digest)
 }
 func (s *Store) AttachInventoryContext(ctx context.Context, job, digest string) error {
-	s.publish.Lock()
+	if e := s.publish.LockContext(ctx); e != nil {
+		return e
+	}
 	defer s.publish.Unlock()
 	if s.poisoned.Load() {
 		return ErrNeedsRestart

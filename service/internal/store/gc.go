@@ -41,7 +41,9 @@ func (s *Store) GC(ctx context.Context, options GCOptions) (GCReport, error) {
 	if options.Now.IsZero() {
 		options.Now = time.Now().UTC()
 	}
-	s.publish.Lock()
+	if e := s.publish.LockContext(ctx); e != nil {
+		return report, e
+	}
 	defer s.publish.Unlock()
 	if e := ctx.Err(); e != nil {
 		return report, e

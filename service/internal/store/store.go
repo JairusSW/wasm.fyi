@@ -45,7 +45,7 @@ type Revision struct {
 type Store struct {
 	db           *pebble.DB
 	root         string
-	publish      sync.Mutex
+	publish      publicationLock
 	mu           sync.RWMutex
 	published    map[string]Revision
 	current      string
@@ -425,7 +425,9 @@ func (s *Store) Commit(id string) (string, error) {
 	return s.CommitContext(context.Background(), id)
 }
 func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
-	s.publish.Lock()
+	if e := s.publish.LockContext(ctx); e != nil {
+		return "", e
+	}
 	defer s.publish.Unlock()
 	if s.poisoned.Load() {
 		return "", ErrNeedsRestart

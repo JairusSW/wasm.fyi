@@ -3,11 +3,14 @@ package main
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -225,5 +228,90 @@ func TestServeOwnsControlLifecycle(t *testing.T) {
 	}
 	if _, err := os.Lstat(socket); !os.IsNotExist(err) {
 		t.Fatal("serve left socket", err)
+	}
+}
+
+type signalUploadRead struct {
+	reader  io.Reader
+	started chan struct{}
+	once    sync.Once
+}
+
+func (r *signalUploadRead) Read(b []byte) (int, error) {
+	r.once.Do(func() { close(r.started) })
+	return r.reader.Read(b)
+}
+
+func TestControlCanceledQueueReleasesAdmissionWhilePublisherBlocked(t *testing.T) {
+	s, root, _, _ := controlFixture(t)
+	job, _, e := testutil.Fixture("held-publisher", time.Now().UTC())
+	if e != nil {
+		t.Fatal(e)
+	}
+	if _, e := s.Submit(job); e != nil {
+		t.Fatal(e)
+	}
+	reader, writer := io.Pipe()
+	defer writer.Close()
+	defer reader.Close()
+	waiting := &signalUploadRead{reader: reader, started: make(chan struct{})}
+	uploadDone := make(chan error, 1)
+	go func() { uploadDone <- s.InstallDeclared(job.Exports[0].Manifest.Objects[0].SHA256, waiting) }()
+	<-waiting.started
+	socket := filepath.Join(root, "control.sock")
+	server, e := startControl(context.Background(), socket, s)
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer server.Close()
+	connection, e := net.Dial("unix", socket)
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer connection.Close()
+	if _, e := fmt.Fprint(connection, "POST /gc HTTP/1.1\r\nHost: local\r\nContent-Length: 2\r\n\r\n{}"); e != nil {
+		t.Fatal(e)
+	}
+	probe := func() error {
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		defer cancel()
+		return callControl(ctx, socket, "gc", "", false, io.Discard)
+	}
+	deadline := time.Now().Add(3 * time.Second)
+	for {
+		e = probe()
+		if e != nil && strings.Contains(e.Error(), "409") {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("queued control request never acquired admission", e)
+		}
+	}
+	if e := connection.Close(); e != nil {
+		t.Fatal(e)
+	}
+	deadline = time.Now().Add(3 * time.Second)
+	for {
+		e = probe()
+		if errors.Is(e, context.DeadlineExceeded) {
+			break
+		} // admitted, now queued at the publisher
+		if time.Now().After(deadline) {
+			t.Fatal("canceled queue retained control admission", e)
+		}
+	}
+	// The original publisher remains blocked throughout both control requests.
+	select {
+	case e := <-uploadDone:
+		t.Fatal("canceled maintenance released publisher ownership", e)
+	default:
+	}
+	if e := reader.CloseWithError(context.Canceled); e != nil {
+		t.Fatal(e)
+	}
+	select {
+	case <-uploadDone:
+	case <-time.After(2 * time.Second):
+		t.Fatal("upload did not release publication owner")
 	}
 }

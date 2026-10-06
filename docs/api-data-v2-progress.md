@@ -1387,3 +1387,20 @@ so a subsequent job can submit and publish. Existing scope/origin, large-plan,
 parent, inventory and actual process-crash recovery tests remain applicable.
 Cancellation is cooperative at bounded reads/validation steps; this does not
 claim that operating-system file reads themselves can be interrupted.
+
+## Cancelable waits for publication ownership
+
+The publication lock now supports context-bearing acquisition while retaining
+ordinary exclusive serialization for callers without a context. Backup, cleanup,
+commit and inventory attachment can leave the queue when their context is canceled
+or reaches its deadline. Waiting cancellation needs no helper goroutine and never
+releases another operation's ownership. If cancellation races lock readiness, the
+new owner releases the lock and returns the context error before doing work.
+
+Race tests hold a publisher lock while each context-bearing operation cancels,
+verify that the queued request returns while the publisher still holds ownership,
+and exercise normal/cancelable writers together. A real Unix control-socket test
+holds a declared upload in its reader, disconnects a queued cleanup client, then
+proves control admission is available to another request before the upload ends.
+Existing live backup/cleanup, admission and shutdown tests remain applicable.
+This closes the queue-cancellation gap left after integrity scans became cancelable.
