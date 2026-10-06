@@ -451,3 +451,49 @@ backend hosting evidence only: current Svelte components still load the bundled
 snapshot and do not yet resolve newly imported workloads through the API. Crawler
 reference pages, lazy client rendering and production cutover remain separate
 acceptance gates.
+
+## Website comparison policy parity
+
+The storage-independent selection/weighting functions now live in
+`src/lib/comparison-policy.ts`. Existing aggregate and history consumers retain
+their exports, layouts and calculations. `service/internal/comparison` implements
+the corresponding shared-workload geometric mean, equal-workload/equal-corpus
+weighting, available-boundary-cell arithmetic RSS policy and a separately named
+matched-boundary-cell arithmetic policy. Inputs require an explicit baseline,
+exact row keys, recorded corpus groups when used and result/report references.
+The future store adapter must build keys from compatible exact contracts and
+measurement selectors; logical names cannot establish equivalence.
+
+Output retains requested/participating/omitted configurations, baseline identity,
+every member and weight, per-configuration report identities, boundary-cell and
+logical-workload counts, available values and nullable ratios. Missing baselines
+never select a substitute. Available-cell RSS retains unequal populations; matched
+RSS is a distinct policy. Unsupported cross-report aggregate intervals remain
+unavailable with a reason under `wasmfyi-cohort-v1`; the legacy browser bootstrap
+has not been changed by this extraction and requires its own methodological
+review during consumer migration.
+
+`scripts/cohort-parity-fixture.mjs` evaluates the existing website aggregates over
+the generated digest-checked view and freezes six host/weighting/RSS fixtures in
+`service/testdata/cohort-current.json`. Source hashes identify the exact view and
+policy code. These legacy fixture contract/result keys are explicitly labels,
+not reconstructed producer contracts or new independently verified evidence.
+Go tests compare values, ratios, counts and report membership against those
+existing website results. Separate cases cover mismatched exact-contract keys,
+unequal/matched RSS populations, omitted configurations, absent baselines,
+nonpositive/nonfinite/missing measurements, duplicate cells, cancellation and
+detached membership values. Regenerate/verify with:
+
+```sh
+node scripts/view-data.mjs
+node scripts/cohort-parity-fixture.mjs          # verify frozen current-site input
+# Only after reviewing changes to source values and policies:
+node scripts/cohort-parity-fixture.mjs --write
+cd service && go test -race ./internal/comparison
+```
+
+The current site aggregate/history suites (36 tests) still pass after extraction.
+This is the comparison policy layer, not an implemented `/aggregates` or
+`/cohorts/{id}` endpoint: canonical producer-summary selectors, compatibility
+checks, bounded membership pagination, method-aware caching and precomputed
+overview scopes remain required before those serving gates are complete.
