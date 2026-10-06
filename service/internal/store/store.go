@@ -508,6 +508,7 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 	if len(missing) > 0 {
 		return "", wire.Invalid(fmt.Sprintf("import missing %d objects", len(missing)))
 	}
+	var nativeProofs nativeValidationPass
 	records := map[string]wire.Record{}
 	digests := map[string]string{}
 	evidence := map[string]bool{}
@@ -664,7 +665,10 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 				if artifact.Inspection.Metadata != "" && !wire.IsHash(contract.SHA256) {
 					return "", wire.Invalid("inspection lacks locked module identity")
 				}
-				if e = s.validateNativeInspection(artifact, contract.SHA256, func(id string) ([]byte, error) {
+				if e = nativeProofs.validate(ctx, s, artifact, contract.SHA256, func(id string) ([]byte, error) {
+					if e := ctx.Err(); e != nil {
+						return nil, e
+					}
 					if !evidence[id] {
 						return nil, wire.Invalid("undeclared inspection resource")
 					}
@@ -719,7 +723,7 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 		if artifact.Inspection.Metadata != "" && !evidence[artifact.Inspection.Metadata] {
 			return "", wire.Invalid("unresolved inspection metadata")
 		}
-		if err = s.validateNativeInspection(artifact, "", func(id string) ([]byte, error) {
+		if err = nativeProofs.validate(ctx, s, artifact, "", func(id string) ([]byte, error) {
 			if e := ctx.Err(); e != nil {
 				return nil, e
 			}

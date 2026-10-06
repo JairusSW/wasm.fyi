@@ -1738,3 +1738,22 @@ These gates establish selected real-evidence cross-architecture portable recover
 They do not establish physical power-loss/device-failure durability, production
 backup/restore operations, wider retention scale or actual remote CI. The larger
 Wasmtime function-export scientific/serving parity gate remains active separately.
+
+## Native inspection proof reuse within one operation
+
+Publication and one reachability/backup/cleanup validation pass now retain at
+most 256 fixed-size native-inspection receipts. Each receipt keys the validated
+artifact descriptor and remembers whether an exact result module was bound.
+Repeated result/standalone-artifact validation can reuse the proof without
+retaining functions, listing text or decoded evidence. An unbound proof cannot
+establish a later module contract; different modules still reach the original
+identity check. Receipt exhaustion simply falls back to validation.
+
+Receipts never survive the operation. Cancellation is checked on cache hits and
+between evidence reads; fresh operations revalidate missing/corrupt content.
+Read-count, exact-module/unbound/mismatched-module, quota, cancellation and fresh
+missing/corrupt diagnostic regressions pass under the race detector, alongside
+native function/inspection and disassembly portable/crash gates. Vet passes.
+This avoids repeated same-operation proof work; no end-to-end performance claim
+is made. The already-running large real parity process still uses its original
+binary and remains pending; it was not restarted for this change.

@@ -71,6 +71,7 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 	return s.reachableContext(context.Background(), includeStaging)
 }
 func (s *Store) reachableContext(ctx context.Context, includeStaging bool) (map[string]bool, error) {
+	var nativeProofs nativeValidationPass
 	if e := ctx.Err(); e != nil {
 		return nil, e
 	}
@@ -222,7 +223,12 @@ func (s *Store) reachableContext(ctx context.Context, includeStaging bool) (map[
 			if e != nil {
 				return e
 			}
-			if e = s.validateNativeInspection(artifact, "", s.content); e != nil {
+			if e = nativeProofs.validate(ctx, s, artifact, "", func(id string) ([]byte, error) {
+				if e := ctx.Err(); e != nil {
+					return nil, e
+				}
+				return s.content(id)
+			}); e != nil {
 				return e
 			}
 			if artifact.Content.Status == "available" {
