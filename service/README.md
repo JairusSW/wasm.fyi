@@ -696,3 +696,43 @@ prepared views remain readable. At the projection ceiling, registration can evic
 replaceable derived views in the same candidate, retaining presets and original
 measurement records. Restart after a commit interruption recovers both entries
 or neither; retry remains idempotent.
+
+
+The native lifecycle smoke runner also accepts an existing producer export:
+
+```sh
+python3 scripts/api-service-smoke.py --binary /path/to/wasmfyi \
+  --fixture /path/to/site-v2-export --source-report /path/to/sealed-report \
+  --producer-binary /path/to/wasmbench --export /path/to/new-portable-bundle
+python3 scripts/api-service-smoke.py --binary /path/to/other-platform-wasmfyi \
+  --recover /path/to/new-portable-bundle
+```
+
+Run from the site root. Source mode invokes the producer's `verify-report`, binds
+the export to the report/seal digests and retains the verifier binary hash.
+Paged inventories activate through authenticated HTTP before missing-body
+uploads; local object reads verify bounded sizes and hashes without retaining
+all evidence bodies in memory. Publisher 429 retries share the same bounded
+per-request deadline: 30 seconds for ordinary requests and five minutes for
+explicit plan/import commits. The test association is synthetic, with no benchmark
+execution or operator qualification claim.
+
+Recovery uses only the portable bundle. It compares complete paged result/history
+responses and signed cursors, and stream-hashes each explicit original report-file
+download after restore and DB-free rebuild. Older bundles remain readable without
+claiming checks their expectation files do not contain. Python optimization is
+rejected so disabled assertions cannot produce a passing gate.
+
+
+Completed-job and plan commits have a dedicated five-minute API context and
+transport write deadline. The authenticated handler overrides the server's
+ordinary 30-second writer limit; ordinary public reads keep their 15-second
+context. The collection publisher uses the same five-minute commit budget across
+rate-limit retries and response reads, while cancellation still stops the request.
+This is a bounded publication operation, not an extension of normal read budgets.
+
+The lifecycle runner logs each phase duration to stderr. Recovery CLI subprocesses
+have a ten-minute validation limit; failures retain their isolated temporary store
+and command/service logs, with the path printed to stderr. Successful runs remove
+only their own temporary store. A larger import passing HTTP publication alone is
+not a completed backup/restore qualification.

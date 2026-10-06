@@ -30,7 +30,8 @@ function publicationClient({url,token,signal,request}){
     signal?.throwIfAborted();
     // This deadline covers every retry, delay and response read together.
     // The API rejects rate-limited requests before publication/upload work.
-    const requestSignal=AbortSignal.any([...(signal?[signal]:[]),AbortSignal.timeout(30000)]);
+    const commit=method==='POST'&&/^\/admin\/v1\/(imports|plans)\/[a-f0-9]{64}\/commit$/.test(path);
+    const requestSignal=AbortSignal.any([...(signal?[signal]:[]),AbortSignal.timeout(commit?300000:30000)]);
     for(;;){
       requestSignal.throwIfAborted();
       const response=await request(url+path,{method,body,redirect:'error',signal:requestSignal,headers:{Authorization:'Bearer '+token,...(body?{'Content-Type':Buffer.isBuffer(body)?'application/octet-stream':'application/json'}:{})}});

@@ -17,7 +17,9 @@ test('API origin requires HTTPS except loopback and excludes embedded secrets',(
  assert.equal(publicationURL('http://127.0.0.1:8090'),'http://127.0.0.1:8090');
  for(const u of ['http://other.test','https://u:p@wasm.fyi','https://wasm.fyi?token=x','https://wasm.fyi/api'])assert.throws(()=>publicationURL(u));
 });
-test('completed corpus uploads only missing objects, publishes idempotently, retains failures',async()=>{
+test('completed corpus uploads only missing objects, publishes idempotently, retains failures',async(t)=>{
+ const timeouts=[]; const realTimeout=AbortSignal.timeout.bind(AbortSignal);
+ t.mock.method(AbortSignal,'timeout',milliseconds=>{timeouts.push(milliseconds);return realTimeout(milliseconds)});
  const root=await mkdtemp(join(tmpdir(),'wasmfyi-api-'));let child;let exit;
  try{
   const binary=join(root,'wasmfyi');await runCommand('go',['build','-o',binary,'./cmd/wasmfyi'],{cwd:join(site,'service')});
@@ -74,7 +76,10 @@ test('completed corpus uploads only missing objects, publishes idempotently, ret
 
   await assert.rejects(publishCompletedJob({...args,machine:'other-machine',request:async()=>{throw Error('Wrong parent reached API')}}),/outside session plan|another plan or machine/);
   const parentPath=join(local,'bundle/index.json'),savedParent=await readFile(parentPath),uncommittedParent=JSON.parse(savedParent);delete uncommittedParent.metadataSha256;await writeFile(parentPath,JSON.stringify(uncommittedParent));await assert.rejects(publishCompletedJob({...args,request:async()=>{throw Error('Uncommitted metadata reached API')}}),/metadata digest required/);await writeFile(parentPath,savedParent);
-  const revision=await publishCompletedJob(args);assert.match(revision,/^[a-f0-9]{64}$/);assert(uploads>0);uploads=0;assert.equal(await publishCompletedJob(args),revision);assert.equal(uploads,0,'Duplicate transferred existing evidence');
+  const revision=await publishCompletedJob(args);
+  assert(timeouts.includes(300000),'Commit lacks five-minute deadline');
+  assert(timeouts.includes(30000),'Ordinary publication requests lost short deadline');
+  assert.match(revision,/^[a-f0-9]{64}$/);assert(uploads>0);uploads=0;assert.equal(await publishCompletedJob(args),revision);assert.equal(uploads,0,'Duplicate transferred existing evidence');
   const manifest=await (await fetch(url+'/api/v1/manifest')).json();assert.equal(manifest.revision,revision);
   const publishedJobs=await(await fetch(url+'/api/v1/sessions/'+plan.id+'/jobs?revision='+revision)).json();
   const historyContext=await(await fetch(url+'/api/v1/history/jobs/'+publishedJobs.items[0].id+'?revision='+revision)).json();

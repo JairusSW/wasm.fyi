@@ -243,13 +243,7 @@ func (a *API) serveRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer finish()
-	timeout := 15 * time.Second
-	bulkPath := strings.Split(strings.Trim(strings.TrimPrefix(r.URL.Path, "/api/v1/"), "/"), "/")
-	bulk := strings.HasPrefix(r.URL.Path, "/api/v1/") && len(bulkPath) == 3 && (bulkPath[0] == "files" || bulkPath[0] == "archives") && wire.IsHash(bulkPath[1]) && bulkPath[2] == "download" && (r.Method == "GET" || r.Method == "HEAD")
-	bulk = bulk || strings.HasPrefix(r.URL.Path, "/api/v1/") && len(bulkPath) == 3 && bulkPath[0] == "artifacts" && wire.IsHash(bulkPath[1]) && (bulkPath[2] == "bytes" || bulkPath[2] == "content") && r.URL.Query().Get("download") == "1" && (r.Method == "GET" || r.Method == "HEAD")
-	if bulk {
-		timeout = 5 * time.Minute
-	}
+	timeout := requestTimeout(r)
 	ctx, cancel := context.WithTimeout(r.Context(), timeout)
 	defer cancel()
 	defer func() {
@@ -1006,6 +1000,12 @@ func (a *API) admin(w http.ResponseWriter, r *http.Request) {
 			respond(w, r, 200, map[string]any{"items": objects, "complete": true}, false)
 			return
 		case parts[2] == "commit" && r.Method == "POST":
+			stop, err := publicationWriteDeadline(w, r)
+			if err != nil {
+				problem(w, r, err)
+				return
+			}
+			defer stop()
 			id, e := a.Store.CommitPlan(r.Context(), parts[1])
 			if e != nil {
 				problem(w, r, e)
@@ -1105,6 +1105,13 @@ func (a *API) admin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if parts[2] == "commit" && r.Method == "POST" {
+			stop, err := publicationWriteDeadline(w, r)
+			if err != nil {
+				problem(w, r, err)
+				return
+			}
+			defer stop()
+
 			revision, e := a.Store.CommitContext(r.Context(), parts[1])
 			if e != nil {
 				problem(w, r, e)
@@ -1151,4 +1158,30 @@ func nativeRange(header string, size int) (int, int, bool) {
 		return 0, 0, false
 	}
 	return start, length, true
+}
+
+// Authenticated commit handlers extend the server's ordinary write timeout.
+func publicationWriteDeadline(w http.ResponseWriter, r *http.Request) (func(), error) {
+	controller := http.NewResponseController(w)
+	if e := controller.SetWriteDeadline(time.Now().Add(5 * time.Minute)); e != nil && !errors.Is(e, http.ErrNotSupported) {
+		return nil, e
+	}
+	stop := context.AfterFunc(r.Context(), func() { _ = controller.SetWriteDeadline(time.Now()) })
+	return func() { stop() }, nil
+}
+
+func requestTimeout(r *http.Request) time.Duration {
+	timeout := 15 * time.Second
+	bulkPath := strings.Split(strings.Trim(strings.TrimPrefix(r.URL.Path, "/api/v1/"), "/"), "/")
+	bulk := strings.HasPrefix(r.URL.Path, "/api/v1/") && len(bulkPath) == 3 && (bulkPath[0] == "files" || bulkPath[0] == "archives") && wire.IsHash(bulkPath[1]) && bulkPath[2] == "download" && (r.Method == "GET" || r.Method == "HEAD")
+	bulk = bulk || strings.HasPrefix(r.URL.Path, "/api/v1/") && len(bulkPath) == 3 && bulkPath[0] == "artifacts" && wire.IsHash(bulkPath[1]) && (bulkPath[2] == "bytes" || bulkPath[2] == "content") && r.URL.Query().Get("download") == "1" && (r.Method == "GET" || r.Method == "HEAD")
+	commitPath := strings.Split(strings.Trim(strings.TrimPrefix(r.URL.Path, "/admin/v1/"), "/"), "/")
+	publication := strings.HasPrefix(r.URL.Path, "/admin/v1/") && r.Method == "POST" && len(commitPath) == 3 && (commitPath[0] == "imports" || commitPath[0] == "plans") && wire.IsHash(commitPath[1]) && commitPath[2] == "commit"
+	if publication {
+		timeout = 5 * time.Minute
+	}
+	if bulk {
+		timeout = 5 * time.Minute
+	}
+	return timeout
 }

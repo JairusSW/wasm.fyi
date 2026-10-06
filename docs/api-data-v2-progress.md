@@ -1527,3 +1527,45 @@ race detector (120.554 s). The HTTP quota gate returns the existing 507 contract
 and proves the rejected seed projection is absent. Focused store/API race tests,
 Go vet and Linux builds pass. Native Linux execution of these new preset cases
 remains pending because the Docker daemon became unavailable during validation.
+
+
+## Existing-report portable lifecycle gate
+
+The retained standard-library smoke runner now verifies an optional existing
+sealed report with a supplied producer CLI, records report/seal/verifier hashes,
+and imports its export through the actual HTTP publisher. It handles inventory
+activation and missing-only upload with bounded object verification and transient
+429 backoff under a single per-request deadline. Original evidence bodies are
+read on demand, not retained as one global payload map.
+
+Frozen expectations now retain every bounded results/history page, exact totals,
+revision and cursors. Original report-file downloads are streamed into hashes with
+a separate bulk ceiling. Restart, restore and DB-free rebuild must preserve all
+pages and original byte counts/hashes. Recovery reads no source fixture; legacy
+expectation files continue to use only their recorded checks. Optimized Python
+execution is refused rather than skipping assertions.
+
+An independently re-verified Wasmer call report passes the local native lifecycle
+with four result/history rows and seven original resources totaling 48,910,768
+bytes, including its 48,886,252-byte sealed archive. Recovery also passes with an
+explicitly nonexistent fixture path. Associations remain synthetic session/job
+metadata, not collector/remote-worker or operator qualification. Physical
+machine-loss and larger off-machine restore qualification remain pending.
+
+
+The larger paged-export HTTP run exposed a separate publication deadline problem:
+its commit exceeded the smoke socket's ten-second limit, while the API context
+would expire at 15 seconds and the server writer at 30 seconds. Canonical POST
+plan/import commit routes now receive a five-minute context. Only authenticated
+commit handlers override the transport writer deadline, and caller cancellation
+moves that deadline to the present. The actual collection publisher and retained
+smoke runner share a five-minute commit budget across retries and response reads;
+ordinary requests retain their short budgets. Deadline classification,
+authentication/writer override and real coordinator publication tests pass.
+
+The paged real-report run completed HTTP publication and full frozen-page checks,
+then exceeded the test runner's 60-second backup subprocess limit. Recovery
+commands now have an explicit ten-minute test budget, phase timings and separate
+command logs; any failure retains the isolated store for diagnosis. This changes
+test supervision only, not production backup durability or serving budgets.
+The larger portable lifecycle gate remains pending until all phases finish.
