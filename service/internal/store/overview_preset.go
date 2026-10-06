@@ -63,10 +63,14 @@ func (s *Store) validatePreset(keyID string, p OverviewPreset) error {
 	}
 	return nil
 }
+
+// Preset registration publishes its seed projection and configuration together.
+// Cohort computation runs outside the publication lock over a pinned revision;
+// admission is checked again after acquiring the lock for the final commit.
 func (s *Store) RegisterOverviewPreset(ctx context.Context, name string, scope CohortScope) (OverviewPreset, error) {
 	var preset OverviewPreset
 	if !wire.IsIdentity(name) {
-		return preset, wire.Invalid("invalid overview preset name")
+		return preset, wire.Invalid("invalid preset name")
 	}
 	normalized, e := s.NormalizeCohort(scope)
 	if e != nil {
@@ -74,7 +78,39 @@ func (s *Store) RegisterOverviewPreset(ctx context.Context, name string, scope C
 	}
 	preset = OverviewPreset{Name: name, Version: comparison.Version, SeedRevision: normalized.Revision, Scope: normalized}
 	preset.Scope.Revision = ""
-	if _, e = s.PrepareOverview(ctx, normalized); e != nil {
+	if e = s.publish.LockContext(ctx); e != nil {
+		return preset, e
+	}
+	var view OverviewResponse
+	var preparedErr error
+	func() {
+		defer s.publish.Unlock()
+		if s.poisoned.Load() {
+			e = ErrNeedsRestart
+			return
+		}
+		if _, e = s.presetAdmission(ctx, s.overviewRoot(), name); e != nil {
+			return
+		}
+		view, preparedErr = s.preparedOverviewAt(ctx, normalized, s.overviewRoot())
+	}()
+	if e != nil {
+		return preset, e
+	}
+	if preparedErr != nil {
+		if preparedErr != ErrNotFound {
+			return preset, preparedErr
+		}
+		cohort, err := s.ComputeCohort(ctx, normalized)
+		if err != nil {
+			return preset, err
+		}
+		view, e = s.BuildOverview(&cohort)
+		if e != nil {
+			return preset, e
+		}
+	}
+	if e = s.checkpoint("preset-prepared"); e != nil {
 		return preset, e
 	}
 	if e = s.publish.LockContext(ctx); e != nil {
@@ -84,23 +120,47 @@ func (s *Store) RegisterOverviewPreset(ctx context.Context, name string, scope C
 	if s.poisoned.Load() {
 		return preset, ErrNeedsRestart
 	}
-	presets, e := s.overviewPresets(ctx, s.overviewRoot())
+	root, count := s.overviewRoot(), s.overviewCount
+	fresh, e := s.presetAdmission(ctx, root, name)
 	if e != nil {
 		return preset, e
 	}
-	old, e := s.mapGet(s.overviewRoot(), presetPrefix+name)
+	// Another registration/preparation may have installed the same projection.
+	_, preparedErr = s.preparedOverviewAt(ctx, normalized, root)
+	if preparedErr != nil && preparedErr != ErrNotFound {
+		return preset, preparedErr
+	}
+	needed := 0
+	if fresh {
+		needed++
+	}
+	if preparedErr == ErrNotFound {
+		needed++
+	}
+	for count+needed > PreparedOverviewLimit {
+		root, count, e = s.evictOverviewProjection(ctx, root, map[string]bool{overviewKey(normalized): true})
+		if e != nil {
+			return preset, e
+		}
+	}
+	additions := map[string]string{}
+	if preparedErr == ErrNotFound {
+		object, err := s.put(view)
+		if err != nil {
+			return preset, err
+		}
+		additions[overviewKey(normalized)] = object
+	}
+	object, e := s.put(preset)
 	if e != nil {
 		return preset, e
 	}
-	if old == "" && (len(presets) >= OverviewPresetLimit || s.overviewCount >= PreparedOverviewLimit) {
-		return preset, ErrQuota
-	}
-	record, e := s.put(preset)
+	additions[presetPrefix+name] = object
+	root, e = s.mapSetMany(ctx, root, additions, 0)
 	if e != nil {
 		return preset, e
 	}
-	root, e := s.mapSet(s.overviewRoot(), presetPrefix+name, record, 0)
-	if e != nil {
+	if e = s.checkpoint("preset-before-commit"); e != nil {
 		return preset, e
 	}
 	if e = ctx.Err(); e != nil {
@@ -110,17 +170,37 @@ func (s *Store) RegisterOverviewPreset(ctx context.Context, name string, scope C
 		s.poisoned.Store(true)
 		return preset, e
 	}
+	if e = s.checkpoint("preset-after-commit"); e != nil {
+		s.poisoned.Store(true)
+		return preset, e
+	}
 	if e = s.portableRoots(s.Current(), s.registrationRoot(), root); e != nil {
 		s.poisoned.Store(true)
 		return preset, e
 	}
 	s.mu.Lock()
 	s.overviews = root
-	if old == "" {
-		s.overviewCount++
-	}
+	s.overviewCount = count + needed
 	s.mu.Unlock()
 	return preset, nil
+}
+
+// Checks only configuration admission; derived projection capacity can be
+// reclaimed in the same unpublished candidate without touching measurements.
+func (s *Store) presetAdmission(ctx context.Context, root, name string) (bool, error) {
+	presets, e := s.overviewPresets(ctx, root)
+	if e != nil {
+		return false, e
+	}
+	for _, preset := range presets {
+		if preset.Name == name {
+			return false, nil
+		}
+	}
+	if len(presets) >= OverviewPresetLimit {
+		return false, ErrQuota
+	}
+	return true, nil
 }
 
 // Preparation reads an immutable candidate through a temporary application

@@ -29,7 +29,16 @@ func (s *Store) PreparedOverview(ctx context.Context, scope CohortScope) (Overvi
 		return out, e
 	}
 	defer s.publish.Unlock()
-	id, e := s.mapGet(s.overviewRoot(), overviewKey(normalized))
+	return s.preparedOverviewAt(ctx, normalized, s.overviewRoot())
+}
+
+// Caller pins the registry root while holding the publication lock.
+func (s *Store) preparedOverviewAt(ctx context.Context, normalized CohortScope, root string) (OverviewResponse, error) {
+	var out OverviewResponse
+	if e := ctx.Err(); e != nil {
+		return out, e
+	}
+	id, e := s.mapGet(root, overviewKey(normalized))
 	if e != nil {
 		return out, e
 	}

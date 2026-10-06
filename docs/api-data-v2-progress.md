@@ -1499,3 +1499,31 @@ A subprocess refusal gate also proves an empty nested directory on a shared
 tmpfs is rejected before creating storage files; only a real dedicated mount root
 is admissible. Shell syntax, workflow YAML and Linux store vet checks pass.
 Actual GitHub Actions execution and native amd64 exhaustion remain pending.
+
+
+## Atomic preset registration and seed projection
+
+A quota regression showed that registering a ninth preset persisted its seed
+projection before returning the preset-limit error. Registration now checks
+configuration admission before computation, builds against a pinned measurement
+revision outside the publication lock, then rechecks admission under the lock.
+The seed projection and preset share one synchronous registry-root commit and
+portable pointer update. Cancellation or quota rejection leaves the visible
+registry unchanged. At projection capacity, the same candidate evicts replaceable
+derived views while protecting its seed; presets and measurements are retained.
+
+The reproduced quota failure now passes. Concurrent last-slot requests admit
+exactly one preset and leave the losing projection absent, while existing prepared
+reads remain available during preparation. Actual subprocess exits immediately
+before and after the synchronous commit recover neither entry or both; redelivery
+is idempotent and backup/DB-free rebuild retain both. Pre-commit cancellation
+allows retry without poisoning the store. No measurement revision or comparison
+policy changes.
+
+The capacity gate uses 4,096 valid persisted synthetic historical projections,
+not a fabricated counter. New registration and replacement at that limit retain
+presets, stay within the limit and pass backup/DB-free reconstruction under the
+race detector (120.554 s). The HTTP quota gate returns the existing 507 contract
+and proves the rejected seed projection is absent. Focused store/API race tests,
+Go vet and Linux builds pass. Native Linux execution of these new preset cases
+remains pending because the Docker daemon became unavailable during validation.

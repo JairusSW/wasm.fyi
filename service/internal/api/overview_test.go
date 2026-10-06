@@ -1,7 +1,10 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"math"
 	"net/http"
 	"net/url"
@@ -267,5 +270,31 @@ func TestOverviewPresetAdminAndAutomaticHTTP(t *testing.T) {
 	}
 	if w := request(t, h, "GET", "/admin/v1/overview-presets", nil, auth); w.Code != 200 || w.Body.String() != `{"items":[]}` {
 		t.Fatal(w.Code, w.Body.String())
+	}
+}
+
+func TestOverviewPresetQuotaDoesNotPublishUnregisteredHTTPView(t *testing.T) {
+	a, h := telemetryAPI(t, nil)
+	revision := importCohort(t, a.Store, "preset-http-quota", []testutil.CohortCell{{Runtime: "a", Workload: "fixture/one", Value: 4}})
+	scope := apiCohortScope(t, a.Store, revision)
+	auth := map[string]string{"Authorization": "Bearer " + a.Token}
+	for i := 0; i < store.OverviewPresetLimit; i++ {
+		body, _ := wire.Encode(map[string]any{"name": fmt.Sprintf("preset-%d", i), "version": comparison.Version, "scope": scope})
+		if response := request(t, h, "POST", "/admin/v1/overview-presets", body, auth); response.Code != 200 {
+			t.Fatal(response.Code, response.Body.String())
+		}
+	}
+	fresh := scope
+	fresh.Workloads = "all"
+	body, _ := wire.Encode(map[string]any{"name": "rejected", "version": comparison.Version, "scope": fresh})
+	response := request(t, h, "POST", "/admin/v1/overview-presets", body, auth)
+	if response.Code != 507 || !strings.Contains(response.Body.String(), `"code":"storage_quota"`) {
+		t.Fatal("quota not returned", response.Code, response.Body.String())
+	}
+	if _, e := a.Store.PreparedOverview(context.Background(), fresh); !errors.Is(e, store.ErrNotFound) {
+		t.Fatal("rejected HTTP request published seed projection", e)
+	}
+	if a.Store.Current() != revision {
+		t.Fatal("quota failure changed measurement revision")
 	}
 }

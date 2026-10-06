@@ -686,3 +686,13 @@ archive readers propagate that context. Hash, declared size, confinement and
 membership checks remain required. Cancellation cannot interrupt a regular-file
 read already blocked inside the kernel; slow or failed physical filesystems are
 outside this gate's qualification.
+
+
+Preset registration now commits its seed projection and configuration in one
+synchronous registry update. Quota is checked before preparation and again before
+commit, so a failed or canceled registration does not publish a new projection.
+Preparation uses a pinned revision outside the publication lock; existing
+prepared views remain readable. At the projection ceiling, registration can evict
+replaceable derived views in the same candidate, retaining presets and original
+measurement records. Restart after a commit interruption recovers both entries
+or neither; retry remains idempotent.
