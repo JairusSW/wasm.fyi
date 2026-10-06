@@ -52,6 +52,8 @@ type Store struct {
 	current           string
 	registrations     string
 	registrationCount int
+	overviews         string
+	overviewCount     int
 	publisher         string
 	fail              func(string) error
 	poisoned          atomic.Bool
@@ -156,6 +158,9 @@ func (s *Store) get(k []byte) ([]byte, error) {
 	return b, c.Close()
 }
 func (s *Store) restore() error {
+	if e := s.initializeOverviews(); e != nil {
+		return e
+	}
 	if b, e := s.get(key("registrations")); e == nil {
 		s.registrations = string(b)
 		if !wire.IsHash(s.registrations) {

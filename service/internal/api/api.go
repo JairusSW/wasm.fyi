@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/JairusSW/wasm.fyi/service/internal/comparison"
 	"github.com/JairusSW/wasm.fyi/service/internal/store"
 	"github.com/JairusSW/wasm.fyi/service/internal/wire"
 )
@@ -803,6 +804,34 @@ func (a *API) admin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(parts) == 1 && parts[0] == "overviews" && r.Method == "POST" {
+		var input struct {
+			Version string            `json:"version"`
+			Scope   store.CohortScope `json:"scope"`
+		}
+		if e := decode(w, r, &input); e != nil {
+			problem(w, r, e)
+			return
+		}
+		if input.Version != comparison.Version {
+			problem(w, r, wire.Invalid("unsupported comparison version"))
+			return
+		}
+		select {
+		case a.calculating <- struct{}{}:
+			defer func() { <-a.calculating }()
+		default:
+			respond(w, r, 429, map[string]string{"error": "cohort computation concurrency limit"}, false)
+			return
+		}
+		prepared, e := a.Store.PrepareOverview(r.Context(), input.Scope)
+		if e != nil {
+			problem(w, r, e)
+			return
+		}
+		respond(w, r, 200, map[string]string{"revision": prepared.Revision, "digest": prepared.Digest}, false)
+		return
+	}
 	if len(parts) == 1 && parts[0] == "progress" && r.Method == "POST" {
 		var update wire.Progress
 		if e := decode(w, r, &update); e != nil {

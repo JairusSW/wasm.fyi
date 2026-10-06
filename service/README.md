@@ -445,3 +445,19 @@ This proves that process boundary with local filesystem-backed temporary data;
 SSH worker behavior, physical power-loss durability and scientific qualification
 remain separate gates. The test is included in CI, whose execution is not claimed
 by local validation.
+
+Authenticated `POST /admin/v1/overviews` accepts a comparison `scope` and
+`version: "wasmfyi-cohort-v3"`. It resolves an immutable revision and computes
+the complete cohort with the existing comparison implementation, then stores
+the compact projection through synchronous commit and a durable pointer.
+Preparation does not change the measurement revision. The registry retains at
+most 4,096 distinct versioned scopes.
+
+Ordinary overview reads prefer prepared projections, avoiding complete result
+scans and cohort computation slots. Signed cohort tokens are supplied at read
+time; tokens and secrets are not materialized. Detailed membership remains on
+the existing progressive endpoint. Prepared views are revision/analysis/category
+bound and participate in cleanup, backup and DB-free reconstruction. Tests cover
+byte-for-byte HTTP parity, computation admission bypass, restore/rebuild and two
+publication-fault checkpoints. Automatic preset registration and preparation
+after completed-job publication remain pending.

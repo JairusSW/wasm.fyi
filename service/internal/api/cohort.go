@@ -136,6 +136,18 @@ func (a *API) cohort(w http.ResponseWriter, r *http.Request, path string, params
 		problem(w, r, e)
 		return
 	}
+	if path == "overview" {
+		prepared, e := a.Store.PreparedOverview(r.Context(), scope)
+		if e == nil {
+			prepared.Cohort = token
+			respond(w, r, 200, prepared, immutable)
+			return
+		}
+		if e != store.ErrNotFound {
+			problem(w, r, e)
+			return
+		}
+	}
 	keyBytes, _ := wire.Encode(cohortCapsule{comparison.Version, comparison.CategoryVersion, scope})
 	key := wire.Hash(keyBytes)
 	c := a.cohorts.get(key)

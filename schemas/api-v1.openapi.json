@@ -3876,6 +3876,79 @@
           }
         }
       }
+    },
+    "/admin/v1/overviews": {
+      "post": {
+        "summary": "Prepare a durable revision-bound overview",
+        "security": [
+          {
+            "publisherToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "const": "wasmfyi-cohort-v3"
+                  },
+                  "scope": {
+                    "$ref": "./site-v2.schema.json#/$defs/CohortScope"
+                  }
+                },
+                "required": [
+                  "version",
+                  "scope"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Prepared revision and complete-cohort digest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "revision": {
+                      "$ref": "./site-v2.schema.json#/$defs/Digest"
+                    },
+                    "digest": {
+                      "$ref": "./site-v2.schema.json#/$defs/Digest"
+                    }
+                  },
+                  "required": [
+                    "revision",
+                    "digest"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid scope or analysis version"
+          },
+          "401": {
+            "description": "Publisher authentication required"
+          },
+          "429": {
+            "description": "Computation admission limit"
+          },
+          "507": {
+            "description": "Prepared overview quota exceeded"
+          },
+          "503": {
+            "description": "Canceled operation or uncertain durability"
+          }
+        }
+      }
     }
   },
   "components": {

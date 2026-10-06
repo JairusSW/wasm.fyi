@@ -22,6 +22,7 @@ type portablePointer struct {
 	Schema        int    `json:"schema"`
 	Current       string `json:"current"`
 	Registrations string `json:"registrationRoot,omitempty"`
+	Overviews     string `json:"overviewRoot,omitempty"`
 }
 
 func atomicFile(path string, b []byte, mode os.FileMode) error {
@@ -54,7 +55,10 @@ func (s *Store) portable(current string) error {
 	return s.portableWithRegistrations(current, s.registrationRoot())
 }
 func (s *Store) portableWithRegistrations(current, registrations string) error {
-	b, e := wire.Encode(portablePointer{Schema: 1, Current: current, Registrations: registrations})
+	return s.portableRoots(current, registrations, s.overviewRoot())
+}
+func (s *Store) portableRoots(current, registrations, overviews string) error {
+	b, e := wire.Encode(portablePointer{Schema: 1, Current: current, Registrations: registrations, Overviews: overviews})
 	if e != nil {
 		return e
 	}
@@ -650,6 +654,9 @@ func (s *Store) reachableContext(ctx context.Context, includeStaging bool) (map[
 			}
 		}
 	}
+	if e := s.markOverviews(ctx, marked); e != nil {
+		return nil, e
+	}
 	if e := s.markRegistrations(ctx, marked, includeStaging); e != nil {
 		return nil, e
 	}
@@ -766,7 +773,7 @@ func Rebuild(source, destination, publisher string) error {
 	if e = wire.Decode(b, &pointer); e != nil {
 		return e
 	}
-	if pointer.Schema != 1 || pointer.Current != "" && !wire.IsHash(pointer.Current) || pointer.Registrations != "" && !wire.IsHash(pointer.Registrations) {
+	if pointer.Schema != 1 || pointer.Current != "" && !wire.IsHash(pointer.Current) || pointer.Registrations != "" && !wire.IsHash(pointer.Registrations) || pointer.Overviews != "" && !wire.IsHash(pointer.Overviews) {
 		return fmt.Errorf("invalid publication pointer")
 	}
 	objects, e := os.OpenRoot(filepath.Join(source, "objects"))
@@ -774,7 +781,7 @@ func Rebuild(source, destination, publisher string) error {
 		return e
 	}
 	defer objects.Close()
-	reader := &Store{root: source, objects: objects, published: map[string]Revision{}, registrations: pointer.Registrations}
+	reader := &Store{root: source, objects: objects, published: map[string]Revision{}, registrations: pointer.Registrations, overviews: pointer.Overviews}
 	chain := []string{}
 	for id := pointer.Current; id != ""; {
 		if len(chain) >= 1000000 {
@@ -867,6 +874,12 @@ func Rebuild(source, destination, publisher string) error {
 			return e
 		}
 	}
+	if pointer.Overviews != "" {
+		if e = target.db.Set(key("overviews"), []byte(pointer.Overviews), pebble.Sync); e != nil {
+			return e
+		}
+		target.overviews = pointer.Overviews
+	}
 	if e = target.portable(pointer.Current); e != nil {
 		return e
 	}
@@ -909,7 +922,7 @@ func verifyPortable(source string) error {
 	if e = wire.Decode(b, &pointer); e != nil {
 		return e
 	}
-	if pointer.Schema != 1 || pointer.Current != "" && !wire.IsHash(pointer.Current) || pointer.Registrations != "" && !wire.IsHash(pointer.Registrations) {
+	if pointer.Schema != 1 || pointer.Current != "" && !wire.IsHash(pointer.Current) || pointer.Registrations != "" && !wire.IsHash(pointer.Registrations) || pointer.Overviews != "" && !wire.IsHash(pointer.Overviews) {
 		return fmt.Errorf("invalid portable pointer")
 	}
 	objects, e := os.OpenRoot(filepath.Join(source, "objects"))
@@ -917,7 +930,7 @@ func verifyPortable(source string) error {
 		return e
 	}
 	defer objects.Close()
-	reader := &Store{root: source, objects: objects, published: map[string]Revision{}, current: pointer.Current, registrations: pointer.Registrations}
+	reader := &Store{root: source, objects: objects, published: map[string]Revision{}, current: pointer.Current, registrations: pointer.Registrations, overviews: pointer.Overviews}
 	for id := pointer.Current; id != ""; {
 		if _, seen := reader.published[id]; seen {
 			return fmt.Errorf("portable revision cycle")

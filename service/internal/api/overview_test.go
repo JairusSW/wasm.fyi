@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"math"
+	"net/http"
 	"net/url"
 	"path/filepath"
 	"strings"
@@ -180,5 +181,45 @@ func TestOverviewAndAggregateExposeExactSourceConversion(t *testing.T) {
 	var page struct{ Items []comparison.Member }
 	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &page) != nil || len(page.Items) != 1 || string(page.Items[0].Cell.SourceValue) != `"9007199254740993"` || !page.Items[0].Cell.ApproximateValue {
 		t.Fatal("exact original lost", w.Code, w.Body.String())
+	}
+}
+
+func TestPreparedOverviewHTTPParityAndAdmissionBypass(t *testing.T) {
+	s, e := store.Open(filepath.Join(t.TempDir(), "live"), "fixture")
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer s.Close()
+	rev := importCohort(t, s, "prepared-http", []testutil.CohortCell{{Runtime: "a", Workload: "fixture/one", Value: 4}, {Runtime: "b", Workload: "fixture/one", Value: 16}})
+	key, e := s.CursorKey()
+	if e != nil {
+		t.Fatal(e)
+	}
+	token := strings.Repeat("x", 32)
+	h, e := New(s, token, key)
+	if e != nil {
+		t.Fatal(e)
+	}
+	scope := apiCohortScope(t, s, rev)
+	encoded, _ := wire.Encode(scope)
+	path := "/api/v1/overview?version=" + comparison.Version + "&scope=" + url.QueryEscape(string(encoded))
+	ordinary := request(t, h, "GET", path, nil, nil)
+	if ordinary.Code != 200 {
+		t.Fatal(ordinary.Code, ordinary.Body.String())
+	}
+	input, _ := wire.Encode(map[string]any{"version": comparison.Version, "scope": scope})
+	auth := map[string]string{"Authorization": "Bearer " + token}
+	if w := request(t, h, "POST", "/admin/v1/overviews", input, nil); w.Code != 401 {
+		t.Fatal(w.Code)
+	}
+	if w := request(t, h, "POST", "/admin/v1/overviews", input, auth); w.Code != 200 {
+		t.Fatal(w.Code, w.Body.String())
+	}
+	a := &API{Store: s, Token: token, CursorKey: key, active: make(chan struct{}, 8), calculating: make(chan struct{}, 2), limiter: newRequestLimiter(DefaultRequestLimits())}
+	a.calculating <- struct{}{}
+	a.calculating <- struct{}{}
+	prepared := request(t, http.HandlerFunc(a.serve), "GET", path, nil, nil)
+	if prepared.Code != 200 || prepared.Body.String() != ordinary.Body.String() {
+		t.Fatal("prepared HTTP drift or full scan admission", prepared.Code, prepared.Body.String())
 	}
 }
