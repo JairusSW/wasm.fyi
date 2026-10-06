@@ -385,3 +385,21 @@ Malformed metadata tests cover report/trial/module/image mismatches, absent
 functions, overlapping/out-of-bounds ranges, duplicate indices and generations.
 Materialization remains recorded producer evidence; the service does not rerun
 compilation or infer instruction-only sizes or lifetime observations.
+
+
+## Strict query contract
+
+All API reads now parse the raw query with errors preserved. Malformed percent
+encoding, semicolon ambiguity, duplicate fields, invalid UTF-8/NUL values, empty
+scope parameters and unsupported route fields return 400 before dataset lookup.
+Queries have a 16 KiB encoded ceiling, at most 32 distinct fields, 64-byte names
+and 4 KiB decoded values. Revision/chunk parameters require full SHA-256 identities.
+Manifest, health/readiness and authenticated admin routes enforce their own finite
+parameter sets; details cannot silently ignore pagination parameters. Existing
+current/previous and s1/s2 selection aliases remain valid.
+
+Revision-list cursors now bind the requested page size, matching result/catalog
+cursor scope. Tests cover malformed and ambiguous requests across routes, valid
+aliases and page-size cursor tampering. This completes consistent parameter-set
+validation for the implemented routes; additional endpoint contracts and per-caller
+rate limits remain separate gates.

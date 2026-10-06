@@ -215,6 +215,14 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(405)
 			return
 		}
+		params, e := strictQuery(r.URL.RawQuery)
+		if e == nil {
+			e = allowedQuery(params)
+		}
+		if e != nil {
+			problem(w, r, e)
+			return
+		}
 		health := a.Store.Health()
 		status := 200
 		if r.URL.Path == "/readyz" && !health.Ready {
@@ -237,6 +245,14 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	path := strings.Trim(strings.TrimPrefix(r.URL.Path, "/api/v1/"), "/")
+	params, e := strictQuery(r.URL.RawQuery)
+	if e == nil {
+		e = routeQuery(path, params)
+	}
+	if e != nil {
+		problem(w, r, e)
+		return
+	}
 	if path == "manifest" {
 		respond(w, r, 200, map[string]any{"schema": 2, "revision": a.Store.Current(), "selectionAliases": map[string]string{"s1": "current", "s2": "previous"}, "limits": map[string]int{"defaultResults": 100, "maxResults": 1000, "decodedResponseBytes": wire.ResponseBytes, "decodedChunkBytes": wire.ChunkBytes, "scanKeys": store.ScanLimit, "decodedEvidenceResourceBytes": wire.ResourceBytes, "maxEvidenceFragments": wire.ResourceFragments}, "endpoints": []string{"results", "reports", "metrics", "configurations", "environments", "workloads", "artifacts", "history"}}, false)
 		return
@@ -246,7 +262,6 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 		problem(w, r, e)
 		return
 	}
-	params := r.URL.Query()
 	c := cursor{}
 	if token := params.Get("cursor"); token != "" {
 		c, e = a.parse(token)
@@ -296,7 +311,7 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 			}
 			id = v.Parent
 		}
-		a.page(w, r, revision, "revisions", ids, n, c, false)
+		a.page(w, r, revision, "revisions:"+strconv.Itoa(n), ids, n, c, false)
 		return
 	}
 	kinds := map[string]string{"reports": "report", "metrics": "metric", "configurations": "configuration", "tracks": "track", "environments": "environment", "workloads": "workload", "artifacts": "artifact", "results": "result"}
@@ -556,6 +571,17 @@ func (a *API) admin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	parts := strings.Split(strings.Trim(strings.TrimPrefix(r.URL.Path, "/admin/v1/"), "/"), "/")
+	params, e := strictQuery(r.URL.RawQuery)
+	if e == nil && len(parts) == 3 && parts[0] == "imports" && parts[2] == "missing" {
+		e = allowedQuery(params, "offset")
+	} else if e == nil {
+		e = allowedQuery(params)
+	}
+	if e != nil {
+		problem(w, r, e)
+		return
+	}
+
 	if len(parts) == 1 && parts[0] == "metrics" && r.Method == "GET" {
 		stats, e := a.Store.Stats()
 		if e != nil {
@@ -621,8 +647,8 @@ func (a *API) admin(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			offset := 0
-			if r.URL.Query().Get("offset") != "" {
-				offset, e = strconv.Atoi(r.URL.Query().Get("offset"))
+			if params.Get("offset") != "" {
+				offset, e = strconv.Atoi(params.Get("offset"))
 				if e != nil || offset < 0 || offset > len(items) {
 					problem(w, r, wire.Invalid("invalid offset"))
 					return
