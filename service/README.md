@@ -429,3 +429,19 @@ imply missing measurements. These operational pages accept no dataset revision
 and do not hold permanent Pebble snapshots. Reads serialize with updates and
 cleanup and honor cancellation. Status filtering scans at most 10,000 records
 with a 32 MiB decoded scan budget; responses never contain evidence inventories.
+
+The retained process-interruption gate runs with synthetic inputs:
+
+```sh
+node --test scripts/api-progress-process.test.mjs
+```
+
+It builds and starts the real service, registers a plan, and launches a separate
+sender using the collector's progress journal and HTTP transport. The test sends
+SIGKILL after the API commit and before delivery returns, restarts the service,
+and resumes from the same journal. It verifies one interrupted original attempt,
+one distinct completed resumed attempt and no manufactured measurement revision.
+This proves that process boundary with local filesystem-backed temporary data;
+SSH worker behavior, physical power-loss durability and scientific qualification
+remain separate gates. The test is included in CI, whose execution is not claimed
+by local validation.
