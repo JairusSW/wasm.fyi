@@ -213,3 +213,22 @@ cleanup follow the same reference format. Tests cover nested resources, unrelate
 digest rejection, cancellation and content-only recovery. Legacy evidence objects
 remain readable. Root inventories, individual diagnostic objects and analytical
 exports retain the size limitations listed above.
+
+
+## Paged producer inventories
+
+Large producer exports now replace the inline payload inventory with independently
+hashed inventory pages: at most 512 descriptors per page and 512 pages per root.
+Each page declares its representation size, payload count and total payload bytes,
+so an importer can reserve storage before expanding its permissions. Small export
+manifests retain their existing encoding. A 2,000-trial producer fixture verifies
+that the root stays below 50 KiB and that every trial, result and payload survives
+paging with exact hash/size/count commitments.
+
+This is the producer portion of large-inventory support. The current service
+rejects the additional manifest field; two-stage admission, coordinator page
+handling and recovery closure must be implemented together before publishing
+large completed corpus jobs. The existing 512-object service limit remains in
+force. Large individual pass contexts, diagnostic records and result reference
+lists also need their own chunking; inventory paging alone does not solve those
+limits.
