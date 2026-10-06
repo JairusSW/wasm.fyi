@@ -51,7 +51,7 @@ func (s *Store) GC(ctx context.Context, options GCOptions) (GCReport, error) {
 	}
 	s.contentMu.Lock()
 	defer s.contentMu.Unlock()
-	marked, e := s.reachable(true)
+	marked, e := s.reachableContext(ctx, true)
 	if e != nil {
 		return report, e
 	}

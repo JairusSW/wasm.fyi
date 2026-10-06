@@ -1370,3 +1370,20 @@ schema tests reject staged status, invalid dates, excess reports/items, embedded
 evidence, invalid cursor/completion combinations and malformed error payloads.
 Generated types compile without runtime imports. No serving behavior, scientific
 values, collection workflow or UI layout changes are part of this contract update.
+
+## Cancelable maintenance integrity scans
+
+Backup and cleanup now pass their caller context into typed content-closure
+validation instead of scanning under a background context. Cancellation checks
+cover revision metadata, shared maps, source plan/archive chunks, analytical
+file/native content, evidence-resource fragments, inventory pages and pending
+imports. Existing context-free startup/rebuild callers retain their complete
+verification wrapper. Canceled scans return an error rather than usable marks.
+
+Deterministic mid-validation cancellation tests cover the closure, backup and
+applied cleanup. They check that cancellation precedes backup copying/quarantine
+creation, leaves the active revision unchanged and releases maintenance ownership
+so a subsequent job can submit and publish. Existing scope/origin, large-plan,
+parent, inventory and actual process-crash recovery tests remain applicable.
+Cancellation is cooperative at bounded reads/validation steps; this does not
+claim that operating-system file reads themselves can be interrupted.

@@ -126,12 +126,21 @@ func (s *Store) AttachInventoryContext(ctx context.Context, job, digest string) 
 // manifestObjects returns verified payload descriptors. Missing pages are retained
 // as missing roots by callers; complete publication requires every page.
 func (s *Store) manifestObjects(m wire.Manifest, partial bool) ([]wire.Object, error) {
+	return s.manifestObjectsContext(context.Background(), m, partial)
+}
+func (s *Store) manifestObjectsContext(ctx context.Context, m wire.Manifest, partial bool) ([]wire.Object, error) {
+	if e := ctx.Err(); e != nil {
+		return nil, e
+	}
 	out := append([]wire.Object{}, m.Objects...)
 	seen := map[string]bool{}
 	for _, object := range out {
 		seen[object.SHA256] = true
 	}
 	for _, page := range m.InventoryPages {
+		if e := ctx.Err(); e != nil {
+			return nil, e
+		}
 		b, err := s.content(page.SHA256)
 		if partial && os.IsNotExist(err) {
 			continue
@@ -144,6 +153,9 @@ func (s *Store) manifestObjects(m wire.Manifest, partial bool) ([]wire.Object, e
 			return nil, err
 		}
 		for _, object := range objects {
+			if e := ctx.Err(); e != nil {
+				return nil, e
+			}
 			if seen[object.SHA256] {
 				return nil, wire.Invalid("repeated inventory payload")
 			}

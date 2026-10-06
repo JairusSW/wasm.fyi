@@ -60,9 +60,18 @@ func (s *Store) portable(current string) error {
 // Reachability is typed: posting-set cell IDs are logical keys, not blob hashes.
 // Visit each shared object only once, irrespective of the number of revisions.
 func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
+	return s.reachableContext(context.Background(), includeStaging)
+}
+func (s *Store) reachableContext(ctx context.Context, includeStaging bool) (map[string]bool, error) {
+	if e := ctx.Err(); e != nil {
+		return nil, e
+	}
 	marked := map[string]bool{}
 	visited := map[string]bool{}
 	read := func(id string, v any) error {
+		if e := ctx.Err(); e != nil {
+			return e
+		}
 		b, e := s.typedContent(id, v)
 		if e != nil {
 			return e
@@ -71,6 +80,9 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 		return wire.Decode(b, v)
 	}
 	fetchProofObject := func(o wire.Object) ([]byte, error) {
+		if e := ctx.Err(); e != nil {
+			return nil, e
+		}
 		b, e := s.objectRepresentation(o)
 		if e == nil {
 			marked[o.SHA256] = true
@@ -87,6 +99,9 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 	revisionRank := 0
 	var markMap func(string, string, func(string, string) error) error
 	markMap = func(id, kind string, entry func(string, string) error) error {
+		if e := ctx.Err(); e != nil {
+			return e
+		}
 		if id == "" {
 			return nil
 		}
@@ -119,6 +134,9 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 	}
 	var markEvidence func(string) error
 	markEvidence = func(id string) error {
+		if e := ctx.Err(); e != nil {
+			return e
+		}
 		if marked[id] {
 			return nil
 		}
@@ -136,7 +154,12 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 			return e
 		}
 		if resource != nil {
-			if e = wire.VerifyResource(*resource, s.content); e != nil {
+			if e = wire.VerifyResource(*resource, func(id string) ([]byte, error) {
+				if e := ctx.Err(); e != nil {
+					return nil, e
+				}
+				return s.content(id)
+			}); e != nil {
 				return e
 			}
 		}
@@ -148,6 +171,9 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 		return nil
 	}
 	markRecord := func(_ string, id string) error {
+		if e := ctx.Err(); e != nil {
+			return e
+		}
 		if visited["record:"+id] {
 			return nil
 		}
@@ -165,7 +191,7 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 				return e
 			}
 			if e = wire.VerifyReportFile(file, func(chunk wire.FileChunk) ([]byte, error) {
-				b, e := s.objectRepresentation(wire.Object{SHA256: chunk.SHA256, Bytes: chunk.Bytes, Kind: "binary"})
+				b, e := fetchProofObject(wire.Object{SHA256: chunk.SHA256, Bytes: chunk.Bytes, Kind: "binary"})
 				if e == nil {
 					marked[chunk.SHA256] = true
 				}
@@ -184,7 +210,7 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 			}
 			if artifact.Content.Status == "available" {
 				object := wire.Object{SHA256: artifact.Content.SHA256, Bytes: artifact.Content.Bytes, Kind: "binary"}
-				if _, e = s.objectRepresentation(object); e != nil {
+				if _, e = fetchProofObject(object); e != nil {
 					return e
 				}
 				marked[object.SHA256] = true
@@ -326,6 +352,9 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 						}
 						budget := ScanLimit
 						e := s.walk(set.Root, &budget, func(k, v string) error {
+							if e := ctx.Err(); e != nil {
+								return e
+							}
 							if v != "1" || !remaining[k] {
 								return wire.Invalid("session plan membership differs")
 							}
@@ -395,6 +424,9 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 	}
 	jobs := map[string]bool{}
 	for _, id := range s.Revisions() {
+		if e := ctx.Err(); e != nil {
+			return nil, e
+		}
 		revisionRank = revisionRanks[id]
 		var r Revision
 		if e := read(id, &r); e != nil {
@@ -433,6 +465,9 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 				if !visited[referenceKey] {
 					budget := ScanLimit
 					e := s.walk(planSet.Root, &budget, func(session, jobID string) error {
+						if e := ctx.Err(); e != nil {
+							return e
+						}
 						if planKind == "session-plan-scope" {
 							var projection indexedPlanScope
 							if e := read(jobID, &projection); e != nil {
@@ -561,7 +596,7 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 		if e := job.Validate(); e != nil {
 			return nil, e
 		}
-		scope, e := s.sessionPlanScopeWithVerifier(context.Background(), r, job.Session, &plans)
+		scope, e := s.sessionPlanScopeWithVerifier(ctx, r, job.Session, &plans)
 		if e != nil {
 			return nil, e
 		}
@@ -586,7 +621,7 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 		}
 		jobs[r.Job] = true
 		for _, export := range job.Exports {
-			payload, e := s.manifestObjects(export.Manifest, false)
+			payload, e := s.manifestObjectsContext(ctx, export.Manifest, false)
 			if e != nil {
 				return nil, e
 			}
@@ -594,7 +629,10 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 				payload = append(payload, page.Object())
 			}
 			for _, object := range payload {
-				b, e := s.objectRepresentation(object)
+				if e := ctx.Err(); e != nil {
+					return nil, e
+				}
+				b, e := fetchProofObject(object)
 				if e != nil {
 					return nil, e
 				}
@@ -613,6 +651,9 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 		}
 		defer it.Close()
 		for it.SeekGE(prefix); it.Valid() && bytes.HasPrefix(it.Key(), prefix); it.Next() {
+			if e := ctx.Err(); e != nil {
+				return nil, e
+			}
 			var job wire.Job
 			if e = wire.Decode(it.Value(), &job); e != nil {
 				return nil, e
@@ -629,7 +670,7 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 			if job.SessionPlan != nil {
 				for _, o := range job.SessionPlan.Chunks {
 					marked[o.SHA256] = true
-					if _, e := s.objectRepresentation(o); e != nil && !os.IsNotExist(e) {
+					if _, e := fetchProofObject(o); e != nil && !os.IsNotExist(e) {
 						return nil, e
 					}
 				}
@@ -637,14 +678,14 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 			if job.ParentArchive != nil {
 				for _, o := range job.ParentArchive.Objects() {
 					marked[o.SHA256] = true
-					_, e := s.objectRepresentation(o)
+					_, e := fetchProofObject(o)
 					if e != nil && !os.IsNotExist(e) {
 						return nil, e
 					}
 				}
 			}
 			for _, export := range job.Exports {
-				payload, e := s.manifestObjects(export.Manifest, true)
+				payload, e := s.manifestObjectsContext(ctx, export.Manifest, true)
 				if e != nil {
 					return nil, e
 				}
@@ -652,8 +693,11 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 					payload = append(payload, page.Object())
 				}
 				for _, object := range payload {
+					if e := ctx.Err(); e != nil {
+						return nil, e
+					}
 					marked[object.SHA256] = true
-					b, e := s.objectRepresentation(object)
+					b, e := fetchProofObject(object)
 					if os.IsNotExist(e) {
 						continue
 					}
