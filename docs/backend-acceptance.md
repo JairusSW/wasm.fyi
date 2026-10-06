@@ -46,3 +46,10 @@ directory durability barriers. Buffer reuse, cancellation, registered scopes and
 portable recovery pass selected race tests. The prior implementation allocated
 128 KiB per file (about 17 GB cumulatively across 130,166 files); this is an
 allocation calculation, not a measured heap or end-to-end speed improvement.
+
+The updated real recovery gate also compares every reconstructed canonical
+scientific result and its provenance, and replays frozen result/history pages
+with their original signed cursors. A fresh Wasmer call-report race run passes
+these checks for four result rows and seven original resources, including the
+48,886,252-byte sealed archive. This small real fixture does not qualify the
+larger Wasmtime recovery still in progress.

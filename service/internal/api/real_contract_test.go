@@ -502,6 +502,23 @@ func TestRealProducerServingParity(t *testing.T) {
 	}
 	t.Logf("verified-source summaries retained: timing=%d memory=%d native-size=%d; exact environment/track/method scopes=%d", matched, memoryMatched, codeMatched, len(scopes))
 	if len(files) > 0 {
+		frozenPages := map[string][]byte{}
+		for _, endpoint := range []string{"results", "history"} {
+			base := "/api/v1/" + endpoint + "?revision=" + revision + "&limit=1"
+			path := base
+			for page := 0; page < 2; page++ {
+				w := realFixtureGET(t, h, path)
+				var response struct{ NextCursor string }
+				if w.Code != 200 || w.Body.Len() > wire.ResponseBytes || json.Unmarshal(w.Body.Bytes(), &response) != nil {
+					t.Fatal("freeze real recovery page", path, w.Code)
+				}
+				frozenPages[path] = append([]byte(nil), w.Body.Bytes()...)
+				if response.NextCursor == "" {
+					break
+				}
+				path = base + "&cursor=" + url.QueryEscape(response.NextCursor)
+			}
+		}
 		t.Log("starting real backup/rebuild qualification")
 		backup := filepath.Join(t.TempDir(), "backup")
 		if _, e = s.Backup(context.Background(), backup); e != nil {
@@ -518,6 +535,43 @@ func TestRealProducerServingParity(t *testing.T) {
 			t.Fatal(e)
 		}
 		defer recovered.Close()
+		recoveredKey, err := recovered.CursorKey()
+		if err != nil || !bytes.Equal(recoveredKey, key) {
+			t.Fatal("portable cursor identity drift", err)
+		}
+		recoveredHandler, err := New(recovered, strings.Repeat("x", 32), recoveredKey)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for path, expected := range frozenPages {
+			w := realFixtureGET(t, recoveredHandler, path)
+			if w.Code != 200 || !bytes.Equal(w.Body.Bytes(), expected) {
+				t.Fatal("portable frozen page/cursor drift", path, w.Code)
+			}
+		}
+		recoveredRows, err := recovered.Results(store.Query{Revision: revision}, true)
+		if err != nil || len(recoveredRows) != len(rows) {
+			t.Fatal("portable result population drift", len(recoveredRows), len(rows), err)
+		}
+		expectedRows := make(map[string][]byte, len(rows))
+		for _, record := range rows {
+			body, err := wire.Encode(record)
+			if err != nil || expectedRows[record.ID] != nil {
+				t.Fatal("invalid original result identity", record.ID, err)
+			}
+			expectedRows[record.ID] = body
+		}
+		for _, record := range recoveredRows {
+			body, err := wire.Encode(record)
+			if err != nil || !bytes.Equal(body, expectedRows[record.ID]) {
+				t.Fatal("portable scientific result/provenance drift", record.ID, err)
+			}
+			delete(expectedRows, record.ID)
+		}
+		if len(expectedRows) != 0 {
+			t.Fatal("portable result identities disappeared", len(expectedRows))
+		}
+		t.Logf("portable scientific result/provenance parity: %d canonical rows", len(recoveredRows))
 		for _, record := range files {
 			descriptor, reader, e := recovered.OpenReportFile(context.Background(), revision, record.ID)
 			if e != nil {
