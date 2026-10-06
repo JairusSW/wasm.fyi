@@ -6,6 +6,7 @@ import (
 	"github.com/JairusSW/wasm.fyi/service/internal/comparison"
 	"github.com/JairusSW/wasm.fyi/service/internal/wire"
 	"github.com/cockroachdb/pebble/v2"
+	"strings"
 )
 
 const PreparedOverviewLimit = 4096
@@ -143,6 +144,7 @@ func (s *Store) markOverviews(ctx context.Context, marked map[string]bool) error
 		return e
 	}
 	count := 0
+	presets := 0
 	budget := ScanLimit
 	return s.walk(root, &budget, func(keyID, id string) error {
 		if e := ctx.Err(); e != nil {
@@ -151,6 +153,21 @@ func (s *Store) markOverviews(ctx context.Context, marked map[string]bool) error
 		count++
 		if count > PreparedOverviewLimit {
 			return ErrLimit
+		}
+		if strings.HasPrefix(keyID, presetPrefix) {
+			presets++
+			if presets > OverviewPresetLimit {
+				return ErrLimit
+			}
+			var p OverviewPreset
+			if e := s.load(id, &p); e != nil {
+				return e
+			}
+			if e := s.validatePreset(keyID, p); e != nil {
+				return e
+			}
+			marked[id] = true
+			return nil
 		}
 		var out OverviewResponse
 		if e := s.load(id, &out); e != nil {

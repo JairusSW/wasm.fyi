@@ -223,3 +223,49 @@ func TestPreparedOverviewHTTPParityAndAdmissionBypass(t *testing.T) {
 		t.Fatal("prepared HTTP drift or full scan admission", prepared.Code, prepared.Body.String())
 	}
 }
+
+func TestOverviewPresetAdminAndAutomaticHTTP(t *testing.T) {
+	s, e := store.Open(filepath.Join(t.TempDir(), "live"), "fixture")
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer s.Close()
+	rev := importCohort(t, s, "preset-http-seed", []testutil.CohortCell{{Runtime: "a", Workload: "fixture/one", Value: 4}, {Runtime: "b", Workload: "fixture/one", Value: 16}})
+	scope := apiCohortScope(t, s, rev)
+	key, e := s.CursorKey()
+	if e != nil {
+		t.Fatal(e)
+	}
+	token := strings.Repeat("x", 32)
+	h, e := New(s, token, key)
+	if e != nil {
+		t.Fatal(e)
+	}
+	auth := map[string]string{"Authorization": "Bearer " + token}
+	input, _ := wire.Encode(map[string]any{"name": "execution", "version": comparison.Version, "scope": scope})
+	if w := request(t, h, "POST", "/admin/v1/overview-presets", input, nil); w.Code != 401 {
+		t.Fatal(w.Code)
+	}
+	if w := request(t, h, "POST", "/admin/v1/overview-presets", input, auth); w.Code != 200 {
+		t.Fatal(w.Code, w.Body.String())
+	}
+	if w := request(t, h, "GET", "/admin/v1/overview-presets", nil, auth); w.Code != 200 || !strings.Contains(w.Body.String(), `"name":"execution"`) {
+		t.Fatal(w.Code, w.Body.String())
+	}
+	next := importCohort(t, s, "preset-http-next", []testutil.CohortCell{{Runtime: "a", Workload: "fixture/two", Value: 16}, {Runtime: "b", Workload: "fixture/two", Value: 64}})
+	scope.Revision = next
+	encoded, _ := wire.Encode(scope)
+	path := "/api/v1/overview?version=" + comparison.Version + "&scope=" + url.QueryEscape(string(encoded))
+	a := &API{Store: s, Token: token, CursorKey: key, active: make(chan struct{}, 8), calculating: make(chan struct{}, 2), limiter: newRequestLimiter(DefaultRequestLimits())}
+	a.calculating <- struct{}{}
+	a.calculating <- struct{}{}
+	if w := request(t, http.HandlerFunc(a.serve), "GET", path, nil, nil); w.Code != 200 {
+		t.Fatal(w.Code, w.Body.String())
+	}
+	if w := request(t, h, "DELETE", "/admin/v1/overview-presets/execution", nil, auth); w.Code != 200 {
+		t.Fatal(w.Code, w.Body.String())
+	}
+	if w := request(t, h, "GET", "/admin/v1/overview-presets", nil, auth); w.Code != 200 || w.Body.String() != `{"items":[]}` {
+		t.Fatal(w.Code, w.Body.String())
+	}
+}

@@ -968,6 +968,13 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 	if e = s.checkpoint("indexes"); e != nil {
 		return "", e
 	}
+	overviewRoot, overviewCount, e := s.prepareRevisionOverviews(ctx, revID, rev)
+	if e != nil {
+		return "", e
+	}
+	if e = s.checkpoint("prepared-overviews"); e != nil {
+		return "", e
+	}
 	rb, _ := wire.Encode(rev)
 	batch := s.db.NewBatch()
 	defer batch.Close()
@@ -976,6 +983,11 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 	}
 	for _, pair := range []struct{ k, v []byte }{{key("revision", revID), rb}, {key("accepted", id), []byte(revID)}, {key("current"), []byte(revID)}} {
 		if e = batch.Set(pair.k, pair.v, nil); e != nil {
+			return "", e
+		}
+	}
+	if overviewRoot != "" {
+		if e = batch.Set(key("overviews"), []byte(overviewRoot), nil); e != nil {
 			return "", e
 		}
 	}
@@ -994,7 +1006,7 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 		s.poisoned.Store(true)
 		return "", e
 	}
-	if e = s.portable(revID); e != nil {
+	if e = s.portableRoots(revID, s.registrationRoot(), overviewRoot); e != nil {
 		s.poisoned.Store(true)
 		return "", e
 	}
@@ -1006,6 +1018,8 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 	rev.ordinal = len(s.published) + 1
 	s.published[revID] = rev
 	s.current = revID
+	s.overviews = overviewRoot
+	s.overviewCount = overviewCount
 	s.mu.Unlock()
 	return revID, nil
 }

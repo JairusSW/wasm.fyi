@@ -459,5 +459,29 @@ time; tokens and secrets are not materialized. Detailed membership remains on
 the existing progressive endpoint. Prepared views are revision/analysis/category
 bound and participate in cleanup, backup and DB-free reconstruction. Tests cover
 byte-for-byte HTTP parity, computation admission bypass, restore/rebuild and two
-publication-fault checkpoints. Automatic preset registration and preparation
-after completed-job publication remain pending.
+publication-fault checkpoints. Automatic preset preparation is described below.
+
+Authenticated `POST /admin/v1/overview-presets` accepts `name`, comparison
+`version` and `scope`. Registration prepares the seed revision and stores a
+normalized template without a dataset revision. Up to eight presets may be
+active. The seed revision preserves the configuration's source identity.
+`GET /admin/v1/overview-presets` lists the bounded inventory, and
+`DELETE /admin/v1/overview-presets/{name}` disables automatic preparation while
+preserving existing projections. Re-registering a name replaces its template.
+
+Each completed-job publication prepares active current-version presets against
+the unpublished candidate revision. Their compact projections and the new
+measurement pointer commit in one synchronous batch, followed by the durable
+portable pointer and reader visibility. A preparation failure leaves the
+candidate revision hidden and retryable. Templates with an older analysis
+version are retained but not reinterpreted. Presets preserve exact environment,
+lane and method policies; operators update them explicitly when those identities
+change. Tests cover automatic preparation, parity, failure/retry, preset removal
+and DB-free reconstruction followed by a further publication.
+
+Automatic preparation evicts replaceable projection references when its 4,096
+entry registry fills. Eviction preserves preset templates and projections already
+prepared for the candidate revision, and never removes measurements or evidence.
+An evicted historical overview uses the existing complete-scope computation
+fallback, preserving its immutable numerical meaning. The eviction path rebuilds
+only bounded key/reference metadata, not historical result datasets.

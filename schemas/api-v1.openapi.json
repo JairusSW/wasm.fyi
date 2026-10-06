@@ -3949,6 +3949,104 @@
           }
         }
       }
+    },
+    "/admin/v1/overview-presets": {
+      "post": {
+        "summary": "Register or replace a bounded automatic overview preset",
+        "security": [
+          {
+            "publisherToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "version": {
+                    "const": "wasmfyi-cohort-v3"
+                  },
+                  "scope": {
+                    "$ref": "./site-v2.schema.json#/$defs/CohortScope"
+                  }
+                },
+                "required": [
+                  "name",
+                  "version",
+                  "scope"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Normalized preset with seed revision"
+          },
+          "400": {
+            "description": "Invalid scope/version/name"
+          },
+          "401": {
+            "description": "Publisher authentication required"
+          },
+          "507": {
+            "description": "Preset or projection quota exceeded"
+          }
+        }
+      },
+      "get": {
+        "summary": "List at most eight registered presets",
+        "security": [
+          {
+            "publisherToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Small preset inventory"
+          },
+          "401": {
+            "description": "Publisher authentication required"
+          }
+        }
+      }
+    },
+    "/admin/v1/overview-presets/{name}": {
+      "delete": {
+        "summary": "Remove automatic preparation while preserving historical views",
+        "security": [
+          {
+            "publisherToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed preset"
+          },
+          "401": {
+            "description": "Publisher authentication required"
+          },
+          "404": {
+            "description": "Unknown preset"
+          }
+        }
+      }
     }
   },
   "components": {

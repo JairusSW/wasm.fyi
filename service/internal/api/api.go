@@ -804,6 +804,52 @@ func (a *API) admin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(parts) == 1 && parts[0] == "overview-presets" && r.Method == "GET" {
+		presets, e := a.Store.OverviewPresets(r.Context())
+		if e != nil {
+			problem(w, r, e)
+			return
+		}
+		respond(w, r, 200, map[string]any{"items": presets}, false)
+		return
+	}
+	if len(parts) == 2 && parts[0] == "overview-presets" && r.Method == "DELETE" {
+		if e := a.Store.DeleteOverviewPreset(r.Context(), parts[1]); e != nil {
+			problem(w, r, e)
+			return
+		}
+		respond(w, r, 200, map[string]string{"name": parts[1], "status": "removed"}, false)
+		return
+	}
+	if len(parts) == 1 && parts[0] == "overview-presets" && r.Method == "POST" {
+		var input struct {
+			Name    string            `json:"name"`
+			Version string            `json:"version"`
+			Scope   store.CohortScope `json:"scope"`
+		}
+		if e := decode(w, r, &input); e != nil {
+			problem(w, r, e)
+			return
+		}
+		if input.Version != comparison.Version {
+			problem(w, r, wire.Invalid("unsupported comparison version"))
+			return
+		}
+		select {
+		case a.calculating <- struct{}{}:
+			defer func() { <-a.calculating }()
+		default:
+			respond(w, r, 429, map[string]string{"error": "cohort computation concurrency limit"}, false)
+			return
+		}
+		preset, e := a.Store.RegisterOverviewPreset(r.Context(), input.Name, input.Scope)
+		if e != nil {
+			problem(w, r, e)
+			return
+		}
+		respond(w, r, 200, preset, false)
+		return
+	}
 	if len(parts) == 1 && parts[0] == "overviews" && r.Method == "POST" {
 		var input struct {
 			Version string            `json:"version"`
