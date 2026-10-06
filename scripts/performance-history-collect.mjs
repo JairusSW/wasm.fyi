@@ -11,6 +11,7 @@ import {workersWithinCpuBudget} from './lib/worker-budget.mjs';
 import {publicationURL} from './lib/api-publish.mjs';
 import {verifySiteExportContract} from './lib/site-export-contract.mjs';
 import {publishPerformanceHistoryConfiguration} from './lib/performance-history-api.mjs';
+import {retainUncollectedHistoryConfiguration} from './lib/performance-history-coverage.mjs';
 import {processLock} from './lib/benchmark-lock.mjs';
 
 const apiURL=process.env.WASMFYI_HISTORY_API_URL?publicationURL(process.env.WASMFYI_HISTORY_API_URL):null;
@@ -131,7 +132,7 @@ await processLock(join(site,'.wasmbench/performance-history.lock'),async()=>{
         if(reusable){retain(cached);await save();await publish(cached,job);continue;}
         if(publishOnly){retain({...cached,apiPublication:{status:'failed',reason:'Original source verification failed: '+verificationError.message}});await save();continue;}
       }
-      if(publishOnly){retain({id:configuration,status:'not-collected',reason:'No verified completed report is available for publication-only replay.'});await save();continue;}
+      if(publishOnly){retain(retainUncollectedHistoryConfiguration(previous.jobs.find(entry=>entry.id===job.id)?.configurations.find(entry=>entry.id===configuration),configuration));await save();continue;}
       const space=await statfs(directory);
       if(Number(space.bavail)*Number(space.bsize)<20*1024**3) {
         state.phase='paused-low-disk';state.reason='Less than 20 GiB available; collection stopped before another build.';await save();

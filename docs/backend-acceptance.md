@@ -56,7 +56,13 @@ stopped owners; unavailable process-start probes do not imply stopped ownership.
 Ledger replacement now synchronizes the staged file and parent directory and
 rejects unreadable/malformed retained ledgers without replacing them. Real replay
 tests cover malformed-ledger rejection and repaired retry; physical power-loss
-qualification and migration of uncollected events remain pending. The large Wasmtime
+qualification and API migration of uncollected events remain pending. Publication-only
+replay now preserves existing unavailable/pending/runner-error states and reasons;
+a real collector/verified Wasmer fixture gate proves the unavailable sibling
+retained its exact ledger state without adding history observations. A bounded
+coverage projection retains configured versus unconfigured scope, unknown release
+dates/configurations, reused aliases and desired versus observed source revisions.
+Its revisioned API transport remains unfinished. The large Wasmtime
 qualification was interrupted by a laptop crash and has been restarted below.
 
 | Requirement | Current evidence / remaining work |

@@ -2057,3 +2057,24 @@ are explicit evidence. Older `conformance-v1` exports without these metadata
 records remain readable, with no fabricated environment or coverage. Export cache
 keys now include producer version `v2`, allowing the existing capture to add this
 metadata without recollecting suites or modifying prior revisions.
+
+
+## Retain historical gaps during publication-only replay
+
+Publication-only replay previously overwrote prior unavailable, pending-binding,
+runner-error and incomplete build states with a generic not-collected message.
+It now preserves each recorded entry, reason and attempt/binding provenance.
+Only a configuration with no existing ledger entry receives that message.
+The actual collector gate replays a real verified Wasmer report alongside a
+synthetic unavailable adapter, preserves the latter's complete ledger entry,
+issues only verify/export commands and retains four historical measurements.
+
+A separate bounded coverage projection prepares queue/ledger metadata for the
+remaining API migration. It keeps one logical coverage cell per exact queued
+configuration, retains reused date aliases, distinguishes configured scope from
+missing entries, and represents planner targets without a resolved build.
+Unknown release dates and configurations remain null/empty, while desired and
+recorded source revisions remain separate. These are trusted publisher assertions,
+not new result rows or an independent report verification. Projection/retention
+and real collector tests pass; the projected records are not yet published or
+served by the backend.

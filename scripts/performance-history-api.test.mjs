@@ -112,5 +112,17 @@ test('real completed history publication reuses its source, tools and API record
       assert.equal(await readFile(ledgerPath,'utf8'),invalidLedger,'invalid ledger was overwritten');
     }
     await writeFile(ledgerPath,retainedLedger);await run();
+    // Publication-only replay must not erase a previously observed unavailable
+    // adapter or its reason while replaying the sibling sealed configuration.
+    const missing={id:'wasmer-cranelift',status:'unavailable',reason:'Pinned adapter package unavailable',binding:{source:{revision:'a'.repeat(40)}}};
+    const partialJob={...job,identity:{configurations:[configuration,missing.id]}};
+    await writeFile(join(historyRoot,'queue.json'),JSON.stringify({...queue,suite,recipeSha256:'fixture',jobs:[partialJob]}));
+    await writeFile(ledgerPath,JSON.stringify({jobs:[{id:job.id,configurations:[entry,missing]}]}));
+    await writeFile(join(isolated,'wasmbench.config.json'),JSON.stringify({root:process.env.WASMFYI_PRODUCER_ROOT,collection:{runtimes:[configuration,missing.id]},harnessSource:{revision:input.configuredHarnessPin}}));
+    await assert.rejects(run());
+    ledger=JSON.parse(await readFile(ledgerPath));assert.equal(ledger.phase,'incomplete');assert.deepEqual(ledger.jobs[0].configurations.find(c=>c.id===missing.id),missing);
+    const preserved=await(await fetch(url+'/api/v1/manifest')).json();assert.equal((await(await fetch(url+'/api/v1/history?revision='+preserved.revision)).json()).total,4);
+    assert((await readFile(commandLog,'utf8')).trim().split('\n').map(JSON.parse).every(args=>['verify-report','export-site'].includes(args[0])));
+
   } finally {if(child){child.kill('SIGTERM');await exit}await rm(root,{recursive:true,force:true})}
 });
