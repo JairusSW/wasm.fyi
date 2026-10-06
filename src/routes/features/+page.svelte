@@ -16,6 +16,10 @@
 	import { ui } from '$lib/state.svelte';
 	import { supportCell, engineFeatureVersions, runtimeFeatureTrack, pluginSupportEvidence } from '$lib/support';
 
+	// One accent per section so phase boundaries read at a glance.
+	const TONES:[string,string][]=[['Phase 5','var(--st-pass)'],['Phase 4','var(--good)'],['Phase 3','var(--rt-wasmtime)'],['Phase 2','var(--st-warn)'],['Phase 1','var(--rt-wazero)'],['Inactive','var(--fg3)']];
+	const toneOf=(g:string)=>TONES.find(([p])=>g.startsWith(p))?.[1] ?? 'var(--fg2)';
+
 	let evidence=$state<{feature:string;engine:string;track:FeatureTrack}|null>(null);
   const channels=['stable'] as const;
 	const propLinks = PROPOSAL_IDS.map((id) => ({ id, label: PROPS[id].title }));
@@ -25,7 +29,8 @@
 		...FEATURE_ENGINES.map((id) => ({ label: RTB[id].name, sub: RTB[id].lang, rt: id }))
 	];
 	const groups = $derived([...new Set(FEATS.map(f=>f.g))].map(g=>({g,rows:FEATS.filter(f=>f.g===g).map(f=>{
-    return {f,count:`${featureContracts(f.id).length} corpus tests`,cells:[...FEATURE_ENGINES.map(id=>({...supportCell('?'),detail:'',tracks:channels.map(channel=>runtimeFeatureTrack(id,f,ui.scope,channel,undefined))}))]};
+    const contracts=featureContracts(f.id).length;
+    return {f,contracts,count:contracts?`${contracts} corpus tests`:f.phase,cells:[...FEATURE_ENGINES.map(id=>({...supportCell('?'),detail:'',tracks:channels.map(channel=>runtimeFeatureTrack(id,f,ui.scope,channel,undefined))}))]};
   })})));
 
 	// ── Spec tests ─────────────────────────────────────────────────────────
@@ -99,10 +104,10 @@
 		{@render proposalLinks()}
 	</div>
 	<div class="tbl-wrap tall">
-		<table class="mx" style:min-width="1400px">
+		<table class="mx compat">
 			<thead>
 				<tr>
-					<th class="stick th-label" style:min-width="185px">Feature</th>
+					<th class="stick th-label feat-h">Feature</th>
 					{#each featCols as h (h.label)}
 						<th class="fh">
 							{#if h.rt}
@@ -127,16 +132,19 @@
 			</thead>
 			<tbody>
 				{#each groups as g (g.g)}
-					<tr class="sec">
-						<td class="stick secname">{g.g}</td>
-						{#each featCols as h (h.label)}<td></td>{/each}
+					<tr class="sec band" style:--tone={toneOf(g.g)}>
+						<td class="stick secname"><span class="sec-title">{g.g}</span><span class="sec-count mono">{g.rows.length}</span></td>
+						<td class="sec-fill" colspan={featCols.length}></td>
 					</tr>
 					{#each g.rows as r (r.f.id)}
 						<tr>
 							<td class="stick fname">
-								{#if r.f.page}<a class="link w5" href={siteHref(`/${r.f.page}`)}>{r.f.name}</a>{:else}<span class="w5">{r.f.name}</span>{/if}
+								{#if r.f.page}<a class="flink w5" href={siteHref(`/${r.f.page}`)} data-tip="Open the {r.f.name} page: status, adoption and performance">{r.f.name}</a>{:else if r.f.url}<a class="flink w5" href={r.f.url} target="_blank" rel="noopener" data-tip="Open the official {r.f.name} {r.f.url.includes('/proposals') || r.f.url.includes('github.com/WebAssembly/') ? 'proposal' : 'specification'}">{r.f.name}<span class="ext-mark" aria-label="(opens in a new tab)">↗</span></a>{:else}<span class="w5">{r.f.name}</span>{/if}
 								<div class="mono micro fg3">{r.count}</div>
 							</td>
+							{#if !r.contracts && !featCols.some((h)=>h.rt==='wago' && pluginSupportEvidence(r.f.id,ui.scope.machine))}
+								<td class="nocorpus" colspan={featCols.length}><span class="micro fg3"><span class="long">No corpus contracts yet · </span>not measured</span></td>
+							{:else}
 							{#each r.cells as x, k (k)}
                   {@const supportedPlugin=featCols[k].rt==='wago'?pluginSupportEvidence(r.f.id,ui.scope.machine):undefined}
 								<td class="fcell">
@@ -149,7 +157,7 @@
                     {#each x.tracks as track}
                       {@const best=track.configurations.filter(c=>c.pass===track.pass).sort((a,b)=>a.failed-b.failed)[0]}
                       {#if track.text==='Node host API · unmeasured'}
-                        <div class="mono micro nowrap" title={track.detail}>{track.text}</div>
+                        <div class="mono micro host-note" title={track.detail}>{track.text}</div>
                       {:else}<FeatureResult passed={track.pass} total={track.expected} failed={best?.failed || 0} skipped={best?.skipped || 0} missing={best?.missing || 0} measured={!!track.configurations.length} flagged={track.text==='corpus passed · flag'}
                         label={`${r.f.name}, ${featCols[k].label}: ${track.pass} of ${track.expected} corpus tests passed. Open corpus results`}
                         tooltip={JSON.stringify({title:`${featCols[k].label} · ${r.f.name}`,subtitle:`Corpus tests · published release ${track.version || 'not collected'}`,rows:track.configurations.map(c=>({label:c.backend,pass:c.pass,total:c.total,failed:c.failed,skipped:c.skipped,missing:c.missing})),hint:track.configurations.length?'Click to inspect individual tests':'No measurements for this track'})}
@@ -159,6 +167,7 @@
                   {:else}<div class="mono small nowrap" style:color={x.color}><span class="micro">{x.glyph}</span> {x.text}</div>{/if}
 </td>
 							{/each}
+							{/if}
 						</tr>
 					{/each}
 				{/each}
@@ -172,10 +181,10 @@
 {:else}
 	<div class="s12 fg3">{PERF_NOTE[ui.perfMetric]}</div>
 	<div class="tbl-wrap tall">
-		<table class="mx" style:min-width="1000px">
+		<table class="mx perf">
 			<thead>
 				<tr>
-					<th class="stick th-label" style:min-width="240px">Proposal / extension · corpus</th>
+					<th class="stick th-label perf-h">Proposal / extension · corpus</th>
 					{#each cols as c (c.id)}
 						<th class="ch r">
 							<span class="cname jr"><Swatch color={c.col} bg={c.hollow ? 'transparent' : c.col} />{c.rt}</span>
@@ -291,12 +300,98 @@
 		padding: 2px 4px;
 		text-align: center;
 	}
+	/* Section bands: spacing above, a full-width tinted bar, and a coloured edge per phase. */
+	.band td {
+		border-top: 14px solid var(--bg2);
+		border-left: 0 !important;
+		background: color-mix(in oklab, var(--tone) 14%, var(--bg3)) !important;
+	}
+	.band:first-child td {
+		border-top-width: 0;
+	}
+	.band .secname {
+		padding: 9px 12px 9px 10px;
+		box-shadow: inset 3px 0 0 var(--tone);
+		white-space: nowrap;
+	}
+	.sec-title {
+		font-size: 13px;
+		font-weight: 600;
+		color: var(--fg);
+	}
+	.sec-count {
+		margin-left: 8px;
+		padding: 0 6px;
+		font-size: 10px;
+		line-height: 16px;
+		display: inline-block;
+		color: var(--fg2);
+		border: 1px solid color-mix(in oklab, var(--tone) 45%, var(--line2));
+	}
+	.nocorpus {
+		padding: 6px 12px;
+	}
+	.flink {
+		color: var(--fg);
+		text-decoration: underline;
+		text-decoration-color: var(--line2);
+		text-underline-offset: 3px;
+	}
+	.flink:hover {
+		text-decoration-color: var(--fg);
+	}
+	.ext-mark {
+		margin-left: 3px;
+		font-size: 10px;
+		color: var(--fg3);
+		text-decoration: none;
+		display: inline-block;
+	}
 	.ch {
 		padding: 6px 10px;
 		text-align: left;
 	}
 	.pcell {
 		padding: 6px 10px;
+	}
+
+	.compat {
+		min-width: 1400px;
+	}
+	.host-note {
+		max-width: 16ch;
+		margin: 0 auto;
+		color: var(--fg3);
+	}
+	.perf {
+		min-width: 1000px;
+	}
+	.feat-h {
+		min-width: 185px;
+	}
+	.perf-h {
+		min-width: 240px;
+	}
+	@media (max-width: 720px) {
+		.compat {
+			min-width: 980px;
+		}
+		.perf {
+			min-width: 760px;
+		}
+		.tall {
+			max-height: 72svh;
+		}
+		.fname,
+		.secname {
+			padding: 6px 10px;
+		}
+		.legend {
+			gap: 6px 12px;
+		}
+		.nocorpus .long {
+			display: none;
+		}
 	}
 
   .track-version { display:flex;gap:5px;align-items:center;margin-top:5px;max-width:140px;text-align:left; }

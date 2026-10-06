@@ -10,7 +10,8 @@
     "prepare": "svelte-kit sync || echo ''",
     "check": "node scripts/view-data.mjs && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "test": "node scripts/view-data.mjs && vitest run",
-    "test:ai": "node --test scripts/ai-metadata.test.mjs"
+    "test:ai": "node --test scripts/ai-metadata.test.mjs",
+    "sync:proposals": "node scripts/sync-proposals.mjs"
   },
   "devDependencies": {
     "@fontsource/ibm-plex-mono": "^5.3.0",

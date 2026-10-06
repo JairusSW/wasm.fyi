@@ -51,7 +51,9 @@ const run=async(program,argv,opts={})=>{for(;;)try{return await runCommand(progr
 }};
 const ssh=(command,opts={})=>run('ssh',[...sshFlags,host.ssh,command],opts);
 const script=(name,argv,opts={})=>run(process.execPath,[join(site,'scripts',name),...argv],opts);
-const dates=prior?.dates??saturdays(new Date(),18).map(historyDate).reverse();
+const requestedQueue=await read(join(directory,'queue.json')).catch(error=>{if(error.code==='ENOENT')return null;throw error;});
+if(requestedQueue)assert(Array.isArray(requestedQueue.dates)&&requestedQueue.dates.every(date=>/^\d{4}-\d{2}-\d{2}$/.test(date)&&new Date(date+'T12:00:00Z').getUTCDay()===6),'Historical queue requires Saturday dates');
+const dates=[...new Set([...(prior?.dates??saturdays(new Date(),18).map(historyDate)),...(requestedQueue?.dates??[])])].sort().reverse();
 const state={schema:1,pid:process.pid,status:'running',scope:'historical-only',started:prior?.started??new Date().toISOString(),dates,publishEvery:2,machines:prior?.machines??{local:{previous:resolve('.wasmbench/weekly-20260926'),completed:[],failed:[]},hub:{previous:remoteRoot+'/weekly-20261003',completed:[],failed:[]}}};
 let stateWrites=Promise.resolve();
 const save=()=>{

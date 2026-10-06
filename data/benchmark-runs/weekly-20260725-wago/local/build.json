@@ -1,0 +1,92 @@
+{
+  "schema": 1,
+  "root": "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20260725/harness/wago",
+  "controller": "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20260725/controller",
+  "harnessRevision": "9332ced5e59c0c3fd9c5aabc6ebc2ed991431eb9",
+  "controllerSha256": "da0848c6e403d2b9369c61f2afd30bcae9b66ffed96d241469aecbde5d6d4369",
+  "analyzerSha256": "57b025f2921ea1b21effc35f3d4e97393fc83256aa771ad068e7d7237d541811",
+  "pin": {
+    "engine": "wago",
+    "targetType": "main",
+    "targetWeek": "2026-07-26T03:59:00.000Z",
+    "repository": "wago-org/wago",
+    "branch": "main",
+    "revision": "792c094b67c39cf877f5307ff9fe1b3f32928791",
+    "committedAt": "2026-07-24T17:29:25Z",
+    "url": "https://github.com/wago-org/wago/commit/792c094b67c39cf877f5307ff9fe1b3f32928791",
+    "status": "planned",
+    "configurations": [
+      "wago"
+    ]
+  },
+  "provenance": {
+    "engine": "wago",
+    "targetType": "main",
+    "targetWeek": "2026-07-26T03:59:00.000Z",
+    "repository": "wago-org/wago",
+    "branch": "main",
+    "revision": "792c094b67c39cf877f5307ff9fe1b3f32928791",
+    "committedAt": "2026-07-24T17:29:25Z",
+    "url": "https://github.com/wago-org/wago/commit/792c094b67c39cf877f5307ff9fe1b3f32928791",
+    "status": "planned",
+    "configurations": [
+      "wago"
+    ],
+    "compatibility": {
+      "api": "legacy HostFunc slots",
+      "wasi": {
+        "version": "v0.3.1",
+        "sum": "h1:hpbJaiy3/0RfFe6cIfJB8cSVTatNYeAHVbTeUuibzO0=",
+        "origin": {
+          "VCS": "git",
+          "URL": "https://github.com/wago-org/wasi",
+          "Hash": "aef440ccb4368b87f122038cf31295bba1b4bd46",
+          "Ref": "refs/tags/v0.3.1"
+        }
+      },
+      "patchSha256": "a1fb66e690e03c6e4c8fe6b90bc13a6a4da22463594ee64a30e286fe17dc4c77",
+      "files": {
+        "adapters/wago/app_init.go": "c1fb77105fb6166e250b7fef5aa5cce4cfb4435c76f72b2bcf7bc1d69e190d75",
+        "adapters/wago/counters.go": "f44535bef1c3fd3d603ed377590d50f8a5e7e9d6a7a1924fd584271c36d76075",
+        "adapters/wago/density.go": "c2d833ecea94a623643b26bcad0c17c8140f219d705db8046139db3a27cbcb8f",
+        "adapters/wago/instantiate.go": "97dbe447161c0b8648aab8f79060e898ddcd10436c4ef85e61d2142b24eb3694",
+        "adapters/wago/main.go": "138d8c2582e507890ab3584254256e25bb8676290f0669c1f604dd54a588a72b",
+        "adapters/wago/phases.go": "930dca48fc262c908ca66a7dd7f9f0fcdf7a5d0e8aa47c7300cd435885dad0a2",
+        "adapters/wago/plugin_features.go": "f955eb488dacc1f12f4e539ef6523b573062c7e339feedcddfd0264c8f0f6954",
+        "adapters/wago/traps.go": "e78c2676276377edf68467199482b8dd8a41b274cd9150d2be73d1414f19041c",
+        "adapters/wago/vectors.go": "3a520f5349871f90a4e86b3651036be11ddeb3237abb20a99766edfd1e23b0de",
+        "adapters/wago/wasi_readonly.go": "aea1127acf84687c024474e08225cf7c74b440df81a2549028e598a98ae6ee0f",
+        "legacy-wasi/internal/core/abi.go": "1c6701237cbdc9c0d61400417eea3d700a6a918cc35e5d832584f91c7daf5953",
+        "legacy-wasi/internal/core/abi_platform.go": "a7cb2d244bfbf02f0272ade702be4a3b0edf88508a1e84bd33e9d2c103e8930c",
+        "legacy-wasi/internal/core/abi_unix.go": "ccf3747837a0be941ccce6778ee5aa73476945a8d0056e5752bbbc1d103cae13",
+        "legacy-wasi/internal/core/abi_windows.go": "4907b7fd9a3ceb5e18a0715bb2f190c5508b207ebfcbd36c5471a2ae37285344",
+        "legacy-wasi/internal/core/clock.go": "ba79a939b871614969b645d525affe6d592f6a126f23e035778260e4f3256075",
+        "legacy-wasi/internal/core/core.go": "fb10062120508cad4d4efbea853d0d5952b9afb3f3a68c87a02d056442560b0a",
+        "legacy-wasi/internal/core/fs.go": "061f63354de55322f999f8ef7abb58242d28436a71ed916adcb4ac39063a12ea",
+        "legacy-wasi/internal/core/fs_darwin.go": "335779acf7aa6569497bb4b4cc3852ce4a8af2b6d5071a63a7f1c2d075f28c8a",
+        "legacy-wasi/internal/core/fs_linux.go": "bafcbc350d58710ee1f066a9213f1af7bf14d0ff42c850f75b50df2921b08e07",
+        "legacy-wasi/internal/core/fs_windows.go": "f452432dea3294a1dc9e1e2271cf08ef1cab0df2f31514f2eddbea49677a1468",
+        "legacy-wasi/internal/core/poll.go": "efcc505ecf4438c0a52f49f371f8beda23bfdd061fd0ff8643b72d70fa5bac74",
+        "legacy-wasi/internal/core/poll_platform.go": "188749d554ce5da31f9d8a64a936febefd6f3d3503c595cd126de14d66cfba64",
+        "legacy-wasi/internal/core/poll_unix.go": "734efdefa6d3a7d23f9f026ee2d297fb377ba58990f994246f7093cdd2996c2c",
+        "legacy-wasi/internal/core/poll_windows.go": "2ee22a65e07cfc5a8344df8f151d4f2cda77955c2559543a0166e60fde791dd9",
+        "legacy-wasi/p1/p1.go": "b400982d3aa57a204176c0ea075e52a6f40e2b91248257c9e87e2b1e1f639bf4"
+      },
+      "componentModel": "unavailable"
+    }
+  },
+  "runtime": {
+    "native_dependency_policy": "macho-third-party-closure-v1; system shared-cache libraries excluded; absolute loads remain exact host prerequisites",
+    "id": "wago",
+    "command": [
+      "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20260725/harness/wago/bin/adapter-wago"
+    ],
+    "file_sha256": {
+      "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20260725/harness/wago/bin/adapter-wago": "9c93a973231258bfd53b664c4dff0dd4875e5fc25f44bb19957ab94a9ec12552"
+    }
+  },
+  "env": {
+    "WASMBENCH_V8_COMPILER_MODE": "optimizing-only"
+  },
+  "builtAt": "2026-10-06T06:32:00.933Z"
+}

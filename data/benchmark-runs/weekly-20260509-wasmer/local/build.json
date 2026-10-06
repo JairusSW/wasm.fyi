@@ -1,0 +1,56 @@
+{
+  "schema": 1,
+  "root": "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20260509/harness/wasmer",
+  "controller": "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20260509/controller",
+  "harnessRevision": "9332ced5e59c0c3fd9c5aabc6ebc2ed991431eb9",
+  "controllerSha256": "da0848c6e403d2b9369c61f2afd30bcae9b66ffed96d241469aecbde5d6d4369",
+  "analyzerSha256": "57b025f2921ea1b21effc35f3d4e97393fc83256aa771ad068e7d7237d541811",
+  "pin": {
+    "engine": "wasmer",
+    "targetType": "main",
+    "targetWeek": "2026-05-10T03:59:00.000Z",
+    "repository": "wasmerio/wasmer",
+    "branch": "main",
+    "revision": "34b05facf3663872813bf65deb3b5b29efb8c4b2",
+    "committedAt": "2026-05-07T13:42:49Z",
+    "url": "https://github.com/wasmerio/wasmer/commit/34b05facf3663872813bf65deb3b5b29efb8c4b2",
+    "status": "planned",
+    "configurations": [
+      "wasmer-singlepass"
+    ]
+  },
+  "provenance": {
+    "engine": "wasmer",
+    "targetType": "main",
+    "targetWeek": "2026-05-10T03:59:00.000Z",
+    "repository": "wasmerio/wasmer",
+    "branch": "main",
+    "revision": "34b05facf3663872813bf65deb3b5b29efb8c4b2",
+    "committedAt": "2026-05-07T13:42:49Z",
+    "url": "https://github.com/wasmerio/wasmer/commit/34b05facf3663872813bf65deb3b5b29efb8c4b2",
+    "status": "planned",
+    "configurations": [
+      "wasmer-singlepass"
+    ],
+    "sdkVersion": "7.2.0-alpha.2",
+    "sdk": "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20260509/wasmer-sdk"
+  },
+  "runtime": {
+    "host_file_sha256": {
+      "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20260509/wasmer-sdk/lib/libwasmer.dylib": "864967a3bbdb806856a3a8045c22d13b2671c154f9ae87da8885c574760da0d5"
+    },
+    "native_dependency_policy": "macho-third-party-closure-v1; system shared-cache libraries excluded; absolute loads remain exact host prerequisites",
+    "id": "wasmer-singlepass",
+    "command": [
+      "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20260509/harness/wasmer/bin/adapter-wasmer-singlepass"
+    ],
+    "file_sha256": {
+      "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20260509/harness/wasmer/bin/adapter-wasmer-singlepass": "09052672295dd7ae2bbe1cfc1381c0a0d06160df960491f5e5c8de68bb2a3a17"
+    }
+  },
+  "env": {
+    "WASMBENCH_V8_COMPILER_MODE": "optimizing-only",
+    "WASMBENCH_WASMER_SDK": "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20260509/wasmer-sdk"
+  },
+  "builtAt": "2026-10-06T06:42:29.004Z"
+}

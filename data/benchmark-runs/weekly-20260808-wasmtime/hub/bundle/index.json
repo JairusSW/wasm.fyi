@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "id": "weekly-20260808-wasmtime",
+  "machine": "hub",
+  "bytes": 56579626,
+  "sha256": "ddaf260c6182b71f15f0b3738ea1082a3f169d036a5d86e1e01c2c64c963d4ff",
+  "format": "tar+gzip concatenated parts",
+  "parts": [
+    {
+      "path": "bundle.tar.gz.part-000",
+      "bytes": 33554432,
+      "sha256": "f7926e97f5c4ff1c78bec8c0d6f77537be2aee4d0d52702f4bd656f24969a42b"
+    },
+    {
+      "path": "bundle.tar.gz.part-001",
+      "bytes": 23025194,
+      "sha256": "25bc972ae783f0b273234cd33ec21b2f543884768ad48a1348952fb88bf78c83"
+    }
+  ],
+  "metadata": "metadata.json",
+  "metadataSha256": "5e38480b02e7747f9638d11f4a092932946d268cab84460f1abb6181bbad5f7e",
+  "download": "Concatenate parts in order, verify the full SHA-256, then tar -xzf bundle.tar.gz."
+}

@@ -82,7 +82,7 @@ export function runtimeFeatureTrack(rid:string,f:FeatureRow,scope:Scope,channel:
   const candidates=viewData.featureVersions[scope.machine].filter(v=>ids.includes(v.id) && v.channel===channel && v.version===selected);
   const latest=new Map<string,(typeof candidates)[number]>();
   for(const v of candidates)if(!latest.has(v.id))latest.set(v.id,v);
-  const counts=[...latest.values()].map(v=>({v,f:v.features.find(x=>x.id===f.id)!})).filter(x=>x.f.total>0);
+  const counts=[...latest.values()].flatMap(v=>{const x=v.features.find(x=>x.id===f.id);return x && x.total>0?[{v,f:x}]:[];});
   const expected=featureContracts(f.id).length;
   const complete=counts.filter(x=>x.f.total===expected && x.f.pass===expected);
   const code:SupportCode=complete.length?'y':counts.some(x=>x.f.pass>0)?'p':'?';

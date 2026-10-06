@@ -72,7 +72,9 @@
 			const el = document.getElementById('gsearch');
 			if (el) {
 				e.preventDefault();
-				el.focus();
+				// On narrow layouts the field is folded behind a toggle that focuses it once shown.
+				if (el.offsetParent) el.focus();
+				else document.querySelector<HTMLButtonElement>('.search-toggle')?.click();
 			}
 		}
 		const rid = page.route.id;
@@ -125,11 +127,29 @@
   .skip-link:focus { transform:translateY(0); }
 	.frame {
 		min-height: 100vh;
+		min-height: 100dvh;
+		display: flex;
+		flex-direction: column;
 	}
 	main {
-		padding: 16px 20px 48px;
+		flex: 1;
+		width: 100%;
+		max-width: var(--content-max);
+		margin: 0 auto;
+		box-sizing: border-box;
+		padding: 16px max(20px, env(safe-area-inset-right)) 48px max(20px, env(safe-area-inset-left));
 		display: flex;
 		flex-direction: column;
 		gap: 18px;
+		min-width: 0;
+	}
+	main:focus {
+		outline: none;
+	}
+	@media (max-width: 720px) {
+		main {
+			padding: 14px max(16px, env(safe-area-inset-right)) 36px max(16px, env(safe-area-inset-left));
+			gap: 16px;
+		}
 	}
 </style>

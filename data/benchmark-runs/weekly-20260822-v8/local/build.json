@@ -1,0 +1,99 @@
+{
+  "schema": 1,
+  "root": "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20260822/harness/v8",
+  "controller": "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20260822/controller",
+  "harnessRevision": "9332ced5e59c0c3fd9c5aabc6ebc2ed991431eb9",
+  "controllerSha256": "da0848c6e403d2b9369c61f2afd30bcae9b66ffed96d241469aecbde5d6d4369",
+  "analyzerSha256": "57b025f2921ea1b21effc35f3d4e97393fc83256aa771ad068e7d7237d541811",
+  "pin": {
+    "engine": "v8",
+    "targetType": "main",
+    "targetWeek": "2026-08-23T03:59:00.000Z",
+    "repository": "nodejs/node",
+    "branch": "main",
+    "revision": "c1d3132a1e0f090501aba871e5f984ee366b3cbd",
+    "committedAt": "2026-08-23T03:53:29Z",
+    "url": "https://github.com/nodejs/node/commit/c1d3132a1e0f090501aba871e5f984ee366b3cbd",
+    "status": "planned",
+    "configurations": [
+      "v8"
+    ]
+  },
+  "provenance": {
+    "engine": "v8",
+    "targetType": "main",
+    "targetWeek": "2026-08-23T03:59:00.000Z",
+    "repository": "nodejs/node",
+    "branch": "main",
+    "revision": "c1d3132a1e0f090501aba871e5f984ee366b3cbd",
+    "committedAt": "2026-08-23T03:53:29Z",
+    "url": "https://github.com/nodejs/node/commit/c1d3132a1e0f090501aba871e5f984ee366b3cbd",
+    "status": "planned",
+    "configurations": [
+      "v8"
+    ],
+    "versions": {
+      "node": "27.0.0-pre",
+      "acorn": "8.18.0",
+      "ada": "4.0.0",
+      "amaro": "1.1.11",
+      "ares": "1.34.8",
+      "brotli": "1.2.0",
+      "cldr": "48.0",
+      "icu": "78.3",
+      "libffi": "3.8.0",
+      "lief": "0.17.0",
+      "llhttp": "9.4.3",
+      "merve": "1.2.2",
+      "modules": "147",
+      "napi": "10",
+      "nbytes": "0.1.4",
+      "ncrypto": "0.0.1",
+      "nghttp2": "1.70.0",
+      "nghttp3": "",
+      "ngtcp2": "",
+      "openssl": "3.5.7",
+      "simdjson": "4.6.7",
+      "simdutf": "7.7.0",
+      "sqlite": "3.53.4",
+      "tz": "2026c",
+      "undici": "8.10.0",
+      "unicode": "17.0",
+      "uv": "1.52.1",
+      "uvwasi": "0.0.23",
+      "v8": "14.6.202.34-node.28",
+      "zlib": "1.3.2.1-motley-8002e91",
+      "zstd": "1.5.7"
+    },
+    "nodeSha256": "aa29879a92c0a801a521d3cda0bcc936c782a115b9f198f19137c10675db3af2"
+  },
+  "runtime": {
+    "native_dependency_policy": "macho-third-party-closure-v1; system shared-cache libraries excluded; absolute loads remain exact host prerequisites",
+    "id": "v8",
+    "command": [
+      "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20260822/sources/v8/out/Release/node",
+      "--allow-natives-syntax",
+      "--no-liftoff",
+      "--no-wasm-tier-up",
+      "--no-wasm-lazy-compilation",
+      "--no-wasm-native-module-cache",
+      "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20260822/harness/v8/adapters/v8/adapter.mjs",
+      "--compiler-mode=optimizing-only"
+    ],
+    "file_sha256": {
+      "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20260822/harness/v8/adapters/v8/adapter.mjs": "3d156843308b09f9eb261237e253afd8bf7042cafc4844cee7b0b1d4dbd43e54",
+      "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20260822/harness/v8/adapters/v8/compiler-mode.mjs": "d49a96a97127057001188dc2a478698b98eec4e3c7649a2462f53bdc9ce2c3d3",
+      "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20260822/harness/v8/adapters/v8/floats.mjs": "4bc5bd022948e2b101df38d8fabfa1e980da2588cf3020c3935d3b7de6eb38ee",
+      "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20260822/harness/v8/adapters/v8/harness.mjs": "4286207601a1a0adfc3d892c07ac792a5518a5ca59710b025e6d9b4b9a9ba735",
+      "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20260822/harness/v8/adapters/v8/native-size.mjs": "4c7c343ef938fb38c2de4c631c757c27da80dd6782505e23ef3e7e226446a522",
+      "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20260822/harness/v8/adapters/v8/profiling.mjs": "9cfeb6b8715a9989631d52cb7dd67fe7c4c81ea5ce451831b0e0f8cb9970ce54",
+      "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20260822/harness/v8/adapters/v8/wasi-readonly.mjs": "70053aaa7598aca0bd3c7c5be1818a5c3a76860cd625e162d6ddd41e4d647624",
+      "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20260822/sources/v8/out/Release/node": "aa29879a92c0a801a521d3cda0bcc936c782a115b9f198f19137c10675db3af2"
+    }
+  },
+  "env": {
+    "WASMBENCH_V8_COMPILER_MODE": "optimizing-only",
+    "WASMBENCH_NODE": "/Users/work/Code/Web/wasm.fyi-weekly-20261003/.wasmbench/weekly-20260822/sources/v8/out/Release/node"
+  },
+  "builtAt": "2026-10-05T12:30:11.290Z"
+}

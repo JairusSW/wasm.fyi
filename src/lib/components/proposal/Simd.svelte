@@ -96,7 +96,7 @@
 				{#each sup as r (r.c.id)}
 					<tr>
 						<td class="nowrap"><RtLabel c={r.c} ver /></td>
-						<td>{r.avail}</td>
+						<td class="nowrap">{r.avail}</td>
 						<td class="r">
 							<button class="mono conf" style:color={r.confColor} onclick={() => (ui.drawer = { type: 'compat', fam: 'simd', cid: r.c.id })}
 								>{r.conf}</button

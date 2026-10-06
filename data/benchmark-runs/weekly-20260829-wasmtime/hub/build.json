@@ -1,0 +1,87 @@
+{
+  "schema": 1,
+  "root": "/home/hub/.cache/wasm-fyi/weekly-20260829/harness/wasmtime",
+  "controller": "/home/hub/.cache/wasm-fyi/weekly-20260829/controller",
+  "harnessRevision": "9332ced5e59c0c3fd9c5aabc6ebc2ed991431eb9",
+  "controllerSha256": "34741da126f5a73c2ae569f6a7fd5ef7d54a8e30198170566abed4011d6ad985",
+  "analyzerSha256": "649d645c5630c68c919394f381ccca528f14e946cc3c16adcdd07ea227440d65",
+  "pin": {
+    "engine": "wasmtime",
+    "targetType": "main",
+    "targetWeek": "2026-08-30T03:59:00.000Z",
+    "repository": "bytecodealliance/wasmtime",
+    "branch": "main",
+    "revision": "d8a0da6d661605713798c1c9c76be5c28e3159ff",
+    "committedAt": "2026-08-28T21:03:59Z",
+    "url": "https://github.com/bytecodealliance/wasmtime/commit/d8a0da6d661605713798c1c9c76be5c28e3159ff",
+    "status": "planned",
+    "configurations": [
+      "wasmtime"
+    ]
+  },
+  "provenance": {
+    "engine": "wasmtime",
+    "targetType": "main",
+    "targetWeek": "2026-08-30T03:59:00.000Z",
+    "repository": "bytecodealliance/wasmtime",
+    "branch": "main",
+    "revision": "d8a0da6d661605713798c1c9c76be5c28e3159ff",
+    "committedAt": "2026-08-28T21:03:59Z",
+    "url": "https://github.com/bytecodealliance/wasmtime/commit/d8a0da6d661605713798c1c9c76be5c28e3159ff",
+    "status": "planned",
+    "configurations": [
+      "wasmtime"
+    ],
+    "compatibility": {
+      "api": "FsPerms",
+      "sourceSha256": "43ba1d983155205075b19bff2afc67112dcc4db3f0029e041994a658291f3d72",
+      "p2Sha256": "edc89d6eab516cb6df94499c5498bc2ed2c5fef663ec5156f240f1b711e65c9f"
+    }
+  },
+  "runtime": {
+    "elf_startup_dependencies": {
+      "version": "linux-glibc-startup-closure-v1",
+      "interpreter": {
+        "path": "/lib64/ld-linux-x86-64.so.2",
+        "sha256": "c20a2dc8917c755f02b94049356320fe1f62ac7d9f8994731f807d9df39302da"
+      },
+      "libraries": {
+        "libc.so.6": {
+          "path": "/lib/x86_64-linux-gnu/libc.so.6",
+          "sha256": "3a15d66867d83762c7f2f1e37359cb8f6c5743edb369c65285cb0b1c4f7498bf"
+        },
+        "libgcc_s.so.1": {
+          "path": "/lib/x86_64-linux-gnu/libgcc_s.so.1",
+          "sha256": "d93224d2b0dab4247598be683adca02f5cf00586f99c187579cd7e92058fb7cb"
+        },
+        "libm.so.6": {
+          "path": "/lib/x86_64-linux-gnu/libm.so.6",
+          "sha256": "fce00b6f25f459cf4ae0b7fae4257909a1a8a86f9149e7c029a5d617baf1ccd0"
+        }
+      },
+      "control_files": {
+        "/etc/ld.so.cache": "1b2ef9fe7da4550f7b4e998fe2e80e9d2163233f0c7f6ccf22b207e1763c6356",
+        "/etc/ld.so.preload": "absent"
+      }
+    },
+    "host_file_sha256": {
+      "/etc/ld.so.cache": "1b2ef9fe7da4550f7b4e998fe2e80e9d2163233f0c7f6ccf22b207e1763c6356",
+      "/lib64/ld-linux-x86-64.so.2": "c20a2dc8917c755f02b94049356320fe1f62ac7d9f8994731f807d9df39302da"
+    },
+    "native_dependency_policy": "linux-glibc-startup-closure-v1; explicit trusted loader --list; exact startup library hashes and loader controls; re-resolved before execution; excludes later dlopen and kernel vDSO",
+    "id": "wasmtime",
+    "command": [
+      "/home/hub/.cache/wasm-fyi/weekly-20260829/harness/wasmtime/adapters/wasmtime/target/release/adapter-wasmtime"
+    ],
+    "file_sha256": {
+      "/home/hub/.cache/wasm-fyi/weekly-20260829/harness/wasmtime/adapters/wasmtime/target/release/adapter-wasmtime": "16108dd311f62144c924b51c62e4a2b253a1e036075686bd004131e458015875",
+      "/lib/x86_64-linux-gnu/libc.so.6": "3a15d66867d83762c7f2f1e37359cb8f6c5743edb369c65285cb0b1c4f7498bf",
+      "/lib/x86_64-linux-gnu/libgcc_s.so.1": "d93224d2b0dab4247598be683adca02f5cf00586f99c187579cd7e92058fb7cb",
+      "/lib/x86_64-linux-gnu/libm.so.6": "fce00b6f25f459cf4ae0b7fae4257909a1a8a86f9149e7c029a5d617baf1ccd0"
+    }
+  },
+  "env": {
+    "WASMBENCH_V8_COMPILER_MODE": "optimizing-only"
+  },
+  "builtAt": "2026-10-05T18:57:45.048Z"
+}
