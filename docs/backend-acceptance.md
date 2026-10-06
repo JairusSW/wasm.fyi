@@ -32,8 +32,9 @@ The current large Wasmtime recovery qualification resumes the published
 130,166-object store without retransfers. Before recovery it has checked 163
 images, 256 selected functions, nine original report/archive resources, 17
 selected analytical sections, 672 timing summaries, 835 memory summaries and
-five exact environment/track/method scopes. Backup and DB-free rebuild are still
-running; these serving checks do not establish portable recovery at that scale.
+five exact environment/track/method scopes. The detached backup has completed;
+DB-free rebuild is still running. These checks do not yet establish complete
+portable recovery at that scale.
 The running binary's source oracle omitted image-extent measurements. A separate
 race-tested source/export gate now checks all 163 `native.code_image` results,
 including exact integer values and source/seal commitments; the updated full
@@ -53,3 +54,15 @@ with their original signed cursors. A fresh Wasmer call-report race run passes
 these checks for four result rows and seven original resources, including the
 48,886,252-byte sealed archive. This small real fixture does not qualify the
 larger Wasmtime recovery still in progress.
+
+The strengthened source/export oracle also passes all 145 engine-reported
+`native.code_size` measurements from the sealed Wasmer native-size report.
+API collection preparation now checks a versioned `export-site --describe`
+capability response from the actual controller before adapter preparation and
+worker launch, and on cached tool reuse. This prevents an incompatible producer
+from failing only after collecting measurements; producer publication/pins remain
+unresolved and legacy file publication retains its existing preparation path.
+Producer commit `cc4e0d5` passes selected site-export race tests and Go vet. Eleven
+coordinator/contract tests pass, including the actual built producer capability
+response, incompatible cached controllers and unchanged legacy reuse. The serving
+dependency closure remains 409 packages without SQLite or harness execution.

@@ -4,6 +4,14 @@ Experimental Go/Pebble/local-content service for the existing collector. See the
 [implementation checkpoint](../docs/api-data-v2-progress.md) for commands,
 wire contracts, validation and remaining production gates.
 
+API collection requires a producer whose prepared controller supports
+`wasmbench export-site --describe`. Preparation checks its versioned format,
+source-verification policy and object/inventory ceilings before building adapters
+or running workers. Cached tool reuse probes the hash-verified controller again.
+Legacy file publication does not require this contract. The configured harness
+pin is retained separately from the actual producer revision and export identity;
+this check does not publish or update either pin.
+
 Run the built executable lifecycle smoke test from the site root:
 
 ```sh
