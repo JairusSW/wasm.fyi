@@ -1,0 +1,366 @@
+{
+	"source": [
+		"https://webassembly.org/features/",
+		"https://github.com/WebAssembly/proposals/blob/main/finished-proposals.md"
+	],
+	"retrieved": "2026-10-06",
+	"proposals": [
+		{
+			"key": "acquireReleaseAtomics",
+			"name": "Acquire-Release Atomics",
+			"url": "https://github.com/WebAssembly/acquire-release-atomics",
+			"phase": 2,
+			"spec": null
+		},
+		{
+			"key": "bigInt",
+			"name": "JS BigInt to Wasm i64 Integration",
+			"url": "https://github.com/WebAssembly/JS-BigInt-integration",
+			"phase": 5,
+			"spec": "2.0"
+		},
+		{
+			"key": "branchHinting",
+			"name": "Branch Hinting",
+			"url": "https://github.com/WebAssembly/branch-hinting/blob/master/proposals/branch-hinting/Overview.md",
+			"phase": 5,
+			"spec": "3.0"
+		},
+		{
+			"key": "bulkMemory",
+			"name": "Bulk Memory Operations",
+			"url": "https://github.com/WebAssembly/bulk-memory-operations/blob/master/proposals/bulk-memory-operations/Overview.md",
+			"phase": 5,
+			"spec": "2.0"
+		},
+		{
+			"key": "compactImportSection",
+			"name": "Compact Import Section",
+			"url": "https://github.com/WebAssembly/compact-import-section/blob/main/proposals/compact-import-section/Overview.md",
+			"phase": 4,
+			"spec": null
+		},
+		{
+			"key": "compilationHints",
+			"name": "Compilation Hints",
+			"url": "https://github.com/WebAssembly/compilation-hints/blob/main/proposals/compilation-hints/Overview.md",
+			"phase": 2,
+			"spec": null
+		},
+		{
+			"key": "componentModel",
+			"name": "Component Model",
+			"url": "https://github.com/WebAssembly/component-model",
+			"phase": 1,
+			"spec": null
+		},
+		{
+			"key": "customAnnotationSyntaxInTheTextFormat",
+			"name": "Custom Text Format Annotations",
+			"url": "https://github.com/WebAssembly/annotations/blob/main/proposals/annotations/Overview.md",
+			"phase": 5,
+			"spec": "3.0"
+		},
+		{
+			"key": "customDescriptors",
+			"name": "Custom Descriptors and JS Interop",
+			"url": "https://github.com/WebAssembly/custom-descriptors/blob/main/proposals/custom-descriptors/Overview.md",
+			"phase": 3,
+			"spec": null
+		},
+		{
+			"key": "customPageSizes",
+			"name": "Custom Page Sizes",
+			"url": "https://github.com/WebAssembly/custom-page-sizes/blob/main/proposals/custom-page-sizes/Overview.md",
+			"phase": 3,
+			"spec": null
+		},
+		{
+			"key": "esmIntegration",
+			"name": "ESM Integration",
+			"url": "https://github.com/WebAssembly/esm-integration",
+			"phase": 3,
+			"spec": null
+		},
+		{
+			"key": "exceptions",
+			"name": "Legacy Exception Handling",
+			"url": "https://github.com/WebAssembly/exception-handling/blob/master/proposals/exception-handling/legacy/Exceptions.md",
+			"phase": "inactive",
+			"spec": null
+		},
+		{
+			"key": "exceptionsFinal",
+			"name": "Exception Handling with exnref",
+			"url": "https://github.com/WebAssembly/exception-handling/blob/master/proposals/exception-handling/Exceptions.md",
+			"phase": 5,
+			"spec": "3.0"
+		},
+		{
+			"key": "extendedConst",
+			"name": "Extended Constant Expressions",
+			"url": "https://github.com/WebAssembly/extended-const/blob/master/proposals/extended-const/Overview.md",
+			"phase": 5,
+			"spec": "3.0"
+		},
+		{
+			"key": "extendedNameSection",
+			"name": "Extended Name Section",
+			"url": "https://github.com/WebAssembly/extended-name-section/blob/main/proposals/extended-name-section/Overview.md",
+			"phase": 2,
+			"spec": null
+		},
+		{
+			"key": "flexibleVectors",
+			"name": "Flexible Vectors",
+			"url": "https://github.com/WebAssembly/flexible-vectors/blob/main/proposals/flexible-vectors/Overview.md",
+			"phase": 1,
+			"spec": null
+		},
+		{
+			"key": "frozenValues",
+			"name": "Frozen Values",
+			"url": "https://github.com/WebAssembly/frozen-values/blob/main/proposals/frozen-values/Overview.md",
+			"phase": 1,
+			"spec": null
+		},
+		{
+			"key": "gc",
+			"name": "Garbage Collection",
+			"url": "https://github.com/WebAssembly/gc",
+			"phase": 5,
+			"spec": "3.0"
+		},
+		{
+			"key": "halfPrecision",
+			"name": "Half Precision",
+			"url": "https://github.com/WebAssembly/half-precision/blob/main/proposals/half-precision/Overview.md",
+			"phase": 1,
+			"spec": null
+		},
+		{
+			"key": "instrumentAndTracingTechnology",
+			"name": "Instrument and Tracing Technology",
+			"url": "https://github.com/WebAssembly/instrument-tracing/blob/main/proposals/instrument-tracing/Overview.md",
+			"phase": "inactive",
+			"spec": null
+		},
+		{
+			"key": "jitInterface",
+			"name": "JIT Interface",
+			"url": "https://github.com/WebAssembly/jit-interface/blob/main/proposals/jit-interface/Explainer.md",
+			"phase": 1,
+			"spec": null
+		},
+		{
+			"key": "jspi",
+			"name": "JS Promise Integration",
+			"url": "https://github.com/WebAssembly/js-promise-integration",
+			"phase": 5,
+			"spec": null
+		},
+		{
+			"key": "jsPrimitiveBuiltins",
+			"name": "JS Primitive Builtins",
+			"url": "https://github.com/WebAssembly/js-primitive-builtins/blob/main/proposals/js-primitive-builtins/Overview.md",
+			"phase": 2,
+			"spec": null
+		},
+		{
+			"key": "jsStringBuiltins",
+			"name": "JS String Builtins",
+			"url": "https://github.com/WebAssembly/js-string-builtins/blob/main/proposals/js-string-builtins/Overview.md",
+			"phase": 5,
+			"spec": "3.0"
+		},
+		{
+			"key": "memory64",
+			"name": "Memory64",
+			"url": "https://github.com/WebAssembly/memory64/blob/master/proposals/memory64/Overview.md",
+			"phase": 5,
+			"spec": "3.0"
+		},
+		{
+			"key": "memoryControl",
+			"name": "Memory Control",
+			"url": "https://github.com/WebAssembly/memory-control/blob/main/proposals/memory-control/Overview.md",
+			"phase": 1,
+			"spec": null
+		},
+		{
+			"key": "moreArrayConstructors",
+			"name": "More Array Constructors",
+			"url": "https://github.com/WebAssembly/more-array-constructors/blob/main/proposals/more-array-constructors/Overview.md",
+			"phase": 1,
+			"spec": null
+		},
+		{
+			"key": "multibyteArrayAccess",
+			"name": "Multibyte Array Access",
+			"url": "https://github.com/WebAssembly/multibyte-array-access",
+			"phase": 2,
+			"spec": null
+		},
+		{
+			"key": "multiMemory",
+			"name": "Multiple Memories",
+			"url": "https://github.com/WebAssembly/multi-memory/blob/master/proposals/multi-memory/Overview.md",
+			"phase": 5,
+			"spec": "3.0"
+		},
+		{
+			"key": "multiValue",
+			"name": "Multi-value",
+			"url": "https://github.com/WebAssembly/spec/blob/master/proposals/multi-value/Overview.md",
+			"phase": 5,
+			"spec": "2.0"
+		},
+		{
+			"key": "mutableGlobals",
+			"name": "Import/Export of Mutable Globals",
+			"url": "https://github.com/WebAssembly/mutable-global/blob/master/proposals/mutable-global/Overview.md",
+			"phase": 5,
+			"spec": "1.0"
+		},
+		{
+			"key": "numericValuesInWat",
+			"name": "Numeric Values in WAT Data Segments",
+			"url": "https://github.com/WebAssembly/wat-numeric-values/blob/main/proposals/wat-numeric-values/Overview.md",
+			"phase": 2,
+			"spec": null
+		},
+		{
+			"key": "profiles",
+			"name": "Profiles",
+			"url": "https://github.com/WebAssembly/profiles/blob/main/proposals/profiles/Overview.md",
+			"phase": 1,
+			"spec": null
+		},
+		{
+			"key": "referenceTypes",
+			"name": "Reference Types",
+			"url": "https://github.com/WebAssembly/reference-types/blob/master/proposals/reference-types/Overview.md",
+			"phase": 5,
+			"spec": "2.0"
+		},
+		{
+			"key": "relaxedDeadCodeValidation",
+			"name": "Relaxed Dead Code Validation",
+			"url": "https://github.com/WebAssembly/relaxed-dead-code-validation/blob/main/proposals/relaxed-dead-code-validation/Overview.md",
+			"phase": 2,
+			"spec": null
+		},
+		{
+			"key": "relaxedSimd",
+			"name": "Relaxed SIMD",
+			"url": "https://github.com/WebAssembly/relaxed-simd/tree/main/proposals/relaxed-simd",
+			"phase": 5,
+			"spec": "3.0"
+		},
+		{
+			"key": "roundingVariants",
+			"name": "Rounding Variants",
+			"url": "https://github.com/WebAssembly/rounding-mode-control/blob/main/proposals/rounding-mode-control/Overview.md",
+			"phase": 2,
+			"spec": null
+		},
+		{
+			"key": "saturatedFloatToInt",
+			"name": "Non-trapping float-to-int Conversions",
+			"url": "https://github.com/WebAssembly/spec/blob/master/proposals/nontrapping-float-to-int-conversion/Overview.md",
+			"phase": 5,
+			"spec": "2.0"
+		},
+		{
+			"key": "sharedEverythingThreads",
+			"name": "Shared-Everything Threads",
+			"url": "https://github.com/WebAssembly/shared-everything-threads/blob/main/proposals/shared-everything-threads/Overview.md",
+			"phase": 1,
+			"spec": null
+		},
+		{
+			"key": "signExtensions",
+			"name": "Sign-extension Operators",
+			"url": "https://github.com/WebAssembly/spec/blob/master/proposals/sign-extension-ops/Overview.md",
+			"phase": 5,
+			"spec": "2.0"
+		},
+		{
+			"key": "simd",
+			"name": "Fixed-width SIMD",
+			"url": "https://github.com/WebAssembly/simd/blob/master/proposals/simd/SIMD.md",
+			"phase": 5,
+			"spec": "2.0"
+		},
+		{
+			"key": "stackSwitching",
+			"name": "Stack Switching",
+			"url": "https://github.com/WebAssembly/stack-switching/blob/main/proposals/stack-switching/Explainer.md",
+			"phase": 3,
+			"spec": null
+		},
+		{
+			"key": "stringref",
+			"name": "Reference-Typed Strings",
+			"url": "https://github.com/WebAssembly/stringref/blob/main/proposals/stringref/Overview.md",
+			"phase": 1,
+			"spec": null
+		},
+		{
+			"key": "tailCall",
+			"name": "Tail Call",
+			"url": "https://github.com/WebAssembly/tail-call/blob/master/proposals/tail-call/Overview.md",
+			"phase": 5,
+			"spec": "3.0"
+		},
+		{
+			"key": "threads",
+			"name": "Threads",
+			"url": "https://github.com/WebAssembly/threads/blob/main-legacy/proposals/threads/Overview.md",
+			"phase": 4,
+			"spec": null
+		},
+		{
+			"key": "typedFunctionReferences",
+			"name": "Typed Function References",
+			"url": "https://github.com/WebAssembly/function-references/blob/main/proposals/function-references/Overview.md",
+			"phase": 5,
+			"spec": "3.0"
+		},
+		{
+			"key": "typeImports",
+			"name": "Type Imports",
+			"url": "https://github.com/WebAssembly/proposal-type-imports/blob/main/proposals/type-imports/Overview.md",
+			"phase": 1,
+			"spec": null
+		},
+		{
+			"key": "typeReflection",
+			"name": "Type Reflection for JS API",
+			"url": "https://github.com/WebAssembly/js-types/blob/main/proposals/js-types/Overview.md",
+			"phase": 1,
+			"spec": null
+		},
+		{
+			"key": "wasmCApi",
+			"name": "WebAssembly C and C++ API",
+			"url": "https://github.com/WebAssembly/wasm-c-api",
+			"phase": 1,
+			"spec": null
+		},
+		{
+			"key": "webContentSecurityPolicy",
+			"name": "Web Content Security Policy",
+			"url": "https://github.com/WebAssembly/content-security-policy/blob/main/proposals/CSP.md",
+			"phase": 5,
+			"spec": null
+		},
+		{
+			"key": "wideArithmetic",
+			"name": "Wide Arithmetic",
+			"url": "https://github.com/WebAssembly/wide-arithmetic/blob/main/proposals/wide-arithmetic/Overview.md",
+			"phase": 4,
+			"spec": null
+		}
+	]
+}

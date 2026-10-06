@@ -33,7 +33,7 @@
 		[RTS.length, 'runtimes & engines tracked'],
 		[TOTAL_WORKLOADS, 'measured contracts'],
 		[viewData.statistics.timingSamples, 'recorded timing samples'],
-		[FEATS.length, 'feature families'],
+		[FEATS.length, 'features tracked'],
 		[2, 'machines']
 	];
 

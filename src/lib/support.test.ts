@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { FEATS } from './data/features';
+import { CORPUS_FEATS, FEATS as LISTED } from './data/features';
+
+const FEATS=[...LISTED,...CORPUS_FEATS];
 import { viewData } from './view-data';
 import { RTB } from './data/runtimes';
 import { compatCell, type Scope } from './model';
