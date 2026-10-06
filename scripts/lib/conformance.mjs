@@ -74,12 +74,13 @@ export function goResults(log){
   const completed=new Map();let run=0;const outputs=[];
   for(const line of log.split('\n')){
     let event;try{event=JSON.parse(line);}catch{continue;}
-    if(event.Action==='run')run++;
+    if(event.Action==='run'&&typeof event.Package==='string'&&event.Package&&typeof event.Test==='string'&&event.Test)run++;
     if(event.Output)outputs.push(event.Output);
-    if(event.Test && ['pass','fail','skip'].includes(event.Action))completed.set(event.Test,{name:event.Test,status:{pass:'passed',fail:'failed',skip:'skipped'}[event.Action]});
+    if(typeof event.Test==='string'&&event.Test && typeof event.Package==='string'&&event.Package && ['pass','fail','skip'].includes(event.Action))completed.set(JSON.stringify([event.Package,event.Test]),{package:event.Package,name:event.Test,status:{pass:'passed',fail:'failed',skip:'skipped'}[event.Action]});
   }
-  const rows=[...completed.values()].filter(t=>![...completed.keys()].some(name=>name.startsWith(t.name+'/')));
-  return {results:rows,totals:countOutcomes(rows),testsStarted:run,output:outputs.join('')};
+  const parents=new Set();for(const test of completed.values())for(let end=test.name.lastIndexOf('/');end>0;end=test.name.lastIndexOf('/',end-1))parents.add(JSON.stringify([test.package,test.name.slice(0,end)]));
+  const rows=[...completed].filter(([key])=>!parents.has(key)).map(([,row])=>row);
+  return {parserVersion:'package-qualified-go-leaves-v2',results:rows,totals:countOutcomes(rows),testsStarted:run,output:outputs.join('')};
 }
 // The released Preview 1 runner reports individual cases in a single Go test.
 // Keep its case counts separate from Go leaf-test counts.

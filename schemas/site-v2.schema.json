@@ -1,0 +1,7711 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wasm.fyi/schemas/site-v2.schema.json",
+  "title": "Experimental site-v2 wire contract",
+  "$defs": {
+    "Digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "ObjectDescriptor": {
+      "type": "object",
+      "properties": {
+        "sha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16777216
+        },
+        "kind": {
+          "enum": [
+            "record",
+            "evidence",
+            "binary"
+          ]
+        }
+      },
+      "required": [
+        "sha256",
+        "bytes",
+        "kind"
+      ],
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "properties": {
+            "kind": {
+              "const": "binary"
+            },
+            "bytes": {
+              "minimum": 0,
+              "maximum": 16777216
+            }
+          }
+        },
+        {
+          "properties": {
+            "kind": {
+              "enum": [
+                "record",
+                "evidence"
+              ]
+            },
+            "bytes": {
+              "minimum": 1,
+              "maximum": 262144
+            }
+          }
+        }
+      ]
+    },
+    "ExportManifest": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 2
+        },
+        "format": {
+          "enum": [
+            "site-v2",
+            "conformance-v1"
+          ]
+        },
+        "reportId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "sourceReportSha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "sourceSealSha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "exporter": {
+          "type": "string"
+        },
+        "verification": {
+          "enum": [
+            "source-recomputed",
+            "source-integrity-checked"
+          ]
+        },
+        "objects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ObjectDescriptor"
+          },
+          "minItems": 0,
+          "maxItems": 512
+        },
+        "inventoryPages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/InventoryDescriptor"
+          },
+          "minItems": 1,
+          "maxItems": 512
+        },
+        "exporterIdentity": {
+          "$ref": "#/$defs/ExporterIdentity"
+        }
+      },
+      "required": [
+        "schema",
+        "format",
+        "reportId",
+        "sourceReportSha256",
+        "sourceSealSha256",
+        "exporter",
+        "verification",
+        "objects"
+      ],
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "properties": {
+            "objects": {
+              "minItems": 1
+            }
+          },
+          "not": {
+            "required": [
+              "inventoryPages"
+            ]
+          }
+        },
+        {
+          "properties": {
+            "objects": {
+              "maxItems": 0
+            }
+          },
+          "required": [
+            "inventoryPages"
+          ]
+        }
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "format": {
+                "const": "site-v2"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "verification": {
+                "const": "source-recomputed"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "verification": {
+                "const": "source-integrity-checked"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ExportReference": {
+      "type": "object",
+      "properties": {
+        "sha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "manifest": {
+          "$ref": "#/$defs/ExportManifest"
+        }
+      },
+      "required": [
+        "sha256",
+        "manifest"
+      ],
+      "additionalProperties": false
+    },
+    "CompletedJob": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/MeasurementCompletedJob"
+        },
+        {
+          "$ref": "#/$defs/ConformanceCompletedJob"
+        },
+        {
+          "$ref": "#/$defs/HistoryCoverageJob"
+        }
+      ]
+    },
+    "ProducerSummary": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Unchanged producer fields; exact integers outside JS safe range are decimal strings for size_bytes. No inferred intervals."
+    },
+    "ResultData": {
+      "type": "object",
+      "properties": {
+        "reportId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "environmentId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "configurationId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "runtime": {
+          "type": "string"
+        },
+        "contractId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "workload": {
+          "type": "string"
+        },
+        "scenario": {
+          "type": "string"
+        },
+        "profile": {
+          "type": "string"
+        },
+        "metric": {
+          "type": "string"
+        },
+        "statistic": {
+          "type": "string"
+        },
+        "created": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "analysisVersion": {
+          "type": "string"
+        },
+        "summary": {
+          "$ref": "#/$defs/ProducerSummary"
+        },
+        "evidence": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Digest"
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "trackId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "metricDefinitionId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "metricDefinitionStatus": {
+          "enum": [
+            "available",
+            "unregistered"
+          ]
+        },
+        "measurementMethod": {
+          "$ref": "#/$defs/MeasurementMethod"
+        },
+        "measurementMethodId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "samplingGroup": {
+          "$ref": "#/$defs/SamplingGroup"
+        }
+      },
+      "required": [
+        "reportId",
+        "environmentId",
+        "configurationId",
+        "runtime",
+        "contractId",
+        "workload",
+        "scenario",
+        "profile",
+        "metric",
+        "statistic",
+        "created",
+        "analysisVersion",
+        "summary",
+        "evidence",
+        "trackId",
+        "metricDefinitionId",
+        "metricDefinitionStatus"
+      ],
+      "additionalProperties": false,
+      "dependentRequired": {
+        "measurementMethod": [
+          "measurementMethodId"
+        ],
+        "measurementMethodId": [
+          "measurementMethod"
+        ]
+      }
+    },
+    "WireRecord": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "result",
+            "report",
+            "environment",
+            "configuration",
+            "workload",
+            "metric",
+            "artifact",
+            "track",
+            "report-file",
+            "feature-probe",
+            "conformance",
+            "conformance-source",
+            "conformance-context",
+            "conformance-coverage",
+            "history-coverage"
+          ]
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "data"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "feature-probe"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "data": {
+                "$ref": "#/$defs/FeatureProbeData"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "conformance"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "data": {
+                "$ref": "#/$defs/ConformanceLaneData"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "conformance-source"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "data": {
+                "$ref": "#/$defs/ConformanceSourceData"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "conformance-context"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "data": {
+                "$ref": "#/$defs/ConformanceContextData"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "conformance-coverage"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "data": {
+                "$ref": "#/$defs/ConformanceCoverageData"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "history-coverage"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "data": {
+                "$ref": "#/$defs/HistoryCoverageData"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "RecordPage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/WireRecord"
+          },
+          "maxItems": 1000
+        },
+        "nextCursor": {
+          "type": "string"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "revision",
+        "items",
+        "nextCursor",
+        "complete",
+        "total"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "complete": {
+                "const": true
+              }
+            },
+            "required": [
+              "complete"
+            ]
+          },
+          "then": {
+            "properties": {
+              "nextCursor": {
+                "const": ""
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "nextCursor": {
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "DatasetManifest": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 2
+        },
+        "revision": {
+          "type": "string"
+        },
+        "selectionAliases": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "limits": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        },
+        "endpoints": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "schema",
+        "revision",
+        "selectionAliases",
+        "limits",
+        "endpoints"
+      ],
+      "additionalProperties": false
+    },
+    "ExactInteger": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        {
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        }
+      ]
+    },
+    "InventoryDescriptor": {
+      "type": "object",
+      "properties": {
+        "sha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 262144
+        },
+        "objects": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 512
+        },
+        "contentBytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8589934592
+        }
+      },
+      "required": [
+        "sha256",
+        "bytes",
+        "objects",
+        "contentBytes"
+      ],
+      "additionalProperties": false
+    },
+    "InventoryPage": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 1
+        },
+        "objects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ObjectDescriptor"
+          },
+          "minItems": 1,
+          "maxItems": 512
+        }
+      },
+      "required": [
+        "schema",
+        "objects"
+      ],
+      "additionalProperties": false
+    },
+    "JSONResource": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "json-resource"
+        },
+        "schema": {
+          "const": 1
+        },
+        "encoding": {
+          "const": "json-utf8"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 67108864
+        },
+        "sha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Digest"
+          },
+          "minItems": 1,
+          "maxItems": 1024
+        }
+      },
+      "required": [
+        "kind",
+        "schema",
+        "encoding",
+        "bytes",
+        "sha256",
+        "references"
+      ],
+      "additionalProperties": false
+    },
+    "JSONFragment": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "json-fragment"
+        },
+        "schema": {
+          "const": 1
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "kind",
+        "schema",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "ExporterIdentity": {
+      "type": "object",
+      "properties": {
+        "format": {
+          "const": "site-v2"
+        },
+        "binarySha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "goVersion": {
+          "type": "string"
+        },
+        "module": {
+          "type": "string"
+        },
+        "moduleVersion": {
+          "type": "string"
+        },
+        "build": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "format",
+        "binarySha256"
+      ],
+      "additionalProperties": false
+    },
+    "ObservationIdentity": {
+      "type": "object",
+      "properties": {
+        "definitionVersion": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unit": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "scope": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "phase": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "collector": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "collectorVersion": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "quality": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "profile": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "denominator": {
+          "type": "string",
+          "maxLength": 4096
+        }
+      },
+      "required": [
+        "definitionVersion",
+        "unit",
+        "scope",
+        "phase",
+        "collector",
+        "collectorVersion",
+        "quality",
+        "profile",
+        "denominator"
+      ],
+      "additionalProperties": false
+    },
+    "MeasurementMethod": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 1
+        },
+        "status": {
+          "enum": [
+            "available",
+            "unavailable"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 1024
+        },
+        "metric": {
+          "type": "string"
+        },
+        "scenario": {
+          "type": "string"
+        },
+        "profile": {
+          "type": "string"
+        },
+        "statistic": {
+          "type": "string"
+        },
+        "recipe": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "recipeSha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "collectorStatus": {
+          "enum": [
+            "recorded",
+            "not_recorded"
+          ]
+        },
+        "observations": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/$defs/ObservationIdentity"
+          }
+        }
+      },
+      "required": [
+        "schema",
+        "status",
+        "metric",
+        "scenario",
+        "profile",
+        "statistic",
+        "collectorStatus",
+        "observations"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "available"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "recipe",
+              "recipeSha256"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "unavailable"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "reason"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "recipe"
+                  ]
+                },
+                {
+                  "required": [
+                    "recipeSha256"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "CohortSelector": {
+      "type": "object",
+      "properties": {
+        "definition": {
+          "$ref": "#/$defs/Digest"
+        },
+        "method": {
+          "$ref": "#/$defs/Digest"
+        },
+        "analysis": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      },
+      "required": [
+        "definition",
+        "method",
+        "analysis"
+      ],
+      "additionalProperties": false
+    },
+    "CohortScope": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "environment": {
+          "$ref": "#/$defs/Digest"
+        },
+        "baseline": {
+          "$ref": "#/$defs/Digest"
+        },
+        "selection": {
+          "enum": [
+            "current",
+            "previous",
+            "s1",
+            "s2"
+          ]
+        },
+        "lanes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/$defs/Digest"
+          }
+        },
+        "selectors": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "items": {
+            "$ref": "#/$defs/CohortSelector"
+          }
+        },
+        "laneKind": {
+          "enum": [
+            "configuration",
+            "track"
+          ]
+        },
+        "policy": {
+          "enum": [
+            "shared-geometric-v1",
+            "available-rss-arithmetic-v1",
+            "matched-rss-arithmetic-v1"
+          ]
+        },
+        "weighting": {
+          "enum": [
+            "workload",
+            "corpus"
+          ]
+        },
+        "workloads": {
+          "enum": [
+            "applications",
+            "all"
+          ]
+        },
+        "mixedConfigurations": {
+          "enum": [
+            "reject",
+            "explicit-membership"
+          ]
+        },
+        "collectors": {
+          "enum": [
+            "require-recorded",
+            "allow-unrecorded-timing",
+            "allow-unrecorded-native-size"
+          ]
+        },
+        "definitions": {
+          "enum": [
+            "require-registered",
+            "allow-unregistered-native-size"
+          ]
+        },
+        "contracts": {
+          "enum": [
+            "latest-in-scope",
+            "all-exact-contracts"
+          ]
+        }
+      },
+      "required": [
+        "environment",
+        "baseline",
+        "lanes",
+        "selectors",
+        "laneKind",
+        "policy",
+        "weighting",
+        "workloads",
+        "mixedConfigurations",
+        "collectors",
+        "definitions",
+        "contracts"
+      ],
+      "additionalProperties": false
+    },
+    "PublishedJob": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/MeasurementPublishedJob"
+        },
+        {
+          "$ref": "#/$defs/ConformancePublishedJob"
+        },
+        {
+          "$ref": "#/$defs/HistoryCoveragePublishedJob"
+        }
+      ]
+    },
+    "SessionProgress": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "plan": {
+          "$ref": "#/$defs/Digest"
+        },
+        "configuredHarnessPin": {
+          "type": "string"
+        },
+        "publishedJobs": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of published attempt records, including retries of a machine/corpus job."
+        },
+        "members": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "plannedJobs": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "collectionComplete": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "completenessReason": {
+          "type": "string"
+        },
+        "publishedCorpusJobs": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Distinct machine/corpus pairs with at least one published completed attempt. Includes failed and unsupported outcomes; does not establish full session completion."
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "plan",
+        "configuredHarnessPin",
+        "publishedJobs",
+        "members",
+        "plannedJobs",
+        "collectionComplete",
+        "completenessReason",
+        "publishedCorpusJobs"
+      ],
+      "additionalProperties": false
+    },
+    "OverviewCard": {
+      "type": "object",
+      "properties": {
+        "lane": {
+          "$ref": "#/$defs/Digest"
+        },
+        "status": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "ratio": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "ratioStatus": {
+          "type": "string"
+        },
+        "ratioReason": {
+          "type": "string"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "workloads": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sourceReports": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "actualConfigurations": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "approximateInputs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "ratioUsesApproximateInputs": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "lane",
+        "status",
+        "reason",
+        "value",
+        "ratio",
+        "ratioStatus",
+        "ratioReason",
+        "count",
+        "workloads",
+        "sourceReports",
+        "actualConfigurations",
+        "approximateInputs",
+        "ratioUsesApproximateInputs"
+      ],
+      "additionalProperties": false
+    },
+    "OverviewDefinition": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "name": {
+          "type": "string"
+        },
+        "unit": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "unit",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "OverviewInterpretation": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": "wasmfyi-cohort-v4"
+        },
+        "population": {
+          "type": "string"
+        },
+        "weighting": {
+          "type": "string"
+        },
+        "reports": {
+          "type": "string"
+        },
+        "uncertainty": {
+          "const": "unavailable"
+        },
+        "uncertaintyReason": {
+          "type": "string"
+        },
+        "sourceReports": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "methods": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CohortSelector"
+          },
+          "maxItems": 4
+        },
+        "contractSelection": {
+          "type": "string",
+          "minLength": 1
+        },
+        "numericRepresentation": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "version",
+        "population",
+        "weighting",
+        "reports",
+        "uncertainty",
+        "uncertaintyReason",
+        "sourceReports",
+        "methods",
+        "contractSelection",
+        "numericRepresentation"
+      ],
+      "additionalProperties": false
+    },
+    "Overview": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "scope": {
+          "$ref": "#/$defs/CohortScope"
+        },
+        "cohort": {
+          "type": "string",
+          "maxLength": 8192
+        },
+        "digest": {
+          "$ref": "#/$defs/Digest"
+        },
+        "categoryPolicy": {
+          "type": "string"
+        },
+        "eligibilityPolicy": {
+          "type": "string"
+        },
+        "excluded": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "definitions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/OverviewDefinition"
+          },
+          "maxItems": 4
+        },
+        "requested": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Digest"
+          },
+          "maxItems": 32
+        },
+        "participants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Digest"
+          },
+          "maxItems": 32
+        },
+        "omitted": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Digest"
+          },
+          "maxItems": 32
+        },
+        "cards": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/OverviewCard"
+          },
+          "maxItems": 32
+        },
+        "interpretation": {
+          "$ref": "#/$defs/OverviewInterpretation"
+        },
+        "publicationChecks": {
+          "$ref": "#/$defs/OverviewPublicationChecks"
+        }
+      },
+      "required": [
+        "revision",
+        "scope",
+        "cohort",
+        "digest",
+        "categoryPolicy",
+        "eligibilityPolicy",
+        "excluded",
+        "definitions",
+        "requested",
+        "participants",
+        "omitted",
+        "cards",
+        "interpretation",
+        "publicationChecks"
+      ],
+      "additionalProperties": false
+    },
+    "OverviewPublicationChecks": {
+      "type": "object",
+      "properties": {
+        "byteIntegrity": {
+          "type": "string"
+        },
+        "sourceVerification": {
+          "type": "string"
+        },
+        "operatorQualification": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "byteIntegrity",
+        "sourceVerification",
+        "operatorQualification"
+      ],
+      "additionalProperties": false
+    },
+    "ResultSummaryData": {
+      "type": "object",
+      "properties": {
+        "reportId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "environmentId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "configurationId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "runtime": {
+          "type": "string"
+        },
+        "contractId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "workload": {
+          "type": "string"
+        },
+        "scenario": {
+          "type": "string"
+        },
+        "profile": {
+          "type": "string"
+        },
+        "metric": {
+          "type": "string"
+        },
+        "statistic": {
+          "type": "string"
+        },
+        "created": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "analysisVersion": {
+          "type": "string"
+        },
+        "summary": {
+          "$ref": "#/$defs/ProducerSummary"
+        },
+        "evidence": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Digest"
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "trackId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "metricDefinitionId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "metricDefinitionStatus": {
+          "enum": [
+            "available",
+            "unregistered"
+          ]
+        },
+        "measurementMethodId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "samplingGroup": {
+          "$ref": "#/$defs/SamplingGroup"
+        }
+      },
+      "required": [
+        "reportId",
+        "environmentId",
+        "configurationId",
+        "runtime",
+        "contractId",
+        "workload",
+        "scenario",
+        "profile",
+        "metric",
+        "statistic",
+        "created",
+        "analysisVersion",
+        "summary",
+        "evidence",
+        "trackId",
+        "metricDefinitionId",
+        "metricDefinitionStatus"
+      ],
+      "additionalProperties": false,
+      "description": "Selected API summary. Exact producer values and identities are preserved; measurementMethodId resolves via /methods/{id}?definition=metricDefinitionId. The canonical result detail retains the complete method and evidence."
+    },
+    "ResultSummaryRecord": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "result"
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "data": {
+          "$ref": "#/$defs/ResultSummaryData"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "ResultSummaryPage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResultSummaryRecord"
+          }
+        },
+        "nextCursor": {
+          "type": "string"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "revision",
+        "items",
+        "nextCursor",
+        "complete",
+        "total"
+      ],
+      "additionalProperties": false
+    },
+    "MethodDetail": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "definition": {
+          "$ref": "#/$defs/Digest"
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "method": {
+          "$ref": "#/$defs/MeasurementMethod"
+        }
+      },
+      "required": [
+        "revision",
+        "definition",
+        "id",
+        "method"
+      ],
+      "additionalProperties": false
+    },
+    "ReportAnalysis": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "report-analysis"
+        },
+        "schema": {
+          "const": 1
+        },
+        "reportId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "field": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]{1,128}$"
+        },
+        "data": {}
+      },
+      "required": [
+        "kind",
+        "schema",
+        "reportId",
+        "field",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "ReportAnalysisReferences": {
+      "type": "object",
+      "maxProperties": 64,
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-z0-9_]{1,128}$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/Digest"
+      },
+      "description": "Original derived source JSON fields, excluding core typed transports and separately recorded analysis versions. Version source-fields-v1. Each reference resolves to ReportAnalysis or a chunked JSONResource for that envelope."
+    },
+    "NativeFunction": {
+      "type": "object",
+      "properties": {
+        "module_index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "wasm_index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "name": {
+          "type": "string"
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16777216
+        },
+        "length": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16777216
+        },
+        "tier": {
+          "enum": [
+            "cranelift",
+            "winch"
+          ]
+        },
+        "generation": {
+          "const": 0
+        },
+        "disassembly": {
+          "$ref": "#/$defs/Digest"
+        }
+      },
+      "required": [
+        "module_index",
+        "wasm_index",
+        "offset",
+        "length",
+        "tier",
+        "generation"
+      ],
+      "additionalProperties": false
+    },
+    "NativeFunctionPage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "artifact": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/NativeFunction"
+          }
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "nextCursor": {
+          "type": "string"
+        },
+        "order": {
+          "const": "producer-order"
+        },
+        "indexed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "revision",
+        "artifact",
+        "items",
+        "total",
+        "complete",
+        "nextCursor",
+        "order",
+        "indexed"
+      ],
+      "additionalProperties": false
+    },
+    "NativeFunctionShard": {
+      "type": "object",
+      "properties": {
+        "sha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        }
+      },
+      "required": [
+        "sha256",
+        "count"
+      ],
+      "additionalProperties": false
+    },
+    "CohortCell": {
+      "type": "object",
+      "properties": {
+        "configuration": {
+          "$ref": "#/$defs/Digest"
+        },
+        "exactConfiguration": {
+          "$ref": "#/$defs/Digest"
+        },
+        "contract": {
+          "$ref": "#/$defs/Digest"
+        },
+        "method": {
+          "$ref": "#/$defs/Digest"
+        },
+        "definition": {
+          "$ref": "#/$defs/Digest"
+        },
+        "result": {
+          "$ref": "#/$defs/Digest"
+        },
+        "report": {
+          "$ref": "#/$defs/Digest"
+        },
+        "status": {
+          "type": "string"
+        },
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "sourceValue": {
+          "type": [
+            "number",
+            "string",
+            "null"
+          ]
+        },
+        "approximateValue": {
+          "type": "boolean"
+        },
+        "samplingGroup": {
+          "$ref": "#/$defs/Digest"
+        }
+      },
+      "required": [
+        "configuration",
+        "result",
+        "report",
+        "status",
+        "value"
+      ],
+      "additionalProperties": false
+    },
+    "CohortMember": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/Digest"
+        },
+        "workload": {
+          "type": "string"
+        },
+        "group": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "weight": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "cell": {
+          "$ref": "#/$defs/CohortCell"
+        }
+      },
+      "required": [
+        "key",
+        "workload",
+        "group",
+        "weight",
+        "cell"
+      ],
+      "additionalProperties": false
+    },
+    "CohortMemberPage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "digest": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/CohortMember"
+          }
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "nextCursor": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "revision",
+        "digest",
+        "items",
+        "total",
+        "complete",
+        "nextCursor"
+      ],
+      "additionalProperties": false
+    },
+    "SamplingGroup": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 1
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "passId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "capturedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "runtime": {
+          "type": "string"
+        },
+        "workload": {
+          "type": "string"
+        },
+        "scenario": {
+          "type": "string"
+        },
+        "profile": {
+          "type": "string"
+        },
+        "manifestSha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "trialsSha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "trialCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        }
+      },
+      "required": [
+        "schema",
+        "id",
+        "passId",
+        "capturedAt",
+        "runtime",
+        "workload",
+        "scenario",
+        "profile",
+        "manifestSha256",
+        "trialsSha256",
+        "trialCount"
+      ],
+      "additionalProperties": false
+    },
+    "ReportFile": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 1
+        },
+        "kind": {
+          "const": "report-file"
+        },
+        "reportId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "name": {
+          "enum": [
+            "samples.parquet",
+            "throughput.parquet",
+            "observations.parquet",
+            "counters.parquet",
+            "engine-events.parquet",
+            "code-lifetimes.parquet",
+            "memory-samples.parquet",
+            "memory-observations.parquet",
+            "report.tar.gz"
+          ]
+        },
+        "mediaType": {
+          "enum": [
+            "application/vnd.apache.parquet",
+            "application/gzip"
+          ]
+        },
+        "encoding": {
+          "const": "identity"
+        },
+        "sha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1073741824
+        },
+        "chunks": {
+          "type": "array",
+          "maxItems": 1024,
+          "items": {
+            "type": "object",
+            "properties": {
+              "sha256": {
+                "$ref": "#/$defs/Digest"
+              },
+              "bytes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1048576
+              }
+            },
+            "required": [
+              "sha256",
+              "bytes"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "packingVersion": {
+          "const": "sealed-files-tar-gzip-v1"
+        },
+        "sourceSealSha256": {
+          "$ref": "#/$defs/Digest"
+        }
+      },
+      "required": [
+        "schema",
+        "kind",
+        "reportId",
+        "name",
+        "mediaType",
+        "encoding",
+        "sha256",
+        "bytes",
+        "chunks"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "report.tar.gz"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "packingVersion",
+              "sourceSealSha256"
+            ],
+            "properties": {
+              "mediaType": {
+                "const": "application/gzip"
+              },
+              "bytes": {
+                "minimum": 1
+              },
+              "chunks": {
+                "minItems": 1
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "mediaType": {
+                "const": "application/vnd.apache.parquet"
+              }
+            },
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "packingVersion"
+                  ]
+                },
+                {
+                  "required": [
+                    "sourceSealSha256"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "ReportFileRecord": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "report-file"
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "data": {
+          "$ref": "#/$defs/ReportFile"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "ReportFilePage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ReportFileRecord"
+          },
+          "maxItems": 1000
+        },
+        "nextCursor": {
+          "type": "string"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "revision",
+        "items",
+        "nextCursor",
+        "complete",
+        "total"
+      ],
+      "additionalProperties": false
+    },
+    "ReportFileDetail": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "record": {
+          "$ref": "#/$defs/ReportFileRecord"
+        }
+      },
+      "required": [
+        "revision",
+        "record"
+      ],
+      "additionalProperties": false
+    },
+    "ParentArchive": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 1
+        },
+        "index": {
+          "$ref": "#/$defs/ParentArchiveJSON"
+        },
+        "metadata": {
+          "$ref": "#/$defs/ParentArchiveJSON"
+        },
+        "sha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1073741824
+        },
+        "chunks": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2048,
+          "items": {
+            "$ref": "#/$defs/ParentArchiveChunk"
+          }
+        }
+      },
+      "required": [
+        "schema",
+        "index",
+        "metadata",
+        "sha256",
+        "bytes",
+        "chunks"
+      ],
+      "additionalProperties": false
+    },
+    "ParentArchiveJSON": {
+      "type": "object",
+      "properties": {
+        "sha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 262144
+        },
+        "kind": {
+          "const": "evidence"
+        }
+      },
+      "required": [
+        "sha256",
+        "bytes",
+        "kind"
+      ],
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "properties": {
+            "kind": {
+              "const": "binary"
+            },
+            "bytes": {
+              "minimum": 0,
+              "maximum": 16777216
+            }
+          }
+        },
+        {
+          "properties": {
+            "kind": {
+              "enum": [
+                "record",
+                "evidence"
+              ]
+            },
+            "bytes": {
+              "minimum": 1,
+              "maximum": 262144
+            }
+          }
+        }
+      ]
+    },
+    "ParentArchiveChunk": {
+      "type": "object",
+      "properties": {
+        "sha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1048576
+        },
+        "kind": {
+          "const": "binary"
+        }
+      },
+      "required": [
+        "sha256",
+        "bytes",
+        "kind"
+      ],
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "properties": {
+            "kind": {
+              "const": "binary"
+            },
+            "bytes": {
+              "minimum": 0,
+              "maximum": 16777216
+            }
+          }
+        },
+        {
+          "properties": {
+            "kind": {
+              "enum": [
+                "record",
+                "evidence"
+              ]
+            },
+            "bytes": {
+              "minimum": 1,
+              "maximum": 262144
+            }
+          }
+        }
+      ]
+    },
+    "ArchiveDescriptor": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 1
+        },
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "job": {
+          "$ref": "#/$defs/Digest"
+        },
+        "session": {
+          "type": "string"
+        },
+        "machine": {
+          "type": "string"
+        },
+        "plan": {
+          "$ref": "#/$defs/Digest"
+        },
+        "sourceIndexSha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "content": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "const": "available"
+                },
+                "sha256": {
+                  "$ref": "#/$defs/Digest"
+                },
+                "bytes": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1073741824
+                },
+                "mediaType": {
+                  "const": "application/gzip"
+                },
+                "encoding": {
+                  "const": "original gzip archive"
+                }
+              },
+              "required": [
+                "status",
+                "sha256",
+                "bytes",
+                "mediaType",
+                "encoding"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "const": "not_imported"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "status",
+                "reason"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "qualification": {
+          "const": "not_checked"
+        },
+        "replayStatus": {
+          "const": "conditional"
+        },
+        "replayReason": {
+          "type": "string"
+        },
+        "chunkCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2048
+        },
+        "metadataSha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "integrity": {
+          "const": "original-part-and-full-sha256-verified"
+        }
+      },
+      "required": [
+        "schema",
+        "revision",
+        "job",
+        "session",
+        "machine",
+        "plan",
+        "sourceIndexSha256",
+        "content",
+        "qualification",
+        "replayStatus",
+        "replayReason"
+      ],
+      "additionalProperties": false
+    },
+    "ArchiveChunkPage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "job": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/ParentArchiveChunk"
+          }
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2048
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "nextCursor": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "revision",
+        "job",
+        "items",
+        "total",
+        "complete",
+        "nextCursor"
+      ],
+      "additionalProperties": false
+    },
+    "SessionPlan": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 1
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16777216
+        },
+        "chunks": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": {
+            "$ref": "#/$defs/ParentArchiveChunk"
+          }
+        }
+      },
+      "required": [
+        "schema",
+        "bytes",
+        "chunks"
+      ],
+      "additionalProperties": false
+    },
+    "SessionJobPage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/PublishedJob"
+          }
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "nextCursor": {
+          "type": "string"
+        },
+        "sort": {
+          "const": "machine-corpus-attempt-id"
+        }
+      },
+      "required": [
+        "revision",
+        "items",
+        "total",
+        "complete",
+        "nextCursor",
+        "sort"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "complete": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "nextCursor": {
+                "const": ""
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "nextCursor": {
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "APIError": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string",
+          "minLength": 1
+        },
+        "code": {
+          "enum": [
+            "internal_error",
+            "not_found",
+            "scope_limit",
+            "restart_required",
+            "immutable_conflict",
+            "storage_quota",
+            "undeclared_object",
+            "invalid_request",
+            "query_timeout",
+            "payload_too_large",
+            "progress_changed"
+          ]
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    "EvidenceIndex": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "evidence-index"
+        },
+        "schema": {
+          "const": 1
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Digest"
+          },
+          "minItems": 1,
+          "maxItems": 128
+        }
+      },
+      "required": [
+        "kind",
+        "schema",
+        "references"
+      ],
+      "additionalProperties": false
+    },
+    "AggregatePopulation": {
+      "type": "object",
+      "properties": {
+        "configuration": {
+          "$ref": "#/$defs/Digest"
+        },
+        "status": {
+          "enum": [
+            "available",
+            "unavailable"
+          ]
+        },
+        "reason": {
+          "type": "string"
+        },
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "ratio": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "ratioStatus": {
+          "enum": [
+            "available",
+            "unavailable"
+          ]
+        },
+        "ratioReason": {
+          "type": "string"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "workloads": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "members": {
+          "type": "null"
+        },
+        "reports": {
+          "type": "null"
+        },
+        "approximateInputs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "ratioUsesApproximateInputs": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "configuration",
+        "status",
+        "reason",
+        "value",
+        "ratio",
+        "ratioStatus",
+        "ratioReason",
+        "count",
+        "workloads",
+        "members",
+        "reports",
+        "approximateInputs",
+        "ratioUsesApproximateInputs"
+      ],
+      "additionalProperties": false
+    },
+    "ComparisonSummary": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": "wasmfyi-cohort-v4"
+        },
+        "baseline": {
+          "$ref": "#/$defs/Digest"
+        },
+        "policy": {
+          "enum": [
+            "shared-geometric-v1",
+            "available-rss-arithmetic-v1",
+            "matched-rss-arithmetic-v1"
+          ]
+        },
+        "weighting": {
+          "enum": [
+            "workload",
+            "corpus"
+          ]
+        },
+        "requested": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Digest"
+          },
+          "maxItems": 32,
+          "uniqueItems": true
+        },
+        "participants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Digest"
+          },
+          "maxItems": 32,
+          "uniqueItems": true
+        },
+        "omitted": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Digest"
+          },
+          "maxItems": 32,
+          "uniqueItems": true
+        },
+        "populations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AggregatePopulation"
+          },
+          "maxItems": 32
+        },
+        "uncertainty": {
+          "const": "unavailable"
+        },
+        "uncertaintyReason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "valueRepresentation": {
+          "const": "float64"
+        }
+      },
+      "required": [
+        "version",
+        "baseline",
+        "policy",
+        "weighting",
+        "requested",
+        "participants",
+        "omitted",
+        "populations",
+        "uncertainty",
+        "uncertaintyReason",
+        "valueRepresentation"
+      ],
+      "additionalProperties": false
+    },
+    "AggregateSummary": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "$ref": "#/$defs/CohortScope"
+        },
+        "cohort": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8192
+        },
+        "digest": {
+          "$ref": "#/$defs/Digest"
+        },
+        "categoryPolicy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "eligibilityPolicy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "excluded": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "comparison": {
+          "$ref": "#/$defs/ComparisonSummary"
+        },
+        "reportCounts": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/Digest"
+          },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "maxProperties": 32
+        },
+        "configurationCounts": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/Digest"
+          },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "maxProperties": 32
+        }
+      },
+      "required": [
+        "scope",
+        "cohort",
+        "digest",
+        "categoryPolicy",
+        "eligibilityPolicy",
+        "excluded",
+        "comparison",
+        "reportCounts",
+        "configurationCounts"
+      ],
+      "additionalProperties": false
+    },
+    "Health": {
+      "type": "object",
+      "properties": {
+        "ready": {
+          "type": "boolean"
+        },
+        "datasetAvailable": {
+          "type": "boolean"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "const": ""
+            },
+            {
+              "$ref": "#/$defs/Digest"
+            }
+          ]
+        },
+        "restartRequired": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "ready",
+        "datasetAvailable",
+        "revision",
+        "restartRequired"
+      ],
+      "additionalProperties": false
+    },
+    "RevisionPage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Digest"
+          },
+          "minItems": 1,
+          "maxItems": 1000,
+          "uniqueItems": true
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "nextCursor": {
+          "type": "string",
+          "maxLength": 2048
+        }
+      },
+      "required": [
+        "revision",
+        "items",
+        "total",
+        "complete",
+        "nextCursor"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "complete": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "nextCursor": {
+                "const": ""
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "nextCursor": {
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "PlanRegistration": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 1
+        },
+        "session": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "plan": {
+          "$ref": "#/$defs/Digest"
+        },
+        "configuredHarnessPin": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "sessionPlan": {
+          "$ref": "#/$defs/SessionPlan"
+        }
+      },
+      "required": [
+        "schema",
+        "session",
+        "plan",
+        "configuredHarnessPin",
+        "sessionPlan"
+      ],
+      "additionalProperties": false
+    },
+    "RegisteredSession": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "registrationId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "plan": {
+          "$ref": "#/$defs/Digest"
+        },
+        "configuredHarnessPin": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "members": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128
+        },
+        "plannedJobs": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        },
+        "status": {
+          "const": "registered"
+        }
+      },
+      "required": [
+        "id",
+        "registrationId",
+        "plan",
+        "configuredHarnessPin",
+        "members",
+        "plannedJobs",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "ProgressUpdate": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 1
+        },
+        "session": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "plan": {
+          "$ref": "#/$defs/Digest"
+        },
+        "machine": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "corpus": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "attempt": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "status": {
+          "enum": [
+            "running",
+            "completed",
+            "interrupted",
+            "failed"
+          ]
+        },
+        "phase": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "observedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "schema",
+        "session",
+        "plan",
+        "machine",
+        "corpus",
+        "attempt",
+        "sequence",
+        "status",
+        "observedAt"
+      ],
+      "additionalProperties": false
+    },
+    "AttemptProgress": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "update": {
+          "$ref": "#/$defs/ProgressUpdate"
+        },
+        "recordedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "update",
+        "recordedAt"
+      ],
+      "additionalProperties": false
+    },
+    "AttemptProgressPage": {
+      "type": "object",
+      "properties": {
+        "progressRoot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Digest"
+            },
+            {
+              "const": ""
+            }
+          ]
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/$defs/AttemptProgress"
+          }
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "nextCursor": {
+          "type": "string"
+        },
+        "sort": {
+          "const": "machine-corpus-attempt"
+        }
+      },
+      "required": [
+        "progressRoot",
+        "items",
+        "total",
+        "complete",
+        "nextCursor",
+        "sort"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "complete": {
+                "const": false
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "nextCursor": {
+                "type": "string",
+                "minLength": 1
+              },
+              "progressRoot": {
+                "$ref": "#/$defs/Digest"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "nextCursor": {
+                "const": ""
+              }
+            }
+          }
+        }
+      ]
+    },
+    "HistoryChange": {
+      "type": "object",
+      "properties": {
+        "policy": {
+          "const": "matched-workload-change-v1"
+        },
+        "status": {
+          "enum": [
+            "available",
+            "unavailable"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "uncertainty": {
+          "const": "unavailable"
+        },
+        "uncertaintyReason": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "beforeScope": {
+          "$ref": "#/$defs/CohortScope"
+        },
+        "afterScope": {
+          "$ref": "#/$defs/CohortScope"
+        },
+        "beforeDigest": {
+          "$ref": "#/$defs/Digest"
+        },
+        "afterDigest": {
+          "$ref": "#/$defs/Digest"
+        },
+        "before": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "after": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "ratio": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "matchedCells": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "matchedWorkloads": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "beforeOnlyCells": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "afterOnlyCells": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "reusedCells": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "approximateInputs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 20000
+        }
+      },
+      "required": [
+        "policy",
+        "status",
+        "reason",
+        "uncertainty",
+        "uncertaintyReason",
+        "beforeScope",
+        "afterScope",
+        "beforeDigest",
+        "afterDigest",
+        "before",
+        "after",
+        "ratio",
+        "matchedCells",
+        "matchedWorkloads",
+        "beforeOnlyCells",
+        "afterOnlyCells",
+        "reusedCells",
+        "approximateInputs"
+      ],
+      "additionalProperties": false
+    },
+    "HistoryRelease": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "publishedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "url": {
+          "type": "string",
+          "maxLength": 2048,
+          "pattern": "^https://",
+          "format": "uri"
+        },
+        "datePrecision": {
+          "enum": [
+            "day",
+            "second"
+          ]
+        }
+      },
+      "required": [
+        "version",
+        "publishedAt",
+        "url"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "datePrecision"
+            ],
+            "properties": {
+              "datePrecision": {
+                "const": "day"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "publishedAt": {
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}T00:00:00(?:\\.0+)?(?:Z|\\+00:00)$"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "datePrecision"
+            ],
+            "properties": {
+              "datePrecision": {
+                "const": "second"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "publishedAt": {
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.0+)?(?:Z|[+-]\\d{2}:\\d{2})$"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "HistoryBinding": {
+      "type": "object",
+      "properties": {
+        "reportId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "configurationId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "policy": {
+          "const": "declared-build-history-v1"
+        },
+        "targetDate": {
+          "type": "string",
+          "format": "date",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "sourceDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "sourceRevision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "buildRole": {
+          "enum": [
+            "source",
+            "release",
+            "unknown"
+          ]
+        },
+        "release": {
+          "$ref": "#/$defs/HistoryRelease"
+        },
+        "targetDates": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+          },
+          "minItems": 1,
+          "maxItems": 256,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "reportId",
+        "configurationId",
+        "policy",
+        "buildRole"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "buildRole": {
+                "const": "release"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "release"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "release"
+              ]
+            }
+          }
+        },
+        {
+          "not": {
+            "required": [
+              "targetDate",
+              "targetDates"
+            ]
+          }
+        }
+      ]
+    },
+    "HistoryContext": {
+      "type": "object",
+      "properties": {
+        "binding": {
+          "$ref": "#/$defs/HistoryBinding"
+        },
+        "collectedAt": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "format": "date-time"
+            }
+          ]
+        },
+        "publishedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "interpretationSource": {
+          "const": "trusted-publisher-assertion"
+        },
+        "collectionTimeSource": {
+          "const": "source-report-created"
+        }
+      },
+      "required": [
+        "binding",
+        "collectedAt",
+        "publishedAt",
+        "interpretationSource",
+        "collectionTimeSource"
+      ],
+      "additionalProperties": false
+    },
+    "HistoryContextPage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "job": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/$defs/HistoryContext"
+          }
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 256
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "nextCursor": {
+          "type": "string",
+          "maxLength": 4096
+        }
+      },
+      "required": [
+        "revision",
+        "job",
+        "items",
+        "total",
+        "complete",
+        "nextCursor"
+      ],
+      "additionalProperties": false
+    },
+    "RequestRouteStats": {
+      "type": "object",
+      "properties": {
+        "active": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "completed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "writtenBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "decodedJSONBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "canceled": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "deadlines": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "writeErrors": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "streamAborts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "panics": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "class": {
+          "enum": [
+            "probe",
+            "admin-import",
+            "admin-upload",
+            "admin-plan",
+            "admin-progress",
+            "admin-other",
+            "summary",
+            "evidence",
+            "frontend",
+            "other"
+          ]
+        },
+        "statuses": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "latency": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "required": [
+        "active",
+        "completed",
+        "writtenBytes",
+        "decodedJSONBytes",
+        "canceled",
+        "deadlines",
+        "writeErrors",
+        "streamAborts",
+        "panics",
+        "class",
+        "statuses",
+        "latency"
+      ],
+      "additionalProperties": false
+    },
+    "RequestStats": {
+      "type": "object",
+      "properties": {
+        "startedAt": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "format": "date-time"
+            }
+          ]
+        },
+        "version": {
+          "const": "http-requests-v1"
+        },
+        "latencyUpperBoundsMs": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 7,
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "routes": {
+          "type": "array",
+          "minItems": 10,
+          "maxItems": 10,
+          "items": {
+            "$ref": "#/$defs/RequestRouteStats"
+          }
+        },
+        "admission": {
+          "type": "object",
+          "properties": {
+            "requests": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 8
+            },
+            "results": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2
+            },
+            "cohorts": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2
+            },
+            "downloads": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2
+            }
+          },
+          "required": [
+            "requests",
+            "results",
+            "cohorts",
+            "downloads"
+          ],
+          "additionalProperties": false
+        },
+        "caches": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/CacheStats"
+          }
+        }
+      },
+      "required": [
+        "startedAt",
+        "version",
+        "latencyUpperBoundsMs",
+        "routes",
+        "admission",
+        "caches"
+      ],
+      "additionalProperties": false
+    },
+    "OperationalStats": {
+      "type": "object",
+      "properties": {
+        "pendingJobs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pendingBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "contentBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "contentLimitBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "databaseBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "compactionDebtBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "compactionsActive": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "health": {
+          "$ref": "#/$defs/Health"
+        },
+        "collectedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "requests": {
+          "$ref": "#/$defs/RequestStats"
+        },
+        "filesystem": {
+          "$ref": "#/$defs/FilesystemSpace"
+        },
+        "writeStalls": {
+          "$ref": "#/$defs/WriteStallStats"
+        },
+        "resultQueries": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/ResultQueryStats"
+          }
+        }
+      },
+      "required": [
+        "pendingJobs",
+        "pendingBytes",
+        "contentBytes",
+        "contentLimitBytes",
+        "databaseBytes",
+        "compactionDebtBytes",
+        "compactionsActive",
+        "health",
+        "collectedAt",
+        "requests",
+        "filesystem",
+        "writeStalls",
+        "resultQueries"
+      ],
+      "additionalProperties": false
+    },
+    "FilesystemSpace": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "available",
+            "unavailable"
+          ]
+        },
+        "availableBytes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "totalBytes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      },
+      "required": [
+        "status",
+        "availableBytes",
+        "totalBytes"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "available"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "availableBytes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "totalBytes": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "availableBytes": {
+                "type": "null"
+              },
+              "totalBytes": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "WriteStallStats": {
+      "type": "object",
+      "properties": {
+        "active": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "durationNs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "memtable": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "level0": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "other": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "version": {
+          "const": "pebble-write-stalls-v1"
+        }
+      },
+      "required": [
+        "active",
+        "count",
+        "durationNs",
+        "memtable",
+        "level0",
+        "other",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "ResultQueryStats": {
+      "type": "object",
+      "properties": {
+        "queries": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "budgetUnits": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "records": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "resultDataBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "matched": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "scope": {
+          "enum": [
+            "selection",
+            "history"
+          ]
+        }
+      },
+      "required": [
+        "queries",
+        "failed",
+        "budgetUnits",
+        "records",
+        "resultDataBytes",
+        "matched",
+        "scope"
+      ],
+      "additionalProperties": false
+    },
+    "CacheStats": {
+      "type": "object",
+      "properties": {
+        "entries": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "accountedBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "entryLimit": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "byteLimit": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "hits": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "misses": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rejected": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "evictions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "kind": {
+          "enum": [
+            "results",
+            "cohorts"
+          ]
+        }
+      },
+      "required": [
+        "entries",
+        "accountedBytes",
+        "entryLimit",
+        "byteLimit",
+        "hits",
+        "misses",
+        "rejected",
+        "evictions",
+        "kind"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "results"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "entryLimit": {
+                "const": 24
+              },
+              "byteLimit": {
+                "const": 16777216
+              },
+              "entries": {
+                "maximum": 24
+              },
+              "accountedBytes": {
+                "maximum": 16777216
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "entryLimit": {
+                "const": 16
+              },
+              "byteLimit": {
+                "const": 33554432
+              },
+              "entries": {
+                "maximum": 16
+              },
+              "accountedBytes": {
+                "maximum": 33554432
+              }
+            }
+          }
+        }
+      ]
+    },
+    "HistorySeriesScope": {
+      "type": "object",
+      "properties": {
+        "runtime": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "workload": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "metric": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "configuration": {
+          "$ref": "#/$defs/Digest"
+        },
+        "scenario": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "profile": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "statistic": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "environment": {
+          "$ref": "#/$defs/Digest"
+        },
+        "track": {
+          "$ref": "#/$defs/Digest"
+        },
+        "contract": {
+          "$ref": "#/$defs/Digest"
+        },
+        "definition": {
+          "$ref": "#/$defs/Digest"
+        },
+        "method": {
+          "$ref": "#/$defs/Digest"
+        },
+        "from": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "until": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "sort": {
+          "const": "catalog"
+        },
+        "selection": {
+          "const": ""
+        },
+        "limit": {
+          "const": 0
+        }
+      },
+      "required": [
+        "revision",
+        "environment",
+        "track",
+        "contract",
+        "definition",
+        "method",
+        "scenario",
+        "profile",
+        "statistic",
+        "from",
+        "until",
+        "sort",
+        "selection",
+        "limit"
+      ],
+      "additionalProperties": false
+    },
+    "HistorySeries": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": "observed-minmax-v1"
+        },
+        "scope": {
+          "$ref": "#/$defs/HistorySeriesScope"
+        },
+        "timeAxis": {
+          "const": "source-report-created"
+        },
+        "reduction": {
+          "enum": [
+            "raw",
+            "ordered-observation-buckets"
+          ]
+        },
+        "gapPolicy": {
+          "const": "retain-nonnumeric-and-neighbors"
+        },
+        "rawCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "maxPoints": {
+          "type": "integer",
+          "minimum": 8,
+          "maximum": 1000
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/ResultSummaryRecord"
+          }
+        }
+      },
+      "required": [
+        "version",
+        "scope",
+        "timeAxis",
+        "reduction",
+        "gapPolicy",
+        "rawCount",
+        "maxPoints",
+        "items"
+      ],
+      "additionalProperties": false
+    },
+    "OverviewPresetScope": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "const": ""
+        },
+        "environment": {
+          "$ref": "#/$defs/Digest"
+        },
+        "baseline": {
+          "$ref": "#/$defs/Digest"
+        },
+        "selection": {
+          "enum": [
+            "current",
+            "previous"
+          ]
+        },
+        "lanes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/$defs/Digest"
+          }
+        },
+        "selectors": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "items": {
+            "$ref": "#/$defs/CohortSelector"
+          }
+        },
+        "laneKind": {
+          "enum": [
+            "configuration",
+            "track"
+          ]
+        },
+        "policy": {
+          "enum": [
+            "shared-geometric-v1",
+            "available-rss-arithmetic-v1",
+            "matched-rss-arithmetic-v1"
+          ]
+        },
+        "weighting": {
+          "enum": [
+            "workload",
+            "corpus"
+          ]
+        },
+        "workloads": {
+          "enum": [
+            "applications",
+            "all"
+          ]
+        },
+        "mixedConfigurations": {
+          "enum": [
+            "reject",
+            "explicit-membership"
+          ]
+        },
+        "collectors": {
+          "enum": [
+            "require-recorded",
+            "allow-unrecorded-timing",
+            "allow-unrecorded-native-size"
+          ]
+        },
+        "definitions": {
+          "enum": [
+            "require-registered",
+            "allow-unregistered-native-size"
+          ]
+        },
+        "contracts": {
+          "enum": [
+            "latest-in-scope",
+            "all-exact-contracts"
+          ]
+        }
+      },
+      "required": [
+        "revision",
+        "environment",
+        "baseline",
+        "selection",
+        "lanes",
+        "selectors",
+        "laneKind",
+        "policy",
+        "weighting",
+        "workloads",
+        "mixedConfigurations",
+        "collectors",
+        "definitions",
+        "contracts"
+      ],
+      "additionalProperties": false
+    },
+    "OverviewPreset": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+          "maxLength": 128
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+          "maxLength": 128
+        },
+        "seedRevision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "scope": {
+          "$ref": "#/$defs/OverviewPresetScope"
+        }
+      },
+      "required": [
+        "name",
+        "version",
+        "seedRevision",
+        "scope"
+      ],
+      "additionalProperties": false
+    },
+    "OverviewPresetList": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/OverviewPreset"
+          }
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "additionalProperties": false
+    },
+    "DisassemblyTool": {
+      "type": "object",
+      "properties": {
+        "sha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        }
+      },
+      "required": [
+        "sha256",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "NativeDisassemblyWindow": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": "llvm-function-listing-v1"
+        },
+        "sourceVersion": {
+          "enum": [
+            "native-image-disassembly-v2",
+            "native-image-disassembly-v3"
+          ]
+        },
+        "imageSha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "textSha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "function": {
+          "$ref": "#/$defs/NativeFunction"
+        },
+        "tools": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/DisassemblyTool"
+          }
+        },
+        "arguments": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "interpretation": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8192
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16384
+          }
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 67108864
+        },
+        "source": {
+          "$ref": "#/$defs/DisassemblySource"
+        }
+      },
+      "required": [
+        "version",
+        "sourceVersion",
+        "imageSha256",
+        "textSha256",
+        "function",
+        "tools",
+        "arguments",
+        "interpretation",
+        "items",
+        "total"
+      ],
+      "additionalProperties": false
+    },
+    "NativeDisassemblyPage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "artifact": {
+          "$ref": "#/$defs/Digest"
+        },
+        "ordinal": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 999999
+        },
+        "window": {
+          "$ref": "#/$defs/NativeDisassemblyWindow"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "nextCursor": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 67108864
+        }
+      },
+      "required": [
+        "revision",
+        "artifact",
+        "ordinal",
+        "window",
+        "complete",
+        "nextCursor",
+        "offset"
+      ],
+      "additionalProperties": false
+    },
+    "NativeDisassemblyLines": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "native-disassembly-lines"
+        },
+        "lines": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16384
+          }
+        }
+      },
+      "required": [
+        "kind",
+        "lines"
+      ],
+      "additionalProperties": false
+    },
+    "NativeFunctionsV2": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "native-functions-v2"
+        },
+        "functions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 128,
+          "items": {
+            "$ref": "#/$defs/NativeFunction"
+          }
+        },
+        "references": {
+          "type": "array",
+          "maxItems": 128,
+          "items": {
+            "$ref": "#/$defs/Digest"
+          }
+        }
+      },
+      "required": [
+        "kind",
+        "functions",
+        "references"
+      ],
+      "additionalProperties": false
+    },
+    "NativeDisassembly": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": "llvm-function-listing-v1"
+        },
+        "sourceVersion": {
+          "enum": [
+            "native-image-disassembly-v2",
+            "native-image-disassembly-v3"
+          ]
+        },
+        "imageSha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "textSha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "function": {
+          "$ref": "#/$defs/NativeFunction"
+        },
+        "tools": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/DisassemblyTool"
+          }
+        },
+        "arguments": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "interpretation": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8192
+        },
+        "kind": {
+          "const": "native-function-disassembly"
+        },
+        "moduleSha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "architecture": {
+          "enum": [
+            "amd64",
+            "arm64"
+          ]
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 67108864
+        },
+        "lines": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 67108864
+        },
+        "chunks": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4096,
+          "items": {
+            "type": "object",
+            "properties": {
+              "sha256": {
+                "$ref": "#/$defs/Digest"
+              },
+              "lines": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 256
+              }
+            },
+            "required": [
+              "sha256",
+              "lines"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "references": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4096,
+          "items": {
+            "$ref": "#/$defs/Digest"
+          }
+        },
+        "source": {
+          "$ref": "#/$defs/DisassemblySource"
+        }
+      },
+      "required": [
+        "version",
+        "sourceVersion",
+        "imageSha256",
+        "textSha256",
+        "function",
+        "tools",
+        "arguments",
+        "interpretation",
+        "kind",
+        "moduleSha256",
+        "architecture",
+        "bytes",
+        "lines",
+        "chunks",
+        "references"
+      ],
+      "additionalProperties": false
+    },
+    "DisassemblySource": {
+      "type": "object",
+      "properties": {
+        "location": {
+          "enum": [
+            "embedded-report",
+            "external-archive"
+          ]
+        },
+        "codePassId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "codeSealSha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "nativeSealSha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "verification": {
+          "const": "producer-asserted"
+        }
+      },
+      "required": [
+        "location",
+        "codePassId",
+        "codeSealSha256",
+        "nativeSealSha256",
+        "verification"
+      ],
+      "additionalProperties": false
+    },
+    "ReportRecord": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "report"
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "ReportDetail": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "record": {
+          "$ref": "#/$defs/ReportRecord"
+        }
+      },
+      "required": [
+        "revision",
+        "record"
+      ],
+      "additionalProperties": false
+    },
+    "ReportPage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ReportRecord"
+          },
+          "maxItems": 1000
+        },
+        "nextCursor": {
+          "type": "string"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "revision",
+        "items",
+        "nextCursor",
+        "complete",
+        "total"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "complete": {
+                "const": true
+              }
+            },
+            "required": [
+              "complete"
+            ]
+          },
+          "then": {
+            "properties": {
+              "nextCursor": {
+                "const": ""
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "nextCursor": {
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "TrackRecord": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "track"
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "TrackDetail": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "record": {
+          "$ref": "#/$defs/TrackRecord"
+        }
+      },
+      "required": [
+        "revision",
+        "record"
+      ],
+      "additionalProperties": false
+    },
+    "TrackPage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TrackRecord"
+          },
+          "maxItems": 1000
+        },
+        "nextCursor": {
+          "type": "string"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "revision",
+        "items",
+        "nextCursor",
+        "complete",
+        "total"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "complete": {
+                "const": true
+              }
+            },
+            "required": [
+              "complete"
+            ]
+          },
+          "then": {
+            "properties": {
+              "nextCursor": {
+                "const": ""
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "nextCursor": {
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "MetricRecord": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "metric"
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "MetricDetail": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "record": {
+          "$ref": "#/$defs/MetricRecord"
+        }
+      },
+      "required": [
+        "revision",
+        "record"
+      ],
+      "additionalProperties": false
+    },
+    "MetricPage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MetricRecord"
+          },
+          "maxItems": 1000
+        },
+        "nextCursor": {
+          "type": "string"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "revision",
+        "items",
+        "nextCursor",
+        "complete",
+        "total"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "complete": {
+                "const": true
+              }
+            },
+            "required": [
+              "complete"
+            ]
+          },
+          "then": {
+            "properties": {
+              "nextCursor": {
+                "const": ""
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "nextCursor": {
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ConfigurationRecord": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "configuration"
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "ConfigurationDetail": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "record": {
+          "$ref": "#/$defs/ConfigurationRecord"
+        }
+      },
+      "required": [
+        "revision",
+        "record"
+      ],
+      "additionalProperties": false
+    },
+    "ConfigurationPage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ConfigurationSummaryRecord"
+          },
+          "maxItems": 1000
+        },
+        "nextCursor": {
+          "type": "string"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "projection": {
+          "const": "configuration-display-v1"
+        }
+      },
+      "required": [
+        "revision",
+        "items",
+        "nextCursor",
+        "complete",
+        "total",
+        "projection"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "complete": {
+                "const": true
+              }
+            },
+            "required": [
+              "complete"
+            ]
+          },
+          "then": {
+            "properties": {
+              "nextCursor": {
+                "const": ""
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "nextCursor": {
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "EnvironmentRecord": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "environment"
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "EnvironmentDetail": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "record": {
+          "$ref": "#/$defs/EnvironmentRecord"
+        }
+      },
+      "required": [
+        "revision",
+        "record"
+      ],
+      "additionalProperties": false
+    },
+    "EnvironmentPage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EnvironmentRecord"
+          },
+          "maxItems": 1000
+        },
+        "nextCursor": {
+          "type": "string"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "revision",
+        "items",
+        "nextCursor",
+        "complete",
+        "total"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "complete": {
+                "const": true
+              }
+            },
+            "required": [
+              "complete"
+            ]
+          },
+          "then": {
+            "properties": {
+              "nextCursor": {
+                "const": ""
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "nextCursor": {
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "WorkloadRecord": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "workload"
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "WorkloadDetail": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "record": {
+          "$ref": "#/$defs/WorkloadRecord"
+        }
+      },
+      "required": [
+        "revision",
+        "record"
+      ],
+      "additionalProperties": false
+    },
+    "WorkloadPage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/WorkloadRecord"
+          },
+          "maxItems": 1000
+        },
+        "nextCursor": {
+          "type": "string"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "revision",
+        "items",
+        "nextCursor",
+        "complete",
+        "total"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "complete": {
+                "const": true
+              }
+            },
+            "required": [
+              "complete"
+            ]
+          },
+          "then": {
+            "properties": {
+              "nextCursor": {
+                "const": ""
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "nextCursor": {
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ArtifactRecord": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "artifact"
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "data": {
+          "$ref": "#/$defs/ArtifactDescriptor"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "ArtifactDetail": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "record": {
+          "$ref": "#/$defs/ArtifactRecord"
+        }
+      },
+      "required": [
+        "revision",
+        "record"
+      ],
+      "additionalProperties": false
+    },
+    "ArtifactPage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ArtifactRecord"
+          },
+          "maxItems": 1000
+        },
+        "nextCursor": {
+          "type": "string"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "revision",
+        "items",
+        "nextCursor",
+        "complete",
+        "total"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "complete": {
+                "const": true
+              }
+            },
+            "required": [
+              "complete"
+            ]
+          },
+          "then": {
+            "properties": {
+              "nextCursor": {
+                "const": ""
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "nextCursor": {
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ResultRecord": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "result"
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "data": {
+          "$ref": "#/$defs/ResultData"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "ResultDetail": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "record": {
+          "$ref": "#/$defs/ResultRecord"
+        }
+      },
+      "required": [
+        "revision",
+        "record"
+      ],
+      "additionalProperties": false
+    },
+    "ImportStatus": {
+      "type": "object",
+      "properties": {
+        "session": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "machine": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "corpus": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "attempt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "state": {
+          "enum": [
+            "staged",
+            "published",
+            "aborted"
+          ]
+        },
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "objects": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "missing": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "declaredBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pendingInventories": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "missingComplete": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "session",
+        "machine",
+        "corpus",
+        "attempt",
+        "id",
+        "state",
+        "objects",
+        "missing",
+        "declaredBytes",
+        "pendingInventories",
+        "missingComplete"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "published"
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "required": [
+              "revision"
+            ],
+            "properties": {
+              "missing": {
+                "const": 0
+              },
+              "pendingInventories": {
+                "const": 0
+              },
+              "missingComplete": {
+                "const": true
+              }
+            }
+          },
+          "else": {
+            "not": {
+              "required": [
+                "revision"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "pendingInventories": {
+                "const": 0
+              }
+            },
+            "required": [
+              "pendingInventories"
+            ]
+          },
+          "then": {
+            "properties": {
+              "missingComplete": {
+                "const": true
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "missingComplete": {
+                "const": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "MissingObject": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ObjectDescriptor"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "sha256": {
+              "$ref": "#/$defs/Digest"
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 262144
+            },
+            "kind": {
+              "const": "inventory"
+            }
+          },
+          "required": [
+            "sha256",
+            "bytes",
+            "kind"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ImportMissingPage": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MissingObject"
+          },
+          "maxItems": 100
+        },
+        "nextOffset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "complete": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "items",
+        "nextOffset",
+        "complete"
+      ],
+      "additionalProperties": false
+    },
+    "PlanMissingObjects": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ObjectDescriptor"
+          },
+          "maxItems": 16
+        },
+        "complete": {
+          "const": true
+        }
+      },
+      "required": [
+        "items",
+        "complete"
+      ],
+      "additionalProperties": false
+    },
+    "ArtifactDescriptor": {
+      "type": "object",
+      "properties": {
+        "reportId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "record": {
+          "type": "object",
+          "properties": {
+            "runtime": {
+              "type": "string",
+              "minLength": 1
+            },
+            "workload": {
+              "type": "string",
+              "minLength": 1
+            },
+            "trial": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "runtime",
+            "workload",
+            "trial"
+          ],
+          "additionalProperties": true
+        },
+        "measurementAvailable": {
+          "type": "boolean"
+        },
+        "content": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "enum": [
+                "available",
+                "unavailable"
+              ]
+            },
+            "sha256": {
+              "type": "string"
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 16777216
+            },
+            "mediaType": {
+              "type": "string"
+            },
+            "reason": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "available"
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              },
+              "then": {
+                "required": [
+                  "sha256",
+                  "bytes",
+                  "mediaType"
+                ],
+                "properties": {
+                  "sha256": {
+                    "$ref": "#/$defs/Digest"
+                  },
+                  "mediaType": {
+                    "const": "application/octet-stream"
+                  }
+                }
+              },
+              "else": {
+                "properties": {
+                  "sha256": {
+                    "const": ""
+                  },
+                  "bytes": {
+                    "const": 0
+                  },
+                  "mediaType": {
+                    "const": ""
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "inspection": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "enum": [
+                "available",
+                "unavailable"
+              ]
+            },
+            "metadata": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Digest"
+                },
+                {
+                  "const": ""
+                }
+              ]
+            },
+            "functionAttribution": {
+              "type": "string"
+            },
+            "disassembly": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "enum": [
+                    "available",
+                    "unavailable"
+                  ]
+                },
+                "version": {
+                  "type": "string"
+                },
+                "selection": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "status"
+              ],
+              "additionalProperties": false,
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "status": {
+                        "const": "available"
+                      }
+                    },
+                    "required": [
+                      "status"
+                    ]
+                  },
+                  "then": {
+                    "required": [
+                      "version",
+                      "selection"
+                    ],
+                    "properties": {
+                      "version": {
+                        "const": "llvm-function-listing-v1"
+                      },
+                      "selection": {
+                        "const": "producer-function-ordinal"
+                      },
+                      "reason": {
+                        "const": ""
+                      }
+                    }
+                  },
+                  "else": {
+                    "properties": {
+                      "version": {
+                        "const": ""
+                      },
+                      "selection": {
+                        "const": ""
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "available"
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              },
+              "then": {
+                "required": [
+                  "metadata"
+                ],
+                "properties": {
+                  "metadata": {
+                    "$ref": "#/$defs/Digest"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "disassembly": {
+                    "properties": {
+                      "status": {
+                        "const": "available"
+                      }
+                    },
+                    "required": [
+                      "status"
+                    ]
+                  }
+                },
+                "required": [
+                  "disassembly"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "status": {
+                    "const": "available"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "target": {
+          "type": "object",
+          "properties": {
+            "architecture": {
+              "type": "string"
+            },
+            "backend": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "architecture",
+            "backend"
+          ],
+          "additionalProperties": false
+        },
+        "interpretation": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "reportId",
+        "record",
+        "content",
+        "inspection"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "inspection": {
+                "properties": {
+                  "status": {
+                    "const": "available"
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              }
+            },
+            "required": [
+              "inspection"
+            ]
+          },
+          "then": {
+            "properties": {
+              "content": {
+                "properties": {
+                  "status": {
+                    "const": "available"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "content": {
+                "properties": {
+                  "status": {
+                    "const": "unavailable"
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              }
+            },
+            "required": [
+              "content"
+            ]
+          },
+          "then": {
+            "properties": {
+              "inspection": {
+                "properties": {
+                  "status": {
+                    "const": "unavailable"
+                  },
+                  "metadata": {
+                    "const": ""
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ConfigurationSummaryData": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "runtime": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "backend": {
+          "type": "string"
+        },
+        "description": {
+          "type": "object",
+          "properties": {
+            "runtime": {
+              "type": "string"
+            },
+            "runtime_version": {
+              "type": "string"
+            },
+            "backend": {
+              "type": "string"
+            },
+            "embedding": {
+              "type": "string"
+            },
+            "phase_release_policy": {
+              "type": "string"
+            },
+            "scenarios": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "abis": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "features": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "phase_barrier_scenarios": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "capabilities": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "boolean"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "ConfigurationSummaryRecord": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "configuration"
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "data": {
+          "$ref": "#/$defs/ConfigurationSummaryData"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "FeatureScenario": {
+      "type": "object",
+      "properties": {
+        "passId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "profile": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "scenario": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "trialCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        },
+        "outcomes": {
+          "type": "object",
+          "minProperties": 1,
+          "maxProperties": 32,
+          "propertyNames": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "passId",
+        "profile",
+        "scenario",
+        "trialCount",
+        "outcomes"
+      ]
+    },
+    "FeatureProbeData": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 1
+        },
+        "policy": {
+          "const": "recorded-feature-trials-v1"
+        },
+        "reportId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "environmentId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "configurationId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "trackId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "contractId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "runtime": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "workload": {
+          "type": "string",
+          "pattern": "^features/[^/]+(?:/.*)?$",
+          "maxLength": 512
+        },
+        "feature": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "created": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "trialCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "scenarios": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/FeatureScenario"
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "$ref": "#/$defs/Digest"
+          }
+        }
+      },
+      "required": [
+        "schema",
+        "policy",
+        "reportId",
+        "environmentId",
+        "configurationId",
+        "trackId",
+        "contractId",
+        "runtime",
+        "workload",
+        "feature",
+        "created",
+        "trialCount",
+        "scenarios",
+        "evidence"
+      ],
+      "additionalProperties": false
+    },
+    "FeatureProbeRecord": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "feature-probe"
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "data": {
+          "$ref": "#/$defs/FeatureProbeData"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "FeatureProbePage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FeatureProbeRecord"
+          },
+          "maxItems": 1000
+        },
+        "nextCursor": {
+          "type": "string"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "revision",
+        "items",
+        "nextCursor",
+        "complete",
+        "total"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "complete": {
+                "const": true
+              }
+            },
+            "required": [
+              "complete"
+            ]
+          },
+          "then": {
+            "properties": {
+              "nextCursor": {
+                "const": ""
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "nextCursor": {
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "FeatureProbeDetail": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "record": {
+          "$ref": "#/$defs/FeatureProbeRecord"
+        }
+      },
+      "required": [
+        "revision",
+        "record"
+      ],
+      "additionalProperties": false
+    },
+    "MeasurementCompletedJob": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 2
+        },
+        "session": {
+          "type": "string"
+        },
+        "machine": {
+          "type": "string"
+        },
+        "corpus": {
+          "type": "string"
+        },
+        "attempt": {
+          "type": "string"
+        },
+        "plan": {
+          "$ref": "#/$defs/Digest"
+        },
+        "configuredHarnessPin": {
+          "type": "string"
+        },
+        "parentBundleSha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "status": {
+          "const": "completed"
+        },
+        "exports": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/ExportReference"
+              },
+              {
+                "properties": {
+                  "manifest": {
+                    "properties": {
+                      "format": {
+                        "const": "site-v2"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 8
+        },
+        "parentArchive": {
+          "$ref": "#/$defs/ParentArchive"
+        },
+        "sessionPlan": {
+          "$ref": "#/$defs/SessionPlan"
+        },
+        "history": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "$ref": "#/$defs/HistoryBinding"
+          }
+        }
+      },
+      "required": [
+        "schema",
+        "session",
+        "machine",
+        "corpus",
+        "attempt",
+        "plan",
+        "configuredHarnessPin",
+        "parentBundleSha256",
+        "status",
+        "exports"
+      ],
+      "additionalProperties": false
+    },
+    "ConformanceCompletedJob": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 3
+        },
+        "session": {
+          "type": "string"
+        },
+        "machine": {
+          "type": "string"
+        },
+        "corpus": {
+          "type": "string"
+        },
+        "attempt": {
+          "type": "string"
+        },
+        "plan": {
+          "$ref": "#/$defs/Digest"
+        },
+        "status": {
+          "const": "completed"
+        },
+        "exports": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/ExportReference"
+              },
+              {
+                "properties": {
+                  "manifest": {
+                    "properties": {
+                      "format": {
+                        "const": "conformance-v1"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 8
+        },
+        "kind": {
+          "const": "conformance"
+        }
+      },
+      "required": [
+        "schema",
+        "session",
+        "machine",
+        "corpus",
+        "attempt",
+        "plan",
+        "status",
+        "exports",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "ConformanceSourceData": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 1
+        },
+        "reportId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "sha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1073741824
+        },
+        "chunks": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1024,
+          "items": {
+            "type": "object",
+            "properties": {
+              "sha256": {
+                "$ref": "#/$defs/Digest"
+              },
+              "bytes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1048576
+              }
+            },
+            "required": [
+              "sha256",
+              "bytes"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "receipt": {
+          "type": "object",
+          "properties": {
+            "sha256": {
+              "$ref": "#/$defs/Digest"
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 64,
+              "maximum": 256
+            }
+          },
+          "required": [
+            "sha256",
+            "bytes"
+          ],
+          "additionalProperties": false
+        },
+        "integrity": {
+          "const": "content-hash-verified"
+        },
+        "collectionVerification": {
+          "const": "publisher-asserted"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "reportId",
+        "sha256",
+        "bytes",
+        "chunks",
+        "receipt",
+        "integrity",
+        "collectionVerification"
+      ]
+    },
+    "ConformanceLaneData": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 1
+        },
+        "policy": {
+          "const": "reported-suite-lanes-v1"
+        },
+        "sourceId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "lane": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "created": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "anyOf": [
+            {
+              "enum": [
+                "passed",
+                "failed",
+                "unsupported",
+                "skipped",
+                "runner-error",
+                "crashed"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "totals": {
+          "anyOf": [
+            {
+              "type": "object",
+              "maxProperties": 8,
+              "propertyNames": {
+                "enum": [
+                  "passed",
+                  "failed",
+                  "unsupported",
+                  "skipped",
+                  "runner-error",
+                  "crashed",
+                  "xfailed",
+                  "xpassed"
+                ]
+              },
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "engine": {
+          "anyOf": [
+            {
+              "type": "object",
+              "minProperties": 1,
+              "properties": {
+                "repository": {
+                  "type": "string",
+                  "maxLength": 2048
+                },
+                "revision": {
+                  "type": "string",
+                  "maxLength": 2048
+                },
+                "tag": {
+                  "type": "string",
+                  "maxLength": 2048
+                },
+                "version": {
+                  "type": "string",
+                  "maxLength": 2048
+                },
+                "sha256": {
+                  "type": "string",
+                  "maxLength": 2048
+                },
+                "assetSha256": {
+                  "type": "string",
+                  "maxLength": 2048
+                },
+                "url": {
+                  "type": "string",
+                  "maxLength": 2048
+                },
+                "label": {
+                  "type": "string",
+                  "maxLength": 2048
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "suite": {
+          "anyOf": [
+            {
+              "type": "object",
+              "minProperties": 1,
+              "properties": {
+                "repository": {
+                  "type": "string",
+                  "maxLength": 2048
+                },
+                "revision": {
+                  "type": "string",
+                  "maxLength": 2048
+                },
+                "tag": {
+                  "type": "string",
+                  "maxLength": 2048
+                },
+                "version": {
+                  "type": "string",
+                  "maxLength": 2048
+                },
+                "sha256": {
+                  "type": "string",
+                  "maxLength": 2048
+                },
+                "assetSha256": {
+                  "type": "string",
+                  "maxLength": 2048
+                },
+                "url": {
+                  "type": "string",
+                  "maxLength": 2048
+                },
+                "label": {
+                  "type": "string",
+                  "maxLength": 2048
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "parserVersion": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "interpretationSource": {
+          "const": "publisher-asserted"
+        }
+      },
+      "required": [
+        "schema",
+        "policy",
+        "sourceId",
+        "lane",
+        "created",
+        "unit",
+        "status",
+        "totals",
+        "engine",
+        "suite",
+        "reason",
+        "parserVersion",
+        "interpretationSource"
+      ],
+      "additionalProperties": false
+    },
+    "ConformanceLaneRecord": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "conformance"
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "data": {
+          "$ref": "#/$defs/ConformanceLaneData"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "ConformanceLaneDetail": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "record": {
+          "$ref": "#/$defs/ConformanceLaneRecord"
+        }
+      },
+      "required": [
+        "revision",
+        "record"
+      ],
+      "additionalProperties": false
+    },
+    "ConformanceLanePage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ConformanceLaneRecord"
+          },
+          "maxItems": 1000
+        },
+        "nextCursor": {
+          "type": "string"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "revision",
+        "items",
+        "nextCursor",
+        "complete",
+        "total"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "complete": {
+                "const": true
+              }
+            },
+            "required": [
+              "complete"
+            ]
+          },
+          "then": {
+            "properties": {
+              "nextCursor": {
+                "const": ""
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "nextCursor": {
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ConformanceSourceRecord": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "conformance-source"
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "data": {
+          "$ref": "#/$defs/ConformanceSourceData"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "ConformanceSourceDetail": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "record": {
+          "$ref": "#/$defs/ConformanceSourceRecord"
+        }
+      },
+      "required": [
+        "revision",
+        "record"
+      ],
+      "additionalProperties": false
+    },
+    "ConformanceSourcePage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ConformanceSourceRecord"
+          },
+          "maxItems": 1000
+        },
+        "nextCursor": {
+          "type": "string"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "revision",
+        "items",
+        "nextCursor",
+        "complete",
+        "total"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "complete": {
+                "const": true
+              }
+            },
+            "required": [
+              "complete"
+            ]
+          },
+          "then": {
+            "properties": {
+              "nextCursor": {
+                "const": ""
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "nextCursor": {
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "MeasurementPublishedJob": {
+      "type": "object",
+      "properties": {
+        "session": {
+          "type": "string"
+        },
+        "machine": {
+          "type": "string"
+        },
+        "corpus": {
+          "type": "string"
+        },
+        "attempt": {
+          "type": "string"
+        },
+        "configuredHarnessPin": {
+          "type": "string"
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "plan": {
+          "$ref": "#/$defs/Digest"
+        },
+        "parentBundleSha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "collectionStatus": {
+          "const": "completed"
+        },
+        "publicationStatus": {
+          "const": "published"
+        },
+        "publishedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reports": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/Digest"
+          }
+        },
+        "parentArchiveStored": {
+          "const": true
+        },
+        "historyBindings": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 256
+        }
+      },
+      "required": [
+        "session",
+        "machine",
+        "corpus",
+        "attempt",
+        "configuredHarnessPin",
+        "id",
+        "plan",
+        "parentBundleSha256",
+        "collectionStatus",
+        "publicationStatus",
+        "publishedAt",
+        "reports"
+      ],
+      "additionalProperties": false
+    },
+    "ConformancePublishedJob": {
+      "type": "object",
+      "properties": {
+        "session": {
+          "type": "string"
+        },
+        "machine": {
+          "type": "string"
+        },
+        "corpus": {
+          "type": "string"
+        },
+        "attempt": {
+          "type": "string"
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "plan": {
+          "$ref": "#/$defs/Digest"
+        },
+        "collectionStatus": {
+          "const": "completed"
+        },
+        "publicationStatus": {
+          "const": "published"
+        },
+        "publishedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reports": {
+          "type": "array",
+          "maxItems": 0,
+          "items": {
+            "$ref": "#/$defs/Digest"
+          }
+        },
+        "kind": {
+          "const": "conformance"
+        }
+      },
+      "required": [
+        "session",
+        "machine",
+        "corpus",
+        "attempt",
+        "id",
+        "plan",
+        "collectionStatus",
+        "publicationStatus",
+        "publishedAt",
+        "reports",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "ConformanceContextData": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 1
+        },
+        "sourceId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "created": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "host": {
+          "type": "object",
+          "properties": {
+            "hostname": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            },
+            "os": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "arch": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          },
+          "required": [
+            "hostname",
+            "os",
+            "arch"
+          ],
+          "additionalProperties": false
+        },
+        "hostIdentity": {
+          "$ref": "#/$defs/Digest"
+        },
+        "coverageCount": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "interpretationSource": {
+          "const": "publisher-asserted"
+        }
+      },
+      "required": [
+        "schema",
+        "sourceId",
+        "created",
+        "host",
+        "hostIdentity",
+        "coverageCount",
+        "interpretationSource"
+      ],
+      "additionalProperties": false
+    },
+    "ConformanceCoverageData": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 1
+        },
+        "sourceId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "created": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "engine": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "status": {
+          "enum": [
+            "selected",
+            "uncollected"
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "interpretationSource": {
+          "const": "publisher-asserted"
+        }
+      },
+      "required": [
+        "schema",
+        "sourceId",
+        "created",
+        "engine",
+        "status",
+        "reason",
+        "interpretationSource"
+      ],
+      "additionalProperties": false
+    },
+    "ConformanceContextRecord": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "conformance-context"
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "data": {
+          "$ref": "#/$defs/ConformanceContextData"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "ConformanceContextPage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ConformanceContextRecord"
+          },
+          "maxItems": 1000
+        },
+        "nextCursor": {
+          "type": "string"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "revision",
+        "items",
+        "nextCursor",
+        "complete",
+        "total"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "complete": {
+                "const": true
+              }
+            },
+            "required": [
+              "complete"
+            ]
+          },
+          "then": {
+            "properties": {
+              "nextCursor": {
+                "const": ""
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "nextCursor": {
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ConformanceContextDetail": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "record": {
+          "$ref": "#/$defs/ConformanceContextRecord"
+        }
+      },
+      "required": [
+        "revision",
+        "record"
+      ],
+      "additionalProperties": false
+    },
+    "ConformanceCoverageRecord": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "conformance-coverage"
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "data": {
+          "$ref": "#/$defs/ConformanceCoverageData"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "ConformanceCoveragePage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ConformanceCoverageRecord"
+          },
+          "maxItems": 1000
+        },
+        "nextCursor": {
+          "type": "string"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "revision",
+        "items",
+        "nextCursor",
+        "complete",
+        "total"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "complete": {
+                "const": true
+              }
+            },
+            "required": [
+              "complete"
+            ]
+          },
+          "then": {
+            "properties": {
+              "nextCursor": {
+                "const": ""
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "nextCursor": {
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ConformanceCoverageDetail": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "record": {
+          "$ref": "#/$defs/ConformanceCoverageRecord"
+        }
+      },
+      "required": [
+        "revision",
+        "record"
+      ],
+      "additionalProperties": false
+    },
+    "CoverageBuild": {
+      "type": "object",
+      "properties": {
+        "engine": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "role": {
+          "enum": [
+            "source",
+            "release"
+          ]
+        },
+        "repository": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "version": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}([a-f0-9]{24})?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sourceDate": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "releaseDate": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "datePrecision": {
+          "anyOf": [
+            {
+              "enum": [
+                "day",
+                "second"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uri",
+              "pattern": "^https://",
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "engine",
+        "role",
+        "repository",
+        "version",
+        "revision",
+        "sourceDate",
+        "releaseDate",
+        "datePrecision",
+        "url"
+      ],
+      "additionalProperties": false
+    },
+    "HistoryCoverageData": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 1
+        },
+        "coverageId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "policy": {
+          "const": "recorded-history-coverage-v1"
+        },
+        "host": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 128
+        },
+        "corpusSha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "recipeSha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "jobId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Digest"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "configuration": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "targetDates": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "date"
+          },
+          "maxItems": 256,
+          "uniqueItems": true
+        },
+        "targetRelease": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "targetType": {
+          "enum": [
+            "weekly",
+            "main",
+            "release"
+          ]
+        },
+        "desiredBuild": {
+          "$ref": "#/$defs/CoverageBuild"
+        },
+        "configured": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "enum": [
+            "collected",
+            "uncollected",
+            "pending-binding",
+            "unavailable",
+            "runner-error",
+            "building",
+            "running"
+          ]
+        },
+        "recordedStatus": {
+          "anyOf": [
+            {
+              "enum": [
+                "collected",
+                "not-collected",
+                "pending-binding",
+                "unavailable",
+                "runner-error",
+                "building",
+                "running"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "observedSourceRevision": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}([a-f0-9]{24})?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sourceReportSha256": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Digest"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "collectedAt": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "publishedRevision": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Digest"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "interpretationSource": {
+          "const": "trusted-publisher-assertion"
+        }
+      },
+      "required": [
+        "schema",
+        "coverageId",
+        "policy",
+        "host",
+        "corpusSha256",
+        "recipeSha256",
+        "jobId",
+        "configuration",
+        "targetDates",
+        "targetType",
+        "desiredBuild",
+        "configured",
+        "status",
+        "recordedStatus",
+        "reason",
+        "observedSourceRevision",
+        "sourceReportSha256",
+        "collectedAt",
+        "publishedRevision",
+        "interpretationSource"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "collected"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "sourceReportSha256": {
+                "$ref": "#/$defs/Digest"
+              },
+              "collectedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "jobId": {
+                "$ref": "#/$defs/Digest"
+              },
+              "configuration": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "sourceReportSha256": {
+                "type": "null"
+              },
+              "collectedAt": {
+                "type": "null"
+              },
+              "observedSourceRevision": {
+                "type": "null"
+              },
+              "publishedRevision": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "HistoryCoverageRecord": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "history-coverage"
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "data": {
+          "$ref": "#/$defs/HistoryCoverageData"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "HistoryCoveragePage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/HistoryCoverageRecord"
+          },
+          "maxItems": 1000
+        },
+        "nextCursor": {
+          "type": "string"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "scope": {
+          "type": "string",
+          "pattern": "^([a-f0-9]{64})?$"
+        }
+      },
+      "required": [
+        "revision",
+        "items",
+        "nextCursor",
+        "complete",
+        "total",
+        "scope"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "complete": {
+                "const": true
+              }
+            },
+            "required": [
+              "complete"
+            ]
+          },
+          "then": {
+            "properties": {
+              "nextCursor": {
+                "const": ""
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "nextCursor": {
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "HistoryCoverageDetail": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "record": {
+          "$ref": "#/$defs/HistoryCoverageRecord"
+        }
+      },
+      "required": [
+        "revision",
+        "record"
+      ],
+      "additionalProperties": false
+    },
+    "HistoryCoverageJob": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 3
+        },
+        "session": {
+          "type": "string"
+        },
+        "machine": {
+          "type": "string"
+        },
+        "corpus": {
+          "type": "string"
+        },
+        "attempt": {
+          "type": "string"
+        },
+        "plan": {
+          "$ref": "#/$defs/Digest"
+        },
+        "status": {
+          "const": "completed"
+        },
+        "exports": {
+          "const": []
+        },
+        "kind": {
+          "const": "history-coverage"
+        },
+        "historyCoverage": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/$defs/HistoryCoverageData"
+          }
+        }
+      },
+      "required": [
+        "schema",
+        "session",
+        "machine",
+        "corpus",
+        "attempt",
+        "plan",
+        "status",
+        "exports",
+        "kind",
+        "historyCoverage"
+      ],
+      "additionalProperties": false
+    },
+    "HistoryCoveragePublishedJob": {
+      "type": "object",
+      "properties": {
+        "session": {
+          "type": "string"
+        },
+        "machine": {
+          "type": "string"
+        },
+        "corpus": {
+          "type": "string"
+        },
+        "attempt": {
+          "type": "string"
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "plan": {
+          "$ref": "#/$defs/Digest"
+        },
+        "collectionStatus": {
+          "const": "completed"
+        },
+        "publicationStatus": {
+          "const": "published"
+        },
+        "publishedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reports": {
+          "type": "array",
+          "maxItems": 0,
+          "items": {
+            "$ref": "#/$defs/Digest"
+          }
+        },
+        "kind": {
+          "const": "history-coverage"
+        },
+        "historyCoverage": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      },
+      "required": [
+        "session",
+        "machine",
+        "corpus",
+        "attempt",
+        "id",
+        "plan",
+        "collectionStatus",
+        "publicationStatus",
+        "publishedAt",
+        "reports",
+        "kind",
+        "historyCoverage"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$ref": "#/$defs/CompletedJob"
+}

@@ -1,6 +1,8 @@
 import { viewCell, viewData, type ViewCell } from './view-data';
 import type { CfgId } from './data/types';
 import type { PerfGroup, Scope } from './model';
+import { measuredCohort, cohortWeights, weightedGeometricMean } from './comparison-policy';
+export { measuredCohort, cohortWeights, weightedGeometricMean } from './comparison-policy';
 
 export interface Aggregate {
 	v:number; r:number; ci:number; ratioInterval?:[number,number]; interval?:[number,number];
@@ -10,18 +12,6 @@ const metrics:Record<PerfGroup,(string|null)[]>={lat:['compile','inst','first','
 const cache=new Map<string,Aggregate|null>();
 const median=(xs:number[])=>{const s=[...xs].sort((a,b)=>a-b);return s.length%2?s[s.length>>1]:(s[(s.length>>1)-1]+s[s.length>>1])/2;};
 const quantile=(xs:number[],q:number)=>{const s=[...xs].sort((a,b)=>a-b);const p=(s.length-1)*q;return s[Math.floor(p)]+(s[Math.ceil(p)]-s[Math.floor(p)])*(p%1);};
-
-/** The same evidence eligibility and weighting apply to current and sealed weekly captures. */
-export function measuredCohort<T extends {id:string}>(workloads:T[],selected:CfgId[],cid:CfgId,cell:(w:string,c:CfgId)=>ViewCell) {
- const available=(w:string,c:CfgId)=>{const v=cell(w,c);return !!v.report && v.st==='ok' && v.v!=null && Number.isFinite(v.v) && v.v>0;};
- const participants=selected.filter(c=>workloads.some(w=>available(w.id,c)));
- return {participants,cohort:participants.includes(cid)?workloads.filter(w=>participants.every(c=>available(w.id,c))):[]};
-}
-export function cohortWeights(workloads:{group:string}[],weighting:Scope['weighting']):number[] {
- const counts=new Map<string,number>();for(const w of workloads)counts.set(w.group,(counts.get(w.group)||0)+1);
- return workloads.map(w=>weighting==='workload'?1/workloads.length:1/(counts.size*counts.get(w.group)!));
-}
-export const weightedGeometricMean=(values:number[],weights:number[])=>Math.exp(values.reduce((sum,v,i)=>sum+weights[i]*Math.log(v),0));
 
 /** The exact current cohort, shared by headline and canonical release history. */
 export function aggregateCohort(s:Scope,group:PerfGroup,cid:CfgId,col:number) {

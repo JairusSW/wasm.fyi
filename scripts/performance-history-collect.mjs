@@ -1,17 +1,28 @@
-import {readFile,writeFile,mkdir,rename,rm,statfs,readdir,link,unlink,stat} from 'node:fs/promises';
+import {readFile,writeFile,mkdir,rename,rm,statfs,readdir,link,unlink,stat,open} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
 import {homedir,availableParallelism} from 'node:os';
-import {site,harness,command,digest,exists,locked} from './lib/wasmbench.mjs';
+import {site,harness,command,digest,exists} from './lib/wasmbench.mjs';
 import {parseCorpusJSON} from './lib/corpus.mjs';
 import {performanceCorpusIdentity} from './lib/performance-history.mjs';
 import {copyHistoricalHarness,buildHistoricalBinding,assertHistoricalRuntime,pendingBindingReason} from './lib/historical-binding.mjs';
 import {workersWithinCpuBudget} from './lib/worker-budget.mjs';
+import {publicationURL} from './lib/api-publish.mjs';
+import {verifySiteExportContract} from './lib/site-export-contract.mjs';
+import {publishPerformanceHistoryConfiguration} from './lib/performance-history-api.mjs';
+import {retainUncollectedHistoryConfiguration} from './lib/performance-history-coverage.mjs';
+import {publishHistoryCoverage} from './lib/performance-history-coverage-api.mjs';
+import {processLock} from './lib/benchmark-lock.mjs';
+
+const apiURL=process.env.WASMFYI_HISTORY_API_URL?publicationURL(process.env.WASMFYI_HISTORY_API_URL):null;
+const publishOnly=process.env.WASMFYI_HISTORY_PUBLISH_ONLY==='1';
+if(publishOnly&&!apiURL)throw Error('Publication-only history requires WASMFYI_HISTORY_API_URL');
+if(apiURL&&(!process.env.WASMFYI_ADMIN_TOKEN||process.env.WASMFYI_ADMIN_TOKEN.length<32))throw Error('Historical API publication requires WASMFYI_ADMIN_TOKEN (at least 32 characters)');
 
 // Acquire the same Linux measurement lock as the current Hub supervisor.
 // flock retains it while the nested collector is alive, including all builds.
-if(process.platform==='linux'&&!process.argv.includes('--under-host-lock')) {
+if(!publishOnly&&process.platform==='linux'&&!process.argv.includes('--under-host-lock')) {
   const lock=join(homedir(),'.cache/wasm-fyi/measurement.lock');await mkdir(join(homedir(),'.cache/wasm-fyi'),{recursive:true});
   const child=spawnSync('flock',['-w','86400',lock,process.execPath,...process.argv.slice(1),'--under-host-lock'],{stdio:'inherit'});
   if(child.error)throw child.error;process.exit(child.status??1);
@@ -42,42 +53,72 @@ async function deduplicateWorkloadArtifacts(directory,workloads) {
 }
 const active=await readFile(join(site,'.wasmbench/full-2026-10-02/active-runs.json'),'utf8').then(JSON.parse,()=>null);
 const localOwners=process.platform==='darwin'?[active?.mac?.pid,active?.macRecovery?.pid]:[];
-for(const localPid of localOwners.filter(Boolean)) {
+for(const localPid of publishOnly?[]:localOwners.filter(Boolean)) {
   try{
     process.kill(localPid,0);
     if(/scripts\/(full-run|resume-collection)\.mjs/.test(command('ps',['-p',String(localPid),'-o','args=']).toString()))throw Error('Current Mac collection still owns the host; run history after its collector exits.');
   }
   catch(error){if(error.code!=='ESRCH')throw error;}
 }
-await locked(async()=>{
+await processLock(join(site,'.wasmbench/performance-history.lock'),async()=>{
   // Planning owns a fresh immutable corpus directory. The full-run and Hub
   // supervisors may perform that plan before starting this collector.
-  if(process.env.WASMBENCH_HISTORY_PLAN_READY!=='1')
+  if(!publishOnly&&process.env.WASMBENCH_HISTORY_PLAN_READY!=='1')
     command(process.execPath,['scripts/performance-history.mjs','plan'],{env,stdio:'inherit'});
   const queue=JSON.parse(await readFile(join(directory,'queue.json')));
-  queue.options.workers=workersWithinCpuBudget(availableParallelism(),queue.options.workers);
-  if(queue.host!==process.platform+'/'+process.arch)throw Error('Historical queue belongs to another architecture');
+  if(!publishOnly)queue.options.workers=workersWithinCpuBudget(availableParallelism(),queue.options.workers);
+  if(!publishOnly&&queue.host!==process.platform+'/'+process.arch)throw Error('Historical queue belongs to another architecture');
   const workloads=parseCorpusJSON(await readFile(queue.suite,'utf8'));
   if(performanceCorpusIdentity(workloads)!==queue.corpusSha256)throw Error('Historical corpus contracts changed');
   for(const w of workloads)if(digest(await readFile(resolve(w.artifact)))!==w.sha256)throw Error('Historical corpus artifact changed: '+w.id);
+  const previous=await readFile(join(directory,'results.json'),'utf8').then(JSON.parse,error=>{if(error.code!=='ENOENT')throw error;return {jobs:[]}});
+  if(!Array.isArray(previous.jobs)||previous.jobs.some(job=>!Array.isArray(job.configurations)))throw Error('Invalid historical results ledger');
   const controller=join(directory,'controller-'+queue.recipeSha256);
-  if(!await exists(controller))command('go',['build','-trimpath','-o',controller,'./cmd/wasmbench'],{cwd:base,env,stdio:'inherit'});
-  const previous=await readFile(join(directory,'results.json'),'utf8').then(JSON.parse,()=>({jobs:[]}));
-  const state={schema:1,pid:process.pid,startedAt:new Date().toISOString(),queue,phase:'collect',jobs:[]};
-  async function save(){const path=join(directory,'results.json');await writeFile(path+'.tmp',JSON.stringify(state,null,2)+'\n');await rename(path+'.tmp',path);}
+  const needsController=!publishOnly||previous.jobs.some(job=>job.configurations.some(entry=>entry.status==='collected'));
+  if(needsController){
+    if(!await exists(controller))command('go',['build','-trimpath','-o',controller,'./cmd/wasmbench'],{cwd:base,env,stdio:'inherit'});
+    if(apiURL)await verifySiteExportContract(controller,{cwd:base,env});
+  }
+  const state={schema:1,pid:process.pid,startedAt:new Date().toISOString(),queue,phase:'collect',jobs:structuredClone(previous.jobs)};
+  async function save(){
+    const path=join(directory,'results.json'),temp=path+'.tmp-'+randomUUID();
+    try{
+      const file=await open(temp,'wx',0o600);
+      try{await file.writeFile(JSON.stringify(state,null,2)+'\n');await file.sync()}
+      finally{await file.close()}
+      await rename(temp,path);
+      const parent=await open(directory,'r');try{await parent.sync()}finally{await parent.close()}
+    }finally{await rm(temp,{force:true})}
+  }
+  async function publish(entry,job) {
+    if(!apiURL||entry.status!=='collected')return;
+    try {
+      entry.apiPublication=await publishPerformanceHistoryConfiguration({directory,queue,job,entry,workloads,configuredHarnessPin:settings.harnessSource.revision,url:apiURL,
+        invoke:(...args)=>command(controller,args,{cwd:base,env,stdio:'inherit'})});
+    } catch(error) {
+      // Scientific completion survives a publication outage. Resume verifies
+      // this same report and replays missing content without collecting again.
+      entry.apiPublication={status:'failed',reason:error.message};
+      console.error('Historical API publication:',job.id,entry.id,error.message);
+    }
+    await save();
+  }
   await save();
   for(const job of queue.jobs.filter(job=>job.identity.configurations.some(id=>supported.has(id)))) {
-    const result={id:job.id,release:job.release,targetWeeks:job.targetWeeks,targetReleases:job.targetReleases||[],status:'running',configurations:[]};
-    state.jobs.push(result);await save();
+    const result={id:job.id,release:job.release,targetWeeks:job.targetWeeks,targetReleases:job.targetReleases||[],status:'running',configurations:structuredClone(previous.jobs.find(j=>j.id===job.id)?.configurations||[])};
+    const prior=state.jobs.findIndex(j=>j.id===job.id);
+    if(prior<0)state.jobs.push(result);else state.jobs[prior]=result;await save();
+    const retain=entry=>{const i=result.configurations.findIndex(c=>c.id===entry.id);if(i<0)result.configurations.push(entry);else result.configurations[i]=entry};
     for(const configuration of job.identity.configurations.filter(id=>supported.has(id))) {
       if(!/^[a-z0-9-]+$/.test(configuration))throw Error('Unsafe historical configuration ID');
       const pendingReason=pendingBindingReason(job.release);
-      if(pendingReason) {
-        result.configurations.push({id:configuration,status:'pending-binding',reason:pendingReason});
+      if(pendingReason&&!publishOnly) {
+        retain({id:configuration,status:'pending-binding',reason:pendingReason});
         result.status='incomplete';await save();continue;
       }
       const cached=previous.jobs.find(j=>j.id===job.id)?.configurations.find(c=>c.id===configuration&&c.status==='collected');
       if(cached) {
+        let reusable=false,verificationError;
         try {
           if(cached.binding?.release.tag!==job.release.tag || cached.binding?.configuration!==configuration)throw Error('Cached release binding differs');
           command(controller,['verify-report','--dir',cached.report],{cwd:base,env});
@@ -90,15 +131,18 @@ await locked(async()=>{
             if(job.release.engine==='wazero'&&audit.wazeroVersion!==job.release.tag)throw Error('Cached scratch SDK differs');
             if(job.release.engine==='wago'&&audit.release.revision!==cached.binding.source.revision)throw Error('Cached scratch source differs');
           }
-          result.configurations.push(cached);await save();continue;
-        } catch(error){console.log('Historical cache rejected:',job.release.engine,job.release.tag,configuration,error.message);}
+          reusable=true;
+        } catch(error){verificationError=error;console.log('Historical cache rejected:',job.release.engine,job.release.tag,configuration,error.message);}
+        if(reusable){retain(cached);await save();await publish(cached,job);continue;}
+        if(publishOnly){retain({...cached,apiPublication:{status:'failed',reason:'Original source verification failed: '+verificationError.message}});await save();continue;}
       }
+      if(publishOnly){retain(retainUncollectedHistoryConfiguration(previous.jobs.find(entry=>entry.id===job.id)?.configurations.find(entry=>entry.id===configuration),configuration));await save();continue;}
       const space=await statfs(directory);
       if(Number(space.bavail)*Number(space.bsize)<20*1024**3) {
         state.phase='paused-low-disk';state.reason='Less than 20 GiB available; collection stopped before another build.';await save();
         throw Error(state.reason);
       }
-      const entry={id:configuration,status:'building',startedAt:new Date().toISOString()};result.configurations.push(entry);await save();
+      const entry={id:configuration,status:'building',startedAt:new Date().toISOString()};retain(entry);await save();
       const attempt=join(directory,'jobs',job.id,configuration,new Date().toISOString().replace(/[:.]/g,'-')+'-'+randomUUID().slice(0,8));
       await mkdir(attempt,{recursive:true});entry.attempt=attempt;
       const root=join(attempt,'harness');
@@ -171,9 +215,16 @@ await locked(async()=>{
         entry.buildIntermediatesRemoved=true;
       }
       entry.completedAt=new Date().toISOString();await save();
+      await publish(entry,job);
     }
     result.status=result.configurations.every(c=>c.status==='collected')?'collected':'incomplete';await save();
   }
   state.phase=state.jobs.every(j=>j.status==='collected')?'collected':'incomplete';state.completedAt=new Date().toISOString();await save();
+  if(state.jobs.some(job=>job.configurations.some(entry=>entry.apiPublication?.status==='failed'))){state.phase='publication-failed';await save();}
+  if(apiURL){
+    try{const result=await publishHistoryCoverage({queue,ledger:state,configured:[...supported],url:apiURL});state.apiCoverage={status:result.imports?'published':'empty',...result}}
+    catch(error){state.apiCoverage={status:'failed',reason:error.message};state.phase='publication-failed';console.error('Historical coverage publication:',error.message)}
+    await save();
+  }
   if(state.phase!=='collected')process.exitCode=1;
-},'performance-history');
+},{legacyPid:true});

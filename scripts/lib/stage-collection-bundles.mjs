@@ -1,8 +1,8 @@
-import {cp,mkdir,readFile,readdir,writeFile} from 'node:fs/promises';
+import {cp,mkdir,readdir,writeFile} from 'node:fs/promises';
 import {join,relative} from 'node:path';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
-import {verifyParentBundle} from './benchmark-bundle.mjs';
+import {verifyParentBundle,readParentBundleMetadata} from './benchmark-bundle.mjs';
 import {digest,site} from './wasmbench.mjs';
 const exec=promisify(execFile);
 
@@ -25,8 +25,7 @@ export async function stageCollectionBundles(source,destination,{archiveBaseUrl,
   const entries=await readdir(folder,{withFileTypes:true});
   const output=join(destination,relative(source,folder));await mkdir(output,{recursive:true});
   if(entries.some(e=>e.isFile()&&e.name==='index.json') && entries.some(e=>e.name.startsWith('bundle.tar.gz.part-'))){
-   const original=await readFile(join(folder,'index.json')),index=JSON.parse(original);
-   const metadata=JSON.parse(await readFile(join(folder,index.metadata)));
+   const {indexBytes:original,index,metadata}=await readParentBundleMetadata(folder);
    await verifyParentBundle(folder,{id:index.id,identity:metadata.planSha256});
    const path=relative(source,join(folder,'index.json'));
    if(archiveBaseUrl && await committed(path,original)){

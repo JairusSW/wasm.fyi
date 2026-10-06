@@ -4,6 +4,7 @@ import { join, resolve } from "node:path";
 import { site, digest } from "./lib/wasmbench.mjs";
 import { atomicJSON } from "./lib/benchmark-plan.mjs";
 import { runCommand } from "./lib/benchmark-process.mjs";
+import { verifySiteExportContract } from "./lib/site-export-contract.mjs";
 const directory = resolve(process.argv[2]),
   plan = JSON.parse(await readFile(join(directory, "plan.json"))),
   host = JSON.parse(await readFile(join(directory, "host.json")));
@@ -24,15 +25,29 @@ try {
   const receipt = JSON.parse(await readFile(ready));
   if (receipt.plan !== plan.identity)
     throw Error("Prepared host has a different plan");
+  if (plan.publication?.type === "api-v1" &&
+      (!Array.isArray(receipt.files) || !receipt.files.some(file => file.path === host.controller)))
+    throw Error("Prepared API controller is missing from the tool hash receipt");
   for (const file of receipt.files)
     if (digest(await readFile(file.path)) !== file.sha256)
       throw Error("Prepared tool changed: " + file.path);
+  if (plan.publication?.type === "api-v1")
+    await verifySiteExportContract(host.controller, { cwd: host.harness, env });
   console.log("Reusing verified host tools");
   process.exit(0);
 } catch (e) {
   if (e.code !== "ENOENT") throw e;
 }
 await mkdir(directory, { recursive: true });
+const buildController = () => runCommand(
+  "go",
+  ["build", "-trimpath", "-o", host.controller, "./cmd/wasmbench"],
+  { cwd: host.harness, env, quiet: false, log: join(directory, "setup.log") },
+);
+if (plan.publication?.type === "api-v1") {
+  await buildController();
+  await verifySiteExportContract(host.controller, { cwd: host.harness, env });
+}
 if (plan.engines.includes("wasmer-singlepass"))
   await runCommand(process.execPath, [join(site, "scripts/wasmer-sdk.mjs")], {
     cwd: site,
@@ -46,11 +61,7 @@ await runCommand(process.execPath, [join(site, "scripts/bench.mjs"), "build"], {
   quiet: false,
   log: join(directory, "setup.log"),
 });
-await runCommand(
-  "go",
-  ["build", "-trimpath", "-o", host.controller, "./cmd/wasmbench"],
-  { cwd: host.harness, env, quiet: false, log: join(directory, "setup.log") },
-);
+if (plan.publication?.type !== "api-v1") await buildController();
 const { readdir } = await import("node:fs/promises");
 const files = [];
 async function walk(dir) {

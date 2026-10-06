@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import {ProgressDelivery} from './lib/api-progress-delivery.mjs';
 import {
   readFile,
   writeFile,
@@ -28,6 +29,7 @@ import {
 import { corpusGroups } from "./lib/corpus-collection.mjs";
 import { runCommand, quote } from "./lib/benchmark-process.mjs";
 import { publishCorpus } from "./lib/benchmark-publish.mjs";
+import { publishCompletedJob, publicationURL, registerSessionPlan, publishAttemptProgress, readAttemptProgress } from "./lib/api-publish.mjs";
 import { benchmarkSource, sourceBundle } from "./lib/benchmark-source.mjs";
 import { verifyParentBundle } from "./lib/benchmark-bundle.mjs";
 import { verifySeal } from "./lib/verify-seal.mjs";
@@ -44,6 +46,7 @@ try {
   --id NAME --launches N --samples N --timeout 5m
   --no-live                             retain reports without changing site
   --deploy                              commit results, push branch, deploy Pages
+  --api-url URL                         publish completed jobs to Go API (requires export-site harness)
 just bench-resume ID                 same immutable plan; completed corpora skipped
 just bench-status [ID]               durable progress and outcomes
 just bench-stop ID                  stop local and SSH host supervisors
@@ -82,6 +85,7 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
         "launches",
         "samples",
         "timeout",
+        "api-url",
       ].includes(key)
     )
       throw Error("Unknown option: " + arg);
@@ -442,6 +446,10 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
       collection,
       live: !options["no-live"],
       deploy: !!options.deploy,
+      ...(options["api-url"] ? {
+        publication: { type: "api-v1", url: publicationURL(options["api-url"]) },
+        configuredHarnessPin: settings.harnessSource.revision,
+      } : {}),
       harnessRevision,
       harnessRoot,
       wagoRevision: wago
@@ -483,6 +491,7 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
   console.log(
     `Run ${id}\n${plan.jobs.length} corpora · ${plan.engines.join(", ")} · ${plan.machines.map((m) => m.name + " " + m.workers).join(", ")}\nResume: just bench-resume ${id}\nStop: just bench-stop ${id}`,
   );
+  const progressDeliveries=[];
   let uploading = Promise.resolve(),
     uploadError,
     failed = false;
@@ -566,11 +575,23 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
         throw Error("Unsafe report path");
       return join(local, p);
     });
-    await verifyParentBundle(join(local, "bundle"), plan);
+    await verifyParentBundle(join(local, "bundle"), plan, {signal: abort.signal});
     for (const path of paths) await verifySeal(path);
     const marker = join(job, "published.json");
     if (await stat(marker).catch(() => false)) return;
     if (plan.live) {
+      if (plan.publication?.type === "api-v1") {
+        const revision = await publishCompletedJob({
+          url: plan.publication.url, local, plan, machine: host.name,
+          result, signal: abort.signal,
+        });
+        await atomicJSON(marker, {
+          published: new Date().toISOString(), live: true,
+          revision, destination: plan.publication.url,
+        });
+        console.log(`[${host.name} ${event.corpus}] API revision ${revision}`);
+        return;
+      }
       const target = join(site, "data/benchmark-runs", id, host.name);
       await mkdir(target, { recursive: true });
       await cp(join(local, "bundle"), join(target, "bundle"), {
@@ -760,6 +781,9 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
     return host;
   }
   try {
+    if (plan.publication?.type === "api-v1") {
+      await registerSessionPlan({url:plan.publication.url,plan,signal:abort.signal});
+    }
     const hosts = [];
     for (const machine of plan.machines) {
       console.log(`[${machine.name}] preparing pinned tools`);
@@ -834,8 +858,9 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
     }
     await Promise.all(
       hosts.map(async (host) => {
-        const local = join(directory, "hosts", host.name),
-          onLine = (line) => {
+        const local = join(directory, "hosts", host.name);
+        let progress=null;
+        const onLine = (line) => {
             let event;
             try {
               event = JSON.parse(line);
@@ -844,15 +869,20 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
             }
             if (!event.benchmarkEvent) return;
             human(event);
+            if(progress){try{progress.record(event)}catch(e){uploadError??=e;abort.abort()}}
             if (event.status === "completed" && event.result)
               uploading = uploading
                 .then(() => publish(host, event))
                 .catch((e) => {
-                  uploadError = e;
+                  uploadError ??= e;
                   abort.abort();
                 });
           };
         try {
+          try {
+            progress = plan.publication?.type === 'api-v1' ? new ProgressDelivery({directory:join(local,'api-progress'),plan,onError:e=>{uploadError??=e;abort.abort()},readState:update=>readAttemptProgress({url:plan.publication.url,update,signal:abort.signal}),send:update=>publishAttemptProgress({url:plan.publication.url,update,signal:abort.signal})}) : null;
+            if(progress){progressDeliveries.push(progress);await progress.replay();await progress.interruptPrevious(host.name)}
+          }catch(e){uploadError??=e;abort.abort();throw e}
           if (host.ssh)
             await ssh(
               host,
@@ -881,13 +911,14 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
         }
       }),
     );
-    await uploading;
+    const delivered=await Promise.allSettled([uploading,...progressDeliveries.map(progress=>progress.flush())]);
     if (uploadError) throw uploadError;
+    const deliveryFailure=delivered.find(result=>result.status==='rejected');if(deliveryFailure)throw deliveryFailure.reason;
     if (abort.signal.aborted)
       throw Error("Interrupted; resume with the saved ID");
     if (failed)
       throw Error("Some hosts are incomplete; resume with the saved ID");
-    if (plan.deploy) {
+    if (plan.deploy && plan.publication?.type !== 'api-v1') {
       const dirty = command("git", ["diff", "--name-only", "HEAD"])
         .toString()
         .trim()

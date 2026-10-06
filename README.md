@@ -63,6 +63,13 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
+To run the website and Go API together behind local Caddy, install Caddy
+(`brew install caddy` on macOS) and Go 1.27.1+, then run `just dev-caddy`.
+Open `http://localhost:8080`. Ctrl+C stops all three services. API data and a
+private generated publisher token persist under `.wasmfyi/local/`; the website
+continues to use its current snapshot. See [service/README.md](service/README.md)
+for backend details.
+
 The site uses Svelte 5 and SvelteKit. Production builds are static HTML and can
 be served by any static host, with `404.html` as the fallback for unknown paths.
 
