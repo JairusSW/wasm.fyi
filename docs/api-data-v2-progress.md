@@ -1451,3 +1451,31 @@ comparison scopes include the complete 145-cell current-RSS population. Its
 arithmetic result, overview and paged membership HTTP surfaces match source
 records. The gate performs no benchmark execution or source modification. Full metric-policy coverage, operator qualification and production
 cutover remain pending.
+
+
+## Native download admission and cancellable content verification
+
+Native-byte requests previously bypassed the shared two-slot download admission,
+and native HEAD requests were rejected by routing. Byte aliases now admit GET
+and HEAD, preserve exact full/ranged headers and omit HEAD bodies. The existing
+download admission/deadline helper now serves both native bytes and file streams.
+Explicit originals use a five-minute request/write window; selected reads retain
+the ordinary deadline. Write failures abort responses and release admission.
+
+Local content reads now hash incrementally in steps bounded to 32 KiB and observe
+caller cancellation between reads. Artifact bytes, report-file chunks/preflight
+and parent-archive chunks/preflight use the contextual reader. Tests verify a
+128-KiB caller buffer cannot exceed that step, cancellation prevents another read,
+original hashes/bytes and declared sizes stay exact, saturated download admission
+leaves metadata accessible, HEAD bodies stay empty and failed native writes
+release permits. A real TCP gate holds two maximum-sized native objects behind
+small client receive windows, verifies a third request gets 429 while artifact
+metadata stays readable, disconnects both clients and verifies a new HEAD request
+succeeds. That gate also passes on native Linux arm64 as a non-root process with
+networking disabled, a read-only root filesystem, 1 CPU and 512 MiB memory.
+Existing live slow-client cancellation/shutdown leases and archive/report serving
+and recovery race gates pass. The broad service test run passes every package
+(storage 442.508 s, API 133.668 s), with final HEAD/native/telemetry regressions
+checked separately under the race detector after the HEAD error-response fix.
+Go vet and a Linux CLI build pass. A blocked kernel filesystem
+syscall remains noninterruptible; this does not qualify device failure behavior.

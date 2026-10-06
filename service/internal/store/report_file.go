@@ -20,7 +20,7 @@ func (s *Store) ReportFileChunk(ctx context.Context, revision, id, digest string
 			if err := ctx.Err(); err != nil {
 				return file, nil, err
 			}
-			b, err := s.objectRepresentation(wire.Object{SHA256: digest, Bytes: chunk.Bytes, Kind: "binary"})
+			b, err := s.objectRepresentationContext(ctx, wire.Object{SHA256: digest, Bytes: chunk.Bytes, Kind: "binary"})
 			if err == nil {
 				err = ctx.Err()
 			}
@@ -83,7 +83,7 @@ func (s *Store) OpenReportFile(ctx context.Context, revision, id string) (wire.R
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		b, err := s.objectRepresentation(wire.Object{SHA256: chunk.SHA256, Bytes: chunk.Bytes, Kind: "binary"})
+		b, err := s.objectRepresentationContext(ctx, wire.Object{SHA256: chunk.SHA256, Bytes: chunk.Bytes, Kind: "binary"})
 		if err == nil {
 			err = ctx.Err()
 		}

@@ -663,3 +663,20 @@ new head and exact captures. The runner passes both gates on native Linux arm64.
 Operators must free space before restarting a service terminated by a fatal WAL
 write. These tmpfs tests do not qualify physical disk/device failures or power
 loss. CI execution remains pending.
+
+
+Native byte `/bytes` and `/content` routes now support GET and HEAD with the same
+revision membership, content verification, range rules and headers; HEAD emits no
+body. Selected ranges and explicit original downloads share the two-slot download
+pool with report files and parent archives. Pool saturation returns 429 while
+ordinary metadata remains readable. Original `download=1` requests have the same
+five-minute request/write deadline as other explicit file downloads; ordinary
+selected reads retain the 15-second request deadline. A write failure aborts the
+response and releases its admission slot.
+
+Content verification reads and hashes at most 32 KiB per step and checks caller
+cancellation before the next read. Artifact, selected report chunk and parent
+archive readers propagate that context. Hash, declared size, confinement and
+membership checks remain required. Cancellation cannot interrupt a regular-file
+read already blocked inside the kernel; slow or failed physical filesystems are
+outside this gate's qualification.

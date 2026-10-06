@@ -4,25 +4,19 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
+	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/JairusSW/wasm.fyi/service/internal/store"
 	"github.com/JairusSW/wasm.fyi/service/internal/testutil"
 	"github.com/JairusSW/wasm.fyi/service/internal/wire"
 )
 
 func TestSelectedNativeBytesAndInspection(t *testing.T) {
-	s, err := store.Open(t.TempDir(), "fixture")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer s.Close()
-	handler, err := New(s, strings.Repeat("x", 32), bytes.Repeat([]byte{1}, 32))
-	if err != nil {
-		t.Fatal(err)
-	}
+	a, handler := telemetryAPI(t, nil)
+	s := a.Store
 	data := bytes.Repeat([]byte{0x90, 0xc3}, 700000)
 	job, objects, artifact, err := testutil.BinaryFixture("byte-api", time.Now().UTC(), data)
 	if err != nil {
@@ -42,6 +36,37 @@ func TestSelectedNativeBytesAndInspection(t *testing.T) {
 		t.Fatal(err)
 	}
 	path := "/api/v1/artifacts/" + artifact + "/bytes?revision=" + revision
+
+	a.downloading <- struct{}{}
+	a.downloading <- struct{}{}
+	busy := request(t, handler, "GET", path+"&download=1", nil, nil)
+	busyHead := request(t, handler, "HEAD", path+"&download=1", nil, map[string]string{"Accept-Encoding": "gzip"})
+	if busyHead.Code != 429 || busyHead.Body.Len() != 0 {
+		t.Fatal("native HEAD admission wrote error body", busyHead.Code)
+	}
+	if busy.Code != 429 {
+		t.Fatal("native download bypassed shared admission", busy.Code)
+	}
+	descriptorRead := request(t, handler, "GET", "/api/v1/artifacts/"+artifact+"?revision="+revision, nil, nil)
+	if descriptorRead.Code != 200 {
+		t.Fatal("bulk occupancy blocked metadata", descriptorRead.Code)
+	}
+	<-a.downloading
+	<-a.downloading
+	for _, query := range []string{"&download=1", "&offset=7&length=33"} {
+		head := request(t, handler, "HEAD", path+query, nil, nil)
+		wantCode, wantBytes := 200, len(data)
+		if query != "&download=1" {
+			wantCode, wantBytes = 206, 33
+		}
+		if head.Code != wantCode || head.Body.Len() != 0 || head.Header().Get("Content-Length") != strconv.Itoa(wantBytes) || len(a.downloading) != 0 {
+			t.Fatal("native HEAD body or leaked permit", head.Code, head.Body.Len())
+		}
+	}
+	badHead := request(t, handler, "HEAD", path+"&length=-1", nil, nil)
+	if badHead.Code != 400 || badHead.Body.Len() != 0 || len(a.downloading) != 0 {
+		t.Fatal("native HEAD validation wrote body or leaked permit", badHead.Code)
+	}
 	selected := request(t, handler, "GET", path+"&offset=7&length=33", nil, nil)
 	if selected.Code != 206 || !bytes.Equal(selected.Body.Bytes(), data[7:40]) || selected.Header().Get("Content-Range") != "bytes 7-39/1400000" {
 		t.Fatal("bad selected range", selected.Code, selected.Body.String())
@@ -71,6 +96,18 @@ func TestSelectedNativeBytesAndInspection(t *testing.T) {
 		if bad.Code != 400 {
 			t.Fatal("accepted ambiguous/unbounded byte query", query, bad.Code)
 		}
+	}
+
+	func() {
+		defer func() {
+			if recover() != http.ErrAbortHandler {
+				t.Fatal("native write failure did not abort response")
+			}
+		}()
+		handler.ServeHTTP(&failingResponseWriter{header: make(http.Header)}, httptest.NewRequest("GET", path+"&download=1", nil))
+	}()
+	if len(a.downloading) != 0 {
+		t.Fatal("aborted native response retained download permit")
 	}
 	meta := request(t, handler, "GET", "/api/v1/artifacts/"+artifact+"/inspection?revision="+revision, nil, nil)
 	if meta.Code != 200 || strings.Contains(meta.Body.String(), `"data"`) {

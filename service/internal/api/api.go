@@ -145,6 +145,15 @@ func respond(w http.ResponseWriter, r *http.Request, status int, v any, immutabl
 		w.WriteHeader(304)
 		return
 	}
+	if r.Method == "HEAD" {
+		if encoding == "gzip" {
+			w.Header().Set("Content-Encoding", "gzip")
+		} else {
+			w.Header().Set("Content-Length", strconv.Itoa(len(b)))
+		}
+		w.WriteHeader(status)
+		return
+	}
 	if observed, ok := w.(interface{ decodedJSON(int) }); ok {
 		observed.decodedJSON(len(b))
 	}
@@ -237,6 +246,7 @@ func (a *API) serveRequest(w http.ResponseWriter, r *http.Request) {
 	timeout := 15 * time.Second
 	bulkPath := strings.Split(strings.Trim(strings.TrimPrefix(r.URL.Path, "/api/v1/"), "/"), "/")
 	bulk := strings.HasPrefix(r.URL.Path, "/api/v1/") && len(bulkPath) == 3 && (bulkPath[0] == "files" || bulkPath[0] == "archives") && wire.IsHash(bulkPath[1]) && bulkPath[2] == "download" && (r.Method == "GET" || r.Method == "HEAD")
+	bulk = bulk || strings.HasPrefix(r.URL.Path, "/api/v1/") && len(bulkPath) == 3 && bulkPath[0] == "artifacts" && wire.IsHash(bulkPath[1]) && (bulkPath[2] == "bytes" || bulkPath[2] == "content") && r.URL.Query().Get("download") == "1" && (r.Method == "GET" || r.Method == "HEAD")
 	if bulk {
 		timeout = 5 * time.Minute
 	}
@@ -304,6 +314,7 @@ func (a *API) serveRequest(w http.ResponseWriter, r *http.Request) {
 	path := strings.Trim(strings.TrimPrefix(r.URL.Path, "/api/v1/"), "/")
 	headParts := strings.Split(path, "/")
 	fileHead := r.Method == "HEAD" && (headParts[0] == "files" || headParts[0] == "archives") && (len(headParts) == 4 && headParts[2] == "chunks" || len(headParts) == 3 && headParts[2] == "download")
+	fileHead = fileHead || r.Method == "HEAD" && len(headParts) == 3 && headParts[0] == "artifacts" && (headParts[2] == "bytes" || headParts[2] == "content")
 	if r.Method != "GET" && !fileHead {
 		w.Header().Set("Allow", "GET")
 		w.WriteHeader(405)
@@ -600,6 +611,11 @@ func (a *API) serveRequest(w http.ResponseWriter, r *http.Request) {
 				problem(w, r, wire.Invalid("invalid download query"))
 				return
 			}
+			release, ok := a.admitDownload(w, r)
+			if !ok {
+				return
+			}
+			defer release()
 			artifact, data, e := a.Store.ArtifactBytes(r.Context(), revision, parts[1])
 			if e != nil {
 				problem(w, r, e)
@@ -660,7 +676,11 @@ func (a *API) serveRequest(w http.ResponseWriter, r *http.Request) {
 			} else {
 				w.WriteHeader(200)
 			}
-			_, _ = w.Write(data[offset : offset+length])
+			if r.Method != "HEAD" {
+				if _, err := w.Write(data[offset : offset+length]); err != nil {
+					panic(http.ErrAbortHandler)
+				}
+			}
 			return
 		}
 		if kind == "artifact" && len(parts) == 3 && parts[2] == "inspection" {

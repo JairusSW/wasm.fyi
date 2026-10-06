@@ -80,7 +80,7 @@ func (s *Store) ArchiveObject(ctx context.Context, revision, id, digest string) 
 			if err := ctx.Err(); err != nil {
 				return o, nil, err
 			}
-			b, err := s.objectRepresentation(o)
+			b, err := s.objectRepresentationContext(ctx, o)
 			if err == nil {
 				err = ctx.Err()
 			}
@@ -102,7 +102,7 @@ func (s *Store) OpenArchive(ctx context.Context, revision, id string) (wire.Pare
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		b, err := s.objectRepresentation(o)
+		b, err := s.objectRepresentationContext(ctx, o)
 		if err == nil {
 			err = ctx.Err()
 		}

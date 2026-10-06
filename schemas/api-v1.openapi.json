@@ -1857,6 +1857,87 @@
           },
           "404": {
             "description": "Artifact/content unavailable in this revision"
+          },
+          "429": {
+            "description": "Shared two-slot file download admission is full",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./site-v2.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "head": {
+        "summary": "Verify selected native content and return byte headers without a body",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./site-v2.schema.json#/$defs/Digest"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "$ref": "./site-v2.schema.json#/$defs/Digest"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "length",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1048576
+            }
+          },
+          {
+            "name": "download",
+            "in": "query",
+            "schema": {
+              "enum": [
+                "1"
+              ]
+            }
+          },
+          {
+            "name": "Range",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Single byte range, at most 1 MiB; cannot combine with download or offset/length."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Explicit original binary download or empty image"
+          },
+          "206": {
+            "description": "Selected byte window, at most 1 MiB"
+          },
+          "400": {
+            "description": "Invalid/ambiguous window"
+          },
+          "404": {
+            "description": "Artifact/content unavailable in this revision"
+          },
+          "429": {
+            "description": "Shared two-slot file download admission is full"
           }
         }
       }
@@ -1980,6 +2061,87 @@
           },
           "404": {
             "description": "Artifact/content unavailable in this revision"
+          },
+          "429": {
+            "description": "Shared two-slot file download admission is full",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./site-v2.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "head": {
+        "summary": "Verify selected native content and return byte headers without a body",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./site-v2.schema.json#/$defs/Digest"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "$ref": "./site-v2.schema.json#/$defs/Digest"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "length",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1048576
+            }
+          },
+          {
+            "name": "download",
+            "in": "query",
+            "schema": {
+              "enum": [
+                "1"
+              ]
+            }
+          },
+          {
+            "name": "Range",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Single byte range, at most 1 MiB; cannot combine with download or offset/length."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Explicit original binary download or empty image"
+          },
+          "206": {
+            "description": "Selected byte window, at most 1 MiB"
+          },
+          "400": {
+            "description": "Invalid/ambiguous window"
+          },
+          "404": {
+            "description": "Artifact/content unavailable in this revision"
+          },
+          "429": {
+            "description": "Shared two-slot file download admission is full"
           }
         }
       }

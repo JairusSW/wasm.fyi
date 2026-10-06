@@ -2,6 +2,9 @@ package store
 
 import (
 	"bytes"
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
@@ -158,6 +161,12 @@ func (s *Store) typedContent(id string, v any) ([]byte, error) {
 }
 func (s *Store) content(id string) ([]byte, error) { return s.representation(id, wire.ChunkBytes) }
 func (s *Store) representation(id string, ceiling int) ([]byte, error) {
+	return s.representationContext(context.Background(), id, ceiling)
+}
+func (s *Store) representationContext(ctx context.Context, id string, ceiling int) ([]byte, error) {
+	if e := ctx.Err(); e != nil {
+		return nil, e
+	}
 	if !wire.IsHash(id) {
 		return nil, ErrNotFound
 	}
@@ -173,22 +182,29 @@ func (s *Store) representation(id string, ceiling int) ([]byte, error) {
 	if info.Size() > int64(ceiling) {
 		return nil, fmt.Errorf("content exceeds decoded ceiling")
 	}
-	b, e := io.ReadAll(io.LimitReader(f, int64(ceiling)+1))
+	h := sha256.New()
+	b, e := io.ReadAll(io.TeeReader(io.LimitReader(contextContentReader{ctx, f}, int64(ceiling)+1), h))
 	if e != nil {
 		return nil, e
 	}
-	if len(b) > ceiling || wire.Hash(b) != id {
+	if e = ctx.Err(); e != nil {
+		return nil, e
+	}
+	if len(b) > ceiling || hex.EncodeToString(h.Sum(nil)) != id {
 		return nil, fmt.Errorf("corrupt content %s", id)
 	}
 	return b, nil
 }
 
 func (s *Store) objectRepresentation(o wire.Object) ([]byte, error) {
+	return s.objectRepresentationContext(context.Background(), o)
+}
+func (s *Store) objectRepresentationContext(ctx context.Context, o wire.Object) ([]byte, error) {
 	ceiling := wire.ChunkBytes
 	if o.Kind == "binary" {
 		ceiling = wire.BlobBytes
 	}
-	b, err := s.representation(o.SHA256, ceiling)
+	b, err := s.representationContext(ctx, o.SHA256, ceiling)
 	if err != nil {
 		return nil, err
 	}
@@ -196,4 +212,18 @@ func (s *Store) objectRepresentation(o wire.Object) ([]byte, error) {
 		return nil, wire.Invalid("object size differs")
 	}
 	return b, nil
+}
+
+// Regular-file reads cannot interrupt a blocked kernel syscall. Bound each
+// read/hash step and observe cancellation before the next syscall.
+type contextContentReader struct {
+	ctx    context.Context
+	reader io.Reader
+}
+
+func (r contextContentReader) Read(p []byte) (int, error) {
+	if err := r.ctx.Err(); err != nil {
+		return 0, err
+	}
+	return r.reader.Read(p[:min(len(p), 32*1024)])
 }

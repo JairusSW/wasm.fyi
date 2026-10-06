@@ -21,7 +21,7 @@ func (s *Store) ArtifactBytes(ctx context.Context, revision, id string) (wire.Ar
 	if err = ctx.Err(); err != nil {
 		return artifact, nil, err
 	}
-	b, err := s.objectRepresentation(wire.Object{SHA256: artifact.Content.SHA256, Bytes: artifact.Content.Bytes, Kind: "binary"})
+	b, err := s.objectRepresentationContext(ctx, wire.Object{SHA256: artifact.Content.SHA256, Bytes: artifact.Content.Bytes, Kind: "binary"})
 	if err == nil {
 		err = ctx.Err()
 	}

@@ -27,20 +27,11 @@ func (a *API) download(w http.ResponseWriter, r *http.Request, open func() (down
 		problem(w, r, wire.Invalid("whole file download does not accept ranges"))
 		return
 	}
-	select {
-	case a.downloading <- struct{}{}:
-		defer func() { <-a.downloading }()
-	default:
-		respond(w, r, 429, map[string]string{"error": "file download concurrency limit"}, false)
+	release, ok := a.admitDownload(w, r)
+	if !ok {
 		return
 	}
-	controller := http.NewResponseController(w)
-	if err := controller.SetWriteDeadline(time.Now().Add(5 * time.Minute)); err != nil && !errors.Is(err, http.ErrNotSupported) {
-		problem(w, r, err)
-		return
-	}
-	stop := context.AfterFunc(r.Context(), func() { _ = controller.SetWriteDeadline(time.Now()) })
-	defer stop()
+	defer release()
 	file, reader, err := open()
 	if err != nil {
 		problem(w, r, err)
@@ -61,4 +52,21 @@ func (a *API) download(w http.ResponseWriter, r *http.Request, open func() (down
 	if _, err = io.CopyBuffer(w, reader, make([]byte, 32*1024)); err != nil {
 		panic(http.ErrAbortHandler)
 	}
+}
+
+func (a *API) admitDownload(w http.ResponseWriter, r *http.Request) (func(), bool) {
+	select {
+	case a.downloading <- struct{}{}:
+	default:
+		respond(w, r, 429, map[string]string{"error": "file download concurrency limit"}, false)
+		return nil, false
+	}
+	controller := http.NewResponseController(w)
+	if err := controller.SetWriteDeadline(time.Now().Add(5 * time.Minute)); err != nil && !errors.Is(err, http.ErrNotSupported) {
+		<-a.downloading
+		problem(w, r, err)
+		return nil, false
+	}
+	stop := context.AfterFunc(r.Context(), func() { _ = controller.SetWriteDeadline(time.Now()) })
+	return func() { stop(); <-a.downloading }, true
 }
