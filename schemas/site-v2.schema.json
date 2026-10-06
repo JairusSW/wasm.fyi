@@ -2881,6 +2881,112 @@
           }
         }
       ]
+    },
+    "HistoryChange": {
+      "type": "object",
+      "properties": {
+        "policy": {
+          "const": "matched-workload-change-v1"
+        },
+        "status": {
+          "enum": [
+            "available",
+            "unavailable"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "uncertainty": {
+          "const": "unavailable"
+        },
+        "uncertaintyReason": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "beforeScope": {
+          "$ref": "#/$defs/CohortScope"
+        },
+        "afterScope": {
+          "$ref": "#/$defs/CohortScope"
+        },
+        "beforeDigest": {
+          "$ref": "#/$defs/Digest"
+        },
+        "afterDigest": {
+          "$ref": "#/$defs/Digest"
+        },
+        "before": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "after": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "ratio": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "matchedCells": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "matchedWorkloads": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "beforeOnlyCells": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "afterOnlyCells": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "reusedCells": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "approximateInputs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 20000
+        }
+      },
+      "required": [
+        "policy",
+        "status",
+        "reason",
+        "uncertainty",
+        "uncertaintyReason",
+        "beforeScope",
+        "afterScope",
+        "beforeDigest",
+        "afterDigest",
+        "before",
+        "after",
+        "ratio",
+        "matchedCells",
+        "matchedWorkloads",
+        "beforeOnlyCells",
+        "afterOnlyCells",
+        "reusedCells",
+        "approximateInputs"
+      ],
+      "additionalProperties": false
     }
   },
   "$ref": "#/$defs/CompletedJob"

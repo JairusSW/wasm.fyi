@@ -485,3 +485,16 @@ prepared for the candidate revision, and never removes measurements or evidence.
 An evicted historical overview uses the existing complete-scope computation
 fallback, preserving its immutable numerical meaning. The eviction path rebuilds
 only bounded key/reference metadata, not historical result datasets.
+
+`GET /api/v1/history/changes` compares two explicit JSON `before` and `after`
+CohortScope parameters with `version=wasmfyi-cohort-v3`. Both scopes must pin
+a dataset revision and one identical runtime track, environment, metric/method
+selectors and population policy. The service intersects exact contract cells and
+recalculates the existing geometric or RSS arithmetic policy over that population.
+The response includes before/after values, after/before ratio, matched workload
+and cell counts, unmatched counts, reused-evidence counts and approximate-input
+counts. It does not infer paired uncertainty or preload membership/evidence.
+Reused cells remain identified rather than counted as new observations. To inspect
+membership, use the two existing aggregate/cohort scopes. Comparisons are immutable
+at the pinned analysis version. This endpoint compares measurement selections;
+source-date/release-role history associations remain a separate unfinished gate.

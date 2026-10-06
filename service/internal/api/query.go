@@ -48,6 +48,9 @@ func allowedQuery(values url.Values, keys ...string) error {
 }
 func routeQuery(path string, values url.Values) error {
 	parts := strings.Split(path, "/")
+	if path == "history/changes" {
+		return allowedQuery(values, "before", "after", "version")
+	}
 	if len(parts) == 4 && parts[0] == "collection" && parts[1] == "sessions" && parts[3] == "attempts" {
 		if !wire.IsIdentity(parts[2]) {
 			return wire.Invalid("invalid session identity")

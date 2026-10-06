@@ -4047,6 +4047,66 @@
           }
         }
       }
+    },
+    "/api/v1/history/changes": {
+      "get": {
+        "summary": "Change over exact matched workload contracts at two frozen selections",
+        "description": "Both JSON CohortScope parameters require explicit revisions and one identical runtime track, environment, metric/method selectors and population policy. Recompute weighting over only exact matching available cells. Report unmatched and reused cells; no paired uncertainty is inferred. No evidence or membership arrays are embedded.",
+        "parameters": [
+          {
+            "name": "before",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 4096
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 4096
+            }
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "wasmfyi-cohort-v3"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded exact matched population change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/HistoryChange"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or incompatible scope"
+          },
+          "404": {
+            "description": "Unknown published revision or selector"
+          },
+          "422": {
+            "description": "Bounded scope capacity exceeded"
+          },
+          "429": {
+            "description": "Request or cohort computation capacity exceeded"
+          }
+        }
+      }
     }
   },
   "components": {

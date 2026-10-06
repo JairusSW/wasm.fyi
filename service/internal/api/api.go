@@ -308,6 +308,39 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 		problem(w, r, e)
 		return
 	}
+	if path == "history/changes" {
+		if params.Get("version") != comparison.Version {
+			problem(w, r, wire.Invalid("explicit comparison version required"))
+			return
+		}
+		var before, after store.CohortScope
+		if e := wire.Decode([]byte(params.Get("before")), &before); e != nil {
+			problem(w, r, e)
+			return
+		}
+		if e := wire.Decode([]byte(params.Get("after")), &after); e != nil {
+			problem(w, r, e)
+			return
+		}
+		if before.Revision == "" || after.Revision == "" {
+			problem(w, r, wire.Invalid("explicit before and after revisions required"))
+			return
+		}
+		select {
+		case a.calculating <- struct{}{}:
+			defer func() { <-a.calculating }()
+		default:
+			respond(w, r, 429, map[string]string{"error": "cohort computation concurrency limit"}, false)
+			return
+		}
+		out, e := a.Store.CompareHistory(r.Context(), before, after)
+		if e != nil {
+			problem(w, r, e)
+			return
+		}
+		respond(w, r, 200, out, true)
+		return
+	}
 	if len(headParts) == 4 && headParts[0] == "collection" && headParts[1] == "sessions" && headParts[3] == "attempts" {
 		n := 50
 		if params.Has("limit") {

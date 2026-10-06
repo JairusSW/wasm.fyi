@@ -64,6 +64,28 @@ class Contracts(unittest.TestCase):
             with self.assertRaises(ValueError):
                 contracts.validate(changed, "AggregateSummary", "invalid comparison summary")
 
+    def test_history_changes_are_bounded_and_do_not_invent_uncertainty(self):
+        lane = "c" * 64
+        scope = {"revision": "a" * 64, "selection": "current", "environment": "b" * 64,
+                 "lanes": [lane], "laneKind": "track", "baseline": lane,
+                 "selectors": [{"definition": "d" * 64, "method": "e" * 64, "analysis": "fixture"}],
+                 "policy": "shared-geometric-v1", "weighting": "workload", "workloads": "applications",
+                 "mixedConfigurations": "reject", "collectors": "allow-unrecorded-timing",
+                 "definitions": "require-registered", "contracts": "latest-in-scope"}
+        value = {"policy": "matched-workload-change-v1", "beforeScope": scope, "afterScope": scope,
+                 "beforeDigest": "f" * 64, "afterDigest": "f" * 64, "status": "unavailable",
+                 "reason": "no matches", "before": None, "after": None, "ratio": None,
+                 "matchedCells": 0, "matchedWorkloads": 0, "beforeOnlyCells": 1,
+                 "afterOnlyCells": 1, "reusedCells": 0, "approximateInputs": 0,
+                 "uncertainty": "unavailable", "uncertaintyReason": "not paired"}
+        contracts.validate(value, "HistoryChange", "missing matches remain unavailable")
+        for key, invalid in [("members", []), ("samples", []), ("uncertainty", "available"),
+                             ("matchedCells", 10001), ("reusedCells", -1), ("policy", "old")]:
+            changed = copy.deepcopy(value)
+            changed[key] = invalid
+            with self.assertRaises(ValueError):
+                contracts.validate(changed, "HistoryChange", "invalid change")
+
     def test_transport_reference_aliases_resolve_only_local_schema(self):
         for root in ("site-v2.schema.json", "./site-v2.schema.json", contracts.SCHEMA["$id"]):
             reference = contracts.transport_reference(root + "#/$defs/Digest")
