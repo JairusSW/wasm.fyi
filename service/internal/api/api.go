@@ -238,7 +238,7 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 	}
 	path := strings.Trim(strings.TrimPrefix(r.URL.Path, "/api/v1/"), "/")
 	if path == "manifest" {
-		respond(w, r, 200, map[string]any{"schema": 2, "revision": a.Store.Current(), "selectionAliases": map[string]string{"s1": "current", "s2": "previous"}, "limits": map[string]int{"defaultResults": 100, "maxResults": 1000, "decodedResponseBytes": wire.ResponseBytes, "decodedChunkBytes": wire.ChunkBytes, "scanKeys": store.ScanLimit}, "endpoints": []string{"results", "reports", "metrics", "configurations", "environments", "workloads", "artifacts", "history"}}, false)
+		respond(w, r, 200, map[string]any{"schema": 2, "revision": a.Store.Current(), "selectionAliases": map[string]string{"s1": "current", "s2": "previous"}, "limits": map[string]int{"defaultResults": 100, "maxResults": 1000, "decodedResponseBytes": wire.ResponseBytes, "decodedChunkBytes": wire.ChunkBytes, "scanKeys": store.ScanLimit, "decodedEvidenceResourceBytes": wire.ResourceBytes, "maxEvidenceFragments": wire.ResourceFragments}, "endpoints": []string{"results", "reports", "metrics", "configurations", "environments", "workloads", "artifacts", "history"}}, false)
 		return
 	}
 	n, e := limit(r)

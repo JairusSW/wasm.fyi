@@ -195,7 +195,7 @@ disk. Further backend scientific/producer/API/scale gates remain in the audit.
 
 ## Producer context and evidence closure
 
-The producer records its actual executable SHA-256 separately from the collecting
+The export manifest records the producer's actual executable SHA-256 separately from the collecting
 runner SHA-256 and includes available module/Go/VCS build identity. Pass manifests
 and admission records are referenced evidence: exact lock/options, host facts,
 pass IDs and recipes survive conversion. Trial details retain diagnostic log,
@@ -247,3 +247,35 @@ small manifests remain compatible. Large individual pass contexts, diagnostic
 records and result reference lists still need their own chunking; inventory paging
 alone does not solve those limits. Broader scale and abrupt-process tests for this
 new admission path remain open.
+
+
+## Large JSON evidence resources
+
+Oversized evidence objects, including pass contexts, trial diagnostics and single
+array rows, now become `json-resource` descriptors with ordered `json-fragment`
+references. Each fragment carries valid UTF-8 text; concatenation restores the
+original JSON bytes before parsing. Fragments are at most 120 KiB of text and
+remain below the 256 KiB object ceiling after JSON escaping. A resource has an
+explicit 64 MiB byte ceiling and at most 1,024 references. Ordinary responses
+return descriptors or one fragment; the server does not assemble large evidence
+on HTTP reads. Small evidence encoding remains compatible.
+
+Import verifies every resource's referenced fragment kind, full content hashes,
+original byte count, original SHA-256 and valid JSON without duplicate keys.
+Startup/recovery closure validates the same representation. Explicit client
+assembly verifies bytes and SHA-256, honors cancellation and never runs during
+ordinary result reads. Producer tests preserve large Unicode/escaped pass recipes,
+logs and oversized phase rows byte-for-byte; service tests cover integrity failures
+and nested recovery, and client tests cover tampering, ceilings and cancellation.
+A directly linked fragment is authorized without scanning all sibling fragments.
+
+This resolves oversized evidence values, not oversized canonical catalog/result
+records. Those records still have the original decoded ceiling; large result
+reference lists and larger-than-64-MiB evidence need additional representations.
+Native bytes remain a separate, unimplemented binary transport.
+
+
+Exact exporter identity belongs to the export receipt/manifest, rather than the
+canonical scientific report record. Re-exporting the same sealed source with a
+different executable must not cause an immutable report collision. Legacy roots
+without this optional identity remain readable; new producer exports include it.

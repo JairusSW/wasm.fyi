@@ -88,21 +88,31 @@ func IsHash(s string) bool         { return hashPattern.MatchString(s) }
 func Hash(b []byte) string         { h := sha256.Sum256(b); return hex.EncodeToString(h[:]) }
 func Encode(v any) ([]byte, error) { return json.Marshal(v) }
 
+type ExporterIdentity struct {
+	Format        string            `json:"format"`
+	BinarySHA256  string            `json:"binarySha256"`
+	GoVersion     string            `json:"goVersion,omitempty"`
+	Module        string            `json:"module,omitempty"`
+	ModuleVersion string            `json:"moduleVersion,omitempty"`
+	Build         map[string]string `json:"build,omitempty"`
+}
+
 type Object struct {
 	SHA256 string `json:"sha256"`
 	Bytes  int    `json:"bytes"`
 	Kind   string `json:"kind"`
 }
 type Manifest struct {
-	Schema             int         `json:"schema"`
-	Format             string      `json:"format"`
-	ReportID           string      `json:"reportId"`
-	SourceReportSHA256 string      `json:"sourceReportSha256"`
-	SourceSealSHA256   string      `json:"sourceSealSha256"`
-	Exporter           string      `json:"exporter"`
-	Verification       string      `json:"verification"`
-	Objects            []Object    `json:"objects"`
-	InventoryPages     []Inventory `json:"inventoryPages,omitempty"`
+	Schema             int               `json:"schema"`
+	Format             string            `json:"format"`
+	ReportID           string            `json:"reportId"`
+	SourceReportSHA256 string            `json:"sourceReportSha256"`
+	SourceSealSHA256   string            `json:"sourceSealSha256"`
+	Exporter           string            `json:"exporter"`
+	Verification       string            `json:"verification"`
+	Objects            []Object          `json:"objects"`
+	InventoryPages     []Inventory       `json:"inventoryPages,omitempty"`
+	ExporterIdentity   *ExporterIdentity `json:"exporterIdentity,omitempty"`
 }
 type Inventory struct {
 	SHA256       string `json:"sha256"`
@@ -191,6 +201,11 @@ func (j Job) Validate() error {
 		if !IsHash(e.SHA256) || Hash(b) != e.SHA256 || m.Schema != 2 || m.Format != "site-v2" || !IsHash(m.ReportID) || !IsHash(m.SourceReportSHA256) || !IsHash(m.SourceSealSHA256) || m.Verification != "source-recomputed" || m.Exporter == "" || m.Objects == nil || (len(m.Objects) == 0 && len(m.InventoryPages) == 0) || (len(m.Objects) > 0 && len(m.InventoryPages) > 0) || len(m.Objects) > MaxObjects || len(m.InventoryPages) > MaxInventoryPages || reports[m.ReportID] {
 			return Invalid("invalid export manifest")
 		}
+		if identity := m.ExporterIdentity; identity != nil {
+			if identity.Format != m.Format || !IsHash(identity.BinarySHA256) {
+				return Invalid("invalid exporter identity")
+			}
+		}
 		reports[m.ReportID] = true
 		seen := map[string]bool{}
 		for _, page := range m.InventoryPages {
@@ -264,6 +279,9 @@ func EvidenceReferences(b []byte) ([]string, error) {
 	}
 	if len(raw) == 0 || raw[0] != '{' {
 		return nil, nil
+	}
+	if _, err := Resource(raw); err != nil {
+		return nil, err
 	}
 	var envelope struct {
 		Samples      []string `json:"samples"`

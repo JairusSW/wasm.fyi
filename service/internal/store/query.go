@@ -281,6 +281,20 @@ func (s *Store) evidenceContext(ctx context.Context, roots []string, digest stri
 		if e != nil {
 			return nil, e
 		}
+		// Authorize a directly named child from the verified envelope without
+		// walking every sibling fragment of a large resource first.
+		for _, ref := range refs {
+			if ref == digest {
+				child, err := s.content(ref)
+				if err != nil {
+					return nil, err
+				}
+				if decoded+len(child) > 32*1024*1024 {
+					return nil, ErrLimit
+				}
+				return child, nil
+			}
+		}
 		if len(pending)+len(refs)+processed > ScanLimit {
 			return nil, ErrLimit
 		}

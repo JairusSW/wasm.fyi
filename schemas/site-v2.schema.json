@@ -71,6 +71,9 @@
           },
           "minItems": 1,
           "maxItems": 512
+        },
+        "exporterIdentity": {
+          "$ref": "#/$defs/ExporterIdentity"
         }
       },
       "required": [
@@ -433,6 +436,97 @@
       "required": [
         "schema",
         "objects"
+      ],
+      "additionalProperties": false
+    },
+    "JSONResource": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "json-resource"
+        },
+        "schema": {
+          "const": 1
+        },
+        "encoding": {
+          "const": "json-utf8"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 67108864
+        },
+        "sha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Digest"
+          },
+          "minItems": 1,
+          "maxItems": 1024
+        }
+      },
+      "required": [
+        "kind",
+        "schema",
+        "encoding",
+        "bytes",
+        "sha256",
+        "references"
+      ],
+      "additionalProperties": false
+    },
+    "JSONFragment": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "json-fragment"
+        },
+        "schema": {
+          "const": 1
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "kind",
+        "schema",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "ExporterIdentity": {
+      "type": "object",
+      "properties": {
+        "format": {
+          "const": "site-v2"
+        },
+        "binarySha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "goVersion": {
+          "type": "string"
+        },
+        "module": {
+          "type": "string"
+        },
+        "moduleVersion": {
+          "type": "string"
+        },
+        "build": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "format",
+        "binarySha256"
       ],
       "additionalProperties": false
     }

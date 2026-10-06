@@ -25,7 +25,9 @@ func TestNestedEvidencePublicationAndRecovery(t *testing.T) {
 		j.Exports[0].Manifest.Objects = append(j.Exports[0].Manifest.Objects, wire.Object{SHA256: hash, Bytes: len(b), Kind: "evidence"})
 		return hash
 	}
-	leaf := add(map[string]any{"kind": "trial-details", "data": map[string]any{"log": "diagnostic"}})
+	value := []byte(`{"log":"diagnostic"}`)
+	fragment := add(wire.JSONFragment{Kind: "json-fragment", Schema: 1, Text: string(value)})
+	leaf := add(wire.JSONResource{Kind: "json-resource", Schema: 1, Encoding: "json-utf8", Bytes: len(value), SHA256: wire.Hash(value), References: []string{fragment}})
 	contextID := add(map[string]any{"kind": "pass-context", "manifest": map[string]any{"id": "pass", "profile": "timing"}})
 	middle := add(map[string]any{"references": []string{leaf}})
 	root := add(map[string]any{"references": []string{middle, contextID}})
@@ -74,7 +76,7 @@ func TestNestedEvidencePublicationAndRecovery(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, hash := range []string{root, middle, leaf, contextID} {
+	for _, hash := range []string{root, middle, leaf, contextID, fragment} {
 		body, err := s.Evidence(revision, result, hash)
 		if err != nil || !bytes.Equal(body, objects[hash]) {
 			t.Fatalf("lost nested evidence %s: %v", hash, err)
@@ -160,5 +162,72 @@ func TestRejectUnresolvedEvidenceAndPassContexts(t *testing.T) {
 				t.Fatal("exposed incomplete revision")
 			}
 		})
+	}
+}
+
+func TestRejectReassembledEvidenceMismatch(t *testing.T) {
+	j, objects, err := testutil.Fixture("bad-resource", time.Now().UTC())
+	if err != nil {
+		t.Fatal(err)
+	}
+	value := []byte(`{"log":"original"}`)
+	fragment, _ := wire.Encode(wire.JSONFragment{Kind: "json-fragment", Schema: 1, Text: string(value)})
+	digest := wire.Hash(fragment)
+	root, _ := wire.Encode(wire.JSONResource{Kind: "json-resource", Schema: 1, Encoding: "json-utf8", Bytes: len(value), SHA256: wire.Hash([]byte("different original")), References: []string{digest}})
+	for _, b := range [][]byte{fragment, root} {
+		hash := wire.Hash(b)
+		objects[hash] = b
+		j.Exports[0].Manifest.Objects = append(j.Exports[0].Manifest.Objects, wire.Object{SHA256: hash, Bytes: len(b), Kind: "evidence"})
+	}
+	b, _ := wire.Encode(j.Exports[0].Manifest)
+	j.Exports[0].SHA256 = wire.Hash(b)
+	s := openTest(t, t.TempDir())
+	defer s.Close()
+	for hash, b := range objects {
+		if err = s.Install(hash, bytes.NewReader(b)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	id, err := s.Submit(j)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = s.Commit(id); !errors.Is(err, wire.ErrInvalid) {
+		t.Fatal("published invalid reassembly", err)
+	}
+	if s.Current() != "" {
+		t.Fatal("exposed invalid resource")
+	}
+}
+
+func TestExporterReceiptsDoNotChangeScientificHistory(t *testing.T) {
+	s := openTest(t, t.TempDir())
+	defer s.Close()
+	job, objects, err := testutil.Fixture("exporter-receipts", time.Now().UTC())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for hash, b := range objects {
+		if err = s.Install(hash, bytes.NewReader(b)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for i, stamp := range []string{"first-binary", "second-binary"} {
+		job.Attempt = stamp
+		job.Exports[0].Manifest.ExporterIdentity = &wire.ExporterIdentity{Format: "site-v2", BinarySHA256: wire.Hash([]byte(stamp))}
+		b, _ := wire.Encode(job.Exports[0].Manifest)
+		job.Exports[0].SHA256 = wire.Hash(b)
+		id, err := s.Submit(job)
+		if err != nil {
+			t.Fatal(err)
+		}
+		revision, err := s.Commit(id)
+		if err != nil {
+			t.Fatal("exporter receipt collided with report", err)
+		}
+		rows, err := s.Results(Query{Revision: revision}, true)
+		if err != nil || len(rows) != 3 {
+			t.Fatalf("exporter %d duplicated scientific history: %d %v", i, len(rows), err)
+		}
 	}
 }

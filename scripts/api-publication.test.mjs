@@ -25,14 +25,28 @@ test('completed corpus uploads only missing objects, publishes idempotently, ret
   const local=join(root,'local');const path='jobs/corpus-0001/exports/report/site-v2';await mkdir(join(local,path),{recursive:true});await cp(join(site,'service/testdata/site-v2'),join(local,path),{recursive:true});await mkdir(join(local,'bundle'));await writeFile(join(local,'bundle/index.json'),'{}');
   const plan={id:'fixture-session',identity:digest(Buffer.from('plan')),configuredHarnessPin:'0509a0a323f41c58a2f2db15a372fb2e63c692bf'};
   const result={corpus:'corpus-0001',plan:plan.identity,siteExports:[path],finished:'2026-10-05T00:00:00Z',verdict:'FAIL'};
-  let uploads=0;const request=(url,options)=>{if(options.method==='PUT')uploads++;return fetch(url,options)};
+  const resourceDirectory=join(local,path),resourceManifest=JSON.parse(await readFile(join(resourceDirectory,'manifest.json'))),resourcePayload=resourceManifest.objects;
+  const original=Buffer.from(JSON.stringify({kind:'pass-context',manifest:{id:'source-pass',lock:{options:{suite:'diagnostic '.repeat(45000)}}}})),references=[];
+  for(let start=0;start<original.length;start+=120*1024){
+    const b=Buffer.from(JSON.stringify({kind:'json-fragment',schema:1,text:original.subarray(start,start+120*1024).toString('utf8')})),sha256=digest(b);
+    await writeFile(join(resourceDirectory,'objects',sha256),b);resourcePayload.push({sha256,bytes:b.length,kind:'evidence'});references.push(sha256);
+  }
+  const resource=Buffer.from(JSON.stringify({kind:'json-resource',schema:1,encoding:'json-utf8',bytes:original.length,sha256:digest(original),references})),resourceHash=digest(resource);
+  await writeFile(join(resourceDirectory,'objects',resourceHash),resource);resourcePayload.push({sha256:resourceHash,bytes:resource.length,kind:'evidence'});
+  for(let i=0;i<resourcePayload.length;i++){
+    const o=resourcePayload[i];if(o.kind!=='record')continue;const record=JSON.parse(await readFile(join(resourceDirectory,'objects',o.sha256)));if(record.kind!=='report')continue;
+    record.data.passContexts=[resourceHash];const b=Buffer.from(JSON.stringify(record)),sha256=digest(b);
+    await writeFile(join(resourceDirectory,'objects',sha256),b);resourcePayload[i]={sha256,bytes:b.length,kind:'record'};
+  }
+  await writeFile(join(resourceDirectory,'manifest.json'),JSON.stringify(resourceManifest));
+  let uploads=0;const request=async(url,options)=>{if(options.method==='PUT')uploads++;const response=await fetch(url,options);assert(response.ok,`Unexpected API failure: ${response.status} ${await response.clone().text()}`);return response};
   const args={url,local,plan,machine:'fixture-machine',result,token,request};
   const revision=await publishCompletedJob(args);assert.match(revision,/^[a-f0-9]{64}$/);assert(uploads>0);uploads=0;assert.equal(await publishCompletedJob(args),revision);assert.equal(uploads,0,'Duplicate transferred existing evidence');
   const manifest=await (await fetch(url+'/api/v1/manifest')).json();assert.equal(manifest.revision,revision);
   const results=await (await fetch(url+'/api/v1/results?revision='+revision)).json();assert.equal(results.items.length,3);assert.equal(results.complete,true);
   const artifacts=await (await fetch(url+'/api/v1/artifacts?revision='+revision)).json();assert.equal(artifacts.items[0].data.measurementAvailable,true);assert.equal(artifacts.items[0].data.content.status,'unavailable');
   const pagedPath='jobs/corpus-0001/exports/paged/site-v2',pagedDirectory=join(local,pagedPath);
-  await mkdir(pagedDirectory,{recursive:true});await cp(join(site,'service/testdata/site-v2'),pagedDirectory,{recursive:true});
+  await mkdir(pagedDirectory,{recursive:true});await cp(join(local,path),pagedDirectory,{recursive:true});
   const pagedManifest=JSON.parse(await readFile(join(pagedDirectory,'manifest.json'))),payload=pagedManifest.objects;
   for(let ordinal=0;ordinal<600;ordinal++){
     const b=Buffer.from(JSON.stringify({kind:'diagnostic',ordinal})),sha256=digest(b);
@@ -49,6 +63,10 @@ test('completed corpus uploads only missing objects, publishes idempotently, ret
   const pagedRevision=await publishCompletedJob(pagedArgs);assert.notEqual(pagedRevision,revision);
   uploads=0;assert.equal(await publishCompletedJob(pagedArgs),pagedRevision);assert.equal(uploads,0,'Paged duplicate uploaded existing content');
   const history=await(await fetch(url+'/api/v1/history?revision='+pagedRevision)).json();assert.equal(history.items.length,3,'Repackaged evidence became new observations');
+  const evidenceURL=url+'/api/v1/reports/'+pagedManifest.reportId+'/evidence?revision='+pagedRevision;
+  const descriptor=await(await fetch(evidenceURL+'&chunk='+resourceHash)).json();assert.equal(descriptor.bytes,original.length);
+  const firstFragment=await(await fetch(evidenceURL+'&chunk='+references[0])).json();assert.equal(firstFragment.kind,'json-fragment');assert(firstFragment.text.length<=120*1024);
+
   await assert.rejects(publishCompletedJob({...args,result:{...result,finished:null}}),/Incomplete/);
   const exportManifest=JSON.parse(await readFile(join(local,path,'manifest.json')));const object=exportManifest.objects[0];await writeFile(join(local,path,'objects',object.sha256),'tampered');await assert.rejects(publishCompletedJob(args),/differs/);
  }finally{if(child){child.kill('SIGTERM');await exit};await rm(root,{recursive:true,force:true})}

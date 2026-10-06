@@ -578,6 +578,23 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 				return "", wire.Invalid("unresolved evidence chunk")
 			}
 		}
+		resource, e := wire.Resource(b)
+		if e != nil {
+			return "", e
+		}
+		if resource != nil {
+			if e = wire.VerifyResource(*resource, func(digest string) ([]byte, error) {
+				if e := ctx.Err(); e != nil {
+					return nil, e
+				}
+				if !evidence[digest] {
+					return nil, wire.Invalid("unresolved JSON fragment")
+				}
+				return s.content(digest)
+			}); e != nil {
+				return "", e
+			}
+		}
 	}
 	if e = s.checkpoint("files"); e != nil {
 		return "", e

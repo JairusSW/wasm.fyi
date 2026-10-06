@@ -8,7 +8,7 @@ passing the existing synthetic fixture tests.
 | Requirement | Current evidence / remaining work |
 | --- | --- |
 | Verified producer, legacy compatibility, full producer identities | Verified exporter records exact binary/build identity and full pass manifest/admission; trial details, adapter/phase evidence and launch diagnostics preserved with tested selected-result/recovery closure; broader analytical evidence still pending |
-| Bounded inventories and evidence, binary and inspection availability | Producer paged inventories tested with 2,000 trials; two-stage service/coordinator imports above 512 payloads, quota/owner/abort/migration/recovery tests pass; large individual resources, broader scale and native export pending |
+| Bounded inventories and evidence, binary and inspection availability | Producer paged inventories tested with 2,000 trials; two-stage service/coordinator imports above 512 payloads, quota/owner/abort/migration/recovery tests pass; large JSON evidence fragments preserve original hashes/bytes with tested integrity/recovery/client assembly; oversized canonical records, broader scale and native export pending |
 | Exact metric/profile/collector/denominator/method identity | Source registry retained; complete selector and compatibility policies pending |
 | Completed-job unit, immutable plans, attempts, parent bundles, resume | Sink and immutable session/member/attempt bindings tested; archive resources and broader resume/attempt fixtures pending |
 | Durable files before synchronous publication, hidden staging IDs | Abrupt subprocess exits verified at five publication stages; ENOSPC hooks, corrupt/missing data and durable retries tested; physical host disk exhaustion is not claimed |

@@ -114,6 +114,15 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 		if e != nil {
 			return e
 		}
+		resource, e := wire.Resource(b)
+		if e != nil {
+			return e
+		}
+		if resource != nil {
+			if e = wire.VerifyResource(*resource, s.content); e != nil {
+				return e
+			}
+		}
 		for _, ref := range refs {
 			if e = markEvidence(ref); e != nil {
 				return e
