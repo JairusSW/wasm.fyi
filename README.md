@@ -60,11 +60,12 @@ Requires Node.js and pnpm. The pinned dependency manager is
 git clone https://github.com/JairusSW/wasm.fyi.git
 cd wasm.fyi
 pnpm install --frozen-lockfile
-pnpm dev
+just dev
 ```
 
-To run the website and Go API together behind local Caddy, install Caddy
-(`brew install caddy` on macOS) and Go 1.27.1+, then run `just dev-caddy`.
+The default `just dev` command runs the website and Go API together behind local
+Caddy. Install just, Caddy (`brew install just caddy` on macOS) and Go 1.27.1+.
+`just dev-caddy` is also available; `just dev-frontend` starts the frontend alone.
 Open `http://localhost:8080`. Ctrl+C stops all three services. API data and a
 private generated publisher token persist under `.wasmfyi/local/`; the website
 continues to use its current snapshot. See [service/README.md](service/README.md)

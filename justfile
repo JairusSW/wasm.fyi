@@ -9,8 +9,11 @@ default:
 setup:
     pnpm install --frozen-lockfile
 
-# Start the original site locally.
-dev:
+# Start the local website and API through Caddy.
+dev: dev-caddy
+
+# Start only the frontend snapshot development server.
+dev-frontend:
     pnpm dev
 
 # Run the website and API behind loopback-only Caddy at http://localhost:8080.
