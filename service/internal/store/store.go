@@ -33,6 +33,7 @@ type Revision struct {
 	Observations        string    `json:"observationRoot,omitempty"`
 	ObservationPolicy   string    `json:"observationPolicy,omitempty"`
 	SessionIndexVersion string    `json:"sessionIndexVersion,omitempty"`
+	HistoryIndexVersion string    `json:"historyIndexVersion,omitempty"`
 	Job                 string    `json:"job"`
 	Publisher           string    `json:"trustedPublisher"`
 	Created             time.Time `json:"publishedAt"`
@@ -687,6 +688,7 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 		}
 		rev.Catalog, rev.Selection, rev.Indexes, rev.Observations = old.Catalog, old.Selection, old.Indexes, old.Observations
 		rev.SessionIndexVersion = old.SessionIndexVersion
+		rev.HistoryIndexVersion = old.HistoryIndexVersion
 		if old.Indexes == "" {
 			budget := 1000000
 			if e = s.walk(old.Catalog, &budget, func(_, digest string) error {
@@ -862,6 +864,9 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 		return "", e
 	}
 	if e = s.indexPublishedJobs(ctx, &rev, j); e != nil {
+		return "", e
+	}
+	if e = s.indexHistory(ctx, &rev, records); e != nil {
 		return "", e
 	}
 	revID, e := s.put(rev)

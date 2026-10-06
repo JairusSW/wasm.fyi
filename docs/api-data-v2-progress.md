@@ -655,3 +655,30 @@ the same progress. Tests cover old frozen views, staged/aborted exclusion, unkno
 sessions, cancellation, cursor scope changes and portable reconstruction. Full
 plan registration, live worker/attempt states and parent archive resources remain
 separate required coordinator/backend work.
+
+## Bounded historical time windows
+
+History reads now accept paired `from`/`until` RFC3339 instants with inclusive
+start and exclusive end. UTC normalization makes equivalent timezone spellings
+share cursor identity. Invalid/reversed/empty ranges and windows exceeding 120
+UTC months are rejected; ordinary current-result queries cannot silently ignore
+those fields. Revision, normalized window, filters and page size remain bound to
+the signed pagination cursor.
+
+Publication builds reusable per-cell/month observation postings with the same
+batched immutable maps as catalog indexes. Entries retain exact result references
+and source observation identity; representation enrichment resolves through the
+existing alias root and does not add launches. The first indexed publication
+bootstraps older source records under key/decoded-byte limits. Older revisions
+use the bounded history-chain fallback. Window reads look up selected month
+postings and filter timestamps before decoding source records, with context and
+scan limits across all month lookups.
+
+Portable closure validates posting timestamps, cell and observation bindings and
+retains their record/evidence graph. Tests cover month boundaries, inclusive/
+exclusive endpoints, timezone equivalence, frozen views after publication, cursor
+mutation, invalid limits, cancellation and backup/DB-free rebuild. A private-test
+revision with an unreadable old chain still serves the indexed selected month,
+demonstrating that the window path does not depend on older chain objects. This
+does not complete retrospective history roles or cross-report reused-evidence
+policy; those remain distinct backend requirements.

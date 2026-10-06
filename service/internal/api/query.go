@@ -23,7 +23,7 @@ func strictQuery(raw string) (url.Values, error) {
 			return nil, wire.Invalid("ambiguous or oversized query")
 		}
 		switch key {
-		case "revision", "cursor", "limit", "chunk", "download", "offset", "length":
+		case "revision", "cursor", "limit", "chunk", "download", "offset", "length", "from", "until":
 			if list[0] == "" {
 				return nil, wire.Invalid("empty scope parameter")
 			}
@@ -69,7 +69,10 @@ func routeQuery(path string, values url.Values) error {
 	if path == "manifest" {
 		return allowedQuery(values)
 	}
-	if path == "results" || path == "history" {
+	if path == "history" {
+		return allowedQuery(values, "revision", "selection", "environment", "runtime", "track", "definition", "method", "configuration", "contract", "workload", "metric", "scenario", "profile", "statistic", "sort", "limit", "cursor", "from", "until")
+	}
+	if path == "results" {
 		return allowedQuery(values, "revision", "selection", "environment", "runtime", "track", "definition", "method", "configuration", "contract", "workload", "metric", "scenario", "profile", "statistic", "sort", "limit", "cursor")
 	}
 	if len(parts) == 1 {

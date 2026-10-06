@@ -45,3 +45,10 @@ bundle references. Cursors freeze publication state. The service currently
 receives completed jobs; it does not have the full planned job inventory or live
 worker states. Therefore planned-job count and full-session completeness are
 explicitly null. Upload/abort details remain on authenticated admin endpoints.
+
+`/api/v1/history` accepts `from` and `until` RFC3339 instants together. The window
+is inclusive at `from` and exclusive at `until`, and spans at most 120 UTC month
+buckets. Equivalent timezone representations normalize to the same cursor scope.
+Published month indexes let a selected window skip older linked history objects;
+older dataset revisions remain readable through a bounded fallback. Historical
+evidence enrichment still resolves to the same capture.

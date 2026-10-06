@@ -32,6 +32,8 @@ type Query struct {
 	Statistic     string `json:"statistic,omitempty"`
 	Sort          string `json:"sort"`
 	Limit         int    `json:"limit"`
+	From          string `json:"from,omitempty"`
+	Until         string `json:"until,omitempty"`
 }
 
 func (q Query) Matches(r wire.Result) bool {
@@ -78,6 +80,10 @@ func (s *Store) Results(q Query, historical bool) ([]wire.Record, error) {
 	return s.ResultsContext(context.Background(), q, historical)
 }
 func (s *Store) ResultsContext(ctx context.Context, q Query, historical bool) ([]wire.Record, error) {
+	start, end, months, e := historyWindow(q, historical)
+	if e != nil {
+		return nil, e
+	}
 	if (q.Sort == "value" || q.Sort == "-value") && (q.Metric == "" || q.Statistic == "") {
 		return nil, wire.Invalid("value sort requires metric and statistic")
 	}
@@ -118,6 +124,9 @@ func (s *Store) ResultsContext(ctx context.Context, q Query, historical bool) ([
 		if !q.Matches(v) {
 			return nil
 		}
+		if q.From != "" && (v.Created.Before(start) || !v.Created.Before(end)) {
+			return nil
+		}
 		decoded += len(r.Data)
 		if decoded > 32*1024*1024 {
 			return ErrLimit
@@ -144,6 +153,9 @@ func (s *Store) ResultsContext(ctx context.Context, q Query, historical bool) ([
 			return e
 		}
 		if historical {
+			if q.From != "" && rev.HistoryIndexVersion == HistoryIndexVersion {
+				return s.historyWindowEntries(ctx, rev, cellKey, start, end, months, &budget, add)
+			}
 			for h := c.History; h != ""; {
 				budget--
 				if budget < 0 {

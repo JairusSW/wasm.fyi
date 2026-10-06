@@ -737,6 +737,24 @@
               "type": "string",
               "pattern": "^[a-f0-9]{64}$"
             }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "Inclusive RFC3339 instant. Requires until. Normalized to UTC for cursor scope.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "until",
+            "in": "query",
+            "description": "Exclusive RFC3339 instant; windows span at most 120 UTC month buckets.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
           }
         ],
         "responses": {

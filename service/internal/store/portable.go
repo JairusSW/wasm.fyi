@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"time"
 
 	"github.com/JairusSW/wasm.fyi/service/internal/wire"
 	"github.com/cockroachdb/pebble/v2"
@@ -223,6 +224,26 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 		switch tuple[0] {
 		case "catalog", "methods":
 			return markMap(set.Root, "posting-record", markRecord)
+		case "history-month":
+			return markMap(set.Root, "posting-history", func(k, id string) error {
+				var record wire.Record
+				if e := read(id, &record); e != nil {
+					return e
+				}
+				var result wire.Result
+				if e := wire.Decode(record.Data, &result); e != nil {
+					return e
+				}
+				observation, e := observationID(record)
+				if e != nil {
+					return e
+				}
+				entry, _ := wire.Encode([]string{result.Created.UTC().Format(time.RFC3339Nano), observation})
+				if string(entry) != k || result.Cell() != tuple[1] || result.Created.UTC().Format("2006-01") != tuple[2] {
+					return wire.Invalid("history posting binding differs")
+				}
+				return markRecord("", id)
+			})
 		case "session-jobs":
 			return markMap(set.Root, "posting-session-job", func(k, id string) error {
 				var summary PublishedJob
@@ -255,6 +276,9 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 		var r Revision
 		if e := read(id, &r); e != nil {
 			return nil, e
+		}
+		if r.HistoryIndexVersion != "" && r.HistoryIndexVersion != HistoryIndexVersion {
+			return nil, wire.Invalid("unsupported history index")
 		}
 		if r.SessionIndexVersion != "" && r.SessionIndexVersion != SessionIndexVersion {
 			return nil, wire.Invalid("unsupported session index")
