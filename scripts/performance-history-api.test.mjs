@@ -104,5 +104,13 @@ test('real completed history publication reuses its source, tools and API record
     await writeFile(controller,script,{mode:0o700});await run();
     ledger=JSON.parse(await readFile(join(historyRoot,'results.json')));assert.equal(ledger.phase,'collected');assert.equal(ledger.jobs.length,2);assert(ledger.jobs.every(job=>job.configurations[0].apiPublication.status==='published'));
     const recoveredManifest=await(await fetch(url+'/api/v1/manifest')).json();assert.equal((await(await fetch(url+'/api/v1/history?revision='+recoveredManifest.revision)).json()).total,4,'crash recovery invented measurements');
+    // Invalid retained evidence is an operator repair condition, never an
+    // empty ledger that can overwrite completed report references on startup.
+    const ledgerPath=join(historyRoot,'results.json'),retainedLedger=await readFile(ledgerPath);
+    for(const invalidLedger of ['{invalid JSON',JSON.stringify({jobs:[{id:job.id,configurations:null}]})]){
+      await writeFile(ledgerPath,invalidLedger);await assert.rejects(run());
+      assert.equal(await readFile(ledgerPath,'utf8'),invalidLedger,'invalid ledger was overwritten');
+    }
+    await writeFile(ledgerPath,retainedLedger);await run();
   } finally {if(child){child.kill('SIGTERM');await exit}await rm(root,{recursive:true,force:true})}
 });

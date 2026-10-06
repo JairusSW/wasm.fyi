@@ -1,4 +1,4 @@
-import {readFile,writeFile,mkdir,rename,rm,statfs,readdir,link,unlink,stat} from 'node:fs/promises';
+import {readFile,writeFile,mkdir,rename,rm,statfs,readdir,link,unlink,stat,open} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
@@ -72,9 +72,19 @@ await processLock(join(site,'.wasmbench/performance-history.lock'),async()=>{
   const controller=join(directory,'controller-'+queue.recipeSha256);
   if(!await exists(controller))command('go',['build','-trimpath','-o',controller,'./cmd/wasmbench'],{cwd:base,env,stdio:'inherit'});
   if(apiURL)await verifySiteExportContract(controller,{cwd:base,env});
-  const previous=await readFile(join(directory,'results.json'),'utf8').then(JSON.parse,()=>({jobs:[]}));
+  const previous=await readFile(join(directory,'results.json'),'utf8').then(JSON.parse,error=>{if(error.code!=='ENOENT')throw error;return {jobs:[]}});
+  if(!Array.isArray(previous.jobs)||previous.jobs.some(job=>!Array.isArray(job.configurations)))throw Error('Invalid historical results ledger');
   const state={schema:1,pid:process.pid,startedAt:new Date().toISOString(),queue,phase:'collect',jobs:structuredClone(previous.jobs)};
-  async function save(){const path=join(directory,'results.json');await writeFile(path+'.tmp',JSON.stringify(state,null,2)+'\n');await rename(path+'.tmp',path);}
+  async function save(){
+    const path=join(directory,'results.json'),temp=path+'.tmp-'+randomUUID();
+    try{
+      const file=await open(temp,'wx',0o600);
+      try{await file.writeFile(JSON.stringify(state,null,2)+'\n');await file.sync()}
+      finally{await file.close()}
+      await rename(temp,path);
+      const parent=await open(directory,'r');try{await parent.sync()}finally{await parent.close()}
+    }finally{await rm(temp,{force:true})}
+  }
   async function publish(entry,job) {
     if(!apiURL||entry.status!=='collected')return;
     try {

@@ -578,7 +578,9 @@ The collector retains unvisited completed entries before replay and uses a
 process-start-bound lease at the existing history lock path. Live legacy PID
 owners remain protected; stopped legacy owners can migrate. A real collector
 SIGKILL/replay gate preserves two completed references and the original history
-row count. Uncollected-event migration and physical power-loss durability still
+row count. Ledger snapshots synchronize the staged file before replacement and
+the parent directory afterward. Unreadable or malformed ledgers stop replay and
+remain intact for repair. Uncollected-event migration and physical power-loss durability still
 require qualification.
 
 Verified producer exports now include `report.tar.gz` as an explicit report-file

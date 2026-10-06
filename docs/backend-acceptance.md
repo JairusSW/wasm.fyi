@@ -17,7 +17,10 @@ preserves two completed report references across interruption before cached jobs
 are revisited, reclaims the stopped owner's lease, and resumes publication without
 new history observations. Legacy PID locks preserve live owners and migrate only
 stopped owners; unavailable process-start probes do not imply stopped ownership.
-Migration of uncollected events and physical ledger durability remain pending. The large Wasmtime
+Ledger replacement now synchronizes the staged file and parent directory and
+rejects unreadable/malformed retained ledgers without replacing them. Real replay
+tests cover malformed-ledger rejection and repaired retry; physical power-loss
+qualification and migration of uncollected events remain pending. The large Wasmtime
 qualification was interrupted by a laptop crash and has been restarted below.
 
 | Requirement | Current evidence / remaining work |
