@@ -46,3 +46,5 @@ export type ReportFileDetail = { "revision": Digest; "record": ReportFileRecord 
 export type ParentArchive = { "schema": 1; "index": ParentArchiveJSON; "metadata": ParentArchiveJSON; "sha256": Digest; "bytes": number; "chunks": Array<ParentArchiveChunk> };
 export type ParentArchiveJSON = { "sha256": Digest; "bytes": number; "kind": "evidence" };
 export type ParentArchiveChunk = { "sha256": Digest; "bytes": number; "kind": "binary" };
+export type ArchiveDescriptor = { "schema": 1; "revision": Digest; "job": Digest; "session": string; "machine": string; "plan": Digest; "sourceIndexSha256": Digest; "content": unknown; "qualification": "not_checked"; "replayStatus": "conditional"; "replayReason": string; "chunkCount"?: number; "metadataSha256"?: Digest; "integrity"?: "original-part-and-full-sha256-verified" };
+export type ArchiveChunkPage = { "revision": Digest; "job": Digest; "items": Array<ParentArchiveChunk>; "total": number; "complete": boolean; "nextCursor": string };

@@ -227,7 +227,7 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 	defer finish()
 	timeout := 15 * time.Second
 	bulkPath := strings.Split(strings.Trim(strings.TrimPrefix(r.URL.Path, "/api/v1/"), "/"), "/")
-	bulk := strings.HasPrefix(r.URL.Path, "/api/v1/") && len(bulkPath) == 3 && bulkPath[0] == "files" && wire.IsHash(bulkPath[1]) && bulkPath[2] == "download" && (r.Method == "GET" || r.Method == "HEAD")
+	bulk := strings.HasPrefix(r.URL.Path, "/api/v1/") && len(bulkPath) == 3 && (bulkPath[0] == "files" || bulkPath[0] == "archives") && wire.IsHash(bulkPath[1]) && bulkPath[2] == "download" && (r.Method == "GET" || r.Method == "HEAD")
 	if bulk {
 		timeout = 5 * time.Minute
 	}
@@ -289,7 +289,7 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 	}
 	path := strings.Trim(strings.TrimPrefix(r.URL.Path, "/api/v1/"), "/")
 	headParts := strings.Split(path, "/")
-	fileHead := r.Method == "HEAD" && headParts[0] == "files" && (len(headParts) == 4 && headParts[2] == "chunks" || len(headParts) == 3 && headParts[2] == "download")
+	fileHead := r.Method == "HEAD" && (headParts[0] == "files" || headParts[0] == "archives") && (len(headParts) == 4 && headParts[2] == "chunks" || len(headParts) == 3 && headParts[2] == "download")
 	if r.Method != "GET" && !fileHead {
 		w.Header().Set("Allow", "GET")
 		w.WriteHeader(405)
@@ -304,7 +304,7 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if path == "manifest" {
-		respond(w, r, 200, map[string]any{"schema": 2, "revision": a.Store.Current(), "selectionAliases": map[string]string{"s1": "current", "s2": "previous"}, "limits": map[string]int{"defaultResults": 100, "maxResults": 1000, "decodedResponseBytes": wire.ResponseBytes, "decodedChunkBytes": wire.ChunkBytes, "scanKeys": store.ScanLimit, "decodedEvidenceResourceBytes": wire.ResourceBytes, "maxEvidenceFragments": wire.ResourceFragments, "nativeFunctionShards": 4096, "nativeFunctions": 1000000, "cohortScopeBytes": 4096, "cohortComputations": 2, "resultComputations": 2, "resultCacheBytes": resultCacheBytes, "resultCacheEntries": resultCacheEntries, "cohortCells": 100000, "reportFileDownloads": 2, "reportFileDownloadSeconds": 300, "reportFileChunkBytes": wire.ReportFileChunkBytes, "reportFileBytes": wire.ReportFileBytes}, "endpoints": []string{"overview", "results", "reports", "metrics", "methods", "configurations", "environments", "workloads", "artifacts", "history", "aggregates", "cohorts", "sessions", "files"}}, false)
+		respond(w, r, 200, map[string]any{"schema": 2, "revision": a.Store.Current(), "selectionAliases": map[string]string{"s1": "current", "s2": "previous"}, "limits": map[string]int{"defaultResults": 100, "maxResults": 1000, "decodedResponseBytes": wire.ResponseBytes, "decodedChunkBytes": wire.ChunkBytes, "scanKeys": store.ScanLimit, "decodedEvidenceResourceBytes": wire.ResourceBytes, "maxEvidenceFragments": wire.ResourceFragments, "nativeFunctionShards": 4096, "nativeFunctions": 1000000, "cohortScopeBytes": 4096, "cohortComputations": 2, "resultComputations": 2, "resultCacheBytes": resultCacheBytes, "resultCacheEntries": resultCacheEntries, "cohortCells": 100000, "reportFileDownloads": 2, "reportFileDownloadSeconds": 300, "reportFileChunkBytes": wire.ReportFileChunkBytes, "reportFileBytes": wire.ReportFileBytes}, "endpoints": []string{"overview", "results", "reports", "metrics", "methods", "configurations", "environments", "workloads", "artifacts", "history", "aggregates", "cohorts", "sessions", "files", "archives"}}, false)
 		return
 	}
 	if path == "overview" || path == "aggregates" || strings.HasPrefix(path, "cohorts/") {
@@ -337,6 +337,10 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	parts := strings.Split(path, "/")
+	if parts[0] == "archives" && len(parts) >= 2 {
+		a.archive(w, r, revision, parts, n, c, immutable)
+		return
+	}
 	if len(parts) == 3 && parts[0] == "reports" && parts[2] == "files" {
 		rows, e := a.Store.ReportFiles(r.Context(), revision, parts[1])
 		if e != nil {

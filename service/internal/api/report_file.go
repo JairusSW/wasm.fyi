@@ -11,7 +11,19 @@ import (
 )
 
 func (a *API) reportFileDownload(w http.ResponseWriter, r *http.Request, revision, id string) {
-	if r.Header.Get("Range") != "" {
+	a.download(w, r, func() (downloadInfo, io.Reader, error) {
+		file, reader, err := a.Store.OpenReportFile(r.Context(), revision, id)
+		return downloadInfo{file.Name, file.MediaType, file.SHA256, file.Bytes}, reader, err
+	})
+}
+
+type downloadInfo struct {
+	Name, MediaType, SHA256 string
+	Bytes                   int64
+}
+
+func (a *API) download(w http.ResponseWriter, r *http.Request, open func() (downloadInfo, io.Reader, error)) {
+	if len(r.Header.Values("Range")) > 0 {
 		problem(w, r, wire.Invalid("whole file download does not accept ranges"))
 		return
 	}
@@ -29,7 +41,7 @@ func (a *API) reportFileDownload(w http.ResponseWriter, r *http.Request, revisio
 	}
 	stop := context.AfterFunc(r.Context(), func() { _ = controller.SetWriteDeadline(time.Now()) })
 	defer stop()
-	file, reader, err := a.Store.OpenReportFile(r.Context(), revision, id)
+	file, reader, err := open()
 	if err != nil {
 		problem(w, r, err)
 		return

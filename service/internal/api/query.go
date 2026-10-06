@@ -48,6 +48,18 @@ func allowedQuery(values url.Values, keys ...string) error {
 }
 func routeQuery(path string, values url.Values) error {
 	parts := strings.Split(path, "/")
+	if len(parts) >= 2 && parts[0] == "archives" {
+		if !wire.IsHash(parts[1]) {
+			return wire.Invalid("invalid archive job identity")
+		}
+		if len(parts) == 3 && parts[2] == "chunks" {
+			return allowedQuery(values, "revision", "cursor", "limit")
+		}
+		if len(parts) == 4 && parts[2] == "chunks" && !wire.IsHash(parts[3]) {
+			return wire.Invalid("invalid archive chunk identity")
+		}
+		return allowedQuery(values, "revision")
+	}
 	if len(parts) == 3 && parts[0] == "files" && parts[2] == "download" {
 		if !wire.IsHash(parts[1]) {
 			return wire.Invalid("invalid file identity")

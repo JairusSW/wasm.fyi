@@ -2606,6 +2606,353 @@
           }
         }
       }
+    },
+    "/api/v1/archives/{id}": {
+      "get": {
+        "summary": "Small published parent archive descriptor",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Small published parent archive descriptor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/ArchiveDescriptor"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No published job or imported archive in this revision"
+          }
+        }
+      }
+    },
+    "/api/v1/archives/{id}/chunks": {
+      "get": {
+        "summary": "Paged transport chunks for a published parent archive",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paged transport chunks for a published parent archive",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/ArchiveChunkPage"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No published job or imported archive in this revision"
+          }
+        }
+      }
+    },
+    "/api/v1/archives/{id}/index": {
+      "get": {
+        "summary": "Original byte-identical archive index JSON",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Original JSON bytes with original hash ETag",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No imported archive"
+          }
+        }
+      }
+    },
+    "/api/v1/archives/{id}/metadata": {
+      "get": {
+        "summary": "Original byte-identical archive metadata JSON",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Original JSON bytes with original hash ETag",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No imported archive"
+          }
+        }
+      }
+    },
+    "/api/v1/archives/{id}/chunks/{digest}": {
+      "get": {
+        "summary": "One membership-bound original archive transport chunk",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          {
+            "name": "digest",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Exact binary chunk, at most 1 MiB",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "File or chunk is not in this revision"
+          }
+        }
+      }
+    },
+    "/api/v1/archives/{id}/download": {
+      "get": {
+        "summary": "Explicit whole original parent archive download",
+        "description": "At most 1 GiB; verified preflight and chunk-by-chunk streaming. Two concurrent downloads, five-minute timeout. Late corruption terminates the connection. Ranges are rejected; selected chunk URLs remain available.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          {
+            "name": "If-None-Match",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Exact original file bytes",
+            "content": {
+              "application/gzip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Original digest matches"
+          },
+          "400": {
+            "description": "Invalid query or unsupported range"
+          },
+          "404": {
+            "description": "File not in revision"
+          },
+          "429": {
+            "description": "Request or bulk concurrency budget exhausted"
+          },
+          "503": {
+            "description": "Canceled or timed out"
+          },
+          "500": {
+            "description": "Content unavailable or corrupt"
+          }
+        }
+      },
+      "head": {
+        "summary": "Explicit whole original parent archive download",
+        "description": "At most 1 GiB; verified preflight and chunk-by-chunk streaming. Two concurrent downloads, five-minute timeout. Late corruption terminates the connection. Ranges are rejected; selected chunk URLs remain available.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          {
+            "name": "If-None-Match",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Exact original file bytes",
+            "content": {
+              "application/gzip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Original digest matches"
+          },
+          "400": {
+            "description": "Invalid query or unsupported range"
+          },
+          "404": {
+            "description": "File not in revision"
+          },
+          "429": {
+            "description": "Request or bulk concurrency budget exhausted"
+          },
+          "503": {
+            "description": "Canceled or timed out"
+          },
+          "500": {
+            "description": "Content unavailable or corrupt"
+          }
+        }
+      }
     }
   },
   "components": {

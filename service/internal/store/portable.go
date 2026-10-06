@@ -281,8 +281,8 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 				}
 				return markRecord("", id)
 			})
-		case "session-jobs":
-			return markMap(set.Root, "posting-session-job", func(k, id string) error {
+		case "session-jobs", "published-job":
+			return markMap(set.Root, "posting-"+tuple[0], func(k, id string) error {
 				var summary PublishedJob
 				if e := read(id, &summary); e != nil {
 					return e
@@ -297,7 +297,7 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 				actual := jobSummary(job, summary.ID, summary.PublishedAt)
 				a, _ := wire.Encode(actual)
 				b, _ := wire.Encode(summary)
-				if string(a) != string(b) || summary.Session != tuple[1] || publishedJobKey(summary) != k {
+				if string(a) != string(b) || tuple[0] == "session-jobs" && (summary.Session != tuple[1] || publishedJobKey(summary) != k) || tuple[0] == "published-job" && (summary.ID != k || tuple[1] != "" || tuple[2] != "") {
 					return wire.Invalid("session job summary differs from source")
 				}
 				return nil

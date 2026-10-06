@@ -2009,6 +2009,154 @@
           }
         }
       ]
+    },
+    "ArchiveDescriptor": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 1
+        },
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "job": {
+          "$ref": "#/$defs/Digest"
+        },
+        "session": {
+          "type": "string"
+        },
+        "machine": {
+          "type": "string"
+        },
+        "plan": {
+          "$ref": "#/$defs/Digest"
+        },
+        "sourceIndexSha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "content": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "const": "available"
+                },
+                "sha256": {
+                  "$ref": "#/$defs/Digest"
+                },
+                "bytes": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1073741824
+                },
+                "mediaType": {
+                  "const": "application/gzip"
+                },
+                "encoding": {
+                  "const": "original gzip archive"
+                }
+              },
+              "required": [
+                "status",
+                "sha256",
+                "bytes",
+                "mediaType",
+                "encoding"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "const": "not_imported"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "status",
+                "reason"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "qualification": {
+          "const": "not_checked"
+        },
+        "replayStatus": {
+          "const": "conditional"
+        },
+        "replayReason": {
+          "type": "string"
+        },
+        "chunkCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2048
+        },
+        "metadataSha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "integrity": {
+          "const": "original-part-and-full-sha256-verified"
+        }
+      },
+      "required": [
+        "schema",
+        "revision",
+        "job",
+        "session",
+        "machine",
+        "plan",
+        "sourceIndexSha256",
+        "content",
+        "qualification",
+        "replayStatus",
+        "replayReason"
+      ],
+      "additionalProperties": false
+    },
+    "ArchiveChunkPage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "job": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/ParentArchiveChunk"
+          }
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2048
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "nextCursor": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "revision",
+        "job",
+        "items",
+        "total",
+        "complete",
+        "nextCursor"
+      ],
+      "additionalProperties": false
     }
   },
   "$ref": "#/$defs/CompletedJob"

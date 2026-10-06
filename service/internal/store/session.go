@@ -66,6 +66,10 @@ func (s *Store) indexPublishedJobs(ctx context.Context, rev *Revision, job wire.
 		if e != nil {
 			return e
 		}
+		rev.Indexes, e = s.indexAdd(rev.Indexes, indexKey("published-job", "", ""), id, digest)
+		if e != nil {
+			return e
+		}
 		if updates[j.Session] == nil {
 			updates[j.Session] = map[string]string{}
 		}

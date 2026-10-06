@@ -1133,3 +1133,31 @@ workflow. A current 60,811,832-byte V8 parent archive imported and reverified as
 58 chunks. That opt-in gate uses a synthetic measurement association and does
 not claim a real completed-job collection binding. Archive serving, larger-scale
 and crash coverage remain pending.
+
+
+### Published parent archive resources
+
+`/archives/{job}` now resolves only a job published in the selected dataset
+revision. New publication maintains a direct immutable job-ID lookup alongside
+session job postings; older immutable revisions use the original exact session
+posting key for compatibility. Staging/import identifiers do not grant access.
+Portable reconstruction validates both posting forms against the original job.
+
+The small descriptor distinguishes imported content from legacy `not_imported`
+identities, lists bytes/full digest and metadata references, and retains explicit
+conditional replay and unchecked qualification explanations. It embeds no chunk
+inventory. Selected `/index` and `/metadata` reads return the exact original JSON
+bytes and hash ETags, including whitespace; values are not re-encoded.
+`/chunks` uses revision/query-bound pagination, `/chunks/{digest}` restricts bytes
+to the selected archive, and `/download` serves the exact original gzip archive
+through the shared two-slot, five-minute preflight/stream verification budget.
+No extraction, disassembly or archived tool execution occurs on API reads.
+
+Tests cover hidden staging, frozen revision membership, missing legacy content,
+small descriptors, paged chunks, forged byte access, byte-identical original
+JSON, complete archive GET/HEAD, and backup/rebuild of the read surfaces. Existing
+report-file corruption/cancellation tests exercise the shared stream implementation.
+Schemas/OpenAPI/generated types cover archive descriptors and chunk pages.
+Full race tests and vet pass; archive-specific schema capture and Linux cross-build
+are checked locally. Larger archive/slow-client/crash and broader real collection
+association gates remain open.
