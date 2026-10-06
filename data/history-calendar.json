@@ -7,6 +7,258 @@
   ],
   "weeks": [
     {
+      "date": "2026-05-23",
+      "cutoff": "2026-05-24T03:59:00.000Z",
+      "zone": "America/New_York",
+      "pins": [
+        {
+          "engine": "wago",
+          "targetType": "main",
+          "targetWeek": "2026-05-24T03:59:00.000Z",
+          "repository": "wago-org/wago",
+          "branch": "main",
+          "status": "unavailable",
+          "reason": "No branch commit was available by this Saturday.",
+          "configurations": [
+            "wago"
+          ]
+        },
+        {
+          "engine": "wazero",
+          "targetType": "main",
+          "targetWeek": "2026-05-24T03:59:00.000Z",
+          "repository": "tetratelabs/wazero",
+          "branch": "main",
+          "revision": "475a1f8f0dc360830ae9cdbe9d08750d7b759bb4",
+          "committedAt": "2026-05-21T07:22:12Z",
+          "url": "https://github.com/wazero/wazero/commit/475a1f8f0dc360830ae9cdbe9d08750d7b759bb4",
+          "status": "planned",
+          "configurations": [
+            "wazero"
+          ]
+        },
+        {
+          "engine": "wasmtime",
+          "targetType": "main",
+          "targetWeek": "2026-05-24T03:59:00.000Z",
+          "repository": "bytecodealliance/wasmtime",
+          "branch": "main",
+          "revision": "90f0c9327f19e3af083a6a57aa3ad38ccee701f2",
+          "committedAt": "2026-05-23T22:49:53Z",
+          "url": "https://github.com/bytecodealliance/wasmtime/commit/90f0c9327f19e3af083a6a57aa3ad38ccee701f2",
+          "status": "planned",
+          "configurations": [
+            "wasmtime"
+          ]
+        },
+        {
+          "engine": "v8",
+          "targetType": "main",
+          "targetWeek": "2026-05-24T03:59:00.000Z",
+          "repository": "nodejs/node",
+          "branch": "main",
+          "revision": "837910d298b0e1bd0c93491d51c0022f13e830f1",
+          "committedAt": "2026-05-23T21:43:57Z",
+          "url": "https://github.com/nodejs/node/commit/837910d298b0e1bd0c93491d51c0022f13e830f1",
+          "status": "planned",
+          "configurations": [
+            "v8"
+          ]
+        },
+        {
+          "engine": "wavm",
+          "targetType": "main",
+          "targetWeek": "2026-05-24T03:59:00.000Z",
+          "repository": "WAVM/WAVM",
+          "branch": "master",
+          "revision": "4e82bb9fecf9c1bdb4d00f96fa89063ee4382d09",
+          "committedAt": "2026-04-04T18:40:00Z",
+          "url": "https://github.com/WAVM/WAVM/commit/4e82bb9fecf9c1bdb4d00f96fa89063ee4382d09",
+          "status": "planned",
+          "configurations": [
+            "wavm"
+          ]
+        },
+        {
+          "engine": "wasmer",
+          "targetType": "main",
+          "targetWeek": "2026-05-24T03:59:00.000Z",
+          "repository": "wasmerio/wasmer",
+          "branch": "main",
+          "revision": "b384fd8162e60a73a0e5bfa429e0cac610ffe5c9",
+          "committedAt": "2026-05-22T12:09:01Z",
+          "url": "https://github.com/wasmerio/wasmer/commit/b384fd8162e60a73a0e5bfa429e0cac610ffe5c9",
+          "status": "planned",
+          "configurations": [
+            "wasmer-singlepass"
+          ]
+        }
+      ],
+      "capture": {
+        "harnessRevision": "9332ced5e59c0c3fd9c5aabc6ebc2ed991431eb9",
+        "corpusSha256": "afcbad32be3ebff2dab9143a2b2307af8c7a1f2b0fdbc7a78d9882896bc2b44c",
+        "collection": {
+          "suite": "wago",
+          "validationProfile": "all",
+          "v8CompilerMode": "optimizing-only",
+          "featureRuntimes": [],
+          "wagoSource": "../../Wago/wago",
+          "launches": 1,
+          "workers": 1,
+          "samples": 3,
+          "scenarioSamples": {
+            "*": 1,
+            "compile": 3,
+            "instantiate": 3,
+            "first-call": 1,
+            "steady": 3
+          },
+          "operations": 1,
+          "warmup": 3,
+          "memory": true,
+          "timingPeakRSS": true,
+          "code": true,
+          "timeout": "5m",
+          "phaseBarriers": false,
+          "featureRuntimesByPlatform": {},
+          "corpusByCorpus": true,
+          "wagoRelease": {
+            "tag": "v0.1.0-beta.11",
+            "revision": "9f01d145d54ac7ab458b6b2f6047db90a757410a"
+          },
+          "includeFeatures": false
+        },
+        "workers": "25%",
+        "corpora": 166
+      }
+    },
+    {
+      "date": "2026-05-30",
+      "cutoff": "2026-05-31T03:59:00.000Z",
+      "zone": "America/New_York",
+      "pins": [
+        {
+          "engine": "wago",
+          "targetType": "main",
+          "targetWeek": "2026-05-31T03:59:00.000Z",
+          "repository": "wago-org/wago",
+          "branch": "main",
+          "status": "unavailable",
+          "reason": "No branch commit was available by this Saturday.",
+          "configurations": [
+            "wago"
+          ]
+        },
+        {
+          "engine": "wazero",
+          "targetType": "main",
+          "targetWeek": "2026-05-31T03:59:00.000Z",
+          "repository": "tetratelabs/wazero",
+          "branch": "main",
+          "revision": "5500f5c2528897113e7ad2652a6d2e1ee436c541",
+          "committedAt": "2026-05-29T09:46:15Z",
+          "url": "https://github.com/wazero/wazero/commit/5500f5c2528897113e7ad2652a6d2e1ee436c541",
+          "status": "planned",
+          "configurations": [
+            "wazero"
+          ]
+        },
+        {
+          "engine": "wasmtime",
+          "targetType": "main",
+          "targetWeek": "2026-05-31T03:59:00.000Z",
+          "repository": "bytecodealliance/wasmtime",
+          "branch": "main",
+          "revision": "1858d1088aebbf3d269856d59e3d2231a3eb2126",
+          "committedAt": "2026-05-29T22:08:22Z",
+          "url": "https://github.com/bytecodealliance/wasmtime/commit/1858d1088aebbf3d269856d59e3d2231a3eb2126",
+          "status": "planned",
+          "configurations": [
+            "wasmtime"
+          ]
+        },
+        {
+          "engine": "v8",
+          "targetType": "main",
+          "targetWeek": "2026-05-31T03:59:00.000Z",
+          "repository": "nodejs/node",
+          "branch": "main",
+          "revision": "8b88e2c841368887ba650478008d14df5cac324f",
+          "committedAt": "2026-05-30T20:35:21Z",
+          "url": "https://github.com/nodejs/node/commit/8b88e2c841368887ba650478008d14df5cac324f",
+          "status": "planned",
+          "configurations": [
+            "v8"
+          ]
+        },
+        {
+          "engine": "wavm",
+          "targetType": "main",
+          "targetWeek": "2026-05-31T03:59:00.000Z",
+          "repository": "WAVM/WAVM",
+          "branch": "master",
+          "revision": "4e82bb9fecf9c1bdb4d00f96fa89063ee4382d09",
+          "committedAt": "2026-04-04T18:40:00Z",
+          "url": "https://github.com/WAVM/WAVM/commit/4e82bb9fecf9c1bdb4d00f96fa89063ee4382d09",
+          "status": "planned",
+          "configurations": [
+            "wavm"
+          ]
+        },
+        {
+          "engine": "wasmer",
+          "targetType": "main",
+          "targetWeek": "2026-05-31T03:59:00.000Z",
+          "repository": "wasmerio/wasmer",
+          "branch": "main",
+          "revision": "a21e070815ac2cb24ed9475c3f35d03445c0344a",
+          "committedAt": "2026-05-30T05:40:50Z",
+          "url": "https://github.com/wasmerio/wasmer/commit/a21e070815ac2cb24ed9475c3f35d03445c0344a",
+          "status": "planned",
+          "configurations": [
+            "wasmer-singlepass"
+          ]
+        }
+      ],
+      "capture": {
+        "harnessRevision": "9332ced5e59c0c3fd9c5aabc6ebc2ed991431eb9",
+        "corpusSha256": "afcbad32be3ebff2dab9143a2b2307af8c7a1f2b0fdbc7a78d9882896bc2b44c",
+        "collection": {
+          "suite": "wago",
+          "validationProfile": "all",
+          "v8CompilerMode": "optimizing-only",
+          "featureRuntimes": [],
+          "wagoSource": "../../Wago/wago",
+          "launches": 1,
+          "workers": 1,
+          "samples": 3,
+          "scenarioSamples": {
+            "*": 1,
+            "compile": 3,
+            "instantiate": 3,
+            "first-call": 1,
+            "steady": 3
+          },
+          "operations": 1,
+          "warmup": 3,
+          "memory": true,
+          "timingPeakRSS": true,
+          "code": true,
+          "timeout": "5m",
+          "phaseBarriers": false,
+          "featureRuntimesByPlatform": {},
+          "corpusByCorpus": true,
+          "wagoRelease": {
+            "tag": "v0.1.0-beta.11",
+            "revision": "9f01d145d54ac7ab458b6b2f6047db90a757410a"
+          },
+          "includeFeatures": false
+        },
+        "workers": "25%",
+        "corpora": 166
+      }
+    },
+    {
       "date": "2026-06-06",
       "cutoff": "2026-06-07T03:59:00.000Z",
       "zone": "America/New_York",
