@@ -204,15 +204,7 @@ func (s *Store) ComputeCohort(ctx context.Context, scope CohortScope) (Cohort, e
 			if e = wire.ValidateMetricBinding(v, definition.Data); e != nil {
 				return c, e
 			}
-			if v.AnalysisVersion == selector.Analysis {
-				prior := active[v.Workload]
-				if prior.ID == "" || v.Created.After(prior.Created) {
-					active[v.Workload] = activeContract{ID: v.ContractID, Created: v.Created}
-				} else if v.Created.Equal(prior.Created) && prior.ID != v.ContractID {
-					prior.Ambiguous = true
-					active[v.Workload] = prior
-				}
-			}
+
 			lane := v.ConfigurationID
 			if scope.LaneKind == "track" {
 				lane = v.TrackID
@@ -226,6 +218,17 @@ func (s *Store) ComputeCohort(ctx context.Context, scope CohortScope) (Cohort, e
 			if scope.Workloads == "applications" && strings.HasPrefix(v.Workload, "features/") {
 				c.Excluded["feature-probe"]++
 				continue
+			}
+			// Latest contracts are selected only from the requested lane/workload
+			// population. Unrelated captures must not supersede or poison it.
+			if v.AnalysisVersion == selector.Analysis {
+				prior := active[v.Workload]
+				if prior.ID == "" || v.Created.After(prior.Created) {
+					active[v.Workload] = activeContract{ID: v.ContractID, Created: v.Created}
+				} else if v.Created.Equal(prior.Created) && prior.ID != v.ContractID {
+					prior.Ambiguous = true
+					active[v.Workload] = prior
+				}
 			}
 			if v.MeasurementMethod == nil || v.MeasurementMethod.Status != "available" {
 				return c, wire.Invalid("cohort method lacks source recipe")

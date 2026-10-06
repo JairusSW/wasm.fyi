@@ -91,7 +91,7 @@ func routeQuery(path string, values url.Values) error {
 		return allowedQuery(values)
 	}
 	if path == "aggregates" || path == "overview" {
-		return allowedQuery(values, "scope")
+		return allowedQuery(values, "scope", "version")
 	}
 	if len(parts) == 2 && parts[0] == "cohorts" {
 		return allowedQuery(values, "limit", "cursor", "lane")

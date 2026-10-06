@@ -32,7 +32,7 @@ func TestOverviewCompleteFrozenScopeAndBudget(t *testing.T) {
 	}
 	scope := apiCohortScope(t, s, revision)
 	encoded, _ := wire.Encode(scope)
-	path := "/api/v1/overview?scope=" + url.QueryEscape(string(encoded))
+	path := "/api/v1/overview?version=" + comparison.Version + "&scope=" + url.QueryEscape(string(encoded))
 	w := request(t, h, "GET", path, nil, nil)
 	var output overviewResponse
 	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &output) != nil {
@@ -113,5 +113,15 @@ func TestOverviewInterpretationPreservesRSSPopulations(t *testing.T) {
 	c.Comparison.Populations = nil
 	if out = projectOverview(&c, "token"); out.Interpretation.SourceReports != 0 || !strings.HasPrefix(out.Interpretation.Reports, "No eligible") {
 		t.Fatal("empty cohort invents source reports")
+	}
+}
+
+func TestOverviewExplainsRecordedContractSelection(t *testing.T) {
+	for _, policy := range []string{"latest-in-scope", "all-exact-contracts"} {
+		c := &store.Cohort{Scope: store.CohortScope{Contracts: policy}}
+		explanation := projectOverview(c, "fixture").Interpretation.ContractSelection
+		if explanation == "" || !strings.Contains(explanation, "requested lanes") {
+			t.Fatal("contract scope explanation missing", policy, explanation)
+		}
 	}
 }

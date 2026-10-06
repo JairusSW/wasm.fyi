@@ -1614,10 +1614,24 @@
         "summary": "Process/readiness and dataset availability",
         "responses": {
           "200": {
-            "description": "Healthy process or ready service"
+            "description": "Healthy process or ready service",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/Health"
+                }
+              }
+            }
           },
           "503": {
-            "description": "Restart/durability recovery required"
+            "description": "Restart/durability recovery required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/Health"
+                }
+              }
+            }
           }
         }
       }
@@ -1627,10 +1641,24 @@
         "summary": "Process/readiness and dataset availability",
         "responses": {
           "200": {
-            "description": "Healthy process or ready service"
+            "description": "Healthy process or ready service",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/Health"
+                }
+              }
+            }
           },
           "503": {
-            "description": "Restart/durability recovery required"
+            "description": "Restart/durability recovery required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/Health"
+                }
+              }
+            }
           }
         }
       }
@@ -1960,11 +1988,30 @@
               "type": "string",
               "maxLength": 4096
             }
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "wasmfyi-cohort-v2"
+              ]
+            },
+            "description": "Pin comparison analysis as well as scope.revision for immutable caching. Unversioned analysis resolves the current policy and must revalidate."
           }
         ],
         "responses": {
           "200": {
-            "description": "Small aggregate summary and cohort reference; full membership and report inventories are omitted"
+            "description": "Small aggregate summary and cohort reference; full membership and report inventories are omitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/AggregateSummary"
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid or incompatible scope"
@@ -2266,6 +2313,18 @@
               "type": "string",
               "maxLength": 4096
             }
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "wasmfyi-cohort-v2"
+              ]
+            },
+            "description": "Pin comparison analysis as well as scope.revision for immutable caching. Unversioned analysis resolves the current policy and must revalidate."
           }
         ],
         "responses": {

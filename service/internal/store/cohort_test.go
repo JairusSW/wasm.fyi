@@ -221,3 +221,71 @@ func TestCohortLatestContractAmbiguityUsesOnlyLatestTime(t *testing.T) {
 		t.Fatal("superseded ambiguity blocked current contract", e)
 	}
 }
+
+func TestLatestContractSelectionIgnoresUnrequestedLanesAndExcludedWorkloads(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		cells   []testutil.CohortCell
+		offset  time.Duration
+		feature bool
+	}{
+		{name: "unrequested-newer", offset: time.Hour, cells: []testutil.CohortCell{{Runtime: "c", Workload: "fixture/one", ContractRevision: "unrequested", Group: "x", Value: 100}}},
+		{name: "unrequested-tied", cells: []testutil.CohortCell{{Runtime: "c", Workload: "fixture/one", ContractRevision: "unrequested", Group: "x", Value: 100}}},
+		{name: "excluded-features", feature: true, cells: []testutil.CohortCell{{Runtime: "a", Workload: "features/probe", ContractRevision: "a-contract", Group: "x", Value: 1}, {Runtime: "b", Workload: "features/probe", ContractRevision: "b-contract", Group: "x", Value: 2}}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			s := openTest(t, filepath.Join(dir, "live"))
+			defer s.Close()
+			base := publishCohort(t, s, "requested", []testutil.CohortCell{{Runtime: "a", Workload: "fixture/one", Group: "x", Value: 4}, {Runtime: "b", Workload: "fixture/one", Group: "x", Value: 16}})
+			scope := cohortScope(t, s, base)
+			baseline, err := s.ComputeCohort(context.Background(), scope)
+			if err != nil {
+				t.Fatal(err)
+			}
+			next := publishCohortAt(t, s, tc.name, time.Date(2026, 10, 5, 0, 0, 0, 0, time.UTC).Add(tc.offset), tc.cells)
+			frozen, err := s.ComputeCohort(context.Background(), scope)
+			if err != nil || frozen.Digest != baseline.Digest {
+				t.Fatal("frozen scope changed", err)
+			}
+			scope.Revision = next
+			check := func(s *Store) {
+				t.Helper()
+				got, err := s.ComputeCohort(context.Background(), scope)
+				if err != nil {
+					t.Fatal("outside-scope contract affected comparison", err)
+				}
+				want, _ := wire.Encode(baseline.Comparison)
+				actual, _ := wire.Encode(got.Comparison)
+				if !bytes.Equal(want, actual) {
+					t.Fatal("outside-scope data changed population, values or membership", string(actual))
+				}
+				if got.Excluded["superseded-contract"] != 0 {
+					t.Fatal("outside-scope contract superseded selected cells")
+				}
+				if tc.feature && got.Excluded["feature-probe"] != 2 {
+					t.Fatal("excluded feature population was lost")
+				}
+			}
+			check(s)
+			if tc.feature {
+				all := scope
+				all.Workloads = "all"
+				if _, err := s.ComputeCohort(context.Background(), all); err == nil {
+					t.Fatal("included feature contract ambiguity concealed")
+				}
+			}
+			backup := filepath.Join(dir, "backup")
+			if _, err = s.Backup(context.Background(), backup); err != nil {
+				t.Fatal(err)
+			}
+			rebuilt := filepath.Join(dir, "rebuilt")
+			if err = Rebuild(backup, rebuilt, "fixture"); err != nil {
+				t.Fatal(err)
+			}
+			recovered := openTest(t, rebuilt)
+			defer recovered.Close()
+			check(recovered)
+		})
+	}
+}

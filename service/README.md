@@ -259,3 +259,31 @@ bodies, corrupts a temporary cached tail, and verifies exact repair. It runs no
 benchmark or archived executable. The 60,811,832-byte V8 parent passed this gate
 on macOS and native Linux aarch64; durable disk and off-machine restore remain
 separate gates.
+
+Website comparison analysis is now `wasmfyi-cohort-v2`. The `latest-in-scope`
+contract policy finds the latest capture only within the requested lanes and
+workload population. Unrequested runtimes cannot supersede selected contracts;
+excluded feature probes cannot introduce timestamp ambiguity. Conflicting exact
+contracts at the latest timestamp within the selected population still fail
+explicitly. The `all-exact-contracts` policy remains available.
+
+The overview exposes `interpretation.contractSelection` from the requested policy.
+Cohort digests, cache keys and signed tokens bind the comparison version. Existing
+v1 cohort tokens are rejected; resolve the selected overview/aggregate again to
+obtain a v2 token. Result/history records, producer analysis versions, scientific
+values, unavailable uncertainty, and the `s1`/`s2` selection aliases are preserved.
+This fixes comparison membership; it does not qualify the wider cohort/history
+methodology or complete production cutover.
+
+Aggregate summary responses now have the executable `AggregateSummary` contract:
+at most 32 lane populations, versioned comparison policy, reference counts, and
+explicitly null member/report inventories. Complete cohort membership remains a
+paged subresource. Schema checks reject evidence preloads and manufactured
+uncertainty; generated TypeScript types share the contract. Comparison v2 HTTP
+captures cover overview, aggregate summaries and member pages.
+
+Pin analysis in overview/aggregate URLs with `version=wasmfyi-cohort-v2` as well
+as an explicit `scope.revision` for immutable caching. Without the version,
+responses use `no-cache` and revalidate so a policy upgrade cannot leave a stale
+cohort token in a long-lived browser cache. Unsupported versions fail explicitly.
+Signed cohort member URLs already bind the analysis version and remain immutable.

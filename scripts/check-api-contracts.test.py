@@ -34,6 +34,44 @@ class Contracts(unittest.TestCase):
             with self.assertRaises(ValueError):
                 contracts.validate(changed, "EvidenceIndex", "invalid index")
 
+    def test_versioned_aggregate_summary_is_bounded_and_has_no_membership_preload(self):
+        lane = "c" * 64
+        scope = {"revision": "a" * 64, "selection": "current", "environment": "b" * 64,
+                 "lanes": [lane], "laneKind": "track", "baseline": lane,
+                 "selectors": [{"definition": "d" * 64, "method": "e" * 64, "analysis": "fixture"}],
+                 "policy": "shared-geometric-v1", "weighting": "workload", "workloads": "applications",
+                 "mixedConfigurations": "reject", "collectors": "allow-unrecorded-timing",
+                 "definitions": "require-registered", "contracts": "latest-in-scope"}
+        population = {"configuration": lane, "status": "available", "reason": "", "value": 4,
+                      "ratio": 1, "ratioStatus": "available", "ratioReason": "", "count": 1,
+                      "workloads": 1, "members": None, "reports": None}
+        comparison = {"version": "wasmfyi-cohort-v2", "baseline": lane, "policy": scope["policy"],
+                      "weighting": "workload", "requested": [lane], "participants": [lane], "omitted": [],
+                      "populations": [population], "uncertainty": "unavailable", "uncertaintyReason": "policy unavailable"}
+        summary = {"scope": scope, "cohort": "fixture-token", "digest": "f" * 64,
+                   "categoryPolicy": "fixture", "eligibilityPolicy": "fixture", "excluded": {},
+                   "comparison": comparison, "reportCounts": {lane: 1}, "configurationCounts": {lane: 1}}
+        contracts.validate(summary, "AggregateSummary", "bounded current-version aggregate")
+        for key, value in [("members", []), ("reports", []), ("count", -1)]:
+            changed = copy.deepcopy(summary)
+            changed["comparison"]["populations"][0][key] = value
+            with self.assertRaises(ValueError):
+                contracts.validate(changed, "AggregateSummary", "invalid population")
+        for key, value in [("version", "wasmfyi-cohort-v1"), ("uncertainty", "available"),
+                           ("requested", [f"{i:064x}" for i in range(33)]), ("populations", [population] * 33)]:
+            changed = copy.deepcopy(summary)
+            changed["comparison"][key] = value
+            with self.assertRaises(ValueError):
+                contracts.validate(changed, "AggregateSummary", "invalid comparison summary")
+
+    def test_transport_reference_aliases_resolve_only_local_schema(self):
+        for root in ("site-v2.schema.json", "./site-v2.schema.json", contracts.SCHEMA["$id"]):
+            reference = contracts.transport_reference(root + "#/$defs/Digest")
+            contracts.validate("a" * 64, {"$ref": reference}, "local transport alias")
+        for reference in ("https://other.test/schema.json#/$defs/Digest", "../site-v2.schema.json"):
+            with self.assertRaises(ValueError):
+                contracts.transport_reference(reference)
+
     def test_required_provenance_and_date(self):
         result = self.result()
         contracts.validate(result, "ResultData", "valid source")

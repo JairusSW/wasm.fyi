@@ -10,7 +10,7 @@ import (
 	"sort"
 )
 
-const Version = "wasmfyi-cohort-v1"
+const Version = "wasmfyi-cohort-v2"
 const MaxCells = 100000
 
 // A Key is an exact workload contract (plus boundary/definition for RSS).

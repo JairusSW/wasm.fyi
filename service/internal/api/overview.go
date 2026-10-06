@@ -34,6 +34,7 @@ type overviewDefinition struct {
 
 type overviewInterpretation struct {
 	Version           string `json:"version"`
+	ContractSelection string `json:"contractSelection"`
 	Population        string `json:"population"`
 	Weighting         string `json:"weighting"`
 	Reports           string `json:"reports"`
@@ -86,6 +87,12 @@ func projectOverview(c *store.Cohort, token string) overviewResponse {
 		response.Cards = append(response.Cards, overviewCard{p.Configuration, p.Status, p.Reason, p.Value, p.Ratio, p.RatioStatus, p.RatioReason, p.Count, p.Workloads, len(p.Reports), len(configurations)})
 	}
 	interpretation := overviewInterpretation{Version: comparison.Version, Uncertainty: out.Uncertainty, UncertaintyReason: out.UncertaintyReason, SourceReports: len(reports), Methods: c.Scope.Selectors}
+	switch c.Scope.Contracts {
+	case "latest-in-scope":
+		interpretation.ContractSelection = "Each logical workload uses the exact contract at the latest capture time among the requested lanes and workload population. Equal-time contract conflicts are rejected."
+	case "all-exact-contracts":
+		interpretation.ContractSelection = "All exact workload contracts in the requested lanes and workload population remain separate comparison cells."
+	}
 	switch out.Policy {
 	case "shared-geometric-v1":
 		interpretation.Population = "Each participating lane uses the shared set of exact workload contracts. Requested lanes without eligible results are listed as omitted."

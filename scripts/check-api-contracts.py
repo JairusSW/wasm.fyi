@@ -78,6 +78,13 @@ def export(directory):
                             validate(row, "NativeFunction", digest)
 
 
+def transport_reference(reference):
+    location, separator, fragment = reference.partition("#")
+    if location in ("site-v2.schema.json", "./site-v2.schema.json", SCHEMA["$id"]):
+        return SCHEMA["$id"] + (separator + fragment if separator else "")
+    raise ValueError("unsupported transport schema reference")
+
+
 def responses(path):
     typed = 0
     for line in path.read_text().splitlines():
@@ -102,7 +109,7 @@ def responses(path):
                 response = response[part.replace("~1", "/").replace("~0", "~")]
         schema = response["content"]["application/json"]["schema"]
         if "$ref" in schema:
-            reference = schema["$ref"].replace("site-v2.schema.json", SCHEMA["$id"])
+            reference = transport_reference(schema["$ref"])
             schema = {"$ref": reference}
             typed += 1
         validate(capture["body"], schema, route)

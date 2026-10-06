@@ -116,7 +116,12 @@ func (a *API) cohort(w http.ResponseWriter, r *http.Request, path string, params
 			problem(w, r, wire.Invalid("invalid cohort scope"))
 			return
 		}
-		immutable = scope.Revision != ""
+		if params.Has("version") && params.Get("version") != comparison.Version {
+			problem(w, r, wire.Invalid("unsupported comparison version"))
+			return
+		}
+		// Dataset revision alone does not pin website analysis across upgrades.
+		immutable = scope.Revision != "" && params.Get("version") == comparison.Version
 		scope, e = a.Store.NormalizeCohort(scope)
 		if e != nil {
 			problem(w, r, e)

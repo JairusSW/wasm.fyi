@@ -3,6 +3,9 @@ package api
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"math"
 	"net/http"
@@ -13,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/JairusSW/wasm.fyi/service/internal/comparison"
 	"github.com/JairusSW/wasm.fyi/service/internal/store"
 	"github.com/JairusSW/wasm.fyi/service/internal/testutil"
 	"github.com/JairusSW/wasm.fyi/service/internal/wire"
@@ -191,5 +195,61 @@ func TestCohortAPIPagePinsScopeAndRecomputesAfterRestore(t *testing.T) {
 	w = request(t, h, "GET", path+"?limit=100", nil, nil)
 	if w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &page) != nil || page.Total != 4 || page.Digest != summary.Digest {
 		t.Fatal("cohort identity depends on cache or Pebble snapshot", w.Code, w.Body.String())
+	}
+}
+
+func TestCohortVersionChangeRejectsAuthenticOlderTokens(t *testing.T) {
+	s, err := store.Open(t.TempDir(), "fixture")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	rev := importCohort(t, s, "versioned", []testutil.CohortCell{{Runtime: "a", Workload: "fixture/one", Group: "x", Value: 4}, {Runtime: "b", Workload: "fixture/one", Group: "x", Value: 16}})
+	scope := apiCohortScope(t, s, rev)
+	key := bytes.Repeat([]byte{7}, 32)
+	h, err := New(s, strings.Repeat("x", 32), key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	old, _ := wire.Encode(cohortCapsule{"wasmfyi-cohort-v1", comparison.CategoryVersion, scope})
+	mac := hmac.New(sha256.New, key)
+	mac.Write([]byte("cohort-v1:"))
+	mac.Write(old)
+	token := base64.RawURLEncoding.EncodeToString(old) + "." + base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
+	if w := request(t, h, "GET", "/api/v1/cohorts/"+token, nil, nil); w.Code != 400 {
+		t.Fatal("older comparison token reused under changed policy", w.Code)
+	}
+	body, _ := wire.Encode(scope)
+	w := request(t, h, "GET", "/api/v1/overview?scope="+url.QueryEscape(string(body)), nil, nil)
+	var overview overviewResponse
+	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &overview) != nil {
+		t.Fatal("current overview unavailable", w.Code, w.Body.String())
+	}
+	if w = request(t, h, "GET", "/api/v1/cohorts/"+overview.Cohort, nil, nil); w.Code != 200 {
+		t.Fatal("current comparison identity rejected", w.Code, w.Body.String())
+	}
+	if w.Header().Get("Cache-Control") != "public, max-age=31536000, immutable" {
+		t.Fatal("signed member page not immutable")
+	}
+	for _, endpoint := range []string{"overview", "aggregates"} {
+		base := "/api/v1/" + endpoint + "?scope=" + url.QueryEscape(string(body))
+		unversioned := request(t, h, "GET", base, nil, nil)
+		if unversioned.Code != 200 || unversioned.Header().Get("Cache-Control") != "no-cache" {
+			t.Fatal("unversioned analysis cached immutable", endpoint)
+		}
+		pinned := request(t, h, "GET", base+"&version="+comparison.Version, nil, nil)
+		if pinned.Code != 200 || !strings.Contains(pinned.Header().Get("Cache-Control"), "immutable") {
+			t.Fatal("pinned comparison not immutable", endpoint, pinned.Code)
+		}
+		if request(t, h, "GET", base+"&version=wasmfyi-cohort-v1", nil, nil).Code != 400 {
+			t.Fatal("older policy silently reinterpreted", endpoint)
+		}
+	}
+	if overview.Interpretation.Version != comparison.Version || overview.Interpretation.ContractSelection == "" {
+		t.Fatal("current scope interpretation missing")
+	}
+
+	if comparison.Version != "wasmfyi-cohort-v2" {
+		t.Fatal("unversioned contract-selection fix")
 	}
 }

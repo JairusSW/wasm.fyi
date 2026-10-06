@@ -1089,7 +1089,7 @@
       "type": "object",
       "properties": {
         "version": {
-          "const": "wasmfyi-cohort-v1"
+          "const": "wasmfyi-cohort-v2"
         },
         "population": {
           "type": "string"
@@ -1116,6 +1116,10 @@
             "$ref": "#/$defs/CohortSelector"
           },
           "maxItems": 4
+        },
+        "contractSelection": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [
@@ -1126,7 +1130,8 @@
         "uncertainty",
         "uncertaintyReason",
         "sourceReports",
-        "methods"
+        "methods",
+        "contractSelection"
       ],
       "additionalProperties": false
     },
@@ -2306,6 +2311,250 @@
         "kind",
         "schema",
         "references"
+      ],
+      "additionalProperties": false
+    },
+    "AggregatePopulation": {
+      "type": "object",
+      "properties": {
+        "configuration": {
+          "$ref": "#/$defs/Digest"
+        },
+        "status": {
+          "enum": [
+            "available",
+            "unavailable"
+          ]
+        },
+        "reason": {
+          "type": "string"
+        },
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "ratio": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "ratioStatus": {
+          "enum": [
+            "available",
+            "unavailable"
+          ]
+        },
+        "ratioReason": {
+          "type": "string"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "workloads": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "members": {
+          "type": "null"
+        },
+        "reports": {
+          "type": "null"
+        }
+      },
+      "required": [
+        "configuration",
+        "status",
+        "reason",
+        "value",
+        "ratio",
+        "ratioStatus",
+        "ratioReason",
+        "count",
+        "workloads",
+        "members",
+        "reports"
+      ],
+      "additionalProperties": false
+    },
+    "ComparisonSummary": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": "wasmfyi-cohort-v2"
+        },
+        "baseline": {
+          "$ref": "#/$defs/Digest"
+        },
+        "policy": {
+          "enum": [
+            "shared-geometric-v1",
+            "available-rss-arithmetic-v1",
+            "matched-rss-arithmetic-v1"
+          ]
+        },
+        "weighting": {
+          "enum": [
+            "workload",
+            "corpus"
+          ]
+        },
+        "requested": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Digest"
+          },
+          "maxItems": 32,
+          "uniqueItems": true
+        },
+        "participants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Digest"
+          },
+          "maxItems": 32,
+          "uniqueItems": true
+        },
+        "omitted": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Digest"
+          },
+          "maxItems": 32,
+          "uniqueItems": true
+        },
+        "populations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AggregatePopulation"
+          },
+          "maxItems": 32
+        },
+        "uncertainty": {
+          "const": "unavailable"
+        },
+        "uncertaintyReason": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "version",
+        "baseline",
+        "policy",
+        "weighting",
+        "requested",
+        "participants",
+        "omitted",
+        "populations",
+        "uncertainty",
+        "uncertaintyReason"
+      ],
+      "additionalProperties": false
+    },
+    "AggregateSummary": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "$ref": "#/$defs/CohortScope"
+        },
+        "cohort": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8192
+        },
+        "digest": {
+          "$ref": "#/$defs/Digest"
+        },
+        "categoryPolicy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "eligibilityPolicy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "excluded": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "comparison": {
+          "$ref": "#/$defs/ComparisonSummary"
+        },
+        "reportCounts": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/Digest"
+          },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "maxProperties": 32
+        },
+        "configurationCounts": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/Digest"
+          },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "maxProperties": 32
+        }
+      },
+      "required": [
+        "scope",
+        "cohort",
+        "digest",
+        "categoryPolicy",
+        "eligibilityPolicy",
+        "excluded",
+        "comparison",
+        "reportCounts",
+        "configurationCounts"
+      ],
+      "additionalProperties": false
+    },
+    "Health": {
+      "type": "object",
+      "properties": {
+        "ready": {
+          "type": "boolean"
+        },
+        "datasetAvailable": {
+          "type": "boolean"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "const": ""
+            },
+            {
+              "$ref": "#/$defs/Digest"
+            }
+          ]
+        },
+        "restartRequired": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "ready",
+        "datasetAvailable",
+        "revision",
+        "restartRequired"
       ],
       "additionalProperties": false
     }
