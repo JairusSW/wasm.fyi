@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "id": "weekly-20260523-v8",
+  "machine": "local",
+  "bytes": 59855786,
+  "sha256": "d968b3e8b668c9294f86eda85d7b1fa4861b5541ca4cdaba5b3cfca32d1e5b93",
+  "format": "tar+gzip concatenated parts",
+  "parts": [
+    {
+      "path": "bundle.tar.gz.part-000",
+      "bytes": 33554432,
+      "sha256": "96a636d035d8745d04f32f1f403411e057657dfbfeadd4d93764d191ec0b8790"
+    },
+    {
+      "path": "bundle.tar.gz.part-001",
+      "bytes": 26301354,
+      "sha256": "a031e327d79a9097eb470733c8efde37f00a09901090f7a6343ebceaa346751e"
+    }
+  ],
+  "metadata": "metadata.json",
+  "metadataSha256": "d5cdd55659f85850c39cde9e9ae436c5fe65db7b6c9a96f31bcf83e6e851ea42",
+  "download": "Concatenate parts in order, verify the full SHA-256, then tar -xzf bundle.tar.gz."
+}
