@@ -1305,3 +1305,23 @@ retained V8 parent also verifies 60,811,832 original bytes through 60 source rea
 rejects a simulated missing chunk. This is real-byte verification evidence with
 synthetic job associations, not a new measurement, throughput claim or qualification.
 Larger retention, serving load and deployment timeout gates remain open.
+
+## Recovery enforces registered scope for legacy deliveries
+
+A DB-free rebuild regression exposed a missing admission check: a hash-consistent
+portable revision could include a completed job without plan content whose
+machine or corpus lay outside its registered session plan. Rebuild accepted it,
+although completed-job publication rejects that delivery.
+
+Typed closure validation now checks every revision's canonical job against the
+plan available in that exact revision, including jobs that omit plan content.
+Plan and configured-pin bindings must also match. Indexed scopes use membership
+pages; older plan-reference formats share the bounded per-pass plan verifier.
+Revisions without any registered plan keep their existing unknown-scope behavior.
+
+The executable regression constructs content-complete portable chains with valid
+hashes and unchanged measurement exports, then alters machine, corpus, plan or pin.
+Both current indexed and older plan-reference formats must reject the actual
+`Rebuild` operation before a destination is installed. Existing valid frozen,
+legacy, large-plan, crash and portable-recovery checks remain in place. This fixes
+recovery/publication parity without changing measurement or comparison policies.

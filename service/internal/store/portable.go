@@ -2,6 +2,7 @@ package store
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -538,6 +539,19 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 		}
 		if e := job.Validate(); e != nil {
 			return nil, e
+		}
+		scope, e := s.sessionPlanScopeWithVerifier(context.Background(), r, job.Session, &plans)
+		if e != nil {
+			return nil, e
+		}
+		if scope != nil {
+			contains, e := scope.Contains(job.Machine, job.Corpus)
+			if e != nil {
+				return nil, e
+			}
+			if scope.Plan != job.Plan || scope.ConfiguredHarnessPin != job.ConfiguredHarnessPin || !contains {
+				return nil, wire.Invalid("recovered job outside published session plan")
+			}
 		}
 		if job.SessionPlan != nil {
 			if _, e := plans.verify(job); e != nil {

@@ -53,6 +53,9 @@ func (s *Store) planPublication(rev Revision, session, id string) (PublishedJob,
 	return summary, nil
 }
 func (s *Store) sessionPlanScope(ctx context.Context, rev Revision, session string) (*sessionScope, error) {
+	return s.sessionPlanScopeWithVerifier(ctx, rev, session, nil)
+}
+func (s *Store) sessionPlanScopeWithVerifier(ctx context.Context, rev Revision, session string, verifier *planVerifier) (*sessionScope, error) {
 	if e := ctx.Err(); e != nil {
 		return nil, e
 	}
@@ -112,12 +115,17 @@ func (s *Store) sessionPlanScope(ctx context.Context, rev Revision, session stri
 	if source.Session != session || source.SessionPlan == nil || summary.Plan != source.Plan || summary.ConfiguredHarnessPin != source.ConfiguredHarnessPin {
 		return nil, wire.Invalid("session plan reference differs")
 	}
-	scope, e := source.SessionPlan.Verify(source, func(o wire.Object) ([]byte, error) {
-		if e := ctx.Err(); e != nil {
-			return nil, e
-		}
-		return s.objectRepresentation(o)
-	})
+	var scope wire.PlanScope
+	if verifier != nil {
+		scope, e = verifier.verify(source)
+	} else {
+		scope, e = source.SessionPlan.Verify(source, func(o wire.Object) ([]byte, error) {
+			if e := ctx.Err(); e != nil {
+				return nil, e
+			}
+			return s.objectRepresentation(o)
+		})
+	}
 	if e != nil {
 		return nil, e
 	}
