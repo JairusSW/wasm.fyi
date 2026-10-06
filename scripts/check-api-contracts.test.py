@@ -14,6 +14,33 @@ spec.loader.exec_module(contracts)
 
 
 class Contracts(unittest.TestCase):
+    def test_catalog_pages_and_details_bind_record_kind_and_bounds(self):
+        for name, kind in [("Report", "report"), ("Track", "track"),
+                           ("Metric", "metric"), ("Configuration", "configuration"),
+                           ("Environment", "environment"), ("Workload", "workload"),
+                           ("Artifact", "artifact")]:
+            record = {"kind": kind, "id": "a" * 64, "data": {"producerField": "retained"}}
+            page = {"revision": "b" * 64, "items": [record], "total": 2,
+                    "complete": False, "nextCursor": "signed"}
+            detail = {"revision": "b" * 64, "record": record}
+            contracts.validate(page, name + "Page", "bounded catalog")
+            contracts.validate(detail, name + "Detail", "canonical detail")
+            for key, value in [("items", [record] * 1001), ("total", -1),
+                               ("nextCursor", ""), ("complete", True),
+                               ("samples", []), ("revision", "latest")]:
+                changed = copy.deepcopy(page)
+                changed[key] = value
+                with self.assertRaises(ValueError):
+                    contracts.validate(changed, name + "Page", "invalid catalog")
+            changed = copy.deepcopy(detail)
+            changed["record"]["kind"] = "result"
+            with self.assertRaises(ValueError):
+                contracts.validate(changed, name + "Detail", "wrong record kind")
+            changed = copy.deepcopy(detail)
+            changed["inventory"] = []
+            with self.assertRaises(ValueError):
+                contracts.validate(changed, name + "Detail", "unsolicited preload")
+
     def test_overview_preset_inventory_is_bounded_and_unpinned(self):
         scope = {"revision": "", "selection": "current", "environment": "a" * 64,
                  "baseline": "b" * 64, "lanes": ["b" * 64], "selectors": [{"definition": "c" * 64, "method": "d" * 64, "analysis": "fixture"}],

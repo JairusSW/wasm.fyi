@@ -792,3 +792,16 @@ image. `WASMFYI_REAL_PENDING_BYTES` sets an explicit fixture quota between the
 `WASMFYI_REAL_STORE` must name a new directory and retains that test store for
 inspection. Synthetic session/job association and original measurement parity
 remain distinct from new collection or operator qualification.
+
+Catalog and canonical record-detail responses now have endpoint-specific schemas
+and generated types. Catalog pages bind each row to the requested record kind,
+contain at most 1,000 returned rows, and require a nonempty successor exactly
+when `complete` is false. Detail responses contain only the resolved revision
+and canonical record envelope. Result details use the full producer-result
+schema; summaries continue to omit evidence references. Other catalog `data`
+objects preserve producer-owned metadata fields rather than define a second
+scientific namespace. The response byte ceiling is enforced separately by the
+HTTP writer. Captured HTTP tests validate all eight kinds, selected successors
+and pinned page/detail bytes after another publication; negative schema tests
+reject wrong kinds, unbounded pages, misleading continuation and extra preload
+fields. The workflow includes these captures in its executable contract gate.

@@ -1795,3 +1795,20 @@ disassembly API tests and vet pass.
 The real 130,166-payload gate is now resumed against the retained store with
 2 GiB explicit pending quota and the same 45-minute deadline, using both native
 proof reuse and bounded publication windows. Its result remains pending.
+
+## Catalog and canonical detail response contracts
+
+Generic OpenAPI object placeholders for reports, tracks, metrics, configurations,
+environments, workloads, artifacts and result details now reference explicit
+response schemas. Pages enforce kind-specific record envelopes, a 1,000-row
+ceiling and consistent complete/successor markers. Details enforce a frozen
+revision and canonical record, with the existing full `ResultData` schema for
+result details. Producer-owned catalog data remains extensible, preserving
+scientific definitions rather than creating website replacements.
+
+Selected HTTP captures cover all eight record kinds, canonical stored bytes,
+catalog successors and frozen page/detail responses after new publication.
+Negative tests reject wrong kind, oversized/negative-count pages, false
+continuation, unpinned revisions and extra preload fields. Generated consumer
+types and the workflow capture list are updated. The extended frozen-scope race gate and all 34 typed captured responses pass,
+along with 22 Python contract tests and generated-type consistency checks. Actual remote CI remains unqualified.

@@ -224,7 +224,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "site-v2.schema.json#/$defs/ReportPage"
                 }
               }
             }
@@ -281,7 +281,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "site-v2.schema.json#/$defs/TrackPage"
                 }
               }
             }
@@ -338,7 +338,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "site-v2.schema.json#/$defs/MetricPage"
                 }
               }
             }
@@ -395,7 +395,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "site-v2.schema.json#/$defs/ConfigurationPage"
                 }
               }
             }
@@ -452,7 +452,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "site-v2.schema.json#/$defs/EnvironmentPage"
                 }
               }
             }
@@ -509,7 +509,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "site-v2.schema.json#/$defs/WorkloadPage"
                 }
               }
             }
@@ -566,7 +566,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "site-v2.schema.json#/$defs/ArtifactPage"
                 }
               }
             }
@@ -870,7 +870,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "site-v2.schema.json#/$defs/ResultDetail"
                 }
               }
             }
@@ -917,7 +917,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "site-v2.schema.json#/$defs/ReportDetail"
                 }
               }
             }
@@ -964,7 +964,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "site-v2.schema.json#/$defs/TrackDetail"
                 }
               }
             }
@@ -1011,7 +1011,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "site-v2.schema.json#/$defs/MetricDetail"
                 }
               }
             }
@@ -1058,7 +1058,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "site-v2.schema.json#/$defs/ConfigurationDetail"
                 }
               }
             }
@@ -1105,7 +1105,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "site-v2.schema.json#/$defs/EnvironmentDetail"
                 }
               }
             }
@@ -1152,7 +1152,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "site-v2.schema.json#/$defs/WorkloadDetail"
                 }
               }
             }
@@ -1199,7 +1199,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "site-v2.schema.json#/$defs/ArtifactDetail"
                 }
               }
             }
