@@ -142,8 +142,9 @@ bounded cohort cache and calculation admission, and links to paginated membershi
 Each response resolves one revision; explicitly pinned scopes are immutable.
 Trial evidence, recipes and report inventories are absent. Publication integrity,
 producer source assertions and operator qualification remain separate fields.
-No baseline or compatible method is selected implicitly. Popular overview presets
-and publication-time precomputation remain pending.
+No baseline or compatible method is selected implicitly. Authenticated overview
+presets prepare bounded projections before publication; registration and recovery
+are described below.
 
 Result and history pages omit full method recipes and evidence inventories while
 retaining `measurementMethodId`, exact source summary values and provenance IDs.
@@ -366,7 +367,8 @@ chunks and returns the same ID. Registration does not create a measurement
 revision. `GET /api/v1/collection/sessions/{id}` returns a small registered scope
 with planned machine/corpus count and source identities; it rejects revision,
 cursor and pagination queries. This live surface is separate from frozen
-published-job progress. Worker/attempt event progress remains pending.
+published-job progress. The separate attempt-progress endpoints and coordinator
+delivery journal are described below; they do not constitute measurement evidence.
 
 Registration uses synchronous Pebble publication plus the durable portable
 pointer. Its persistent membership maps and original plan chunks participate in
@@ -792,6 +794,20 @@ image. `WASMFYI_REAL_PENDING_BYTES` sets an explicit fixture quota between the
 `WASMFYI_REAL_STORE` must name a new directory and retains that test store for
 inspection. Synthetic session/job association and original measurement parity
 remain distinct from new collection or operator qualification.
+
+The code-size oracle preserves the producer's distinction between engine-reported
+`size_bytes` (`native.code_size`) and materialized `image_bytes`
+(`native.code_image`), including zero and exact integer strings. To check those
+source/export populations without importing a store or running recovery, use:
+
+```sh
+WASMFYI_REAL_REPORTS='[{"Source":"/absolute/report","Export":"/absolute/site-v2"}]' \
+  go test -race ./internal/api -run 'TestRealCodeExportParity|TestRealCodeOracle' -count=1 -v
+```
+
+Run from `service/`. This checks source/seal commitments and compact result values;
+it does not establish HTTP or portable-recovery parity. The full serving gate
+checks both native metrics before beginning backup and DB-free rebuild.
 
 Catalog and canonical record-detail responses now have endpoint-specific schemas
 and generated types. Catalog pages bind each row to the requested record kind,
