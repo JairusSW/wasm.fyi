@@ -179,6 +179,10 @@ func TestRealProducerServingParity(t *testing.T) {
 			}
 			assembled = append(assembled, response.Body.Bytes()...)
 		}
+		whole := request(t, h, "GET", "/api/v1/files/"+record.ID+"/download?revision="+revision, nil, nil)
+		if whole.Code != 200 || !bytes.Equal(whole.Body.Bytes(), original) {
+			t.Fatal("whole analytical-file download drift", file.Name, whole.Code)
+		}
 		if !bytes.Equal(assembled, original) || wire.Hash(original) != file.SHA256 {
 			t.Fatal("analytical file drift", file.Name)
 		}

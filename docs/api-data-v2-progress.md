@@ -1041,3 +1041,28 @@ installed producer verified an existing Wasmer call report, imported 117 objects
 and preserved six original Parquet files plus its timing/memory and twelve
 analysis sections through HTTP. Schema/OpenAPI and generated consumer types
 include the new resources.
+
+
+### Explicit original-file streaming
+
+`GET /api/v1/files/{id}/download?revision=...` now serves the full original
+analytical file. HEAD validates availability and returns the same length, digest
+ETag, media type and safe original filename; exact If-None-Match returns 304.
+Ranges are rejected in this whole-file interface; selected chunk URLs continue
+to provide bounded evidence access.
+
+Before success headers, the store verifies all original chunk sizes/hashes and
+the full-file digest. The stream retains one current chunk, rechecking content
+when loading each next chunk. It does not assemble a full-file byte array. Late
+corruption or write/cancellation failure aborts the HTTP connection, so the
+original Content-Length cannot label a truncated body complete. Download context
+and socket write deadlines are bounded to five minutes, with a separate two-slot
+bulk budget under the existing request/peer admission and shutdown leases.
+
+Tests check original bytes, filename/length/ETag, HEAD, 304, range rejection,
+permit exhaustion/release, cancellation before further chunk reads, corrupt
+chunks before success, and actual HTTP truncation after post-preflight corruption.
+The existing multi-chunk backup/rebuild test exercises the new full download as
+well. Verified Wasmer fixtures preserve all six original Parquet files through
+both chunk and whole-file HTTP reads. Report/tool archives and broader bulk-scale
+and slow-client operational gates remain pending.

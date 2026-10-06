@@ -2482,6 +2482,130 @@
           }
         }
       }
+    },
+    "/api/v1/files/{id}/download": {
+      "get": {
+        "summary": "Explicit whole original Parquet download",
+        "description": "At most 1 GiB; verified preflight and chunk-by-chunk streaming. Two concurrent downloads, five-minute timeout. Late corruption terminates the connection. Ranges are rejected; selected chunk URLs remain available.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          {
+            "name": "If-None-Match",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Exact original file bytes",
+            "content": {
+              "application/vnd.apache.parquet": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Original digest matches"
+          },
+          "400": {
+            "description": "Invalid query or unsupported range"
+          },
+          "404": {
+            "description": "File not in revision"
+          },
+          "429": {
+            "description": "Request or bulk concurrency budget exhausted"
+          },
+          "503": {
+            "description": "Canceled or timed out"
+          },
+          "500": {
+            "description": "Content unavailable or corrupt"
+          }
+        }
+      },
+      "head": {
+        "summary": "Verify availability and original file headers without body",
+        "description": "At most 1 GiB; verified preflight and chunk-by-chunk streaming. Two concurrent downloads, five-minute timeout. Late corruption terminates the connection. Ranges are rejected; selected chunk URLs remain available.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          {
+            "name": "If-None-Match",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Exact original file bytes",
+            "content": {
+              "application/vnd.apache.parquet": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Original digest matches"
+          },
+          "400": {
+            "description": "Invalid query or unsupported range"
+          },
+          "404": {
+            "description": "File not in revision"
+          },
+          "429": {
+            "description": "Request or bulk concurrency budget exhausted"
+          },
+          "503": {
+            "description": "Canceled or timed out"
+          },
+          "500": {
+            "description": "Content unavailable or corrupt"
+          }
+        }
+      }
     }
   },
   "components": {
