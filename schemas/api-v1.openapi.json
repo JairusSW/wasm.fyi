@@ -4188,6 +4188,65 @@
           }
         }
       }
+    },
+    "/api/v1/history/series": {
+      "get": {
+        "summary": "Bounded exact historical series of original summaries",
+        "description": "Requires one exact revision/environment/track/contract/definition/method plus scenario/profile/statistic and an explicit collection-time window. Source-report-created is the recorded time axis. Reduction keeps original first/last and exact numeric extrema in ordered-observation buckets; all nonnumeric records and neighbors are mandatory. No point, interval or absent-period observation is invented. Gap-heavy or oversized scopes return 422; the existing paginated history endpoint supplies raw access using the same scope. Both dataset and display policy are pinned for immutable caching.",
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 4096
+            }
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "const": "observed-minmax-v1"
+            }
+          },
+          {
+            "name": "maxPoints",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 8,
+              "maximum": 1000,
+              "default": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Original bounded plotted summaries and explicit display policy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/HistorySeries"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or incompatible scope"
+          },
+          "404": {
+            "description": "Unknown published revision or selector"
+          },
+          "422": {
+            "description": "Bounded scope capacity exceeded"
+          },
+          "429": {
+            "description": "Request or cohort computation capacity exceeded"
+          }
+        }
+      }
     }
   },
   "components": {

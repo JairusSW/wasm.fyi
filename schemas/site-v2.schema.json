@@ -3723,6 +3723,141 @@
           }
         }
       ]
+    },
+    "HistorySeriesScope": {
+      "type": "object",
+      "properties": {
+        "runtime": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "workload": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "metric": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "configuration": {
+          "$ref": "#/$defs/Digest"
+        },
+        "scenario": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "profile": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "statistic": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "environment": {
+          "$ref": "#/$defs/Digest"
+        },
+        "track": {
+          "$ref": "#/$defs/Digest"
+        },
+        "contract": {
+          "$ref": "#/$defs/Digest"
+        },
+        "definition": {
+          "$ref": "#/$defs/Digest"
+        },
+        "method": {
+          "$ref": "#/$defs/Digest"
+        },
+        "from": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "until": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "sort": {
+          "const": "catalog"
+        },
+        "selection": {
+          "const": ""
+        },
+        "limit": {
+          "const": 0
+        }
+      },
+      "required": [
+        "revision",
+        "environment",
+        "track",
+        "contract",
+        "definition",
+        "method",
+        "scenario",
+        "profile",
+        "statistic",
+        "from",
+        "until",
+        "sort",
+        "selection",
+        "limit"
+      ],
+      "additionalProperties": false
+    },
+    "HistorySeries": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": "observed-minmax-v1"
+        },
+        "scope": {
+          "$ref": "#/$defs/HistorySeriesScope"
+        },
+        "timeAxis": {
+          "const": "source-report-created"
+        },
+        "reduction": {
+          "enum": [
+            "raw",
+            "ordered-observation-buckets"
+          ]
+        },
+        "gapPolicy": {
+          "const": "retain-nonnumeric-and-neighbors"
+        },
+        "rawCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "maxPoints": {
+          "type": "integer",
+          "minimum": 8,
+          "maximum": 1000
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/ResultSummaryRecord"
+          }
+        }
+      },
+      "required": [
+        "version",
+        "scope",
+        "timeAxis",
+        "reduction",
+        "gapPolicy",
+        "rawCount",
+        "maxPoints",
+        "items"
+      ],
+      "additionalProperties": false
     }
   },
   "$ref": "#/$defs/CompletedJob"

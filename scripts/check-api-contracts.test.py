@@ -168,6 +168,19 @@ class Contracts(unittest.TestCase):
             with self.assertRaises(ValueError):
                 contracts.validate(changed, "CacheStats", "identifying or invalid cache telemetry")
 
+    def test_history_series_scope_requires_exact_identities(self):
+        value = {"revision": "a" * 64, "environment": "b" * 64, "track": "c" * 64,
+                 "contract": "d" * 64, "definition": "e" * 64, "method": "f" * 64,
+                 "scenario": "steady", "profile": "timing", "statistic": "median",
+                 "from": "2026-01-01T00:00:00Z", "until": "2026-02-01T00:00:00Z",
+                 "sort": "catalog", "selection": "", "limit": 0}
+        contracts.validate(value, "HistorySeriesScope", "exact bounded historical scope")
+        for key in ("revision", "environment", "track", "contract", "definition", "method"):
+            changed = copy.deepcopy(value)
+            del changed[key]
+            with self.assertRaises(ValueError):
+                contracts.validate(changed, "HistorySeriesScope", "mixed historical identity")
+
     def test_transport_reference_aliases_resolve_only_local_schema(self):
         for root in ("site-v2.schema.json", "./site-v2.schema.json", contracts.SCHEMA["$id"]):
             reference = contracts.transport_reference(root + "#/$defs/Digest")

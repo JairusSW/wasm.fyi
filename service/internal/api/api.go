@@ -317,6 +317,10 @@ func (a *API) serveRequest(w http.ResponseWriter, r *http.Request) {
 		problem(w, r, e)
 		return
 	}
+	if path == "history/series" {
+		a.historySeries(w, r)
+		return
+	}
 	if path == "history/changes" {
 		if params.Get("version") != comparison.Version {
 			problem(w, r, wire.Invalid("explicit comparison version required"))

@@ -353,3 +353,6 @@ func (s *Store) evidenceContext(ctx context.Context, roots []string, digest stri
 	}
 	return nil, ErrNotFound
 }
+
+// ExactResultValue exposes the existing rational numeric interpretation for display selection.
+func ExactResultValue(r wire.Record) (*big.Rat, bool) { return value(r) }

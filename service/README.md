@@ -589,3 +589,21 @@ conservative accounted bytes, hit/miss counts, rejected inserts and evictions.
 Accounting is the existing retention estimate, not measured RSS. No cache keys or
 query identities are returned. Result cache hits bypass store selection; page size
 is excluded from cache identity while signed cursor scope still includes it.
+
+`GET /api/v1/history/series?scope=JSON&version=observed-minmax-v1&maxPoints=200`
+returns a bounded exact series of original summaries. Scope pins revision,
+environment, runtime track, workload contract, metric definition, method, scenario,
+profile, statistic and a `from`/`until` window. The time axis is explicitly
+`source-report-created`, matching the existing history indexes. Other historical
+roles/source dates remain in separate history bindings; they are not substituted
+for collection time. Missing/legacy method identity needs raw history access.
+
+At most 1,000 requested points are returned under the ordinary 1 MiB response
+ceiling and shared two-slot computation admission. Small series remain raw. Larger
+series retain first/last and exact numeric extrema in ordered-observation buckets,
+plus all nonnumeric records and neighbors. Values, statuses, reasons, provenance
+and unavailable intervals remain in original records. `rawCount`, `reduction` and
+`gapPolicy` disclose the representation. No intermediate or absent-period point is
+created. Gap-heavy or oversized responses require a narrower window or raw paged
+`/api/v1/history` access with the same filters. This display policy changes no
+measurement analysis, uncertainty or matched-workload comparison calculation.
