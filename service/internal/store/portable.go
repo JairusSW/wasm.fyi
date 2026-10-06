@@ -69,6 +69,13 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 		marked[id] = true
 		return wire.Decode(b, v)
 	}
+	plans := planVerifier{fetch: func(o wire.Object) ([]byte, error) {
+		b, e := s.objectRepresentation(o)
+		if e == nil {
+			marked[o.SHA256] = true
+		}
+		return b, e
+	}}
 	var markMap func(string, string, func(string, string) error) error
 	markMap = func(id, kind string, entry func(string, string) error) error {
 		if id == "" {
@@ -294,13 +301,7 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 				if projection.Schema != 1 || projection.Session != session || job.Session != session || job.SessionPlan == nil || projection.Plan != job.Plan || projection.ConfiguredHarnessPin != job.ConfiguredHarnessPin || tuple[1] != "" || tuple[2] != "" {
 					return wire.Invalid("invalid indexed session plan binding")
 				}
-				scope, e := job.SessionPlan.Verify(job, func(o wire.Object) ([]byte, error) {
-					b, e := s.objectRepresentation(o)
-					if e == nil {
-						marked[o.SHA256] = true
-					}
-					return b, e
-				})
+				scope, e := plans.verify(job)
 				if e != nil {
 					return e
 				}
@@ -346,13 +347,7 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 				if job.Session != k || job.SessionPlan == nil || tuple[1] != "" || tuple[2] != "" {
 					return wire.Invalid("invalid session plan reference")
 				}
-				_, e := job.SessionPlan.Verify(job, func(o wire.Object) ([]byte, error) {
-					b, e := s.objectRepresentation(o)
-					if e == nil {
-						marked[o.SHA256] = true
-					}
-					return b, e
-				})
+				_, e := plans.verify(job)
 				return e
 			})
 		case "session-jobs", "published-job":
@@ -543,13 +538,7 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 			return nil, e
 		}
 		if job.SessionPlan != nil {
-			if _, e := job.SessionPlan.Verify(job, func(o wire.Object) ([]byte, error) {
-				b, e := s.objectRepresentation(o)
-				if e == nil {
-					marked[o.SHA256] = true
-				}
-				return b, e
-			}); e != nil {
+			if _, e := plans.verify(job); e != nil {
 				return nil, e
 			}
 		}

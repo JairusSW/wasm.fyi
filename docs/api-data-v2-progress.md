@@ -1262,3 +1262,23 @@ content closure and cleanup protection. A synthetic plan with 1,000 corpora,
 bounded progress, source-read independence, missing-evidence backup rejection and
 exact restart/rebuild. Altered membership and staged source references are
 rejected. This proves read dependencies, not a serving throughput or RSS budget.
+
+## Bounded plan proof reuse during recovery
+
+One startup/backup/cleanup/rebuild validation pass may encounter the same locked
+plan through its projection, legacy reference and many completed jobs. The typed
+closure now reuses a verified scope within that pass, keyed by the full plan hash,
+configured harness pin and exact ordered transport descriptors. Every job still
+checks machine/corpus membership. Changing a pin, full identity or chunk ordering
+cannot reuse the proof.
+
+The cache retains at most two scopes under a conservative 4 MiB name/map/slice
+accounting budget. It stores no raw plan bytes, declines oversized scopes and
+re-verifies after eviction. Returned name slices are independent copies. Each
+new validation pass starts empty, so earlier success cannot conceal subsequently
+missing evidence. Original chunks remain in the marked portable content closure.
+Tests prove one source read across 100 reused jobs, per-job membership rejection,
+exact identity isolation, eviction, oversized-scope admission without retention,
+and missing-source rejection in a fresh pass. Existing large-plan, membership
+projection, crash and portable recovery tests pass. These checks do not establish
+throughput, physical RSS or wider retention-scale budgets.
