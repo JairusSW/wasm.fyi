@@ -48,8 +48,9 @@ test('completed corpus uploads only missing objects, publishes idempotently, ret
   const historyManifest=JSON.parse(await readFile(join(local,path,'manifest.json')));
   const configurationObject=await Promise.all(historyManifest.objects.filter(o=>o.kind==='record').map(async o=>JSON.parse(await readFile(join(local,path,'objects',o.sha256)))));
   const configurationId=configurationObject.find(r=>r.kind==='configuration').id;
-  const historyBindings=[{reportId:historyManifest.reportId,configurationId,policy:'declared-build-history-v1',targetDate:'2026-01-01',buildRole:'source'}];
-  const args={url,local,plan,machine:'fixture-machine',result,historyBindings,token,request};
+  const historyBindings=[{reportId:historyManifest.reportId,configurationId,policy:'declared-build-history-v1',targetDates:['2026-01-03','2026-01-10'],buildRole:'source'}];
+  result.historyBindings=historyBindings;
+  const args={url,local,plan,machine:'fixture-machine',result,token,request};
   const collectionURL=url+'/api/v1/collection/sessions/'+plan.id;
   assert.equal((await fetch(collectionURL)).status,404,'Unregistered session visible');
   const registered=await registerSessionPlan({url,plan,token,request});assert.match(registered,/^[a-f0-9]{64}$/);

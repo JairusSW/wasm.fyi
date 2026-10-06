@@ -14,6 +14,19 @@ spec.loader.exec_module(contracts)
 
 
 class Contracts(unittest.TestCase):
+    def test_history_target_aliases_do_not_ambiguously_replace_a_capture(self):
+        binding = {"reportId": "a" * 64, "configurationId": "b" * 64,
+                   "policy": "declared-build-history-v1", "buildRole": "source",
+                   "targetDates": ["2026-01-03", "2026-01-10"]}
+        contracts.validate(binding, "HistoryBinding", "reused source targets")
+        for key, value in [("targetDates", []), ("targetDates", None),
+                           ("targetDates", ["2026-01-03"] * 2),
+                           ("targetDates", ["2026-02-30"]),
+                           ("targetDates", ["2026-01-03"] * 257),
+                           ("targetDate", "2026-01-03")]:
+            with self.assertRaises(ValueError):
+                contracts.validate(dict(binding, **{key: value}), "HistoryBinding", "invalid alias scope")
+
     def test_artifact_size_content_and_inspection_are_independent(self):
         artifact = {"reportId": "a" * 64, "measurementAvailable": True,
                     "record": {"runtime": "engine", "workload": "w", "trial": "code-1", "size_bytes": "9007199254740993"},

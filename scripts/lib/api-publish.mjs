@@ -71,7 +71,7 @@ export async function registerSessionPlan({url,plan,signal,token=process.env.WAS
  for(const object of missing.items){signal?.throwIfAborted();const source=local.get(object.sha256);assert(source&&source.bytes===object.bytes&&object.kind==='binary','API requested undeclared plan chunk');await call(`/admin/v1/objects/${object.sha256}`,'PUT',source.body);}
  const committed=await call(`/admin/v1/plans/${submitted.id}/commit`,'POST');assert.equal(committed.id,expected,'Committed plan identity differs');return committed.id;
 }
-export async function publishCompletedJob({url,local,plan,machine,result,historyBindings=[],signal,token=process.env.WASMFYI_ADMIN_TOKEN,request=fetch}){
+export async function publishCompletedJob({url,local,plan,machine,result,historyBindings=result?.historyBindings??[],signal,token=process.env.WASMFYI_ADMIN_TOKEN,request=fetch}){
   signal?.throwIfAborted();
   url=publicationURL(url);assert(typeof token==='string'&&token.length>=32,'WASMFYI_ADMIN_TOKEN must contain at least 32 characters');
   assert(result.plan===plan.identity&&HASH.test(plan.identity)&&Array.isArray(result.siteExports)&&result.siteExports.length>0&&result.siteExports.length<=8,'Missing completed-job exports');

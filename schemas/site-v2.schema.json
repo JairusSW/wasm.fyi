@@ -3152,6 +3152,17 @@
         },
         "release": {
           "$ref": "#/$defs/HistoryRelease"
+        },
+        "targetDates": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+          },
+          "minItems": 1,
+          "maxItems": 256,
+          "uniqueItems": true
         }
       },
       "required": [
@@ -3181,6 +3192,14 @@
                 "release"
               ]
             }
+          }
+        },
+        {
+          "not": {
+            "required": [
+              "targetDate",
+              "targetDates"
+            ]
           }
         }
       ]

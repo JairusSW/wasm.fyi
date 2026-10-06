@@ -54,11 +54,29 @@ func TestHistoryBindingDatesAndReleaseRoles(t *testing.T) {
 }
 
 func TestHistoryBindingRejectsAmbiguousOptionalFields(t *testing.T) {
-	for _, field := range []string{`"sourceDate":null`, `"release":null`, `"targetDate":""`, `"sourceRevision":""`, `"unknown":1`} {
+	for _, field := range []string{`"sourceDate":null`, `"release":null`, `"targetDates":null`, `"targetDates":[]`, `"targetDate":""`, `"sourceRevision":""`, `"unknown":1`} {
 		body := []byte(`{"reportId":"` + strings.Repeat("a", 64) + `","configurationId":"` + strings.Repeat("b", 64) + `","policy":"declared-build-history-v1","buildRole":"source",` + field + `}`)
 		var h HistoryBinding
 		if e := Decode(body, &h); e == nil {
 			t.Fatal("ambiguous optional field accepted", field)
 		}
+	}
+}
+
+func TestHistoryTargetAliasesAreBoundedCanonicalMetadata(t *testing.T) {
+	h := HistoryBinding{ReportID: strings.Repeat("a", 64), ConfigurationID: strings.Repeat("b", 64), Policy: HistoryBindingPolicy, BuildRole: "source", TargetDates: []string{"2026-01-03", "2026-01-10"}}
+	if err := h.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	for _, dates := range [][]string{{}, {"2026-01-10", "2026-01-03"}, {"2026-01-03", "2026-01-03"}, {"2026-02-30"}, {"0000-01-01"}, make([]string, HistoryTargetLimit+1)} {
+		bad := h
+		bad.TargetDates = dates
+		if err := bad.Validate(); err == nil {
+			t.Fatal("invalid aliases admitted", dates)
+		}
+	}
+	h.TargetDate = "2026-01-03"
+	if err := h.Validate(); err == nil {
+		t.Fatal("ambiguous singular/plural targets admitted")
 	}
 }

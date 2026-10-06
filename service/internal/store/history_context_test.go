@@ -39,6 +39,10 @@ func TestHistoryContextPublicationFrozenRebuildAndNoObservation(t *testing.T) {
 	s := openTest(t, t.TempDir())
 	defer s.Close()
 	j, objects := historyJobFixture(t)
+	for i := range j.History {
+		j.History[i].TargetDate = ""
+		j.History[i].TargetDates = []string{"2026-01-03", "2026-01-10"}
+	}
 	for id, body := range objects {
 		if e := s.Install(id, bytes.NewReader(body)); e != nil {
 			t.Fatal(e)
@@ -60,7 +64,7 @@ func TestHistoryContextPublicationFrozenRebuildAndNoObservation(t *testing.T) {
 		t.Fatal(e, total, before)
 	}
 	for _, item := range before {
-		if item.Binding.BuildRole != "source" || item.Binding.Release != nil || item.InterpretationSource != "trusted-publisher-assertion" || item.PublishedAt.IsZero() {
+		if item.Binding.BuildRole != "source" || item.Binding.Release != nil || item.InterpretationSource != "trusted-publisher-assertion" || item.PublishedAt.IsZero() || item.Binding.TargetDate != "" || len(item.Binding.TargetDates) != 2 || item.Binding.TargetDates[0] != "2026-01-03" || item.Binding.TargetDates[1] != "2026-01-10" {
 			t.Fatal("history roles changed", item)
 		}
 	}

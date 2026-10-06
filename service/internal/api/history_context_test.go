@@ -39,7 +39,7 @@ func TestHistoryContextHTTPPublicationAndCursor(t *testing.T) {
 		}
 	}
 	for id := range configurations {
-		job.History = append(job.History, wire.HistoryBinding{ReportID: job.Exports[0].Manifest.ReportID, ConfigurationID: id, Policy: wire.HistoryBindingPolicy, TargetDate: "2026-01-01", BuildRole: "source"})
+		job.History = append(job.History, wire.HistoryBinding{ReportID: job.Exports[0].Manifest.ReportID, ConfigurationID: id, Policy: wire.HistoryBindingPolicy, TargetDates: []string{"2026-01-03", "2026-01-10"}, BuildRole: "source"})
 	}
 	id, e := s.Submit(job)
 	if e != nil {
@@ -67,6 +67,9 @@ func TestHistoryContextHTTPPublicationAndCursor(t *testing.T) {
 		t.Fatal(w.Code, w.Body.String())
 	}
 	before := w.Body.String()
+	if len(page.Items[0].Binding.TargetDates) != 2 || page.Items[0].Binding.TargetDate != "" {
+		t.Fatal("HTTP lost target aliases")
+	}
 	importFixture(t, s, "later-history-context", time.Now().UTC())
 	w = request(t, h, "GET", path, nil, nil)
 	if w.Code != 200 || w.Body.String() != before {

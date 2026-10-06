@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/url"
+	"sort"
 	"strings"
 	"time"
 )
 
 const HistoryBindingPolicy = "declared-build-history-v1"
 const HistoryBindingLimit = 256
+const HistoryTargetLimit = 256
 
 // HistoryBinding is website interpretation supplied by the publisher. It does
 // not alter a producer result, its collection time, or independent observations.
@@ -18,6 +20,7 @@ type HistoryBinding struct {
 	ConfigurationID string          `json:"configurationId"`
 	Policy          string          `json:"policy"`
 	TargetDate      string          `json:"targetDate,omitempty"`
+	TargetDates     []string        `json:"targetDates,omitempty"`
 	SourceDate      *time.Time      `json:"sourceDate,omitempty"`
 	SourceRevision  string          `json:"sourceRevision,omitempty"`
 	BuildRole       string          `json:"buildRole"`
@@ -44,6 +47,9 @@ func (h *HistoryBinding) UnmarshalJSON(data []byte) error {
 			return Invalid("empty history binding field")
 		}
 	}
+	if _, present := fields["targetDates"]; present && len(decoded.TargetDates) == 0 {
+		return Invalid("empty history target aliases")
+	}
 	*h = HistoryBinding(decoded)
 	return nil
 }
@@ -62,6 +68,17 @@ func (h HistoryBinding) Validate() error {
 		d, e := time.Parse("2006-01-02", h.TargetDate)
 		if e != nil || d.Year() < 1 || d.Format("2006-01-02") != h.TargetDate {
 			return Invalid("invalid history target date")
+		}
+	}
+	if h.TargetDates != nil {
+		if h.TargetDate != "" || len(h.TargetDates) == 0 || len(h.TargetDates) > HistoryTargetLimit || !sort.StringsAreSorted(h.TargetDates) {
+			return Invalid("invalid history target aliases")
+		}
+		for i, target := range h.TargetDates {
+			d, e := time.Parse("2006-01-02", target)
+			if e != nil || d.Year() < 1 || d.Format("2006-01-02") != target || i > 0 && h.TargetDates[i-1] == target {
+				return Invalid("invalid history target alias date")
+			}
 		}
 	}
 	if h.SourceDate != nil && (h.SourceDate.IsZero() || h.SourceDate.Year() < 1 || h.SourceDate.Year() > 9999) {

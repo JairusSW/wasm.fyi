@@ -1907,3 +1907,27 @@ with 32 files, plus HTTP and portable reconstruction. Replay uploads zero object
 The larger Wasmtime scientific/selected-disassembly gate is now restarted only
 after the prior process was terminal, against the same published store; final
 qualification remains pending. Production import/startup latency is unqualified.
+
+## Reused-source history target aliases
+
+History bindings now optionally carry `targetDates`: one to 256 distinct, sorted
+calendar dates referring to the same report/configuration capture. The legacy
+`targetDate` remains readable; a binding cannot contain both forms. Null/empty,
+duplicate, unordered, impossible dates and oversized lists are rejected by the
+wire validator. JSON schemas enforce shape/date/uniqueness/size/exclusivity; the
+wire validator additionally enforces canonical ordering. Old bindings omit the
+new field and retain their byte identity. Source/release roles, collection time,
+source date and publication time remain separate. Aliases are publisher
+interpretation, not extra independent observations or backdated collection.
+
+The existing completed-job publisher now accepts bindings from
+completed-result metadata unless explicitly supplied by its caller. The actual
+HTTP publisher test transmits two aliases, preserves the returned binding,
+retains failed outcomes and repeats with no uploads. Frozen history-context
+HTTP/cursors and portable reconstruction retain both dates while the synthetic
+measurement history still contains exactly three original result records.
+Existing single-target/release-role and immutable-attempt guards remain tested.
+Selected Go race tests, three captured HTTP contracts, 26 Python contract tests,
+generated types and vet pass. Historical queue publication and explicit
+uncollected target events remain pending; this adds their bounded representation
+and completed-result transport without replacing the collector.

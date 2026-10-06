@@ -830,3 +830,11 @@ inspection. A valid size-only code record retains its original size while raw
 content and inspection remain unavailable. Downloadable content requires a
 hash, original byte count and media type; offline inspection binds metadata and
 a versioned derivative. Function indexes and listings remain selected resources.
+
+A history binding can carry `targetDates` for one source capture reused by several
+planned calendar dates. Lists contain one to 256 sorted, distinct valid dates;
+`targetDate` and `targetDates` are mutually exclusive. These aliases do not add
+result/history rows or independent samples. The completed-job publisher accepts
+`result.historyBindings`, retaining the existing explicit argument override.
+Bindings remain immutable publisher assertions tied to an exported report and
+exact configuration; changing an existing attempt's interpretation is rejected.
