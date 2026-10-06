@@ -86,6 +86,32 @@ class Contracts(unittest.TestCase):
             with self.assertRaises(ValueError):
                 contracts.validate(changed, "HistoryChange", "invalid change")
 
+    def test_history_binding_preserves_roles_and_separate_dates(self):
+        binding = {"reportId": "a" * 64, "configurationId": "b" * 64,
+                   "policy": "declared-build-history-v1", "targetDate": "2026-01-01",
+                   "sourceDate": "2025-12-31T23:59:59Z", "sourceRevision": "c" * 40,
+                   "buildRole": "source"}
+        context = {"binding": binding, "collectedAt": None,
+                   "publishedAt": "2026-10-06T12:00:00Z",
+                   "interpretationSource": "trusted-publisher-assertion",
+                   "collectionTimeSource": "source-report-created"}
+        contracts.validate(context, "HistoryContext", "unknown collection time remains null")
+        release = {"version": "v1.2.3", "publishedAt": "2026-01-02T00:00:00Z",
+                   "url": "https://example.test/releases/v1.2.3"}
+        for key, invalid in [("release", release), ("buildRole", "release"),
+                             ("targetDate", "2026-02-30"), ("sourceRevision", "main"),
+                             ("samples", [])]:
+            changed = copy.deepcopy(binding)
+            changed[key] = invalid
+            with self.assertRaises(ValueError):
+                contracts.validate(changed, "HistoryBinding", "invalid binding")
+        binding["buildRole"] = "release"
+        binding["release"] = release
+        contracts.validate(binding, "HistoryBinding", "explicit release association")
+        context["interpretationSource"] = "source-verified"
+        with self.assertRaises(ValueError):
+            contracts.validate(context, "HistoryContext", "publisher role is not source verification")
+
     def test_transport_reference_aliases_resolve_only_local_schema(self):
         for root in ("site-v2.schema.json", "./site-v2.schema.json", contracts.SCHEMA["$id"]):
             reference = contracts.transport_reference(root + "#/$defs/Digest")

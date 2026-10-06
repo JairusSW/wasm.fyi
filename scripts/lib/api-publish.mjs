@@ -70,7 +70,7 @@ export async function registerSessionPlan({url,plan,signal,token=process.env.WAS
  for(const object of missing.items){signal?.throwIfAborted();const source=local.get(object.sha256);assert(source&&source.bytes===object.bytes&&object.kind==='binary','API requested undeclared plan chunk');await call(`/admin/v1/objects/${object.sha256}`,'PUT',source.body);}
  const committed=await call(`/admin/v1/plans/${submitted.id}/commit`,'POST');assert.equal(committed.id,expected,'Committed plan identity differs');return committed.id;
 }
-export async function publishCompletedJob({url,local,plan,machine,result,signal,token=process.env.WASMFYI_ADMIN_TOKEN,request=fetch}){
+export async function publishCompletedJob({url,local,plan,machine,result,historyBindings=[],signal,token=process.env.WASMFYI_ADMIN_TOKEN,request=fetch}){
   signal?.throwIfAborted();
   url=publicationURL(url);assert(typeof token==='string'&&token.length>=32,'WASMFYI_ADMIN_TOKEN must contain at least 32 characters');
   assert(result.plan===plan.identity&&HASH.test(plan.identity)&&Array.isArray(result.siteExports)&&result.siteExports.length>0&&result.siteExports.length<=8,'Missing completed-job exports');
@@ -124,6 +124,8 @@ export async function publishCompletedJob({url,local,plan,machine,result,signal,
   const {parent:parentArchive,objects:parentObjects}=await prepareParentArchive(join(local,'bundle'),parentSource,{signal});
   for(const object of parentObjects){const previous=objects.get(object.sha256);assert(!previous||(previous.bytes===object.bytes&&previous.kind===object.kind),'Parent object conflicts with measurement export');objects.set(object.sha256,object);}
   const job={schema:2,session:plan.id,machine,corpus:result.corpus,attempt:digest(Buffer.from(JSON.stringify([exports.map(e=>e.sha256),digest(Buffer.from(JSON.stringify(parentArchive))),digest(Buffer.from(JSON.stringify(sessionPlan)))]))),plan:plan.identity,configuredHarnessPin:plan.configuredHarnessPin,parentBundleSha256:digest(parent),parentArchive,sessionPlan,status:'completed',exports};
+  assert(Array.isArray(historyBindings)&&historyBindings.length<=256,'History bindings exceed ceiling');
+  if(historyBindings.length)job.history=historyBindings;
   assert(typeof job.configuredHarnessPin==='string'&&job.configuredHarnessPin.length>0,'Missing configured harness identity');
   const call=publicationClient({url,token,signal,request});
   const submitted=await call('/admin/v1/imports','POST',JSON.stringify(job));assert(HASH.test(submitted.id),'Invalid import identity');

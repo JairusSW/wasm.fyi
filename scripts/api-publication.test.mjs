@@ -43,7 +43,11 @@ test('completed corpus uploads only missing objects, publishes idempotently, ret
   }
   await writeFile(join(resourceDirectory,'manifest.json'),JSON.stringify(resourceManifest));
   let uploads=0;const request=async(url,options)=>{if(options.method==='PUT')uploads++;const response=await fetch(url,options);assert(response.ok,`Unexpected API failure: ${response.status} ${await response.clone().text()}`);return response};
-  const args={url,local,plan,machine:'fixture-machine',result,token,request};
+  const historyManifest=JSON.parse(await readFile(join(local,path,'manifest.json')));
+  const configurationObject=await Promise.all(historyManifest.objects.filter(o=>o.kind==='record').map(async o=>JSON.parse(await readFile(join(local,path,'objects',o.sha256)))));
+  const configurationId=configurationObject.find(r=>r.kind==='configuration').id;
+  const historyBindings=[{reportId:historyManifest.reportId,configurationId,policy:'declared-build-history-v1',targetDate:'2026-01-01',buildRole:'source'}];
+  const args={url,local,plan,machine:'fixture-machine',result,historyBindings,token,request};
   const collectionURL=url+'/api/v1/collection/sessions/'+plan.id;
   assert.equal((await fetch(collectionURL)).status,404,'Unregistered session visible');
   const registered=await registerSessionPlan({url,plan,token,request});assert.match(registered,/^[a-f0-9]{64}$/);
@@ -72,6 +76,9 @@ test('completed corpus uploads only missing objects, publishes idempotently, ret
   const parentPath=join(local,'bundle/index.json'),savedParent=await readFile(parentPath),uncommittedParent=JSON.parse(savedParent);delete uncommittedParent.metadataSha256;await writeFile(parentPath,JSON.stringify(uncommittedParent));await assert.rejects(publishCompletedJob({...args,request:async()=>{throw Error('Uncommitted metadata reached API')}}),/metadata digest required/);await writeFile(parentPath,savedParent);
   const revision=await publishCompletedJob(args);assert.match(revision,/^[a-f0-9]{64}$/);assert(uploads>0);uploads=0;assert.equal(await publishCompletedJob(args),revision);assert.equal(uploads,0,'Duplicate transferred existing evidence');
   const manifest=await (await fetch(url+'/api/v1/manifest')).json();assert.equal(manifest.revision,revision);
+  const publishedJobs=await(await fetch(url+'/api/v1/sessions/'+plan.id+'/jobs?revision='+revision)).json();
+  const historyContext=await(await fetch(url+'/api/v1/history/jobs/'+publishedJobs.items[0].id+'?revision='+revision)).json();
+  assert.equal(historyContext.total,1);assert.deepEqual(historyContext.items[0].binding,historyBindings[0]);assert.equal(historyContext.items[0].interpretationSource,'trusted-publisher-assertion');assert.equal(historyContext.items[0].collectionTimeSource,'source-report-created');
   const results=await (await fetch(url+'/api/v1/results?revision='+revision)).json();assert.equal(results.items.length,3);assert.equal(results.complete,true);
   const artifacts=await (await fetch(url+'/api/v1/artifacts?revision='+revision)).json();assert.equal(artifacts.items[0].data.measurementAvailable,true);assert.equal(artifacts.items[0].data.content.status,'unavailable');
   const pagedPath='jobs/corpus-0001/exports/paged/site-v2',pagedDirectory=join(local,pagedPath);

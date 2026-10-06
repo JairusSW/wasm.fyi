@@ -4107,6 +4107,73 @@
           }
         }
       }
+    },
+    "/api/v1/history/jobs/{id}": {
+      "get": {
+        "summary": "Selected completed-job history interpretation",
+        "description": "Optional publisher-declared history bindings reference exact exported report/configuration records, with source/target dates and explicit release association separate from measurement collection and publication. Interpretation is a trusted publisher assertion, not independent source verification. collectedAt comes from source report created, can be null, and is not a per-pass observation time. Does not create independent observations or fetch evidence. Empty bindings do not imply unsupported history.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 4096
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded immutable history interpretation bindings for a published job",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/HistoryContextPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or incompatible scope"
+          },
+          "404": {
+            "description": "Unknown published revision or selector"
+          },
+          "422": {
+            "description": "Bounded scope capacity exceeded"
+          },
+          "429": {
+            "description": "Request or cohort computation capacity exceeded"
+          }
+        }
+      }
     }
   },
   "components": {

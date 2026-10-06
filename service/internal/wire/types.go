@@ -178,21 +178,25 @@ type Export struct {
 // Job is submitted only after the coordinator verifies every completed pass and
 // parent bundle. Producer assertions and authenticated delivery are separate.
 type Job struct {
-	Schema               int            `json:"schema"`
-	Session              string         `json:"session"`
-	Machine              string         `json:"machine"`
-	Corpus               string         `json:"corpus"`
-	Attempt              string         `json:"attempt"`
-	Plan                 string         `json:"plan"`
-	ConfiguredHarnessPin string         `json:"configuredHarnessPin"`
-	ParentBundleSHA256   string         `json:"parentBundleSha256"`
-	ParentArchive        *ParentArchive `json:"parentArchive,omitempty"`
-	SessionPlan          *SessionPlan   `json:"sessionPlan,omitempty"`
-	Status               string         `json:"status"`
-	Exports              []Export       `json:"exports"`
+	Schema               int              `json:"schema"`
+	Session              string           `json:"session"`
+	Machine              string           `json:"machine"`
+	Corpus               string           `json:"corpus"`
+	Attempt              string           `json:"attempt"`
+	Plan                 string           `json:"plan"`
+	ConfiguredHarnessPin string           `json:"configuredHarnessPin"`
+	ParentBundleSHA256   string           `json:"parentBundleSha256"`
+	ParentArchive        *ParentArchive   `json:"parentArchive,omitempty"`
+	SessionPlan          *SessionPlan     `json:"sessionPlan,omitempty"`
+	Status               string           `json:"status"`
+	Exports              []Export         `json:"exports"`
+	History              []HistoryBinding `json:"history,omitempty"`
 }
 
 func (j Job) Validate() error {
+	if e := j.ValidateHistory(); e != nil {
+		return e
+	}
 	if j.Schema != 2 || j.Status != "completed" || !identityPattern.MatchString(j.Session) || !identityPattern.MatchString(j.Machine) || !identityPattern.MatchString(j.Corpus) || !identityPattern.MatchString(j.Attempt) || !IsHash(j.Plan) || !IsHash(j.ParentBundleSHA256) || !revisionPattern.MatchString(j.ConfiguredHarnessPin) || len(j.Exports) == 0 || len(j.Exports) > 8 {
 		return Invalid("invalid completed job")
 	}

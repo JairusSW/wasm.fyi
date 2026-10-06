@@ -199,6 +199,13 @@
         },
         "sessionPlan": {
           "$ref": "#/$defs/SessionPlan"
+        },
+        "history": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "$ref": "#/$defs/HistoryBinding"
+          }
         }
       },
       "required": [
@@ -912,6 +919,11 @@
         },
         "parentArchiveStored": {
           "const": true
+        },
+        "historyBindings": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 256
         }
       },
       "required": [
@@ -2985,6 +2997,175 @@
         "afterOnlyCells",
         "reusedCells",
         "approximateInputs"
+      ],
+      "additionalProperties": false
+    },
+    "HistoryRelease": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "publishedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "url": {
+          "type": "string",
+          "maxLength": 2048,
+          "pattern": "^https://",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "version",
+        "publishedAt",
+        "url"
+      ],
+      "additionalProperties": false
+    },
+    "HistoryBinding": {
+      "type": "object",
+      "properties": {
+        "reportId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "configurationId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "policy": {
+          "const": "declared-build-history-v1"
+        },
+        "targetDate": {
+          "type": "string",
+          "format": "date",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "sourceDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "sourceRevision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "buildRole": {
+          "enum": [
+            "source",
+            "release",
+            "unknown"
+          ]
+        },
+        "release": {
+          "$ref": "#/$defs/HistoryRelease"
+        }
+      },
+      "required": [
+        "reportId",
+        "configurationId",
+        "policy",
+        "buildRole"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "buildRole": {
+                "const": "release"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "release"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "release"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "HistoryContext": {
+      "type": "object",
+      "properties": {
+        "binding": {
+          "$ref": "#/$defs/HistoryBinding"
+        },
+        "collectedAt": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "format": "date-time"
+            }
+          ]
+        },
+        "publishedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "interpretationSource": {
+          "const": "trusted-publisher-assertion"
+        },
+        "collectionTimeSource": {
+          "const": "source-report-created"
+        }
+      },
+      "required": [
+        "binding",
+        "collectedAt",
+        "publishedAt",
+        "interpretationSource",
+        "collectionTimeSource"
+      ],
+      "additionalProperties": false
+    },
+    "HistoryContextPage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "job": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/$defs/HistoryContext"
+          }
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 256
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "nextCursor": {
+          "type": "string",
+          "maxLength": 4096
+        }
+      },
+      "required": [
+        "revision",
+        "job",
+        "items",
+        "total",
+        "complete",
+        "nextCursor"
       ],
       "additionalProperties": false
     }

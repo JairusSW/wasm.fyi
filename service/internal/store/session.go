@@ -24,6 +24,7 @@ type PublishedJob struct {
 	PublicationStatus    string    `json:"publicationStatus"`
 	PublishedAt          time.Time `json:"publishedAt"`
 	Reports              []string  `json:"reports"`
+	HistoryBindings      int       `json:"historyBindings,omitempty"`
 }
 type Session struct {
 	ID                   string `json:"id"`
@@ -45,6 +46,7 @@ type JobPage struct {
 func jobSummary(job wire.Job, id string, created time.Time) PublishedJob {
 	out := PublishedJob{ID: id, Session: job.Session, Machine: job.Machine, Corpus: job.Corpus, Attempt: job.Attempt, Plan: job.Plan, ConfiguredHarnessPin: job.ConfiguredHarnessPin, ParentBundleSHA256: job.ParentBundleSHA256, CollectionStatus: job.Status, PublicationStatus: "published", PublishedAt: created, Reports: []string{}}
 	out.ParentArchiveStored = job.ParentArchive != nil
+	out.HistoryBindings = len(job.History)
 	for _, export := range job.Exports {
 		out.Reports = append(out.Reports, export.Manifest.ReportID)
 	}

@@ -498,3 +498,28 @@ Reused cells remain identified rather than counted as new observations. To inspe
 membership, use the two existing aggregate/cohort scopes. Comparisons are immutable
 at the pinned analysis version. This endpoint compares measurement selections;
 source-date/release-role history associations remain a separate unfinished gate.
+
+Completed-job manifests may include up to 256 optional `history` bindings with
+`policy=declared-build-history-v1`. Each binding identifies an exported report and
+exact configuration with measured results. Target calendar date, source timestamp,
+source revision and build role (`source`, `release`, `unknown`) remain separate.
+A `release` role requires explicit version, HTTPS source URL and publication time;
+a source snapshot receives no release association by inference. These interpretation
+fields are trusted publisher assertions, separate from source verification.
+They never modify result timestamps or create independent observations.
+
+The coordinator publication helper accepts explicit `historyBindings`; normal
+collection omits them. Historical collection callers must supply qualified bindings
+from their existing pin/receipt policy. Changing bindings on a previously delivered
+attempt is rejected by immutable job identity rather than rewriting history.
+Existing retrospective capture/alias projection still needs migration integration.
+
+`GET /api/v1/history/jobs/{id}?revision=...&limit=100` pages these bindings from
+the selected published job index, with signed revision/job/page-size cursors.
+Staged jobs cannot expose history labels. Session job summaries advertise only
+the binding count. The response reports actual job publication time and nullable
+`collectedAt` from the source report's `created` field, with
+`collectionTimeSource=source-report-created`. This report-level timestamp is not
+a per-pass observation time; individual producer sampling groups retain their
+original `capturedAt`. No missing date is substituted with a target or release date.
+Bindings and their time/trust roles survive backup, restart and database-free rebuild.

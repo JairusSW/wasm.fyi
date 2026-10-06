@@ -431,6 +431,29 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	parts := strings.Split(path, "/")
+	if len(parts) == 3 && parts[0] == "history" && parts[1] == "jobs" {
+		if n > 100 {
+			problem(w, r, wire.Invalid("history context page limit exceeds ceiling"))
+			return
+		}
+		query := path + ":" + strconv.Itoa(n)
+		if c.Revision != "" && (c.Revision != revision || c.Query != query) {
+			problem(w, r, wire.Invalid("cursor scope differs"))
+			return
+		}
+		rows, total, e := a.Store.HistoryContexts(r.Context(), revision, parts[2], c.Offset, n)
+		if e != nil {
+			problem(w, r, e)
+			return
+		}
+		end := c.Offset + len(rows)
+		next := ""
+		if end < total {
+			next = a.sign(cursor{revision, query, end})
+		}
+		respond(w, r, 200, map[string]any{"revision": revision, "job": parts[2], "items": rows, "total": total, "complete": end == total, "nextCursor": next}, immutable)
+		return
+	}
 	if parts[0] == "archives" && len(parts) >= 2 {
 		a.archive(w, r, revision, parts, n, c, immutable)
 		return

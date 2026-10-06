@@ -631,6 +631,13 @@ func (s *Store) reachableContext(ctx context.Context, includeStaging bool) (map[
 			}
 		}
 		jobs[r.Job] = true
+		historyRecords := map[string]wire.Record{}
+		wantedHistory := map[string]bool{}
+		wantedHistoryReports := map[string]bool{}
+		for _, h := range job.History {
+			wantedHistory[h.ReportID+":"+h.ConfigurationID] = true
+			wantedHistoryReports[h.ReportID] = true
+		}
 		for _, export := range job.Exports {
 			payload, e := s.manifestObjectsContext(ctx, export.Manifest, false)
 			if e != nil {
@@ -651,7 +658,29 @@ func (s *Store) reachableContext(ctx context.Context, includeStaging bool) (map[
 					return nil, fmt.Errorf("content size differs")
 				}
 				marked[object.SHA256] = true
+				if len(wantedHistory) > 0 && object.Kind == "record" {
+					var record wire.Record
+					if e := wire.Decode(b, &record); e != nil {
+						return nil, e
+					}
+					if record.Kind == "report" && wantedHistoryReports[record.ID] {
+						historyRecords["report:"+record.ID] = record
+					}
+					if record.Kind == "result" {
+						var result wire.Result
+						if e := wire.Decode(record.Data, &result); e != nil {
+							return nil, e
+						}
+						k := result.ReportID + ":" + result.ConfigurationID
+						if wantedHistory[k] {
+							historyRecords[k] = record
+						}
+					}
+				}
 			}
+		}
+		if e := s.validateHistoryBindings(ctx, job, historyRecords); e != nil {
+			return nil, e
 		}
 	}
 	if e := s.markOverviews(ctx, marked); e != nil {

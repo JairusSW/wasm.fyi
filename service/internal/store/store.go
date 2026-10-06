@@ -587,6 +587,9 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 			digests[k] = o.SHA256
 		}
 	}
+	if e = s.validateHistoryBindings(ctx, j, records); e != nil {
+		return "", e
+	}
 	for _, x := range j.Exports {
 		if _, ok := reportObjects[x.Manifest.ReportID]; !ok {
 			return "", wire.Invalid("missing report descriptor")

@@ -48,6 +48,12 @@ func allowedQuery(values url.Values, keys ...string) error {
 }
 func routeQuery(path string, values url.Values) error {
 	parts := strings.Split(path, "/")
+	if len(parts) == 3 && parts[0] == "history" && parts[1] == "jobs" {
+		if !wire.IsHash(parts[2]) {
+			return wire.Invalid("invalid history job identity")
+		}
+		return allowedQuery(values, "revision", "limit", "cursor")
+	}
 	if path == "history/changes" {
 		return allowedQuery(values, "before", "after", "version")
 	}
