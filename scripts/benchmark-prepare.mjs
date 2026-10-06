@@ -25,6 +25,9 @@ try {
   const receipt = JSON.parse(await readFile(ready));
   if (receipt.plan !== plan.identity)
     throw Error("Prepared host has a different plan");
+  if (plan.publication?.type === "api-v1" &&
+      (!Array.isArray(receipt.files) || !receipt.files.some(file => file.path === host.controller)))
+    throw Error("Prepared API controller is missing from the tool hash receipt");
   for (const file of receipt.files)
     if (digest(await readFile(file.path)) !== file.sha256)
       throw Error("Prepared tool changed: " + file.path);

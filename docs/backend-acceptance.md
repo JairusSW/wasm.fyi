@@ -57,6 +57,10 @@ larger Wasmtime recovery still in progress.
 
 The strengthened source/export oracle also passes all 145 engine-reported
 `native.code_size` measurements from the sealed Wasmer native-size report.
+The updated full real-source serving race gate passes its 7,453-object export,
+preserving 588 timing, 725 memory and 145 native-size summaries and five exact
+comparison scopes. This older export has no original report-file resources;
+portable originals remain qualified by the separate call-report gate.
 API collection preparation now checks a versioned `export-site --describe`
 capability response from the actual controller before adapter preparation and
 worker launch, and on cached tool reuse. This prevents an incompatible producer
@@ -66,3 +70,5 @@ Producer commit `cc4e0d5` passes selected site-export race tests and Go vet. Ele
 coordinator/contract tests pass, including the actual built producer capability
 response, incompatible cached controllers and unchanged legacy reuse. The serving
 dependency closure remains 409 packages without SQLite or harness execution.
+Cached API preparation also requires the controller itself in the tool hash
+receipt before running the probe; the missing-controller regression passes.

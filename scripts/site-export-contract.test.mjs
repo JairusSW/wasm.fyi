@@ -27,13 +27,13 @@ test('cached API preparation probes its hashed controller; legacy reuse does not
   const root=await mkdtemp(join(tmpdir(),'wasmfyi-export-contract-'));
   try {
     const controller=join(root,'controller'),marker=join(root,'probe.json'),identity='a'.repeat(64);
-    const prepare=async(publication,response)=>{
+    const prepare=async(publication,response,includeController=true)=>{
       const script='#!'+process.execPath+'\n'+`import {writeFileSync} from 'node:fs'; writeFileSync(${JSON.stringify(marker)},JSON.stringify(process.argv.slice(2))); console.log(${JSON.stringify(JSON.stringify(response))});\n`;
       // The extension is intentionally .mjs: execute a synthetic controller only.
       const path=controller+'.mjs';await writeFile(path,script,{mode:0o700});
       await writeFile(join(root,'plan.json'),JSON.stringify({identity,engines:[],collection:{},publication}));
       await writeFile(join(root,'host.json'),JSON.stringify({harness:root,controller:path}));
-      await writeFile(join(root,'ready.json'),JSON.stringify({plan:identity,files:[{path,sha256:digest(Buffer.from(script))}]}));
+      await writeFile(join(root,'ready.json'),JSON.stringify({plan:identity,files:includeController?[{path,sha256:digest(Buffer.from(script))}]:[]}));
       return exec(process.execPath,[join(site,'scripts/benchmark-prepare.mjs'),root],{timeout:10_000,maxBuffer:16*1024});
     };
     await prepare({type:'api-v1'},contract);
@@ -41,6 +41,8 @@ test('cached API preparation probes its hashed controller; legacy reuse does not
     await rm(marker);
     await assert.rejects(prepare({type:'api-v1'},{...contract,exportSchema:1}),/requires a controller supporting/);
     await rm(marker);
+    await assert.rejects(prepare({type:'api-v1'},contract,false),/missing from the tool hash receipt/);
+    await assert.rejects(access(marker));
     await prepare(undefined,{exportSchema:1});
     await assert.rejects(access(marker));
   } finally {await rm(root,{recursive:true,force:true})}
