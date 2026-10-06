@@ -32,6 +32,20 @@ class Contracts(unittest.TestCase):
             with self.assertRaises(ValueError):
                 contracts.validate(dict(lane, **{field: value}), "ConformanceLaneData", "invalid trust")
 
+    def test_conformance_coverage_is_not_a_test_verdict(self):
+        value = {"schema": 1, "sourceId": "a" * 64, "created": "2026-10-06T00:00:00Z",
+                 "engine": "wago", "status": "uncollected", "reason": None,
+                 "interpretationSource": "publisher-asserted"}
+        contracts.validate(value, "ConformanceCoverageData", "uncollected runner")
+        contracts.validate(dict(value, status="selected"), "ConformanceCoverageData", "selected runner")
+        for status in ["passed", "failed", "unsupported"]:
+            with self.assertRaises(ValueError):
+                contracts.validate(dict(value, status=status), "ConformanceCoverageData", "manufactured verdict")
+        changed = dict(value)
+        del changed["reason"]
+        with self.assertRaises(ValueError):
+            contracts.validate(changed, "ConformanceCoverageData", "missing reason availability")
+
     def test_release_date_precision_is_explicit_and_consistent(self):
         release = {"version": "v1.2.3", "publishedAt": "2026-01-01T00:00:00Z", "url": "https://example.test/release"}
         contracts.validate(release, "HistoryRelease", "legacy unknown precision")

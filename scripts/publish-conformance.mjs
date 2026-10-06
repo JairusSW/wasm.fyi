@@ -18,7 +18,7 @@ if(apiURL){
     const bytes=await readFile(join(directory,'report.json')),receipt=await readFile(join(directory,'sha256'));
     const {sha256,receiptSha256}=verifyConformanceArchive(bytes,receipt);
     // Cache identities include the exact checksum receipt representation.
-    const output=join(cache,sha256+'-'+receiptSha256);
+    const output=join(cache,'v2-'+sha256+'-'+receiptSha256);
     try{const info=await lstat(output);assert(info.isDirectory()&&!info.isSymbolicLink(),'Invalid conformance export directory')}
     catch(error){if(error.code!=='ENOENT')throw error;await exportConformanceArchive({bytes,receipt,directory:output})}
     const revision=await publishConformanceExport({directory:output,url:apiURL});

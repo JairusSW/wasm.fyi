@@ -87,3 +87,70 @@ func TestConformanceJobCannotClaimMeasurementToolsOrVerification(t *testing.T) {
 		})
 	}
 }
+
+func TestConformanceCoverageIsSeparateFromSuiteOutcomes(t *testing.T) {
+	_, objects, err := testutil.ConformanceFixture("coverage")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var contextData, coverageData []byte
+	for _, body := range objects {
+		var record wire.Record
+		if json.Unmarshal(body, &record) != nil {
+			continue
+		}
+		if record.Kind == "conformance-context" {
+			contextData = record.Data
+		}
+		if record.Kind == "conformance-coverage" {
+			coverageData = record.Data
+		}
+	}
+	if _, err = wire.ConformanceContextData(contextData); err != nil {
+		t.Fatal(err)
+	}
+	for _, count := range []any{nil, 0, 128} {
+		var v map[string]any
+		json.Unmarshal(contextData, &v)
+		v["coverageCount"] = count
+		body, _ := json.Marshal(v)
+		if _, err = wire.ConformanceContextData(body); err != nil {
+			t.Fatal("valid coverage availability rejected", count, err)
+		}
+	}
+	for _, count := range []any{-1, 129, 1.5} {
+		var v map[string]any
+		json.Unmarshal(contextData, &v)
+		v["coverageCount"] = count
+		body, _ := json.Marshal(v)
+		if _, err = wire.ConformanceContextData(body); err == nil {
+			t.Fatal("invalid coverage count accepted", count)
+		}
+	}
+	var v map[string]any
+	json.Unmarshal(contextData, &v)
+	delete(v, "coverageCount")
+	body, _ := json.Marshal(v)
+	if _, err = wire.ConformanceContextData(body); err == nil {
+		t.Fatal("missing coverage availability accepted")
+	}
+	if _, err = wire.ConformanceCoverageData(coverageData); err != nil {
+		t.Fatal(err)
+	}
+	for _, status := range []string{"passed", "failed", "unsupported"} {
+		v = nil
+		json.Unmarshal(coverageData, &v)
+		v["status"] = status
+		body, _ = json.Marshal(v)
+		if _, err = wire.ConformanceCoverageData(body); err == nil {
+			t.Fatal("suite outcome became collection coverage", status)
+		}
+	}
+	v = nil
+	json.Unmarshal(coverageData, &v)
+	delete(v, "reason")
+	body, _ = json.Marshal(v)
+	if _, err = wire.ConformanceCoverageData(body); err == nil {
+		t.Fatal("missing reason availability accepted")
+	}
+}

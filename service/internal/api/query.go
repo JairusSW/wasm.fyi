@@ -60,7 +60,7 @@ func routeQuery(path string, values url.Values) error {
 		}
 		return allowedQuery(values)
 	}
-	if path == "conformance" {
+	if path == "conformance" || path == "conformance-contexts" || path == "conformance-coverage" {
 		return allowedQuery(values, "revision", "limit", "cursor", "source")
 	}
 	if path == "features" {

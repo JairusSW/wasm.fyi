@@ -559,17 +559,17 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 				return "", wire.Invalid("invalid record")
 			}
 			if j.Kind == "conformance" {
-				if r.Kind != "conformance" && r.Kind != "conformance-source" {
+				if !wire.IsConformanceKind(r.Kind) {
 					return "", wire.Invalid("measurement record in conformance export")
 				}
-			} else if r.Kind == "conformance" || r.Kind == "conformance-source" {
+			} else if wire.IsConformanceKind(r.Kind) {
 				return "", wire.Invalid("conformance record in measurement export")
 			}
 			if r.Kind == "artifact" && len(r.Data)+512 > 10*1024 {
 				return "", wire.Invalid("artifact descriptor exceeds budget")
 			}
 			switch r.Kind {
-			case "environment", "configuration", "track", "workload", "metric", "result", "artifact", "report-file", "feature-probe", "conformance", "conformance-source":
+			case "environment", "configuration", "track", "workload", "metric", "result", "artifact", "report-file", "feature-probe", "conformance", "conformance-source", "conformance-context", "conformance-coverage":
 				if wire.Hash(r.Data) != r.ID {
 					return "", wire.Invalid("record identity mismatch")
 				}

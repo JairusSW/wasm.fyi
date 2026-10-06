@@ -50,6 +50,49 @@ func (s *Store) validateConformance(ctx context.Context, job wire.Job, records m
 			}
 		}
 	}
+	contexts := map[string]wire.ConformanceContext{}
+	coverage := map[string]int{}
+	coverageKeys := map[string]bool{}
+	for _, record := range records {
+		if record.Kind != "conformance-context" {
+			continue
+		}
+		value, err := wire.ConformanceContextData(record.Data)
+		if err != nil {
+			return err
+		}
+		if _, ok := sources[value.SourceID]; !ok {
+			return wire.Invalid("unresolved conformance context source")
+		}
+		if _, ok := contexts[value.SourceID]; ok {
+			return wire.Invalid("duplicate conformance source context")
+		}
+		contexts[value.SourceID] = value
+	}
+	for _, record := range records {
+		if record.Kind != "conformance-coverage" {
+			continue
+		}
+		value, err := wire.ConformanceCoverageData(record.Data)
+		if err != nil {
+			return err
+		}
+		context, ok := contexts[value.SourceID]
+		if !ok || context.CoverageCount == nil || !context.Created.Equal(value.Created) {
+			return wire.Invalid("unresolved conformance coverage context")
+		}
+		key := value.SourceID + ":" + value.Engine
+		if coverageKeys[key] {
+			return wire.Invalid("duplicate conformance coverage engine")
+		}
+		coverageKeys[key] = true
+		coverage[value.SourceID]++
+	}
+	for source, context := range contexts {
+		if context.CoverageCount != nil && coverage[source] != *context.CoverageCount {
+			return wire.Invalid("conformance coverage population differs")
+		}
+	}
 	seen := map[string]bool{}
 	populations := map[string]int{}
 	for _, record := range records {
@@ -62,6 +105,9 @@ func (s *Store) validateConformance(ctx context.Context, job wire.Job, records m
 		}
 		if _, ok := sources[lane.SourceID]; !ok {
 			return wire.Invalid("unresolved conformance lane source")
+		}
+		if context, ok := contexts[lane.SourceID]; ok && !context.Created.Equal(lane.Created) {
+			return wire.Invalid("conformance collection time differs")
 		}
 		key := lane.SourceID + ":" + lane.Lane
 		if seen[key] {

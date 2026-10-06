@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/JairusSW/wasm.fyi/service/internal/store"
@@ -114,6 +115,22 @@ func TestConformanceImportSourceHTTPAndRebuild(t *testing.T) {
 	if crossed.Code != 400 {
 		t.Fatal("cursor crossed source scope", crossed.Code)
 	}
+	for path, kind := range map[string]string{"conformance-contexts": "conformance-context", "conformance-coverage": "conformance-coverage"} {
+		got := request(t, h, "GET", "/api/v1/"+path+"?revision="+latest+"&source="+lane.SourceID, nil, nil)
+		var page struct {
+			Items []wire.Record `json:"items"`
+			Total int           `json:"total"`
+		}
+		if got.Code != 200 || json.Unmarshal(got.Body.Bytes(), &page) != nil || page.Total != 1 || page.Items[0].Kind != kind {
+			t.Fatal("source metadata population drift", got.Code, got.Body.String())
+		}
+		if kind == "conformance-coverage" {
+			coverage, err := wire.ConformanceCoverageData(page.Items[0].Data)
+			if err != nil || coverage.Status != "uncollected" {
+				t.Fatal("uncollected became a suite outcome", err)
+			}
+		}
+	}
 	backup := filepath.Join(t.TempDir(), "backup")
 	if _, err = a.Store.Backup(context.Background(), backup); err != nil {
 		t.Fatal(err)
@@ -133,6 +150,12 @@ func TestConformanceImportSourceHTTPAndRebuild(t *testing.T) {
 	record, err := recovered.Record(revision, "conformance", catalog.Items[0].ID)
 	if err != nil || !bytes.Equal(record.Data, catalog.Items[0].Data) {
 		t.Fatal("conformance reconstruction drift", err)
+	}
+	for _, kind := range []string{"conformance-context", "conformance-coverage"} {
+		page, err := recovered.ConformancePage(context.Background(), revision, kind, lane.SourceID, 0, 10)
+		if err != nil || page.Total != 1 {
+			t.Fatal("reconstruction lost context/coverage", kind, err)
+		}
 	}
 	for _, chunk := range source.Chunks {
 		body, err := recovered.ConformanceSourceChunk(context.Background(), revision, lane.SourceID, chunk.SHA256)
@@ -172,5 +195,124 @@ func TestConformanceCannotPublishMeasurementRecords(t *testing.T) {
 	}
 	if a.Store.Current() != "" {
 		t.Fatal("rejected conformance import became public")
+	}
+}
+
+func TestConformanceRejectsIncompleteOrForeignCoverage(t *testing.T) {
+	for _, name := range []string{"count", "source", "time", "outcome"} {
+		t.Run(name, func(t *testing.T) {
+			a, _ := telemetryAPI(t, nil)
+			job, objects, err := testutil.ConformanceFixture("coverage-" + name)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for i, object := range job.Exports[0].Manifest.Objects {
+				if object.Kind != "record" {
+					continue
+				}
+				var record wire.Record
+				if err = wire.Decode(objects[object.SHA256], &record); err != nil {
+					t.Fatal(err)
+				}
+				wanted := "conformance-coverage"
+				if name == "count" {
+					wanted = "conformance-context"
+				}
+				if record.Kind != wanted {
+					continue
+				}
+				var data map[string]any
+				json.Unmarshal(record.Data, &data)
+				switch name {
+				case "count":
+					data["coverageCount"] = 2
+				case "source":
+					data["sourceId"] = wire.Hash([]byte("foreign"))
+				case "time":
+					data["created"] = "2026-10-07T00:00:00Z"
+				case "outcome":
+					data["status"] = "passed"
+				}
+				record.Data, _ = wire.Encode(data)
+				record.ID = wire.Hash(record.Data)
+				body, _ := wire.Encode(record)
+				hash := wire.Hash(body)
+				delete(objects, object.SHA256)
+				objects[hash] = body
+				job.Exports[0].Manifest.Objects[i] = wire.Object{SHA256: hash, Bytes: len(body), Kind: "record"}
+			}
+			manifest, _ := wire.Encode(job.Exports[0].Manifest)
+			job.Exports[0].SHA256 = wire.Hash(manifest)
+			id, err := a.Store.Submit(job)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for hash, body := range objects {
+				if err = a.Store.InstallDeclared(hash, bytes.NewReader(body)); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if _, err = a.Store.Commit(id); err == nil {
+				t.Fatal("invalid coverage became public")
+			}
+			expected := map[string]string{"count": "population differs", "source": "coverage context", "time": "coverage context", "outcome": "invalid conformance coverage"}[name]
+			if !strings.Contains(err.Error(), expected) {
+				t.Fatal("wrong rejection boundary", name, err)
+			}
+			if a.Store.Current() != "" {
+				t.Fatal("partial conformance revision exposed")
+			}
+		})
+	}
+}
+
+func TestLegacyConformanceExportsRetainUnknownMetadata(t *testing.T) {
+	a, _ := telemetryAPI(t, nil)
+	job, objects, err := testutil.ConformanceFixture("legacy")
+	if err != nil {
+		t.Fatal(err)
+	}
+	kept := []wire.Object{}
+	for _, object := range job.Exports[0].Manifest.Objects {
+		if object.Kind == "record" {
+			var record wire.Record
+			if err = wire.Decode(objects[object.SHA256], &record); err != nil {
+				t.Fatal(err)
+			}
+			if record.Kind == "conformance-context" || record.Kind == "conformance-coverage" {
+				delete(objects, object.SHA256)
+				continue
+			}
+		}
+		kept = append(kept, object)
+	}
+	job.Exports[0].Manifest.Objects = kept
+	manifest, _ := wire.Encode(job.Exports[0].Manifest)
+	job.Exports[0].SHA256 = wire.Hash(manifest)
+	id, err := a.Store.Submit(job)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for hash, body := range objects {
+		if err = a.Store.InstallDeclared(hash, bytes.NewReader(body)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	revision, err := a.Store.Commit(id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, kind := range []string{"conformance-context", "conformance-coverage"} {
+		page, err := a.Store.CatalogPage(context.Background(), revision, kind, 0, 100)
+		if err != nil || page.Total != 0 {
+			t.Fatal("legacy archive received invented metadata", kind, err)
+		}
+	}
+	backup := filepath.Join(t.TempDir(), "backup")
+	if _, err = a.Store.Backup(context.Background(), backup); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = store.VerifyBackup(context.Background(), backup); err != nil {
+		t.Fatal(err)
 	}
 }

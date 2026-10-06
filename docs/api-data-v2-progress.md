@@ -2037,5 +2037,23 @@ erase an inherited benchmark selection.
 Synthetic gates cover the actual Node exporter and publisher against a built Go
 server, a forced 429 retry, duplicate publication, selected original byte parity,
 corrupted local payload rejection, source-scoped cursors, and portable recovery
-under race detection. Real completed suite archives and compact uncollected
-coverage projections still need qualification.
+under race detection. Real completed suite archives still need qualification.
+
+
+Conformance exports now include bounded `conformance-context` and
+`conformance-coverage` records. `/api/v1/conformance-contexts?source=<id>` returns
+recorded hostname/OS/architecture, exact collection time, full reported host
+identity and coverage population. `/api/v1/conformance-coverage?source=<id>`
+paginates selected/uncollected engines before reading descriptors. Both use the
+same frozen revision and source-bound cursor policy as the suite lane catalog.
+Each descriptor stays within 10 KiB. A null coverage population means the archive
+did not record coverage; zero means it recorded an empty list. Neither absence
+nor an uncollected engine is a suite failure or unsupported verdict.
+
+Imports reject unresolved or duplicate source contexts, duplicate coverage
+engines, inconsistent population counts, and mismatched collection times before
+publication. Original archives remain exact; their larger inventories and outputs
+are explicit evidence. Older `conformance-v1` exports without these metadata
+records remain readable, with no fabricated environment or coverage. Export cache
+keys now include producer version `v2`, allowing the existing capture to add this
+metadata without recollecting suites or modifying prior revisions.

@@ -141,12 +141,12 @@ func (s *Store) addRecordIndexes(rev *Revision, r wire.Record, digest string) er
 	if e != nil {
 		return e
 	}
-	if r.Kind == "conformance" {
-		lane, err := wire.ConformanceLaneData(r.Data)
+	if wire.IsConformanceKind(r.Kind) && r.Kind != "conformance-source" {
+		source, err := wire.ConformanceMetadataSource(r.Kind, r.Data)
 		if err != nil {
 			return err
 		}
-		rev.Indexes, err = s.indexAdd(rev.Indexes, indexKey("source-conformance", lane.SourceID, ""), r.ID, digest)
+		rev.Indexes, err = s.indexAdd(rev.Indexes, indexKey("source-"+r.Kind, source, ""), r.ID, digest)
 		return err
 	}
 	if r.Kind == "feature-probe" {

@@ -23,6 +23,8 @@ test('completed conformance archive publishes through real API and existing publ
   const args={directory,url,token,request},revision=await publishConformanceExport(args);assert(retried&&uploads>0);uploads=0;assert.equal(await publishConformanceExport(args),revision);assert.equal(uploads,0);
   const json=async path=>{const response=await fetch(url+path);assert.equal(response.status,200);return response.json()};
   const page=await json('/api/v1/conformance?revision='+revision);assert.equal(page.total,2);const lane=page.items.find(row=>row.data.lane==='fixture-wasi').data;assert.equal(lane.status,'failed');assert.deepEqual(lane.totals,{failed:1,skipped:1});assert(!('path' in lane.engine));assert.equal(lane.interpretationSource,'publisher-asserted');
+  const contexts=await json('/api/v1/conformance-contexts?revision='+revision+'&source='+lane.sourceId);assert.equal(contexts.total,1);assert.deepEqual(contexts.items[0].data.host,capture().host);assert.equal(contexts.items[0].data.coverageCount,1);
+  const coverage=await json('/api/v1/conformance-coverage?revision='+revision+'&source='+lane.sourceId);assert.equal(coverage.total,1);assert.equal(coverage.items[0].data.status,'uncollected');assert.equal(coverage.items[0].data.reason,'No archived capture');assert(!('totals' in coverage.items[0].data));
   assert.equal((await json('/api/v1/results?revision='+revision)).total,0);
   const source=(await json('/api/v1/conformance/sources/'+lane.sourceId+'?revision='+revision)).record.data;const restored=[];for(const chunk of source.chunks){const response=await fetch(url+'/api/v1/conformance/sources/'+lane.sourceId+'/chunks?revision='+revision+'&chunk='+chunk.sha256);assert.equal(response.status,200);restored.push(Buffer.from(await response.arrayBuffer()))}assert(Buffer.concat(restored).equals(bytes));
   const isolated=join(root,'site');await mkdir(isolated);await cp(join(site,'scripts'),join(isolated,'scripts'),{recursive:true});const original=join(root,'capture');await mkdir(original);await writeFile(join(original,'report.json'),bytes);await writeFile(join(original,'sha256'),receipt);
@@ -31,4 +33,16 @@ test('completed conformance archive publishes through real API and existing publ
   await assert.rejects(readFile(join(isolated,'data/conformance/index.json')),error=>error.code==='ENOENT');
   const manifest=JSON.parse(await readFile(join(directory,'manifest.json'))),object=manifest.objects[0];await writeFile(join(directory,'objects',object.sha256),'tampered');await assert.rejects(publishConformanceExport(args),/Invalid conformance publication file|Changed conformance payload/);assert.equal((await json('/api/v1/manifest')).revision,revision);
  }finally{if(child){child.kill('SIGTERM');await exit}await rm(root,{recursive:true,force:true})}
+});
+
+test('compact coverage distinguishes unrecorded, empty and explicit populations',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'conformance-coverage-'));
+ try{
+  for(const [name,coverage,expected]of [['unrecorded',undefined,null],['empty',[],0],['recorded',[{engine:'wago',status:'uncollected',reason:'No completed capture'},{engine:'wasmtime',status:'selected'}],2]]){
+   const report={...capture(),coverage,padding:undefined},bytes=Buffer.from(JSON.stringify(report)),directory=join(root,name);await exportConformanceArchive({bytes,receipt:Buffer.from(digest(bytes)+'\n'),directory});
+   const manifest=JSON.parse(await readFile(join(directory,'manifest.json'))),records=[];for(const object of manifest.objects){if(object.kind==='record')records.push(JSON.parse(await readFile(join(directory,'objects',object.sha256))))}
+   const context=records.find(row=>row.kind==='conformance-context');assert.equal(context.data.coverageCount,expected);assert(Buffer.byteLength(JSON.stringify(context))<10*1024);
+   const rows=records.filter(row=>row.kind==='conformance-coverage');assert.equal(rows.length,expected??0);for(const row of rows){assert(['selected','uncollected'].includes(row.data.status));assert(!('totals' in row.data));assert(Buffer.byteLength(JSON.stringify(row))<10*1024)}
+  }
+ }finally{await rm(root,{recursive:true,force:true})}
 });

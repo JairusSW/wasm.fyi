@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -22,7 +23,15 @@ func ConformanceFixture(seed string) (wire.Job, map[string][]byte, error) {
 		manifest.Objects = append(manifest.Objects, object)
 		return object
 	}
-	bytes, _ := wire.Encode(map[string]any{"schema": 1, "created": "2026-10-06T00:00:00Z", "lanes": []any{}, "padding": strings.Repeat("synthetic ", 160000), "seed": seed})
+	rows := []map[string]any{}
+	inventory := []map[string]any{}
+	for i, status := range []string{"passed", "passed", "failed", "skipped", "skipped", "skipped"} {
+		path := fmt.Sprintf("synthetic-%d.wast", i)
+		hash := wire.Hash([]byte(path))
+		rows = append(rows, map[string]any{"path": path, "sha256": hash, "status": status})
+		inventory = append(inventory, map[string]any{"path": path, "sha256": hash})
+	}
+	bytes, _ := wire.Encode(map[string]any{"schema": 1, "created": "2026-10-06T00:00:00Z", "host": wire.ConformanceHost{Hostname: "synthetic", OS: "darwin", Arch: "arm64"}, "coverage": []map[string]any{{"engine": "wago", "status": "uncollected", "reason": "No archived capture"}}, "lanes": []any{map[string]any{"id": "synthetic-wast", "kind": "wast", "unit": "files", "status": "failed", "totals": map[string]int{"passed": 2, "failed": 1, "skipped": 3}, "engine": map[string]any{"tag": "v1.0.0", "sha256": wire.Hash([]byte("synthetic engine"))}, "suite": map[string]any{"repository": "fixture/suite", "revision": strings.Repeat("a", 40), "inventory": inventory}, "results": rows}}, "padding": strings.Repeat("synthetic ", 160000), "seed": seed})
 	manifest.SourceReportSHA256 = wire.Hash(bytes)
 	receipt := add("binary", []byte(manifest.SourceReportSHA256+"\n"))
 	manifest.SourceSealSHA256 = receipt.SHA256
@@ -36,6 +45,19 @@ func ConformanceFixture(seed string) (wire.Job, map[string][]byte, error) {
 	data, _ := wire.Encode(source)
 	sourceID := wire.Hash(data)
 	record, _ := wire.Encode(wire.Record{Kind: "conformance-source", ID: sourceID, Data: data})
+	add("record", record)
+	created := time.Date(2026, 10, 6, 0, 0, 0, 0, time.UTC)
+	host := wire.ConformanceHost{Hostname: "synthetic", OS: "darwin", Arch: "arm64"}
+	hostBytes, _ := wire.Encode(host)
+	coverageCount := 1
+	context := wire.ConformanceContext{Schema: 1, SourceID: sourceID, Created: created, Host: host, HostIdentity: wire.Hash(hostBytes), CoverageCount: &coverageCount, InterpretationSource: "publisher-asserted"}
+	data, _ = wire.Encode(context)
+	record, _ = wire.Encode(wire.Record{Kind: "conformance-context", ID: wire.Hash(data), Data: data})
+	add("record", record)
+	reason := "No archived capture"
+	coverage := wire.ConformanceCoverage{Schema: 1, SourceID: sourceID, Created: created, Engine: "wago", Status: "uncollected", Reason: &reason, InterpretationSource: "publisher-asserted"}
+	data, _ = wire.Encode(coverage)
+	record, _ = wire.Encode(wire.Record{Kind: "conformance-coverage", ID: wire.Hash(data), Data: data})
 	add("record", record)
 	status, unit := "failed", "files"
 	lane := wire.ConformanceLane{Schema: 1, Policy: wire.ConformancePolicy, SourceID: sourceID, Lane: "synthetic-wast", Created: time.Date(2026, 10, 6, 0, 0, 0, 0, time.UTC), Unit: &unit, Status: &status, Totals: map[string]int64{"passed": 2, "failed": 1, "skipped": 3}, Engine: []byte(`{"tag":"v1.0.0"}`), Suite: []byte(`{"repository":"fixture/suite","revision":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}`), InterpretationSource: "publisher-asserted"}

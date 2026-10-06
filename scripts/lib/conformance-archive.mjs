@@ -47,7 +47,7 @@ export function verifyConformanceArchive(bytes,receipt){
       assert(lane.kind===undefined&&lane.status==='runner-error'&&typeof lane.reason==='string'&&lane.reason,'Unqualified conformance lane kind');
     }
   }
-  if(report.coverage!==undefined){assert(Array.isArray(report.coverage),'Invalid conformance coverage');const engines=new Set();for(const row of report.coverage){assert(ID.test(row.engine)&&!engines.has(row.engine)&&['selected','uncollected'].includes(row.status),'Invalid conformance coverage state');engines.add(row.engine)}}
+  if(report.coverage!==undefined){assert(Array.isArray(report.coverage)&&report.coverage.length<=128,'Invalid conformance coverage');const engines=new Set();for(const row of report.coverage){assert(ID.test(row.engine)&&!engines.has(row.engine)&&['selected','uncollected'].includes(row.status),'Invalid conformance coverage state');assert(row.reason===undefined||(typeof row.reason==='string'&&Buffer.byteLength(row.reason)<=2048),'Invalid conformance coverage reason');engines.add(row.engine)}}
   return {report,sha256,receiptSha256:digest(receipt)};
 }
 

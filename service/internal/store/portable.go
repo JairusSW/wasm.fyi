@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/JairusSW/wasm.fyi/service/internal/wire"
@@ -244,11 +245,11 @@ func (s *Store) reachableScopes(ctx context.Context, includeStaging bool, requir
 				return err
 			}
 		}
-		if r.Kind == "conformance" {
+		if wire.IsConformanceKind(r.Kind) && r.Kind != "conformance-source" {
 			if wire.Hash(r.Data) != r.ID {
 				return wire.Invalid("conformance lane identity differs")
 			}
-			if _, err := wire.ConformanceLaneData(r.Data); err != nil {
+			if _, err := wire.ConformanceMetadataSource(r.Kind, r.Data); err != nil {
 				return err
 			}
 		}
@@ -355,7 +356,7 @@ func (s *Store) reachableScopes(ctx context.Context, includeStaging bool, requir
 			return e
 		}
 		switch tuple[0] {
-		case "report-features", "source-conformance":
+		case "report-features", "source-conformance", "source-conformance-context", "source-conformance-coverage":
 			if !wire.IsHash(tuple[1]) || tuple[2] != "" || set.Count < 0 || set.Count > ScanLimit {
 				return wire.Invalid("invalid report feature index")
 			}
@@ -383,12 +384,12 @@ func (s *Store) reachableScopes(ctx context.Context, includeStaging bool, requir
 					}
 					source = probe.ReportID
 				} else {
-					kind = "conformance"
-					lane, err := wire.ConformanceLaneData(record.Data)
+					kind = strings.TrimPrefix(tuple[0], "source-")
+					value, err := wire.ConformanceMetadataSource(kind, record.Data)
 					if err != nil {
 						return err
 					}
-					source = lane.SourceID
+					source = value
 				}
 				if record.Kind != kind || record.ID != key || source != tuple[1] {
 					return wire.Invalid("source-scoped posting differs")
@@ -782,7 +783,7 @@ func (s *Store) reachableScopes(ctx context.Context, includeStaging bool, requir
 						if e := wire.Decode(b, &record); e != nil {
 							return nil, e
 						}
-						if (record.Kind != "conformance" && record.Kind != "conformance-source") || wire.Hash(record.Data) != record.ID {
+						if !wire.IsConformanceKind(record.Kind) || wire.Hash(record.Data) != record.ID {
 							return nil, wire.Invalid("invalid portable conformance record")
 						}
 						conformanceRecords[record.Kind+":"+record.ID] = record
