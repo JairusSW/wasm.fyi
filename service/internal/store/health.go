@@ -16,17 +16,18 @@ func (s *Store) Health() Health {
 }
 
 type Stats struct {
-	Health            Health          `json:"health"`
-	PendingJobs       int             `json:"pendingJobs"`
-	PendingBytes      int64           `json:"pendingBytes"`
-	ContentBytes      int64           `json:"contentBytes"`
-	ContentLimit      int64           `json:"contentLimitBytes"`
-	DatabaseBytes     uint64          `json:"databaseBytes"`
-	CompactionDebt    uint64          `json:"compactionDebtBytes"`
-	CompactionsActive int64           `json:"compactionsActive"`
-	Filesystem        FilesystemSpace `json:"filesystem"`
-	WriteStalls       WriteStallStats `json:"writeStalls"`
-	Collected         time.Time       `json:"collectedAt"`
+	ResultQueries     []ResultQueryStats `json:"resultQueries"`
+	Health            Health             `json:"health"`
+	PendingJobs       int                `json:"pendingJobs"`
+	PendingBytes      int64              `json:"pendingBytes"`
+	ContentBytes      int64              `json:"contentBytes"`
+	ContentLimit      int64              `json:"contentLimitBytes"`
+	DatabaseBytes     uint64             `json:"databaseBytes"`
+	CompactionDebt    uint64             `json:"compactionDebtBytes"`
+	CompactionsActive int64              `json:"compactionsActive"`
+	Filesystem        FilesystemSpace    `json:"filesystem"`
+	WriteStalls       WriteStallStats    `json:"writeStalls"`
+	Collected         time.Time          `json:"collectedAt"`
 }
 
 func (s *Store) Stats() (Stats, error) {
@@ -38,5 +39,5 @@ func (s *Store) Stats() (Stats, error) {
 	size := s.contentBytes
 	s.contentMu.Unlock()
 	metrics := s.db.Metrics()
-	return Stats{Filesystem: filesystemSpace(s.root), WriteStalls: s.stalls.snapshot(time.Now()), Health: s.Health(), PendingJobs: q.Jobs, PendingBytes: q.Bytes, ContentBytes: size, ContentLimit: s.limits.ContentBytes, DatabaseBytes: metrics.DiskSpaceUsage(), CompactionDebt: metrics.Compact.EstimatedDebt, CompactionsActive: metrics.Compact.NumInProgress, Collected: time.Now().UTC()}, nil
+	return Stats{ResultQueries: s.resultQueryStats(), Filesystem: filesystemSpace(s.root), WriteStalls: s.stalls.snapshot(time.Now()), Health: s.Health(), PendingJobs: q.Jobs, PendingBytes: q.Bytes, ContentBytes: size, ContentLimit: s.limits.ContentBytes, DatabaseBytes: metrics.DiskSpaceUsage(), CompactionDebt: metrics.Compact.EstimatedDebt, CompactionsActive: metrics.Compact.NumInProgress, Collected: time.Now().UTC()}, nil
 }

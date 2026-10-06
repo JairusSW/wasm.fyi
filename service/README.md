@@ -571,3 +571,21 @@ active stalls and sums writer-stall time if events overlap; it is not exclusive
 wall time. Counters reset when the store opens. The listener does no storage work
 and holds only its own short-lived accounting lock. A real pressure test blocks
 SST I/O until a memtable stall is observed, then verifies resume/end accounting.
+
+`resultQueries` reports fixed `selection` and `history` totals for calls to the
+store result-query path, including internal cohort selections. Budget units count
+index/selection/history traversal charges; `records` and `resultDataBytes` count
+primary results examined at the filtering stage. They do not count all metadata,
+proof-enrichment or disk I/O. Matches are complete-query selections, not returned
+page rows. Failed/cancelled queries retain their partial work counts. Counters
+reset with the store; snapshots are independent atomic reads.
+
+The 32 MiB query data ceiling now charges rejected rows before parsing/filtering,
+so an unindexed legacy query cannot evade the budget by matching nothing. A broad
+query can require narrower filters even when its eventual page would be small.
+
+`requests.caches` reports bounded result/history and cohort cache occupancy,
+conservative accounted bytes, hit/miss counts, rejected inserts and evictions.
+Accounting is the existing retention estimate, not measured RSS. No cache keys or
+query identities are returned. Result cache hits bypass store selection; page size
+is excluded from cache identity while signed cursor scope still includes it.

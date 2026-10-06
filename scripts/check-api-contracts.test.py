@@ -157,6 +157,17 @@ class Contracts(unittest.TestCase):
         contracts.validate({"status": "available", "availableBytes": 0, "totalBytes": 1},
                            "FilesystemSpace", "zero available space is valid")
 
+    def test_query_and_cache_metrics_retain_no_keys(self):
+        value = {"kind": "results", "entries": 1, "accountedBytes": 1024,
+                 "entryLimit": 24, "byteLimit": 16777216, "hits": 1, "misses": 1,
+                 "rejected": 0, "evictions": 0}
+        contracts.validate(value, "CacheStats", "bounded cache metrics")
+        for key, invalid in [("key", "private-query"), ("kind", "runtime-id"), ("hits", -1)]:
+            changed = copy.deepcopy(value)
+            changed[key] = invalid
+            with self.assertRaises(ValueError):
+                contracts.validate(changed, "CacheStats", "identifying or invalid cache telemetry")
+
     def test_transport_reference_aliases_resolve_only_local_schema(self):
         for root in ("site-v2.schema.json", "./site-v2.schema.json", contracts.SCHEMA["$id"]):
             reference = contracts.transport_reference(root + "#/$defs/Digest")

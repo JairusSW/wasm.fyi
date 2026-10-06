@@ -79,7 +79,25 @@ func value(r wire.Record) (*big.Rat, bool) {
 func (s *Store) Results(q Query, historical bool) ([]wire.Record, error) {
 	return s.ResultsContext(context.Background(), q, historical)
 }
-func (s *Store) ResultsContext(ctx context.Context, q Query, historical bool) ([]wire.Record, error) {
+func (s *Store) ResultsContext(ctx context.Context, q Query, historical bool) (rows []wire.Record, err error) {
+	budget := ScanLimit
+	var records, dataBytes, matched uint64
+	index := 0
+	if historical {
+		index = 1
+	}
+	defer func() {
+		c := &s.queryWork[index]
+		c.queries.Add(1)
+		if err != nil {
+			c.failed.Add(1)
+		}
+		c.budgetUnits.Add(uint64(ScanLimit - budget))
+		c.records.Add(records)
+		c.dataBytes.Add(dataBytes)
+		c.matched.Add(matched)
+	}()
+
 	start, end, months, e := historyWindow(q, historical)
 	if e != nil {
 		return nil, e
@@ -92,7 +110,6 @@ func (s *Store) ResultsContext(ctx context.Context, q Query, historical bool) ([
 		return nil, e
 	}
 	out := []wire.Record{}
-	budget := ScanLimit
 	decoded := 0
 	seenObservations := map[string]bool{}
 	add := func(id string) error {
@@ -117,6 +134,12 @@ func (s *Store) ResultsContext(ctx context.Context, q Query, historical bool) ([
 		if e != nil {
 			return e
 		}
+		records++
+		dataBytes += uint64(len(r.Data))
+		decoded += len(r.Data)
+		if decoded > 32*1024*1024 {
+			return ErrLimit
+		}
 		var v wire.Result
 		if e = json.Unmarshal(r.Data, &v); e != nil {
 			return e
@@ -130,10 +153,6 @@ func (s *Store) ResultsContext(ctx context.Context, q Query, historical bool) ([
 		if q.From != "" && (v.Created.Before(start) || !v.Created.Before(end)) {
 			return nil
 		}
-		decoded += len(r.Data)
-		if decoded > 32*1024*1024 {
-			return ErrLimit
-		}
 		v.Evidence = nil
 		b, e := wire.Encode(v)
 		if e != nil {
@@ -141,6 +160,7 @@ func (s *Store) ResultsContext(ctx context.Context, q Query, historical bool) ([
 		}
 		r.Data = b
 		out = append(out, r)
+		matched++
 		return nil
 	}
 	e = s.candidates(ctx, rev, q, &budget, func(cellKey string) error {

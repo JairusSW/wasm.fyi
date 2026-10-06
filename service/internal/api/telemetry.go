@@ -45,6 +45,7 @@ type RequestRouteStats struct {
 	Panics           uint64    `json:"panics"`
 }
 type RequestStats struct {
+	Caches               []CacheStats        `json:"caches"`
 	StartedAt            *time.Time          `json:"startedAt"`
 	Version              string              `json:"version"`
 	LatencyUpperBoundsMS [7]int64            `json:"latencyUpperBoundsMs"`
@@ -59,7 +60,7 @@ type AdmissionStats struct {
 }
 
 func (a *API) requestStats() RequestStats {
-	out := RequestStats{StartedAt: a.requests.started.Load(), Version: "http-requests-v1", Routes: make([]RequestRouteStats, 0, len(requestClasses)), Admission: AdmissionStats{len(a.active), len(a.selecting), len(a.calculating), len(a.downloading)}}
+	out := RequestStats{Caches: []CacheStats{a.results.stats(), a.cohorts.stats()}, StartedAt: a.requests.started.Load(), Version: "http-requests-v1", Routes: make([]RequestRouteStats, 0, len(requestClasses)), Admission: AdmissionStats{len(a.active), len(a.selecting), len(a.calculating), len(a.downloading)}}
 	for i, b := range latencyBounds {
 		out.LatencyUpperBoundsMS[i] = b.Milliseconds()
 	}

@@ -17,16 +17,22 @@ type resultCacheEntry struct {
 	cost int
 }
 type resultCache struct {
-	mu      sync.Mutex
-	entries map[string]resultCacheEntry
-	order   []string
-	bytes   int
+	hits, misses, rejected, evictions uint64
+	mu                                sync.Mutex
+	entries                           map[string]resultCacheEntry
+	order                             []string
+	bytes                             int
 }
 
 func (c *resultCache) get(key string) ([]wire.Record, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	entry, ok := c.entries[key]
+	if ok {
+		c.hits++
+	} else {
+		c.misses++
+	}
 	return entry.rows, ok
 }
 func (c *resultCache) put(key string, rows []wire.Record) {
@@ -35,6 +41,9 @@ func (c *resultCache) put(key string, rows []wire.Record) {
 		cost += 2*(len(r.Data)+len(r.ID)+len(r.Kind)) + 192
 	}
 	if cost > resultCacheBytes {
+		c.mu.Lock()
+		c.rejected++
+		c.mu.Unlock()
 		return
 	}
 	c.mu.Lock()
@@ -43,6 +52,7 @@ func (c *resultCache) put(key string, rows []wire.Record) {
 		return
 	}
 	for len(c.order) >= resultCacheEntries || c.bytes+cost > resultCacheBytes {
+		c.evictions++
 		old := c.order[0]
 		c.order = c.order[1:]
 		c.bytes -= c.entries[old].cost

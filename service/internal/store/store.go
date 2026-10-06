@@ -44,6 +44,7 @@ type Revision struct {
 	Qualification       string    `json:"operatorQualification"`
 }
 type Store struct {
+	queryWork         [2]queryCounters
 	db                *pebble.DB
 	stalls            *writeStallMetrics
 	root              string

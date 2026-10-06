@@ -18,17 +18,24 @@ import (
 const cohortCacheBytes = 32 << 20
 
 type cohortCache struct {
-	mu      sync.Mutex
-	entries map[string]*store.Cohort
-	order   []string
-	bytes   int
-	sizes   map[string]int
+	hits, misses, rejected, evictions uint64
+	mu                                sync.Mutex
+	entries                           map[string]*store.Cohort
+	order                             []string
+	bytes                             int
+	sizes                             map[string]int
 }
 
 func (c *cohortCache) get(key string) *store.Cohort {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	return c.entries[key]
+	entry := c.entries[key]
+	if entry != nil {
+		c.hits++
+	} else {
+		c.misses++
+	}
+	return entry
 }
 func (c *cohortCache) put(key string, v *store.Cohort) {
 	b, e := wire.Encode(v)
@@ -39,6 +46,9 @@ func (c *cohortCache) put(key string, v *store.Cohort) {
 		cost += len(p.Members) * 256
 	}
 	if e != nil || cost > cohortCacheBytes {
+		c.mu.Lock()
+		c.rejected++
+		c.mu.Unlock()
 		return
 	}
 	c.mu.Lock()
@@ -50,6 +60,7 @@ func (c *cohortCache) put(key string, v *store.Cohort) {
 		c.sizes = map[string]int{}
 	}
 	for len(c.order) >= 16 || c.bytes+cost > cohortCacheBytes {
+		c.evictions++
 		old := c.order[0]
 		c.order = c.order[1:]
 		c.bytes -= c.sizes[old]
