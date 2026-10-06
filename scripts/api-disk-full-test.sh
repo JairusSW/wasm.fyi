@@ -16,7 +16,8 @@ fi
 scratch=$(mktemp -d)
 trap 'rm -rf -- "$scratch"' EXIT HUP INT TERM
 (cd "$site_root/service" && GOFLAGS=-mod=readonly GOWORK=off GOOS=linux GOARCH="$test_arch" go test -c -o "$scratch/store.test" ./internal/store)
-docker run --rm --network none --read-only --cpus 1 --memory 512m \
+for gate in TestKernelDiskExhaustionPreservesPublicationAndRecovery TestKernelWALExhaustionRecovery; do
+  docker run --rm --network none --read-only --cpus 1 --memory 512m \
   --user 65534:65534 \
   --tmpfs /tmp:rw,nosuid,nodev,size=128m,mode=1777 \
   --tmpfs /data:rw,nosuid,nodev,size=32m,mode=1777 \
@@ -24,4 +25,5 @@ docker run --rm --network none --read-only --cpus 1 --memory 512m \
   --mount "type=bind,src=$scratch/store.test,dst=/tests/store.test,readonly" \
   --mount "type=bind,src=$site_root/service/testdata,dst=$site_root/service/testdata,readonly" \
   --entrypoint /tests/store.test "$image" \
-  -test.run '^TestKernelDiskExhaustionPreservesPublicationAndRecovery$' -test.v
+  -test.run "^$gate$" -test.v
+done

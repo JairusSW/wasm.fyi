@@ -642,5 +642,14 @@ Real kernel ENOSPC during a declared upload leaves no canonical partial object.
 ENOSPC during publication leaves the previous revision readable. Freeing space
 allows upload/publication retry, idempotent commit, restart and portable rebuild
 with the same head and captures. The native Linux arm64 runner passes locally.
-This covers upload and pre-publication index allocation, not an exhausted Pebble
-WAL, physical disk/device failures or power loss. CI execution remains pending.
+A second fresh-container gate exhausts the filesystem at the pre-commit
+checkpoint, after all publication files are installed. With the pinned Pebble
+version, the synchronous WAL write logs a fatal ENOSPC and terminates the helper
+process. The test requires that specific WAL failure and checkpoint, frees space,
+then verifies that restart retains the exact prior summaries. Missing-only retry
+publishes once; another restart and DB-free portable rebuild retain the complete
+new head and exact captures. The runner passes both gates on native Linux arm64.
+
+Operators must free space before restarting a service terminated by a fatal WAL
+write. These tmpfs tests do not qualify physical disk/device failures or power
+loss. CI execution remains pending.
