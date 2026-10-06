@@ -154,3 +154,30 @@ flags are honored and invalid limits fail before any destination is installed.
 Retained real recovery directories can preserve a verified backup for another
 attempt, with revision equality checked before reuse. Terminal large recovery
 success must still be established with the corrected code.
+
+
+## Review handoff (2026-10-06)
+
+Implementation checkpoint: site `80c9e45ee`, producer `f19091b`. Both isolated
+worktrees are clean and pushed. Draft reviews are wasm.fyi PR #6 and wasm-bench
+PR #1. Site checks are pending; producer checks currently fail. Neither PR is
+claimed merge-ready, and no deployment or merge has been performed.
+
+Full local race/vet qualification passed from fixed snapshot `d4e2bbea8`.
+Subsequent receipt-rebuild, conformance and history-coverage changes passed their
+selected race/recovery, collector HTTP, schema/type, dependency and vet gates.
+These selected checks do not substitute for complete latest-head CI.
+
+The corrected large Wasmtime run is executing snapshot `454c76f24` and resumes
+its acknowledged 130,166-object store without uploading missing payloads. Source
+and serving parity and the new backup have passed. Database-free reconstruction
+is still running; terminal success remains unproven. Its retained status/logs and
+backup live under `.wasmbench/api-qualification/wasmtime/recovery-454c76f2472c`.
+That run does not qualify the later history-coverage implementation wholesale.
+
+Remaining release work includes green latest-head CI, terminal large recovery,
+real sealed feature/conformance fixtures, broader operational/retention and
+operator restore qualification, a production producer pin arrangement, and the
+separate lazy frontend/crawler/hosting cutover. The current UI is preserved and
+still uses its existing data path. The full migration and rock-solid backend
+completion are not claimed by this handoff.
