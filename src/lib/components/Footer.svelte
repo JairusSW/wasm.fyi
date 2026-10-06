@@ -34,7 +34,7 @@
 <style>
 	footer {
 		border-top: 1px solid var(--line);
-		padding: 28px 20px 36px;
+		padding: 28px max(var(--gutter), env(safe-area-inset-right)) max(36px, env(safe-area-inset-bottom)) max(var(--gutter), env(safe-area-inset-left));
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
 		gap: 20px;
@@ -67,5 +67,18 @@
 	}
 	a:hover {
 		color: var(--fg);
+	}
+	@media (max-width: 720px) {
+		footer {
+			grid-template-columns: 1fr 1fr;
+			padding: 24px max(16px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+			gap: 22px 16px;
+		}
+		.col {
+			gap: 2px;
+		}
+		a {
+			padding: 5px 0;
+		}
 	}
 </style>

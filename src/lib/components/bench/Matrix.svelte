@@ -171,6 +171,22 @@ import { viewCell, viewData } from '$lib/view-data';
 		font-size: 12px;
 		cursor: help;
 	}
+	@media (max-width: 720px) {
+		.snap {
+			margin-left: 0;
+			padding-left: 0;
+			border-left: 0;
+			width: 100%;
+			justify-content: center;
+			gap: 2px 8px;
+		}
+		.rtcell,
+		.val,
+		.corr,
+		.colh {
+			padding: 4px 10px;
+		}
+	}
 	.colh {
 		text-align: right;
 		padding: 8px 12px;

@@ -40,13 +40,29 @@
             queueMicrotask(() => { if (!cur) shown = false; });
 		};
 		const closest = (e: Event) => (e.target instanceof Element ? e.target.closest('[data-tip], [data-tip-summary]') : null);
+		// Touch has no hover: ignore the compatibility mouse events a tap emits, and let a tap
+		// on a non-interactive element toggle its tip instead.
+		let touchAt = 0;
+		const recentTouch = () => performance.now() - touchAt < 800;
+		const pointer = (e: PointerEvent) => {
+			if (e.pointerType !== 'mouse') touchAt = performance.now();
+		};
+		const tap = (e: MouseEvent) => {
+			if (!recentTouch()) return hide();
+			const t = closest(e);
+			const interactive = t && (e.target as Element).closest('a, button, input, select, label, summary, [role="button"], [onclick]');
+			if (!t || interactive || t === cur) return hide();
+			const r = t.getBoundingClientRect();
+			show(t, Math.min(r.left, innerWidth - 24), r.bottom - 8);
+		};
 		const over = (e: MouseEvent) => {
+			if (recentTouch()) return;
 			const t = closest(e);
 			if (t && t !== cur) show(t, e.clientX, e.clientY);
 			else if (!t && cur) hide();
 		};
 		const move = (e: MouseEvent) => {
-			if (cur) place(e.clientX, e.clientY);
+			if (cur && !recentTouch()) place(e.clientX, e.clientY);
 		};
 		const focus = (e: FocusEvent) => {
 			const t = closest(e);
@@ -62,7 +78,8 @@
 		document.addEventListener('focusin', focus);
 		document.addEventListener('focusout', hide);
 		document.addEventListener('scroll', hide, true);
-		document.addEventListener('click', hide, true);
+		document.addEventListener('click', tap, true);
+		document.addEventListener('pointerdown', pointer, true);
 		return () => {
 			document.removeEventListener('keydown', key);
 			document.removeEventListener('mouseover', over);
@@ -70,7 +87,8 @@
 			document.removeEventListener('focusin', focus);
 			document.removeEventListener('focusout', hide);
 			document.removeEventListener('scroll', hide, true);
-			document.removeEventListener('click', hide, true);
+			document.removeEventListener('click', tap, true);
+			document.removeEventListener('pointerdown', pointer, true);
 		};
 	});
 </script>
@@ -96,7 +114,8 @@
 		position: fixed;
 		z-index: 9999;
 		pointer-events: none;
-		max-width: 320px;
+		max-width: min(320px, calc(100vw - 16px));
+		box-sizing: border-box;
 		padding: 6px 9px;
 		font: 12px/1.45 var(--sans);
 		white-space: pre-line;

@@ -118,4 +118,10 @@
 		flex-direction: column;
 		gap: 14px;
 	}
+	/* Leave room for the y-axis labels, which hang left of the plot. */
+	@media (max-width: 720px) {
+		.chart {
+			margin-left: 26px;
+		}
+	}
 </style>
