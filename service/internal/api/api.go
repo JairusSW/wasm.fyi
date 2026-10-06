@@ -29,7 +29,11 @@ type API struct {
 	frontend    http.Handler
 	cohorts     *cohortCache
 	calculating chan struct{}
+	results     *resultCache
+	selecting   chan struct{}
 }
+
+var errQueryBusy = errors.New("result query concurrency limit")
 
 func New(s *store.Store, token string, key []byte) (http.Handler, error) {
 	return NewWithRequestLimits(s, token, key, DefaultRequestLimits())
@@ -51,6 +55,8 @@ func NewWithFrontend(s *store.Store, token string, key []byte, limits RequestLim
 	a := &API{Store: s, Token: token, CursorKey: key, active: make(chan struct{}, 8), limiter: newRequestLimiter(limits), frontend: frontend}
 	a.cohorts = &cohortCache{entries: map[string]*store.Cohort{}}
 	a.calculating = make(chan struct{}, 2)
+	a.results = &resultCache{entries: map[string]resultCacheEntry{}}
+	a.selecting = make(chan struct{}, 2)
 	return http.HandlerFunc(a.serve), nil
 }
 
@@ -283,7 +289,7 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if path == "manifest" {
-		respond(w, r, 200, map[string]any{"schema": 2, "revision": a.Store.Current(), "selectionAliases": map[string]string{"s1": "current", "s2": "previous"}, "limits": map[string]int{"defaultResults": 100, "maxResults": 1000, "decodedResponseBytes": wire.ResponseBytes, "decodedChunkBytes": wire.ChunkBytes, "scanKeys": store.ScanLimit, "decodedEvidenceResourceBytes": wire.ResourceBytes, "maxEvidenceFragments": wire.ResourceFragments, "cohortScopeBytes": 4096, "cohortComputations": 2, "cohortCells": 100000}, "endpoints": []string{"overview", "results", "reports", "metrics", "configurations", "environments", "workloads", "artifacts", "history", "aggregates", "cohorts", "sessions"}}, false)
+		respond(w, r, 200, map[string]any{"schema": 2, "revision": a.Store.Current(), "selectionAliases": map[string]string{"s1": "current", "s2": "previous"}, "limits": map[string]int{"defaultResults": 100, "maxResults": 1000, "decodedResponseBytes": wire.ResponseBytes, "decodedChunkBytes": wire.ChunkBytes, "scanKeys": store.ScanLimit, "decodedEvidenceResourceBytes": wire.ResourceBytes, "maxEvidenceFragments": wire.ResourceFragments, "cohortScopeBytes": 4096, "cohortComputations": 2, "resultComputations": 2, "resultCacheBytes": resultCacheBytes, "resultCacheEntries": resultCacheEntries, "cohortCells": 100000}, "endpoints": []string{"overview", "results", "reports", "metrics", "methods", "configurations", "environments", "workloads", "artifacts", "history", "aggregates", "cohorts", "sessions"}}, false)
 		return
 	}
 	if path == "overview" || path == "aggregates" || strings.HasPrefix(path, "cohorts/") {
@@ -316,6 +322,15 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	parts := strings.Split(path, "/")
+	if parts[0] == "methods" && len(parts) == 2 {
+		method, e := a.Store.MethodContext(r.Context(), revision, params.Get("definition"), parts[1])
+		if e != nil {
+			problem(w, r, e)
+			return
+		}
+		respond(w, r, 200, map[string]any{"revision": revision, "definition": params.Get("definition"), "id": parts[1], "method": method}, immutable)
+		return
+	}
 	if parts[0] == "sessions" && len(parts) >= 2 {
 		if len(parts) == 2 {
 			v, e := a.Store.SessionInfo(r.Context(), revision, parts[1])
@@ -568,12 +583,20 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 		}
 		qb, _ := wire.Encode(q)
 		queryHash := wire.Hash(append([]byte(path+":"), qb...))
-		rows, e := a.Store.ResultsContext(r.Context(), q, path == "history")
+		if c.Revision != "" && (c.Revision != revision || c.Query != queryHash) {
+			problem(w, r, wire.Invalid("cursor scope differs"))
+			return
+		}
+		rows, e := a.resultRows(r.Context(), q, path == "history")
 		if e != nil {
+			if errors.Is(e, errQueryBusy) {
+				respond(w, r, 429, map[string]string{"error": e.Error()}, false)
+				return
+			}
 			problem(w, r, e)
 			return
 		}
-		a.page(w, r, revision, queryHash, rows, n, c, immutable)
+		a.resultPage(w, r, revision, queryHash, rows, n, c, immutable)
 		return
 	}
 	if kind, ok := kinds[path]; ok && kind != "result" {

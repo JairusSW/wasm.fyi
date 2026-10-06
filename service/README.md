@@ -48,6 +48,17 @@ producer source assertions and operator qualification remain separate fields.
 No baseline or compatible method is selected implicitly. Popular overview presets
 and publication-time precomputation remain pending.
 
+Result and history pages omit full method recipes and evidence inventories while
+retaining `measurementMethodId`, exact source summary values and provenance IDs.
+Resolve one descriptor at `/api/v1/methods/{id}?definition={metricDefinitionId}`
+within the same revision; `/results/{id}` still returns the canonical detail.
+These summary representations are distinct from import records. Pagination
+serializes only returned rows after global selection/sorting. Immutable sorted
+summary selections share a fixed 16 MiB/24-entry cache across page sizes, with
+conservative memory charging; oversized selections are served without retention.
+Two uncached selections may execute concurrently. Cache keys include the exact
+revision, normalized filters, selection, sort and history window.
+
 `GET /api/v1/sessions/{id}?revision=...` reports the session's immutable plan/pin
 bindings and counts of jobs published in that revision. `/sessions/{id}/jobs`
 returns bounded pages of completed collection jobs, with small report and parent

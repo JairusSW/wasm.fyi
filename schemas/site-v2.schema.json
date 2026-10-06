@@ -1218,6 +1218,176 @@
         "operatorQualification"
       ],
       "additionalProperties": false
+    },
+    "ResultSummaryData": {
+      "type": "object",
+      "properties": {
+        "reportId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "environmentId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "configurationId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "runtime": {
+          "type": "string"
+        },
+        "contractId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "workload": {
+          "type": "string"
+        },
+        "scenario": {
+          "type": "string"
+        },
+        "profile": {
+          "type": "string"
+        },
+        "metric": {
+          "type": "string"
+        },
+        "statistic": {
+          "type": "string"
+        },
+        "created": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "analysisVersion": {
+          "type": "string"
+        },
+        "summary": {
+          "$ref": "#/$defs/ProducerSummary"
+        },
+        "evidence": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Digest"
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "trackId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "metricDefinitionId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "metricDefinitionStatus": {
+          "enum": [
+            "available",
+            "unregistered"
+          ]
+        },
+        "measurementMethodId": {
+          "$ref": "#/$defs/Digest"
+        }
+      },
+      "required": [
+        "reportId",
+        "environmentId",
+        "configurationId",
+        "runtime",
+        "contractId",
+        "workload",
+        "scenario",
+        "profile",
+        "metric",
+        "statistic",
+        "created",
+        "analysisVersion",
+        "summary",
+        "evidence",
+        "trackId",
+        "metricDefinitionId",
+        "metricDefinitionStatus"
+      ],
+      "additionalProperties": false,
+      "description": "Selected API summary. Exact producer values and identities are preserved; measurementMethodId resolves via /methods/{id}?definition=metricDefinitionId. The canonical result detail retains the complete method and evidence."
+    },
+    "ResultSummaryRecord": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "result"
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "data": {
+          "$ref": "#/$defs/ResultSummaryData"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "ResultSummaryPage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResultSummaryRecord"
+          }
+        },
+        "nextCursor": {
+          "type": "string"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "revision",
+        "items",
+        "nextCursor",
+        "complete",
+        "total"
+      ],
+      "additionalProperties": false
+    },
+    "MethodDetail": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "definition": {
+          "$ref": "#/$defs/Digest"
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "method": {
+          "$ref": "#/$defs/MeasurementMethod"
+        }
+      },
+      "required": [
+        "revision",
+        "definition",
+        "id",
+        "method"
+      ],
+      "additionalProperties": false
     }
   },
   "$ref": "#/$defs/CompletedJob"

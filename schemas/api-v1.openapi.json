@@ -166,7 +166,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "site-v2.schema.json#/$defs/ResultSummaryPage"
                 }
               }
             }
@@ -183,7 +183,8 @@
           "429": {
             "$ref": "#/components/responses/Response429_4"
           }
-        }
+        },
+        "description": "Globally filtered and sorted immutable summaries, with exact source values and method references. Recipes and evidence are selected-detail resources. Completeness and total refer to the complete selection."
       }
     },
     "/api/v1/reports": {
@@ -763,7 +764,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "site-v2.schema.json#/$defs/ResultSummaryPage"
                 }
               }
             }
@@ -780,7 +781,8 @@
           "429": {
             "$ref": "#/components/responses/Response429_4"
           }
-        }
+        },
+        "description": "Globally filtered and sorted immutable summaries, with exact source values and method references. Recipes and evidence are selected-detail resources. Completeness and total refer to the complete selection."
       }
     },
     "/api/v1/revisions": {
@@ -2156,6 +2158,61 @@
           },
           "429": {
             "description": "Request or cohort computation capacity exceeded"
+          }
+        }
+      }
+    },
+    "/api/v1/methods/{id}": {
+      "get": {
+        "summary": "Resolve one exact producer method in a published definition scope",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "site-v2.schema.json#/$defs/Digest"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "site-v2.schema.json#/$defs/Digest"
+            }
+          },
+          {
+            "name": "definition",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "site-v2.schema.json#/$defs/Digest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded revision-scoped response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "site-v2.schema.json#/$defs/MethodDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Response400_1"
+          },
+          "404": {
+            "$ref": "#/components/responses/Response404_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/Response422_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/Response429_4"
           }
         }
       }

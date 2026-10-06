@@ -48,6 +48,12 @@ func allowedQuery(values url.Values, keys ...string) error {
 }
 func routeQuery(path string, values url.Values) error {
 	parts := strings.Split(path, "/")
+	if len(parts) == 2 && parts[0] == "methods" {
+		if !wire.IsHash(parts[1]) || !wire.IsHash(values.Get("definition")) {
+			return wire.Invalid("exact definition and method digests required")
+		}
+		return allowedQuery(values, "revision", "definition")
+	}
 	if len(parts) >= 2 && parts[0] == "sessions" {
 		if !wire.IsIdentity(parts[1]) {
 			return wire.Invalid("invalid session identity")

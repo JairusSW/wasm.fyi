@@ -735,3 +735,33 @@ and later publication, resolve unpinned current once, and validate linked member
 pagination. Explicit scopes are required; popular preset selection and durable
 publication-time overview precomputation remain open. OpenAPI and JSON Schema
 record the new endpoint and response contract.
+
+### Bounded result pagination and reusable query summaries
+
+The result/history HTTP path no longer serializes and decodes the entire matched
+result set to construct each page. It selects globally ordered rows and serializes
+only the page, advancing the signed cursor at the ordinary response-byte ceiling
+without dropping the remainder. Cursor-scope mismatches are rejected before query
+execution. Totals and completeness continue to describe the full selection.
+
+API summaries now retain the exact producer summary, result/report/configuration/
+contract/definition identities and method digest while omitting full method recipes
+and evidence inventories. Canonical result details and import validation remain
+unchanged. `/api/v1/methods/{id}?definition=...&revision=...` uses the existing
+persistent method index to resolve a selected recipe; an old publication cannot
+resolve a method introduced later. JSON Schema distinguishes import records from
+API summary representations, and OpenAPI describes selected method retrieval.
+
+Normalized immutable selections share a 16 MiB/24-entry FIFO cache, conservatively
+charged for data and structures. Page size affects cursor validity but not the
+cached global ordering. Empty selections are reusable; oversized selections are
+not retained. Two uncached selections are admitted at a time; canceled/error
+queries are not cached. Cache keys freeze revision, current/previous policy,
+filters, sort and normalized history windows. This does not remove the existing
+100,000-key/32 MiB query limits or precompute popular overview scopes.
+
+Tests cover byte/count bounds, oversize rejection, empty hits, cancellation,
+uncached concurrency admission, exact decimal values, selected-row serialization,
+byte-ceiling pagination without loss, method detail identity, old-revision method
+isolation and cursor continuation after new publication. Wider measured resident
+memory/host-load and query-scale gates remain open.

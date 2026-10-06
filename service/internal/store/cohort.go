@@ -479,3 +479,15 @@ func (s *Store) cohortMethod(ctx context.Context, revision string, selector Coho
 	}
 	return method, nil
 }
+
+// MethodContext resolves only descriptors admitted into the selected publication.
+// The metric definition disambiguates the small persistent method posting set.
+func (s *Store) MethodContext(ctx context.Context, revision, definition, method string) (*wire.MeasurementMethod, error) {
+	if !wire.IsHash(definition) || !wire.IsHash(method) {
+		return nil, wire.Invalid("exact definition and method digests required")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	return s.cohortMethod(ctx, revision, CohortSelector{Definition: definition, Method: method})
+}
