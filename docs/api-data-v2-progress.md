@@ -1867,3 +1867,10 @@ The terminal failed process was resumed against the now-published store; missing
 objects, idempotent publication and all original scientific/text assertions are
 still checked. Selected image progress is logged every 25 images. Final real
 qualification remains pending.
+
+The resumed process is still live. A second one-second sample at roughly seven
+minutes places it in `OpenWithLimits` → `restore` → `reachableContext` →
+`EvidenceReferences` strict JSON validation of the published content graph.
+It has not reached idempotent import or serving replay yet. This is startup
+integrity validation, not another permit-release stall. No validation is
+skipped and the process is left running for its original deadline.
