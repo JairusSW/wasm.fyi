@@ -58,8 +58,15 @@ func readRegular(fs *os.Root, name string, ceiling int64) ([]byte, error) {
 
 // Copy, never link, so a checkpoint/backup does not share mutable inodes with
 // the live store. The caller receives the exact stream digest and byte count.
-func copyRegular(ctx context.Context, src *os.Root, name, destination string, ceiling int64) (backupFile, error) {
+// A backup/restore owns one buffer; copying is sequential and never retains it.
+func copyRegular(ctx context.Context, src *os.Root, name, destination string, ceiling int64, buffer []byte) (backupFile, error) {
 	out := backupFile{Path: name}
+	if err := ctx.Err(); err != nil {
+		return out, err
+	}
+	if len(buffer) == 0 {
+		return out, fmt.Errorf("empty backup copy buffer")
+	}
 	info, e := src.Lstat(name)
 	if e != nil {
 		return out, e
@@ -88,7 +95,6 @@ func copyRegular(ctx context.Context, src *os.Root, name, destination string, ce
 	}
 	defer f.Close()
 	hash := sha256.New()
-	buffer := make([]byte, 128*1024)
 	limited := io.LimitReader(in, ceiling+1)
 	for {
 		if e = ctx.Err(); e != nil {
@@ -167,6 +173,7 @@ func (s *Store) Backup(ctx context.Context, destination string) (BackupManifest,
 	}
 	defer checkpoint.Close()
 	files := []backupFile{}
+	copyBuffer := make([]byte, 128*1024)
 	e = filepath.WalkDir(filepath.Join(temp, "checkpoint"), func(path string, entry os.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -181,7 +188,7 @@ func (s *Store) Backup(ctx context.Context, destination string) (BackupManifest,
 		if e != nil {
 			return e
 		}
-		record, e := copyRegular(ctx, checkpoint, relative, filepath.Join(temp, "db", relative), 16<<30)
+		record, e := copyRegular(ctx, checkpoint, relative, filepath.Join(temp, "db", relative), 16<<30, copyBuffer)
 		if e != nil {
 			return e
 		}
@@ -202,7 +209,7 @@ func (s *Store) Backup(ctx context.Context, destination string) (BackupManifest,
 	}
 	sort.Strings(objects)
 	for _, id := range objects {
-		record, e := copyRegular(ctx, s.objects, id, filepath.Join(temp, "objects", id), wire.BlobBytes)
+		record, e := copyRegular(ctx, s.objects, id, filepath.Join(temp, "objects", id), wire.BlobBytes, copyBuffer)
 		if e != nil {
 			if os.IsNotExist(e) && !required[id] {
 				continue
@@ -229,7 +236,7 @@ func (s *Store) Backup(ctx context.Context, destination string) (BackupManifest,
 		if !info.Mode().IsRegular() || info.Size() != 32 {
 			return manifest, fmt.Errorf("invalid cursor secret")
 		}
-		record, e := copyRegular(ctx, source, "cursor.key", filepath.Join(temp, "cursor.key"), 32)
+		record, e := copyRegular(ctx, source, "cursor.key", filepath.Join(temp, "cursor.key"), 32, copyBuffer)
 		if e != nil {
 			return manifest, e
 		}
@@ -468,6 +475,7 @@ func Restore(ctx context.Context, backup, destination, publisher string) error {
 		return e
 	}
 	defer fs.Close()
+	copyBuffer := make([]byte, 128*1024)
 	e = filepath.WalkDir(backup, func(path string, entry os.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -482,7 +490,7 @@ func Restore(ctx context.Context, backup, destination, publisher string) error {
 		if e != nil {
 			return e
 		}
-		_, e = copyRegular(ctx, fs, filepath.ToSlash(name), filepath.Join(temp, name), 16<<30)
+		_, e = copyRegular(ctx, fs, filepath.ToSlash(name), filepath.Join(temp, name), 16<<30, copyBuffer)
 		return e
 	})
 	if e != nil {
