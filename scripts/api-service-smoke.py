@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import shutil
 import socket
 import subprocess
 import tempfile
@@ -28,16 +29,20 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--binary", type=Path, required=True)
     parser.add_argument("--fixture", type=Path, default=Path(__file__).resolve().parent.parent / "service/testdata/site-v2")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--export", type=Path, help="Keep a new portable backup and frozen expectations after validation")
+    mode.add_argument("--recover", type=Path, help="Validate an exported bundle without importing its source fixture")
     args = parser.parse_args()
     binary = str(args.binary.resolve())
-    manifest = json.loads((args.fixture / "manifest.json").read_bytes())
-    payloads = {o["sha256"]: (args.fixture / "objects" / o["sha256"]).read_bytes() for o in manifest["objects"]}
-    for o in manifest["objects"]:
-        assert len(payloads[o["sha256"]]) == o["bytes"] and digest(payloads[o["sha256"]]) == o["sha256"]
-    job = {"schema": 2, "session": "native-smoke", "machine": "isolated", "corpus": "corpus-0001", "attempt": "synthetic",
-           "plan": digest(b"synthetic smoke plan"), "configuredHarnessPin": "0509a0a323f41c58a2f2db15a372fb2e63c692bf",
-           "parentBundleSha256": digest(b"no archived tools in this synthetic fixture"), "status": "completed",
-           "exports": [{"sha256": digest(encoded(manifest)), "manifest": manifest}]}
+    if not args.recover:
+        manifest = json.loads((args.fixture / "manifest.json").read_bytes())
+        payloads = {o["sha256"]: (args.fixture / "objects" / o["sha256"]).read_bytes() for o in manifest["objects"]}
+        for o in manifest["objects"]:
+            assert len(payloads[o["sha256"]]) == o["bytes"] and digest(payloads[o["sha256"]]) == o["sha256"]
+        job = {"schema": 2, "session": "native-smoke", "machine": "isolated", "corpus": "corpus-0001", "attempt": "synthetic",
+               "plan": digest(b"synthetic smoke plan"), "configuredHarnessPin": "0509a0a323f41c58a2f2db15a372fb2e63c692bf",
+               "parentBundleSha256": digest(b"no archived tools in this synthetic fixture"), "status": "completed",
+               "exports": [{"sha256": digest(encoded(manifest)), "manifest": manifest}]}
     token = "isolated-smoke-" + os.urandom(32).hex()
     env = {**os.environ, "WASMFYI_ADMIN_TOKEN": token}
     with tempfile.TemporaryDirectory(prefix="wasmfyi-native-smoke-") as temporary:
@@ -87,7 +92,7 @@ def main():
                         process.wait(timeout=5)
                     assert process.returncode == 0, (root / (data.name + ".log")).read_text()
 
-        frozen = {}
+        frozen = json.loads((args.recover / "expected.json").read_bytes()) if args.recover else {}
         def import_and_read(call):
             identifier = call("/admin/v1/imports", "POST", job)["id"]
             for _ in range(len(payloads) + 1):
@@ -107,7 +112,8 @@ def main():
                           session=call("/api/v1/sessions/native-smoke?revision=" + revision),
                           history=call("/api/v1/history?revision=" + revision))
         live = root / "live"
-        exercise(live, import_and_read)
+        if not args.recover:
+            exercise(live, import_and_read)
         def verify(call):
             assert call("/api/v1/manifest")["revision"] == frozen["revision"]
             assert call("/api/v1/results?revision=" + frozen["revision"] + "&limit=1") == frozen["page"]
@@ -116,15 +122,24 @@ def main():
             assert call("/api/v1/results?limit=1&cursor=" + quote(cursor, safe=""))["revision"] == frozen["revision"]
             assert call("/api/v1/sessions/native-smoke?revision=" + frozen["revision"]) == frozen["session"]
             assert call("/api/v1/history?revision=" + frozen["revision"]) == frozen["history"]
-        exercise(live, verify)
-        backup = root / "backup"
-        command("backup", "--data", live, "--output", backup)
+        backup = args.recover / "backup" if args.recover else root / "backup"
+        if not args.recover:
+            exercise(live, verify)
+            command("backup", "--data", live, "--output", backup)
         command("verify-backup", "--data", backup)
         for action in ["restore", "rebuild"]:
             destination = root / action
             command(action, "--data", backup, "--output", destination)
             exercise(destination, verify)
-        print(json.dumps({"status": "passed", "system": platform.system(), "machine": platform.machine(), "checks": ["http-import", "idempotence", "graceful-shutdown", "restart", "backup-verification", "restore", "db-free-rebuild", "frozen-values", "cursor-key"], "fixture": "synthetic; no benchmark execution"}))
+        if args.export:
+            args.export.mkdir(mode=0o700, parents=True, exist_ok=False)
+            shutil.copytree(backup, args.export / "backup")
+            (args.export / "expected.json").write_bytes(encoded(frozen))
+            command("verify-backup", "--data", args.export / "backup")
+        checks = ["graceful-shutdown", "backup-verification", "restore", "db-free-rebuild", "frozen-values", "cursor-key"]
+        if not args.recover:
+            checks = ["http-import", "idempotence", "restart", *checks]
+        print(json.dumps({"status": "passed", "system": platform.system(), "machine": platform.machine(), "checks": checks, "mode": "recover" if args.recover else "collect", "fixture": "synthetic; no benchmark execution"}))
 
 
 if __name__ == "__main__":

@@ -18,11 +18,28 @@ copies. It checks frozen result/session/history values and the original signed
 pagination cursor in each copy. It deletes its temporary data on exit. CI runs
 this against the native Linux binary in addition to the Go tests.
 
-Local execution passed on macOS arm64 and Linux aarch64. The Linux run used a
-non-root, network-disabled container with one CPU, 512 MiB memory, a read-only
-root filesystem and temporary data on tmpfs. This establishes executable/API
-compatibility; it does not test durable storage across machine failure, off-machine
-restore, production proxy behavior or scientific qualification.
+To retain a private portable bundle for another machine, add `--export`:
+
+```sh
+python3 scripts/api-service-smoke.py --binary /tmp/wasmfyi-smoke --export /tmp/wasmfyi-portable-smoke
+python3 scripts/api-service-smoke.py --binary /tmp/wasmfyi-smoke --recover /tmp/wasmfyi-portable-smoke
+```
+
+Recovery requires only the exported bundle, not the producer fixture. Preserve
+private file modes when transferring it. On macOS, use `tar --no-mac-metadata
+--no-xattrs` when creating a transfer archive: added Apple metadata files are
+correctly rejected by strict backup verification.
+
+Local execution passed on macOS arm64, Linux aarch64 and native Linux x86_64.
+The aarch64 run used a non-root, network-disabled container with one CPU, 512 MiB
+memory, a read-only root filesystem and temporary data on tmpfs. The x86_64 run
+used a separate host, one CPU and ordinary filesystem-backed temporary stores.
+Off-machine restore and DB-free rebuild passed in both macOS arm64 → Linux
+x86_64 and Linux x86_64 → macOS arm64 directions, preserving frozen values and
+signed cursors without importing the source fixture. These are synthetic-fixture
+checks; physical machine-failure durability, large real-evidence recovery,
+production proxy behavior and scientific qualification remain unproven. The
+updated CI workflow has not yet been run.
 
 Wire decoding rejects malformed UTF-8 and unpaired UTF-16 escapes instead of
 silently replacing source text. Duplicate keys, unknown typed fields and trailing

@@ -29,7 +29,8 @@ jobs:
       - name: Run Linux service lifecycle smoke test
         run: |
           go build -o "$RUNNER_TEMP/wasmfyi-smoke" ./cmd/wasmfyi
-          python ../scripts/api-service-smoke.py --binary "$RUNNER_TEMP/wasmfyi-smoke"
+          python ../scripts/api-service-smoke.py --binary "$RUNNER_TEMP/wasmfyi-smoke" --export "$RUNNER_TEMP/wasmfyi-portable-smoke"
+          python ../scripts/api-service-smoke.py --binary "$RUNNER_TEMP/wasmfyi-smoke" --recover "$RUNNER_TEMP/wasmfyi-portable-smoke"
         working-directory: service
         env:
           GOFLAGS: -mod=readonly
