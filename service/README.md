@@ -625,3 +625,22 @@ through one proxy hop. macOS can omit only that secondary-address subcase when
 the OS has no loopback alias. These tests qualify the reference path, not an
 operator's reverse-proxy/firewall configuration or a deployed TLS certificate.
 The production proxy must overwrite the header and restrict direct API access.
+
+Actual kernel disk exhaustion has a separate opt-in Linux gate. From the site
+root, with the runner's pinned image already installed, run:
+
+```sh
+./scripts/api-disk-full-test.sh
+```
+
+The runner compiles for the native Linux Docker engine and requires a matching
+image architecture. It runs as a non-root user with networking disabled, a
+read-only root filesystem and a fresh 32 MiB tmpfs. The test refuses non-tmpfs,
+nonempty or larger-than-64-MiB exhaustion targets; ordinary Go test runs skip it.
+
+Real kernel ENOSPC during a declared upload leaves no canonical partial object.
+ENOSPC during publication leaves the previous revision readable. Freeing space
+allows upload/publication retry, idempotent commit, restart and portable rebuild
+with the same head and captures. The native Linux arm64 runner passes locally.
+This covers upload and pre-publication index allocation, not an exhausted Pebble
+WAL, physical disk/device failures or power loss. CI execution remains pending.
