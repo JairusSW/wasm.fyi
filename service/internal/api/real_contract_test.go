@@ -520,12 +520,34 @@ func TestRealProducerServingParity(t *testing.T) {
 			}
 		}
 		t.Log("starting real backup/rebuild qualification")
+		recoveryRoot := os.Getenv("WASMFYI_REAL_RECOVERY_ROOT")
 		backup := filepath.Join(t.TempDir(), "backup")
-		if _, e = s.Backup(context.Background(), backup); e != nil {
-			t.Fatal(e)
+		rebuilt := filepath.Join(t.TempDir(), "rebuilt")
+		if recoveryRoot != "" {
+			if e = os.MkdirAll(recoveryRoot, 0700); e != nil {
+				t.Fatal(e)
+			}
+			info, err := os.Lstat(recoveryRoot)
+			if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
+				t.Fatal("recovery fixture root must be a real directory", err)
+			}
+			backup = filepath.Join(recoveryRoot, "backup")
+			rebuilt = filepath.Join(recoveryRoot, "rebuilt")
+		}
+		if _, err := os.Lstat(backup); os.IsNotExist(err) {
+			if _, e = s.Backup(context.Background(), backup); e != nil {
+				t.Fatal(e)
+			}
+		} else if err != nil {
+			t.Fatal(err)
+		} else {
+			manifest, err := store.VerifyBackup(context.Background(), backup)
+			if err != nil || manifest.Current != revision {
+				t.Fatal("retained backup scope differs", err)
+			}
+			t.Log("reusing verified retained backup")
 		}
 		t.Log("real backup completed; starting DB-free rebuild")
-		rebuilt := filepath.Join(t.TempDir(), "rebuilt")
 		if e = store.Rebuild(backup, rebuilt, "real-source-parity"); e != nil {
 			t.Fatal(e)
 		}

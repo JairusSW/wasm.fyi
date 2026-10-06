@@ -80,8 +80,8 @@ func Open(root, publisher string) (*Store, error) {
 	return OpenWithLimits(root, publisher, DefaultLimits())
 }
 func OpenWithLimits(root, publisher string, limits Limits) (*Store, error) {
-	if limits.PendingJobs < 1 || limits.PendingBytes < 1 || limits.ContentBytes < wire.ChunkBytes {
-		return nil, wire.Invalid("invalid storage limits")
+	if err := validateLimits(limits); err != nil {
+		return nil, err
 	}
 	if publisher == "" {
 		return nil, fmt.Errorf("publisher identity required")

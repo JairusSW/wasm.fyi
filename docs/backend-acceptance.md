@@ -20,8 +20,12 @@ The restarted large Wasmtime run has now completed its serving parity checks:
 163 native images, 256 selected function listings, nine original resources, 17
 analytical sections, 672 timing summaries, 835 memory summaries and 163 native-size
 measurements across five exact scopes. Its 444,970,172-byte report archive retains
-4,765 sealed files. Backup/database-free rebuild is still running, with no terminal
-recovery success claimed.
+4,765 sealed files. Backup completed, but database-free rebuild failed when it
+re-admitted that already published job under the default 512 MiB pending-upload
+quota. Published-receipt restoration now avoids staging admission while retaining
+content quotas; new uploads remain subject to ordinary admission. The one-byte
+quota regression, accepted duplicate delivery and existing corruption/membership
+recovery gates pass under race detection. Large recovery remains unqualified.
 
 Conformance publication now validates WAST inventory/outcome membership and
 totals, keeps official WASI case counts separate from Go leaves, preserves missing
@@ -136,3 +140,15 @@ response, incompatible cached controllers and unchanged legacy reuse. The servin
 dependency closure remains 409 packages without SQLite or harness execution.
 Cached API preparation also requires the controller itself in the tool hash
 receipt before running the probe; the missing-controller regression passes.
+
+
+The real Wasmtime qualification ended at 5,333 seconds with `ErrQuota` during
+rebuild, after source/serving parity and backup passed. The fix restores canonical
+published job headers, immutable session/member/attempt bindings and accepted
+receipts directly into the new database after verifying the portable closure.
+It does not create pending owners or weaken publisher HTTP admission. Rebuild
+now accepts explicit storage limits through `RebuildWithLimits`; CLI storage
+flags are honored and invalid limits fail before any destination is installed.
+Retained real recovery directories can preserve a verified backup for another
+attempt, with revision equality checked before reuse. Terminal large recovery
+success must still be established with the corrected code.

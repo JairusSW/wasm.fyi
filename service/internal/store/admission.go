@@ -23,6 +23,13 @@ type Limits struct {
 	ContentBytes int64
 }
 
+func validateLimits(limits Limits) error {
+	if limits.PendingJobs < 1 || limits.PendingBytes < 1 || limits.ContentBytes < wire.ChunkBytes {
+		return wire.Invalid("invalid storage limits")
+	}
+	return nil
+}
+
 func DefaultLimits() Limits {
 	return Limits{PendingJobs: 128, PendingBytes: 512 << 20, ContentBytes: 50 << 30}
 }

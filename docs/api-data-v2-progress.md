@@ -2078,3 +2078,22 @@ recorded source revisions remain separate. These are trusted publisher assertion
 not new result rows or an independent report verification. Projection/retention
 and real collector tests pass; the projected records are not yet published or
 served by the backend.
+
+
+## Rebuild acknowledged imports independently of staging quota
+
+The large Wasmtime source/serving gate passed and backup completed, but rebuild
+failed while calling normal import admission for its already acknowledged job.
+The source had used a larger pending quota; rebuilding under the default 512 MiB
+limit wrongly treated that published dataset as a new staged upload.
+
+Rebuild now restores validated canonical job headers and accepted receipts in
+synchronous batches, retaining immutable scope bindings and all portable closure
+checks. No pending reservation or upload permit is created. Content storage
+remains bounded, `RebuildWithLimits` exposes recovery limits, and CLI rebuild
+honors the existing storage flags. A race regression rebuilds with a one-byte
+staging quota, confirms zero pending reservations and exact accepted redelivery,
+and proves a genuinely new import is still rejected by that quota. Existing
+portable/corruption/future-publication/context gates pass under race detection.
+The real fixture can retain a backup through a failed recovery and verifies its
+revision before reusing it. The corrected large recovery is not yet qualified.

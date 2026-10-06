@@ -90,7 +90,7 @@ func run(ctx context.Context, args []string) error {
 		if action == "restore" {
 			return store.Restore(ctx, *root, *output, *publisher)
 		}
-		return store.Rebuild(*root, *output, *publisher)
+		return store.RebuildWithLimits(*root, *output, *publisher, limits)
 	case "serve", "backup", "gc":
 	default:
 		return fmt.Errorf("unknown command %q; use serve, backup, verify-backup, restore, rebuild or gc", action)

@@ -935,6 +935,15 @@ func validateNode(n node) error {
 // Rebuild a brand-new database using only the acknowledged portable pointer and
 // immutable content. Source directories are never modified or silently reused.
 func Rebuild(source, destination, publisher string) error {
+	return RebuildWithLimits(source, destination, publisher, DefaultLimits())
+}
+
+// Recovery preserves already published jobs without re-admitting them as staged
+// uploads. Content storage remains bounded by the operator's recovery limits.
+func RebuildWithLimits(source, destination, publisher string, limits Limits) error {
+	if err := validateLimits(limits); err != nil {
+		return err
+	}
 	if _, e := os.Lstat(destination); e == nil {
 		return fmt.Errorf("destination already exists")
 	} else if !os.IsNotExist(e) {
@@ -989,7 +998,7 @@ func Rebuild(source, destination, publisher string) error {
 		return e
 	}
 	defer os.RemoveAll(temp)
-	target, e := Open(temp, publisher)
+	target, e := OpenWithLimits(temp, publisher, limits)
 	if e != nil {
 		return e
 	}
@@ -1021,19 +1030,13 @@ func Rebuild(source, destination, publisher string) error {
 		if e = reader.load(rev.Job, &job); e != nil {
 			return e
 		}
-		jobID, e := target.Submit(job)
-		if e != nil {
-			return e
-		}
-		if jobID != rev.Job {
-			return fmt.Errorf("job hash differs during rebuild")
-		}
+		jobID := rev.Job
 		rb, e := wire.Encode(rev)
 		if e != nil {
 			return e
 		}
 		batch := target.db.NewBatch()
-		if e = target.releaseImport(batch, jobID, job); e != nil {
+		if e = target.restorePublishedJob(batch, jobID, job); e != nil {
 			batch.Close()
 			return e
 		}

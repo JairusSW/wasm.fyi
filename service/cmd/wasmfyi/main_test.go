@@ -5,6 +5,7 @@ import (
 	"context"
 	"github.com/JairusSW/wasm.fyi/service/internal/store"
 	"github.com/JairusSW/wasm.fyi/service/internal/testutil"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -43,7 +44,7 @@ func TestOperationalCommands(t *testing.T) {
 	}
 	ctx := context.Background()
 	backup := filepath.Join(root, "backup")
-	for _, args := range [][]string{{"backup", "--data", data, "--output", backup}, {"verify-backup", "--data", backup}, {"restore", "--data", backup, "--output", filepath.Join(root, "restored")}, {"rebuild", "--data", backup, "--output", filepath.Join(root, "rebuilt")}} {
+	for _, args := range [][]string{{"backup", "--data", data, "--output", backup}, {"verify-backup", "--data", backup}, {"restore", "--data", backup, "--output", filepath.Join(root, "restored")}, {"rebuild", "--data", backup, "--output", filepath.Join(root, "rebuilt"), "--max-pending-bytes", "1"}} {
 		if e = run(ctx, args); e != nil {
 			t.Fatalf("%v: %v", args, e)
 		}
@@ -61,6 +62,13 @@ func TestOperationalCommands(t *testing.T) {
 			t.Fatal("lost persistent cursor key")
 		}
 		s.Close()
+	}
+	invalid := filepath.Join(root, "invalid-rebuild")
+	if e = run(ctx, []string{"rebuild", "--data", backup, "--output", invalid, "--max-content-bytes", "1"}); e == nil {
+		t.Fatal("rebuild ignored storage limits")
+	}
+	if _, e = os.Lstat(invalid); !os.IsNotExist(e) {
+		t.Fatal("invalid recovery exposed a destination", e)
 	}
 	if e = run(ctx, []string{""}); e == nil {
 		t.Fatal("empty command accepted")
