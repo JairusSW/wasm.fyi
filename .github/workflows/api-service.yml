@@ -26,6 +26,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Run Linux service lifecycle smoke test
+        run: |
+          go build -o "$RUNNER_TEMP/wasmfyi-smoke" ./cmd/wasmfyi
+          python ../scripts/api-service-smoke.py --binary "$RUNNER_TEMP/wasmfyi-smoke"
+        working-directory: service
+        env:
+          GOFLAGS: -mod=readonly
+          GOWORK: 'off'
       - run: python -m pip install 'jsonschema[format-nongpl]==4.26.0'
       - run: python scripts/check-api-contracts.test.py
       - name: Capture and validate schema contracts

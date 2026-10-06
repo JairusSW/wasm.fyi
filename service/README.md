@@ -4,6 +4,26 @@ Experimental Go/Pebble/local-content service for the existing collector. See the
 [implementation checkpoint](../docs/api-data-v2-progress.md) for commands,
 wire contracts, validation and remaining production gates.
 
+Run the built executable lifecycle smoke test from the site root:
+
+```sh
+(cd service && GOFLAGS=-mod=readonly GOWORK=off go build -o /tmp/wasmfyi-smoke ./cmd/wasmfyi)
+python3 scripts/api-service-smoke.py --binary /tmp/wasmfyi-smoke
+```
+
+The standard-library Python runner creates temporary stores, publishes the
+synthetic producer fixture over HTTP, repeats the commit, shuts down gracefully,
+restarts, verifies a backup, then serves both its restored and DB-free rebuilt
+copies. It checks frozen result/session/history values and the original signed
+pagination cursor in each copy. It deletes its temporary data on exit. CI runs
+this against the native Linux binary in addition to the Go tests.
+
+Local execution passed on macOS arm64 and Linux aarch64. The Linux run used a
+non-root, network-disabled container with one CPU, 512 MiB memory, a read-only
+root filesystem and temporary data on tmpfs. This establishes executable/API
+compatibility; it does not test durable storage across machine failure, off-machine
+restore, production proxy behavior or scientific qualification.
+
 Wire decoding rejects malformed UTF-8 and unpaired UTF-16 escapes instead of
 silently replacing source text. Duplicate keys, unknown typed fields and trailing
 documents remain rejected. Numeric token validation preserves original JSON
