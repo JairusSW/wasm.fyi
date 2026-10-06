@@ -210,7 +210,7 @@ func (s *Store) representationRank(revision Revision, record wire.Record) (int, 
 
 // Return whether an observation already existed, retaining the richer available
 // representation. Stable ID order breaks equal-rank ties without publication time.
-func (s *Store) registerObservation(revision *Revision, record wire.Record) (bool, error) {
+func (s *Store) registerObservation(revision *Revision, record wire.Record, pending ...*observationBatch) (bool, error) {
 	id, err := observationIdentity(record, revision.ObservationPolicy)
 	if err != nil {
 		return false, err
@@ -220,12 +220,12 @@ func (s *Store) registerObservation(revision *Revision, record wire.Record) (boo
 		return false, err
 	}
 	if revision.ObservationPolicy != ObservationPolicy {
-		return s.registerObservationIdentity(revision, record, id)
+		return s.registerObservationIdentity(revision, record, id, pending...)
 	}
 	// Source binding and evidence ranking are separate: a descriptor need not
 	// replace a richer same-report representation to prove its source identity.
 	if id != legacy {
-		priorProof, err := s.mapGet(revision.SourceBindings, legacy)
+		priorProof, err := s.observationLookup(revision.SourceBindings, legacy, observationOverlay(pending, true))
 		if err != nil {
 			return false, err
 		}
@@ -242,17 +242,17 @@ func (s *Store) registerObservation(revision *Revision, record wire.Record) (boo
 				return false, wire.Invalid("conflicting same-report source binding")
 			}
 		} else {
-			revision.SourceBindings, err = s.mapSet(revision.SourceBindings, legacy, record.ID, 0)
+			err = s.observationSet(&revision.SourceBindings, legacy, record.ID, observationOverlay(pending, true))
 			if err != nil {
 				return false, err
 			}
 		}
 	}
-	existed, err := s.registerObservationIdentity(revision, record, legacy)
+	existed, err := s.registerObservationIdentity(revision, record, legacy, pending...)
 	if err != nil {
 		return false, err
 	}
-	proofID, err := s.mapGet(revision.SourceBindings, legacy)
+	proofID, err := s.observationLookup(revision.SourceBindings, legacy, observationOverlay(pending, true))
 	if err != nil || proofID == "" {
 		return existed, err
 	}
@@ -264,7 +264,7 @@ func (s *Store) registerObservation(revision *Revision, record wire.Record) (boo
 	if err != nil {
 		return false, err
 	}
-	preferred, err := s.mapGet(revision.Observations, legacy)
+	preferred, err := s.observationLookup(revision.Observations, legacy, observationOverlay(pending, false))
 	if err != nil {
 		return false, err
 	}
@@ -275,7 +275,7 @@ func (s *Store) registerObservation(revision *Revision, record wire.Record) (boo
 	if err := compatibleSourceProof(rich, proof); err != nil {
 		return false, err
 	}
-	shared, err := s.registerObservationIdentity(revision, rich, sharedID)
+	shared, err := s.registerObservationIdentity(revision, rich, sharedID, pending...)
 	return existed || shared, err
 }
 
@@ -310,8 +310,8 @@ func compatibleSourceProof(record, proof wire.Record) error {
 	return source.ValidateMethod()
 }
 
-func (s *Store) registerObservationIdentity(revision *Revision, record wire.Record, id string) (bool, error) {
-	prior, err := s.mapGet(revision.Observations, id)
+func (s *Store) registerObservationIdentity(revision *Revision, record wire.Record, id string, pending ...*observationBatch) (bool, error) {
+	prior, err := s.observationLookup(revision.Observations, id, observationOverlay(pending, false))
 	if err != nil {
 		return false, err
 	}
@@ -335,11 +335,11 @@ func (s *Store) registerObservationIdentity(revision *Revision, record wire.Reco
 			return true, nil
 		}
 	}
-	revision.Observations, err = s.mapSet(revision.Observations, id, record.ID, 0)
+	err = s.observationSet(&revision.Observations, id, record.ID, observationOverlay(pending, false))
 	return prior != "", err
 }
-func (s *Store) resolveObservation(revision Revision, result string) (string, error) {
-	if revision.Observations == "" {
+func (s *Store) resolveObservation(revision Revision, result string, pending ...*observationBatch) (string, error) {
+	if revision.Observations == "" && len(observationOverlay(pending, false)) == 0 {
 		return result, nil
 	}
 	record, err := s.record(revision.Catalog, "result", result)
@@ -351,7 +351,7 @@ func (s *Store) resolveObservation(revision Revision, result string) (string, er
 		if err != nil {
 			return "", err
 		}
-		proofID, err := s.mapGet(revision.SourceBindings, legacy)
+		proofID, err := s.observationLookup(revision.SourceBindings, legacy, observationOverlay(pending, true))
 		if err != nil {
 			return "", err
 		}
@@ -366,7 +366,7 @@ func (s *Store) resolveObservation(revision Revision, result string) (string, er
 				return "", err
 			}
 		}
-		preferred, err := s.mapGet(revision.Observations, id)
+		preferred, err := s.observationLookup(revision.Observations, id, observationOverlay(pending, false))
 		if err != nil {
 			return "", err
 		}
@@ -379,7 +379,7 @@ func (s *Store) resolveObservation(revision Revision, result string) (string, er
 	if err != nil {
 		return "", err
 	}
-	resolved, err := s.mapGet(revision.Observations, id)
+	resolved, err := s.observationLookup(revision.Observations, id, observationOverlay(pending, false))
 	if err != nil {
 		return "", err
 	}
@@ -397,7 +397,7 @@ func (s *Store) resolveObservation(revision Revision, result string) (string, er
 		if err != nil {
 			return "", err
 		}
-		preferred, err := s.mapGet(revision.Observations, shared)
+		preferred, err := s.observationLookup(revision.Observations, shared, observationOverlay(pending, false))
 		if err != nil {
 			return "", err
 		}

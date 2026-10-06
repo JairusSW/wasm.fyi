@@ -51,6 +51,18 @@ func TestRealProducerServingParity(t *testing.T) {
 		root = path
 		t.Logf("retained real-fixture store: %s", root)
 	}
+	resume := os.Getenv("WASMFYI_REAL_RESUME_STORE")
+	if resume != "" {
+		if os.Getenv("WASMFYI_REAL_STORE") != "" {
+			t.Fatal("new and resumed stores are mutually exclusive")
+		}
+		info, err := os.Lstat(resume)
+		if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
+			t.Fatal("resume requires an existing real directory", err)
+		}
+		root = resume
+		t.Logf("resuming retained real-fixture store: %s", root)
+	}
 	s, e := store.OpenWithLimits(root, "real-source-parity", limits)
 	if e != nil {
 		t.Fatal(e)
@@ -153,15 +165,43 @@ func TestRealProducerServingParity(t *testing.T) {
 			}
 			objects = append(objects, inventory.Objects...)
 		}
-		for _, object := range objects {
-			data, e := os.ReadFile(filepath.Join(input.Export, "objects", object.SHA256))
-			if e != nil {
-				t.Fatal(e)
+		install := func(object wire.Object) {
+			data, err := os.ReadFile(filepath.Join(input.Export, "objects", object.SHA256))
+			if err != nil {
+				t.Fatal(err)
 			}
-			if e = s.InstallDeclared(object.SHA256, bytes.NewReader(data)); e != nil {
-				t.Fatal(e)
+			if err = s.InstallDeclared(object.SHA256, bytes.NewReader(data)); err != nil {
+				t.Fatal(err)
 			}
 		}
+		if resume == "" {
+			for n, object := range objects {
+				install(object)
+				if (n+1)%10000 == 0 {
+					t.Logf("installed %d/%d producer payloads", n+1, len(objects))
+				}
+			}
+		} else {
+			uploaded := 0
+			for pages := 0; pages <= len(objects); pages++ {
+				missing, err := s.Missing(id)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if len(missing) == 0 {
+					break
+				}
+				if pages == len(objects) {
+					t.Fatal("resumed missing-object import did not converge")
+				}
+				for _, object := range missing {
+					install(object)
+					uploaded++
+				}
+			}
+			t.Logf("resumed real import installed %d missing payloads", uploaded)
+		}
+		t.Logf("committing producer export %s", filepath.Base(input.Export))
 		if _, e = s.Commit(id); e != nil {
 			t.Fatal("real producer import", e)
 		}

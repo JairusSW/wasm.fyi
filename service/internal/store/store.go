@@ -854,6 +854,39 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 	if e = s.addRecordIndexBatch(ctx, &rev, records, digests); e != nil {
 		return "", e
 	}
+	pendingObservations := &observationBatch{observations: map[string]string{}, sources: map[string]string{}}
+	pendingCells := map[string]cell{}
+	pendingCount := 0
+	flushPending := func() error {
+		if e = pendingObservations.flush(ctx, s, &rev); e != nil {
+			return e
+		}
+		selectionUpdates := map[string]string{}
+		cellKeys := make([]string, 0, len(pendingCells))
+		for key := range pendingCells {
+			cellKeys = append(cellKeys, key)
+		}
+		sort.Strings(cellKeys)
+		for _, key := range cellKeys {
+			if e = ctx.Err(); e != nil {
+				return e
+			}
+			digest, err := s.put(pendingCells[key])
+			if err != nil {
+				return err
+			}
+			selectionUpdates[key] = digest
+		}
+		rev.Selection, e = s.mapSetMany(ctx, rev.Selection, selectionUpdates, 0)
+		if e != nil {
+			return e
+		}
+
+		pendingObservations = &observationBatch{observations: map[string]string{}, sources: map[string]string{}}
+		pendingCells = map[string]cell{}
+		pendingCount = 0
+		return nil
+	}
 	for _, k := range keys {
 		if e := ctx.Err(); e != nil {
 			return "", e
@@ -862,34 +895,42 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 		if r.Kind != "result" {
 			continue
 		}
+		if pendingCount == observationBatchRecords {
+			if e = flushPending(); e != nil {
+				return "", e
+			}
+		}
+		pendingCount++
 		var v wire.Result
 		if e = wire.Decode(r.Data, &v); e != nil {
 			return "", e
 		}
 		cellKey := v.Cell()
-		old, e := s.mapGet(rev.Selection, cellKey)
-		if e != nil {
-			return "", e
-		}
-		c := cell{}
-		if old != "" {
-			if e = s.load(old, &c); e != nil {
+		c, staged := pendingCells[cellKey]
+		if !staged {
+			old, e := s.mapGet(rev.Selection, cellKey)
+			if e != nil {
 				return "", e
 			}
+			if old != "" {
+				if e = s.load(old, &c); e != nil {
+					return "", e
+				}
+			}
 		}
-		captured, e := s.registerObservation(&rev, r)
+		captured, e := s.registerObservation(&rev, r, pendingObservations)
 		if e != nil {
 			return "", e
 		}
 		if captured {
 			if c.Current != "" {
-				c.Current, e = s.resolveObservation(rev, c.Current)
+				c.Current, e = s.resolveObservation(rev, c.Current, pendingObservations)
 				if e != nil {
 					return "", e
 				}
 			}
 			if c.Previous != "" {
-				c.Previous, e = s.resolveObservation(rev, c.Previous)
+				c.Previous, e = s.resolveObservation(rev, c.Previous, pendingObservations)
 				if e != nil {
 					return "", e
 				}
@@ -897,14 +938,7 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 			if c.Previous == c.Current {
 				c.Previous = ""
 			}
-			digest, e := s.put(c)
-			if e != nil {
-				return "", e
-			}
-			rev.Selection, e = s.mapSet(rev.Selection, cellKey, digest, 0)
-			if e != nil {
-				return "", e
-			}
+			pendingCells[cellKey] = c
 			continue
 		}
 		c.History, e = s.put(history{r.ID, c.History})
@@ -921,7 +955,7 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 		distinct := []string{}
 		seen := map[string]bool{}
 		for _, rid := range choices {
-			resolved, err := s.resolveObservation(rev, rid)
+			resolved, err := s.resolveObservation(rev, rid, pendingObservations)
 			if err != nil {
 				return "", err
 			}
@@ -954,15 +988,12 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 		if len(choices) > 1 {
 			c.Previous = choices[1]
 		}
-		digest, e := s.put(c)
-		if e != nil {
-			return "", e
-		}
-		rev.Selection, e = s.mapSet(rev.Selection, cellKey, digest, 0)
-		if e != nil {
-			return "", e
-		}
+		pendingCells[cellKey] = c
 	}
+	if e = flushPending(); e != nil {
+		return "", e
+	}
+
 	// Portable job + revision roots are durable before the Pebble pointer.
 	jb, _ := wire.Encode(j)
 	if e = s.installRepresentation(id, jb, wire.JobBytes); e != nil {

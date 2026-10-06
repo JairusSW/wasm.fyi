@@ -1757,3 +1757,41 @@ native function/inspection and disassembly portable/crash gates. Vet passes.
 This avoids repeated same-operation proof work; no end-to-end performance claim
 is made. The already-running large real parity process still uses its original
 binary and remains pending; it was not restarted for this change.
+
+## Large real import: terminal timeout and bounded index batching
+
+The original real Wasmtime parity process exited at its 45-minute test deadline.
+Its final stack was in `registerObservationIdentity` → `mapSet` → content
+installation/directory sync, after native validation. This identifies repeated
+intermediate radix-map installation as another publication bottleneck; the
+previous native proof-reuse change was absent from that original process.
+The retained store still has an empty public pointer, preserving the publication
+boundary. Its installed immutable objects remain available for a retry.
+
+Observation/source-binding and current/previous selection updates now accumulate
+in windows of at most 256 results. Overlay lookups preserve sequential
+representation ranking and source binding within each window; final map branches
+are installed with the existing `mapSetMany` implementation. Canonical records
+and linked history entries remain intact. No batch becomes public before the
+existing durable publication step.
+
+The real parity helper accepts `WASMFYI_REAL_RESUME_STORE` for an existing retained
+store, mutually exclusive with new-store creation. It converges through missing
+object admission rather than blindly reinstalling the full payload inventory.
+This is opt-in test infrastructure, not a change to the coordinator or producer.
+Qualification and the resumed real scientific/serving gate remain pending.
+
+The 257-result regression crosses the publication window boundary and passes
+under race detection: sequential and batched observation roots match exactly;
+within-window lookups and capture decisions match; canonical stored records and
+query projections retain their expected bytes. Observation index installation
+checkpoints fall from 514 to 17 for this fixture (not an end-to-end timing claim).
+The cancellation assertion caught and fixed premature candidate-root assignment:
+both roots are now assigned only after both maps succeed and cancellation is
+checked. Existing observation/source-proof/history and actual process-crash
+cases passed in the preceding selected race run; selected native function and
+disassembly API tests and vet pass.
+
+The real 130,166-payload gate is now resumed against the retained store with
+2 GiB explicit pending quota and the same 45-minute deadline, using both native
+proof reuse and bounded publication windows. Its result remains pending.
