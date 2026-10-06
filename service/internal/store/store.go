@@ -688,6 +688,7 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 			return "", e
 		}
 		rev.Catalog, rev.Selection, rev.Indexes, rev.Observations = old.Catalog, old.Selection, old.Indexes, old.Observations
+		rev.ObservationPolicy = old.ObservationPolicy
 		rev.SessionIndexVersion = old.SessionIndexVersion
 		rev.HistoryIndexVersion = old.HistoryIndexVersion
 		if old.Indexes == "" {
@@ -706,25 +707,8 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 			}
 		}
 	}
-	rev.ObservationPolicy = "source-summary-v1"
-	if rev.Observations == "" && rev.Catalog != "" {
-		budget := 1000000
-		if e = s.walk(rev.Catalog, &budget, func(_, digest string) error {
-			if err := ctx.Err(); err != nil {
-				return err
-			}
-			var record wire.Record
-			if err := s.load(digest, &record); err != nil {
-				return err
-			}
-			if record.Kind != "result" {
-				return nil
-			}
-			_, err := s.registerObservation(&rev, record)
-			return err
-		}); e != nil {
-			return "", e
-		}
+	if e = s.upgradeObservations(ctx, &rev); e != nil {
+		return "", e
 	}
 	keys := make([]string, 0, len(records))
 	for k := range records {

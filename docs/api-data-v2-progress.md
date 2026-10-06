@@ -948,3 +948,34 @@ memory summaries with the new descriptors; external schema validation checked
 input contract for the next versioned cross-report history policy; current history
 remains report-scoped and aggregate uncertainty remains unavailable. Cross-report
 capture aliasing and resampling compatibility are not claimed complete here.
+
+
+### Cross-report source capture policy
+
+New dataset revisions use `source-sampling-summary-v2`. Results with validated
+sampling descriptors may share a capture across report IDs only when their exact
+source population, capture timestamp, environment, configuration, contract,
+metric/definition, analysis version, measurement-method digest and normalized
+scientific summary match. Artifact links and evidence representations do not
+create new measurements. Missing sampling provenance retains the legacy
+report-scoped identity; no match is inferred from workload names or block numbers.
+Different capture timestamps remain distinct pending a separate historical-role
+policy rather than silently changing source dates.
+
+Same-report legacy-to-provenance enrichment uses a bounded two-step resolution.
+Each report-local alias stays bound to its own record; the shared source alias
+chooses the richer representation. New publication upgrades the observation map
+and recovers current/previous from distinct retained history captures. Existing
+revisions, maps, history postings and cursors remain immutable and readable.
+Portable verification accepts and independently checks both policy versions.
+
+Focused race tests cover repeated captures in separate reports, independent
+populations, scientific identity differences, previous selection, bounded history
+windows, legacy map/selection upgrade, restart and backup/rebuild. Existing
+verified Wasmer/Deno exports retain serving parity. This is capture deduplication,
+not an aggregate resampling change; retrospective roles and matched-history
+change policies remain open.
+
+Mixed legacy records whose richer evidence competes with newly supplied source
+provenance still need an explicit combined-representation policy and regression
+gates; this change does not claim that migration case complete.

@@ -1,13 +1,144 @@
 package store
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
+	"time"
 
 	"github.com/JairusSW/wasm.fyi/service/internal/wire"
 )
 
-// The source report/seal identify this capture. Exact configuration, contract,
+const ObservationPolicy = "source-sampling-summary-v2"
+
+func observationIdentity(record wire.Record, policy string) (string, error) {
+	if policy == "" || policy == "source-summary-v1" {
+		return observationID(record)
+	}
+	if policy != ObservationPolicy {
+		return "", wire.Invalid("unsupported observation policy")
+	}
+	var value wire.Result
+	if err := wire.Decode(record.Data, &value); err != nil {
+		return "", err
+	}
+	if value.SamplingGroup == nil {
+		return observationID(record)
+	}
+	if err := value.SamplingGroup.Validate(value); err != nil {
+		return "", err
+	}
+	var summary map[string]json.RawMessage
+	if err := json.Unmarshal(value.Summary, &summary); err != nil {
+		return "", err
+	}
+	delete(summary, "artifactId")
+	value.Summary, _ = wire.Encode(summary)
+	value.ReportID = ""
+	value.Evidence = nil
+	value.MeasurementMethod = nil // Its digest remains part of scientific identity.
+	b, err := wire.Encode(value)
+	if err != nil {
+		return "", err
+	}
+	return wire.Hash(b), nil
+}
+
+// Upgrade only the new revision. Older maps and their cursor scopes stay intact.
+func (s *Store) upgradeObservations(ctx context.Context, rev *Revision) error {
+	if rev.ObservationPolicy == ObservationPolicy && rev.Observations != "" {
+		return nil
+	}
+	rev.Observations = ""
+	rev.ObservationPolicy = ObservationPolicy
+	budget := ScanLimit
+	if err := s.walk(rev.Catalog, &budget, func(_, digest string) error {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		var record wire.Record
+		if err := s.load(digest, &record); err != nil {
+			return err
+		}
+		if record.Kind != "result" {
+			return nil
+		}
+		_, err := s.registerObservation(rev, record)
+		return err
+	}); err != nil {
+		return err
+	}
+	// A v1 current/previous pair may represent two publications of one source.
+	// Recover the newest two distinct captures from the retained history chain.
+	budget = ScanLimit
+	updates := map[string]string{}
+	err := s.walk(rev.Selection, &budget, func(key, digest string) error {
+		var c cell
+		if err := s.load(digest, &c); err != nil {
+			return err
+		}
+		dates := map[string]time.Time{}
+		for h := c.History; h != ""; {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+			budget--
+			if budget < 0 {
+				return ErrLimit
+			}
+			var entry history
+			if err := s.load(h, &entry); err != nil {
+				return err
+			}
+			id, err := s.resolveObservation(*rev, entry.Result)
+			if err != nil {
+				return err
+			}
+			if _, ok := dates[id]; !ok {
+				record, err := s.record(rev.Catalog, "result", id)
+				if err != nil {
+					return err
+				}
+				var result wire.Result
+				if err := wire.Decode(record.Data, &result); err != nil {
+					return err
+				}
+				dates[id] = result.Created
+			}
+			h = entry.Previous
+		}
+		ids := make([]string, 0, len(dates))
+		for id := range dates {
+			ids = append(ids, id)
+		}
+		sort.Slice(ids, func(i, j int) bool {
+			if dates[ids[i]].Equal(dates[ids[j]]) {
+				return ids[i] > ids[j]
+			}
+			return dates[ids[i]].After(dates[ids[j]])
+		})
+		c.Current, c.Previous = "", ""
+		if len(ids) > 0 {
+			c.Current = ids[0]
+		}
+		if len(ids) > 1 {
+			c.Previous = ids[1]
+		}
+		id, err := s.put(c)
+		if err == nil {
+			updates[key] = id
+		}
+		return err
+	})
+	if err != nil {
+		return err
+	}
+	rev.Selection, err = s.mapSetMany(ctx, rev.Selection, updates, 0)
+	return err
+}
+
+// Legacy report-scoped identity. Exact configuration, contract,
 // metric and analysis distinguish scientific results. Evidence links and artifact
 // representations do not create a second independent capture of the same result.
 func observationID(record wire.Record) (string, error) {
@@ -25,8 +156,7 @@ func observationID(record wire.Record) (string, error) {
 	// representation; it does not create another independent measurement.
 	value.MeasurementMethod = nil
 	value.MeasurementMethodID = ""
-	// Sampling provenance is enrichment until a versioned history policy can
-	// connect equivalent captures across reports. Preserve same-report identity.
+	// Keep the v1 hash stable for immutable revisions and same-report aliases.
 	value.SamplingGroup = nil
 	value.Summary, _ = wire.Encode(summary)
 	b, err := wire.Encode(value)
@@ -82,10 +212,41 @@ func (s *Store) representationRank(revision Revision, record wire.Record) (int, 
 // Return whether an observation already existed, retaining the richer available
 // representation. Stable ID order breaks equal-rank ties without publication time.
 func (s *Store) registerObservation(revision *Revision, record wire.Record) (bool, error) {
-	id, err := observationID(record)
+	id, err := observationIdentity(record, revision.ObservationPolicy)
 	if err != nil {
 		return false, err
 	}
+	legacy, err := observationID(record)
+	if err != nil {
+		return false, err
+	}
+	legacyCapture := false
+	if id != legacy {
+		prior, err := s.mapGet(revision.Observations, legacy)
+		if err != nil {
+			return false, err
+		}
+		if prior != "" {
+			old, err := s.record(revision.Catalog, "result", prior)
+			if err != nil {
+				return false, err
+			}
+			var value wire.Result
+			if err := wire.Decode(old.Data, &value); err != nil {
+				return false, err
+			}
+			legacyCapture = value.SamplingGroup == nil
+		}
+	}
+	existed, err := s.registerObservationIdentity(revision, record, legacy)
+	if err != nil || legacy == id {
+		return existed, err
+	}
+	shared, err := s.registerObservationIdentity(revision, record, id)
+	return legacyCapture || shared, err
+}
+
+func (s *Store) registerObservationIdentity(revision *Revision, record wire.Record, id string) (bool, error) {
 	prior, err := s.mapGet(revision.Observations, id)
 	if err != nil {
 		return false, err
@@ -121,7 +282,7 @@ func (s *Store) resolveObservation(revision Revision, result string) (string, er
 	if err != nil {
 		return "", err
 	}
-	id, err := observationID(record)
+	id, err := observationIdentity(record, revision.ObservationPolicy)
 	if err != nil {
 		return "", err
 	}
@@ -131,6 +292,26 @@ func (s *Store) resolveObservation(revision Revision, result string) (string, er
 	}
 	if resolved == "" {
 		return "", fmt.Errorf("missing observation representation")
+	}
+	// A legacy record can resolve to same-report provenance enrichment, then
+	// to the preferred representation of that source population across reports.
+	if revision.ObservationPolicy == ObservationPolicy && resolved != result {
+		record, err := s.record(revision.Catalog, "result", resolved)
+		if err != nil {
+			return "", err
+		}
+		shared, err := observationIdentity(record, revision.ObservationPolicy)
+		if err != nil {
+			return "", err
+		}
+		preferred, err := s.mapGet(revision.Observations, shared)
+		if err != nil {
+			return "", err
+		}
+		if preferred == "" {
+			return "", fmt.Errorf("missing source observation representation")
+		}
+		resolved = preferred
 	}
 	return resolved, nil
 }

@@ -194,6 +194,11 @@ func TestScientificIdentityDoesNotCollapseDifferentResults(t *testing.T) {
 }
 
 func TestLegacyRevisionObservationIndexMigration(t *testing.T) {
+	t.Run("unindexed", func(t *testing.T) { testLegacyObservationMigration(t, false) })
+	t.Run("v1-indexed", func(t *testing.T) { testLegacyObservationMigration(t, true) })
+}
+
+func testLegacyObservationMigration(t *testing.T, indexed bool) {
 	root := t.TempDir()
 	s := openTest(t, root)
 	date := time.Date(2026, 10, 5, 0, 0, 0, 0, time.UTC)
@@ -202,8 +207,11 @@ func TestLegacyRevisionObservationIndexMigration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	revision.Observations = ""
-	revision.ObservationPolicy = ""
+	revision.ObservationPolicy = "source-summary-v1"
+	if !indexed {
+		revision.Observations = ""
+		revision.ObservationPolicy = ""
+	}
 	legacy, err := s.put(revision)
 	if err != nil {
 		t.Fatal(err)
@@ -237,7 +245,7 @@ func TestLegacyRevisionObservationIndexMigration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result.Observations == "" || result.ObservationPolicy != "source-summary-v1" {
+	if result.Observations == "" || result.ObservationPolicy != ObservationPolicy {
 		t.Fatal("did not index legacy observations")
 	}
 	rows, err := s.Results(Query{Revision: upgraded}, true)
@@ -245,7 +253,7 @@ func TestLegacyRevisionObservationIndexMigration(t *testing.T) {
 		t.Fatal("migration lost legacy history", len(rows), err)
 	}
 	old, err := s.Revision(legacy)
-	if err != nil || old.Observations != "" {
+	if err != nil || old.Observations != revision.Observations || old.ObservationPolicy != revision.ObservationPolicy {
 		t.Fatal("migration changed an immutable legacy revision", err)
 	}
 }
@@ -268,5 +276,233 @@ func TestSamplingProvenanceEnrichmentKeepsSameReportObservation(t *testing.T) {
 	after, err := observationID(record)
 	if err != nil || before != after {
 		t.Fatal("sampling provenance became a new measurement", err)
+	}
+}
+
+// Independent source populations are distinct even when their summaries and
+// block numbers coincide. Rebuilding the exact same capture in another report
+// must not advance the previous-measurement selection.
+func TestCrossReportSamplingPreservesHistoryAndPrevious(t *testing.T) {
+	dir := t.TempDir()
+	s := openTest(t, filepath.Join(dir, "live"))
+	date := time.Date(2026, 10, 5, 0, 0, 0, 0, time.UTC)
+	publish := func(report, pass string, captured time.Time) string {
+		t.Helper()
+		job, objects, err := testutil.Fixture(report, captured)
+		if err != nil {
+			t.Fatal(err)
+		}
+		manifest := &job.Exports[0].Manifest
+		for i, object := range manifest.Objects {
+			if object.Kind != "record" {
+				continue
+			}
+			var record wire.Record
+			if err := wire.Decode(objects[object.SHA256], &record); err != nil {
+				t.Fatal(err)
+			}
+			if record.Kind != "result" {
+				continue
+			}
+			var result wire.Result
+			if err := wire.Decode(record.Data, &result); err != nil {
+				t.Fatal(err)
+			}
+			group := wire.SamplingGroup{Schema: 1, PassID: pass, CapturedAt: captured, Runtime: result.Runtime, Workload: result.Workload, Scenario: result.Scenario, Profile: result.Profile, ManifestSHA256: wire.Hash([]byte(pass)), TrialsSHA256: wire.Hash([]byte(pass + result.Metric)), TrialCount: 1}
+			group.ID = group.Digest()
+			result.SamplingGroup = &group
+			record.Data, _ = wire.Encode(result)
+			record.ID = wire.Hash(record.Data)
+			b, _ := wire.Encode(record)
+			delete(objects, object.SHA256)
+			object.SHA256, object.Bytes = wire.Hash(b), len(b)
+			objects[object.SHA256] = b
+			manifest.Objects[i] = object
+		}
+		b, _ := wire.Encode(manifest)
+		job.Exports[0].SHA256 = wire.Hash(b)
+		for hash, b := range objects {
+			if err := s.Install(hash, bytes.NewReader(b)); err != nil {
+				t.Fatal(err)
+			}
+		}
+		id, err := s.Submit(job)
+		if err != nil {
+			t.Fatal(err)
+		}
+		revision, err := s.Commit(id)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return revision
+	}
+	first := publish("first-report", "source-one", date)
+	second := publish("second-report", "source-two", date.Add(time.Hour))
+	rebuilt := publish("rebuilt-report", "source-one", date)
+	check := func(s *Store, revision string, count int) {
+		t.Helper()
+		rows, err := s.Results(Query{Revision: revision}, true)
+		if err != nil || len(rows) != count {
+			t.Fatalf("history: %d want %d: %v", len(rows), count, err)
+		}
+		window, err := s.Results(Query{Revision: revision, From: date.Format(time.RFC3339), Until: date.Add(2 * time.Hour).Format(time.RFC3339)}, true)
+		if err != nil || len(window) != count {
+			t.Fatalf("window: %d want %d: %v", len(window), count, err)
+		}
+	}
+	check(s, first, 3)
+	check(s, second, 6)
+	check(s, rebuilt, 6)
+	previous, err := s.Results(Query{Revision: rebuilt, Selection: "previous"}, false)
+	if err != nil || len(previous) != 3 {
+		t.Fatal("previous population", len(previous), err)
+	}
+	for _, r := range previous {
+		var value wire.Result
+		_ = wire.Decode(r.Data, &value)
+		if value.SamplingGroup.PassID != "source-one" {
+			t.Fatal("previous became repeated publication")
+		}
+	}
+	// Exercise an old report-scoped map with a duplicated current/previous pair.
+	legacy, err := s.Revision(rebuilt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	legacy.Observations = ""
+	legacy.ObservationPolicy = "source-summary-v1"
+	budget := ScanLimit
+	if err = s.walk(legacy.Catalog, &budget, func(_, digest string) error {
+		var record wire.Record
+		if err := s.load(digest, &record); err != nil {
+			return err
+		}
+		if record.Kind != "result" {
+			return nil
+		}
+		_, err := s.registerObservation(&legacy, record)
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	rows, err := s.Results(Query{Revision: rebuilt}, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var duplicate wire.Result
+	var duplicateID string
+	for _, row := range rows {
+		var v wire.Result
+		_ = wire.Decode(row.Data, &v)
+		if v.SamplingGroup.PassID == "source-one" {
+			duplicate, duplicateID = v, row.ID
+			break
+		}
+	}
+	cellDigest, err := s.mapGet(legacy.Selection, duplicate.Cell())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var oldCell cell
+	if err = s.load(cellDigest, &oldCell); err != nil {
+		t.Fatal(err)
+	}
+	oldCell.Current, oldCell.Previous = duplicateID, duplicateID
+	cellDigest, err = s.put(oldCell)
+	if err != nil {
+		t.Fatal(err)
+	}
+	legacy.Selection, err = s.mapSet(legacy.Selection, duplicate.Cell(), cellDigest, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = s.upgradeObservations(context.Background(), &legacy); err != nil {
+		t.Fatal(err)
+	}
+	cellDigest, err = s.mapGet(legacy.Selection, duplicate.Cell())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = s.load(cellDigest, &oldCell); err != nil {
+		t.Fatal(err)
+	}
+	if oldCell.Current == oldCell.Previous || oldCell.Previous == "" {
+		t.Fatal("migration lost earlier distinct capture")
+	}
+	for _, choice := range []struct{ id, pass string }{{oldCell.Current, "source-two"}, {oldCell.Previous, "source-one"}} {
+		record, err := s.record(legacy.Catalog, "result", choice.id)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var value wire.Result
+		_ = wire.Decode(record.Data, &value)
+		if value.SamplingGroup.PassID != choice.pass {
+			t.Fatal("migration did not recover newest distinct captures")
+		}
+	}
+	// Frozen revisions and portable reconstruction retain the policy and aliases.
+	backup := filepath.Join(dir, "backup")
+	if _, err = s.Backup(context.Background(), backup); err != nil {
+		t.Fatal(err)
+	}
+	s.Close()
+	s = openTest(t, filepath.Join(dir, "live"))
+	check(s, rebuilt, 6)
+	s.Close()
+	restored := filepath.Join(dir, "rebuilt")
+	if err = Rebuild(backup, restored, "fixture"); err != nil {
+		t.Fatal(err)
+	}
+	s = openTest(t, restored)
+	defer s.Close()
+	check(s, first, 3)
+	check(s, rebuilt, 6)
+}
+
+func TestSourceSamplingIdentityRequiresExactScience(t *testing.T) {
+	date := time.Date(2026, 10, 5, 0, 0, 0, 0, time.UTC)
+	value := wire.Result{ReportID: wire.Hash([]byte("report")), Runtime: "engine", Workload: "fixture/a", Scenario: "steady", Profile: "timing", Created: date, Summary: json.RawMessage(`{"median_ns_per_operation":4}`)}
+	group := wire.SamplingGroup{Schema: 1, PassID: "pass", CapturedAt: date, Runtime: value.Runtime, Workload: value.Workload, Scenario: value.Scenario, Profile: value.Profile, ManifestSHA256: wire.Hash([]byte("manifest")), TrialsSHA256: wire.Hash([]byte("trials")), TrialCount: 1}
+	group.ID = group.Digest()
+	value.SamplingGroup = &group
+	record := func(v wire.Result) wire.Record {
+		b, _ := wire.Encode(v)
+		return wire.Record{Kind: "result", ID: wire.Hash(b), Data: b}
+	}
+	original, err := observationIdentity(record(value), ObservationPolicy)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rebuilt := value
+	rebuilt.ReportID = wire.Hash([]byte("other report"))
+	shared, err := observationIdentity(record(rebuilt), ObservationPolicy)
+	if err != nil || shared != original {
+		t.Fatal("report rebuild became capture", err)
+	}
+	changes := []func(*wire.Result){
+		func(v *wire.Result) { v.ConfigurationID = "other" },
+		func(v *wire.Result) { v.ContractID = "other" },
+		func(v *wire.Result) { v.MetricDefinitionID = "other" },
+		func(v *wire.Result) { v.AnalysisVersion = "other" },
+		func(v *wire.Result) { v.MeasurementMethodID = "other" },
+		func(v *wire.Result) { v.Created = v.Created.Add(time.Hour) },
+		func(v *wire.Result) { v.Summary = json.RawMessage(`{"median_ns_per_operation":5}`) },
+		func(v *wire.Result) {
+			g := *v.SamplingGroup
+			g.PassID = "other"
+			g.ID = g.Digest()
+			v.SamplingGroup = &g
+		},
+	}
+	for i, change := range changes {
+		v := value
+		change(&v)
+		id, err := observationIdentity(record(v), ObservationPolicy)
+		if err != nil || id == original {
+			t.Fatal("distinct scientific identity collapsed", i, err)
+		}
+	}
+	if _, err := observationIdentity(record(value), "unknown"); err == nil {
+		t.Fatal("unknown observation policy accepted")
 	}
 }

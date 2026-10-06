@@ -294,7 +294,7 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 			return nil, e
 		}
 		if r.Observations != "" {
-			if r.ObservationPolicy != "source-summary-v1" {
+			if r.ObservationPolicy != "source-summary-v1" && r.ObservationPolicy != ObservationPolicy {
 				return nil, fmt.Errorf("unsupported observation policy")
 			}
 			if e := markMap(r.Observations, "observations", func(id, result string) error {
@@ -302,12 +302,15 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 				if e != nil {
 					return e
 				}
-				actual, e := observationID(record)
+				actual, e := observationIdentity(record, r.ObservationPolicy)
 				if e != nil {
 					return e
 				}
 				if actual != id {
-					return fmt.Errorf("observation identity differs")
+					legacy, e := observationID(record)
+					if e != nil || r.ObservationPolicy != ObservationPolicy || legacy != id {
+						return fmt.Errorf("observation identity differs")
+					}
 				}
 				return nil
 			}); e != nil {
