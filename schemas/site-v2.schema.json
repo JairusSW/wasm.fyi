@@ -4034,7 +4034,10 @@
           "const": "llvm-function-listing-v1"
         },
         "sourceVersion": {
-          "const": "native-image-disassembly-v2"
+          "enum": [
+            "native-image-disassembly-v2",
+            "native-image-disassembly-v3"
+          ]
         },
         "imageSha256": {
           "$ref": "#/$defs/Digest"
@@ -4081,6 +4084,9 @@
           "type": "integer",
           "minimum": 1,
           "maximum": 67108864
+        },
+        "source": {
+          "$ref": "#/$defs/DisassemblySource"
         }
       },
       "required": [
@@ -4197,7 +4203,10 @@
           "const": "llvm-function-listing-v1"
         },
         "sourceVersion": {
-          "const": "native-image-disassembly-v2"
+          "enum": [
+            "native-image-disassembly-v2",
+            "native-image-disassembly-v3"
+          ]
         },
         "imageSha256": {
           "$ref": "#/$defs/Digest"
@@ -4283,6 +4292,9 @@
           "items": {
             "$ref": "#/$defs/Digest"
           }
+        },
+        "source": {
+          "$ref": "#/$defs/DisassemblySource"
         }
       },
       "required": [
@@ -4301,6 +4313,39 @@
         "lines",
         "chunks",
         "references"
+      ],
+      "additionalProperties": false
+    },
+    "DisassemblySource": {
+      "type": "object",
+      "properties": {
+        "location": {
+          "enum": [
+            "embedded-report",
+            "external-archive"
+          ]
+        },
+        "codePassId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "codeSealSha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "nativeSealSha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "verification": {
+          "const": "producer-asserted"
+        }
+      },
+      "required": [
+        "location",
+        "codePassId",
+        "codeSealSha256",
+        "nativeSealSha256",
+        "verification"
       ],
       "additionalProperties": false
     }

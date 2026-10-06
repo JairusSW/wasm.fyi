@@ -19,6 +19,9 @@ func disassemblyDescriptor(b []byte, function wire.NativeFunction, metadata wire
 	if err := d.Validate(); err != nil {
 		return d, err
 	}
+	if d.Source != nil && d.Source.CodePassID != metadata.PassID {
+		return d, wire.Invalid("disassembly code-pass attestation differs")
+	}
 	function.Disassembly = ""
 	if d.Function != function || d.ImageSHA256 != metadata.Image.SHA256 || d.ModuleSHA256 != metadata.Image.ModuleSHA256 || d.Architecture != metadata.Image.Architecture {
 		return d, wire.Invalid("disassembly source identity differs")
@@ -95,17 +98,18 @@ func validateDisassembly(function wire.NativeFunction, metadata wire.NativeMetad
 }
 
 type DisassemblyPage struct {
-	Version        string                 `json:"version"`
-	SourceVersion  string                 `json:"sourceVersion"`
-	ImageSHA256    string                 `json:"imageSha256"`
-	TextSHA256     string                 `json:"textSha256"`
-	Function       wire.NativeFunction    `json:"function"`
-	Tools          []wire.DisassemblyTool `json:"tools"`
-	Arguments      []string               `json:"arguments"`
-	Interpretation string                 `json:"interpretation"`
-	Items          []string               `json:"items"`
-	Total          int                    `json:"total"`
-	Next           int                    `json:"-"`
+	Source         *wire.DisassemblySource `json:"source,omitempty"`
+	Version        string                  `json:"version"`
+	SourceVersion  string                  `json:"sourceVersion"`
+	ImageSHA256    string                  `json:"imageSha256"`
+	TextSHA256     string                  `json:"textSha256"`
+	Function       wire.NativeFunction     `json:"function"`
+	Tools          []wire.DisassemblyTool  `json:"tools"`
+	Arguments      []string                `json:"arguments"`
+	Interpretation string                  `json:"interpretation"`
+	Items          []string                `json:"items"`
+	Total          int                     `json:"total"`
+	Next           int                     `json:"-"`
 }
 
 // Ordinal follows the same immutable producer order as FunctionPage. Only the
@@ -170,6 +174,7 @@ func (s *Store) DisassemblyPage(ctx context.Context, revision, id string, ordina
 	if offset > d.Lines {
 		return page, wire.Invalid("disassembly cursor offset invalid")
 	}
+	page.Source = d.Source
 	page.Version = d.Version
 	page.SourceVersion = d.SourceVersion
 	page.ImageSHA256 = d.ImageSHA256

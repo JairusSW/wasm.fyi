@@ -1645,3 +1645,34 @@ measurement association are explicitly synthetic. Serving code contains no LLVM
 or harness execution dependency; the dependency closure remains 409 packages,
 without SQLite. CI configuration includes the new HTTP contract capture, but
 actual remote CI has not been run or claimed.
+
+## Separate native archives and function-only real evidence
+
+A retained real Wasmtime capture contains 163 attributed images and 39,893
+functions. The existing full-image LLVM path failed closed at trial 55 because
+its whole-image listing exceeded the 64 MiB invocation output ceiling. No report
+or measurement was changed. The producer now offers a versioned function-only
+v3 path, retaining full image bytes in the synthetic ELF but collecting only
+attributed ranges, with 64 MiB per invocation and 128 MiB summed listings per
+image. Older full-image formats and their exact renderer bytes stay supported;
+the v3 page does not advertise an absent linear-listing download. Offline
+regeneration and exact-tool replay retain the recorded mode and limits.
+
+`export-site --native-disassembly` admits a separately sealed derivative only
+when its native verification, code-pass ID and original raw-source seal match
+the measurement report. Same-ID foreign-source and forged consumer attestation
+regressions pass. Optional source provenance records embedded/external origin
+and both seal identities, with explicit producer-assertion semantics and no
+original-archive download claim. Selected windows preserve those fields.
+
+The real function-only archive now completes and seals all 39,893 listings from
+existing bytes, with no benchmark/image execution. Its site export completes:
+255 inventory pages, 130,166 payloads, 1,503,145,706 payload bytes (491,408,943
+binary bytes). The actual serving/scientific parity gate is running against this
+export with an explicit 2 GiB fixture pending quota and retained isolated store;
+production still defaults to 512 MiB. Complete real function HTTP parity,
+numerical comparisons and portable original-file checks remain pending until
+that process finishes. Synthetic installed-LLVM external-source, v3 generation/
+regeneration, same-ID different-seal rejection and consumer provenance/range/hash
+checks pass; schema/type, vet and Linux-build checks pass. Actual remote CI and
+native Linux execution remain unqualified.

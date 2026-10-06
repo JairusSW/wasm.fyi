@@ -116,15 +116,18 @@ func TestDisassemblyWindowsAndPortableRecovery(t *testing.T) {
 
 func TestDisassemblyRejectsForgedDiagnostics(t *testing.T) {
 	function := wire.NativeFunction{WasmIndex: 7, Offset: 0, Length: 32, Tier: "cranelift"}
-	metadata := wire.NativeMetadata{}
+	metadata := wire.NativeMetadata{PassID: "code"}
 	metadata.Image.SHA256 = wire.Hash([]byte("image"))
 	metadata.Image.ModuleSHA256 = wire.Hash([]byte("module"))
 	metadata.Image.Architecture = "amd64"
 	raw, _ := wire.Encode(wire.DisassemblyLines{Kind: "native-disassembly-lines", Lines: []string{"0: nop\n"}})
 	chunk := wire.Hash(raw)
 	d := wire.NativeDisassembly{Kind: "native-function-disassembly", Version: wire.DisassemblyVersion, SourceVersion: "native-image-disassembly-v2", ImageSHA256: metadata.Image.SHA256, ModuleSHA256: metadata.Image.ModuleSHA256, Architecture: "amd64", Function: function, Tools: []wire.DisassemblyTool{{SHA256: wire.Hash([]byte("a")), Version: "v"}, {SHA256: wire.Hash([]byte("b")), Version: "v"}}, Arguments: []string{"--disassemble", "--disassemble-zeroes", "--section=.text", "--start-address=0", "--stop-address=32", "image.o"}, Interpretation: "Tool-produced diagnostics", TextSHA256: wire.Hash([]byte("0: nop\n")), Bytes: 7, Lines: 1, Chunks: []wire.DisassemblyChunk{{SHA256: chunk, Lines: 1}}, References: []string{chunk}}
-	for _, mutate := range []func(*wire.NativeDisassembly){nil, func(d *wire.NativeDisassembly) { d.ImageSHA256 = wire.Hash([]byte("wrong")) }, func(d *wire.NativeDisassembly) { d.Function.WasmIndex++ }, func(d *wire.NativeDisassembly) { d.Arguments[3] = "--start-address=1" }, func(d *wire.NativeDisassembly) { d.TextSHA256 = wire.Hash([]byte("fake")) }, func(d *wire.NativeDisassembly) { d.Bytes++ }, func(d *wire.NativeDisassembly) { d.Chunks[0].Lines++ }, func(d *wire.NativeDisassembly) { d.Tools[0].SHA256 = "bad" }} {
+	d.Source = &wire.DisassemblySource{Location: "external-archive", CodePassID: "code", CodeSealSHA256: wire.Hash([]byte("code-seal")), NativeSealSHA256: wire.Hash([]byte("native-seal")), Verification: "producer-asserted"}
+	for _, mutate := range []func(*wire.NativeDisassembly){nil, func(d *wire.NativeDisassembly) { d.Source.CodePassID = "another-pass" }, func(d *wire.NativeDisassembly) { d.Source.Verification = "independently-verified" }, func(d *wire.NativeDisassembly) { d.Source.NativeSealSHA256 = "bad" }, func(d *wire.NativeDisassembly) { d.ImageSHA256 = wire.Hash([]byte("wrong")) }, func(d *wire.NativeDisassembly) { d.Function.WasmIndex++ }, func(d *wire.NativeDisassembly) { d.Arguments[3] = "--start-address=1" }, func(d *wire.NativeDisassembly) { d.TextSHA256 = wire.Hash([]byte("fake")) }, func(d *wire.NativeDisassembly) { d.Bytes++ }, func(d *wire.NativeDisassembly) { d.Chunks[0].Lines++ }, func(d *wire.NativeDisassembly) { d.Tools[0].SHA256 = "bad" }} {
 		copy := d
+		source := *d.Source
+		copy.Source = &source
 		copy.Arguments = append([]string{}, d.Arguments...)
 		copy.Chunks = append([]wire.DisassemblyChunk{}, d.Chunks...)
 		copy.Tools = append([]wire.DisassemblyTool{}, d.Tools...)

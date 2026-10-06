@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -29,11 +30,28 @@ func TestRealProducerServingParity(t *testing.T) {
 	if raw == "" {
 		t.Skip("set WASMFYI_REAL_REPORTS to JSON source/export pairs")
 	}
-	var inputs []struct{ Source, Export string }
+	var inputs []struct{ Source, Export, Disassembly string }
 	if e := json.Unmarshal([]byte(raw), &inputs); e != nil || len(inputs) == 0 {
 		t.Fatal("invalid real report inputs", e)
 	}
-	s, e := store.Open(t.TempDir(), "real-source-parity")
+	limits := store.DefaultLimits()
+	if text := os.Getenv("WASMFYI_REAL_PENDING_BYTES"); text != "" {
+		value, err := strconv.ParseInt(text, 10, 64)
+		if err != nil || value < limits.PendingBytes || value > 8<<30 {
+			t.Fatal("invalid explicit real-fixture pending quota", err)
+		}
+		limits.PendingBytes = value
+		t.Logf("explicit real-fixture pending quota: %d bytes", value)
+	}
+	root := t.TempDir()
+	if path := os.Getenv("WASMFYI_REAL_STORE"); path != "" {
+		if err := os.Mkdir(path, 0700); err != nil {
+			t.Fatal("real-fixture retained store must be new", err)
+		}
+		root = path
+		t.Logf("retained real-fixture store: %s", root)
+	}
+	s, e := store.OpenWithLimits(root, "real-source-parity", limits)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -162,6 +180,15 @@ func TestRealProducerServingParity(t *testing.T) {
 	h, e := New(s, strings.Repeat("x", 32), key)
 	if e != nil {
 		t.Fatal(e)
+	}
+	for _, input := range inputs {
+		if input.Disassembly != "" {
+			for reportID, source := range reportSources {
+				if source == input.Source {
+					verifyRealDisassembly(t, s, h, revision, input.Disassembly, reportID)
+				}
+			}
+		}
 	}
 	files, e := s.Catalog(revision, "report-file")
 	if e != nil {

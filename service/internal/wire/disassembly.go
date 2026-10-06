@@ -15,7 +15,26 @@ type DisassemblyChunk struct {
 	SHA256 string `json:"sha256"`
 	Lines  int    `json:"lines"`
 }
+
+// Archive identities are producer attestations, not downloadable blob
+// descriptors or independent verification of absent original evidence.
+type DisassemblySource struct {
+	Location         string `json:"location"`
+	CodePassID       string `json:"codePassId"`
+	CodeSealSHA256   string `json:"codeSealSha256"`
+	NativeSealSHA256 string `json:"nativeSealSha256"`
+	Verification     string `json:"verification"`
+}
+
+func (s DisassemblySource) Validate() error {
+	if (s.Location != "embedded-report" && s.Location != "external-archive") || s.CodePassID == "" || len(s.CodePassID) > 1024 || !IsHash(s.CodeSealSHA256) || !IsHash(s.NativeSealSHA256) || s.Verification != "producer-asserted" {
+		return Invalid("invalid disassembly source attestation")
+	}
+	return nil
+}
+
 type NativeDisassembly struct {
+	Source         *DisassemblySource `json:"source,omitempty"`
 	Kind           string             `json:"kind"`
 	Version        string             `json:"version"`
 	SourceVersion  string             `json:"sourceVersion"`
@@ -79,7 +98,12 @@ func NativeFunctions(b []byte) ([]NativeFunction, error) {
 }
 
 func (d NativeDisassembly) Validate() error {
-	if d.Kind != "native-function-disassembly" || d.Version != DisassemblyVersion || d.SourceVersion != "native-image-disassembly-v2" || !IsHash(d.ImageSHA256) || !IsHash(d.ModuleSHA256) || !IsHash(d.TextSHA256) || (d.Architecture != "amd64" && d.Architecture != "arm64") || d.Function.Disassembly != "" || d.Function.Length == 0 || len(d.Tools) != 2 || len(d.Arguments) != 6 || d.Interpretation == "" || len(d.Interpretation) > 8192 || d.Bytes <= 0 || d.Bytes > 64<<20 || d.Lines <= 0 || len(d.Chunks) == 0 || len(d.Chunks) > 4096 || len(d.Chunks) != len(d.References) {
+	if d.Source != nil {
+		if err := d.Source.Validate(); err != nil {
+			return err
+		}
+	}
+	if d.Kind != "native-function-disassembly" || d.Version != DisassemblyVersion || (d.SourceVersion != "native-image-disassembly-v2" && d.SourceVersion != "native-image-disassembly-v3") || !IsHash(d.ImageSHA256) || !IsHash(d.ModuleSHA256) || !IsHash(d.TextSHA256) || (d.Architecture != "amd64" && d.Architecture != "arm64") || d.Function.Disassembly != "" || d.Function.Length == 0 || len(d.Tools) != 2 || len(d.Arguments) != 6 || d.Interpretation == "" || len(d.Interpretation) > 8192 || d.Bytes <= 0 || d.Bytes > 64<<20 || d.Lines <= 0 || len(d.Chunks) == 0 || len(d.Chunks) > 4096 || len(d.Chunks) != len(d.References) {
 		return Invalid("invalid disassembly descriptor")
 	}
 	for _, t := range d.Tools {

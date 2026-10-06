@@ -772,3 +772,23 @@ Only the selected function and intersecting chunks are decoded. Ordinary JSON
 still has the 1 MiB ceiling, and the endpoint never runs LLVM or native bytes.
 Unavailable listings return 404. Descriptor and function pages advertise the
 available derivative without fetching its body.
+
+New derivative descriptors may include a `source` attestation with embedded or
+external archive origin, exact code-pass ID, raw code seal digest and native
+archive seal digest. Serving preserves the explicit `producer-asserted` label;
+these identities do not advertise an original-archive download or establish
+independent API verification of evidence that was not imported. Admission binds
+the attested pass to the native image's recorded pass. Older descriptors lacking
+this optional field remain readable. The source format may be full-image v2 or
+function-only `native-image-disassembly-v3`; transport windows retain their exact
+source format and interpretation.
+
+The opt-in real producer parity gate accepts an additional `Disassembly` archive
+path in each `WASMFYI_REAL_REPORTS` entry. It stream-reads native archive records,
+retains selected first/middle/last function paths, and checks complete HTTP line
+windows, exact original text, range identities and source seals for every linked
+image. `WASMFYI_REAL_PENDING_BYTES` sets an explicit fixture quota between the
+512 MiB default and 8 GiB; it does not change production defaults. An optional
+`WASMFYI_REAL_STORE` must name a new directory and retains that test store for
+inspection. Synthetic session/job association and original measurement parity
+remain distinct from new collection or operator qualification.

@@ -71,6 +71,11 @@ func TestFreshNativeProducerContract(t *testing.T) {
 			if err != nil || page.Version != wire.DisassemblyVersion || page.Function.WasmIndex != 7 || len(page.Tools) != 2 {
 				t.Fatal("fresh producer derivative incompatible", page, err)
 			}
+			if expected := os.Getenv("WASMFYI_NATIVE_EXPECT_SOURCE_LOCATION"); expected != "" {
+				if page.Source == nil || page.Source.Location != expected || page.Source.CodePassID != "code-pass" || page.Source.Verification != "producer-asserted" || page.Source.Validate() != nil {
+					t.Fatal("producer source attestation changed", page.Source)
+				}
+			}
 			expectedHash = page.TextSHA256
 			for _, line := range page.Items {
 				listing.WriteString(line)
