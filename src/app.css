@@ -26,6 +26,9 @@
 	--sans: 'IBM Plex Sans', system-ui, sans-serif;
 	--mono: 'IBM Plex Mono', ui-monospace, monospace;
 	--shadow-float: 0 6px 18px rgba(0, 0, 0, 0.28);
+	/* Widest content column; chrome (header, scope bar, footer) aligns its contents to it. */
+	--content-max: 1680px;
+	--gutter: max(20px, calc((100% - var(--content-max)) / 2 + 20px));
 	color-scheme: dark;
 }
 [data-theme='light'] {
@@ -61,8 +64,15 @@ body {
 	margin: 0;
 	background: var(--bg);
 }
+html {
+	-webkit-text-size-adjust: 100%;
+	text-size-adjust: 100%;
+	-webkit-tap-highlight-color: transparent;
+	scroll-padding-top: 12px;
+}
 body {
 	color: var(--fg);
+	overflow-x: clip;
 	font-family: var(--sans);
 	font-size: 13px;
 	line-height: 1.45;
@@ -86,6 +96,14 @@ select,
 input {
 	font: inherit;
 	color: inherit;
+}
+button,
+a,
+select,
+input,
+label,
+summary {
+	touch-action: manipulation;
 }
 button {
 	background: none;
@@ -238,6 +256,10 @@ p {
 	overflow: auto;
 	border: 1px solid var(--line);
 	background: var(--bg2);
+	overscroll-behavior-x: contain;
+	-webkit-overflow-scrolling: touch;
+	scrollbar-width: thin;
+	scrollbar-color: var(--line2) transparent;
 }
 table.t {
 	border-collapse: collapse;
@@ -311,12 +333,14 @@ table.mx tr.sec td {
 	border: 0;
 	text-align: right;
 }
-.cellbtn:hover {
-	outline: 1px solid var(--fg3);
-	outline-offset: -1px;
-}
-.hoverbg:hover {
-	background: var(--hover);
+@media (hover: hover) {
+	.cellbtn:hover {
+		outline: 1px solid var(--fg3);
+		outline-offset: -1px;
+	}
+	.hoverbg:hover {
+		background: var(--hover);
+	}
 }
 
 /* Horizontal bar rows (runtime label · bar · value) */
@@ -346,4 +370,92 @@ table.mx tr.sec td {
 	background: var(--bg);
 	border: 1px solid var(--line2);
 	box-shadow: var(--shadow-float);
+}
+
+/* Touch: hover affordances stick after a tap, so give a press state instead. */
+@media (hover: none) {
+	.hoverbg:active,
+	.cellbtn:active {
+		outline: 1px solid var(--fg3);
+		outline-offset: -1px;
+	}
+}
+
+/* Horizontally scrolling rows of tabs/segments without a visible scrollbar. */
+.scroll-x {
+	overflow-x: auto;
+	overscroll-behavior-x: contain;
+	scrollbar-width: none;
+	-webkit-overflow-scrolling: touch;
+}
+.scroll-x::-webkit-scrollbar {
+	display: none;
+}
+
+/* Phones and small tablets. */
+@media (max-width: 720px) {
+	body {
+		font-size: 14px;
+	}
+	/* iOS zooms into any focused control below 16px. */
+	select,
+	input,
+	textarea {
+		font-size: 16px;
+	}
+	select {
+		padding: 7px 8px;
+		max-width: 100%;
+	}
+	.btn-small {
+		padding: 7px 12px;
+		font-size: 13px;
+	}
+	.btn-primary,
+	.btn-outline {
+		padding: 12px 18px;
+		text-align: center;
+	}
+	.card {
+		padding: 12px;
+	}
+	.cards {
+		gap: 12px;
+	}
+	.bar-row {
+		grid-template-columns: minmax(0, 10.5em) minmax(0, 1fr) auto !important;
+		gap: 10px;
+		min-height: 28px;
+	}
+	.bar-row > :last-child {
+		white-space: nowrap;
+	}
+	table.t th,
+	table.t td {
+		padding-left: 10px;
+		padding-right: 10px;
+	}
+	/* The sticky first column of a matrix may take at most ~40% of the phone. */
+	table.mx .stick {
+		min-width: 0 !important;
+		max-width: 42vw;
+		box-sizing: border-box;
+		white-space: normal;
+		overflow-wrap: break-word;
+		box-shadow: 1px 0 0 var(--line2), 6px 0 8px -6px rgba(0, 0, 0, 0.35);
+	}
+	table.mx .stick .rl {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		column-gap: 6px;
+		row-gap: 0;
+		white-space: normal;
+	}
+	table.mx .stick .rl > :last-child {
+		grid-column: 2;
+		line-height: 1.2;
+	}
+	.th-label {
+		padding: 8px 10px;
+	}
 }

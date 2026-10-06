@@ -53,7 +53,7 @@
   header,.backend { display:flex;justify-content:space-between;gap:16px;align-items:baseline; }
   h2 { margin:0;font-size:16px; }
   .version { color:var(--fg3);font-size:11px;overflow-wrap:anywhere;margin-top:6px; }
-  header button { padding:4px 8px; }
+  header button { padding:4px 8px;min-width:36px;min-height:36px;border:1px solid var(--line2);flex:none; }
   .backends { display:flex;gap:5px;flex-wrap:wrap;margin-top:15px; }
   .backends button { font-size:11px;border:1px solid var(--line2);padding:4px 6px;color:var(--fg3); }
   .backends button[aria-pressed="true"] { background:var(--line2);color:var(--fg); }

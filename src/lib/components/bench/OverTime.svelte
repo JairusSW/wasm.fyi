@@ -290,4 +290,63 @@ import HistoryMarker from '../HistoryMarker.svelte';
 		padding-top: 3px;
 		margin-top: 2px;
 	}
+	/* Phones: one card per runtime — label, now and delta on top, a full-width sparkline below. */
+	@media (max-width: 720px) {
+		.push {
+			margin-left: 0;
+		}
+		.sp {
+			min-width: 0;
+			display: block;
+		}
+		.sp thead {
+			display: none;
+		}
+		.sp tbody {
+			display: block;
+		}
+		.sp tr {
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) auto auto;
+			grid-template-areas:
+				'rt now delta'
+				'spark spark spark';
+			align-items: center;
+			gap: 2px 12px;
+			padding: 8px 12px 4px;
+			border-bottom: 1px solid var(--line);
+		}
+		.sp tr:last-child {
+			border-bottom: 0;
+		}
+		.sp td {
+			border: 0;
+			padding: 0;
+			width: auto;
+		}
+		.sp td:nth-child(1) {
+			grid-area: rt;
+			min-width: 0;
+			overflow: hidden;
+		}
+		.sp td:nth-child(2) {
+			grid-area: spark;
+			padding: 2px 0;
+		}
+		.sp td:nth-child(3) {
+			grid-area: now;
+		}
+		.sp td:nth-child(4) {
+			grid-area: delta;
+			font-size: 12px;
+		}
+		.spark {
+			min-width: 0;
+			height: 40px;
+			margin: 0 6px;
+		}
+		.tip {
+			display: none;
+		}
+	}
 </style>

@@ -80,4 +80,25 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
+	@media (max-width: 720px) {
+		.car {
+			gap: 8px;
+		}
+		.head {
+			width: 100%;
+			grid-template-columns: 36px minmax(0, 1fr) 36px;
+			gap: 8px;
+		}
+		.arrow {
+			width: 36px;
+			height: 36px;
+			font-size: 18px;
+		}
+		.titles {
+			text-align: center;
+		}
+		.sub {
+			font-size: 11px;
+		}
+	}
 </style>

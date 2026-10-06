@@ -48,4 +48,21 @@
 	.mono {
 		font-family: var(--mono);
 	}
+	/* Phones: wrapped options read as a chip group rather than a broken bar. */
+	@media (max-width: 720px) {
+		.seg {
+			border: 0;
+			gap: 4px;
+		}
+		button,
+		.md button,
+		.lg button {
+			padding: 7px 11px;
+			font-size: 13px;
+			border: 1px solid var(--line2);
+		}
+		button[aria-pressed='true'] {
+			border-color: var(--fg3);
+		}
+	}
 </style>

@@ -35,6 +35,17 @@ import HistoryMarker from '$lib/components/HistoryMarker.svelte';
 	};
 
 	let hover = $state<number | null>(null);
+
+	// Touch scrubbing: a horizontal drag across the chart moves the hover point.
+	function scrub(e: PointerEvent) {
+		if (e.pointerType === 'mouse') return;
+		const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+		const x = ((e.clientX - r.left) / r.width) * W;
+		hover = Math.max(0, Math.min(SNAPS.length - 1, Math.round((x - pl) / STEP)));
+	}
+	function endScrub(e: PointerEvent) {
+		if (e.pointerType !== 'mouse') hover = null;
+	}
 	const oi = $derived(OTM_KEYS.indexOf(ui.otMetric));
 	const step = (d: number) => (ui.otMetric = OTM_KEYS[(oi + d + OTM_KEYS.length) % OTM_KEYS.length]);
 
@@ -268,8 +279,8 @@ import HistoryMarker from '$lib/components/HistoryMarker.svelte';
 </div>
 
 <div class="panel chart-panel">
-	<div class="chart" role="presentation" onmouseleave={() => (hover = null)}>
-		<svg viewBox="0 0 {W} {HC}">
+	<div class="chart" role="presentation" onmouseleave={() => (hover = null)} onpointerdown={scrub} onpointermove={scrub} onpointerup={endScrub} onpointercancel={endScrub}>
+		<svg viewBox="0 0 {W} {HC}" preserveAspectRatio="none">
 			<rect x={X(f).toFixed(1)} y="38" width={(X(t) - X(f)).toFixed(1)} height="216" style="fill:var(--bg3)" />
 			{#each scale.ticks as k (k.y)}<line x1="46" x2="844" y1={k.y} y2={k.y} style="stroke:var(--line)" />{/each}
 			{#each events as e (e.x)}<line x1={e.x} x2={e.x} y1="30" y2="254" style:stroke={e.stroke} style:stroke-dasharray={e.dash} />{/each}
@@ -299,8 +310,7 @@ import HistoryMarker from '$lib/components/HistoryMarker.svelte';
 					width={STEP.toFixed(1)}
 					height="232"
 					class="hit"
-					onmouseenter={() => (hover = h.i)}
-					ontouchstart={() => (hover = h.i)}
+					onpointerenter={(e) => e.pointerType === 'mouse' && (hover = h.i)}
 					onclick={() => pick(h.i)}
 				/>
 			{/each}
@@ -460,6 +470,10 @@ import HistoryMarker from '$lib/components/HistoryMarker.svelte';
 	.line {
 		fill: none;
 		stroke-linejoin: round;
+	}
+	svg :global(line),
+	svg :global(path) {
+		vector-effect: non-scaling-stroke;
 	}
 	.hit {
 		fill: transparent;
@@ -628,5 +642,65 @@ import HistoryMarker from '$lib/components/HistoryMarker.svelte';
 	}
 	.more {
 		padding: 8px 14px;
+	}
+	/* Phones: a taller stretched chart, a pinned readout instead of a floating tip, compact controls. */
+	@media (max-width: 720px) {
+		.sel {
+			flex: 1 1 140px;
+			font-size: 13px;
+		}
+		.sel select {
+			flex: 1;
+			min-width: 0;
+		}
+		.chart-panel {
+			padding: 10px;
+		}
+		.chart {
+			margin-left: 22px;
+			touch-action: pan-y;
+		}
+		svg {
+			height: 240px;
+		}
+		svg circle {
+			display: none;
+		}
+		.htip {
+			top: auto;
+			bottom: calc(100% + 6px);
+			left: -22px !important;
+			right: 0;
+			transform: none !important;
+			min-width: 0;
+		}
+		.htip-row {
+			grid-template-columns: 12px minmax(0, 1fr) auto 58px;
+		}
+		.key {
+			white-space: normal;
+		}
+		.chip {
+			padding: 6px 10px;
+			font-size: 13px;
+		}
+		.rep-head {
+			padding: 10px 12px;
+		}
+		.push {
+			margin-left: 0;
+		}
+		.sum,
+		.other,
+		.more {
+			padding-left: 12px;
+			padding-right: 12px;
+		}
+		.sums {
+			grid-template-columns: 1fr 1fr;
+		}
+		.other {
+			grid-template-columns: 1fr;
+		}
 	}
 </style>

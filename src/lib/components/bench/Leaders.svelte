@@ -155,4 +155,15 @@
 		font-size: 18px;
 		font-weight: 500;
 	}
+	@media (max-width: 380px) {
+		.results {
+			grid-template-columns: minmax(0, 1fr);
+			gap: 10px;
+		}
+	}
+	@media (max-width: 720px) {
+		.expand-bar {
+			padding: 10px 14px;
+		}
+	}
 </style>

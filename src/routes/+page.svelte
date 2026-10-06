@@ -428,4 +428,63 @@
 		gap: 6px;
 		max-width: 620px;
 	}
+	@media (max-width: 720px) {
+		.hero {
+			padding: 20px 0 8px;
+			gap: 28px;
+		}
+		h1 {
+			font-size: clamp(32px, 9.5vw, 40px);
+		}
+		.lead {
+			font-size: 15px;
+		}
+		.ctas > :global(a) {
+			flex: 1 1 auto;
+		}
+		.board-head,
+		.board-rows,
+		.board-foot {
+			padding-left: 14px;
+			padding-right: 14px;
+		}
+		.tiles-row {
+			grid-template-columns: 1fr 1fr;
+		}
+		.tile {
+			padding: 16px 4px;
+		}
+		.tile:last-child:nth-child(odd) {
+			grid-column: 1 / -1;
+		}
+		.tv {
+			font-size: 24px;
+		}
+		.block {
+			padding: 28px 0 4px;
+			gap: 16px;
+		}
+		h2 {
+			font-size: 22px;
+		}
+		.area {
+			padding: 16px;
+		}
+		.prop {
+			padding: 16px;
+		}
+		.split {
+			gap: 28px;
+		}
+		.event {
+			grid-template-columns: 88px 1fr;
+		}
+		.cta {
+			margin-top: 28px;
+			padding: 20px 16px;
+		}
+		.cta > :global(.btn-primary) {
+			flex: 1 1 100%;
+		}
+	}
 </style>

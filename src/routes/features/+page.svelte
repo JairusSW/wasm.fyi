@@ -99,10 +99,10 @@
 		{@render proposalLinks()}
 	</div>
 	<div class="tbl-wrap tall">
-		<table class="mx" style:min-width="1400px">
+		<table class="mx compat">
 			<thead>
 				<tr>
-					<th class="stick th-label" style:min-width="185px">Feature</th>
+					<th class="stick th-label feat-h">Feature</th>
 					{#each featCols as h (h.label)}
 						<th class="fh">
 							{#if h.rt}
@@ -149,7 +149,7 @@
                     {#each x.tracks as track}
                       {@const best=track.configurations.filter(c=>c.pass===track.pass).sort((a,b)=>a.failed-b.failed)[0]}
                       {#if track.text==='Node host API · unmeasured'}
-                        <div class="mono micro nowrap" title={track.detail}>{track.text}</div>
+                        <div class="mono micro host-note" title={track.detail}>{track.text}</div>
                       {:else}<FeatureResult passed={track.pass} total={track.expected} failed={best?.failed || 0} skipped={best?.skipped || 0} missing={best?.missing || 0} measured={!!track.configurations.length} flagged={track.text==='corpus passed · flag'}
                         label={`${r.f.name}, ${featCols[k].label}: ${track.pass} of ${track.expected} corpus tests passed. Open corpus results`}
                         tooltip={JSON.stringify({title:`${featCols[k].label} · ${r.f.name}`,subtitle:`Corpus tests · published release ${track.version || 'not collected'}`,rows:track.configurations.map(c=>({label:c.backend,pass:c.pass,total:c.total,failed:c.failed,skipped:c.skipped,missing:c.missing})),hint:track.configurations.length?'Click to inspect individual tests':'No measurements for this track'})}
@@ -172,10 +172,10 @@
 {:else}
 	<div class="s12 fg3">{PERF_NOTE[ui.perfMetric]}</div>
 	<div class="tbl-wrap tall">
-		<table class="mx" style:min-width="1000px">
+		<table class="mx perf">
 			<thead>
 				<tr>
-					<th class="stick th-label" style:min-width="240px">Proposal / extension · corpus</th>
+					<th class="stick th-label perf-h">Proposal / extension · corpus</th>
 					{#each cols as c (c.id)}
 						<th class="ch r">
 							<span class="cname jr"><Swatch color={c.col} bg={c.hollow ? 'transparent' : c.col} />{c.rt}</span>
@@ -297,6 +297,42 @@
 	}
 	.pcell {
 		padding: 6px 10px;
+	}
+
+	.compat {
+		min-width: 1400px;
+	}
+	.host-note {
+		max-width: 16ch;
+		margin: 0 auto;
+		color: var(--fg3);
+	}
+	.perf {
+		min-width: 1000px;
+	}
+	.feat-h {
+		min-width: 185px;
+	}
+	.perf-h {
+		min-width: 240px;
+	}
+	@media (max-width: 720px) {
+		.compat {
+			min-width: 980px;
+		}
+		.perf {
+			min-width: 760px;
+		}
+		.tall {
+			max-height: 72svh;
+		}
+		.fname,
+		.secname {
+			padding: 6px 10px;
+		}
+		.legend {
+			gap: 6px 12px;
+		}
 	}
 
   .track-version { display:flex;gap:5px;align-items:center;margin-top:5px;max-width:140px;text-align:left; }
