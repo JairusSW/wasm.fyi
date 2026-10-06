@@ -1243,3 +1243,22 @@ process exits at five publication checkpoints exercise hidden plan indexes,
 missing-chunk retry and portable recovery. The existing coordinator's resume and
 failed-outcome tests still pass. Registering an empty session before its first
 completed corpus and live worker/attempt state remain separate open requirements.
+
+## Indexed session plan membership
+
+New publications retain a small `session-plan-scope` record with source plan/pin,
+published source job, member/corpus counts and persistent membership roots.
+Ordinary session progress uses these pages instead of opening the source job or
+assembling its potentially 16 MiB plan. Later corpus publications reuse the same
+projection. Older revisions keep the source-plan fallback; their next publication
+adds the projection without rewriting the old revision.
+
+Startup, backup and DB-free reconstruction still require the original source
+content. Portable verification derives membership from the hash-verified locked
+plan and checks every projected name, value and count, as well as the source job's
+publication in the requested revision. Membership pages join the existing typed
+content closure and cleanup protection. A synthetic plan with 1,000 corpora,
+2,000 planned member/corpus pairs and over 2 MiB of retained source options tests
+bounded progress, source-read independence, missing-evidence backup rejection and
+exact restart/rebuild. Altered membership and staged source references are
+rejected. This proves read dependencies, not a serving throughput or RSS budget.

@@ -281,6 +281,62 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 				}
 				return markRecord("", id)
 			})
+		case "session-plan-scope":
+			return markMap(set.Root, "posting-session-plan-scope", func(session, id string) error {
+				var projection indexedPlanScope
+				if e := read(id, &projection); e != nil {
+					return e
+				}
+				var job wire.Job
+				if e := read(projection.SourceJob, &job); e != nil {
+					return e
+				}
+				if projection.Schema != 1 || projection.Session != session || job.Session != session || job.SessionPlan == nil || projection.Plan != job.Plan || projection.ConfiguredHarnessPin != job.ConfiguredHarnessPin || tuple[1] != "" || tuple[2] != "" {
+					return wire.Invalid("invalid indexed session plan binding")
+				}
+				scope, e := job.SessionPlan.Verify(job, func(o wire.Object) ([]byte, error) {
+					b, e := s.objectRepresentation(o)
+					if e == nil {
+						marked[o.SHA256] = true
+					}
+					return b, e
+				})
+				if e != nil {
+					return e
+				}
+				checkSet := func(set indexSet, expected []string, kind string) error {
+					if set.Count != len(expected) || !wire.IsHash(set.Root) {
+						return wire.Invalid("session plan membership count differs")
+					}
+					binding := "plan-membership:" + kind + ":" + projection.Plan + ":" + set.Root
+					if !visited[binding] {
+						remaining := map[string]bool{}
+						for _, v := range expected {
+							remaining[v] = true
+						}
+						budget := ScanLimit
+						e := s.walk(set.Root, &budget, func(k, v string) error {
+							if v != "1" || !remaining[k] {
+								return wire.Invalid("session plan membership differs")
+							}
+							delete(remaining, k)
+							return nil
+						})
+						if e != nil {
+							return e
+						}
+						if len(remaining) != 0 {
+							return wire.Invalid("session plan membership missing")
+						}
+						visited[binding] = true
+					}
+					return markMap(set.Root, "plan-membership-pages", func(_, _ string) error { return nil })
+				}
+				if e := checkSet(projection.Members, scope.Members, "members"); e != nil {
+					return e
+				}
+				return checkSet(projection.Corpora, scope.Corpora, "corpora")
+			})
 		case "session-plan":
 			return markMap(set.Root, "posting-session-plan", func(k, id string) error {
 				var job wire.Job
@@ -344,39 +400,48 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 		if e := markMap(r.Selection, "selection", markSelection); e != nil {
 			return nil, e
 		}
-		planSet, e := s.indexGet(r.Indexes, indexKey("session-plan", "", ""))
-		if e != nil {
-			return nil, e
-		}
-		if planSet.Count > 0 {
-			published, e := s.indexGet(r.Indexes, indexKey("published-job", "", ""))
+		for _, planKind := range []string{"session-plan", "session-plan-scope"} {
+			planSet, e := s.indexGet(r.Indexes, indexKey(planKind, "", ""))
 			if e != nil {
 				return nil, e
 			}
-			referenceKey := "session-plan-publications:" + planSet.Root + ":" + published.Root
-			if !visited[referenceKey] {
-				budget := ScanLimit
-				e := s.walk(planSet.Root, &budget, func(session, jobID string) error {
-					summaryID, e := s.mapGet(published.Root, jobID)
-					if e != nil {
-						return e
-					}
-					if summaryID == "" {
-						return wire.Invalid("session plan source is unpublished")
-					}
-					var summary PublishedJob
-					if e := read(summaryID, &summary); e != nil {
-						return e
-					}
-					if summary.ID != jobID || summary.Session != session {
-						return wire.Invalid("session plan publication binding differs")
-					}
-					return nil
-				})
+			if planSet.Count > 0 {
+				published, e := s.indexGet(r.Indexes, indexKey("published-job", "", ""))
 				if e != nil {
 					return nil, e
 				}
-				visited[referenceKey] = true
+				referenceKey := "session-plan-publications:" + planKind + ":" + planSet.Root + ":" + published.Root
+				if !visited[referenceKey] {
+					budget := ScanLimit
+					e := s.walk(planSet.Root, &budget, func(session, jobID string) error {
+						if planKind == "session-plan-scope" {
+							var projection indexedPlanScope
+							if e := read(jobID, &projection); e != nil {
+								return e
+							}
+							jobID = projection.SourceJob
+						}
+						summaryID, e := s.mapGet(published.Root, jobID)
+						if e != nil {
+							return e
+						}
+						if summaryID == "" {
+							return wire.Invalid("session plan source is unpublished")
+						}
+						var summary PublishedJob
+						if e := read(summaryID, &summary); e != nil {
+							return e
+						}
+						if summary.ID != jobID || summary.Session != session {
+							return wire.Invalid("session plan publication binding differs")
+						}
+						return nil
+					})
+					if e != nil {
+						return nil, e
+					}
+					visited[referenceKey] = true
+				}
 			}
 		}
 		if e := markMap(r.Indexes, "indexes", markIndexes); e != nil {

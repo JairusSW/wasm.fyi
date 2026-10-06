@@ -313,8 +313,14 @@ func (s *Store) SessionInfo(ctx context.Context, revision, session string) (Sess
 			return out, wire.Invalid("session immutable bindings differ")
 		}
 		out.Plan, out.ConfiguredHarnessPin = summary.Plan, summary.ConfiguredHarnessPin
-		if scope != nil && (scope.Plan != summary.Plan || scope.ConfiguredHarnessPin != summary.ConfiguredHarnessPin || !scope.Contains(summary.Machine, summary.Corpus)) {
-			return out, wire.Invalid("published job outside session plan")
+		if scope != nil {
+			contains, e := scope.Contains(summary.Machine, summary.Corpus)
+			if e != nil {
+				return out, e
+			}
+			if scope.Plan != summary.Plan || scope.ConfiguredHarnessPin != summary.ConfiguredHarnessPin || !contains {
+				return out, wire.Invalid("published job outside session plan")
+			}
 		}
 		members[summary.Machine] = true
 		corpusJobs[struct{ machine, corpus string }{summary.Machine, summary.Corpus}] = true
@@ -323,7 +329,7 @@ func (s *Store) SessionInfo(ctx context.Context, revision, session string) (Sess
 	out.Members = len(members)
 	out.PublishedCorpusJobs = len(corpusJobs)
 	if scope != nil {
-		planned := len(scope.Members) * len(scope.Corpora)
+		planned := scope.MemberCount * scope.CorpusCount
 		complete := planned == out.PublishedCorpusJobs
 		out.PlannedJobs, out.CollectionComplete = &planned, &complete
 		out.CompletenessReason = "published completed attempts cover only part of the immutable session plan"

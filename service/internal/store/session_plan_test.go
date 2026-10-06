@@ -29,14 +29,14 @@ func plannedFixture(t *testing.T, seed, machine, corpus string, attach bool) (wi
 }
 func stagePlannedFixture(t *testing.T, s *Store, j wire.Job, objects map[string][]byte) string {
 	t.Helper()
-	for id, b := range objects {
-		if e := s.Install(id, bytes.NewReader(b)); e != nil {
-			t.Fatal(e)
-		}
-	}
 	id, e := s.Submit(j)
 	if e != nil {
 		t.Fatal(e)
+	}
+	for object, b := range objects {
+		if e := s.InstallDeclared(object, bytes.NewReader(b)); e != nil {
+			t.Fatal(e)
+		}
 	}
 	return id
 }
@@ -156,7 +156,24 @@ func TestSessionPlanReferenceRequiresRevisionPublishedSource(t *testing.T) {
 	if _, err = s.put(pending); err != nil {
 		t.Fatal(err)
 	}
-	rev.Indexes, err = s.indexAdd(rev.Indexes, indexKey("session-plan", "", ""), job.Session, id)
+	set, err := s.indexGet(rev.Indexes, indexKey("session-plan-scope", "", ""))
+	if err != nil {
+		t.Fatal(err)
+	}
+	projectionID, err := s.mapGet(set.Root, job.Session)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var projection indexedPlanScope
+	if err := s.load(projectionID, &projection); err != nil {
+		t.Fatal(err)
+	}
+	projection.SourceJob = id
+	projectionID, err = s.put(projection)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rev.Indexes, err = s.indexAdd(rev.Indexes, indexKey("session-plan-scope", "", ""), job.Session, projectionID)
 	if err != nil {
 		t.Fatal(err)
 	}
