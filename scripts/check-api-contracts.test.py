@@ -44,15 +44,15 @@ class Contracts(unittest.TestCase):
                  "definitions": "require-registered", "contracts": "latest-in-scope"}
         population = {"configuration": lane, "status": "available", "reason": "", "value": 4,
                       "ratio": 1, "ratioStatus": "available", "ratioReason": "", "count": 1,
-                      "workloads": 1, "members": None, "reports": None}
-        comparison = {"version": "wasmfyi-cohort-v2", "baseline": lane, "policy": scope["policy"],
+                      "workloads": 1, "members": None, "reports": None, "approximateInputs": 0, "ratioUsesApproximateInputs": False}
+        comparison = {"version": "wasmfyi-cohort-v3", "valueRepresentation": "float64", "baseline": lane, "policy": scope["policy"],
                       "weighting": "workload", "requested": [lane], "participants": [lane], "omitted": [],
                       "populations": [population], "uncertainty": "unavailable", "uncertaintyReason": "policy unavailable"}
         summary = {"scope": scope, "cohort": "fixture-token", "digest": "f" * 64,
                    "categoryPolicy": "fixture", "eligibilityPolicy": "fixture", "excluded": {},
                    "comparison": comparison, "reportCounts": {lane: 1}, "configurationCounts": {lane: 1}}
         contracts.validate(summary, "AggregateSummary", "bounded current-version aggregate")
-        for key, value in [("members", []), ("reports", []), ("count", -1)]:
+        for key, value in [("members", []), ("reports", []), ("count", -1), ("approximateInputs", -1), ("ratioUsesApproximateInputs", "yes")]:
             changed = copy.deepcopy(summary)
             changed["comparison"]["populations"][0][key] = value
             with self.assertRaises(ValueError):

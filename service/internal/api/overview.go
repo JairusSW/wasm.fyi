@@ -12,17 +12,19 @@ import (
 // Overview is a compact projection of a complete cohort, never of a result page.
 // Producer recipes and report inventories remain referenced resources.
 type overviewCard struct {
-	Lane                 string   `json:"lane"`
-	Status               string   `json:"status"`
-	Reason               string   `json:"reason"`
-	Value                *float64 `json:"value"`
-	Ratio                *float64 `json:"ratio"`
-	RatioStatus          string   `json:"ratioStatus"`
-	RatioReason          string   `json:"ratioReason"`
-	Count                int      `json:"count"`
-	Workloads            int      `json:"workloads"`
-	SourceReports        int      `json:"sourceReports"`
-	ActualConfigurations int      `json:"actualConfigurations"`
+	Lane                       string   `json:"lane"`
+	Status                     string   `json:"status"`
+	Reason                     string   `json:"reason"`
+	Value                      *float64 `json:"value"`
+	Ratio                      *float64 `json:"ratio"`
+	RatioStatus                string   `json:"ratioStatus"`
+	RatioReason                string   `json:"ratioReason"`
+	Count                      int      `json:"count"`
+	ApproximateInputs          int      `json:"approximateInputs"`
+	RatioUsesApproximateInputs *bool    `json:"ratioUsesApproximateInputs"`
+	Workloads                  int      `json:"workloads"`
+	SourceReports              int      `json:"sourceReports"`
+	ActualConfigurations       int      `json:"actualConfigurations"`
 }
 
 type overviewDefinition struct {
@@ -33,14 +35,15 @@ type overviewDefinition struct {
 }
 
 type overviewInterpretation struct {
-	Version           string `json:"version"`
-	ContractSelection string `json:"contractSelection"`
-	Population        string `json:"population"`
-	Weighting         string `json:"weighting"`
-	Reports           string `json:"reports"`
-	Uncertainty       string `json:"uncertainty"`
-	UncertaintyReason string `json:"uncertaintyReason"`
-	SourceReports     int    `json:"sourceReports"`
+	Version               string `json:"version"`
+	ContractSelection     string `json:"contractSelection"`
+	NumericRepresentation string `json:"numericRepresentation"`
+	Population            string `json:"population"`
+	Weighting             string `json:"weighting"`
+	Reports               string `json:"reports"`
+	Uncertainty           string `json:"uncertainty"`
+	UncertaintyReason     string `json:"uncertaintyReason"`
+	SourceReports         int    `json:"sourceReports"`
 	// Exact producer methods define profiles, collectors and observation boundaries.
 	Methods []store.CohortSelector `json:"methods"`
 }
@@ -84,9 +87,10 @@ func projectOverview(c *store.Cohort, token string) overviewResponse {
 		for _, id := range p.Reports {
 			reports[id] = true
 		}
-		response.Cards = append(response.Cards, overviewCard{p.Configuration, p.Status, p.Reason, p.Value, p.Ratio, p.RatioStatus, p.RatioReason, p.Count, p.Workloads, len(p.Reports), len(configurations)})
+		response.Cards = append(response.Cards, overviewCard{p.Configuration, p.Status, p.Reason, p.Value, p.Ratio, p.RatioStatus, p.RatioReason, p.Count, p.ApproximateInputs, p.RatioUsesApproximateInputs, p.Workloads, len(p.Reports), len(configurations)})
 	}
 	interpretation := overviewInterpretation{Version: comparison.Version, Uncertainty: out.Uncertainty, UncertaintyReason: out.UncertaintyReason, SourceReports: len(reports), Methods: c.Scope.Selectors}
+	interpretation.NumericRepresentation = "Aggregate values and ratios are floating-point estimates. Approximate-input counts describe source values that lost precision on conversion; exact originals remain in paged membership. These counts do not describe statistical uncertainty."
 	switch c.Scope.Contracts {
 	case "latest-in-scope":
 		interpretation.ContractSelection = "Each logical workload uses the exact contract at the latest capture time among the requested lanes and workload population. Equal-time contract conflicts are rejected."

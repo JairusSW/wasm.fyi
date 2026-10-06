@@ -220,3 +220,57 @@ func TestRatioOutsideFloatingRangeIsUnavailable(t *testing.T) {
 		t.Fatal("overflow exposed an invalid ratio")
 	}
 }
+
+func TestAggregatePrecisionIncludesBaselineAndExcludedInputs(t *testing.T) {
+	for _, policy := range []string{"shared-geometric-v1", "available-rss-arithmetic-v1", "matched-rss-arithmetic-v1"} {
+		in := basic()
+		in.Policy = policy
+		in.Rows[0].Cells[0].ApproximateValue = true
+		in.Rows[0].Cells[0].SourceValue = json.RawMessage(`"9007199254740993"`)
+		in.Rows[0].Cells[0].Value = number(9007199254740992)
+		out, err := Compute(context.Background(), in)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if out.ValueRepresentation != "float64" {
+			t.Fatal("numeric representation hidden")
+		}
+		for _, p := range out.Populations {
+			if p.Configuration == "missing" {
+				if p.RatioUsesApproximateInputs != nil || p.ApproximateInputs != 0 {
+					t.Fatal("unavailable ratio invents precision metadata")
+				}
+				continue
+			}
+			want := 0
+			if p.Configuration == "a" {
+				want = 1
+			}
+			if p.ApproximateInputs != want || p.RatioUsesApproximateInputs == nil || !*p.RatioUsesApproximateInputs {
+				t.Fatal("baseline conversion loss hidden", policy, p)
+			}
+		}
+		in.Rows[0].Cells[0].ApproximateValue = false
+		in.Rows[0].Cells[0].SourceValue = nil
+		in.Rows[0].Cells[1].ApproximateValue = true
+		out, err = Compute(context.Background(), in)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, p := range out.Populations {
+			if p.RatioUsesApproximateInputs != nil && *p.RatioUsesApproximateInputs != (p.Configuration == "b") {
+				t.Fatal("numerator conversion loss leaked to unrelated ratio", policy, p)
+			}
+		}
+		in.Rows[0].Cells[1].Status = "failed"
+		out, err = Compute(context.Background(), in)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, p := range out.Populations {
+			if p.RatioUsesApproximateInputs != nil && *p.RatioUsesApproximateInputs {
+				t.Fatal("exact source falsely marked converted")
+			}
+		}
+	}
+}

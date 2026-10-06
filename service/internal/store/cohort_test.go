@@ -76,6 +76,9 @@ func TestCohortNativePrecisionAndRebuild(t *testing.T) {
 		t.Fatal(e)
 	}
 	member := c.Comparison.Populations[0].Members[0]
+	if c.Comparison.Populations[0].ApproximateInputs != 1 || c.Comparison.Populations[0].RatioUsesApproximateInputs == nil || !*c.Comparison.Populations[0].RatioUsesApproximateInputs {
+		t.Fatal("aggregate hid exact-integer conversion")
+	}
 	if string(member.Cell.SourceValue) != `"9007199254740993"` || !member.Cell.ApproximateValue {
 		t.Fatal("exact measured integer silently rounded")
 	}
@@ -93,6 +96,12 @@ func TestCohortNativePrecisionAndRebuild(t *testing.T) {
 	if e != nil || restored.Digest != c.Digest {
 		t.Fatal("cohort method index not portable", e)
 	}
+	before, _ := wire.Encode(c.Comparison)
+	after, _ := wire.Encode(restored.Comparison)
+	if !bytes.Equal(before, after) {
+		t.Fatal("portable rebuild changed source precision metadata")
+	}
+
 }
 func publishCohortAt(t *testing.T, s *Store, seed string, date time.Time, cells []testutil.CohortCell) string {
 	t.Helper()

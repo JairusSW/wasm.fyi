@@ -125,3 +125,60 @@ func TestOverviewExplainsRecordedContractSelection(t *testing.T) {
 		}
 	}
 }
+
+func TestOverviewAndAggregateExposeExactSourceConversion(t *testing.T) {
+	s, err := store.Open(t.TempDir(), "fixture")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	rev := importCohort(t, s, "native-precision", []testutil.CohortCell{{Runtime: "a", Workload: "fixture/one", Group: "x", Metric: "native.code_size", ExactValue: "9007199254740993"}, {Runtime: "b", Workload: "fixture/one", Group: "x", Metric: "native.code_size", ExactValue: "4"}})
+	scope := apiCohortScope(t, s, rev)
+	scope.Collectors = "allow-unrecorded-native-size"
+	scope.Definitions = "allow-unregistered-native-size"
+	h, err := New(s, strings.Repeat("x", 32), []byte(strings.Repeat("k", 32)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, _ := wire.Encode(scope)
+	query := "?version=" + comparison.Version + "&scope=" + url.QueryEscape(string(body))
+	w := request(t, h, "GET", "/api/v1/overview"+query, nil, nil)
+	var out overviewResponse
+	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &out) != nil {
+		t.Fatal("overview precision unavailable", w.Code, w.Body.String())
+	}
+	if !strings.Contains(out.Interpretation.NumericRepresentation, "exact originals") {
+		t.Fatal("floating-point interpretation missing")
+	}
+	for _, card := range out.Cards {
+		want := 0
+		if card.Lane == scope.Baseline {
+			want = 1
+		}
+		if card.ApproximateInputs != want || card.RatioUsesApproximateInputs == nil || !*card.RatioUsesApproximateInputs {
+			t.Fatal("rounded baseline hidden in overview", card)
+		}
+	}
+	w = request(t, h, "GET", "/api/v1/aggregates"+query, nil, nil)
+	var aggregate struct {
+		Comparison comparison.Output
+		Cohort     string
+	}
+	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &aggregate) != nil || aggregate.Comparison.ValueRepresentation != "float64" {
+		t.Fatal("aggregate precision unavailable", w.Code, w.Body.String())
+	}
+	for _, p := range aggregate.Comparison.Populations {
+		want := 0
+		if p.Configuration == scope.Baseline {
+			want = 1
+		}
+		if p.ApproximateInputs != want || p.RatioUsesApproximateInputs == nil || !*p.RatioUsesApproximateInputs || len(p.Members) != 0 || len(p.Reports) != 0 {
+			t.Fatal("aggregate precision or evidence boundary drift", p)
+		}
+	}
+	w = request(t, h, "GET", "/api/v1/cohorts/"+aggregate.Cohort+"?lane="+scope.Baseline, nil, nil)
+	var page struct{ Items []comparison.Member }
+	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &page) != nil || len(page.Items) != 1 || string(page.Items[0].Cell.SourceValue) != `"9007199254740993"` || !page.Items[0].Cell.ApproximateValue {
+		t.Fatal("exact original lost", w.Code, w.Body.String())
+	}
+}

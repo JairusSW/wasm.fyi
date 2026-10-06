@@ -211,13 +211,15 @@ func TestCohortVersionChangeRejectsAuthenticOlderTokens(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	old, _ := wire.Encode(cohortCapsule{"wasmfyi-cohort-v1", comparison.CategoryVersion, scope})
-	mac := hmac.New(sha256.New, key)
-	mac.Write([]byte("cohort-v1:"))
-	mac.Write(old)
-	token := base64.RawURLEncoding.EncodeToString(old) + "." + base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
-	if w := request(t, h, "GET", "/api/v1/cohorts/"+token, nil, nil); w.Code != 400 {
-		t.Fatal("older comparison token reused under changed policy", w.Code)
+	for _, version := range []string{"wasmfyi-cohort-v1", "wasmfyi-cohort-v2"} {
+		old, _ := wire.Encode(cohortCapsule{version, comparison.CategoryVersion, scope})
+		mac := hmac.New(sha256.New, key)
+		mac.Write([]byte("cohort-v1:"))
+		mac.Write(old)
+		token := base64.RawURLEncoding.EncodeToString(old) + "." + base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
+		if w := request(t, h, "GET", "/api/v1/cohorts/"+token, nil, nil); w.Code != 400 {
+			t.Fatal("older comparison token reused under changed response", version, w.Code)
+		}
 	}
 	body, _ := wire.Encode(scope)
 	w := request(t, h, "GET", "/api/v1/overview?scope="+url.QueryEscape(string(body)), nil, nil)
@@ -249,7 +251,7 @@ func TestCohortVersionChangeRejectsAuthenticOlderTokens(t *testing.T) {
 		t.Fatal("current scope interpretation missing")
 	}
 
-	if comparison.Version != "wasmfyi-cohort-v2" {
+	if comparison.Version != "wasmfyi-cohort-v3" {
 		t.Fatal("unversioned contract-selection fix")
 	}
 }

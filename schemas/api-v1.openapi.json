@@ -1996,7 +1996,7 @@
             "schema": {
               "type": "string",
               "enum": [
-                "wasmfyi-cohort-v2"
+                "wasmfyi-cohort-v3"
               ]
             },
             "description": "Pin comparison analysis as well as scope.revision for immutable caching. Unversioned analysis resolves the current policy and must revalidate."
@@ -2321,7 +2321,7 @@
             "schema": {
               "type": "string",
               "enum": [
-                "wasmfyi-cohort-v2"
+                "wasmfyi-cohort-v3"
               ]
             },
             "description": "Pin comparison analysis as well as scope.revision for immutable caching. Unversioned analysis resolves the current policy and must revalidate."

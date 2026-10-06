@@ -260,7 +260,7 @@ benchmark or archived executable. The 60,811,832-byte V8 parent passed this gate
 on macOS and native Linux aarch64; durable disk and off-machine restore remain
 separate gates.
 
-Website comparison analysis is now `wasmfyi-cohort-v2`. The `latest-in-scope`
+Website comparison analysis is now `wasmfyi-cohort-v3`. The `latest-in-scope`
 contract policy finds the latest capture only within the requested lanes and
 workload population. Unrequested runtimes cannot supersede selected contracts;
 excluded feature probes cannot introduce timestamp ambiguity. Conflicting exact
@@ -269,8 +269,8 @@ explicitly. The `all-exact-contracts` policy remains available.
 
 The overview exposes `interpretation.contractSelection` from the requested policy.
 Cohort digests, cache keys and signed tokens bind the comparison version. Existing
-v1 cohort tokens are rejected; resolve the selected overview/aggregate again to
-obtain a v2 token. Result/history records, producer analysis versions, scientific
+v1/v2 cohort tokens are rejected; resolve the selected overview/aggregate again to
+obtain a v3 token. Result/history records, producer analysis versions, scientific
 values, unavailable uncertainty, and the `s1`/`s2` selection aliases are preserved.
 This fixes comparison membership; it does not qualify the wider cohort/history
 methodology or complete production cutover.
@@ -279,11 +279,26 @@ Aggregate summary responses now have the executable `AggregateSummary` contract:
 at most 32 lane populations, versioned comparison policy, reference counts, and
 explicitly null member/report inventories. Complete cohort membership remains a
 paged subresource. Schema checks reject evidence preloads and manufactured
-uncertainty; generated TypeScript types share the contract. Comparison v2 HTTP
+uncertainty; generated TypeScript types share the contract. Comparison v3 HTTP
 captures cover overview, aggregate summaries and member pages.
 
-Pin analysis in overview/aggregate URLs with `version=wasmfyi-cohort-v2` as well
+Pin analysis in overview/aggregate URLs with `version=wasmfyi-cohort-v3` as well
 as an explicit `scope.revision` for immutable caching. Without the version,
 responses use `no-cache` and revalidate so a policy upgrade cannot leave a stale
 cohort token in a long-lived browser cache. Unsupported versions fail explicitly.
 Signed cohort member URLs already bind the analysis version and remain immutable.
+
+Cohort response v3 exposes `approximateInputs` for each population/card: the number
+of contributing source values that lost precision when converted for calculation.
+`ratioUsesApproximateInputs` includes conversion loss in either the numerator or
+baseline and is null when the ratio is unavailable. Failed/excluded cells do not
+contribute to these counts. `comparison.valueRepresentation` is `float64`, and
+overviews share the numeric interpretation. Exact originals remain in paged
+membership, including decimal strings beyond JavaScript's safe integer range.
+
+These flags describe input conversion, not confidence intervals or the rounding
+of every subsequent arithmetic operation. A zero count does not certify an exact
+floating-point aggregate. The v3 response version prevents immutable v2 URLs or
+tokens from silently serving a projection without the new required precision
+fields. Measurement identities, weighting, arithmetic and uncertainty policies
+remain unchanged.

@@ -1043,6 +1043,17 @@
         "actualConfigurations": {
           "type": "integer",
           "minimum": 0
+        },
+        "approximateInputs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "ratioUsesApproximateInputs": {
+          "type": [
+            "boolean",
+            "null"
+          ]
         }
       },
       "required": [
@@ -1056,7 +1067,9 @@
         "count",
         "workloads",
         "sourceReports",
-        "actualConfigurations"
+        "actualConfigurations",
+        "approximateInputs",
+        "ratioUsesApproximateInputs"
       ],
       "additionalProperties": false
     },
@@ -1089,7 +1102,7 @@
       "type": "object",
       "properties": {
         "version": {
-          "const": "wasmfyi-cohort-v2"
+          "const": "wasmfyi-cohort-v3"
         },
         "population": {
           "type": "string"
@@ -1120,6 +1133,10 @@
         "contractSelection": {
           "type": "string",
           "minLength": 1
+        },
+        "numericRepresentation": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [
@@ -1131,7 +1148,8 @@
         "uncertaintyReason",
         "sourceReports",
         "methods",
-        "contractSelection"
+        "contractSelection",
+        "numericRepresentation"
       ],
       "additionalProperties": false
     },
@@ -2365,6 +2383,17 @@
         },
         "reports": {
           "type": "null"
+        },
+        "approximateInputs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "ratioUsesApproximateInputs": {
+          "type": [
+            "boolean",
+            "null"
+          ]
         }
       },
       "required": [
@@ -2378,7 +2407,9 @@
         "count",
         "workloads",
         "members",
-        "reports"
+        "reports",
+        "approximateInputs",
+        "ratioUsesApproximateInputs"
       ],
       "additionalProperties": false
     },
@@ -2386,7 +2417,7 @@
       "type": "object",
       "properties": {
         "version": {
-          "const": "wasmfyi-cohort-v2"
+          "const": "wasmfyi-cohort-v3"
         },
         "baseline": {
           "$ref": "#/$defs/Digest"
@@ -2441,6 +2472,9 @@
         "uncertaintyReason": {
           "type": "string",
           "minLength": 1
+        },
+        "valueRepresentation": {
+          "const": "float64"
         }
       },
       "required": [
@@ -2453,7 +2487,8 @@
         "omitted",
         "populations",
         "uncertainty",
-        "uncertaintyReason"
+        "uncertaintyReason",
+        "valueRepresentation"
       ],
       "additionalProperties": false
     },

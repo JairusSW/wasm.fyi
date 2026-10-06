@@ -10,7 +10,7 @@ import (
 	"sort"
 )
 
-const Version = "wasmfyi-cohort-v2"
+const Version = "wasmfyi-cohort-v3"
 const MaxCells = 100000
 
 // A Key is an exact workload contract (plus boundary/definition for RSS).
@@ -50,29 +50,32 @@ type Member struct {
 	Cell     Cell    `json:"cell"`
 }
 type Population struct {
-	Configuration string   `json:"configuration"`
-	Status        string   `json:"status"`
-	Reason        string   `json:"reason"`
-	Value         *float64 `json:"value"`
-	Ratio         *float64 `json:"ratio"`
-	RatioStatus   string   `json:"ratioStatus"`
-	RatioReason   string   `json:"ratioReason"`
-	Count         int      `json:"count"`
-	Workloads     int      `json:"workloads"`
-	Members       []Member `json:"members"`
-	Reports       []string `json:"reports"`
+	Configuration              string   `json:"configuration"`
+	Status                     string   `json:"status"`
+	Reason                     string   `json:"reason"`
+	Value                      *float64 `json:"value"`
+	Ratio                      *float64 `json:"ratio"`
+	RatioStatus                string   `json:"ratioStatus"`
+	RatioReason                string   `json:"ratioReason"`
+	Count                      int      `json:"count"`
+	ApproximateInputs          int      `json:"approximateInputs"`
+	RatioUsesApproximateInputs *bool    `json:"ratioUsesApproximateInputs"`
+	Workloads                  int      `json:"workloads"`
+	Members                    []Member `json:"members"`
+	Reports                    []string `json:"reports"`
 }
 type Output struct {
-	Version           string       `json:"version"`
-	Baseline          string       `json:"baseline"`
-	Policy            string       `json:"policy"`
-	Weighting         string       `json:"weighting"`
-	Requested         []string     `json:"requested"`
-	Participants      []string     `json:"participants"`
-	Omitted           []string     `json:"omitted"`
-	Populations       []Population `json:"populations"`
-	Uncertainty       string       `json:"uncertainty"`
-	UncertaintyReason string       `json:"uncertaintyReason"`
+	Version             string       `json:"version"`
+	ValueRepresentation string       `json:"valueRepresentation"`
+	Baseline            string       `json:"baseline"`
+	Policy              string       `json:"policy"`
+	Weighting           string       `json:"weighting"`
+	Requested           []string     `json:"requested"`
+	Participants        []string     `json:"participants"`
+	Omitted             []string     `json:"omitted"`
+	Populations         []Population `json:"populations"`
+	Uncertainty         string       `json:"uncertainty"`
+	UncertaintyReason   string       `json:"uncertaintyReason"`
 }
 
 func eligible(c Cell) bool {
@@ -82,7 +85,7 @@ func eligible(c Cell) bool {
 // Compute never reads trials or treats a pagination window as a cohort. Row
 // order is retained for numerical parity; callers canonicalize it for caching.
 func Compute(ctx context.Context, input Input) (Output, error) {
-	out := Output{Version: Version, Baseline: input.Baseline, Policy: input.Policy, Weighting: input.Weighting,
+	out := Output{Version: Version, ValueRepresentation: "float64", Baseline: input.Baseline, Policy: input.Policy, Weighting: input.Weighting,
 		Requested: append([]string{}, input.Configurations...), Participants: []string{}, Omitted: []string{}, Populations: []Population{},
 		Uncertainty: "unavailable", UncertaintyReason: "cross-report independent sampling policy is not defined"}
 	if len(input.Configurations) == 0 || len(input.Configurations) > 32 || len(input.Rows) > 10000 {
@@ -199,6 +202,9 @@ func Compute(ctx context.Context, input Input) (Output, error) {
 			} else {
 				sum += *cell.Value
 			}
+			if cell.ApproximateValue {
+				population.ApproximateInputs++
+			}
 			population.Members = append(population.Members, Member{Key: row.Key, Workload: row.Workload, Group: row.Group, Weight: weight, Cell: cell})
 			reports[cell.Report], workloads[row.Workload] = true, true
 		}
@@ -221,6 +227,12 @@ func Compute(ctx context.Context, input Input) (Output, error) {
 		sort.Strings(population.Reports)
 		out.Populations = append(out.Populations, population)
 	}
+	baselineApproximate := false
+	for _, p := range out.Populations {
+		if p.Configuration == input.Baseline {
+			baselineApproximate = p.ApproximateInputs > 0
+		}
+	}
 	for i := range out.Populations {
 		p := &out.Populations[i]
 		p.RatioStatus, p.RatioReason = "unavailable", "baseline unavailable"
@@ -239,6 +251,8 @@ func Compute(ctx context.Context, input Input) (Output, error) {
 		if r > 0 && !math.IsNaN(r) && !math.IsInf(r, 0) {
 			p.Ratio = &r
 			p.RatioStatus, p.RatioReason = "available", ""
+			uses := p.ApproximateInputs > 0 || baselineApproximate
+			p.RatioUsesApproximateInputs = &uses
 		}
 	}
 	return out, nil
