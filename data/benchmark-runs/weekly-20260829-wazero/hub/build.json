@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "root": "/home/hub/.cache/wasm-fyi/weekly-20260829/harness/wazero",
+  "controller": "/home/hub/.cache/wasm-fyi/weekly-20260829/controller",
+  "harnessRevision": "9332ced5e59c0c3fd9c5aabc6ebc2ed991431eb9",
+  "controllerSha256": "34741da126f5a73c2ae569f6a7fd5ef7d54a8e30198170566abed4011d6ad985",
+  "analyzerSha256": "649d645c5630c68c919394f381ccca528f14e946cc3c16adcdd07ea227440d65",
+  "pin": {
+    "engine": "wazero",
+    "targetType": "main",
+    "targetWeek": "2026-08-30T03:59:00.000Z",
+    "repository": "tetratelabs/wazero",
+    "branch": "main",
+    "revision": "f4779551afb474c7f2ac79929ce2b3390197544c",
+    "committedAt": "2026-08-29T08:42:55Z",
+    "url": "https://github.com/wazero/wazero/commit/f4779551afb474c7f2ac79929ce2b3390197544c",
+    "status": "planned",
+    "configurations": [
+      "wazero"
+    ]
+  },
+  "provenance": {
+    "engine": "wazero",
+    "targetType": "main",
+    "targetWeek": "2026-08-30T03:59:00.000Z",
+    "repository": "tetratelabs/wazero",
+    "branch": "main",
+    "revision": "f4779551afb474c7f2ac79929ce2b3390197544c",
+    "committedAt": "2026-08-29T08:42:55Z",
+    "url": "https://github.com/wazero/wazero/commit/f4779551afb474c7f2ac79929ce2b3390197544c",
+    "status": "planned",
+    "configurations": [
+      "wazero"
+    ],
+    "module": {
+      "Path": "github.com/tetratelabs/wazero",
+      "Version": "v1.12.1-0.20260829084255-f4779551afb4",
+      "Query": "f4779551afb474c7f2ac79929ce2b3390197544c",
+      "Info": "/home/hub/go/pkg/mod/cache/download/github.com/tetratelabs/wazero/@v/v1.12.1-0.20260829084255-f4779551afb4.info",
+      "GoMod": "/home/hub/go/pkg/mod/cache/download/github.com/tetratelabs/wazero/@v/v1.12.1-0.20260829084255-f4779551afb4.mod",
+      "Zip": "/home/hub/go/pkg/mod/cache/download/github.com/tetratelabs/wazero/@v/v1.12.1-0.20260829084255-f4779551afb4.zip",
+      "Dir": "/home/hub/go/pkg/mod/github.com/tetratelabs/wazero@v1.12.1-0.20260829084255-f4779551afb4",
+      "Sum": "h1:HMAdbvgBsFARgA+67cxc7DYUhgQ75vJisiY4zXuOt88=",
+      "GoModSum": "h1:LvKtzl2RqO4gyF27BiXU+nKAjcV8f38U+kP/q2vgxh0=",
+      "Origin": {
+        "VCS": "git",
+        "URL": "https://github.com/tetratelabs/wazero",
+        "Hash": "f4779551afb474c7f2ac79929ce2b3390197544c"
+      }
+    }
+  },
+  "runtime": {
+    "elf_startup_dependencies": {
+      "version": "linux-glibc-startup-closure-v1",
+      "interpreter": {
+        "path": "/lib64/ld-linux-x86-64.so.2",
+        "sha256": "c20a2dc8917c755f02b94049356320fe1f62ac7d9f8994731f807d9df39302da"
+      },
+      "libraries": {
+        "libc.so.6": {
+          "path": "/lib/x86_64-linux-gnu/libc.so.6",
+          "sha256": "3a15d66867d83762c7f2f1e37359cb8f6c5743edb369c65285cb0b1c4f7498bf"
+        }
+      },
+      "control_files": {
+        "/etc/ld.so.cache": "1b2ef9fe7da4550f7b4e998fe2e80e9d2163233f0c7f6ccf22b207e1763c6356",
+        "/etc/ld.so.preload": "absent"
+      }
+    },
+    "host_file_sha256": {
+      "/etc/ld.so.cache": "1b2ef9fe7da4550f7b4e998fe2e80e9d2163233f0c7f6ccf22b207e1763c6356",
+      "/lib64/ld-linux-x86-64.so.2": "c20a2dc8917c755f02b94049356320fe1f62ac7d9f8994731f807d9df39302da"
+    },
+    "native_dependency_policy": "linux-glibc-startup-closure-v1; explicit trusted loader --list; exact startup library hashes and loader controls; re-resolved before execution; excludes later dlopen and kernel vDSO",
+    "id": "wazero",
+    "command": [
+      "/home/hub/.cache/wasm-fyi/weekly-20260829/harness/wazero/bin/adapter-wazero"
+    ],
+    "file_sha256": {
+      "/home/hub/.cache/wasm-fyi/weekly-20260829/harness/wazero/bin/adapter-wazero": "977e13f388b12880c24abdd848b10d6657d13de4914ccfefa4f9edc417dc5f52",
+      "/lib/x86_64-linux-gnu/libc.so.6": "3a15d66867d83762c7f2f1e37359cb8f6c5743edb369c65285cb0b1c4f7498bf"
+    }
+  },
+  "env": {
+    "WASMBENCH_V8_COMPILER_MODE": "optimizing-only"
+  },
+  "builtAt": "2026-10-05T18:54:12.919Z"
+}
