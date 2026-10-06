@@ -133,15 +133,14 @@ func TestRealProducerServingParity(t *testing.T) {
 			memoryExpected[identity(summary, "runtime", "workload", "scenario", "metric")] = summary
 		}
 		for _, record := range source.Code {
-			value := record["size_bytes"]
-			if len(value) == 0 || string(value) == "null" {
+			metric, text, available, err := realCodeMeasurement(record)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !available {
 				continue
 			}
-			text := string(value)
-			if value[0] == '"' {
-				_ = json.Unmarshal(value, &text)
-			}
-			codeExpected[identity(record, "runtime", "workload", "trial")] = text
+			codeExpected[identity(record, "runtime", "workload", "trial")+"|"+metric] = text
 		}
 		id, e := s.Submit(job)
 		if e != nil {
@@ -371,14 +370,14 @@ func TestRealProducerServingParity(t *testing.T) {
 					scopes[id] = store.CohortScope{Revision: revision, Environment: r.EnvironmentID, Lanes: []string{r.TrackID}, LaneKind: "track", Baseline: r.TrackID, Selectors: []store.CohortSelector{{Definition: r.MetricDefinitionID, Method: r.MeasurementMethodID, Analysis: r.AnalysisVersion}}, Policy: "available-rss-arithmetic-v1", Weighting: "workload", Workloads: "all", MixedConfigurations: "explicit-membership", Collectors: "require-recorded", Definitions: "require-registered", Contracts: "latest-in-scope"}
 				}
 			}
-			if r.Metric == "native.code_size" {
+			if r.Metric == "native.code_size" || r.Metric == "native.code_image" {
 				var summary struct {
 					Size     json.RawMessage `json:"size_bytes"`
 					Trial    string          `json:"trial_id"`
 					Artifact string          `json:"artifactId"`
 				}
 				_ = json.Unmarshal(r.Summary, &summary)
-				want := codeExpected[r.ReportID+"|"+r.Runtime+"|"+r.Workload+"|"+summary.Trial]
+				want := codeExpected[r.ReportID+"|"+r.Runtime+"|"+r.Workload+"|"+summary.Trial+"|"+r.Metric]
 				text := string(summary.Size)
 				if len(summary.Size) > 0 && summary.Size[0] == '"' {
 					_ = json.Unmarshal(summary.Size, &text)

@@ -27,3 +27,22 @@ Completion requires current-state evidence for each row, including representativ
 sealed producer fixtures, source-preserving conversions, scale tests and actual
 subprocess failures. Update this audit as evidence changes; keep unresolved rows
 explicit. Never infer methodological parity from storage tests alone.
+
+The current large Wasmtime recovery qualification resumes the published
+130,166-object store without retransfers. Before recovery it has checked 163
+images, 256 selected functions, nine original report/archive resources, 17
+selected analytical sections, 672 timing summaries, 835 memory summaries and
+five exact environment/track/method scopes. Backup and DB-free rebuild are still
+running; these serving checks do not establish portable recovery at that scale.
+The running binary's source oracle omitted image-extent measurements. A separate
+race-tested source/export gate now checks all 163 `native.code_image` results,
+including exact integer values and source/seal commitments; the updated full
+serving oracle covers both engine-reported sizes and materialized image extents.
+That updated HTTP oracle has not yet run against this large retained store.
+
+Backup and restore now reuse one operation-owned 128 KiB copy buffer while
+retaining detached files, streamed digests, per-file synchronization and existing
+directory durability barriers. Buffer reuse, cancellation, registered scopes and
+portable recovery pass selected race tests. The prior implementation allocated
+128 KiB per file (about 17 GB cumulatively across 130,166 files); this is an
+allocation calculation, not a measured heap or end-to-end speed improvement.
