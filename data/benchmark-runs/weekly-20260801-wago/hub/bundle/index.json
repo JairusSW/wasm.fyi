@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "id": "weekly-20260801-wago",
+  "machine": "hub",
+  "bytes": 23308397,
+  "sha256": "7d927546aa57849a4f8693df6af2fe4523925c646c4ac96c21c1c907e1978742",
+  "format": "tar+gzip concatenated parts",
+  "parts": [
+    {
+      "path": "bundle.tar.gz.part-000",
+      "bytes": 23308397,
+      "sha256": "7d927546aa57849a4f8693df6af2fe4523925c646c4ac96c21c1c907e1978742"
+    }
+  ],
+  "metadata": "metadata.json",
+  "metadataSha256": "ad7df696ce8712867653372f2691dee7b36bb4cf4d4eafb5002268e737855733",
+  "download": "Concatenate parts in order, verify the full SHA-256, then tar -xzf bundle.tar.gz."
+}
