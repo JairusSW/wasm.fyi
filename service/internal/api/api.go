@@ -835,12 +835,20 @@ func (a *API) serveRequest(w http.ResponseWriter, r *http.Request) {
 	}
 	if kind, ok := kinds[path]; ok && kind != "result" {
 		for k, v := range params {
-			if (k != "revision" && k != "limit" && k != "cursor") || len(v) != 1 {
+			if (k != "revision" && k != "limit" && k != "cursor" && !(kind == "configuration" && k == "projection")) || len(v) != 1 {
 				problem(w, r, wire.Invalid("unsupported query"))
 				return
 			}
 		}
 		query := path + ":" + strconv.Itoa(n)
+		if kind == "configuration" {
+			if projection := params.Get("projection"); projection != "" && projection != configurationProjection {
+				problem(w, r, wire.Invalid("unsupported configuration projection"))
+				return
+			}
+			query += ":" + configurationProjection
+			immutable = immutable && params.Get("projection") == configurationProjection
+		}
 		if c.Revision != "" && (c.Revision != revision || c.Query != query) {
 			problem(w, r, wire.Invalid("cursor scope differs"))
 			return
@@ -854,7 +862,18 @@ func (a *API) serveRequest(w http.ResponseWriter, r *http.Request) {
 		if p.Next < p.Total {
 			next = a.sign(cursor{revision, query, p.Next})
 		}
-		respond(w, r, 200, map[string]any{"revision": revision, "items": p.Items, "nextCursor": next, "complete": p.Next == p.Total, "total": p.Total}, immutable)
+		response := map[string]any{"revision": revision, "items": p.Items, "nextCursor": next, "complete": p.Next == p.Total, "total": p.Total}
+		if kind == "configuration" {
+			for i := range p.Items {
+				p.Items[i], e = configurationSummary(p.Items[i])
+				if e != nil {
+					problem(w, r, e)
+					return
+				}
+			}
+			response["projection"] = configurationProjection
+		}
+		respond(w, r, 200, response, immutable)
 		return
 	}
 	http.NotFound(w, r)

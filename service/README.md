@@ -838,3 +838,12 @@ result/history rows or independent samples. The completed-job publisher accepts
 `result.historyBindings`, retaining the existing explicit argument override.
 Bindings remain immutable publisher assertions tied to an exported report and
 exact configuration; changing an existing attempt's interpretation is rejected.
+
+`/api/v1/configurations` serves `configuration-display-v1` summaries with exact
+canonical IDs and recorded display/capability facts. Invocation commands, local
+dependency paths, build strings and effective configuration maps are fetched
+explicitly through `/api/v1/configurations/{id}`, whose original bytes remain
+intact. Summary pages name their projection; pin both `revision` and
+`projection=configuration-display-v1` for immutable caching. Unversioned display
+projections revalidate, and cursors bind the projection version. This changes
+catalog loading, not measurement identities or cohort selection.

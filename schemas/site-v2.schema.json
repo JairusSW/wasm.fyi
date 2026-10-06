@@ -4737,7 +4737,7 @@
         "items": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/ConfigurationRecord"
+            "$ref": "#/$defs/ConfigurationSummaryRecord"
           },
           "maxItems": 1000
         },
@@ -4750,6 +4750,9 @@
         "total": {
           "type": "integer",
           "minimum": 0
+        },
+        "projection": {
+          "const": "configuration-display-v1"
         }
       },
       "required": [
@@ -4757,7 +4760,8 @@
         "items",
         "nextCursor",
         "complete",
-        "total"
+        "total",
+        "projection"
       ],
       "additionalProperties": false,
       "allOf": [
@@ -5664,6 +5668,95 @@
           }
         }
       ]
+    },
+    "ConfigurationSummaryData": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "runtime": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "backend": {
+          "type": "string"
+        },
+        "description": {
+          "type": "object",
+          "properties": {
+            "runtime": {
+              "type": "string"
+            },
+            "runtime_version": {
+              "type": "string"
+            },
+            "backend": {
+              "type": "string"
+            },
+            "embedding": {
+              "type": "string"
+            },
+            "phase_release_policy": {
+              "type": "string"
+            },
+            "scenarios": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "abis": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "features": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "phase_barrier_scenarios": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "capabilities": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "boolean"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "ConfigurationSummaryRecord": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "configuration"
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "data": {
+          "$ref": "#/$defs/ConfigurationSummaryData"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "data"
+      ],
+      "additionalProperties": false
     }
   },
   "$ref": "#/$defs/CompletedJob"

@@ -1931,3 +1931,45 @@ Selected Go race tests, three captured HTTP contracts, 26 Python contract tests,
 generated types and vet pass. Historical queue publication and explicit
 uncollected target events remain pending; this adds their bounded representation
 and completed-result transport without replacing the collector.
+
+## Broad regression gates and configuration catalog privacy
+
+The full Go race suite at base `c766a7db9` passes with `GOMAXPROCS=2`, serialized
+package execution and a 30-minute package deadline. API took 139.391 seconds
+and store took 748.779 seconds on this local host; these are qualification
+durations, not benchmark or production latency claims. The serving dependency
+closure has 409 packages and excludes SQLite and harness execution packages.
+Both client/resource test files (six tests) and client/generated-type TypeScript
+checks pass. The workflow now includes resource tests and history-context
+contract captures, closing gaps in its previous selected gate list.
+
+A real Wasmtime export audit found one absolute executable path in canonical
+configuration `command`. Configuration catalogs now project only allowlisted
+display facts: logical ID, legacy display fields and recorded runtime/version/
+backend/embedding, capability and feature/scenario/ABI declarations. Commands,
+file/host dependency paths, build paths, effective configuration maps and unknown
+fields remain in the unchanged canonical record fetched explicitly by ID.
+Scientific selection continues to use the canonical configuration identity/data.
+
+Catalog pages declare `projection: configuration-display-v1`. Immutable caching
+requires both an explicit revision and projection pin; unpinned projections
+revalidate. Configuration cursors bind the projection version, so older cursor
+contracts cannot silently change their record representation. Unknown/empty
+policy parameters are rejected. Canonical detail endpoints retain their exact
+bytes and existing immutable caching. The schemas/types distinguish display
+summary records from canonical details and reject invocation/path-bearing fields
+in summaries. A pinning regression caught and fixed the route query allowlist.
+
+Selected projection/privacy, canonical-byte, pinning and frozen catalog tests
+pass under race detection; 37 captured typed responses and 27 negative contract
+tests pass. The full API package passes after the query fix (184.814 seconds under race
+detection with `GOMAXPROCS=2`); the fresh configured gate validates 65 typed
+HTTP captures and 81 total schema checks. Vet, dependency closure, generated
+types and strict TypeScript checks pass. The store/wire sources did not
+change after their full-suite pass.
+
+The large Wasmtime gate has passed selected disassembly parity for all 163
+attributed images and 256 selected functions, then verified the exact
+444,970,172-byte original sealed report archive containing 4,765 files, alongside
+nine original analytical/archive resources. Its remaining scientific/recovery
+assertions are still running; these sub-gates do not establish final success.

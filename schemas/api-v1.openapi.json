@@ -387,6 +387,18 @@
               "minimum": 1,
               "maximum": 1000
             }
+          },
+          {
+            "name": "projection",
+            "in": "query",
+            "required": false,
+            "description": "Pin the display projection with the revision for immutable caching. Canonical details retain exact invocation metadata.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "configuration-display-v1"
+              ]
+            }
           }
         ],
         "responses": {

@@ -14,6 +14,19 @@ spec.loader.exec_module(contracts)
 
 
 class Contracts(unittest.TestCase):
+    def test_configuration_summaries_exclude_invocation_and_host_paths(self):
+        public = {"id": "engine", "description": {"runtime": "engine", "runtime_version": "1.2.3", "backend": "compiler", "capabilities": {"code-image": True}}}
+        contracts.validate(public, "ConfigurationSummaryData", "public display facts")
+        for key, value in [("command", ["/Users/private/engine"]), ("file_sha256", {}),
+                           ("host_file_sha256", {}), ("unavailable_reason", "private path")]:
+            with self.assertRaises(ValueError):
+                contracts.validate(dict(public, **{key: value}), "ConfigurationSummaryData", "private catalog metadata")
+        for key, value in [("build", "/tmp/private"), ("effective_configuration", {"cache_dir": "/tmp/private"})]:
+            bad = copy.deepcopy(public)
+            bad["description"][key] = value
+            with self.assertRaises(ValueError):
+                contracts.validate(bad, "ConfigurationSummaryData", "private description metadata")
+
     def test_history_target_aliases_do_not_ambiguously_replace_a_capture(self):
         binding = {"reportId": "a" * 64, "configurationId": "b" * 64,
                    "policy": "declared-build-history-v1", "buildRole": "source",
@@ -102,6 +115,9 @@ class Contracts(unittest.TestCase):
                                   "content": {"status": "unavailable"}, "inspection": {"status": "unavailable"}}
             page = {"revision": "b" * 64, "items": [record], "total": 2,
                     "complete": False, "nextCursor": "signed"}
+            if kind == "configuration":
+                record["data"] = {"id": "engine", "description": {"runtime": "engine", "runtime_version": "1.2.3", "backend": "compiler"}}
+                page["projection"] = "configuration-display-v1"
             detail = {"revision": "b" * 64, "record": record}
             contracts.validate(page, name + "Page", "bounded catalog")
             contracts.validate(detail, name + "Detail", "canonical detail")
