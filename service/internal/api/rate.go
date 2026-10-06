@@ -1,7 +1,9 @@
 package api
 
 import (
+	"github.com/JairusSW/wasm.fyi/service/internal/wire"
 	"net"
+	"net/http"
 	"net/netip"
 	"sync"
 	"time"
@@ -14,6 +16,7 @@ type RequestLimits struct {
 	PublisherBurst int
 	Clients        int
 	Idle           time.Duration
+	TrustedProxies []netip.Prefix
 }
 
 func DefaultRequestLimits() RequestLimits {
@@ -34,10 +37,51 @@ type requestLimiter struct {
 }
 
 func (l RequestLimits) valid() bool {
+	if len(l.TrustedProxies) > 64 {
+		return false
+	}
+	for _, prefix := range l.TrustedProxies {
+		if !prefix.IsValid() || prefix.Bits() == 0 || prefix.Addr().Is4In6() {
+			return false
+		}
+	}
 	return l.PublicRate > 0 && l.PublicRate <= 100000 && l.PublisherRate > 0 && l.PublisherRate <= 100000 && l.PublicBurst > 0 && l.PublicBurst <= 100000 && l.PublisherBurst > 0 && l.PublisherBurst <= 100000 && l.Clients >= 2 && l.Clients <= 100000 && l.Idle >= time.Second && l.Idle <= time.Hour
 }
 func newRequestLimiter(limits RequestLimits) *requestLimiter {
+	limits.TrustedProxies = append([]netip.Prefix(nil), limits.TrustedProxies...)
 	return &requestLimiter{limits: limits, clients: map[string]clientBucket{}}
+}
+
+// Only explicitly trusted transport peers may attest one client address. Public
+// budgets use that address; authenticated publication stays on the transport peer.
+func (l *requestLimiter) clientIdentity(r *http.Request, publisher bool) (string, error) {
+	peer := peerIdentity(r.RemoteAddr)
+	if publisher || r.URL.Path == "/healthz" || r.URL.Path == "/readyz" {
+		return peer, nil
+	}
+	address, err := netip.ParseAddr(peer)
+	if err != nil {
+		return peer, nil
+	}
+	trusted := false
+	for _, prefix := range l.limits.TrustedProxies {
+		if prefix.Contains(address) {
+			trusted = true
+			break
+		}
+	}
+	if !trusted {
+		return peer, nil
+	}
+	values := r.Header.Values("X-Real-IP")
+	if len(values) != 1 || len(values[0]) > 64 {
+		return "", wire.Invalid("trusted proxy requires one client address")
+	}
+	client, err := netip.ParseAddr(values[0])
+	if err != nil || client.Zone() != "" || client.IsUnspecified() || client.IsMulticast() {
+		return "", wire.Invalid("invalid trusted proxy client address")
+	}
+	return client.Unmap().String(), nil
 }
 func peerIdentity(remote string) string {
 	host, _, err := net.SplitHostPort(remote)
@@ -51,8 +95,8 @@ func peerIdentity(remote string) string {
 	return addr.Unmap().String()
 }
 
-// Only the transport peer is trusted. Forwarded headers cannot mint new budgets.
 // Publisher and public traffic have independent budgets and bounded state.
+// The caller supplies an identity already resolved from transport/proxy policy.
 func (l *requestLimiter) allow(remote string, publisher bool, now time.Time) (bool, int) {
 	l.mu.Lock()
 	defer l.mu.Unlock()

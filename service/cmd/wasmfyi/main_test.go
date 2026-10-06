@@ -69,3 +69,11 @@ func TestOperationalCommands(t *testing.T) {
 		t.Fatal("missing destination accepted")
 	}
 }
+
+func TestTrustedProxyFlagRejectsUnboundedOrMalformedTrust(t *testing.T) {
+	for _, value := range []string{"0.0.0.0/0", "::/0", "example.com/32", "192.0.2.1/32,", "::ffff:192.0.2.1/128"} {
+		if err := run(context.Background(), []string{"serve", "--trusted-proxies", value, "--data", t.TempDir() + "/data"}); err == nil {
+			t.Fatal("invalid proxy trust accepted", value)
+		}
+	}
+}

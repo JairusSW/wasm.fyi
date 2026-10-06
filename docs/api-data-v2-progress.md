@@ -895,3 +895,27 @@ checks, captures and validates selected endpoint fixtures, verifies generated ty
 and type-checks their nullable/exact-value contract. This workflow change is local;
 no GitHub run, push or deployment is claimed. Scientific verification, admission,
 reference closure and broader endpoint-schema coverage remain separate gates.
+
+### Explicit reverse-proxy client rate policy
+
+`serve --trusted-proxies <comma-separated CIDRs>` now opts public API/static reads
+into a trusted-proxy rate identity policy. Only a configured transport peer can
+attest exactly one valid `X-Real-IP`; malformed/missing or multi-value identities
+are rejected before reading the request body. Untrusted peers ignore all forwarded
+identity, and default serving still uses only transport peers. The upstream proxy
+must overwrite incoming client headers and protect the trusted backend origin.
+No forwarded chain or arbitrary caller-selected header is interpreted.
+
+Public addresses are normalized so mapped IPv4 spellings cannot create extra
+budgets. Authenticated publisher budgets remain bound to the transport peer, so
+varying client headers cannot evade publication limits or consume its reserved
+capacity. Health/readiness probes use transport identity without requiring a client
+header. Startup limits trust to 64 validated, non-universal, unmapped CIDR prefixes;
+constructed handlers copy their policy so caller mutation cannot widen trust.
+
+Tests cover separate trusted clients, IPv4 alias reuse, spoofing by untrusted
+peers, publisher isolation, IPv6 clients, invalid/duplicate/chained/ported/zoned
+addresses, health probes, immutable constructor policy and rejected CLI trust
+flags. This completes an explicit proxy policy implementation; real proxy
+configuration/deployment, wider ingress load and distributed identity policy are
+not claimed by these local tests.

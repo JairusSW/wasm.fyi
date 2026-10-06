@@ -227,7 +227,12 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	r = r.WithContext(ctx)
 	publisher := strings.HasPrefix(r.URL.Path, "/admin/v1/") && hmac.Equal([]byte(r.Header.Get("Authorization")), []byte("Bearer "+a.Token))
-	if allowed, retry := a.limiter.allow(r.RemoteAddr, publisher, time.Now()); !allowed {
+	client, e := a.limiter.clientIdentity(r, publisher)
+	if e != nil {
+		problem(w, r, e)
+		return
+	}
+	if allowed, retry := a.limiter.allow(client, publisher, time.Now()); !allowed {
 		w.Header().Set("Retry-After", strconv.Itoa(retry))
 		respond(w, r, 429, map[string]string{"error": "client request limit"}, false)
 		return

@@ -9,8 +9,10 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/netip"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -47,6 +49,7 @@ func run(ctx context.Context, args []string) error {
 	flags.Float64Var(&requestLimits.PublisherRate, "publisher-requests-per-second", requestLimits.PublisherRate, "authenticated publication rate per transport peer")
 	flags.IntVar(&requestLimits.PublisherBurst, "publisher-request-burst", requestLimits.PublisherBurst, "publication request burst per transport peer")
 	flags.IntVar(&requestLimits.Clients, "max-request-clients", requestLimits.Clients, "maximum tracked peer/budget pairs")
+	trustedProxies := flags.String("trusted-proxies", "", "comma-separated proxy CIDRs allowed to set one X-Real-IP for public rate budgets")
 	cert := flags.String("tls-cert", "", "TLS certificate for direct non-loopback serving")
 	key := flags.String("tls-key", "", "TLS key for direct non-loopback serving")
 	if e := flags.Parse(args); e != nil {
@@ -54,6 +57,18 @@ func run(ctx context.Context, args []string) error {
 	}
 	if flags.NArg() != 0 {
 		return fmt.Errorf("unexpected positional arguments")
+	}
+	if *trustedProxies != "" {
+		for _, cidr := range strings.Split(*trustedProxies, ",") {
+			prefix, err := netip.ParsePrefix(cidr)
+			if err != nil || prefix.Bits() == 0 || prefix.Addr().Is4In6() {
+				return fmt.Errorf("invalid trusted proxy CIDR %q", cidr)
+			}
+			requestLimits.TrustedProxies = append(requestLimits.TrustedProxies, prefix.Masked())
+		}
+		if len(requestLimits.TrustedProxies) > 64 {
+			return fmt.Errorf("too many trusted proxy CIDRs")
+		}
 	}
 	if *control != "" {
 		return callControl(ctx, *control, action, *output, *apply, os.Stdout)

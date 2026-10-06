@@ -34,6 +34,22 @@ The serving module imports no harness code and no SQLite. It does not execute
 benchmarks, archived verifiers or on-demand native disassembly. The current
 frontend is still served through the existing Pages workflow.
 
+Behind a reverse proxy, `serve --trusted-proxies 127.0.0.1/32,::1/128` optionally
+uses one `X-Real-IP` address for public client rate budgets. List only actual proxy
+transport networks. The proxy must overwrite that header with the connecting
+client address and prevent clients from bypassing the proxy through a trusted
+origin path. Missing, duplicate, chained, port-bearing, zoned or invalid addresses
+from a trusted proxy are rejected before body reads. IPv4-mapped addresses share
+the same budget as their IPv4 spelling. Other forwarding headers are ignored.
+
+Without this flag, all forwarding headers remain ignored. Untrusted transport
+peers always use their own address. Authenticated publication stays on transport
+budgets, preserving publisher capacity independently of end-user addresses.
+Health/readiness probes also use transport budgets and require no client header.
+Trust configuration is copied at startup, capped at 64 CIDRs and rejects universal
+or mapped-address prefixes. This flag changes rate identity, not authentication,
+TLS requirements, revision scope or storage permissions.
+
 Executable wire-contract checks use a pinned test-only JSON Schema validator:
 
 ```sh
