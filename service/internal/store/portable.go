@@ -424,6 +424,17 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 		if e := job.Validate(); e != nil {
 			return nil, e
 		}
+		if job.ParentArchive != nil {
+			if e := job.ParentArchive.Verify(job, func(o wire.Object) ([]byte, error) {
+				b, e := s.objectRepresentation(o)
+				if e == nil {
+					marked[o.SHA256] = true
+				}
+				return b, e
+			}); e != nil {
+				return nil, e
+			}
+		}
 		jobs[r.Job] = true
 		for _, export := range job.Exports {
 			payload, e := s.manifestObjects(export.Manifest, false)
@@ -465,6 +476,15 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 				continue
 			} else if !errors.Is(e, pebble.ErrNotFound) {
 				return nil, e
+			}
+			if job.ParentArchive != nil {
+				for _, o := range job.ParentArchive.Objects() {
+					marked[o.SHA256] = true
+					_, e := s.objectRepresentation(o)
+					if e != nil && !os.IsNotExist(e) {
+						return nil, e
+					}
+				}
 			}
 			for _, export := range job.Exports {
 				payload, e := s.manifestObjects(export.Manifest, true)

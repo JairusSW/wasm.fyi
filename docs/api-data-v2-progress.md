@@ -1096,3 +1096,40 @@ verified its original two parts and 60,811,832 bytes with the new reader. CI now
 includes the parent-bundle regression suite. This closes source-admission checks;
 actual parent archive ingestion, availability descriptors and API downloads
 remain open.
+
+
+### Parent archive ingestion and shared content
+
+Completed jobs now optionally carry a bounded `parentArchive` transport: original
+index and metadata objects plus ordered 1 MiB archive chunks. Original archive
+parts, their checksums and concatenated full digest remain authoritative. The
+service verifies original index/session/machine/plan and metadata commitments,
+all source part boundaries/digests and the full archive before publication. It
+never extracts or executes the archive. Legacy jobs omit this field and remain
+readable, without invented content availability.
+
+These objects participate in existing upload permits, pending/content quotas,
+missing-object pages, abort/recovery and portable backup/rebuild. Corpus jobs
+share the same parent hashes and content; subsequent jobs request no existing
+parent bytes. `parentArchiveStored: true` is a small published-job indication,
+not a download or replay-availability claim. Ordinary progress pages do not
+embed chunk inventories. Public parent metadata/chunk/download endpoints remain
+open work.
+
+The existing coordinator publisher materializes transport chunks from the existing
+parent archive once, in a cache keyed by the original index digest. This is an
+archive transport representation, not a second tool cache or collection backend.
+Concurrent preparation uses unique atomic temporary files; warm publication
+reuses the completed snapshot, preserves raw index/metadata bytes, and uploads
+only missing content. Cancellation is checked during cold preparation. Archives
+are currently bounded to 1 GiB/2048 transport chunks, within configured import
+quotas; larger archive inventory/scale policy remains open.
+
+Wire/store tests cover original parts crossing transport chunk boundaries,
+reordered/corrupt bytes, scope mismatches, hidden partial publication, cross-corpus
+content reuse, unchanged history and byte-complete backup/rebuild. Node tests
+cover concurrent and warm materialization plus the existing publication/resume
+workflow. A current 60,811,832-byte V8 parent archive imported and reverified as
+58 chunks. That opt-in gate uses a synthetic measurement association and does
+not claim a real completed-job collection binding. Archive serving, larger-scale
+and crash coverage remain pending.

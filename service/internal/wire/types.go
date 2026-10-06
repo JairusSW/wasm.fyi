@@ -177,16 +177,17 @@ type Export struct {
 // Job is submitted only after the coordinator verifies every completed pass and
 // parent bundle. Producer assertions and authenticated delivery are separate.
 type Job struct {
-	Schema               int      `json:"schema"`
-	Session              string   `json:"session"`
-	Machine              string   `json:"machine"`
-	Corpus               string   `json:"corpus"`
-	Attempt              string   `json:"attempt"`
-	Plan                 string   `json:"plan"`
-	ConfiguredHarnessPin string   `json:"configuredHarnessPin"`
-	ParentBundleSHA256   string   `json:"parentBundleSha256"`
-	Status               string   `json:"status"`
-	Exports              []Export `json:"exports"`
+	Schema               int            `json:"schema"`
+	Session              string         `json:"session"`
+	Machine              string         `json:"machine"`
+	Corpus               string         `json:"corpus"`
+	Attempt              string         `json:"attempt"`
+	Plan                 string         `json:"plan"`
+	ConfiguredHarnessPin string         `json:"configuredHarnessPin"`
+	ParentBundleSHA256   string         `json:"parentBundleSha256"`
+	ParentArchive        *ParentArchive `json:"parentArchive,omitempty"`
+	Status               string         `json:"status"`
+	Exports              []Export       `json:"exports"`
 }
 
 func (j Job) Validate() error {
@@ -196,6 +197,18 @@ func (j Job) Validate() error {
 	reports := map[string]bool{}
 	objects := map[string]Object{}
 	inventories := map[string]Inventory{}
+	if j.ParentArchive != nil {
+		if err := j.ParentArchive.Validate(j); err != nil {
+			return err
+		}
+		for _, o := range j.ParentArchive.Objects() {
+			if old, ok := objects[o.SHA256]; ok && old != o {
+				return Invalid("conflicting parent archive objects")
+			}
+			objects[o.SHA256] = o
+		}
+	}
+
 	for _, e := range j.Exports {
 		m := e.Manifest
 		b, err := Encode(m)

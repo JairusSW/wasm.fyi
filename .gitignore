@@ -35,3 +35,6 @@ src/lib/data/plugin-tests.json
 /.wasmfyi/
 /service/.wasmfyi/
 /service/wasmfyi
+
+# API transport chunks of existing parent archives.
+/.cache/collection-api-parent/

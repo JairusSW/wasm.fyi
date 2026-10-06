@@ -332,6 +332,23 @@ func (s *Store) MissingContext(ctx context.Context, id string) ([]wire.Object, e
 	if pendingErr != nil && !errors.Is(pendingErr, pebble.ErrNotFound) {
 		return nil, pendingErr
 	}
+	if j.ParentArchive != nil {
+		for _, o := range j.ParentArchive.Objects() {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+			if seen[o.SHA256] {
+				continue
+			}
+			seen[o.SHA256] = true
+			_, e := s.objectRepresentation(o)
+			if os.IsNotExist(e) {
+				out = append(out, o)
+			} else if e != nil {
+				return nil, e
+			}
+		}
+	}
 	for _, x := range j.Exports {
 		if e := ctx.Err(); e != nil {
 			return nil, e
@@ -439,6 +456,16 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 	evidence := map[string]bool{}
 	binaries := map[string]wire.Object{}
 	reportObjects := map[string]wire.Manifest{}
+	if j.ParentArchive != nil {
+		if err := j.ParentArchive.Verify(j, func(o wire.Object) ([]byte, error) {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+			return s.objectRepresentation(o)
+		}); err != nil {
+			return "", err
+		}
+	}
 	for _, x := range j.Exports {
 		if e := ctx.Err(); e != nil {
 			return "", e

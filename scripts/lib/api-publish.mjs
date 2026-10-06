@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {readFile, lstat} from 'node:fs/promises';
 import {join, resolve, sep} from 'node:path';
 import {digest} from './wasmbench.mjs';
+import {prepareParentArchive} from './api-parent-archive.mjs';
 import {readParentBundleMetadata} from './benchmark-bundle.mjs';
 const HASH=/^[a-f0-9]{64}$/;
 const CHUNK=256*1024;
@@ -59,9 +60,12 @@ export async function publishCompletedJob({url,local,plan,machine,result,signal,
     }
     exports.push({sha256:digest(bytes),manifest});
   }
-  const {index:parentIndex,indexBytes:parent}=await readParentBundleMetadata(join(local,'bundle'),{...plan,machine});
+  const parentSource=await readParentBundleMetadata(join(local,'bundle'),{...plan,machine});
+  const {index:parentIndex,indexBytes:parent}=parentSource;
   assert(HASH.test(parentIndex.metadataSha256),'Parent metadata digest required for API publication');
-  const job={schema:2,session:plan.id,machine,corpus:result.corpus,attempt:digest(Buffer.from(JSON.stringify(exports.map(e=>e.sha256)))),plan:plan.identity,configuredHarnessPin:plan.configuredHarnessPin,parentBundleSha256:digest(parent),status:'completed',exports};
+  const {parent:parentArchive,objects:parentObjects}=await prepareParentArchive(join(local,'bundle'),parentSource,{signal});
+  for(const object of parentObjects){const previous=objects.get(object.sha256);assert(!previous||(previous.bytes===object.bytes&&previous.kind===object.kind),'Parent object conflicts with measurement export');objects.set(object.sha256,object);}
+  const job={schema:2,session:plan.id,machine,corpus:result.corpus,attempt:digest(Buffer.from(JSON.stringify([exports.map(e=>e.sha256),digest(Buffer.from(JSON.stringify(parentArchive)))]))),plan:plan.identity,configuredHarnessPin:plan.configuredHarnessPin,parentBundleSha256:digest(parent),parentArchive,status:'completed',exports};
   assert(typeof job.configuredHarnessPin==='string'&&job.configuredHarnessPin.length>0,'Missing configured harness identity');
   const call=async(path,method='GET',body)=>{
     const response=await request(url+path,{method,body,redirect:'error',signal:AbortSignal.any([...(signal?[signal]:[]),AbortSignal.timeout(30000)]),headers:{Authorization:'Bearer '+token,...(body?{'Content-Type':Buffer.isBuffer(body)?'application/octet-stream':'application/json'}:{})}});

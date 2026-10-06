@@ -42,6 +42,11 @@ type objectPermit struct {
 
 func declaredObjects(j wire.Job) map[string]wire.Object {
 	out := map[string]wire.Object{}
+	if j.ParentArchive != nil {
+		for _, o := range j.ParentArchive.Objects() {
+			out[o.SHA256] = o
+		}
+	}
 	for _, x := range j.Exports {
 		for _, o := range x.Manifest.Objects {
 			out[o.SHA256] = o
