@@ -100,6 +100,17 @@ at 24 operations per input and two backups, so this slower target uses a fixed
 execution count. HTTP tests separately check that rejected ingress does not read
 the request body or publish data.
 
+For local development, run `just dev-caddy` from the repository root. Install
+Caddy first (`brew install caddy` on macOS), alongside Go and the frontend
+dependencies (`just setup`). The command builds the API and starts the existing
+Vite website behind Caddy at `http://localhost:8080`; API/admin routes and health
+probes go to the Go service. All listeners bind to loopback. Local HTTP requires
+no certificate installation. Ctrl+C stops the services; private API data and the
+generated publisher token persist under `.wasmfyi/local/`. Set
+`WASMFYI_ADMIN_TOKEN` to use an existing token. The website still renders its
+existing snapshot until the API data migration is complete. This development
+command is not the production VPS/systemd deployment.
+
 The serving module imports no harness code and no SQLite. It does not execute
 benchmarks, archived verifiers or on-demand native disassembly. The current
 frontend is still served through the existing Pages workflow.
