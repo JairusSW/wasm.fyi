@@ -573,7 +573,7 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
         throw Error("Unsafe report path");
       return join(local, p);
     });
-    await verifyParentBundle(join(local, "bundle"), plan);
+    await verifyParentBundle(join(local, "bundle"), plan, {signal: abort.signal});
     for (const path of paths) await verifySeal(path);
     const marker = join(job, "published.json");
     if (await stat(marker).catch(() => false)) return;

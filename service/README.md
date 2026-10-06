@@ -223,3 +223,14 @@ requests. HTTP 429 responses use the API's integer `Retry-After` (1–30 seconds
 all retries and waits share the request's original 30-second deadline. Cancellation
 also stops backoff. Other HTTP failures remain explicit so an operator can resume
 the immutable attempt after addressing the cause.
+
+The collector also passes its stop signal into parent-bundle verification.
+Metadata readers check cancellation and close opened files; archive streams use
+that signal and close their file handles on exit. API parent materialization
+checks cancellation during cache reads, chunk writes and descriptor installation.
+A canceled write removes only its own temporary file. Completed chunks remain
+available for retry, and a descriptor is installed only after full archive
+verification. An abort concurrent with the final atomic rename may leave a valid
+complete cache descriptor; it cannot install a partial descriptor or publish a
+website revision. Real stream/write cancellation and subsequent retries are
+checked on macOS and Linux by the parent-bundle tests.

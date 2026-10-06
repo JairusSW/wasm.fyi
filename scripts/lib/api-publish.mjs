@@ -76,7 +76,7 @@ export async function publishCompletedJob({url,local,plan,machine,result,signal,
     exports.push({sha256:digest(bytes),manifest});
   }
   signal?.throwIfAborted();
-  const parentSource=await readParentBundleMetadata(join(local,'bundle'),{...plan,machine});
+  const parentSource=await readParentBundleMetadata(join(local,'bundle'),{...plan,machine},{signal});
   const {index:parentIndex,indexBytes:parent}=parentSource;
   assert(HASH.test(parentIndex.metadataSha256),'Parent metadata digest required for API publication');
   const {parent:parentArchive,objects:parentObjects}=await prepareParentArchive(join(local,'bundle'),parentSource,{signal});
