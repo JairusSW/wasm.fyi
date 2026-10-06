@@ -84,7 +84,18 @@ func (s *Store) ResultsContext(ctx context.Context, q Query, historical bool) ([
 	out := []wire.Record{}
 	budget := ScanLimit
 	decoded := 0
+	seenObservations := map[string]bool{}
 	add := func(id string) error {
+		id, e = s.resolveObservation(rev, id)
+		if e != nil {
+			return e
+		}
+		if historical {
+			if seenObservations[id] {
+				return nil
+			}
+			seenObservations[id] = true
+		}
 		if e := ctx.Err(); e != nil {
 			return e
 		}

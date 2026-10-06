@@ -298,3 +298,31 @@ service and coordinator still reject binary inventory entries. Binary content
 storage/serving, recovery closure and history identity must land together before
 that publication path is enabled. Adding downloadable bytes or changing evidence
 encoding must not turn an existing capture into a new independent observation.
+
+
+## Observation identity and representation updates
+
+New revisions record `observationPolicy: source-summary-v1` and a reusable
+`observationRoot`. An observation hashes its exact source report/seal identity,
+configuration, contract, environment, metric definition, scenario/profile,
+statistic, analysis version, creation time and scientific summary. Detailed
+evidence links and the summary's artifact descriptor reference are representation
+fields and do not create an additional capture.
+
+Representations remain immutable canonical records. Each revision resolves a
+capture to a preferred representation, favoring available content, available
+inspection, then evidence presence; canonical ID order breaks equal-rank ties.
+Late richer evidence can update a historical/previous capture without advancing
+current/previous measurement selection or adding history. A poorer redelivery
+cannot downgrade it. Older revisions retain their original representation map.
+Legacy revisions remain readable; the next publication indexes their existing
+result records into this policy. Distinct source/configuration/contract/definition,
+analysis or scientific-summary changes remain distinct observations.
+
+Tests cover an older capture enriched after a newer measurement, unchanged history
+counts and selection populations, immutable older views, poorer redelivery,
+DB-free rebuild, legacy-index migration and distinct scientific identities. This
+identity policy applies to the same exact sealed report; reuse across separately
+rebuilt source reports and retrospective history/cohort policies still need their
+explicit source-pass/sampling-group work. Binary publication remains disabled until
+its storage, serving and recovery checks are implemented.

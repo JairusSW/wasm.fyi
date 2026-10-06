@@ -220,6 +220,27 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 		if e := markMap(r.Indexes, "indexes", markIndexes); e != nil {
 			return nil, e
 		}
+		if r.Observations != "" {
+			if r.ObservationPolicy != "source-summary-v1" {
+				return nil, fmt.Errorf("unsupported observation policy")
+			}
+			if e := markMap(r.Observations, "observations", func(id, result string) error {
+				record, e := s.record(r.Catalog, "result", result)
+				if e != nil {
+					return e
+				}
+				actual, e := observationID(record)
+				if e != nil {
+					return e
+				}
+				if actual != id {
+					return fmt.Errorf("observation identity differs")
+				}
+				return nil
+			}); e != nil {
+				return nil, e
+			}
+		}
 		var job wire.Job
 		if e := read(r.Job, &job); e != nil {
 			return nil, e
@@ -496,7 +517,7 @@ func verifyPortable(source string) error {
 		if e = reader.load(id, &r); e != nil {
 			return e
 		}
-		if !wire.IsHash(r.Job) || !wire.IsHash(r.Catalog) || !wire.IsHash(r.Selection) || r.Parent != "" && !wire.IsHash(r.Parent) {
+		if !wire.IsHash(r.Job) || !wire.IsHash(r.Catalog) || !wire.IsHash(r.Selection) || r.Parent != "" && !wire.IsHash(r.Parent) || r.Observations != "" && !wire.IsHash(r.Observations) {
 			return fmt.Errorf("invalid portable revision")
 		}
 		reader.published[id] = r

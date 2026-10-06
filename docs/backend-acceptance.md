@@ -15,7 +15,7 @@ passing the existing synthetic fixture tests.
 | Reusable revision indexes and bounded query CPU/memory | Persistent dimension/kind indexes, bounded catalog pages and request cancellation tested; query caching, large-inventory scale and time-window indexing pending |
 | Summary, catalog, session/job, report and artifact APIs | Initial endpoints implemented; full contract and query validation pending |
 | Multi-report cohorts, coverage, weighting, memory populations | Producer summaries retained; site-policy parity and backend comparison endpoints pending |
-| Exact historical contracts, builds, roles, reused evidence | Raw result history implemented; retrospective policies/windowing pending |
+| Exact historical contracts, builds, roles, reused evidence | Revision-scoped source-summary observation mapping prevents evidence/artifact representation updates from adding captures; selection, immutable views, legacy migration and rebuild tested; cross-report reused-evidence identity, retrospective policies/windowing pending |
 | Safe admin ingress, quotas, diagnostics, no benchmark/SQLite closure | Strict JSON, declared-object upload permits, pending/count/content quotas, import status/abort, safe errors and dependency closure tested; per-caller rate limits and broader ingress fuzz/scale gates pending |
 | Portable rebuild, consistent backup, verified restore, conservative cleanup | Detached checkpoints, content-complete restore/DB-free rebuild, active-import-aware marking, two-phase grace/quarantine cleanup and crash recovery tested; online backup/maintenance leases and larger retention/scale gates pending |
 | Static serving, application routes, real asset 404s, crawler references | Pending backend hosting integration |

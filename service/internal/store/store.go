@@ -30,6 +30,8 @@ type Revision struct {
 	Catalog            string    `json:"catalogRoot"`
 	Selection          string    `json:"selectionRoot"`
 	Indexes            string    `json:"indexRoot,omitempty"`
+	Observations       string    `json:"observationRoot,omitempty"`
+	ObservationPolicy  string    `json:"observationPolicy,omitempty"`
 	Job                string    `json:"job"`
 	Publisher          string    `json:"trustedPublisher"`
 	Created            time.Time `json:"publishedAt"`
@@ -606,7 +608,7 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 		if e != nil {
 			return "", e
 		}
-		rev.Catalog, rev.Selection, rev.Indexes = old.Catalog, old.Selection, old.Indexes
+		rev.Catalog, rev.Selection, rev.Indexes, rev.Observations = old.Catalog, old.Selection, old.Indexes, old.Observations
 		if old.Indexes == "" {
 			budget := 1000000
 			if e = s.walk(old.Catalog, &budget, func(_, digest string) error {
@@ -621,6 +623,26 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 			}); e != nil {
 				return "", e
 			}
+		}
+	}
+	rev.ObservationPolicy = "source-summary-v1"
+	if rev.Observations == "" && rev.Catalog != "" {
+		budget := 1000000
+		if e = s.walk(rev.Catalog, &budget, func(_, digest string) error {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+			var record wire.Record
+			if err := s.load(digest, &record); err != nil {
+				return err
+			}
+			if record.Kind != "result" {
+				return nil
+			}
+			_, err := s.registerObservation(&rev, record)
+			return err
+		}); e != nil {
+			return "", e
 		}
 	}
 	keys := make([]string, 0, len(records))
@@ -670,19 +692,35 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 				return "", e
 			}
 		}
-		// Reused result identity is not a new measurement or history observation.
-		if parent != "" {
-			prior, e := s.Revision(parent)
+		captured, e := s.registerObservation(&rev, r)
+		if e != nil {
+			return "", e
+		}
+		if captured {
+			if c.Current != "" {
+				c.Current, e = s.resolveObservation(rev, c.Current)
+				if e != nil {
+					return "", e
+				}
+			}
+			if c.Previous != "" {
+				c.Previous, e = s.resolveObservation(rev, c.Previous)
+				if e != nil {
+					return "", e
+				}
+			}
+			if c.Previous == c.Current {
+				c.Previous = ""
+			}
+			digest, e := s.put(c)
 			if e != nil {
 				return "", e
 			}
-			found, e := s.mapGet(prior.Catalog, k)
+			rev.Selection, e = s.mapSet(rev.Selection, cellKey, digest, 0)
 			if e != nil {
 				return "", e
 			}
-			if found != "" {
-				continue
-			}
+			continue
 		}
 		c.History, e = s.put(history{r.ID, c.History})
 		if e != nil {
@@ -695,6 +733,19 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 		if c.Previous != "" {
 			choices = append(choices, c.Previous)
 		}
+		distinct := []string{}
+		seen := map[string]bool{}
+		for _, rid := range choices {
+			resolved, err := s.resolveObservation(rev, rid)
+			if err != nil {
+				return "", err
+			}
+			if !seen[resolved] {
+				seen[resolved] = true
+				distinct = append(distinct, resolved)
+			}
+		}
+		choices = distinct
 		dates := map[string]time.Time{}
 		for _, rid := range choices {
 			record, e := s.record(rev.Catalog, "result", rid)
@@ -714,6 +765,7 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 			return dates[choices[i]].After(dates[choices[j]])
 		})
 		c.Current = choices[0]
+		c.Previous = ""
 		if len(choices) > 1 {
 			c.Previous = choices[1]
 		}
