@@ -145,6 +145,18 @@ class Contracts(unittest.TestCase):
             with self.assertRaises(ValueError):
                 contracts.validate(changed, "RequestRouteStats", "unbounded or identifying telemetry")
 
+    def test_filesystem_space_unavailability_is_not_zero(self):
+        value = {"status": "unavailable", "availableBytes": None, "totalBytes": None}
+        contracts.validate(value, "FilesystemSpace", "unknown filesystem")
+        for key, invalid in [("status", "available"), ("availableBytes", 0),
+                             ("path", "/private/store"), ("error", "permission denied")]:
+            changed = copy.deepcopy(value)
+            changed[key] = invalid
+            with self.assertRaises(ValueError):
+                contracts.validate(changed, "FilesystemSpace", "invalid or leaking filesystem state")
+        contracts.validate({"status": "available", "availableBytes": 0, "totalBytes": 1},
+                           "FilesystemSpace", "zero available space is valid")
+
     def test_transport_reference_aliases_resolve_only_local_schema(self):
         for root in ("site-v2.schema.json", "./site-v2.schema.json", contracts.SCHEMA["$id"]):
             reference = contracts.transport_reference(root + "#/$defs/Digest")

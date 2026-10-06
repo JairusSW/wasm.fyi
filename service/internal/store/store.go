@@ -45,6 +45,7 @@ type Revision struct {
 }
 type Store struct {
 	db                *pebble.DB
+	stalls            *writeStallMetrics
 	root              string
 	publish           publicationLock
 	mu                sync.RWMutex
@@ -101,7 +102,8 @@ func OpenWithLimits(root, publisher string, limits Limits) (*Store, error) {
 	}
 	cache := pebble.NewCache(32 << 20)
 	defer cache.Unref()
-	db, e := pebble.Open(filepath.Join(root, "db"), &pebble.Options{Cache: cache, MemTableSize: 8 << 20, MemTableStopWritesThreshold: 2})
+	stalls := &writeStallMetrics{}
+	db, e := pebble.Open(filepath.Join(root, "db"), &pebble.Options{Cache: cache, MemTableSize: 8 << 20, MemTableStopWritesThreshold: 2, EventListener: stalls.listener()})
 	if e != nil {
 		return nil, e
 	}
@@ -110,7 +112,7 @@ func OpenWithLimits(root, publisher string, limits Limits) (*Store, error) {
 		db.Close()
 		return nil, e
 	}
-	s := &Store{db: db, root: root, publisher: publisher, published: map[string]Revision{}, objects: objects, limits: limits}
+	s := &Store{db: db, stalls: stalls, root: root, publisher: publisher, published: map[string]Revision{}, objects: objects, limits: limits}
 	if e = s.scanContentUsage(); e != nil {
 		db.Close()
 		objects.Close()

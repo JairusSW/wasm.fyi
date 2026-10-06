@@ -1615,7 +1615,7 @@
             "description": "Configured storage or pending-import quota exceeded"
           }
         },
-        "description": "Fixed route classes retain no request identities. Process-handler counters reset on restart; startedAt identifies the first observed request. Histograms use disjoint latency buckets. Written bytes are successfully accepted by ResponseWriter; decodedJSONBytes excludes 304/no-body responses. Handler completion includes failures, cancellation and aborted streams. HTTP status alone does not prove complete delivery. Concurrent counter snapshots are approximate and exclude the collecting request from terminal totals."
+        "description": "Fixed route classes retain no request identities. Process-handler counters reset on restart; startedAt identifies the first observed request. Histograms use disjoint latency buckets. Written bytes are successfully accepted by ResponseWriter; decodedJSONBytes excludes 304/no-body responses. Handler completion includes failures, cancellation and aborted streams. HTTP status alone does not prove complete delivery. Concurrent counter snapshots are approximate and exclude the collecting request from terminal totals. filesystem reports caller-available space on the data root filesystem, independently of content quota; unknown readings are null. Write stall events and active weighted nanoseconds use Pebble callbacks and reset when the store opens."
       }
     },
     "/healthz": {

@@ -3433,6 +3433,12 @@
         },
         "requests": {
           "$ref": "#/$defs/RequestStats"
+        },
+        "filesystem": {
+          "$ref": "#/$defs/FilesystemSpace"
+        },
+        "writeStalls": {
+          "$ref": "#/$defs/WriteStallStats"
         }
       },
       "required": [
@@ -3445,7 +3451,115 @@
         "compactionsActive",
         "health",
         "collectedAt",
-        "requests"
+        "requests",
+        "filesystem",
+        "writeStalls"
+      ],
+      "additionalProperties": false
+    },
+    "FilesystemSpace": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "available",
+            "unavailable"
+          ]
+        },
+        "availableBytes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "totalBytes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      },
+      "required": [
+        "status",
+        "availableBytes",
+        "totalBytes"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "available"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "availableBytes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "totalBytes": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "availableBytes": {
+                "type": "null"
+              },
+              "totalBytes": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "WriteStallStats": {
+      "type": "object",
+      "properties": {
+        "active": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "durationNs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "memtable": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "level0": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "other": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "version": {
+          "const": "pebble-write-stalls-v1"
+        }
+      },
+      "required": [
+        "active",
+        "count",
+        "durationNs",
+        "memtable",
+        "level0",
+        "other",
+        "version"
       ],
       "additionalProperties": false
     }

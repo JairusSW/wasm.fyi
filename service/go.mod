@@ -2,7 +2,10 @@ module github.com/JairusSW/wasm.fyi/service
 
 go 1.27.1
 
-require github.com/cockroachdb/pebble/v2 v2.1.7
+require (
+	github.com/cockroachdb/pebble/v2 v2.1.7
+	golang.org/x/sys v0.44.0
+)
 
 require (
 	github.com/DataDog/zstd v1.5.7 // indirect
@@ -32,7 +35,6 @@ require (
 	github.com/prometheus/procfs v0.10.1 // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df // indirect
-	golang.org/x/sys v0.44.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 )

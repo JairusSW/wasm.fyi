@@ -558,3 +558,16 @@ writer, including compressed output; it does not prove remote delivery.
 panics are separate handler counts (one per affected request); a 200 header on an aborted download is not a complete
 transfer. `admission` exposes occupancy of request/result/cohort/download slots.
 The response wrapper preserves streaming copies and ResponseController operations.
+
+Storage metrics include `filesystem` capacity for the data-root filesystem,
+independently of the application content quota. `availableBytes` is OS-reported
+caller-available space, not a reclaimable-directory estimate. Linux/macOS use
+`statfs`; Windows uses `GetDiskFreeSpaceEx`. Unsupported or failed readings return
+`status=unavailable` with null capacities and no filesystem paths/errors exposed.
+
+`writeStalls` uses Pebble's actual begin/end callbacks. Counts classify memtable,
+level-0 and other stalls without retaining reason strings. `durationNs` includes
+active stalls and sums writer-stall time if events overlap; it is not exclusive
+wall time. Counters reset when the store opens. The listener does no storage work
+and holds only its own short-lived accounting lock. A real pressure test blocks
+SST I/O until a memtable stall is observed, then verifies resume/end accounting.
