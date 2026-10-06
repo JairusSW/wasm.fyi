@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"math"
 	"math/big"
 	"net/url"
@@ -35,12 +36,17 @@ func TestRealProducerServingParity(t *testing.T) {
 	timingExpected := map[string]map[string]json.RawMessage{}
 	memoryExpected := map[string]map[string]json.RawMessage{}
 	codeExpected := map[string]string{}
+	analysisExpected := map[string]map[string]json.RawMessage{}
 	for i, input := range inputs {
 		b, e := os.ReadFile(filepath.Join(input.Source, "data.json"))
 		if e != nil {
 			t.Fatal(e)
 		}
 		sourceDataSHA := wire.Hash(b)
+		var sourceFields map[string]json.RawMessage
+		if e = json.Unmarshal(b, &sourceFields); e != nil {
+			t.Fatal(e)
+		}
 		seal, e := os.ReadFile(filepath.Join(input.Source, "checksums.json"))
 		if e != nil {
 			t.Fatal(e)
@@ -64,6 +70,7 @@ func TestRealProducerServingParity(t *testing.T) {
 		if manifest.SourceReportSHA256 != sourceDataSHA || manifest.SourceSealSHA256 != wire.Hash(seal) || manifest.ExporterIdentity == nil || !wire.IsHash(manifest.ExporterIdentity.BinarySHA256) {
 			t.Fatal("real source/exporter provenance drift")
 		}
+		analysisExpected[manifest.ReportID] = sourceFields
 		for _, summary := range source.Summaries {
 			var runtime, workload, scenario, profile string
 			_ = json.Unmarshal(summary["runtime"], &runtime)
@@ -149,6 +156,66 @@ func TestRealProducerServingParity(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
+	analysisFields := 0
+	for reportID, source := range analysisExpected {
+		record, e := s.Record(revision, "report", reportID)
+		if e != nil {
+			t.Fatal(e)
+		}
+		descriptor, e := wire.ReportEvidenceData(record.Data)
+		if e != nil {
+			t.Fatal(e)
+		}
+		if descriptor.AnalysisSectionVersion == "source-fields-v1" {
+			for field := range source {
+				switch field {
+				case "bundle", "summaries", "memory_stages", "code_records", "metrics", "schema":
+					continue
+				}
+				if strings.HasSuffix(field, "_version") {
+					continue
+				}
+				if descriptor.AnalysisSections[field] == "" {
+					t.Fatal("derived source field missing", field)
+				}
+			}
+		}
+		// Legacy exports remain valid. Fresh analytical exporters must retain all
+		// declared source fields through selected evidence HTTP responses.
+		for field, digest := range descriptor.AnalysisSections {
+			fetch := func(id string) ([]byte, error) {
+				w := request(t, h, "GET", "/api/v1/reports/"+reportID+"/evidence?revision="+revision+"&chunk="+id, nil, nil)
+				if w.Code != 200 || w.Body.Len() > wire.ResponseBytes {
+					return nil, fmt.Errorf("analysis HTTP status %d", w.Code)
+				}
+				return w.Body.Bytes(), nil
+			}
+			body, e := fetch(digest)
+			if e != nil {
+				t.Fatal(e)
+			}
+			resource, e := wire.Resource(body)
+			if e != nil {
+				t.Fatal(e)
+			}
+			if resource != nil {
+				body, e = wire.AssembleResource(*resource, fetch)
+				if e != nil {
+					t.Fatal(e)
+				}
+			}
+			var section wire.ReportAnalysis
+			if e = wire.Decode(body, &section); e != nil {
+				t.Fatal(e)
+			}
+			var expected, actual bytes.Buffer
+			if json.Compact(&expected, source[field]) != nil || json.Compact(&actual, section.Data) != nil || !bytes.Equal(expected.Bytes(), actual.Bytes()) {
+				t.Fatal("derived source analysis changed", field)
+			}
+			analysisFields++
+		}
+	}
+	t.Logf("selected producer analysis sections retained: %d", analysisFields)
 	matched, scopes := 0, map[string]store.CohortScope{}
 	memoryMatched, codeMatched := 0, 0
 	for _, record := range rows {

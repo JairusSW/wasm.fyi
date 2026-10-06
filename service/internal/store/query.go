@@ -257,13 +257,11 @@ func (s *Store) ReportEvidenceContext(ctx context.Context, revision, report, dig
 	if err != nil {
 		return nil, err
 	}
-	var descriptor struct {
-		PassContexts []string `json:"passContexts"`
-	}
-	if err = json.Unmarshal(record.Data, &descriptor); err != nil {
+	descriptor, err := wire.ReportEvidenceData(record.Data)
+	if err != nil {
 		return nil, err
 	}
-	return s.evidenceContext(ctx, descriptor.PassContexts, digest)
+	return s.evidenceContext(ctx, descriptor.Roots(), digest)
 }
 
 func (s *Store) evidenceContext(ctx context.Context, roots []string, digest string) ([]byte, error) {

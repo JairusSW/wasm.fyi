@@ -765,3 +765,32 @@ uncached concurrency admission, exact decimal values, selected-row serialization
 byte-ceiling pagination without loss, method detail identity, old-revision method
 isolation and cursor continuation after new publication. Wider measured resident
 memory/host-load and query-scale gates remain open.
+
+### Producer-derived report analysis sections
+
+The producer now exports remaining derived `Dataset` JSON fields as named,
+referenced evidence sections instead of discarding them. This includes throughput,
+scaling, memory timelines, density footprints, phase CPU, counter displays,
+CPU-stack summaries and future source fields. Core result/catalog/pass transports
+remain in their existing formats; independent source analysis versions stay in
+report metadata, alongside the source report schema. No website re-analysis is
+performed. Each section envelope binds its report ID, source field and raw JSON.
+
+`analysisSections` is limited to 64 field references under version
+`source-fields-v1`. Large sections use the existing 64 MiB logical-resource limit
+and independently readable 120 KiB UTF-8 fragments; ordinary objects remain under
+256 KiB. Report evidence access, import reference validation, startup checks,
+backup, restore, DB-free rebuild and cleanup all follow these roots. Legacy
+reports without section references remain valid. Sections for a different report
+or source field are rejected before publication.
+
+Producer tests preserve populated future fields, a large Unicode diagnostic and
+an integer above JavaScript's safe range without float conversion. Service tests
+verify selected root/fragment authorization and exact reconstruction through
+backup, restore, rebuild and conservative cleanup, with no additional history
+captures. A fresh installed exporter verified the existing complete Wasmer/Deno
+call reports and emitted 105 objects each; the serving parity gate preserved all
+24 declared derived source fields through HTTP, alongside four timing and four
+memory summaries and two exact cohort scopes. These remain archived report tests,
+not new measurements. Standalone Parquet/trace/profile files and parent/archive
+bulk resources are still separate pending work.

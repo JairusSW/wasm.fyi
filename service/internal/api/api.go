@@ -536,7 +536,16 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 				}
 				respond(w, r, 200, json.RawMessage(b), immutable)
 			} else {
-				respond(w, r, 200, map[string]any{"revision": revision, "chunks": append(v.Evidence, v.PassContexts...)}, immutable)
+				roots := append(v.Evidence, v.PassContexts...)
+				if kind == "report" {
+					report, err := wire.ReportEvidenceData(record.Data)
+					if err != nil {
+						problem(w, r, err)
+						return
+					}
+					roots = report.Roots()
+				}
+				respond(w, r, 200, map[string]any{"revision": revision, "chunks": roots}, immutable)
 			}
 			return
 		}

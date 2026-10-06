@@ -1388,6 +1388,45 @@
         "method"
       ],
       "additionalProperties": false
+    },
+    "ReportAnalysis": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "report-analysis"
+        },
+        "schema": {
+          "const": 1
+        },
+        "reportId": {
+          "$ref": "#/$defs/Digest"
+        },
+        "field": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]{1,128}$"
+        },
+        "data": {}
+      },
+      "required": [
+        "kind",
+        "schema",
+        "reportId",
+        "field",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "ReportAnalysisReferences": {
+      "type": "object",
+      "maxProperties": 64,
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-z0-9_]{1,128}$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/Digest"
+      },
+      "description": "Original derived source JSON fields, excluding core typed transports and separately recorded analysis versions. Version source-fields-v1. Each reference resolves to ReportAnalysis or a chunked JSONResource for that envelope."
     }
   },
   "$ref": "#/$defs/CompletedJob"

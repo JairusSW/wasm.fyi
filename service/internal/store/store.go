@@ -598,16 +598,17 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 		if record.Kind != "report" {
 			continue
 		}
-		var report struct {
-			PassContexts []string `json:"passContexts"`
+		report, err := wire.ReportEvidenceData(record.Data)
+		if err != nil {
+			return "", err
 		}
-		if e = json.Unmarshal(record.Data, &report); e != nil {
-			return "", wire.Invalid("invalid pass contexts")
-		}
-		for _, ref := range report.PassContexts {
+		for _, ref := range report.Roots() {
 			if !evidence[ref] {
-				return "", wire.Invalid("unresolved pass context")
+				return "", wire.Invalid("unresolved report evidence")
 			}
+		}
+		if err = validateReportSections(record.ID, report, s.content); err != nil {
+			return "", err
 		}
 	}
 	for _, record := range records {

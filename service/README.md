@@ -74,6 +74,16 @@ Published month indexes let a selected window skip older linked history objects;
 older dataset revisions remain readable through a bounded fallback. Historical
 evidence enrichment still resolves to the same capture.
 
+Fresh producer report descriptors include `analysisSectionVersion: source-fields-v1`
+and `analysisSections`, a bounded map from original derived source field names to
+evidence references. Throughput, scaling, counter displays, CPU stacks, timelines
+and future derived JSON fields retain producer values. Resolve selected roots or
+fragments through `/reports/{id}/evidence?chunk=...` in the pinned revision.
+Large sections use the existing independently readable JSON-resource transport.
+Import and portable recovery check report/field identities and retain the entire
+content closure. Legacy report descriptors remain readable. External analytical
+files and archive downloads require separate resources.
+
 For maintenance while serving, create a private directory (mode `0700`) and pass
 `--control-socket /private/run/wasmfyi.sock` to `serve`. The optional local Unix
 socket has mode `0600`; existing socket paths are rejected. Use

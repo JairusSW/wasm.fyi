@@ -162,13 +162,14 @@ func (s *Store) reachable(includeStaging bool) (map[string]bool, error) {
 			}
 		}
 		if r.Kind == "report" {
-			var report struct {
-				PassContexts []string `json:"passContexts"`
+			report, err := wire.ReportEvidenceData(r.Data)
+			if err != nil {
+				return err
 			}
-			if e := json.Unmarshal(r.Data, &report); e != nil {
-				return e
+			if err = validateReportSections(r.ID, report, s.content); err != nil {
+				return err
 			}
-			for _, ref := range report.PassContexts {
+			for _, ref := range report.Roots() {
 				if e := markEvidence(ref); e != nil {
 					return e
 				}
