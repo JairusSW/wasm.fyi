@@ -15,6 +15,16 @@ foreign digests are rejected. Interpretation into current UI feature-support cel
 remains a separate website policy. Official suite conformance receipts remain a
 separate unfinished transport and cannot be inferred from these probe outcomes.
 
+The existing conformance publisher now checks archive checksums, WAST inventory
+membership and outcome totals before publication. It preserves whole-file, WASI
+case and plugin Go-leaf units, including failures and unavailable runners. New
+Go captures use `package-qualified-go-leaves-v2` to retain equal test names from
+different packages. Prior archives keep their original values and missing parser
+version. Publication synchronizes staged files and directories, installs report
+files before replacing indexes, and stops on retained index or immutable-file
+damage. These integrity/consistency checks remain separate from independent
+execution verification and operator qualification.
+
 Experimental Go/Pebble/local-content service for the existing collector. See the
 [implementation checkpoint](../docs/api-data-v2-progress.md) for commands,
 wire contracts, validation and remaining production gates.

@@ -44,7 +44,7 @@ test('completed corpus uploads only missing objects, publishes idempotently, ret
     await writeFile(join(resourceDirectory,'objects',sha256),b);resourcePayload[i]={sha256,bytes:b.length,kind:'record'};
   }
   await writeFile(join(resourceDirectory,'manifest.json'),JSON.stringify(resourceManifest));
-  let uploads=0;const request=async(url,options)=>{if(options.method==='PUT')uploads++;const response=await fetch(url,options);assert(response.ok,`Unexpected API failure: ${response.status} ${await response.clone().text()}`);return response};
+  let uploads=0,rateLimited=false;const request=async(url,options)=>{if(!rateLimited&&options.method==='PUT'){rateLimited=true;return new Response('',{status:429,headers:{'Retry-After':'1'}})}const response=await fetch(url,options);if(response.status===429)return response;assert(response.ok,`Unexpected API failure: ${response.status} ${await response.clone().text()}`);if(options.method==='PUT')uploads++;return response};
   const historyManifest=JSON.parse(await readFile(join(local,path,'manifest.json')));
   const configurationObject=await Promise.all(historyManifest.objects.filter(o=>o.kind==='record').map(async o=>JSON.parse(await readFile(join(local,path,'objects',o.sha256)))));
   const configurationId=configurationObject.find(r=>r.kind==='configuration').id;
@@ -54,6 +54,7 @@ test('completed corpus uploads only missing objects, publishes idempotently, ret
   const collectionURL=url+'/api/v1/collection/sessions/'+plan.id;
   assert.equal((await fetch(collectionURL)).status,404,'Unregistered session visible');
   const registered=await registerSessionPlan({url,plan,token,request});assert.match(registered,/^[a-f0-9]{64}$/);
+  assert(rateLimited,'Publisher fixture did not exercise rate-limit retry');
   const registeredScope=await(await fetch(collectionURL)).json();assert.equal(registeredScope.plannedJobs,2);assert.equal(registeredScope.members,1);assert.equal(registeredScope.status,'registered');
   assert.equal((await(await fetch(url+'/api/v1/manifest')).json()).revision,'','Registration published measurement revision');
   const update={schema:1,session:plan.id,plan:plan.identity,machine:'fixture-machine',corpus:'corpus-0001',attempt:'live-attempt',sequence:1,status:'running',phase:'timing',observedAt:'2026-10-06T00:00:00Z'};

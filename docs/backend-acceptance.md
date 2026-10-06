@@ -5,6 +5,29 @@ fidelity, bounded serving work, crash-safe publication and recoverable operation
 Frontend migration is a separate consumer; backend completion does not mean merely
 passing the existing synthetic fixture tests.
 
+Linux CI at site head `19ccc17ce` passed the complete Go race suite, Go vet,
+kernel disk/WAL exhaustion and portable lifecycle/schema gates. The job failed
+later because the Node publication fixture threw on HTTP 429 before production
+retry handling. That fixture now forwards rate-limited responses and explicitly
+injects one retry; the corrected local publication gate passes. Overall CI remains
+pending on the next head.
+
+The restarted large Wasmtime run has now completed its serving parity checks:
+163 native images, 256 selected function listings, nine original resources, 17
+analytical sections, 672 timing summaries, 835 memory summaries and 163 native-size
+measurements across five exact scopes. Its 444,970,172-byte report archive retains
+4,765 sealed files. Backup/database-free rebuild is still running, with no terminal
+recovery success claimed.
+
+Conformance publication now validates WAST inventory/outcome membership and
+totals, keeps official WASI case counts separate from Go leaves, preserves missing
+runners and uncollected coverage, and rejects retained index/content damage.
+The existing Go parser now qualifies leaf identities by package under
+`package-qualified-go-leaves-v2`; equal names from distinct packages no longer
+discard failures. Existing sealed archives remain unchanged. Source consistency
+and content integrity do not independently establish suite execution or operator
+qualification. Conformance API transport remains unfinished.
+
 Latest review checkpoint (2026-10-06): the full backend race suite passed before
 the release-precision/history-publisher changes; selected history/API race tests,
 28 schema checks and generated-type consistency passed again afterward. The real
