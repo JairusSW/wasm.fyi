@@ -736,3 +736,9 @@ have a ten-minute validation limit; failures retain their isolated temporary sto
 and command/service logs, with the path printed to stderr. Successful runs remove
 only their own temporary store. A larger import passing HTTP publication alone is
 not a completed backup/restore qualification.
+
+For an import-phase failure, add `--resume-store /path/printed/by/failed-run` to
+redeliver the same fixture into that isolated store. This mode appends service
+logs and keeps the supplied store after success as well as failure. It cannot be
+combined with `--recover`, and it does not overwrite existing backup/restore
+outputs. Transport failures identify the method, path and request budget.

@@ -31,15 +31,18 @@ def digest(data):
 
 
 @contextmanager
-def scratch_store():
-    root = Path(tempfile.mkdtemp(prefix="wasmfyi-native-smoke-"))
+def scratch_store(existing=None):
+    root = existing if existing else Path(tempfile.mkdtemp(prefix="wasmfyi-native-smoke-"))
+    if existing and (not root.is_dir() or root.is_symlink()):
+        raise RuntimeError("Resume store must be an existing real directory")
     try:
         yield root
     except BaseException:
         print(f"Failed lifecycle store and logs retained at {root}", file=sys.stderr, flush=True)
         raise
     else:
-        shutil.rmtree(root)
+        if not existing:
+            shutil.rmtree(root)
 
 
 def main():
@@ -51,7 +54,10 @@ def main():
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--export", type=Path, help="Keep a new portable backup and frozen expectations after validation")
     mode.add_argument("--recover", type=Path, help="Validate an exported bundle without importing its source fixture")
+    parser.add_argument("--resume-store", type=Path, help="Redeliver against a retained failed lifecycle store; never removed automatically")
     args = parser.parse_args()
+    if args.recover and args.resume_store:
+        parser.error("Resume store is for import redelivery, not portable recovery")
     if not __debug__:
         raise RuntimeError("Validation requires Python assertions; do not use -O or PYTHONOPTIMIZE")
     if args.recover and (args.source_report or args.producer_binary):
@@ -103,7 +109,7 @@ def main():
                "exports": [{"sha256": digest(encoded(manifest)), "manifest": manifest}]}
     token = "isolated-smoke-" + os.urandom(32).hex()
     env = {**os.environ, "WASMFYI_ADMIN_TOKEN": token}
-    with scratch_store() as root:
+    with scratch_store(args.resume_store) as root:
 
         def command(*values):
             started = time.monotonic()
@@ -123,7 +129,7 @@ def main():
             with socket.socket() as reservation:
                 reservation.bind(("127.0.0.1", 0))
                 port = reservation.getsockname()[1]
-            with (root / (data.name + ".log")).open("wb") as log:
+            with (root / (data.name + ".log")).open("ab") as log:
                 process = subprocess.Popen([binary, "serve", "--data", str(data), "--listen", f"127.0.0.1:{port}"], env=env, stdout=log, stderr=log)
                 try:
                     def call(path, method="GET", value=None, raw=False, download=False):
@@ -141,6 +147,7 @@ def main():
                                 break
                             except HTTPError as error:
                                 if error.code != 429:
+                                    error.add_note(f"{method} {path}")
                                     raise
                                 retry = error.headers.get("Retry-After", "")
                                 error.close()
@@ -148,6 +155,9 @@ def main():
                                 if time.monotonic() + int(retry) >= deadline:
                                     raise TimeoutError("publisher retry exceeds request deadline")
                                 time.sleep(int(retry))
+                            except (TimeoutError, URLError) as error:
+                                error.add_note(f"{method} {path} within {budget}s budget")
+                                raise
                         with response:
                             if download:
                                 hasher = hashlib.sha256()

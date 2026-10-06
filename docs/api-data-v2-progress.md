@@ -1569,3 +1569,13 @@ commands now have an explicit ten-minute test budget, phase timings and separate
 command logs; any failure retains the isolated store for diagnosis. This changes
 test supervision only, not production backup durability or serving budgets.
 The larger portable lifecycle gate remains pending until all phases finish.
+
+The next large run timed out before publishing a revision; its isolated store
+and logs were retained. A one-second native process sample showed filesystem
+synchronization, but does not by itself establish an overall I/O profile or
+performance claim. The runner now prints upload/commit boundaries and adds the
+failing HTTP method/path and budget to transport exceptions. `--resume-store`
+redelivers into a retained isolated store, appends service logs and never removes
+that supplied store automatically. A synthetic lifecycle passes with this mode
+and confirms the supplied store survives success. Real-report redelivery starts
+with zero missing-object uploads; publication and portable recovery remain pending.
