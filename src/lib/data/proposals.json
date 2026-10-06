@@ -1,7 +1,7 @@
 {
 	"source": [
 		"https://webassembly.org/features/",
-		"https://github.com/WebAssembly/proposals"
+		"https://github.com/WebAssembly/proposals/blob/main/finished-proposals.md"
 	],
 	"retrieved": "2026-10-06",
 	"proposals": [
@@ -135,7 +135,7 @@
 			"key": "halfPrecision",
 			"name": "Half Precision",
 			"url": "https://github.com/WebAssembly/half-precision/blob/main/proposals/half-precision/Overview.md",
-			"phase": 2,
+			"phase": 1,
 			"spec": null
 		},
 		{
@@ -172,13 +172,6 @@
 			"url": "https://github.com/WebAssembly/js-string-builtins/blob/main/proposals/js-string-builtins/Overview.md",
 			"phase": 5,
 			"spec": "3.0"
-		},
-		{
-			"key": "jsTextEncodingBuiltin",
-			"name": "JS Text Encoding Builtins",
-			"url": "https://github.com/WebAssembly/js-text-encoding-builtins",
-			"phase": 1,
-			"spec": null
 		},
 		{
 			"key": "memory64",

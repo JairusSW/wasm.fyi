@@ -139,7 +139,7 @@
 					{#each g.rows as r (r.f.id)}
 						<tr>
 							<td class="stick fname">
-								{#if r.f.page}<a class="link w5" href={siteHref(`/${r.f.page}`)}>{r.f.name}</a>{:else if r.f.url}<a class="w5 ext" href={r.f.url} rel="noopener" data-tip="Open the proposal repository">{r.f.name}</a>{:else}<span class="w5">{r.f.name}</span>{/if}
+								{#if r.f.page}<a class="flink w5" href={siteHref(`/${r.f.page}`)} data-tip="Open the {r.f.name} page: status, adoption and performance">{r.f.name}</a>{:else if r.f.url}<a class="flink w5" href={r.f.url} target="_blank" rel="noopener" data-tip="Open the official {r.f.name} {r.f.url.includes('/proposals') || r.f.url.includes('github.com/WebAssembly/') ? 'proposal' : 'specification'}">{r.f.name}<span class="ext-mark" aria-label="(opens in a new tab)">↗</span></a>{:else}<span class="w5">{r.f.name}</span>{/if}
 								<div class="mono micro fg3">{r.count}</div>
 							</td>
 							{#if !r.contracts && !featCols.some((h)=>h.rt==='wago' && pluginSupportEvidence(r.f.id,ui.scope.machine))}
@@ -331,12 +331,21 @@
 	.nocorpus {
 		padding: 6px 12px;
 	}
-	.ext {
+	.flink {
 		color: var(--fg);
-		text-decoration: none;
-	}
-	.ext:hover {
 		text-decoration: underline;
+		text-decoration-color: var(--line2);
+		text-underline-offset: 3px;
+	}
+	.flink:hover {
+		text-decoration-color: var(--fg);
+	}
+	.ext-mark {
+		margin-left: 3px;
+		font-size: 10px;
+		color: var(--fg3);
+		text-decoration: none;
+		display: inline-block;
 	}
 	.ch {
 		padding: 6px 10px;

@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 // Snapshot the WebAssembly proposal list into src/lib/data/proposals.json.
 //
-// Sources, in order of authority:
-//   1. WebAssembly/proposals README + finished-proposals.md — official phases and spec versions.
-//   2. WebAssembly/website features.json — the list shown on webassembly.org/features
-//      (names, links, and phases for anything the proposals repo does not list).
+// Sources:
+//   - WebAssembly/website features.json — the exact list, names, links and phases shown on
+//     webassembly.org/features.
+//   - WebAssembly/proposals finished-proposals.md — the spec version each finished proposal shipped in.
 // Only identity and phase are imported; support claims are never copied in, because
 // wasm.fyi reports measured results only.
 import { writeFileSync } from 'node:fs';
@@ -36,21 +36,6 @@ function linkRefs(md) {
 	return new Map([...md.matchAll(/^\[([^\]]+)\]:\s*(\S+)/gm)].map((m) => [m[1].toLowerCase(), m[2]]));
 }
 
-/** Table rows `| [Name][ref] | …` under each `### Phase N` heading of the proposals README. */
-function readmePhases(md) {
-	const refs = linkRefs(md);
-	const rows = [];
-	let phase = null;
-	for (const line of md.split('\n')) {
-		const h = /^###\s+Phase\s+(\d)/.exec(line);
-		if (h) phase = +h[1];
-		else if (/^##\s/.test(line)) phase = null;
-		const r = phase != null && /^\|\s*\[([^\]]+)\]\[([^\]]+)\]/.exec(line);
-		if (r) rows.push({ name: r[1].trim(), url: refs.get(r[2].toLowerCase()), phase });
-	}
-	return rows;
-}
-
 /** Finished proposals → Map(repo → spec version). */
 function finishedVersions(md) {
 	const refs = linkRefs(md);
@@ -62,46 +47,30 @@ function finishedVersions(md) {
 	return versions;
 }
 
-const [website, readme, finished] = await Promise.all([
+const [website, finished] = await Promise.all([
 	get(`${RAW}/website/main/features.json`).then(JSON.parse),
-	get(`${RAW}/proposals/main/README.md`),
 	get(`${RAW}/proposals/main/finished-proposals.md`)
 ]);
 
-const official = readmePhases(readme);
 const versions = finishedVersions(finished);
-const byRepo = new Map(official.filter((p) => repoOf(p.url)).map((p) => [repoOf(p.url), p]));
 
 const proposals = Object.entries(website.features).map(([key, f]) => {
 	const repo = repoOf(f.url);
-	const listed = repo ? byRepo.get(repo) : undefined;
-	if (listed) byRepo.delete(repo);
 	return {
 		key,
 		name: f.description,
 		url: f.url,
-		phase: listed ? listed.phase : f.phase,
+		phase: f.phase,
 		spec: (f.phase !== 'inactive' && repo && versions.get(repo)) || null
 	};
 });
-
-// Active proposals the website does not list yet.
-for (const [repo, p] of byRepo) {
-	proposals.push({
-		key: repo.replace(/-([a-z])/g, (_, c) => c.toUpperCase()),
-		name: p.name,
-		url: p.url,
-		phase: p.phase,
-		spec: null
-	});
-}
 
 proposals.sort((a, b) => a.key.localeCompare(b.key));
 writeFileSync(
 	out,
 	JSON.stringify(
 		{
-			source: ['https://webassembly.org/features/', 'https://github.com/WebAssembly/proposals'],
+			source: ['https://webassembly.org/features/', 'https://github.com/WebAssembly/proposals/blob/main/finished-proposals.md'],
 			retrieved: new Date().toISOString().slice(0, 10),
 			proposals
 		},

@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
-import { FEATS, PROPS } from '$lib/data/features';
+import { CORPUS_FEATS, FEATS, PROPS } from '$lib/data/features';
 import { CFG, FEATURE_CFG } from '$lib/data/runtimes';
 import { ALLB } from '$lib/data/snapshot';
 import type { Cfg, ProposalId } from '$lib/data/types';
@@ -58,7 +58,7 @@ function measuredWorkloads(): number {
 /** Engines with feature-test evidence on any host. */
 function enginesWithEvidence(): number {
 	const hosts = Object.keys(viewData.hosts) as Scope['machine'][];
-	return new Set(FEATURE_CFG.filter((c) => hosts.some((m) => FEATS.some((f) => compatCell(f.id, c.id, { ...scope, machine: m }).run))).map((c) => c.rt)).size;
+	return new Set(FEATURE_CFG.filter((c) => hosts.some((m) => [...FEATS, ...CORPUS_FEATS].some((f) => compatCell(f.id, c.id, { ...scope, machine: m }).run))).map((c) => c.rt)).size;
 }
 
 /** Best-first list → each runtime once (its best configuration), top ROWS. */
@@ -111,7 +111,7 @@ function cardFor(slug: string): Card {
 		const b = ALLB.find((x) => hasOwnImage(x) && workloadSlug(x.id) === slug);
 		if (b) return { title: workloadName(b.id), subtitle: b.group, panel: workloadBars(b.id) };
 	}
-	const featureTests = FEATS.reduce((n, f) => n + featureContracts(f.id).length, 0);
+	const featureTests = [...FEATS, ...CORPUS_FEATS].reduce((n, f) => n + featureContracts(f.id).length, 0);
 	switch (slug) {
 		case 'benchmarks':
 			return { title: 'Benchmarks', panel: leaders(0, 'Fastest compilation') };
