@@ -303,8 +303,17 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 		problem(w, r, e)
 		return
 	}
+	if len(headParts) == 7 && headParts[0] == "collection" && headParts[1] == "sessions" && headParts[3] == "attempts" {
+		out, e := a.Store.AttemptProgressContext(r.Context(), headParts[2], headParts[4], headParts[5], headParts[6])
+		if e != nil {
+			problem(w, r, e)
+			return
+		}
+		respond(w, r, 200, out, false)
+		return
+	}
 	if len(headParts) == 3 && headParts[0] == "collection" && headParts[1] == "sessions" {
-		out, e := a.Store.RegisteredSession(headParts[2])
+		out, e := a.Store.RegisteredSessionContext(r.Context(), headParts[2])
 		if e != nil {
 			problem(w, r, e)
 			return
@@ -752,6 +761,20 @@ func (a *API) admin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(parts) == 1 && parts[0] == "progress" && r.Method == "POST" {
+		var update wire.Progress
+		if e := decode(w, r, &update); e != nil {
+			problem(w, r, e)
+			return
+		}
+		out, e := a.Store.RecordProgress(r.Context(), update)
+		if e != nil {
+			problem(w, r, e)
+			return
+		}
+		respond(w, r, 200, out, false)
+		return
+	}
 	if len(parts) == 1 && parts[0] == "plans" && r.Method == "POST" {
 		var plan wire.PlanRegistration
 		if e := decode(w, r, &plan); e != nil {

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/JairusSW/wasm.fyi/service/internal/store"
 	"github.com/JairusSW/wasm.fyi/service/internal/wire"
@@ -68,6 +69,26 @@ func TestRegistrationHTTPBeforeMeasurements(t *testing.T) {
 		if w = request(t, h, "GET", path+query, nil, nil); w.Code != 400 {
 			t.Fatal(query, w.Code)
 		}
+	}
+	u := wire.Progress{Schema: 1, Session: r.Session, Plan: r.Plan, Machine: "local", Corpus: "corpus-0001", Attempt: "first", Sequence: 1, Status: "running", Phase: "timing", ObservedAt: time.Date(2026, 10, 6, 0, 0, 0, 0, time.UTC)}
+	encoded, _ := wire.Encode(u)
+	if w = request(t, h, "POST", "/admin/v1/progress", encoded, nil); w.Code != 401 {
+		t.Fatal(w.Code)
+	}
+	if w = request(t, h, "POST", "/admin/v1/progress", encoded, auth); w.Code != 200 {
+		t.Fatal(w.Code, w.Body.String())
+	}
+	progressPath := path + "/attempts/local/corpus-0001/first"
+	if w = request(t, h, "GET", progressPath, nil, nil); w.Code != 200 {
+		t.Fatal(w.Code, w.Body.String())
+	}
+	if w = request(t, h, "GET", progressPath+"?revision="+strings.Repeat("b", 64), nil, nil); w.Code != 400 {
+		t.Fatal(w.Code)
+	}
+	u.Sequence = 3
+	encoded, _ = wire.Encode(u)
+	if w = request(t, h, "POST", "/admin/v1/progress", encoded, auth); w.Code != 409 {
+		t.Fatal(w.Code, w.Body.String())
 	}
 	if w = request(t, h, "POST", "/admin/v1/plans/"+id+"/abort", nil, auth); w.Code != http.StatusConflict {
 		t.Fatal(w.Code, w.Body.String())

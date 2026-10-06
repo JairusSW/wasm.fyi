@@ -366,3 +366,31 @@ the running process. Tests cover registration before any measurement, missing
 source admission, cancellation/abort, shared quota migration, two publication
 fault checkpoints, restart, backup restore and DB-free rebuild. They do not yet
 prove physical crash durability or large multi-session operational load.
+
+Attempt progress is an authenticated operational assertion, separate from sealed
+measurements and publication. `POST /admin/v1/progress` accepts schema 1, session,
+locked-plan digest, machine, corpus, attempt ID, sequence, status, optional phase
+and producer observation time. States are `running`, `completed`, `interrupted`
+and `failed`. The server records receipt time separately. A completed progress
+record does not establish that evidence is verified or published.
+
+The first sequence is 1; each subsequent update increments by exactly one. Exact
+retries return the original receipt. Sequence gaps, conflicting redelivery and
+updates after a terminal state return 409. A new attempt gets a distinct ID;
+prior attempts retain their latest states. Each registered session admits at
+most 10,000 attempt records, each with at most 10,000 sequential updates. The
+store retains the latest state per attempt, not every phase event.
+
+`GET /api/v1/collection/sessions/{id}/attempts/{machine}/{corpus}/{attempt}`
+returns exactly one small live record. It accepts no revision or pagination
+query and carries no evidence inventory. The persistent progress map participates
+in registration publication, cleanup, backup and DB-free rebuild. Ordering,
+idempotence, scope admission, terminal transitions, two publication fault
+checkpoints, portable reconstruction and concurrent update/read/cleanup have
+regression coverage. Live reads share the maintenance lock with cancellation,
+so cleanup cannot remove a replaced index while a request follows it.
+
+`publishAttemptProgress` uses the existing bounded publisher transport, deadlines
+and rate-limit backoff. Durable coordinator event delivery, attempt discovery
+and paginated session progress remain pending; the running collector does not
+yet emit these updates to the API.

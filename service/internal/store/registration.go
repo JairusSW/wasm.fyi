@@ -18,6 +18,7 @@ type registeredPlan struct {
 	Registration wire.PlanRegistration `json:"registration"`
 	Members      indexSet              `json:"members"`
 	Corpora      indexSet              `json:"corpora"`
+	Progress     *indexSet             `json:"progress,omitempty"`
 }
 type RegisteredSession struct {
 	ID                   string `json:"id"`
@@ -52,6 +53,13 @@ func (s *Store) registered(session string) (registeredPlan, error) {
 	return p, nil
 }
 func (s *Store) RegisteredSession(session string) (RegisteredSession, error) {
+	return s.RegisteredSessionContext(context.Background(), session)
+}
+func (s *Store) RegisteredSessionContext(ctx context.Context, session string) (RegisteredSession, error) {
+	if e := s.publish.LockContext(ctx); e != nil {
+		return RegisteredSession{}, e
+	}
+	defer s.publish.Unlock()
 	p, e := s.registered(session)
 	if e != nil {
 		return RegisteredSession{}, e
@@ -459,7 +467,7 @@ func (s *Store) markRegistrations(ctx context.Context, marked map[string]bool, s
 					return wire.Invalid("registration members missing")
 				}
 			}
-			return nil
+			return s.markProgress(ctx, p, scope, marked)
 		}); e != nil {
 			return e
 		}

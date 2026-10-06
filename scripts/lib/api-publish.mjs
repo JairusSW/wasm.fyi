@@ -47,6 +47,13 @@ function publicationClient({url,token,signal,request}){
   };
  return call;
 }
+export async function publishAttemptProgress({url,update,signal,token=process.env.WASMFYI_ADMIN_TOKEN,request=fetch}){
+ signal?.throwIfAborted();
+ const call=publicationClient({url,token,signal,request});
+ const receipt=await call('/admin/v1/progress','POST',JSON.stringify(update));
+ assert(HASH.test(receipt.id)&&['session','plan','machine','corpus','attempt','sequence','status'].every(key=>receipt.update?.[key]===update[key]),'Invalid attempt progress receipt');
+ return receipt;
+}
 export async function registerSessionPlan({url,plan,signal,token=process.env.WASMFYI_ADMIN_TOKEN,request=fetch}){
  signal?.throwIfAborted();
  const {registration,objects}=prepareSessionPlan(plan,{signal}),call=publicationClient({url,token,signal,request});

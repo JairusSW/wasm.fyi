@@ -8,7 +8,7 @@ import {createServer} from 'node:net';
 import {fileURLToPath} from 'node:url';
 import {runCommand} from './lib/benchmark-process.mjs';
 import {digest} from './lib/wasmbench.mjs';
-import {publicationURL,publishCompletedJob,registerSessionPlan} from './lib/api-publish.mjs';
+import {publicationURL,publishCompletedJob,registerSessionPlan,publishAttemptProgress} from './lib/api-publish.mjs';
 import {planIdentity} from './lib/benchmark-plan.mjs';
 const site=fileURLToPath(new URL('..',import.meta.url));
 test('API origin requires HTTPS except loopback and excludes embedded secrets',()=>{
@@ -48,6 +48,14 @@ test('completed corpus uploads only missing objects, publishes idempotently, ret
   const registered=await registerSessionPlan({url,plan,token,request});assert.match(registered,/^[a-f0-9]{64}$/);
   const registeredScope=await(await fetch(collectionURL)).json();assert.equal(registeredScope.plannedJobs,2);assert.equal(registeredScope.members,1);assert.equal(registeredScope.status,'registered');
   assert.equal((await(await fetch(url+'/api/v1/manifest')).json()).revision,'','Registration published measurement revision');
+  const update={schema:1,session:plan.id,plan:plan.identity,machine:'fixture-machine',corpus:'corpus-0001',attempt:'live-attempt',sequence:1,status:'running',phase:'timing',observedAt:'2026-10-06T00:00:00Z'};
+  const liveProgress=await publishAttemptProgress({url,update,token});assert.equal(liveProgress.update.status,'running');
+  assert.deepEqual(await publishAttemptProgress({url,update,token}),liveProgress,'Progress retry changed receipt');
+  const progressURL=collectionURL+'/attempts/fixture-machine/corpus-0001/live-attempt';
+  assert.deepEqual(await(await fetch(progressURL)).json(),liveProgress);
+  await assert.rejects(publishAttemptProgress({url,update:{...update,sequence:3},token}),/409/);
+  await publishAttemptProgress({url,update:{...update,sequence:2,status:'interrupted'},token});
+  await assert.rejects(publishAttemptProgress({url,update:{...update,sequence:3},token}),/409/);
   assert.equal((await fetch(collectionURL+'?revision='+ 'a'.repeat(64))).status,400,'Live registration accepted immutable revision scope');
   uploads=0;assert.equal(await registerSessionPlan({url,plan,token,request}),registered);assert.equal(uploads,0,'Registered duplicate retransferred source');
   const changed=structuredClone(plan);changed.jobs.push({id:'corpus-other'});changed.identity=planIdentity(changed);

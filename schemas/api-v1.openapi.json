@@ -3544,6 +3544,213 @@
           }
         }
       }
+    },
+    "/api/v1/collection/sessions/{id}/attempts/{machine}/{corpus}/{attempt}": {
+      "get": {
+        "summary": "Small live operational attempt state; measurement publication is separate",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+            }
+          },
+          {
+            "name": "machine",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+            }
+          },
+          {
+            "name": "corpus",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+            }
+          },
+          {
+            "name": "attempt",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Latest state of exactly one attempt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./site-v2.schema.json#/$defs/AttemptProgress"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid progress or scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./site-v2.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown registered attempt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./site-v2.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Out-of-order or terminal conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./site-v2.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request admission limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./site-v2.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Canceled request or uncertain durability",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./site-v2.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/v1/progress": {
+      "post": {
+        "summary": "Ordered idempotent update from an authenticated coordinator",
+        "security": [
+          {
+            "publisherToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./site-v2.schema.json#/$defs/ProgressUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Durable progress receipt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./site-v2.schema.json#/$defs/AttemptProgress"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid progress or scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./site-v2.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown registered attempt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./site-v2.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Out-of-order or terminal conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./site-v2.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request admission limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./site-v2.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Canceled request or uncertain durability",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./site-v2.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Publisher authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./site-v2.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          },
+          "507": {
+            "description": "Attempt-state quota exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./site-v2.schema.json#/$defs/APIError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {

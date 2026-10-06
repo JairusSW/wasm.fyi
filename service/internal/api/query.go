@@ -48,7 +48,14 @@ func allowedQuery(values url.Values, keys ...string) error {
 }
 func routeQuery(path string, values url.Values) error {
 	parts := strings.Split(path, "/")
-	if len(parts) == 3 && parts[0] == "collection" && parts[1] == "sessions" {
+	if (len(parts) == 3 || len(parts) == 7 && parts[3] == "attempts") && parts[0] == "collection" && parts[1] == "sessions" {
+		if len(parts) == 7 {
+			for _, id := range parts[4:] {
+				if !wire.IsIdentity(id) {
+					return wire.Invalid("invalid attempt identity")
+				}
+			}
+		}
 		if !wire.IsIdentity(parts[2]) {
 			return wire.Invalid("invalid session identity")
 		}

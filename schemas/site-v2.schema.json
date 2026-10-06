@@ -2725,6 +2725,87 @@
         "status"
       ],
       "additionalProperties": false
+    },
+    "ProgressUpdate": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 1
+        },
+        "session": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "plan": {
+          "$ref": "#/$defs/Digest"
+        },
+        "machine": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "corpus": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "attempt": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "status": {
+          "enum": [
+            "running",
+            "completed",
+            "interrupted",
+            "failed"
+          ]
+        },
+        "phase": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "observedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "schema",
+        "session",
+        "plan",
+        "machine",
+        "corpus",
+        "attempt",
+        "sequence",
+        "status",
+        "observedAt"
+      ],
+      "additionalProperties": false
+    },
+    "AttemptProgress": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "update": {
+          "$ref": "#/$defs/ProgressUpdate"
+        },
+        "recordedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "update",
+        "recordedAt"
+      ],
+      "additionalProperties": false
     }
   },
   "$ref": "#/$defs/CompletedJob"

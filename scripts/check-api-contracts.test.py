@@ -167,6 +167,19 @@ class Contracts(unittest.TestCase):
             with self.assertRaises(ValueError):
                 contracts.validate(bad, "RegisteredSession", "unbounded or fabricated scope")
 
+    def test_progress_is_small_operational_metadata(self):
+        update = {"schema": 1, "session": "s", "plan": "a" * 64, "machine": "local",
+                  "corpus": "corpus-0001", "attempt": "attempt-1", "sequence": 1,
+                  "status": "running", "phase": "timing", "observedAt": "2026-10-06T00:00:00Z"}
+        receipt = {"id": "b" * 64, "update": update, "recordedAt": "2026-10-06T00:00:01Z"}
+        contracts.validate(receipt, "AttemptProgress", "operational receipt")
+        for key, value in [("samples", []), ("reports", []), ("sequence", 0),
+                           ("sequence", 10001), ("status", "published"), ("observedAt", "today")]:
+            bad = copy.deepcopy(receipt)
+            bad["update"][key] = value
+            with self.assertRaises(ValueError):
+                contracts.validate(bad, "AttemptProgress", "invalid progress")
+
     def test_session_error_contracts(self):
         contracts.validate({"error": "request limit"}, "APIError", "admission error")
         contracts.validate({"error": "invalid request", "code": "invalid_request"},

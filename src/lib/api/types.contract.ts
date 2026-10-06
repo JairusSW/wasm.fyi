@@ -1,5 +1,5 @@
 // Compile-time contract checks. This file has no runtime imports or UI effects.
-import type {OverviewCard, CohortCell, NativeFunctionPage, ResultSummaryData, SessionJobPage, APIError, PlanRegistration, RegisteredSession} from './types';
+import type {OverviewCard, CohortCell, NativeFunctionPage, ResultSummaryData, SessionJobPage, APIError, PlanRegistration, RegisteredSession, ProgressUpdate} from './types';
 
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
 type Assert<T extends true> = T;
@@ -18,3 +18,6 @@ export type RegistrationHasNoAttempt = Assert<Equal<Extract<keyof PlanRegistrati
 
 export type RegisteredStatus = Assert<Equal<RegisteredSession['status'], 'registered'>>;
 export type RegisteredScopeHasNoInventory = Assert<Equal<Extract<keyof RegisteredSession, 'jobs' | 'reports' | 'chunks'>, never>>;
+
+export type ProgressStatus = Assert<Equal<ProgressUpdate['status'], 'running' | 'completed' | 'interrupted' | 'failed'>>;
+export type ProgressHasNoEvidence = Assert<Equal<Extract<keyof ProgressUpdate, 'samples' | 'reports' | 'exports'>, never>>;
