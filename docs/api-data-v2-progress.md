@@ -1186,3 +1186,20 @@ restart, backup and DB-free rebuild with all 24 summaries preserved. This proves
 the bounded job container, not larger individual canonical measurement records.
 The archive gate uses multi-chunk synthetic original bytes; large real archive
 crash/slow-client/retention gates and production deployment remain open.
+
+
+### Live slow-client cancellation and shutdown gate
+
+A live HTTP/TCP test now holds two 64 MiB synthetic download streams open without
+consuming their bodies. The shared bulk budget rejects a third before opening
+its reader, while an unrelated read continues. Storage close waits for the
+admitted stream leases. Canceling the server request context forces socket write
+deadlines, unblocks both handlers, releases both bulk permits and completes
+storage shutdown within the test deadline. Connections remain open during the
+cancellation check, so passing does not depend on the client closing its socket.
+
+This exercises the shared whole-file/parent-archive streaming implementation
+through real sockets. The stream source is synthetic transport stress, not
+benchmark evidence or a claim about measured throughput/RSS. Repeated race runs
+include archive/report-file reads and corruption handling. Wider multi-client
+scale, long-duration timeout and production proxy operation remain open gates.
