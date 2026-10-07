@@ -2,10 +2,15 @@
 
 Every configured corpus artifact has a source build: 166 application algorithms
 in 27 categories and 241 feature contracts. The application inventory contains
-102 original import-free C kernels and 64 retained upstream workloads. Each
+102 original import-free C kernels, 43 retained core upstream workloads, and
+21 import-free library/runtime replacements for former WASI commands. Each
 category has 6–9 distinct algorithms. Feature probes are counted separately.
 
-The default inventory has no Emscripten modules. The DNA/text kernels replacing
+The main inventory has no WASI commands or Emscripten modules. All guest inputs
+and outputs are in memory. See [the full replacement mapping and explicit scope
+changes](nonwasi/README.md). Feature/conformance WASI tests remain separate.
+
+The DNA/text kernels replacing
 six Emscripten defaults are original implementations; they do not claim to run
 seqtk, FastTree or GNU sed.
 
@@ -15,23 +20,25 @@ Prerequisites:
 
 - Node **26.4.0**, with V8 **14.6.202.34-node.21**.
 - LLVM Clang **22.1.8** for the original C kernels.
-- Rust **1.98.1**, Cargo and the `wasm32-unknown-unknown` / `wasm32-wasip1` targets.
-- Go **1.26.5** with automatic toolchain selection enabled; age selects **1.27.0**.
+- Rust **1.90.0**, Cargo and `wasm32-unknown-unknown` for the new core libraries.
+  The feature/component source workflow additionally uses Rust **1.98.1** and
+  its `wasm32-unknown-unknown` / `wasm32-wasip1` targets.
+- Go **1.26.5** with automatic toolchain selection for the benchmark harness audit.
 - `wasm-tools` **1.260.0**, Wasmtime **46.0.1**, WABT, CMake, Ninja, make, Git,
   curl, tar and unzip.
-- Docker. The large Ruby, Yosys and Swift ports use pinned Linux toolchains.
-  Allow Docker 12 GB of memory for Yosys linking. Linux x64 is recommended for
-  the complete build; Mac hosts can build the other modules natively and run
-  these ports in Docker.
+- A native C/C++ compiler, Ruby and Rake for mruby's bundled parser/build tools.
+  Docker is no longer required by any main-corpus workload.
 
 Use the Rustup toolchain (the Homebrew Rust distribution cannot use these
 Rustup target libraries). For Rust:
 
 ```sh
+rustup toolchain install 1.90.0 --profile minimal --target wasm32-unknown-unknown
+# Needed only for the separate feature/component source build:
 rustup toolchain install 1.98.1 --profile minimal \
   --target wasm32-unknown-unknown,wasm32-wasip1
 export PATH="$HOME/.cargo/bin:$PATH"
-export RUSTUP_TOOLCHAIN=1.98.1
+export RUSTUP_TOOLCHAIN=1.90.0
 ```
 
 Set `WASMBENCH_CLANG` / `WASMBENCH_WASM_TOOLS` if those binaries are outside their
@@ -40,7 +47,9 @@ archive on Linux x64. The build installs the digest-pinned WASI SDK 34 compiler
 in the workspace. It downloads source dependencies on the first build.
 
 ```sh
-just corpus-build-all        # also available as just corpus-build
+just corpus-main-build      # all 166 main algorithms, import checks, oracles, catalog
+just corpus-main-check      # recheck all built main modules without rebuilding
+just corpus-build-all       # also build/check the separate feature/component corpus
 ```
 
 This compiles all original kernels, all feature modules/components, the WASI
@@ -64,7 +73,7 @@ inventory after verification. Collection still uses the wasm-bench harness.
 For a focused rebuild:
 
 ```sh
-node scripts/corpus-rebuild.mjs --ids=json2csv-people,lua-cli-buckets
+just corpus-main-rebuild serde-json2csv,lua-memory-buckets
 just applications-build      # all 102 C kernels
 just features-build          # all 119 feature artifacts / 241 contracts
 just corpus-wat-build        # seven retained WAT workloads
@@ -84,10 +93,10 @@ command on Linux and retains verification reports.
   `node scripts/corpus-source-inputs.mjs --refresh` to re-pin source digests.
 - Complete upstream source trees: each build retains them in `tree/.tmp/`.
   Save source edits as patches under `upstream/patches/`; see its README.
-- Compiler ports and pinned toolchains: `upstream/ports/` and
-  `../scripts/corpus-rebuild.mjs`. These include source builds for Ruby, Clang,
-  Lua, coreutils, ripgrep, JSON-to-CSV, Yosys, IcePack, IceMulti, ECPPLL and Swift
-  formatter, replacing the former binary-only recipes.
+- Active import-free replacements: `nonwasi/` and `../scripts/nonwasi-*.mjs`.
+  These embed actual pinned upstream libraries/interpreters; see each group's
+  notices and scope documentation. Legacy CLI sources/ports remain historical
+  provenance only and are never selected by the active source builder.
 
 The Preview 1 to Preview 2 adapter is compiled from Wasmtime **46.0.1** source
 at revision `823d1b8f251494a06288194d0df746191f535ff7`, using Rust **1.98.1**. Its
@@ -95,7 +104,7 @@ structural verifier runs before `wasm-tools component new` incorporates it into
 feature modules. `../scripts/feature-adapter-source.mjs` records this build.
 
 `upstream/sources.json` pins 162 retained source/wrapper/fixture/license files,
-the original Wago revision and historical recipes. `upstream/contracts.json`
+the original Wago revision and historical recipes, plus the active replacement mapping. `upstream/contracts.json`
 retains independent exact contracts without depending on a Wago checkout.
 Historical fetch/transform scripts are provenance; the active build is
 `corpus-rebuild.mjs`. `just corpus-sources-refresh` intentionally refreshes the

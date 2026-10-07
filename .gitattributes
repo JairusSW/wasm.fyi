@@ -1,2 +1,5 @@
 # Retain upstream source and license bytes exactly as sealed in sources.json.
 corpora/upstream/wago/** -whitespace
+# Preserve copied upstream notices verbatim, including their original whitespace.
+corpora/nonwasi/**/LICENSES/** -whitespace
+corpora/nonwasi/**/licenses/** -whitespace

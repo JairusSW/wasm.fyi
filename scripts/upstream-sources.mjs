@@ -2,11 +2,13 @@
 import { readFile, writeFile, mkdir, readdir, copyFile } from 'node:fs/promises';
 import { join, resolve, dirname, relative } from 'node:path';
 import { config, site, command, digest } from './lib/wasmbench.mjs';
+import { selectRetainedSources } from './lib/upstream-source-selection.mjs';
 const settings=await config();
 const source=resolve(site,process.env.WAGO_SOURCE || settings.collection.wagoSource);
 const root=join(site,'corpora/upstream/wago');
 const catalog=JSON.parse(await readFile(join(source,'corpus/catalog.json')));
-const selected=catalog.benchmarks.filter(b=>settings.corpus.ids.includes(b.id));
+const previous=JSON.parse(await readFile(join(site,'corpora/upstream/sources.json')));
+const {selected,replacements}=selectRetainedSources(settings.corpus.ids,catalog.benchmarks,previous.benchmarks);
 const directories=new Set(['corpus/sources','corpus/build','corpus/workloads/semantic/shared']);
 for(const b of selected)if(b.artifact.startsWith('workloads/semantic/')||b.artifact.startsWith('workloads/applications/'))directories.add('corpus/'+dirname(b.artifact));
 for(const b of selected)if(b.command?.preopen) {
@@ -42,5 +44,8 @@ for(const b of lock.benchmarks) {
   b.sourceBuild='scripts/corpus-rebuild.mjs';
   b.workflow='source-build';
 }
+lock.benchmarks.push(...replacements);
+lock.benchmarks.sort((a,b)=>settings.corpus.ids.indexOf(a.id)-settings.corpus.ids.indexOf(b.id));
+if(replacements.length)lock.policy=previous.policy;
 await writeFile(join(site,'corpora/upstream/sources.json'),JSON.stringify(lock,null,2)+'\n');
 console.log(`Retained ${files.length} source/build/fixture/license files for ${selected.length} selected upstream benchmarks at ${relative(site,root)}`);

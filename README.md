@@ -29,6 +29,18 @@ behind each result.
 > checks establish correctness for their specific contracts; official test
 > suites have separate coverage and results.
 
+## Main corpus without WASI
+
+The 166 main application algorithms run as core Wasm with no WASI or host-I/O
+imports. The 21 former CLI workloads have new, source-built library/runtime
+identities; [the mapping](corpora/nonwasi/README.md) states the retained algorithms
+and deliberate scope changes. Separate WASI feature/conformance tests are unchanged.
+
+Run `just corpus-main-build` to build all main sources, check correctness and
+imports, and refresh the inventory. `just corpus-main-check` rechecks the outputs;
+`just corpus-build-all` also builds the feature/component suites.
+See [source prerequisites and commands](corpora/README.md).
+
 ## Why wasm.fyi?
 
 - **Workload-specific comparisons.** Compare execution, compilation and memory

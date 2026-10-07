@@ -1,11 +1,12 @@
 // Build in an empty staging tree. Never populate outputs from release modules.
 import { readFile, writeFile, mkdir, copyFile, symlink, access, readdir, rename } from 'node:fs/promises';
 import { join, resolve, dirname, basename } from 'node:path';
-import { spawn, execFileSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { platform, arch } from 'node:os';
 import { randomUUID } from 'node:crypto';
-import { site, digest, config, exists } from './lib/wasmbench.mjs';
+import { site, digest, config, exists, command } from './lib/wasmbench.mjs';
 import { parseCorpusJSON } from './lib/corpus.mjs';
+import { assertMainCorpusContract } from './lib/main-corpus-contract.mjs';
 
 const settings=await config();
 if(process.version!==`v${settings.node.version}`||process.versions.v8!==settings.node.v8)throw Error('Source verification requires the pinned Node/V8 from wasmbench.config.json');
@@ -19,31 +20,44 @@ const sdkHost={ 'darwin-arm64':'arm64-macos','darwin-x64':'x86_64-macos','linux-
 const sdk=resolve(process.env.WASI_SDK || join(site,'.wasmbench/toolchains','wasi-sdk-34.0-'+sdkHost));
 const env={...process.env,WASI_SDK:sdk,WASI_SDK_PATH:sdk};
 // Prefer an installed rustup toolchain when Homebrew's standalone rustc is on
-// PATH. The benchmark has both wasm32-unknown-unknown and WASI Rust workloads;
-// the compiler must have both target libraries available.
+// PATH. Feature/component tools manage their separate WASI target libraries;
+// the main corpus compiler only needs the core target library.
 if(!env.RUSTC) {
   try {
     const candidate=command('rustup',['which','rustc']).toString().trim();
     const sysroot=command(candidate,['--print','sysroot']).toString().trim();
-    const targets=['wasm32-unknown-unknown','wasm32-wasip1'];
+    const targets=['wasm32-unknown-unknown'];
     if((await Promise.all(targets.map(target=>exists(join(sysroot,'lib/rustlib',target))))).every(Boolean))env.RUSTC=candidate;
   } catch {}
 }
 let currentSources=[];const artifactSources=new Map();
 const recipeSha256=digest(await readFile(join(site,'scripts/corpus-rebuild.mjs')));
 const sourcePorts=join(directory,'ports'),sourcePatches=join(directory,'patches');
-const buildInputs=[];
+const buildInputs=[],observedInputs=new Map();
 async function snapshot(from,to,relativePath) {
   await mkdir(to,{recursive:true});
   for(const entry of await readdir(from,{withFileTypes:true})) {
-    if(entry.name==='node_modules'||entry.name.startsWith('.'))continue;
+    if(['node_modules','target'].includes(entry.name)||entry.name.startsWith('.'))continue;
     const path=join(from,entry.name),dest=join(to,entry.name),name=join(relativePath,entry.name);
     if(entry.isDirectory())await snapshot(path,dest,name);
-    else if(entry.isFile()){const bytes=await readFile(path);await writeFile(dest,bytes);buildInputs.push({path:name,sha256:digest(bytes)});}
+    else if(entry.isFile()){const bytes=await readFile(path);await writeFile(dest,bytes);buildInputs.push({path:name,sha256:digest(bytes)});observedInputs.set(path,digest(bytes));}
   }
 }
 await snapshot(join(site,'corpora/upstream/ports'),sourcePorts,'ports');
 await snapshot(join(site,'corpora/upstream/patches'),sourcePatches,'patches');
+await snapshot(join(site,'corpora/nonwasi'),join(directory,'nonwasi'),'nonwasi');
+await writeFile(join(directory,'recipe.mjs'),await readFile(join(site,'scripts/corpus-rebuild.mjs')));
+for(const group of ['data','runtimes','tooling','text']) {
+  const name='nonwasi-'+group+'.mjs',bytes=await readFile(join(site,'scripts',name));
+  await writeFile(join(directory,name),bytes);buildInputs.push({path:name,sha256:digest(bytes)});
+  observedInputs.set(join(site,'scripts',name),digest(bytes));
+}
+observedInputs.set(join(site,'scripts/corpus-rebuild.mjs'),recipeSha256);
+const admission=await readFile(join(site,'scripts/lib/main-corpus-contract.mjs'));
+buildInputs.push({path:'lib/main-corpus-contract.mjs',sha256:digest(admission)});
+await mkdir(join(directory,'lib'),{recursive:true});
+await writeFile(join(directory,'lib/main-corpus-contract.mjs'),admission);
+observedInputs.set(join(site,'scripts/lib/main-corpus-contract.mjs'),digest(admission));
 await writeFile(join(directory,'inputs.json'),JSON.stringify({recipeSha256,retained:lock.files,contractsSha256:digest(await readFile(join(site,'corpora/upstream/contracts.json'))),buildInputs},null,2)+'\n');
 await mkdir(directory,{recursive:true});
 for(const file of lock.files){
@@ -84,26 +98,19 @@ async function archive(name,url,sha256,folder) {
   if(await access(patch).then(()=>true,error=>{if(error.code==='ENOENT')return false;throw error;}))await run('git',['apply',patch],{cwd:dir,env:{...env,GIT_CEILING_DIRECTORIES:dirname(dir)}});
   return dir;
 }
-const applicationSources={
-  'tree-list':['tree','https://github.com/Old-Man-Programmer/tree.git','d501b58ff9cbfd64272c8cbcad0bda36a3fada06',false],
-  'brotli-compress':['brotli','https://github.com/google/brotli.git','028fb5a23661f123017c060daa546b55cf4bde29',true],
-  'quickjs-script':['wasi-lab','https://github.com/saghul/wasi-lab.git','05d2c175afeed626187f792c9dd1a8142e11f95a',true],
-  'age-keygen-public':['age','https://github.com/FiloSottile/age.git','b74dce4cdbe35b5e5f66c06d9612b72f89028758',false],
-  'esbuild-minify':['esbuild','https://github.com/evanw/esbuild.git','f6058f8364fe7ab91ca57a83e02577ed74c9cae4',false]
-};
-const applicationArchives={
-  'jq-json-transform':['jq-1.8.2.tar.gz','https://github.com/jqlang/jq/releases/download/jq-1.8.2/jq-1.8.2.tar.gz','71b8d6e8f5fe81f6c6d0d110e3892251f6ce76ed095abd315e26e6e1193af3af','jq-1.8.2',true],
-  'xzdec-decompress':['xz-5.8.4.tar.xz','https://github.com/tukaani-project/xz/releases/download/v5.8.4/xz-5.8.4.tar.xz','4ce24038fd4221e0d13bc1a2de7a4db56e90b92b3bf75321f6c14be73f65de4b','xz-5.8.4',true],
-  'sqlite3-query':['sqlite.zip','https://www.sqlite.org/2026/sqlite-amalgamation-3530400.zip','1e71ddf93849c6a6ecf58b827c0692073d2dd7ee40196158068f7b29f422e87d','sqlite-amalgamation-3530400',false]
-};
-const built=new Set(),outcomes=[],suite=[];
+const built=new Set(),outcomes=[],suite=[],replacementContracts=new Map();
 for(const b of lock.benchmarks.filter(b=>requested.includes(b.id))) {
   const artifact=join(tree,'corpus',b.artifact);
   try {
     if(!built.has(b.artifact)) {
       env.SOURCE_EDITS='0';currentSources=[];
       await mkdir(dirname(artifact),{recursive:true});
-      if(b.artifact.includes('/synthetic/')||b.id==='linked_list') {
+      if(b.replaces) {
+        const builder=await import('./nonwasi-'+b.group+'.mjs');
+        const contract=await builder.build({id:b.replaces.split('/')[1],artifact,checkout,archive,run,sdk,tree,sourcePorts});
+        if(contract.id.split('/')[1]!==b.id)throw Error('Replacement builder returned the wrong workload: '+contract.id);
+        replacementContracts.set(b.artifact,contract);
+      } else if(b.artifact.includes('/synthetic/')||b.id==='linked_list') {
         await run('wat2wasm',[join(tree,'corpus/sources/wat',b.id+'.wat'),'-o',artifact]);
       } else if(b.artifact.includes('/polybench/')) {
         currentSources.push({repository:'https://github.com/JamesMenetrey/webassembly-polybench-c.git',revision:'5474c59fe88f4e36ba968e8f8c4ac913ee83f0d0'});
@@ -143,76 +150,25 @@ for(const b of lock.benchmarks.filter(b=>requested.includes(b.id))) {
         await symlink(join(tools,'node_modules'),join(dir,'node_modules'),'dir');
         await copyFile(join(tree,'corpus/sources/assemblyscript',b.id+'.ts'),join(dir,'assembly/wago-bench.ts'));
         await run(process.execPath,[join(tools,'node_modules/assemblyscript/bin/asc.js'),'assembly/wago-bench.ts','-o',artifact,'-O3','--noAssert','--uncheckedBehavior','always','--exportStart','_initialize','--enable','simd','--enable','bulk-memory',...(json?['--transform','./transform','--runtime','incremental','--exportRuntime']:['--runtime','stub'])],{cwd:dir,env:{...env,JSON_MODE:'SIMD'}});
-      } else if(b.id==='clang-cpp-kernels') {
-        const dir=await checkout('llvm','https://github.com/binji/llvm-project.git','5dc09c94393510bc8d042a9f07382b53e845c0f2');
-        await run('bash',[join(sourcePorts,'clang/build.sh'),dir,artifact]);
-      } else if(['ruby-buckets','yosys-counter'].includes(b.id)) {
-        const ruby=b.id==='ruby-buckets',name=ruby?'ruby':'yosys';
-        const dir=await checkout(name,ruby?'https://github.com/ruby/ruby.git':'https://github.com/YoWASP/yosys.git',ruby?'e51014f9c05aa65cbf203442d37fef7c12390015':'d0ee6801cc45748a8630a04723eb290fcff1a7bf');
-        if(!ruby)await run('git',['submodule','update','--init','--depth','1','yosys-src'],{cwd:dir});
-        const ports=join(sourcePorts,'legacy');
-        if(!built.has('legacy-image')) {await run('docker',['build','--platform','linux/amd64','-t','wasm-fyi-corpus-legacy-sdk19',ports]);built.add('legacy-image');}
-        await run('docker',['run','--rm','--platform','linux/amd64',ruby?'--memory=4g':'--memory=12g','--cpus=2','-v',dir+':/src','-v',ports+':/recipes:ro','-w','/src','wasm-fyi-corpus-legacy-sdk19','bash','/recipes/'+name+'.sh']);
-        await copyFile(join(dir,ruby?'build-wasi/ruby':'yosys-build/yosys.wasm'),artifact);
-      } else if(b.id==='ecppll-clock') {
-        const dir=await checkout('prjtrellis','https://github.com/YosysHQ/prjtrellis.git','35f5affe10a2995bdace49e23fcbafb5723c5347');
-        const boost=await archive('boost_1_76_0.tar.bz2','https://archives.boost.io/release/1.76.0/source/boost_1_76_0.tar.bz2','f0397ba6e982c4450f27bf32a2a83292aba035b827a5623a14636ea583318c41','boost_1_76_0');
-        await copyFile(join(sourcePorts,'ecppll/wasmexcept.hpp'),join(dir,'libtrellis/tools/wasmexcept.hpp'));
-        const version=join(tree,'.tmp/ecppll-version.cpp');await writeFile(version,'#include <string>\nextern const std::string git_describe_str = "35f5affe10a2995bdace49e23fcbafb5723c5347";\n');
-                const sources=(await readdir(join(boost,'libs/program_options/src'))).filter(f=>f.endsWith('.cpp')).map(f=>join(boost,'libs/program_options/src',f));
-        await run(join(sdk,'bin/clang++'),['-std=c++14','-O2','-fexceptions','-DBOOST_NO_EXCEPTIONS','-DBOOST_NO_CXX11_HDR_MUTEX','-DBOOST_SP_NO_ATOMIC_ACCESS','-DBOOST_AC_DISABLE_THREADS','-I'+boost,...sources,join(dir,'libtrellis/tools/ecppll.cpp'),version,'-o',artifact]);
-      } else if(b.id==='swift-format-source') {
-        const dir=await checkout('swift-format','https://github.com/kkebo/swift-format.git','92097d54ac3be47738fe77e38c918e9aabce0302');
-        await run('bash',[join(sourcePorts,'swift-format/build.sh'),dir,artifact]);
-      } else if(applicationSources[b.id]||applicationArchives[b.id]) {
-        const item=applicationSources[b.id]||applicationArchives[b.id];
-        const dir=applicationSources[b.id]?await checkout(...item.slice(0,3)):await archive(...item.slice(0,4));
-        const args=[join(tree,b.recipe),dir];if(item.at(-1))args.push(join(tree,'.tmp/build-'+b.id));
-        if(env.SOURCE_EDITS==='1') {
-          const path=join(tree,b.recipe);const original=await readFile(path,'utf8');
-          const guard='if [[ -n "$(git -C "$source_dir" status --porcelain)" ]]; then';
-          await writeFile(path,original.replace(guard,'if [[ "${SOURCE_EDITS:-0}" != 1 ]] && [[ -n "$(git -C "$source_dir" status --porcelain)" ]]; then'));
-        }
-        await run('bash',args);
-      } else if(b.id==='lua-cli-buckets') {
-        const dir=await archive('lua-5.4.6.tar.gz','https://www.lua.org/ftp/lua-5.4.6.tar.gz','7d5ea1b9cb6aa0b59ca3dde1c6adcb57ef83a1ba8e5432c0ecd06bf439b3ad88','lua-5.4.6');
-        const port=join(sourcePorts,'lua');const shim=join(tree,'.tmp/lua-compat.o');
-        await run(join(sdk,'bin/clang'),['-O2','-c',join(port,'compat.c'),'-o',shim]);
-        await run('make',['-C',join(dir,'src'),'lua',`CC=${join(sdk,'bin/clang')}`,`AR=${join(sdk,'bin/llvm-ar')} rcu`,`RANLIB=${join(sdk,'bin/llvm-ranlib')}`,
-          `MYCFLAGS=-include ${join(port,'compat.h')} -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_PROCESS_CLOCKS -mllvm -wasm-enable-sjlj`,
-          `MYLDFLAGS=${shim} -lwasi-emulated-signal -lwasi-emulated-process-clocks -lsetjmp`]);
-        // SDK 34's SjLj support library emits the retired EH encoding. Convert
-        // that output to standardized try_table/exnref without optimizing it.
-        const wasmOpt=env.WASM_OPT || 'wasm-opt';
-        const version=execFileSync(wasmOpt,['--version'],{encoding:'utf8'}).trim();
-        if(version!=='wasm-opt version 130')throw Error('Lua requires Binaryen wasm-opt version 130');
-        const legacy=join(dir,'src/lua');
-        const args=['--translate-to-exnref','--emit-exnref','--all-features',legacy,'-o',artifact];
-        await run(wasmOpt,args);
-        currentSources.push({name:'binaryen',repository:'https://github.com/WebAssembly/binaryen',revision:'version_130',version,inputSha256:digest(await readFile(legacy)),flags:args.slice(0,3)});
-      } else if(b.id==='json2csv-people') {
-        const dir=await checkout('json2csv','https://github.com/jehiah/json2csv.git','0bd0bb4e06a282ff4c9ec979a52159c379bf9652');
-        await run('go',['build','-mod=readonly','-trimpath','-o',artifact,'.'],{cwd:dir,env:{...env,CGO_ENABLED:'0',GOOS:'wasip1',GOARCH:'wasm'}});
-      } else if(b.id.startsWith('coreutils-')||b.id==='ripgrep-source') {
-        const core=b.id.startsWith('coreutils-');
-        const dir=await checkout(core?'coreutils':'ripgrep',core?'https://github.com/uutils/coreutils.git':'https://github.com/BurntSushi/ripgrep.git',core?'28b6856d7b215bf844b4223589cb54ade84f5223':'4649aa9700619f94cf9c66876e9549d83420e16c');
-        await run(process.env.CARGO || 'cargo',['build','--locked','--release','--target','wasm32-wasip1','-j','2',...(core?['--no-default-features','--features','feat_wasm']:[])],{cwd:dir,env:{...env,RUSTFLAGS:'-C linker='+join(sdk,'bin/wasm-ld')}});
-        await copyFile(join(dir,'target/wasm32-wasip1/release',core?'coreutils.wasm':'rg.wasm'),artifact);
-      } else if(['icemulti-image','icepack-pack'].includes(b.id)) {
-        const dir=await checkout('icestorm-'+b.id,'https://github.com/YosysHQ/icestorm.git','45f5e5f3889afb07907bab439cf071478ee5a2a5');
-        const name=b.id==='icemulti-image'?'icemulti':'icepack';
-        await run(join(sdk,'bin/clang++'),['-O2','-fno-exceptions',join(dir,name,name+'.cc'),'-o',artifact]);
       } else throw Error('Source build not implemented yet: '+b.id);
       // Reject absent, empty, or non-Wasm output even if a recipe exited zero.
       const data=await readFile(artifact);if(data.subarray(0,8).toString('hex')!=='0061736d01000000')throw Error('Recipe did not produce a core Wasm module');
-      artifactSources.set(b.artifact,currentSources.length?currentSources:[{repository:lock.repository,revision:lock.revision,recipe:b.recipe}]);
+      const replacement=replacementContracts.get(b.artifact);
+      const replacementSource=typeof replacement?.source==='string'?{path:replacement.source}:replacement?.source || {};
+      artifactSources.set(b.artifact,currentSources.length?currentSources:replacement?[{...replacementSource,recipe:'scripts/nonwasi-'+b.group+'.mjs',packages:replacement.provenance?.upstreamPackages,cargoLockSha256:replacement.provenance?.recipe?.cargoLockSha256}]:[{repository:lock.repository,revision:lock.revision,recipe:b.recipe}]);
       built.add(b.artifact);
     }
-    const w=structuredClone(contracts.find(w=>w.id.split('/')[1]===b.id));
+    const w=structuredClone(replacementContracts.get(b.artifact) || contracts.find(w=>w.id.split('/')[1]===b.id));
     if(!w)throw Error('Retained correctness contract missing');
+    const expected=contracts.find(item=>item.id===w.id);
+    if(b.replaces && expected)for(const key of ['abi','export','args','reset','initialize','oracle']) {
+      if(JSON.stringify(w[key])!==JSON.stringify(expected[key]))throw Error('Replacement contract drift: '+w.id+' '+key);
+    }
     w.artifact=artifact;w.sha256=digest(await readFile(artifact));
+    assertMainCorpusContract(w,await readFile(artifact));
     for(const f of Object.values(w.command?.files||{}))f.path=resolve(site,f.path);
     const inputs=artifactSources.get(b.artifact);
+    if(b.replaces)w.provenance.upstreamSource=structuredClone(w.source || {packages:w.provenance.upstreamPackages});
     w.source=inputs[0].repository || inputs[0].url || inputs[0].name || inputs[0].recipe || b.recipe;w.generator='wasm-fyi-source-build-v1';
     w.provenance.rebuild={sources:artifactSources.get(b.artifact),recipe:'scripts/corpus-rebuild.mjs',recipeSha256,inputsSha256:digest(await readFile(join(directory,'inputs.json'))),originalRecipe:b.recipe};
     const resultFile=join(directory,b.id+'.check.json');
@@ -224,6 +180,9 @@ for(const b of lock.benchmarks.filter(b=>requested.includes(b.id))) {
   } catch(error){outcomes.push({id:b.id,status:'failed',reason:error.message});console.error(b.id,error.message);}
   await writeFile(join(directory,'report.json'),JSON.stringify({schema:1,requested,outcomes},null,2)+'\n');
 }
+// Helpers read local wrappers by their source-relative paths. Refuse to accept
+// a build if an editor changed any snapshotted input while it was compiling.
+for(const [path,sha256] of observedInputs)if(digest(await readFile(path))!==sha256)throw Error('Build input changed during compilation: '+path);
 await writeFile(join(directory,'suite.json'),JSON.stringify(suite,null,2)+'\n');
 await writeFile(join(site,'.wasmbench/latest-source-build.json'),JSON.stringify({directory})+'\n');
 console.log(`Source build: ${suite.length}/${requested.length} verified; ${directory}`);

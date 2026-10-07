@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "source": "Independent native upstream/library references; see PROVENANCE.md",
+  "icemulti": {
+    "length": 45683,
+    "sha256": "cc1f7493f6812904fef129845c4f838ff410cda07f067c72eb2f0f7587321214",
+    "fnv1a32": 3294422427,
+    "first_header_hex": "7eaa997e92000044030050008200000108000000000000000000000000000000",
+    "image_offsets": [4096,8192,20480,28672],
+    "image_lengths": [1021,8193,4099,17011]
+  },
+  "icepack": {
+    "length": 32216,
+    "sha256": "c4d07ab8273fb71b133e0c6fdd0d7c7bcf8854505ba38e2d4ed3942b619832e4",
+    "fnv1a32": 2918599611,
+    "first_32_bytes_hex": "7eaa997e5101010592002162014b72009082000011000101c93649b24d926c93",
+    "crc_command_and_trailer_hex": "224fa6010600",
+    "crc16": "4fa6"
+  },
+  "pll": {
+    "clock_pairs_mhz": [[12,48],[20,30],[45,30],[100,400],[70,40],[12,96],[90,50],[43,86],[25,74.25],[48,148.5],[27,65]],
+    "fields": ["refclk_div","feedback_div","output_div","primary_cphase"],
+    "records": [[1,4,12,5],[2,3,20,9],[3,2,20,9],[1,4,1,0],[7,4,15,7],[1,8,6,2],[9,5,12,5],[1,2,7,3],[1,3,8,4],[11,34,4,1],[5,12,9,4]],
+    "fnv1a32": 1792084035
+  },
+  "abc": {"fnv1a32": 1213771677,"functions":12,"assignments_checked_each":1024},
+  "swift": {"fnv1a32":664666373,"parses":24},
+  "oxc": {"fnv1a32":3819475620,"input_bytes":19342,"output_bytes":6871,"javascript_result":1414016970},
+  "wasm_tools": {"fnv1a32":1659816563,"output_bytes":7951,"kernel_arguments":[123,37],"kernel_result":-1840500015}
+}

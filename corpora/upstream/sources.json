@@ -3,364 +3,322 @@
   "repository": "https://github.com/wago-org/wago",
   "revision": "9f01d145d54ac7ab458b6b2f6047db90a757410a",
   "upstreamCatalogSha256": "e02b20f2ccf9db3bc4649270c8d8eeff2b29bdb6acb6ecb47fab2697cd811a9f",
-  "policy": "Retained upstream wrappers, original WAT/Rust/AssemblyScript sources, fixtures and licenses. The historical recipes remain as provenance; scripts/corpus-rebuild.mjs fetches pinned source revisions and compiles every selected benchmark in an empty staging tree, then checks the retained independent contracts.",
+  "policy": "Selected main corpus contains core modules only: 43 retained upstream core workloads plus 21 new non-WASI replacements. Retained historical CLI source files are provenance only, never active build recipes. The source build pins and records all local and fetched inputs, verifies independent oracles, and rejects WASI/host I/O imports.",
   "benchmarks": [
     {
-      "id": "ruby-buckets",
-      "artifact": "workloads/applications/ruby/ruby.wasm",
+      "id": "mruby-memory-buckets",
+      "artifact": "workloads/nonwasi/mruby-memory-buckets.wasm",
       "source": {
-        "repository": "https://github.com/vmware-labs/webassembly-language-runtimes/releases/tag/ruby%2F3.2.2%2B20230714-11be424",
-        "revision": "ruby/3.2.2+20230714-11be424",
-        "revision_date": "2023-07-14",
-        "license": "Apache-2.0 AND (BSD-2-Clause OR Ruby)",
-        "toolchain": "WLR slim WASI release",
-        "toolchain_version": "3.2.2"
+        "path": "corpora/nonwasi/runtimes",
+        "recipe": "scripts/nonwasi-runtimes.mjs",
+        "policy": "Pinned upstream engines and independent references; see recipe and per-build input receipt."
       },
-      "license": "Apache-2.0 AND (BSD-2-Clause OR Ruby)",
+      "license": "See source notices and built contract",
       "recipe": null,
-      "historicalWorkflow": "release-artifact-only",
       "sourceBuild": "scripts/corpus-rebuild.mjs",
-      "workflow": "source-build"
+      "workflow": "source-build",
+      "replaces": "wago/ruby-buckets",
+      "group": "runtimes"
     },
     {
-      "id": "clang-cpp-kernels",
-      "artifact": "workloads/applications/clang/clang.wasm",
+      "id": "wasm-tools-assemble-validate",
+      "artifact": "workloads/nonwasi/wasm-tools-assemble-validate.wasm",
       "source": {
-        "repository": "https://github.com/binji/wasm-clang",
-        "revision": "648c4a89997a351eef75cdaec3ef5b89d4937dec",
-        "revision_date": "2023-12-07",
-        "license": "Apache-2.0 WITH LLVM-exception",
-        "toolchain": "WABT import rename",
-        "toolchain_version": "Clang 8.0.1"
+        "path": "corpora/nonwasi/tooling",
+        "recipe": "scripts/nonwasi-tooling.mjs",
+        "policy": "Pinned upstream engines and independent references; see recipe and per-build input receipt."
       },
-      "license": "Apache-2.0 WITH LLVM-exception",
-      "recipe": "corpus/workloads/applications/clang/build.sh",
-      "historicalWorkflow": "fetch-or-transform",
-      "sourceBuild": "scripts/corpus-rebuild.mjs",
-      "workflow": "source-build"
-    },
-    {
-      "id": "lua-cli-buckets",
-      "artifact": "workloads/applications/lua/lua.wasm",
-      "source": {
-        "repository": "https://github.com/nalgeon/lua-wasi",
-        "revision": "@antonz/lua-wasi 5.4.6",
-        "revision_date": "2024-01-03",
-        "license": "MIT",
-        "toolchain": "wasienv plus WABT import rename",
-        "toolchain_version": "Lua 5.4.6"
-      },
-      "license": "MIT",
-      "recipe": "corpus/workloads/applications/lua/build.sh",
-      "historicalWorkflow": "fetch-or-transform",
-      "sourceBuild": "scripts/corpus-rebuild.mjs",
-      "workflow": "source-build"
-    },
-    {
-      "id": "coreutils-sort",
-      "artifact": "workloads/applications/coreutils/coreutils.wasm",
-      "source": {
-        "repository": "https://github.com/uutils/coreutils/releases/tag/0.10.0",
-        "revision": "0.10.0",
-        "revision_date": "2026-08-05",
-        "license": "MIT",
-        "toolchain": "upstream wasm32-wasip1 release",
-        "toolchain_version": "0.10.0"
-      },
-      "license": "MIT",
+      "license": "See source notices and built contract",
       "recipe": null,
-      "historicalWorkflow": "release-artifact-only",
       "sourceBuild": "scripts/corpus-rebuild.mjs",
-      "workflow": "source-build"
+      "workflow": "source-build",
+      "replaces": "wago/clang-cpp-kernels",
+      "group": "tooling"
     },
     {
-      "id": "coreutils-base64",
-      "artifact": "workloads/applications/coreutils/coreutils.wasm",
+      "id": "lua-memory-buckets",
+      "artifact": "workloads/nonwasi/lua-memory-buckets.wasm",
       "source": {
-        "repository": "https://github.com/uutils/coreutils/releases/tag/0.10.0",
-        "revision": "0.10.0",
-        "revision_date": "2026-08-05",
-        "license": "MIT",
-        "toolchain": "upstream wasm32-wasip1 release",
-        "toolchain_version": "0.10.0"
+        "path": "corpora/nonwasi/runtimes",
+        "recipe": "scripts/nonwasi-runtimes.mjs",
+        "policy": "Pinned upstream engines and independent references; see recipe and per-build input receipt."
       },
-      "license": "MIT",
+      "license": "See source notices and built contract",
       "recipe": null,
-      "historicalWorkflow": "release-artifact-only",
       "sourceBuild": "scripts/corpus-rebuild.mjs",
-      "workflow": "source-build"
+      "workflow": "source-build",
+      "replaces": "wago/lua-cli-buckets",
+      "group": "runtimes"
     },
     {
-      "id": "coreutils-wc",
-      "artifact": "workloads/applications/coreutils/coreutils.wasm",
+      "id": "rusttext-sort",
+      "artifact": "workloads/nonwasi/rusttext-sort.wasm",
       "source": {
-        "repository": "https://github.com/uutils/coreutils/releases/tag/0.10.0",
-        "revision": "0.10.0",
-        "revision_date": "2026-08-05",
-        "license": "MIT",
-        "toolchain": "upstream wasm32-wasip1 release",
-        "toolchain_version": "0.10.0"
+        "path": "corpora/nonwasi/text",
+        "recipe": "scripts/nonwasi-text.mjs",
+        "policy": "Pinned upstream engines and independent references; see recipe and per-build input receipt."
       },
-      "license": "MIT",
+      "license": "See source notices and built contract",
       "recipe": null,
-      "historicalWorkflow": "release-artifact-only",
       "sourceBuild": "scripts/corpus-rebuild.mjs",
-      "workflow": "source-build"
+      "workflow": "source-build",
+      "replaces": "wago/coreutils-sort",
+      "group": "text"
     },
     {
-      "id": "ripgrep-source",
-      "artifact": "workloads/applications/ripgrep/rg.wasm",
+      "id": "base64-rfc4648",
+      "artifact": "workloads/nonwasi/base64-rfc4648.wasm",
       "source": {
-        "repository": "https://github.com/holzschu/a-Shell-commands/releases/tag/0.1",
-        "revision": "rg asset 2025-03-15",
-        "revision_date": "2025-03-15",
-        "license": "MIT OR Unlicense",
-        "toolchain": "a-Shell release binary",
-        "toolchain_version": "ripgrep 14.1.1"
+        "path": "corpora/nonwasi/text",
+        "recipe": "scripts/nonwasi-text.mjs",
+        "policy": "Pinned upstream engines and independent references; see recipe and per-build input receipt."
       },
-      "license": "MIT OR Unlicense",
+      "license": "See source notices and built contract",
       "recipe": null,
-      "historicalWorkflow": "release-artifact-only",
       "sourceBuild": "scripts/corpus-rebuild.mjs",
-      "workflow": "source-build"
+      "workflow": "source-build",
+      "replaces": "wago/coreutils-base64",
+      "group": "text"
     },
     {
-      "id": "yosys-counter",
-      "artifact": "workloads/applications/yosys/yosys.wasm",
+      "id": "unicode-wordcount",
+      "artifact": "workloads/nonwasi/unicode-wordcount.wasm",
       "source": {
-        "repository": "https://pypi.org/project/yowasp-yosys/0.32.0.0.post560/",
-        "revision": "0.32.0.0.post560",
-        "revision_date": "2023-08-08",
-        "license": "ISC",
-        "toolchain": "YoWASP wheel",
-        "toolchain_version": "0.32.0.0.post560"
+        "path": "corpora/nonwasi/text",
+        "recipe": "scripts/nonwasi-text.mjs",
+        "policy": "Pinned upstream engines and independent references; see recipe and per-build input receipt."
       },
-      "license": "ISC",
+      "license": "See source notices and built contract",
       "recipe": null,
-      "historicalWorkflow": "release-artifact-only",
       "sourceBuild": "scripts/corpus-rebuild.mjs",
-      "workflow": "source-build"
+      "workflow": "source-build",
+      "replaces": "wago/coreutils-wc",
+      "group": "text"
     },
     {
-      "id": "icemulti-image",
-      "artifact": "workloads/applications/icemulti/icemulti.wasm",
+      "id": "regex-source-scan",
+      "artifact": "workloads/nonwasi/regex-source-scan.wasm",
       "source": {
-        "repository": "https://pypi.org/project/yowasp-nextpnr-ice40/0.5.0.0.post399/",
-        "revision": "0.5.0.0.post399",
-        "revision_date": "2023-02-07",
-        "license": "ISC",
-        "toolchain": "YoWASP wheel",
-        "toolchain_version": "0.5.0.0.post399"
+        "path": "corpora/nonwasi/text",
+        "recipe": "scripts/nonwasi-text.mjs",
+        "policy": "Pinned upstream engines and independent references; see recipe and per-build input receipt."
       },
-      "license": "ISC",
+      "license": "See source notices and built contract",
       "recipe": null,
-      "historicalWorkflow": "release-artifact-only",
       "sourceBuild": "scripts/corpus-rebuild.mjs",
-      "workflow": "source-build"
+      "workflow": "source-build",
+      "replaces": "wago/ripgrep-source",
+      "group": "text"
     },
     {
-      "id": "icepack-pack",
-      "artifact": "workloads/applications/icepack/icepack.wasm",
+      "id": "abc-isop-minimize",
+      "artifact": "workloads/nonwasi/abc-isop-minimize.wasm",
       "source": {
-        "repository": "https://pypi.org/project/yowasp-nextpnr-ice40/0.5.0.0.post399/",
-        "revision": "0.5.0.0.post399",
-        "revision_date": "2023-02-07",
-        "license": "ISC",
-        "toolchain": "YoWASP wheel",
-        "toolchain_version": "0.5.0.0.post399"
+        "path": "corpora/nonwasi/tooling",
+        "recipe": "scripts/nonwasi-tooling.mjs",
+        "policy": "Pinned upstream engines and independent references; see recipe and per-build input receipt."
       },
-      "license": "ISC",
+      "license": "See source notices and built contract",
       "recipe": null,
-      "historicalWorkflow": "release-artifact-only",
       "sourceBuild": "scripts/corpus-rebuild.mjs",
-      "workflow": "source-build"
+      "workflow": "source-build",
+      "replaces": "wago/yosys-counter",
+      "group": "tooling"
     },
     {
-      "id": "ecppll-clock",
-      "artifact": "workloads/applications/ecppll/ecppll.wasm",
+      "id": "icestorm-multiboot-memory",
+      "artifact": "workloads/nonwasi/icestorm-multiboot-memory.wasm",
       "source": {
-        "repository": "https://pypi.org/project/yowasp-nextpnr-ecp5/0.5.0.0.post399/",
-        "revision": "0.5.0.0.post399",
-        "revision_date": "2023-02-07",
-        "license": "ISC",
-        "toolchain": "YoWASP wheel",
-        "toolchain_version": "0.5.0.0.post399"
+        "path": "corpora/nonwasi/tooling",
+        "recipe": "scripts/nonwasi-tooling.mjs",
+        "policy": "Pinned upstream engines and independent references; see recipe and per-build input receipt."
       },
-      "license": "ISC",
+      "license": "See source notices and built contract",
       "recipe": null,
-      "historicalWorkflow": "release-artifact-only",
       "sourceBuild": "scripts/corpus-rebuild.mjs",
-      "workflow": "source-build"
+      "workflow": "source-build",
+      "replaces": "wago/icemulti-image",
+      "group": "tooling"
     },
     {
-      "id": "json2csv-people",
-      "artifact": "workloads/applications/json2csv/json2csv.wasm",
+      "id": "icestorm-bitstream-memory",
+      "artifact": "workloads/nonwasi/icestorm-bitstream-memory.wasm",
       "source": {
-        "repository": "https://github.com/holzschu/a-Shell-commands/releases/tag/0.1",
-        "revision": "asset-68082085",
-        "revision_date": "2022-06-10",
-        "license": "MIT",
-        "toolchain": "upstream a-Shell release artifact",
-        "toolchain_version": "0.1"
+        "path": "corpora/nonwasi/tooling",
+        "recipe": "scripts/nonwasi-tooling.mjs",
+        "policy": "Pinned upstream engines and independent references; see recipe and per-build input receipt."
       },
-      "license": "MIT",
+      "license": "See source notices and built contract",
       "recipe": null,
-      "historicalWorkflow": "release-artifact-only",
       "sourceBuild": "scripts/corpus-rebuild.mjs",
-      "workflow": "source-build"
+      "workflow": "source-build",
+      "replaces": "wago/icepack-pack",
+      "group": "tooling"
     },
     {
-      "id": "tree-list",
-      "artifact": "workloads/applications/tree/tree.wasm",
+      "id": "trellis-pll-search",
+      "artifact": "workloads/nonwasi/trellis-pll-search.wasm",
       "source": {
-        "repository": "https://github.com/Old-Man-Programmer/tree.git",
-        "revision": "d501b58ff9cbfd64272c8cbcad0bda36a3fada06",
-        "revision_date": "2024-11-25",
-        "license": "GPL-2.0-or-later",
-        "toolchain": "wasi-sdk",
-        "toolchain_version": "34.0"
+        "path": "corpora/nonwasi/tooling",
+        "recipe": "scripts/nonwasi-tooling.mjs",
+        "policy": "Pinned upstream engines and independent references; see recipe and per-build input receipt."
       },
-      "license": "GPL-2.0-or-later",
-      "recipe": "corpus/workloads/applications/tree/build.sh",
-      "historicalWorkflow": "source-build",
+      "license": "See source notices and built contract",
+      "recipe": null,
       "sourceBuild": "scripts/corpus-rebuild.mjs",
-      "workflow": "source-build"
+      "workflow": "source-build",
+      "replaces": "wago/ecppll-clock",
+      "group": "tooling"
     },
     {
-      "id": "brotli-compress",
-      "artifact": "workloads/applications/brotli/brotli.wasm",
+      "id": "serde-json2csv",
+      "artifact": "workloads/nonwasi/serde-json2csv.wasm",
       "source": {
-        "repository": "https://github.com/google/brotli.git",
-        "revision": "028fb5a23661f123017c060daa546b55cf4bde29",
-        "revision_date": "2025-10-27",
-        "license": "MIT",
-        "toolchain": "wasi-sdk",
-        "toolchain_version": "34.0"
+        "path": "corpora/nonwasi/text",
+        "recipe": "scripts/nonwasi-text.mjs",
+        "policy": "Pinned upstream engines and independent references; see recipe and per-build input receipt."
       },
-      "license": "MIT",
-      "recipe": "corpus/workloads/applications/brotli/build.sh",
-      "historicalWorkflow": "source-build",
+      "license": "See source notices and built contract",
+      "recipe": null,
       "sourceBuild": "scripts/corpus-rebuild.mjs",
-      "workflow": "source-build"
+      "workflow": "source-build",
+      "replaces": "wago/json2csv-people",
+      "group": "text"
     },
     {
-      "id": "jq-json-transform",
-      "artifact": "workloads/applications/jq/jq.wasm",
+      "id": "zip-directory-extract",
+      "artifact": "workloads/nonwasi/zip-directory-extract.wasm",
       "source": {
-        "repository": "https://github.com/jqlang/jq.git",
-        "revision": "34f7186b86743a083a589741b6cea95293524108",
-        "revision_date": "2026-06-20",
-        "license": "MIT AND BSD-2-Clause",
-        "toolchain": "wasi-sdk",
-        "toolchain_version": "34.0"
+        "path": "corpora/nonwasi/text",
+        "recipe": "scripts/nonwasi-text.mjs",
+        "policy": "Pinned upstream engines and independent references; see recipe and per-build input receipt."
       },
-      "license": "MIT AND BSD-2-Clause",
-      "recipe": "corpus/workloads/applications/jq/build.sh",
-      "historicalWorkflow": "source-build",
+      "license": "See source notices and built contract",
+      "recipe": null,
       "sourceBuild": "scripts/corpus-rebuild.mjs",
-      "workflow": "source-build"
+      "workflow": "source-build",
+      "replaces": "wago/tree-list",
+      "group": "text"
     },
     {
-      "id": "age-keygen-public",
-      "artifact": "workloads/applications/age/age-keygen.wasm",
+      "id": "brotli-memory-roundtrip",
+      "artifact": "workloads/nonwasi/brotli-memory-roundtrip.wasm",
       "source": {
-        "repository": "https://github.com/FiloSottile/age.git",
-        "revision": "b74dce4cdbe35b5e5f66c06d9612b72f89028758",
-        "revision_date": "2026-08-29",
-        "license": "BSD-3-Clause",
-        "toolchain": "go",
-        "toolchain_version": "1.27.0"
+        "path": "corpora/nonwasi/data",
+        "recipe": "scripts/nonwasi-data.mjs",
+        "policy": "Pinned upstream engines and independent references; see recipe and per-build input receipt."
       },
-      "license": "BSD-3-Clause",
-      "recipe": "corpus/workloads/applications/age/build.sh",
-      "historicalWorkflow": "source-build",
+      "license": "See source notices and built contract",
+      "recipe": null,
       "sourceBuild": "scripts/corpus-rebuild.mjs",
-      "workflow": "source-build"
+      "workflow": "source-build",
+      "replaces": "wago/brotli-compress",
+      "group": "data"
     },
     {
-      "id": "xzdec-decompress",
-      "artifact": "workloads/applications/xzdec/xzdec.wasm",
+      "id": "jaq-json-query",
+      "artifact": "workloads/nonwasi/jaq-json-query.wasm",
       "source": {
-        "repository": "https://github.com/tukaani-project/xz.git",
-        "revision": "d3e650e63c110e830fd5391e7f8b45df0b91d3da",
-        "revision_date": "2026-09-09",
-        "license": "0BSD",
-        "toolchain": "wasi-sdk",
-        "toolchain_version": "34.0"
+        "path": "corpora/nonwasi/text",
+        "recipe": "scripts/nonwasi-text.mjs",
+        "policy": "Pinned upstream engines and independent references; see recipe and per-build input receipt."
       },
-      "license": "0BSD",
-      "recipe": "corpus/workloads/applications/xzdec/build.sh",
-      "historicalWorkflow": "source-build",
+      "license": "See source notices and built contract",
+      "recipe": null,
       "sourceBuild": "scripts/corpus-rebuild.mjs",
-      "workflow": "source-build"
+      "workflow": "source-build",
+      "replaces": "wago/jq-json-transform",
+      "group": "text"
     },
     {
-      "id": "sqlite3-query",
-      "artifact": "workloads/applications/sqlite3/sqlite3.wasm",
+      "id": "x25519-public",
+      "artifact": "workloads/nonwasi/x25519-public.wasm",
       "source": {
-        "repository": "https://www.sqlite.org/2026/sqlite-amalgamation-3530400.zip",
-        "revision": "3.53.4",
-        "revision_date": "2026-07-24",
-        "license": "Public-Domain",
-        "toolchain": "wasi-sdk",
-        "toolchain_version": "34.0"
+        "path": "corpora/nonwasi/text",
+        "recipe": "scripts/nonwasi-text.mjs",
+        "policy": "Pinned upstream engines and independent references; see recipe and per-build input receipt."
       },
-      "license": "Public-Domain",
-      "recipe": "corpus/workloads/applications/sqlite3/build.sh",
-      "historicalWorkflow": "source-build",
+      "license": "See source notices and built contract",
+      "recipe": null,
       "sourceBuild": "scripts/corpus-rebuild.mjs",
-      "workflow": "source-build"
+      "workflow": "source-build",
+      "replaces": "wago/age-keygen-public",
+      "group": "text"
     },
     {
-      "id": "quickjs-script",
-      "artifact": "workloads/applications/quickjs/qjs.wasm",
+      "id": "xz-memory-decode",
+      "artifact": "workloads/nonwasi/xz-memory-decode.wasm",
       "source": {
-        "repository": "https://github.com/saghul/wasi-lab.git",
-        "revision": "05d2c175afeed626187f792c9dd1a8142e11f95a",
-        "revision_date": "2019-10-25",
-        "license": "MIT",
-        "toolchain": "wasi-sdk",
-        "toolchain_version": "34.0"
+        "path": "corpora/nonwasi/data",
+        "recipe": "scripts/nonwasi-data.mjs",
+        "policy": "Pinned upstream engines and independent references; see recipe and per-build input receipt."
       },
-      "license": "MIT",
-      "recipe": "corpus/workloads/applications/quickjs/build.sh",
-      "historicalWorkflow": "source-build",
+      "license": "See source notices and built contract",
+      "recipe": null,
       "sourceBuild": "scripts/corpus-rebuild.mjs",
-      "workflow": "source-build"
+      "workflow": "source-build",
+      "replaces": "wago/xzdec-decompress",
+      "group": "data"
     },
     {
-      "id": "swift-format-source",
-      "artifact": "workloads/applications/swift-format/swift-format.wasm",
+      "id": "sqlite-memory-query",
+      "artifact": "workloads/nonwasi/sqlite-memory-query.wasm",
       "source": {
-        "repository": "https://github.com/kkebo/swift-format.git",
-        "revision": "92097d54ac3be47738fe77e38c918e9aabce0302",
-        "revision_date": "2026-07-01",
-        "license": "Apache-2.0 WITH Swift-exception",
-        "toolchain": "upstream WASI release artifact",
-        "toolchain_version": "603.0.0-wasm32-wasi"
+        "path": "corpora/nonwasi/data",
+        "recipe": "scripts/nonwasi-data.mjs",
+        "policy": "Pinned upstream engines and independent references; see recipe and per-build input receipt."
       },
-      "license": "Apache-2.0 WITH Swift-exception",
-      "recipe": "corpus/workloads/applications/swift-format/fetch.sh",
-      "historicalWorkflow": "fetch-or-transform",
+      "license": "See source notices and built contract",
+      "recipe": null,
       "sourceBuild": "scripts/corpus-rebuild.mjs",
-      "workflow": "source-build"
+      "workflow": "source-build",
+      "replaces": "wago/sqlite3-query",
+      "group": "data"
     },
     {
-      "id": "esbuild-minify",
-      "artifact": "workloads/applications/esbuild/esbuild.wasm",
+      "id": "quickjs-memory-events",
+      "artifact": "workloads/nonwasi/quickjs-memory-events.wasm",
       "source": {
-        "repository": "https://github.com/evanw/esbuild.git",
-        "revision": "f6058f8364fe7ab91ca57a83e02577ed74c9cae4",
-        "revision_date": "2026-08-09",
-        "license": "MIT",
-        "toolchain": "go",
-        "toolchain_version": "1.26.5"
+        "path": "corpora/nonwasi/runtimes",
+        "recipe": "scripts/nonwasi-runtimes.mjs",
+        "policy": "Pinned upstream engines and independent references; see recipe and per-build input receipt."
       },
-      "license": "MIT",
-      "recipe": "corpus/workloads/applications/esbuild/build.sh",
-      "historicalWorkflow": "source-build",
+      "license": "See source notices and built contract",
+      "recipe": null,
       "sourceBuild": "scripts/corpus-rebuild.mjs",
-      "workflow": "source-build"
+      "workflow": "source-build",
+      "replaces": "wago/quickjs-script",
+      "group": "runtimes"
+    },
+    {
+      "id": "tree-sitter-swift-parse",
+      "artifact": "workloads/nonwasi/tree-sitter-swift-parse.wasm",
+      "source": {
+        "path": "corpora/nonwasi/tooling",
+        "recipe": "scripts/nonwasi-tooling.mjs",
+        "policy": "Pinned upstream engines and independent references; see recipe and per-build input receipt."
+      },
+      "license": "See source notices and built contract",
+      "recipe": null,
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
+      "workflow": "source-build",
+      "replaces": "wago/swift-format-source",
+      "group": "tooling"
+    },
+    {
+      "id": "oxc-js-minify",
+      "artifact": "workloads/nonwasi/oxc-js-minify.wasm",
+      "source": {
+        "path": "corpora/nonwasi/tooling",
+        "recipe": "scripts/nonwasi-tooling.mjs",
+        "policy": "Pinned upstream engines and independent references; see recipe and per-build input receipt."
+      },
+      "license": "See source notices and built contract",
+      "recipe": null,
+      "sourceBuild": "scripts/corpus-rebuild.mjs",
+      "workflow": "source-build",
+      "replaces": "wago/esbuild-minify",
+      "group": "tooling"
     },
     {
       "id": "tiny",
@@ -1336,7 +1294,7 @@
     },
     {
       "path": "corpus/workloads/semantic/nanosvg/build.sh",
-      "sha256": "20a861c4dddc92e926b0bb0f2b215545d5ed82f8d561a75b5925624197d263ec"
+      "sha256": "5486a402c47778f26f401b89af7a1d37989d657ac2670e2a40f3251909dc4890"
     },
     {
       "path": "corpus/workloads/semantic/nanosvg/LICENSE",
@@ -1404,7 +1362,7 @@
     },
     {
       "path": "corpus/workloads/semantic/yyjson/build.sh",
-      "sha256": "4ce8923c217fafcadb86aceb2029f684e5b84e07fab2a155de86b6870f368029"
+      "sha256": "295e494a2dad27084953eb8ee62c78d120249f0a0014c232caeeeb1b9f3f75d6"
     },
     {
       "path": "corpus/workloads/semantic/yyjson/LICENSE",
