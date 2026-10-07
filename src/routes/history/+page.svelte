@@ -4,13 +4,13 @@
 	import Swatch from '$lib/components/Swatch.svelte';
 	import Tabs from '$lib/components/Tabs.svelte';
 	import { CB, CFG } from '$lib/data/runtimes';
-	import { ALLB, EVENTS, HARNESS_BREAK, MET, OTM, OTM_KEYS, SNAPS, verAt } from '$lib/data/snapshot';
+	import { EVENTS, HARNESS_BREAK, MET, OTM, OTM_KEYS, SNAPS, verAt } from '$lib/data/snapshot';
 	import type { CfgId, MetricKey } from '$lib/data/types';
 	import { fmtU, n0, pc, pct, relative, workloadName } from '$lib/format';
-	import { benchVal, otSeries } from '$lib/model';
+	import { otSeries } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 import { viewData } from '$lib/view-data';
-import { historyCell, historyChange, historySegments, historyCurve, historicalCallWorkloads, historyCallDetails, historyAggregateDetails, historyVersionChanges, historyCoverage, historyComparison } from '$lib/history-values';
+import { historyCatalogue, historyCell, historyChange, historySegments, historyCurve, historicalCallWorkloads, historyCallDetails, historyAggregateDetails, historyVersionChanges, historyCoverage, historyComparison } from '$lib/history-values';
 import HistoryMarker from '$lib/components/HistoryMarker.svelte';
 
 	const W = 860;
@@ -184,7 +184,7 @@ import HistoryMarker from '$lib/components/HistoryMarker.svelte';
 		const matched=historyComparison(s,cid,isCov?'exec':M.key,f,t);
 		const dt = matched?.ratio??NaN;
         const callIds=historicalCallWorkloads(M.key);
-        const directionRows=ALLB.filter(b=>!callIds.length || callIds.includes(b.id)).map(b=>{
+        const directionRows=historyCatalogue(s.machine).filter(b=>!callIds.length || callIds.includes(b.id)).map(b=>{
           const before=historyCell(s.machine,b.id,cid,RM,f),after=historyCell(s.machine,b.id,cid,RM,t);
           const change=historyChange(before,after);if(!change)return null;
           const d=change.delta,interval=change.interval;
@@ -243,7 +243,7 @@ import HistoryMarker from '$lib/components/HistoryMarker.svelte';
 
 <div class="head">
 	<h1>History</h1>
-	<span class="subtitle fg3">Retrospective engine revisions · frozen workload artifacts · current-chart reference cohort</span>
+	<span class="subtitle fg3">Retrospective engine revisions · frozen workload artifacts · recorded-contract reference cohort</span>
 </div>
 <Tabs options={OTM_KEYS.map((k) => [k, OTM[k].l])} value={ui.otMetric} onselect={(k) => (ui.otMetric = k)} />
 <Carousel title="{M.l} History" sub="{oi + 1} / {OTM_KEYS.length} · {NOTE[M.key]}" onprev={() => step(-1)} onnext={() => step(1)} noun="metric" />

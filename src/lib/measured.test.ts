@@ -5,7 +5,13 @@ import { loadMeasuredSnapshot, measuredCodeImage, measuredHistory, measuredMemor
 const root = new URL('../../data/', import.meta.url);
 async function store(name: string) {
 	const index = JSON.parse(await readFile(new URL(name + '/index.json', root), 'utf8')) as { reports: SnapshotEntry[] };
-	const snapshots = await Promise.all(index.reports.map(async entry => JSON.parse(await readFile(new URL(name + '/' + entry.projection, root), 'utf8')) as MeasuredSnapshot));
+	// Historical stores contain tens of thousands of projections. Bound pending
+	// reads instead of opening the entire archive at once on shared CI runners.
+	const snapshots: MeasuredSnapshot[] = [];
+	for (let offset = 0; offset < index.reports.length; offset += 64) {
+		snapshots.push(...await Promise.all(index.reports.slice(offset, offset + 64).map(async entry =>
+			JSON.parse(await readFile(new URL(name + '/' + entry.projection, root), 'utf8')) as MeasuredSnapshot)));
+	}
 	return { index, snapshots };
 }
 const { index, snapshots } = await store('wasmbench');
@@ -119,19 +125,20 @@ describe('measured view boundary', () => {
 		await expect(loadMeasuredSnapshot('/wasm.fyi/wasmbench', { ...entry, host: { ...entry.host, hostname: 'wrong-host' } }, fetcher)).rejects.toThrow('metadata');
 	});
 
-	it('reads each pinned historical point on both hosts and retains shard provenance and gaps', async () => {
-		for (const name of ['history', 'history-hub']) {
-			const { snapshots } = await store(name);
-			const history = JSON.parse(await readFile(new URL(name + '/weekly.json', root), 'utf8')) as MeasuredWeeklyHistory;
-			const first=history.results.findIndex(point=>point.engines?.wago?.reports?.length || (!point.engines && (point.reports?.length || point.runId)));
-			expect(first).toBeGreaterThanOrEqual(0);
-			const source=history.results[first];
-			const receipts=source.engines?.wago?.reports||source.reports||[source];
-			const historical=snapshots.find(snapshot=>receipts.some(pin=>pin.runId===snapshot.runId)&&snapshot.workloads.some(w=>w.id==='applications/image-blur'))!;
-			const workload=historical.workloads.find(w=>w.id==='applications/image-blur')!;
-			const cells = measuredHistory(history, snapshots, historical.host, 'wago', workload.id, workload.sha256, 'steady');
-			expect(cells).toHaveLength(history.results.length);
-			for(const [i,point] of cells.entries()){
+	// Keep each host independently timed and reported; full archive I/O is an
+	// integration check, not a 30-second budget shared by both historical hosts.
+	it.each(['history', 'history-hub'])('reads each pinned historical point in %s and retains shard provenance and gaps', async (name) => {
+		const { snapshots } = await store(name);
+		const history = JSON.parse(await readFile(new URL(name + '/weekly.json', root), 'utf8')) as MeasuredWeeklyHistory;
+		const first=history.results.findIndex(point=>point.engines?.wago?.reports?.length || (!point.engines && (point.reports?.length || point.runId)));
+		expect(first).toBeGreaterThanOrEqual(0);
+		const source=history.results[first];
+		const receipts=source.engines?.wago?.reports||source.reports||[source];
+		const historical=snapshots.find(snapshot=>receipts.some(pin=>pin.runId===snapshot.runId)&&snapshot.workloads.some(w=>w.id==='applications/image-blur'))!;
+		const workload=historical.workloads.find(w=>w.id==='applications/image-blur')!;
+		const cells = measuredHistory(history, snapshots, historical.host, 'wago', workload.id, workload.sha256, 'steady');
+		expect(cells).toHaveLength(history.results.length);
+		for(const [i,point] of cells.entries()){
                 expect(point.role).toBe('retrospective-revision');
                 const week=history.results[i];
                 const pin=week.engines ? week.engines.wago : week;
@@ -146,16 +153,15 @@ describe('measured view boundary', () => {
                     expect(point.cell.status,`${name} ${week.targetWeek}: absent workload stays uncollected`).toBe('not-collected');
                 }
             }
-			const baseline = measuredHistory(history, snapshots, historical.host, 'wasmtime', workload.id, workload.sha256, 'steady');
-			for(const [i,point] of baseline.entries()){
+		const baseline = measuredHistory(history, snapshots, historical.host, 'wasmtime', workload.id, workload.sha256, 'steady');
+		for(const [i,point] of baseline.entries()){
                 expect(point.role).toBe(history.results[i].engines?'retrospective-revision':'fixed-comparison-baseline');
                 expect(point.revision).toBe(history.results[i].engines?.wasmtime?.revision);
             }
-			const gaps = measuredHistory(history, snapshots.filter(snapshot => snapshot.runId !== historical.runId), historical.host, 'wago', workload.id, workload.sha256, 'steady');
-			expect(gaps[first].cell.status).toBe('not-collected');
-			expect(gaps).toHaveLength(history.results.length);
-		}
-	}, 30_000);
+		const gaps = measuredHistory(history, snapshots.filter(snapshot => snapshot.runId !== historical.runId), historical.host, 'wago', workload.id, workload.sha256, 'steady');
+		expect(gaps[first].cell.status).toBe('not-collected');
+		expect(gaps).toHaveLength(history.results.length);
+	}, 120_000);
 });
 
 it('resolves historical corpus shards independently and rejects a changed receipt',()=>{
