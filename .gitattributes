@@ -1,2 +1,7 @@
 # Retain upstream source and license bytes exactly as sealed in sources.json.
 corpora/upstream/wago/** -whitespace
+
+# Retain the selected upstream bytes exactly as sealed in their source index.
+corpora/features/upstream/licenses/** -whitespace
+corpora/features/upstream/spec/** -whitespace
+corpora/features/upstream/vectors/** -whitespace

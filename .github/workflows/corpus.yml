@@ -26,9 +26,25 @@ jobs:
           rustup toolchain install 1.98.1 --profile minimal --target wasm32-unknown-unknown,wasm32-wasip1
           node scripts/llvm-toolchain.mjs
           cargo install wasm-tools --version 1.260.0 --locked --root "$HOME/.local/share/wasm-fyi/toolchains/wasm-tools-1.260.0"
+      - name: Install pinned component conformance runtime
+        run: |
+          curl --fail --location --retry 3 https://github.com/bytecodealliance/wasmtime/releases/download/v46.0.1/wasmtime-v46.0.1-x86_64-linux.tar.xz -o /tmp/wasmtime.tar.xz
+          echo '9ae0b17ea298bcc52277a8208d6ab7fae8e1a89579672f9d82f9d86c116edb62  /tmp/wasmtime.tar.xz' | sha256sum -c -
+          tar -xJf /tmp/wasmtime.tar.xz -C /tmp
+          sudo install /tmp/wasmtime-v46.0.1-x86_64-linux/wasmtime /usr/local/bin/wasmtime
+      - name: Verify curated execution kernels and upstream positive semantics
+        env:
+          WASMBENCH_WASM_TOOLS: /home/runner/.local/share/wasm-fyi/toolchains/wasm-tools-1.260.0/bin/wasm-tools
+        run: |
+          node --test scripts/feature-curation.test.mjs scripts/feature-upstream-v8.test.mjs
+          node scripts/feature-curation-check.mjs --require-all
+          node scripts/feature-upstream-spec.mjs --require-all
+          node corpora/features/upstream/runner-regression.mjs
+          node scripts/feature-upstream-v8.mjs --require-all
+          node scripts/feature-upstream-components.mjs --require-all
       - name: Verify committed inputs and execution
         run: |
-          node --test scripts/workflow.test.mjs scripts/corpus-source-manifest.test.mjs scripts/application-corpus.test.mjs scripts/corpus-v8.test.mjs scripts/upstream-sources.test.mjs scripts/feature-adapter.test.mjs
+          node --test scripts/workflow.test.mjs scripts/corpus-build-all.test.mjs scripts/source-build-toolchains.test.mjs scripts/corpus-native-ports.test.mjs scripts/corpus-source-manifest.test.mjs scripts/application-corpus.test.mjs scripts/corpus-v8.test.mjs scripts/upstream-sources.test.mjs scripts/feature-adapter.test.mjs
           node scripts/corpus-v8.mjs --local
       - name: Recompile editable sources and verify again
         env:
@@ -45,7 +61,10 @@ jobs:
         if: always()
         with:
           name: corpus-v8-correctness
-          path: .wasmbench/corpus-v8-check.json
+          path: |
+            .wasmbench/corpus-v8-check.json
+            .wasmbench/feature-curation-check.json
+            .wasmbench/feature-upstream-*.json
 
   all-sources:
     runs-on: ubuntu-24.04
@@ -81,6 +100,19 @@ jobs:
           echo '9ae0b17ea298bcc52277a8208d6ab7fae8e1a89579672f9d82f9d86c116edb62  /tmp/wasmtime.tar.xz' | sha256sum -c -
           tar -xJf /tmp/wasmtime.tar.xz -C /tmp
           sudo install /tmp/wasmtime-v46.0.1-x86_64-linux/wasmtime /usr/local/bin/wasmtime
+      - name: Build pinned Binaryen for Lua exception translation
+        run: |
+          binaryen_source="$RUNNER_TEMP/binaryen-130-source"
+          binaryen_build="$RUNNER_TEMP/binaryen-130-build"
+          git init --quiet "$binaryen_source"
+          git -C "$binaryen_source" remote add origin https://github.com/WebAssembly/binaryen.git
+          git -C "$binaryen_source" fetch --depth=1 origin 5d704ad52bc77a258e8fa3f9d34fcc5e8799c1c3
+          git -C "$binaryen_source" checkout --detach FETCH_HEAD
+          test "$(git -C "$binaryen_source" rev-parse HEAD)" = 5d704ad52bc77a258e8fa3f9d34fcc5e8799c1c3
+          cmake -S "$binaryen_source" -B "$binaryen_build" -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF
+          cmake --build "$binaryen_build" --target wasm-opt --parallel 2
+          test "$("$binaryen_build/bin/wasm-opt" --version)" = 'wasm-opt version 130'
+          echo "WASM_OPT=$binaryen_build/bin/wasm-opt" >> "$GITHUB_ENV"
       - name: Build every corpus from source and check execution
         run: |
           corpus_tool_bin=$(dirname "$WASMBENCH_WASM_TOOLS")
@@ -94,5 +126,7 @@ jobs:
             .wasmbench/upstream/*.json
             .wasmbench/source-builds/*/report.json
             .wasmbench/source-builds/*/inputs.json
+            .wasmbench/source-builds/*/recipe.mjs
+            .wasmbench/source-builds/*/lib/source-build-toolchains.mjs
             .wasmbench/corpus-v8-check.json
             .wasmbench/corpus-components-check.json

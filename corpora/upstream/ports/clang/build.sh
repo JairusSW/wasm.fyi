@@ -3,6 +3,8 @@ set -euo pipefail
 source_dir=${1:?LLVM source checkout required}
 output=${2:?Wasm output path required}
 sdk=${WASI_SDK:?set WASI_SDK}
+jobs=${WASMBENCH_BUILD_JOBS:-3}
+[[ $jobs =~ ^[1-9][0-9]*$ ]] || { echo 'WASMBENCH_BUILD_JOBS must be a positive integer' >&2; exit 1; }
 port_dir=$(cd "$(dirname "$0")" && pwd)
 [[ $(git -C "$source_dir" rev-parse HEAD) == 5dc09c94393510bc8d042a9f07382b53e845c0f2 ]]
 git -C "$source_dir" apply "$port_dir/compat.patch"
@@ -12,7 +14,7 @@ cmake -S "$source_dir/llvm" -B "$build_root/native" -G Ninja \
   -DCMAKE_CXX_FLAGS='-include cstdint -include string' \
   -DLLVM_TARGETS_TO_BUILD=WebAssembly -DLLVM_ENABLE_PROJECTS=clang \
   -DLLVM_INCLUDE_TESTS=OFF -DLLVM_ENABLE_THREADS=OFF -DLLVM_ENABLE_LIBXML2=OFF
-cmake --build "$build_root/native" --target llvm-tblgen clang-tblgen --parallel 3
+cmake --build "$build_root/native" --target llvm-tblgen clang-tblgen --parallel "$jobs"
 emulation='-DBINJI_HACK -D_WASI_EMULATED_MMAN -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_PROCESS_CLOCKS -D_WASI_EMULATED_GETPID'
 cmake -S "$source_dir/llvm" -B "$build_root/wasi" -G Ninja \
   -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DUNIX=ON \
@@ -32,5 +34,5 @@ cmake -S "$source_dir/llvm" -B "$build_root/wasi" -G Ninja \
   -DLLVM_ENABLE_LIBPFM=OFF -DLLVM_BUILD_STATIC=ON -DCMAKE_SKIP_RPATH=ON \
   -DCMAKE_SKIP_INSTALL_RPATH=ON -DLLVM_ENABLE_PIC=OFF -DLLVM_ENABLE_ZLIB=OFF \
   -DCLANG_ENABLE_ARCMT=OFF -DCLANG_ENABLE_STATIC_ANALYZER=OFF -DCLANG_BUILD_TOOLS=OFF
-cmake --build "$build_root/wasi" --target clang --parallel 3
+cmake --build "$build_root/wasi" --target clang --parallel "$jobs"
 cp "$build_root/wasi/bin/clang" "$output"
