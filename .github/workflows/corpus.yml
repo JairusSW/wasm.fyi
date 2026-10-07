@@ -44,7 +44,7 @@ jobs:
           node scripts/feature-upstream-components.mjs --require-all
       - name: Verify committed inputs and execution
         run: |
-          node --test scripts/workflow.test.mjs scripts/corpus-build-all.test.mjs scripts/source-build-toolchains.test.mjs scripts/corpus-native-ports.test.mjs scripts/corpus-source-manifest.test.mjs scripts/application-corpus.test.mjs scripts/corpus-v8.test.mjs scripts/upstream-sources.test.mjs scripts/feature-adapter.test.mjs
+          node --test scripts/workflow.test.mjs scripts/corpus-build-all.test.mjs scripts/source-build-toolchains.test.mjs scripts/age-toolchain.test.mjs scripts/corpus-native-ports.test.mjs scripts/corpus-source-manifest.test.mjs scripts/application-corpus.test.mjs scripts/corpus-v8.test.mjs scripts/upstream-sources.test.mjs scripts/feature-adapter.test.mjs
           node scripts/corpus-v8.mjs --local
       - name: Recompile editable sources and verify again
         env:
@@ -114,6 +114,9 @@ jobs:
           test "$("$binaryen_build/bin/wasm-opt" --version)" = 'wasm-opt version 130'
           echo "WASM_OPT=$binaryen_build/bin/wasm-opt" >> "$GITHUB_ENV"
       - name: Build every corpus from source and check execution
+        env:
+          # setup-go exports local; age's pinned go.mod selects Go 1.27.0.
+          GOTOOLCHAIN: auto
         run: |
           corpus_tool_bin=$(dirname "$WASMBENCH_WASM_TOOLS")
           export PATH="$corpus_tool_bin:$PATH"
