@@ -6,6 +6,7 @@ import { platform, arch } from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { site, digest, config, exists } from './lib/wasmbench.mjs';
 import { parseCorpusJSON } from './lib/corpus.mjs';
+import { isBinaryen130Version } from './lib/source-build-toolchains.mjs';
 
 const settings=await config();
 if(process.version!==`v${settings.node.version}`||process.versions.v8!==settings.node.v8)throw Error('Source verification requires the pinned Node/V8 from wasmbench.config.json');
@@ -30,9 +31,15 @@ if(!env.RUSTC) {
   } catch {}
 }
 let currentSources=[];const artifactSources=new Map();
-const recipeSha256=digest(await readFile(join(site,'scripts/corpus-rebuild.mjs')));
+const recipeBytes=await readFile(join(site,'scripts/corpus-rebuild.mjs'));
+const recipeSha256=digest(recipeBytes);
 const sourcePorts=join(directory,'ports'),sourcePatches=join(directory,'patches');
 const buildInputs=[];
+await mkdir(join(directory,'lib'),{recursive:true});
+await writeFile(join(directory,'recipe.mjs'),recipeBytes);
+const toolchainRules=await readFile(join(site,'scripts/lib/source-build-toolchains.mjs'));
+await writeFile(join(directory,'lib/source-build-toolchains.mjs'),toolchainRules);
+buildInputs.push({path:'lib/source-build-toolchains.mjs',sha256:digest(toolchainRules)});
 async function snapshot(from,to,relativePath) {
   await mkdir(to,{recursive:true});
   for(const entry of await readdir(from,{withFileTypes:true})) {
@@ -151,8 +158,13 @@ for(const b of lock.benchmarks.filter(b=>requested.includes(b.id))) {
         const dir=await checkout(name,ruby?'https://github.com/ruby/ruby.git':'https://github.com/YoWASP/yosys.git',ruby?'e51014f9c05aa65cbf203442d37fef7c12390015':'d0ee6801cc45748a8630a04723eb290fcff1a7bf');
         if(!ruby)await run('git',['submodule','update','--init','--depth','1','yosys-src'],{cwd:dir});
         const ports=join(sourcePorts,'legacy');
-        if(!built.has('legacy-image')) {await run('docker',['build','--platform','linux/amd64','-t','wasm-fyi-corpus-legacy-sdk19',ports]);built.add('legacy-image');}
-        await run('docker',['run','--rm','--platform','linux/amd64',ruby?'--memory=4g':'--memory=12g','--cpus=2','-v',dir+':/src','-v',ports+':/recipes:ro','-w','/src','wasm-fyi-corpus-legacy-sdk19','bash','/recipes/'+name+'.sh']);
+        if(env.WASMBENCH_NATIVE_LEGACY==='1') {
+          if(!env.WASMBENCH_LEGACY_WASI_SDK)throw Error('Native legacy builds require WASMBENCH_LEGACY_WASI_SDK (WASI SDK 19)');
+          await run('bash',[join(ports,name+'.sh'),dir],{env:{...env,WASI_SDK_PATH:resolve(env.WASMBENCH_LEGACY_WASI_SDK)}});
+        } else {
+          if(!built.has('legacy-image')) {await run('docker',['build','--platform','linux/amd64','-t','wasm-fyi-corpus-legacy-sdk19',ports]);built.add('legacy-image');}
+          await run('docker',['run','--rm','--platform','linux/amd64',ruby?'--memory=4g':'--memory=12g','--cpus=2','-v',dir+':/src','-v',ports+':/recipes:ro','-w','/src','wasm-fyi-corpus-legacy-sdk19','bash','/recipes/'+name+'.sh']);
+        }
         await copyFile(join(dir,ruby?'build-wasi/ruby':'yosys-build/yosys.wasm'),artifact);
       } else if(b.id==='ecppll-clock') {
         const dir=await checkout('prjtrellis','https://github.com/YosysHQ/prjtrellis.git','35f5affe10a2995bdace49e23fcbafb5723c5347');
@@ -185,7 +197,7 @@ for(const b of lock.benchmarks.filter(b=>requested.includes(b.id))) {
         // that output to standardized try_table/exnref without optimizing it.
         const wasmOpt=env.WASM_OPT || 'wasm-opt';
         const version=execFileSync(wasmOpt,['--version'],{encoding:'utf8'}).trim();
-        if(version!=='wasm-opt version 130')throw Error('Lua requires Binaryen wasm-opt version 130');
+        if(!isBinaryen130Version(version))throw Error('Lua requires Binaryen wasm-opt version 130');
         const legacy=join(dir,'src/lua');
         const args=['--translate-to-exnref','--emit-exnref','--all-features',legacy,'-o',artifact];
         await run(wasmOpt,args);

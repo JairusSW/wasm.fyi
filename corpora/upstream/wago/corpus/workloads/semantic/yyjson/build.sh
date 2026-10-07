@@ -20,9 +20,11 @@ git -C "$upstream" checkout --detach "$rev" >/dev/null 2>&1
 
 stage=$(mktemp -d)
 trap 'rm -rf "$stage"' EXIT
+# These in-memory library calls have no constructors. Exporting the empty ctor
+# prevents wasm-ld from adding command-style stdio cleanup and WASI imports.
 "$sdk/bin/clang" --target=wasm32-wasip1 -O2 -DNDEBUG -nostartfiles -ffunction-sections -fdata-sections \
 	-I"$upstream/src" "$upstream/src/yyjson.c" "$here/wago_yyjson.c" \
-	-Wl,--strip-debug -Wl,--no-entry -Wl,--export=yyjson_run -Wl,--export-memory \
+	-Wl,--strip-debug -Wl,--no-entry -Wl,--export=__wasm_call_ctors -Wl,--export=yyjson_run -Wl,--export-memory \
 	-o "$stage/yyjson.wasm"
 
 got=$(shasum -a 256 "$stage/yyjson.wasm" | awk '{print $1}')

@@ -16,8 +16,10 @@ test('Saturday source selection uses publication time, never main, drafts or nig
   assert.equal(releasedBuild(r('main',null)),false);
 });
 test('upstream Go runners count leaf tests, retain skips, and expose zero-test invocations',()=>{
-  const log=[{Action:'run',Test:'Suite'},{Action:'run',Test:'Suite/A'},{Action:'pass',Test:'Suite/A'},{Action:'skip',Test:'Suite/B'},{Action:'pass',Test:'Suite'}].map(x=>JSON.stringify(x)).join('\n');
+  const log=[{Action:'run',Test:'Suite'},{Action:'run',Test:'Suite/A'},{Action:'pass',Test:'Suite/A'},{Action:'skip',Test:'Suite/B'},{Action:'pass',Test:'Suite'}].map(x=>JSON.stringify({Package:'example.test/suite',...x})).join('\n');
   const r=goResults(log);assert.equal(r.results.length,2);assert.equal(r.totals.passed,1);assert.equal(r.totals.skipped,1);
+  assert.equal(r.testsStarted,2);
+  assert.deepEqual(r.results.map(({package:pkg,name})=>[pkg,name]),[['example.test/suite','Suite/A'],['example.test/suite','Suite/B']]);
   assert.equal(goResults('{}').testsStarted,0);
   assert.equal(countOutcomes([{status:'runner-error'},{status:'failed'}]).passed,0);
 });
