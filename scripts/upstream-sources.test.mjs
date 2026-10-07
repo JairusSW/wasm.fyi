@@ -40,3 +40,18 @@ test('every selected upstream contract has an active source build and standalone
     }
   }
 });
+
+test('in-memory yyjson and NanoSVG recipes preserve import-free core library linking',async()=>{
+  const contracts=JSON.parse(await readFile(join(site,'corpora/upstream/contracts.json')));
+  for(const id of ['yyjson','nanosvg']) {
+    const recipe=await readFile(join(site,'corpora/upstream/wago/corpus/workloads/semantic',id,'build.sh'),'utf8');
+    // An explicit ctor export suppresses wasm-ld's command-export wrapper,
+    // whose libc stdio destructor would otherwise retain clock_time_get.
+    assert.match(recipe,/-Wl,--export=__wasm_call_ctors/);
+    assert.match(recipe,new RegExp('-Wl,--export='+id+'_run'));
+    const contract=contracts.find(w=>w.id.split('/')[1]===id);
+    assert.equal(contract.abi,'core');
+    assert.equal(contract.initialize,undefined);
+    assert.equal(contract.oracle.kind,'exact_u64');
+  }
+});

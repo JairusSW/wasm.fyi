@@ -94,7 +94,7 @@ pnpm preview
 
 The application corpus contains **166 algorithms across 27 categories**:
 102 original import-free C kernels and 64 upstream workloads. The feature
-corpus adds **241 contracts across 119 artifacts**.
+corpus adds **290 contracts across 135 artifacts**.
 
 Every configured artifact has a source build. Original sources, wrappers,
 fixtures and compiler ports are included here; complete upstream source trees

@@ -27,9 +27,25 @@ jobs:
           rustup toolchain install 1.90.0 --profile minimal --target wasm32-unknown-unknown
           node scripts/llvm-toolchain.mjs
           cargo install wasm-tools --version 1.260.0 --locked --root "$HOME/.local/share/wasm-fyi/toolchains/wasm-tools-1.260.0"
+      - name: Install pinned component conformance runtime
+        run: |
+          curl --fail --location --retry 3 https://github.com/bytecodealliance/wasmtime/releases/download/v46.0.1/wasmtime-v46.0.1-x86_64-linux.tar.xz -o /tmp/wasmtime.tar.xz
+          echo '9ae0b17ea298bcc52277a8208d6ab7fae8e1a89579672f9d82f9d86c116edb62  /tmp/wasmtime.tar.xz' | sha256sum -c -
+          tar -xJf /tmp/wasmtime.tar.xz -C /tmp
+          sudo install /tmp/wasmtime-v46.0.1-x86_64-linux/wasmtime /usr/local/bin/wasmtime
+      - name: Verify curated execution kernels and upstream positive semantics
+        env:
+          WASMBENCH_WASM_TOOLS: /home/runner/.local/share/wasm-fyi/toolchains/wasm-tools-1.260.0/bin/wasm-tools
+        run: |
+          node --test scripts/feature-curation.test.mjs scripts/feature-upstream-v8.test.mjs
+          node scripts/feature-curation-check.mjs --require-all
+          node scripts/feature-upstream-spec.mjs --require-all
+          node corpora/features/upstream/runner-regression.mjs
+          node scripts/feature-upstream-v8.mjs --require-all
+          node scripts/feature-upstream-components.mjs --require-all
       - name: Verify committed inputs and execution
         run: |
-          node --test scripts/main-corpus-contract.test.mjs scripts/corpus-main-build.test.mjs scripts/corpus-build-all.test.mjs scripts/workflow.test.mjs scripts/corpus-source-manifest.test.mjs scripts/application-corpus.test.mjs scripts/corpus-v8.test.mjs scripts/upstream-sources.test.mjs scripts/feature-adapter.test.mjs
+          node --test scripts/main-corpus-contract.test.mjs scripts/corpus-main-build.test.mjs scripts/corpus-build-all.test.mjs scripts/workflow.test.mjs scripts/corpus-source-manifest.test.mjs scripts/application-corpus.test.mjs scripts/corpus-v8.test.mjs scripts/upstream-sources.test.mjs scripts/feature-adapter.test.mjs scripts/source-build-toolchains.test.mjs scripts/age-toolchain.test.mjs scripts/corpus-native-ports.test.mjs
           node scripts/corpus-v8.mjs --local
       - name: Recompile editable sources and verify again
         env:
@@ -46,7 +62,10 @@ jobs:
         if: always()
         with:
           name: corpus-v8-correctness
-          path: .wasmbench/corpus-v8-check.json
+          path: |
+            .wasmbench/corpus-v8-check.json
+            .wasmbench/feature-curation-check.json
+            .wasmbench/feature-upstream-*.json
 
   all-sources:
     runs-on: ubuntu-24.04
@@ -87,6 +106,9 @@ jobs:
         with:
           just-version: '1.58.0'
       - name: Build every corpus from source and check execution
+        env:
+          # Allow the pinned benchmark harness to select its required Go toolchain.
+          GOTOOLCHAIN: auto
         run: |
           corpus_tool_bin=$(dirname "$WASMBENCH_WASM_TOOLS")
           export PATH="$corpus_tool_bin:$PATH"
@@ -100,8 +122,9 @@ jobs:
             .wasmbench/upstream/*.json
             .wasmbench/source-builds/*/report.json
             .wasmbench/source-builds/*/inputs.json
+            .wasmbench/source-builds/*/recipe.mjs
+            .wasmbench/source-builds/*/lib/main-corpus-contract.mjs
             .wasmbench/corpus-v8-check.json
             .wasmbench/main-corpus-check.json
             .wasmbench/corpus-components-check.json
-            .wasmbench/source-builds/*/recipe.mjs
             .wasmbench/source-builds/*/nonwasi-*.mjs

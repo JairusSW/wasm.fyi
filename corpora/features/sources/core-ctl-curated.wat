@@ -1,0 +1,48 @@
+(module
+  (func (export "br-table-state-machine") (param $n i32) (result i32)
+    (local $i i32) (local $state i32) (local $total i32)
+    (block $done (loop $next
+      (br_if $done (i32.ge_u (local.get $i) (local.get $n)))
+      (block $dispatch
+        (block $case3 (block $case2 (block $case1 (block $case0
+          (br_table $case0 $case1 $case2 $case3
+            (i32.and (i32.add (i32.add (local.get $i) (local.get $state))
+              (i32.div_u (local.get $i) (i32.const 7))) (i32.const 3))))
+          (local.set $state (i32.add (local.get $state) (i32.const 3)))
+          (br $dispatch))
+        (local.set $state (i32.xor (local.get $state) (local.get $i)))
+        (br $dispatch))
+      (local.set $state (i32.add (i32.mul (local.get $state) (i32.const 3)) (i32.const 1)))
+      (br $dispatch))
+      (local.set $state (i32.sub (local.get $state) (local.get $i))))
+      (local.set $state (i32.and (local.get $state) (i32.const 1023)))
+      (local.set $total (i32.add (local.get $total) (local.get $state)))
+      (local.set $i (i32.add (local.get $i) (i32.const 1)))
+      (br $next)))
+    (local.get $total))
+  (func (export "nested-divisor-count") (param $n i32) (result i32)
+    (local $v i32) (local $d i32) (local $total i32)
+    (local.set $v (i32.const 1))
+    (block $done (loop $next
+      (br_if $done (i32.gt_u (local.get $v) (local.get $n)))
+      (local.set $d (i32.const 1))
+      (block $divisors-done (loop $divisors
+        (br_if $divisors-done (i32.gt_u (i32.mul (local.get $d) (local.get $d)) (local.get $v)))
+        (if (i32.eqz (i32.rem_u (local.get $v) (local.get $d)))
+          (then (local.set $total (i32.add (local.get $total)
+            (i32.add (i32.const 1) (i32.ne (i32.mul (local.get $d) (local.get $d)) (local.get $v)))))))
+        (local.set $d (i32.add (local.get $d) (i32.const 1)))
+        (br $divisors)))
+      (local.set $v (i32.add (local.get $v) (i32.const 1)))
+      (br $next)))
+    (local.get $total))
+  (func (export "early-return-search") (param $n i32) (result i32)
+    (local $i i32) (local $target i32)
+    (local.set $target (i32.and (local.get $n) (i32.const 15)))
+    (block $done (loop $next
+      (br_if $done (i32.ge_u (local.get $i) (local.get $n)))
+      (if (i32.eq (i32.rem_u (i32.add (i32.mul (local.get $i) (i32.const 17)) (i32.const 11)) (i32.const 97)) (local.get $target))
+        (then (return (i32.add (local.get $i) (i32.const 1)))))
+      (local.set $i (i32.add (local.get $i) (i32.const 1)))
+      (br $next)))
+    (i32.const 0)))

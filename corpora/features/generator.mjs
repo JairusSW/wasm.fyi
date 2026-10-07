@@ -1,6 +1,7 @@
 // Original, deterministic feature workloads. Each operation has an independent
 // arithmetic oracle; runtime output is never used to invent an expected value.
 import { createHash } from 'node:crypto';
+import { curatedFixtures } from './curated.mjs';
 const streamDigest = text => createHash('sha256').update(text).digest('hex');
 const sum = (n, value) => {
   let total = 0;
@@ -252,5 +253,5 @@ export function fixtures() {
       { sizes:[1], units:1, size:count*2, dimension:'canonical_async_builtin_count', abi:'component', export:'', args:()=>[], scope:'compile-only', workUnit:'component', oracle:()=>({kind:'component_compile_only',expected:[]}) });
   }
 
-  return out;
+  return [...out, ...curatedFixtures()];
 }

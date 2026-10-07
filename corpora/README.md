@@ -1,7 +1,7 @@
 # Corpus sources and correctness
 
 Every configured corpus artifact has a source build: 166 application algorithms
-in 27 categories and 241 feature contracts. The application inventory contains
+in 27 categories and 290 feature contracts. The application inventory contains
 102 original import-free C kernels, 43 retained core upstream workloads, and
 21 import-free library/runtime replacements for former WASI commands. Each
 category has 6–9 distinct algorithms. Feature probes are counted separately.
@@ -15,6 +15,12 @@ six Emscripten defaults are original implementations; they do not claim to run
 seqtk, FastTree or GNU sed.
 
 ## Build everything
+
+The source workflow validates original kernels, pinned upstream libraries, feature
+modules/components and the separately generated host-call fixtures. Per-build
+input manifests and CI reports identify the exact tested commit and toolchains.
+Independent contracts establish correctness only for their specified workloads;
+source builds do not create or rewrite performance measurements.
 
 Prerequisites:
 
@@ -68,19 +74,29 @@ A successful complete upstream build publishes
 `.wasmbench/upstream/manifest.json`. Normal corpus preparation and measurement
 use those locally compiled artifacts. No separate Wago checkout is required to
 build or verify the source corpus. The full command refreshes the prepared
-inventory after verification. Collection still uses the wasm-bench harness.
+inventory after verification. The main-only audit needs no harness. For the full audit and its host-call fixtures,
+the all-corpus command uses `WASMBENCH_ROOT` / the configured harness checkout when present, or fetches
+the pinned `harnessSource` from `wasmbench.config.json`. Collection uses the
+same wasm-bench harness.
 
 For a focused rebuild:
 
 ```sh
 just corpus-main-rebuild serde-json2csv,lua-memory-buckets
 just applications-build      # all 102 C kernels
-just features-build          # all 119 feature artifacts / 241 contracts
+just features-build          # all 135 feature artifacts / 290 contracts
 just corpus-wat-build        # seven retained WAT workloads
 ```
 
 The full source workflow in `.github/workflows/corpus.yml` exercises the same
 command on Linux and retains verification reports.
+
+### Historical command recipes
+
+The retired WASI CLI recipes remain as provenance. Their older native/Docker
+toolchain instructions are retained in [the archived build guide](upstream/ports/LEGACY.md).
+Current main-corpus commands select only the import-free replacements and need
+none of those legacy compiler or container routes.
 
 ## Edit the sources
 
@@ -127,8 +143,8 @@ The V8 checker isolates each workload in a process with a 30-second timeout.
 It checks three fresh instances and repeated calls for stateless workloads,
 exact return values, full byte vectors, memory output, stream SHA-256 and exit
 codes. File inputs are digest-checked and staged in fresh directories. Node's
-WASI host uses `LANG=C.UTF-8`; old Clang rejects an empty environment and tree's
-Unicode output depends on locale. Checks collect no performance measurements.
+WASI feature host uses `LANG=C.UTF-8`. Main-corpus modules have no WASI host
+contract. Checks collect no performance measurements.
 
 V8 executes core modules; `node:wasi` supplies Preview 1 imports. V8 has no
 native Component Model API, so its report marks components unavailable.
@@ -142,3 +158,16 @@ argument contents and null terminators, preopened file access/seeking,
 monotonic clocks, and random-call errno. The random probe checks the interface
 result, not entropy quality. Negative host tests reject missing reads, missing
 argument strings and missing write counts.
+
+## Curated feature execution and upstream semantics
+
+The feature inventory now includes 49 additional execution contracts in 16
+shared, multi-export modules. All 21 execution-capable feature families have
+at least five distinct operation families, excluding scalar baselines and
+size-only variants. Validation, extended-constant initialization and async
+component type construction remain structural/compile-only workloads.
+
+See [feature curation](features/CURATION.md) for the operation inventory,
+execution-only timing command, independent-oracle checks, pinned upstream
+assertions and attribution. Upstream semantic assertions run separately and
+are never timed as benchmark kernels.

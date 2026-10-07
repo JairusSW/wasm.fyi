@@ -3,3 +3,8 @@ corpora/upstream/wago/** -whitespace
 # Preserve copied upstream notices verbatim, including their original whitespace.
 corpora/nonwasi/**/LICENSES/** -whitespace
 corpora/nonwasi/**/licenses/** -whitespace
+
+# Retain the selected upstream bytes exactly as sealed in their source index.
+corpora/features/upstream/licenses/** -whitespace
+corpora/features/upstream/spec/** -whitespace
+corpora/features/upstream/vectors/** -whitespace

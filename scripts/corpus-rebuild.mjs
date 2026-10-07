@@ -31,7 +31,8 @@ if(!env.RUSTC) {
   } catch {}
 }
 let currentSources=[];const artifactSources=new Map();
-const recipeSha256=digest(await readFile(join(site,'scripts/corpus-rebuild.mjs')));
+const recipeBytes=await readFile(join(site,'scripts/corpus-rebuild.mjs'));
+const recipeSha256=digest(recipeBytes);
 const sourcePorts=join(directory,'ports'),sourcePatches=join(directory,'patches');
 const buildInputs=[],observedInputs=new Map();
 async function snapshot(from,to,relativePath) {

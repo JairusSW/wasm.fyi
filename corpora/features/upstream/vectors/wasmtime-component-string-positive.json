@@ -1,0 +1,577 @@
+{
+  "schema": 1,
+  "kind": "portable-semantic-vectors",
+  "source": "wasmtime-component-strings",
+  "license": "Apache-2.0 WITH LLVM-exception",
+  "adaptation": "Exact ordinary STRINGS fixtures from strings.rs. Explicit encoding-pair matrix expands upstream ENCODINGS iteration. Requires component string ABI adapter; not executable by the existing u64-only profile.",
+  "cases": [
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf8",
+      "toEncoding": "utf8",
+      "input": "",
+      "expected": ""
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf8",
+      "toEncoding": "utf8",
+      "input": "x",
+      "expected": "x"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf8",
+      "toEncoding": "utf8",
+      "input": "hello this is a particularly long string yes it is it keeps going",
+      "expected": "hello this is a particularly long string yes it is it keeps going"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf8",
+      "toEncoding": "utf8",
+      "input": "à á â ã ä å æ ç è é ê ë",
+      "expected": "à á â ã ä å æ ç è é ê ë"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf8",
+      "toEncoding": "utf8",
+      "input": "Ξ Ο Π Ρ Σ Τ Υ Φ Χ Ψ Ω Ϊ Ϋ ά έ ή",
+      "expected": "Ξ Ο Π Ρ Σ Τ Υ Φ Χ Ψ Ω Ϊ Ϋ ά έ ή"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf8",
+      "toEncoding": "utf8",
+      "input": "ＳＴＵＶＷＸＹＺ",
+      "expected": "ＳＴＵＶＷＸＹＺ"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf8",
+      "toEncoding": "utf8",
+      "input": "ËÌÍÎÏÐÑÒ",
+      "expected": "ËÌÍÎÏÐÑÒ"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf8",
+      "toEncoding": "utf8",
+      "input": "𐀀",
+      "expected": "𐀀"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf8",
+      "toEncoding": "utf8",
+      "input": "à ascii ＶＷＸＹＺ",
+      "expected": "à ascii ＶＷＸＹＺ"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf8",
+      "toEncoding": "utf16",
+      "input": "",
+      "expected": ""
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf8",
+      "toEncoding": "utf16",
+      "input": "x",
+      "expected": "x"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf8",
+      "toEncoding": "utf16",
+      "input": "hello this is a particularly long string yes it is it keeps going",
+      "expected": "hello this is a particularly long string yes it is it keeps going"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf8",
+      "toEncoding": "utf16",
+      "input": "à á â ã ä å æ ç è é ê ë",
+      "expected": "à á â ã ä å æ ç è é ê ë"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf8",
+      "toEncoding": "utf16",
+      "input": "Ξ Ο Π Ρ Σ Τ Υ Φ Χ Ψ Ω Ϊ Ϋ ά έ ή",
+      "expected": "Ξ Ο Π Ρ Σ Τ Υ Φ Χ Ψ Ω Ϊ Ϋ ά έ ή"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf8",
+      "toEncoding": "utf16",
+      "input": "ＳＴＵＶＷＸＹＺ",
+      "expected": "ＳＴＵＶＷＸＹＺ"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf8",
+      "toEncoding": "utf16",
+      "input": "ËÌÍÎÏÐÑÒ",
+      "expected": "ËÌÍÎÏÐÑÒ"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf8",
+      "toEncoding": "utf16",
+      "input": "𐀀",
+      "expected": "𐀀"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf8",
+      "toEncoding": "utf16",
+      "input": "à ascii ＶＷＸＹＺ",
+      "expected": "à ascii ＶＷＸＹＺ"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf8",
+      "toEncoding": "latin1+utf16",
+      "input": "",
+      "expected": ""
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf8",
+      "toEncoding": "latin1+utf16",
+      "input": "x",
+      "expected": "x"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf8",
+      "toEncoding": "latin1+utf16",
+      "input": "hello this is a particularly long string yes it is it keeps going",
+      "expected": "hello this is a particularly long string yes it is it keeps going"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf8",
+      "toEncoding": "latin1+utf16",
+      "input": "à á â ã ä å æ ç è é ê ë",
+      "expected": "à á â ã ä å æ ç è é ê ë"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf8",
+      "toEncoding": "latin1+utf16",
+      "input": "Ξ Ο Π Ρ Σ Τ Υ Φ Χ Ψ Ω Ϊ Ϋ ά έ ή",
+      "expected": "Ξ Ο Π Ρ Σ Τ Υ Φ Χ Ψ Ω Ϊ Ϋ ά έ ή"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf8",
+      "toEncoding": "latin1+utf16",
+      "input": "ＳＴＵＶＷＸＹＺ",
+      "expected": "ＳＴＵＶＷＸＹＺ"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf8",
+      "toEncoding": "latin1+utf16",
+      "input": "ËÌÍÎÏÐÑÒ",
+      "expected": "ËÌÍÎÏÐÑÒ"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf8",
+      "toEncoding": "latin1+utf16",
+      "input": "𐀀",
+      "expected": "𐀀"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf8",
+      "toEncoding": "latin1+utf16",
+      "input": "à ascii ＶＷＸＹＺ",
+      "expected": "à ascii ＶＷＸＹＺ"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf16",
+      "toEncoding": "utf8",
+      "input": "",
+      "expected": ""
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf16",
+      "toEncoding": "utf8",
+      "input": "x",
+      "expected": "x"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf16",
+      "toEncoding": "utf8",
+      "input": "hello this is a particularly long string yes it is it keeps going",
+      "expected": "hello this is a particularly long string yes it is it keeps going"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf16",
+      "toEncoding": "utf8",
+      "input": "à á â ã ä å æ ç è é ê ë",
+      "expected": "à á â ã ä å æ ç è é ê ë"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf16",
+      "toEncoding": "utf8",
+      "input": "Ξ Ο Π Ρ Σ Τ Υ Φ Χ Ψ Ω Ϊ Ϋ ά έ ή",
+      "expected": "Ξ Ο Π Ρ Σ Τ Υ Φ Χ Ψ Ω Ϊ Ϋ ά έ ή"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf16",
+      "toEncoding": "utf8",
+      "input": "ＳＴＵＶＷＸＹＺ",
+      "expected": "ＳＴＵＶＷＸＹＺ"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf16",
+      "toEncoding": "utf8",
+      "input": "ËÌÍÎÏÐÑÒ",
+      "expected": "ËÌÍÎÏÐÑÒ"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf16",
+      "toEncoding": "utf8",
+      "input": "𐀀",
+      "expected": "𐀀"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf16",
+      "toEncoding": "utf8",
+      "input": "à ascii ＶＷＸＹＺ",
+      "expected": "à ascii ＶＷＸＹＺ"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf16",
+      "toEncoding": "utf16",
+      "input": "",
+      "expected": ""
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf16",
+      "toEncoding": "utf16",
+      "input": "x",
+      "expected": "x"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf16",
+      "toEncoding": "utf16",
+      "input": "hello this is a particularly long string yes it is it keeps going",
+      "expected": "hello this is a particularly long string yes it is it keeps going"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf16",
+      "toEncoding": "utf16",
+      "input": "à á â ã ä å æ ç è é ê ë",
+      "expected": "à á â ã ä å æ ç è é ê ë"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf16",
+      "toEncoding": "utf16",
+      "input": "Ξ Ο Π Ρ Σ Τ Υ Φ Χ Ψ Ω Ϊ Ϋ ά έ ή",
+      "expected": "Ξ Ο Π Ρ Σ Τ Υ Φ Χ Ψ Ω Ϊ Ϋ ά έ ή"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf16",
+      "toEncoding": "utf16",
+      "input": "ＳＴＵＶＷＸＹＺ",
+      "expected": "ＳＴＵＶＷＸＹＺ"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf16",
+      "toEncoding": "utf16",
+      "input": "ËÌÍÎÏÐÑÒ",
+      "expected": "ËÌÍÎÏÐÑÒ"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf16",
+      "toEncoding": "utf16",
+      "input": "𐀀",
+      "expected": "𐀀"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf16",
+      "toEncoding": "utf16",
+      "input": "à ascii ＶＷＸＹＺ",
+      "expected": "à ascii ＶＷＸＹＺ"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf16",
+      "toEncoding": "latin1+utf16",
+      "input": "",
+      "expected": ""
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf16",
+      "toEncoding": "latin1+utf16",
+      "input": "x",
+      "expected": "x"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf16",
+      "toEncoding": "latin1+utf16",
+      "input": "hello this is a particularly long string yes it is it keeps going",
+      "expected": "hello this is a particularly long string yes it is it keeps going"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf16",
+      "toEncoding": "latin1+utf16",
+      "input": "à á â ã ä å æ ç è é ê ë",
+      "expected": "à á â ã ä å æ ç è é ê ë"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf16",
+      "toEncoding": "latin1+utf16",
+      "input": "Ξ Ο Π Ρ Σ Τ Υ Φ Χ Ψ Ω Ϊ Ϋ ά έ ή",
+      "expected": "Ξ Ο Π Ρ Σ Τ Υ Φ Χ Ψ Ω Ϊ Ϋ ά έ ή"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf16",
+      "toEncoding": "latin1+utf16",
+      "input": "ＳＴＵＶＷＸＹＺ",
+      "expected": "ＳＴＵＶＷＸＹＺ"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf16",
+      "toEncoding": "latin1+utf16",
+      "input": "ËÌÍÎÏÐÑÒ",
+      "expected": "ËÌÍÎÏÐÑÒ"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf16",
+      "toEncoding": "latin1+utf16",
+      "input": "𐀀",
+      "expected": "𐀀"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "utf16",
+      "toEncoding": "latin1+utf16",
+      "input": "à ascii ＶＷＸＹＺ",
+      "expected": "à ascii ＶＷＸＹＺ"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "latin1+utf16",
+      "toEncoding": "utf8",
+      "input": "",
+      "expected": ""
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "latin1+utf16",
+      "toEncoding": "utf8",
+      "input": "x",
+      "expected": "x"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "latin1+utf16",
+      "toEncoding": "utf8",
+      "input": "hello this is a particularly long string yes it is it keeps going",
+      "expected": "hello this is a particularly long string yes it is it keeps going"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "latin1+utf16",
+      "toEncoding": "utf8",
+      "input": "à á â ã ä å æ ç è é ê ë",
+      "expected": "à á â ã ä å æ ç è é ê ë"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "latin1+utf16",
+      "toEncoding": "utf8",
+      "input": "Ξ Ο Π Ρ Σ Τ Υ Φ Χ Ψ Ω Ϊ Ϋ ά έ ή",
+      "expected": "Ξ Ο Π Ρ Σ Τ Υ Φ Χ Ψ Ω Ϊ Ϋ ά έ ή"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "latin1+utf16",
+      "toEncoding": "utf8",
+      "input": "ＳＴＵＶＷＸＹＺ",
+      "expected": "ＳＴＵＶＷＸＹＺ"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "latin1+utf16",
+      "toEncoding": "utf8",
+      "input": "ËÌÍÎÏÐÑÒ",
+      "expected": "ËÌÍÎÏÐÑÒ"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "latin1+utf16",
+      "toEncoding": "utf8",
+      "input": "𐀀",
+      "expected": "𐀀"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "latin1+utf16",
+      "toEncoding": "utf8",
+      "input": "à ascii ＶＷＸＹＺ",
+      "expected": "à ascii ＶＷＸＹＺ"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "latin1+utf16",
+      "toEncoding": "utf16",
+      "input": "",
+      "expected": ""
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "latin1+utf16",
+      "toEncoding": "utf16",
+      "input": "x",
+      "expected": "x"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "latin1+utf16",
+      "toEncoding": "utf16",
+      "input": "hello this is a particularly long string yes it is it keeps going",
+      "expected": "hello this is a particularly long string yes it is it keeps going"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "latin1+utf16",
+      "toEncoding": "utf16",
+      "input": "à á â ã ä å æ ç è é ê ë",
+      "expected": "à á â ã ä å æ ç è é ê ë"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "latin1+utf16",
+      "toEncoding": "utf16",
+      "input": "Ξ Ο Π Ρ Σ Τ Υ Φ Χ Ψ Ω Ϊ Ϋ ά έ ή",
+      "expected": "Ξ Ο Π Ρ Σ Τ Υ Φ Χ Ψ Ω Ϊ Ϋ ά έ ή"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "latin1+utf16",
+      "toEncoding": "utf16",
+      "input": "ＳＴＵＶＷＸＹＺ",
+      "expected": "ＳＴＵＶＷＸＹＺ"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "latin1+utf16",
+      "toEncoding": "utf16",
+      "input": "ËÌÍÎÏÐÑÒ",
+      "expected": "ËÌÍÎÏÐÑÒ"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "latin1+utf16",
+      "toEncoding": "utf16",
+      "input": "𐀀",
+      "expected": "𐀀"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "latin1+utf16",
+      "toEncoding": "utf16",
+      "input": "à ascii ＶＷＸＹＺ",
+      "expected": "à ascii ＶＷＸＹＺ"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "latin1+utf16",
+      "toEncoding": "latin1+utf16",
+      "input": "",
+      "expected": ""
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "latin1+utf16",
+      "toEncoding": "latin1+utf16",
+      "input": "x",
+      "expected": "x"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "latin1+utf16",
+      "toEncoding": "latin1+utf16",
+      "input": "hello this is a particularly long string yes it is it keeps going",
+      "expected": "hello this is a particularly long string yes it is it keeps going"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "latin1+utf16",
+      "toEncoding": "latin1+utf16",
+      "input": "à á â ã ä å æ ç è é ê ë",
+      "expected": "à á â ã ä å æ ç è é ê ë"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "latin1+utf16",
+      "toEncoding": "latin1+utf16",
+      "input": "Ξ Ο Π Ρ Σ Τ Υ Φ Χ Ψ Ω Ϊ Ϋ ά έ ή",
+      "expected": "Ξ Ο Π Ρ Σ Τ Υ Φ Χ Ψ Ω Ϊ Ϋ ά έ ή"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "latin1+utf16",
+      "toEncoding": "latin1+utf16",
+      "input": "ＳＴＵＶＷＸＹＺ",
+      "expected": "ＳＴＵＶＷＸＹＺ"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "latin1+utf16",
+      "toEncoding": "latin1+utf16",
+      "input": "ËÌÍÎÏÐÑÒ",
+      "expected": "ËÌÍÎÏÐÑÒ"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "latin1+utf16",
+      "toEncoding": "latin1+utf16",
+      "input": "𐀀",
+      "expected": "𐀀"
+    },
+    {
+      "operation": "component-string-roundtrip",
+      "fromEncoding": "latin1+utf16",
+      "toEncoding": "latin1+utf16",
+      "input": "à ascii ＶＷＸＹＺ",
+      "expected": "à ascii ＶＷＸＹＺ"
+    }
+  ]
+}
+
