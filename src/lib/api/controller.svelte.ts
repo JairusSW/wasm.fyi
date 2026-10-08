@@ -81,7 +81,7 @@ async function refreshHistory(targets:{platforms:string[];machine:MachineId}[]){
 export async function connectSite(_origin='',_revision?:string){
  abort?.abort();abort=new AbortController();const signal=abort.signal;apiView.loading=true;apiView.error='';
  try{
-  const platforms=await get<PlatformList>('/api/platforms',signal);const view=emptyView();const catalogue=new Map<string,Bench>();const historyTargets:{platforms:string[];machine:MachineId}[]=[];machines=[];
+  const platforms=await get<PlatformList>('/api/platforms',signal);const view=emptyView();const catalogue=new Map<string,Bench>();const historyTargets:{platforms:string[];machine:MachineId}[]=[];let timingSamples=0;let timingSamplesComplete=true;machines=[];
   for(const {machine,platforms:group} of platformGroups(platforms.items)){
    const platform=group[0];machines.push(machine);
    const host=view.hosts[machine];host.label=machineLabel(platform.cpu);host.os=`${platform.os}/${platform.arch} · ${platform.kernel}`;host.policy={cores:String(platform.cores),memory:platform.memoryBytes?`${(platform.memoryBytes/1024**3).toFixed(1)} GiB`:'not collected'};
@@ -90,9 +90,11 @@ export async function connectSite(_origin='',_revision?:string){
    const all=selectEngineVersions(current.flat().map(normalize));
    historyTargets.push({platforms:group.map(p=>p.id),machine});
    for(const row of all){
+    if(row.latencyStatus==='ok'){if(row.samplesNs?.length)timingSamples+=row.samplesNs.length;else timingSamplesComplete=false;}
     const cid=slot(row.engine);const cfg=CFG.find(c=>c.id===cid)!;CB[cid]=cfg;host.configurations[cid]={runtime:cfg.rt,version:row.engine.startsWith('wago-')?row.engine.slice(5)+' · '+row.version:row.version,backend:row.backend,source:row.source};view.configurations[cid]=row.engine;
     const report=row.capturedAt+'|'+row.engine;view.reports[report]={runId:report,created:row.capturedAt,evidence:'',sha256:'',options:{},codeRecords:[],configurations:[row.engine],host:machine};
-    if(!catalogue.has(row.workload))catalogue.set(row.workload,{id:row.workload,artifactSha256:row.artifactSha256,tags:row.display?.tags||[],kb:row.display?.bytes?row.display.bytes/1024:null,ms:null,group:row.display?.group||(row.workload.startsWith('mechanisms/')?'Host calls':row.workload.split('/')[1]||'Other workloads'),purpose:row.display?.purpose||row.wasm,abi:row.display?.abi||'',src:row.display?.source,reset:row.display?.reset});
+    // Host-call mechanism workloads feed the call-latency view only; they are not listed as workloads.
+    if(!row.workload.startsWith('mechanisms/')&&!catalogue.has(row.workload))catalogue.set(row.workload,{id:row.workload,artifactSha256:row.artifactSha256,tags:row.display?.tags||[],kb:row.display?.bytes?row.display.bytes/1024:null,ms:null,group:row.display?.group||(row.workload.startsWith('mechanisms/')?'Host calls':row.workload.split('/')[1]||'Other workloads'),purpose:row.display?.purpose||row.wasm,abi:row.display?.abi||'',src:row.display?.source,reset:row.display?.reset});
     const base={report,created:row.capturedAt,contract:row.contractSha256,configuration:row.engine};
     const phase=({compile:'compile',instantiate:'inst','first-call':'first',steady:'steady'} as const)[row.phase];
     host.snapshots.s1[`${row.workload}|${cid}|${phase}`]={...base,samples:row.samplesNs?.map(value=>value/1e6),st:status(row.latencyStatus),...(row.latencyNs!=null?{v:row.latencyNs/1e6}:{})};
@@ -104,7 +106,7 @@ export async function connectSite(_origin='',_revision?:string){
 
   }
   if(signal.aborted)return;
-  view.catalogue=[...catalogue.values()];view.applicationConfigurations=[...new Set([...slots.values()])];view.statistics.machines=machines.length;
+  view.catalogue=[...catalogue.values()];view.applicationConfigurations=[...new Set([...slots.values()])];view.statistics.machines=machines.length;view.statistics.timingSamples=timingSamplesComplete?timingSamples:null;
   if(!apiView.ready&&typeof location!=='undefined'){const shown=new URL(location.href).searchParams.get('rt');if(shown){const ids=shown.split(',');ui.hide=Object.fromEntries(CFG.map(c=>[c.id,!ids.includes(c.id)]));}}
   datasetView.current=view;datasetView.revision='';datasetView.generation++;apiView.ready=true;void refreshHistory(historyTargets);
   if(!machines.includes(ui.machine)&&machines.length)ui.machine=machines[0];datasetView.machine=ui.machine;

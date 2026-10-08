@@ -1,7 +1,7 @@
 <script lang="ts">
 	import {shortVersion} from '$lib/version-identity';
 	import { tipCard, tipWho } from '$lib/tip';
-	import { CFG, MACH } from '$lib/data/runtimes';
+	import { CFG, MACH, execOf, type Exec } from '$lib/data/runtimes';
 	import type { MachineId, CfgId } from '$lib/data/types';
 	import {untrack} from 'svelte';
 	import {datasetView} from '$lib/api/view.svelte';
@@ -16,19 +16,41 @@
 
 	$effect(() => {datasetView.machine=ui.machine;untrack(()=>{const count=viewData.history[ui.machine].points.length;ui.histTo=Math.max(0,count-1);ui.histFrom=Math.min(ui.histFrom,Math.max(0,count-1));});});
 	$effect(() => { if (ui.snap !== 's1') ui.snap = 's1'; });
-	const someHidden = $derived(Object.values(ui.hide).some(Boolean));
-	const shown = $derived(CFG.filter((c) => !ui.hide[c.id]));
+	const shown = $derived(CFG.filter((c) => !ui.scope.hide[c.id]));
 	// Phones collapse the scope controls behind a one-line summary.
 	let open = $state(false);
 
 	function toggle(id: (typeof CFG)[number]['id']) {
-		const next:Partial<Record<CfgId,boolean>> = { ...ui.hide, [id]: !ui.hide[id] };
-		if (CFG.every((x) => next[x.id])) return; // keep at least one runtime visible
+		const c = CFG.find((x) => x.id === id)!;
+		// A chip outside the execution filter widens the filter to All and adds just that runtime.
+		if (ui.exec !== 'all' && execOf(c) !== ui.exec) {
+			ui.hide = { ...ui.scope.hide, [id]: false };
+			ui.exec = 'all';
+			return;
+		}
+		const next: Partial<Record<CfgId, boolean>> = { ...ui.hide, [id]: !ui.hide[id] };
+		if (CFG.every((x) => next[x.id] || (ui.exec !== 'all' && execOf(x) !== ui.exec))) return; // keep at least one runtime visible
 		ui.hide = next;
 	}
 	function solo(e: MouseEvent, id: string) {
 		e.preventDefault();
+		const c = CFG.find((x) => x.id === id)!;
+		if (ui.exec !== 'all' && execOf(c) !== ui.exec) ui.exec = 'all';
 		ui.hide = Object.fromEntries(CFG.map((x) => [x.id, x.id !== id]));
+	}
+
+	// Execution filter: hides the other execution model on top of the per-runtime chips.
+	const onMachine = $derived(CFG.filter((c) => viewData.hosts[ui.machine].configurations[c.id]));
+	const execMissing = $derived((['compiler', 'interpreter'] as const).filter((k) => !onMachine.some((c) => execOf(c) === k)));
+	const someHidden = $derived(onMachine.some((c) => ui.scope.hide[c.id]));
+	// A machine without the selected execution model would show an empty table.
+	$effect(() => {
+		// Wait for the machine's configurations to load; an empty list is not "missing".
+		if (onMachine.length && ui.exec !== 'all' && execMissing.includes(ui.exec)) untrack(() => (ui.exec = 'all'));
+	});
+	function setExec(kind: Exec) {
+		ui.exec = kind;
+		ui.hide = {};
 	}
 
 	const advItems = $derived([
@@ -62,6 +84,9 @@
 					<option value={v as MachineId}>{m.l}</option>
 				{/each}
 			</select>
+			<div class="exec" data-tip="Compilers include optimizing and baseline JITs, single-pass and ahead-of-time backends.">
+				<Seg options={[['all', 'All'], ['compiler', 'Compilers'], ['interpreter', 'Interpreters']]} value={ui.exec} onselect={setExec} disabled={execMissing} label="Execution model" />
+			</div>
 			<select bind:value={ui.snap} aria-label="Snapshot" class="snap">
 				{#each SNAP_OPTS as [v, l] (v)}
 					<option value={v}>{l}</option>
@@ -69,7 +94,7 @@
 			</select>
 			<div class="chips" role="group" aria-label="Runtimes shown">
 				{#each CFG as c (c.id)}
-					{@const on = !ui.hide[c.id]}
+					{@const on = !ui.scope.hide[c.id]}
 					<button
 						class="chip"
 						class:off={!on}
@@ -82,7 +107,7 @@
 						<span class="be">{c.be}</span>
 					</button>
 				{/each}
-				{#if someHidden}<button class="all" onclick={() => (ui.hide = {})}>Show all</button>{/if}
+				{#if someHidden}<button class="all" onclick={() => setExec('all')}>Show all</button>{/if}
 			</div>
 		</div>
 		<div class="side">

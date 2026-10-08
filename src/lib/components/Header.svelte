@@ -100,6 +100,11 @@
 				/></svg
 			>
 		</button>
+		<a class="icon sponsor" href="https://github.com/sponsors/JairusSW" aria-label="Sponsor wasm.fyi on GitHub" data-tip="Sponsor wasm.fyi">
+			<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"
+				><path d="M8 13.5S2 10 2 5.75A3.25 3.25 0 0 1 8 4a3.25 3.25 0 0 1 6 1.75C14 10 8 13.5 8 13.5Z" /></svg
+			>
+		</a>
 		<a class="icon" href="https://github.com/JairusSW/wasm.fyi" aria-label="wasm.fyi on GitHub" data-tip="wasm.fyi on GitHub">
 			<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="currentColor"
 				><path
@@ -220,6 +225,12 @@
 	.icon:hover {
 		color: var(--fg);
 		border-color: var(--fg3);
+	}
+	.sponsor:hover {
+		color: #db61a2;
+	}
+	.sponsor:hover svg {
+		fill: currentColor;
 	}
 	.search-toggle {
 		display: none;

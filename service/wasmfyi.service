@@ -1,0 +1,23 @@
+[Unit]
+Description=wasm.fyi API and frontend
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=wasmfyi
+Group=wasmfyi
+EnvironmentFile=/etc/wasmfyi/environment
+WorkingDirectory=/opt/wasmfyi/current
+ExecStart=/opt/wasmfyi/current/wasmfyi serve --data /var/lib/wasmfyi --frontend /opt/wasmfyi/current/frontend --listen 127.0.0.1:8090 --trusted-proxies 127.0.0.1/32
+Restart=on-failure
+RestartSec=3
+CPUAffinity=0 1
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/wasmfyi
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

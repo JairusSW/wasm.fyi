@@ -105,8 +105,20 @@ preview:
 pages-build:
     BASE_PATH="/wasm.fyi" just build
 
-# Deploy the committed branch through the GitHub Pages workflow.
-deploy ref="main":
+# Deploy the prepared production build to Remote without compiling on this device.
+deploy host="root@remote":
+    bash scripts/deploy-remote.sh {{quote(host)}}
+
+# Build and deploy the committed main branch through GitHub Actions.
+deploy-ci:
+    gh workflow run deploy-remote.yml --ref main
+
+# Show recent production deployments.
+deploy-status:
+    gh run list --workflow deploy-remote.yml --limit 5
+
+# Deploy the committed branch through the legacy GitHub Pages workflow.
+deploy-pages ref="main":
     gh workflow run deploy-pages.yml --ref {{quote(ref)}}
 
 # Start an immediate refresh on the registered wasm-bench runner.
@@ -174,6 +186,14 @@ automation-check:
 # Rebuild the original feature corpus with the pinned compiler and WASI adapter.
 features-build:
     node scripts/feature-corpus.mjs build
+
+# Build long, single-feature execution contracts separately from correctness probes.
+features-performance-build: features-build
+    node scripts/feature-performance-suite.mjs
+
+# Probe long feature contracts using a saved adapter/source/host plan.
+features-performance-probe plan:
+    node scripts/feature-performance-probe.mjs {{quote(plan)}}
 
 # Execute exact feature oracles across all configured runtimes.
 features-check: features-adapters

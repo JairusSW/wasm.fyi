@@ -6,20 +6,22 @@
 		onselect,
 		mono = false,
 		size = 'sm',
-		label
+		label,
+		disabled = []
 	}: {
 		options: [T, string][];
-		value: T;
+		value: T | null;
 		onselect: (v: T) => void;
 		mono?: boolean;
 		size?: 'sm' | 'md' | 'lg';
 		label?: string;
+		disabled?: T[];
 	} = $props();
 </script>
 
 <div class="seg {size}" role="group" aria-label={label}>
 	{#each options as [v, text] (text)}
-		<button aria-pressed={v === value} class:mono onclick={() => onselect(v)}>{text}</button>
+		<button aria-pressed={v === value} class:mono disabled={disabled.includes(v)} onclick={() => onselect(v)}>{text}</button>
 	{/each}
 </div>
 
@@ -44,6 +46,10 @@
 	button[aria-pressed='true'] {
 		background: var(--line2);
 		color: var(--fg);
+	}
+	button:disabled {
+		opacity: 0.4;
+		cursor: default;
 	}
 	.mono {
 		font-family: var(--mono);

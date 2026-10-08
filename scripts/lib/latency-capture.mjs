@@ -1,3 +1,4 @@
+import {collectFeatureBatches} from './feature-timing.mjs';
 import {readFile,readdir,mkdir,rm} from 'node:fs/promises';
 import {join,basename} from 'node:path';
 import {digest} from './wasmbench.mjs';
@@ -38,7 +39,7 @@ export function summarizeLatencies({manifest,trials,workloads,engines,scenarios=
 }
 
 // Kernel peak RSS comes from timing-process exit; code needs one cold compile.
-function summarizeResources(trials,phase) {
+export function summarizeResources(trials,phase) {
  const out={memoryStatus:'not-measured',peakRssBytes:null,codeStatus:'not-measured',codeBytes:null,codeKind:null};
  for(const [profile,scenario,field,statusField,metric] of [['memory',phase,'peakRssBytes','memoryStatus','process.peak_rss'],['code','compile','codeBytes','codeStatus','native.code_image']]) {
   const all=trials.filter(t=>t.profile===profile||(t.profile==='timing'&&(profile==='memory'?(t.observations||[]).some(o=>o.metric===metric):[...(t.observations||[]),...(t.samples||[]).filter(s=>s.verified&&!s.warmup).flatMap(s=>s.observations||[])].some(o=>o.metric==='native.code_size'||o.metric==='native.code_image'))));
@@ -74,7 +75,7 @@ export async function collectLatencies({directory,workloads,engines,collection,r
  const shared=['--archive-tools=false','--suite',suite,'--runtimes',engines.join(','),'--workers','1','--timeout',collection.timeout,'--validation-profile',collection.validationProfile||'all'];
  const execute=async(out,selected,operations,samples,profile='timing',runtimeIds=engines)=>{
   const runnerStarted=performance.now();
-  try {await run('run',...shared.map((value,index)=>shared[index-1]==='--runtimes'?runtimeIds.join(','):value),'--timing-peak-rss='+String(profile==='timing'&&!!collection.memory),...(profile==='memory'&&collection.phaseBarriers?['--phase-barriers']:[]),'--profile',profile,'--launches',String(profile==='timing'?collection.launches:1),'--scenarios',selected.join(','),'--samples',String(samples),'--samples-by-scenario',JSON.stringify(Object.fromEntries(Object.entries(profile==='timing'?collection.scenarioSamples||{}:{'*':1}).filter(([p])=>p==='*'||selected.includes(p)))),'--operations',String(operations),'--warmup',String(profile==='timing'?collection.warmup:0),'--out',out);}
+  try {await run('run',...shared.map((value,index)=>shared[index-1]==='--runtimes'?runtimeIds.join(','):value),'--timing-peak-rss='+String(profile==='timing'&&!!collection.memory),...(profile==='memory'&&collection.phaseBarriers?['--phase-barriers']:[]),'--profile',profile,'--launches',String(profile==='timing'?(workloads.every(w=>w.provenance?.performance)&&selected.includes('steady')?Math.max(3,collection.launches||1):collection.launches):1),'--scenarios',selected.join(','),'--samples',String(samples),'--samples-by-scenario',JSON.stringify(Object.fromEntries(Object.entries(profile==='timing'?collection.scenarioSamples||{}:{'*':1}).filter(([p])=>p==='*'||selected.includes(p)))),'--operations',String(operations),'--warmup',String(profile==='timing'?(workloads.every(w=>w.provenance?.performance)&&selected.includes('steady')?7:collection.warmup):0),'--out',out);}
   catch(error){
    // A failed trial is data only when the producer completed its sealed output.
    // Infrastructure failures or incomplete runs remain errors.
@@ -86,9 +87,16 @@ export async function collectLatencies({directory,workloads,engines,collection,r
  const load=async(out)=>Promise.all((await readdir(join(out,'trials'))).filter(name=>name.endsWith('.json')).map(async name=>parseCorpusJSON(await readFile(join(out,'trials',name),'utf8'))));
  try {
   const calls=workloads.every(w=>w.id.startsWith('mechanisms/'))&&scenarios.includes('steady');
-  const ordinary=calls?scenarios.filter(p=>p!=='steady'):scenarios;
+  const featurePerformance=workloads.every(w=>w.provenance?.performance)&&scenarios.includes('steady');
+  const ordinary=(calls||featurePerformance)?scenarios.filter(p=>p!=='steady'):scenarios;
   const timing=join(scratch,'timing');let manifest,trials=[];
   if(ordinary.length){await execute(timing,ordinary,collection.operations,collection.samples);manifest=JSON.parse(await readFile(join(timing,'manifest.json')));trials=await load(timing);}
+  if(featurePerformance){
+   const out=await collectFeatureBatches({directory:scratch,samples:collection.samples,operations:collection.operations,run:(out,operations,samples)=>execute(out,['steady'],operations,samples),load});
+   const featureManifest=JSON.parse(await readFile(join(out,'manifest.json')));if(manifest&&JSON.stringify(manifest.host)!==JSON.stringify(featureManifest.host))throw Error('Feature phases changed platform');
+   if(manifest&&JSON.stringify(manifest.lock.runtime_configurations)!==JSON.stringify(featureManifest.lock.runtime_configurations))throw Error('Engine identity changed during feature capture');
+   manifest=featureManifest;trials.push(...await load(out));
+  }
   if(calls){
    const out=await collectCallBatches({directory:scratch,prefix:'calls',operations:callBatchOperations(workloads[0]),samples:collection.samples,run:(out,operations,samples)=>execute(out,['steady'],operations,samples),verify:async()=>{},load});
    const callManifest=JSON.parse(await readFile(join(out,'manifest.json')));

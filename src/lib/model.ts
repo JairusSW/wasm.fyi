@@ -6,7 +6,7 @@ import { aggregate } from './aggregates';
 import { viewCell, viewData } from './view-data';
 // Derived computations over the snapshot. Everything here is pure: callers pass
 // the comparison scope (machine, baseline, visible runtimes) explicitly.
-import { CB, CFG, FEATURE_CFG, MACH, WF } from './data/runtimes';
+import { CB, CFG, FEATURE_CFG, MACH, WF, execOf, type Exec } from './data/runtimes';
 import { MET, OTM, UNIT } from './data/snapshot';
 import type { Bench, Cfg, CfgId, MachineId, MetricKey, OtMetricKey, RatioCi, Status } from './data/types';
 import { fmtU, fmtUGroup, fx, n0, relative, type DeltaFormat } from './format';
@@ -18,7 +18,12 @@ export interface Scope {
 	cohortMode?: 'shared' | 'per-engine';
 	hide: Partial<Record<CfgId, boolean>>;
 	snapshot?: 's1' | 's2';
+	exec?: Exec;
 }
+
+/** Interpreter translation is not compilation: keep interpreters out of compile metrics unless the scope selects interpreters. */
+export const compileExcluded = (s: Scope, c: Cfg, metric: string) =>
+	(metric === 'compile' || metric === 'rssCompile') && (s.exec ?? 'compiler') !== 'interpreter' && execOf(c) === 'interpreter';
 
 export type PerfGroup = 'lat' | 'mem' | 'code';
 
@@ -109,7 +114,7 @@ export function seriesFmt(key: OtMetricKey, format: DeltaFormat = 'percent') {
 
 /** Headline leader for one aggregate: clear only when the 95% intervals do not overlap. */
 export function leader(s: Scope, label: string, group: PerfGroup, col: number, metric: MetricKey) {
-	const list = CFG.filter(c => viewData.applicationConfigurations.includes(c.id) && compilationCandidate(c.rt,metric))
+	const list = CFG.filter(c => viewData.applicationConfigurations.includes(c.id) && compilationCandidate(c.rt,metric) && !compileExcluded(s,c,metric))
 		.map((c) => ({ c, x: ratio(s, group, c.id, col) }))
 		.filter((e): e is { c: Cfg; x: NonNullable<ReturnType<typeof ratio>> } => e.x != null && isVisible(s, e.c))
 		.sort((a, b) => a.x.r - b.x.r);

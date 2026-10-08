@@ -12,7 +12,7 @@
 	import type { CfgId } from '$lib/data/types';
 	import { pc } from '$lib/format';
 	import { href } from '$lib/links';
-	import { isOff, isVisible, otSeries, seriesFmt } from '$lib/model';
+	import { compileExcluded, isOff, isVisible, otSeries, seriesFmt } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 import { historySegments, historyCurve, historyReusesEvidence, historyPointInfo, historyEndpoints, historyVersionChanges, historyCoverage, historyComparison } from '$lib/history-values';
 import { viewData } from '$lib/view-data';
@@ -44,7 +44,7 @@ import HistoryMarker from '../HistoryMarker.svelte';
  function observeHistory(node:HTMLElement){const observer=new IntersectionObserver(entries=>{visible=entries.some(entry=>entry.isIntersecting)});observer.observe(node);return {destroy(){observer.disconnect()}}}
  $effect(()=>{
   if(!visible||!apiView.ready)return;
-  const scope={machine:ui.machine,snapshot:ui.snap,metric:ui.metric,hide:{...ui.hide},baseline:ui.baseline,weighting:ui.weighting};
+  const scope={machine:ui.machine,snapshot:ui.snap,metric:ui.metric,hide:{...ui.scope.hide},baseline:ui.baseline,weighting:ui.weighting};
   void loadHistory(scope,ui.otMetric).then(()=>{const max=Math.max(0,SNAPS.length-1);ui.histFrom=Math.min(ui.histFrom,max);ui.histTo=Math.min(ui.histTo,max)});
  });
 	const oi = $derived(OTM_KEYS.indexOf(ui.otMetric));
@@ -70,7 +70,7 @@ import HistoryMarker from '../HistoryMarker.svelte';
 	const rows = $derived.by(() => {
 		const s = ui.scope;
 		const { fv, chg, col } = seriesFmt(ui.otMetric,ui.deltaFormat);
-		return CFG.filter((c) => !s.hide[c.id] && (isVisible(s, c) || otSeries(s,c.id,ui.otMetric))).map((c) => {
+		return CFG.filter((c) => !s.hide[c.id] && !compileExcluded(s, c, ui.otMetric) && (isVisible(s, c) || otSeries(s,c.id,ui.otMetric))).map((c) => {
 			const vals = otSeries(s, c.id, ui.otMetric);
 			if (!vals) return { c, na: true as const, now: isOff(s, c.id) ? 'unavailable' : 'n/a' };
 			const finite=vals.filter(Number.isFinite);

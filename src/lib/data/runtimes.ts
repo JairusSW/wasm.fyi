@@ -97,3 +97,8 @@ for(const c of CFG) {
 }
 
 export function configIdentity(machine:MachineId,id:CfgId){const c=viewData.hosts[machine].configurations[id];return c?versionIdentity(c.version,c.source):{label:"not collected",url:null};}
+
+/** Execution model for the scope filter. Backend names decide; configurations without one fall back to runtimes that only interpret (e.g. LibWasm). */
+export type Exec = 'all' | 'compiler' | 'interpreter';
+export const execOf = (c: Cfg): Exclude<Exec, 'all'> =>
+	c.interp || /interp/i.test(c.be) || (!c.be && runtimeRegistry.find((r) => r.id === c.rt)?.exec.join() === 'Interpreter') ? 'interpreter' : 'compiler';

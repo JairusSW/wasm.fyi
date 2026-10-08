@@ -2,7 +2,7 @@ import {datasetView} from './api/view.svelte';
 // Global UI state. Filters are URL-backed: scope keys (machine, snapshot,
 // runtimes) persist across pages; page keys reset to their defaults when a
 // URL omits them, so any view can be shared by copying the address bar.
-import { CFG } from './data/runtimes';
+import { CFG, execOf, type Exec } from './data/runtimes';
 import { viewData } from './view-data';
 import { comparisonBaseline } from './comparison-baseline';
 const defaultConfig=CFG.find(c=>viewData.hosts.m1.configurations[c.id]||viewData.hosts.m2.configurations[c.id])?.id||'A';
@@ -95,6 +95,7 @@ const FIELDS = {
 	machine: { codec: str<MachineId>('m', 'm1', ['m1', 'm2', 'm3']), routes: '*' },
 	snap: { codec: str('snap', 's1', ['s1', 's2']), routes: '*' },
 	hide: { codec: hideCodec, routes: '*' },
+	exec: { codec: str<Exec>('exec', 'compiler', ['all', 'compiler', 'interpreter']), routes: '*' },
 	group: { codec: str<OvKey>('view', 'lat', ['lat', 'calls', 'mem', 'code', 'cov']), routes: ['/benchmarks'] },
 	metric: { codec: str<MetricKey>('metric', 'steady', METRICS), routes: ['/benchmarks'] },
 	tag: { codec: nullable('tag'), routes: ['/benchmarks'] },
@@ -129,6 +130,9 @@ class UiState {
 	machine = $state<MachineId>('m1');
 	snap = $state<'s1' | 's2'>('s1');
 	hide = $state<Partial<Record<CfgId, boolean>>>({});
+	/** Execution-model filter; combined with the per-runtime `hide` choices in `scope.hide`. */
+	exec = $state<Exec>('compiler');
+	shownHide = $derived(this.exec === 'all' ? this.hide : { ...this.hide, ...Object.fromEntries(CFG.filter((c) => execOf(c) !== this.exec).map((c) => [c.id, true])) });
 	baseline = $derived(comparisonBaseline(defaultConfig, CFG.filter(c => viewData.hosts[this.machine].configurations[c.id]).map(c => c.id)));
 	weighting = $state<'corpus' | 'workload'>('corpus');
 	cohortMode = $state<'shared' | 'per-engine'>('per-engine');
@@ -171,7 +175,7 @@ class UiState {
 	xReuse = $state<'single' | 'shared' | 'cached'>('single');
 	xLog = $state(2);
 
-	scope: Scope = $derived({ machine: this.machine, baseline: this.baseline, weighting: this.weighting, cohortMode: this.cohortMode, hide: this.hide, snapshot:this.snap });
+	scope: Scope = $derived({ machine: this.machine, baseline: this.baseline, weighting: this.weighting, cohortMode: this.cohortMode, hide: this.shownHide, snapshot:this.snap, exec: this.exec });
 
 	/** Applies URL params for `routeId`. Scope keys missing from the URL keep their current value. */
 	loadFromUrl(url: URL, routeId: string | null) {

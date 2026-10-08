@@ -26,9 +26,14 @@
 		<a href="https://github.com/JairusSW/wasm.fyi/blob/main/docs/wasmbench-integration.md">Methodology</a>
 		<a href="https://github.com/JairusSW/wasm.fyi/blob/main/README.md">Contribute</a>
 		<a href="https://github.com/JairusSW/wasm.fyi">GitHub</a>
+		<a href="https://github.com/sponsors/JairusSW">Sponsor</a>
 		<a href={siteHref('/llms.txt')}>LLM reference</a>
 		<a href={'/api/platforms'}>Machine-readable data</a>
 	</div>
+	<p class="sponsor-note">
+		💖 wasm.fyi is built and run free of charge. If it's useful to you or your company, or you'd like it to keep going,
+		<em>please</em> consider <a href="https://github.com/sponsors/JairusSW">sponsoring</a>. It'd truly mean the world.
+	</p>
 </footer>
 
 <style>
@@ -67,6 +72,23 @@
 	}
 	a:hover {
 		color: var(--fg);
+	}
+	.sponsor-note {
+		grid-column: 1 / -1;
+		margin: 0;
+		padding-top: 16px;
+		border-top: 1px solid var(--line);
+		font-size: 12px;
+		color: var(--fg2);
+	}
+	.sponsor-note a {
+		color: var(--fg);
+		text-decoration: underline;
+		text-decoration-color: var(--line2);
+		text-underline-offset: 3px;
+	}
+	.sponsor-note a:hover {
+		color: #db61a2;
 	}
 	@media (max-width: 720px) {
 		footer {

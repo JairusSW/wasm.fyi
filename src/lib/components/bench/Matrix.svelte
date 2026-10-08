@@ -9,7 +9,7 @@ import { ST } from '$lib/data/status';
 	import type { MetricKey, OvKey } from '$lib/data/types';
 	import { fmtUGroup, n0 } from '$lib/format';
 	import { heatCount, heatRatio } from '$lib/heat';
-	import { totalWorkloads, sharedCount, cov, absOf, disp, isOff, isVisible, ratio } from '$lib/model';
+	import { totalWorkloads, sharedCount, cov, absOf, disp, isOff, isVisible, ratio, compileExcluded } from '$lib/model';
 import { ui } from '$lib/state.svelte';
 import { viewCell, viewData } from '$lib/view-data';
 	import Carousel from '../Carousel.svelte';
@@ -94,6 +94,7 @@ import { viewCell, viewData } from '$lib/view-data';
 				}
 				const grp = ui.group as 'lat' | 'mem' | 'code';
 				const sourceIndex = grp === 'code' ? i + 3 : i;
+				if ((grp === 'lat' || grp === 'mem') && compileExcluded(s, c, g.metrics[i])) return { text: 'n/a', bg: 'transparent', color: 'var(--fg3)' };
 				const r = ratio(s, grp, c.id, sourceIndex);
                 const absolute=absOf(s,grp,c.id,sourceIndex);
 				if (!absolute) {

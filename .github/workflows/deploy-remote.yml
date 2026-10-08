@@ -1,0 +1,77 @@
+name: Deploy Remote
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: wasm-fyi-production
+  cancel-in-progress: false
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.4.0'
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: service/go.mod
+          cache-dependency-path: service/go.sum
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm test
+      - name: Test API and release activation
+        run: |
+          (cd service && GOWORK=off GOFLAGS=-mod=readonly go test ./...)
+          python3 scripts/activate-remote.test.py
+      - name: Build production frontend and static API
+        run: |
+          pnpm build
+          mkdir -p release/frontend
+          cp -a build/. release/frontend/
+          (cd service && CGO_ENABLED=0 GOWORK=off GOFLAGS=-mod=readonly go build -trimpath -ldflags='-s -w' -o ../release/wasmfyi ./cmd/wasmfyi)
+        env:
+          BASE_PATH: ''
+      - uses: actions/upload-artifact@v4
+        with:
+          name: production-release
+          path: release/
+          retention-days: 7
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: production
+      url: https://wasm.fyi
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: production-release
+          path: release
+      - name: Upload and activate release
+        env:
+          REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
+          REMOTE_USER: ${{ secrets.REMOTE_USER }}
+          REMOTE_DEPLOY_KEY: ${{ secrets.REMOTE_DEPLOY_KEY }}
+          REMOTE_KNOWN_HOSTS: ${{ secrets.REMOTE_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 "$RUNNER_TEMP/deploy-ssh"
+          printf '%s\n' "$REMOTE_DEPLOY_KEY" > "$RUNNER_TEMP/deploy-ssh/key"
+          printf '%s\n' "$REMOTE_KNOWN_HOSTS" > "$RUNNER_TEMP/deploy-ssh/known_hosts"
+          chmod 600 "$RUNNER_TEMP/deploy-ssh/key" "$RUNNER_TEMP/deploy-ssh/known_hosts"
+          trap 'rm -f "$RUNNER_TEMP/deploy-ssh/key"' EXIT
+          target="$REMOTE_USER@$REMOTE_HOST"
+          transport="ssh -i $RUNNER_TEMP/deploy-ssh/key -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$RUNNER_TEMP/deploy-ssh/known_hosts -o ConnectTimeout=15"
+          $transport "$target" "mkdir -p /var/lib/wasmfyi-deploy/incoming/$GITHUB_SHA"
+          rsync -a --delete -e "$transport" release/ "$target:/var/lib/wasmfyi-deploy/incoming/$GITHUB_SHA/"
+          $transport "$target" "sudo -n /usr/local/sbin/wasmfyi-activate $GITHUB_SHA"
+          deployed=$($transport "$target" 'cat /opt/wasmfyi/current/commit')
+          test "$deployed" = "$GITHUB_SHA"
+          curl --fail --retry 3 --retry-delay 2 https://wasm.fyi/healthz

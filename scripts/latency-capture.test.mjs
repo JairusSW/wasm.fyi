@@ -115,3 +115,20 @@ test('already compiled native code size avoids a duplicate transpiler/compiler p
   assert.equal(passes,1);assert(capture.results.every(r=>r.codeStatus==='ok'&&r.codeBytes===1234&&r.codeKind==='engine-reported'));
  }finally{await rm(directory,{recursive:true,force:true})}
 });
+
+test('feature capture warms long steady batches and retains only the duration-qualified samples',async()=>{
+ const directory=await mkdtemp(join(tmpdir(),'feature-duration-capture-'));let calls=0;
+ const feature={...workload,id:'features/core-num/test/performance-4096x64',reset:'stateless',provenance:{performance:true}};
+ try{
+  await writeFile(join(directory,'wago-suite.json'),JSON.stringify([feature]));
+  const capture=await collectLatencies({directory,workloads:[feature],engines:['engine'],collection:{scenarios:'steady',timeout:'1s',launches:1,samples:5,operations:1,warmup:2},run:async(command,...args)=>{
+   calls++;assert.equal(command,'run');assert.equal(args[args.indexOf('--warmup')+1],'7');assert.equal(args[args.indexOf('--launches')+1],'3');
+   const operations=Number(args[args.indexOf('--operations')+1]),out=args[args.indexOf('--out')+1];
+   await mkdir(join(out,'trials'),{recursive:true});await writeFile(join(out,'manifest.json'),JSON.stringify(manifest));
+   const t={...trial(0,[]),workload:feature.id,samples:Array.from({length:5},()=>({elapsed_ns:calls===1?1000000:126000000,operations,verified:true,warmup:false}))};
+   for(let block=0;block<3;block++)await writeFile(join(out,'trials/steady-'+block+'.json'),JSON.stringify({...t,block}));
+  }});
+  assert.equal(calls,2);assert.equal(capture.results[0].timingSamples,15);assert.deepEqual(capture.results[0].samplesNs,Array(15).fill(2000000));
+  assert.deepEqual(await readdir(directory),['wago-suite.json']);
+ }finally{await rm(directory,{recursive:true,force:true})}
+});

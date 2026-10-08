@@ -123,7 +123,7 @@
 
 <section class="tiles-row">
 	{#each tiles as [v, l] (l)}
-		<div class="tile"><span class="mono tv" title={v==null?undefined:shortCount(v) === n0(v) ? undefined : n0(v)}>{v==null?'not collected':shortCount(v)}</span><span class="fg3">{l}</span></div>
+		<div class="tile"><span class="mono tv" title={v==null?undefined:shortCount(v) === n0(v) ? undefined : n0(v)}>{v==null?'not collected':shortCount(v)}</span> <span class="fg3">{l}</span></div>
 	{/each}
 </section>
 

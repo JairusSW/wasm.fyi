@@ -13,15 +13,15 @@
 	import { fmtU, fmtUGroup, n0, workloadName } from '$lib/format';
 	import { heatCount } from '$lib/heat';
 	import { benchHref } from '$lib/links';
-	import { benchVal, isVisible } from '$lib/model';
+	import { benchVal, compileExcluded, isVisible } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 	import Seg from '../Seg.svelte';
 	import Swatch from '../Swatch.svelte';
 
-	const cols = $derived(CFG.filter((c) => isVisible(ui.scope, c)));
+	const cols = $derived(CFG.filter((c) => isVisible(ui.scope, c) && !compileExcluded(ui.scope, c, ui.metric)));
 	function more(){
 		if(apiView.pageLoading||!apiView.page?.nextCursor)return;
-		void loadPage({machine:ui.machine,snapshot:ui.snap,metric:ui.metric,hide:{...ui.hide},baseline:ui.baseline,weighting:ui.weighting,search:ui.q,tag:ui.tag,sortBy:ui.sortBy},apiView.pageIndex+1,true);
+		void loadPage({machine:ui.machine,snapshot:ui.snap,metric:ui.metric,hide:{...ui.scope.hide},baseline:ui.baseline,weighting:ui.weighting,search:ui.q,tag:ui.tag,sortBy:ui.sortBy},apiView.pageIndex+1,true);
 	}
 	function watchMore(node:HTMLElement,_cursor:string|undefined){
 		const observer=new IntersectionObserver(entries=>{if(entries.some(e=>e.isIntersecting)&&!apiView.pageError)more()},{rootMargin:'300px'});

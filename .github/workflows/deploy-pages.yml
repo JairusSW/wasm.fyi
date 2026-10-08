@@ -1,7 +1,5 @@
-name: Deploy website
+name: Deploy legacy Pages preview
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read

@@ -10,7 +10,7 @@
   let active=$state('');
   $effect(()=>{
     active='';
-    if(selection)untrack(()=>{for(const configuration of selection.track.configurations){const identity=viewData.featureVersions[ui.machine].find(v=>v.id===configuration.id&&v.version===configuration.version)?.identity;if(identity)void loadFeatures({machine:ui.machine,snapshot:ui.snap,metric:ui.metric,hide:{...ui.hide},baseline:ui.baseline,weighting:ui.weighting},selection.feature,identity)}});
+    if(selection)untrack(()=>{for(const configuration of selection.track.configurations){const identity=viewData.featureVersions[ui.machine].find(v=>v.id===configuration.id&&v.version===configuration.version)?.identity;if(identity)void loadFeatures({machine:ui.machine,snapshot:ui.snap,metric:ui.metric,hide:{...ui.scope.hide},baseline:ui.baseline,weighting:ui.weighting},selection.feature,identity)}});
     if(selection)void tick().then(()=>{if(selection && !dialog.open)dialog.showModal();});
     else if(dialog?.open)dialog.close();
   });

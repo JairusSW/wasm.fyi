@@ -1,0 +1,21 @@
+[Unit]
+Description=Publish completed wasm.fyi captures on Remote
+After=network-online.target wasmfyi.service
+Wants=network-online.target
+Requires=wasmfyi.service
+
+[Service]
+EnvironmentFile=/etc/wasmfyi/environment
+ExecStart=/usr/bin/python3 /usr/local/lib/wasmfyi/publish-host-captures.py --root /root/.cache/wasm-fyi --state /var/lib/wasmfyi-publisher --hub hub@hub
+Restart=on-failure
+RestartSec=5
+CPUAffinity=0 1
+Nice=10
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/wasmfyi-publisher /root/.ssh /tmp
+
+[Install]
+WantedBy=multi-user.target
