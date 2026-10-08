@@ -40,7 +40,7 @@ jobs:
       # Validate the live API client and current UI calculation contracts here.
       - name: Test current API and UI contracts
         run: >-
-          pnpm test -- src/lib/api
+          pnpm exec vitest run src/lib/api
           src/lib/latency.test.ts src/lib/version-identity.test.ts
           src/lib/call-total.test.ts src/lib/peak-rss-average.test.ts
           src/lib/main-latency.test.ts src/lib/native-code-cohort.test.ts
