@@ -13,7 +13,9 @@ await mkdir(root,{recursive:true});
 async function save(){state.updated=new Date().toISOString();await writeFile(join(root,'status.json'),JSON.stringify(state,null,2)+'\n')}
 async function currentWorkActive(){
  const s=await readFile(join(main,'coordinator-status.json'),'utf8').then(JSON.parse,()=>null);
- if(!s||s.status==='running')return true;
+ // A stopped coordinator can still have missing source builds or captures.
+ // Features wait for the general corpus completion audit to pass.
+ if(!s||s.status!=='completed')return true;
  // A free measurement lock alone is insufficient: builders can be between stages.
  const output=await new Promise((ok,fail)=>{const p=spawn('ps',['-eo','pid,args']);let text='';p.stdout.on('data',d=>text+=d);p.on('error',fail);p.on('exit',()=>ok(text))});
  return output.split('\n').some(line=>!line.trim().startsWith(String(process.pid)+' ')&&line.includes(main)&&/benchmark-(round-robin|engine-history|go-history|libwasm-history|history-worker)|repair-(wasmer-native-code|wamr-code|capture-code)/.test(line));
