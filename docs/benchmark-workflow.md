@@ -42,6 +42,23 @@ The default worker budget is 25% of the logical CPUs admitted to each process, r
 
 `hub` comes from `hosts` in `wasmbench.config.json`. Add other named SSH machines there, or pass an SSH alias / `user@host` directly. SSH must work noninteractively. Each remote host needs Git, rsync, Go, Cargo/Rust, tar, curl and (on Linux) taskset. If the configured local harness checkout is absent, the command fetches `harnessSource` at its exact configured commit. The command installs the pinned Node/V8 on SSH hosts, transfers the selected cached inputs and source revisions, builds native adapters on the destination, and retrieves completed corpora individually. It does not require a GitHub key on the destination. Wasmer's pinned SDK is prepared automatically; WAVM requires the pinned native SDK at the configured path or `WASMBENCH_WAVM_SDK`. Unavailable prerequisites fail during preparation before measurements start; no engine is substituted.
 
+## Call latency
+
+```sh
+just bench --corpus mechanisms --calls-only --machines local,hub
+```
+
+This collects timing only and calibrates each accepted batch to at least 0.5 ms,
+including warmup batches. Host → Wasm → host repeatedly invokes a typed identity
+export. Wasm → host → Wasm invokes a guest loop containing one million typed
+identity callbacks, then divides elapsed time by the number of callbacks.
+Guest loop control and amortized outer host entry/return remain included.
+If a batch is too short, the collector increases its invocation count and retries;
+raw trial logs and calibration decisions are retained. GCC callbacks remain
+opaque under optimization so identity calls cannot disappear. Older callback
+history is labeled legacy because it timed one outer host call per callback.
+The two directions are measured separately; no synthetic round-trip sum is used.
+
 ## Progress, stop and resume
 
 ```sh

@@ -198,7 +198,7 @@ func TestControlSocketSafety(t *testing.T) {
 	}
 }
 
-func TestServeOwnsControlLifecycle(t *testing.T) {
+func TestLegacyServeOwnsControlLifecycle(t *testing.T) {
 	_, root, _, _ := controlFixture(t)
 	// Use a distinct owner directory; the fixture owner stays open throughout.
 	t.Setenv("WASMFYI_ADMIN_TOKEN", strings.Repeat("x", 32))
@@ -207,7 +207,7 @@ func TestServeOwnsControlLifecycle(t *testing.T) {
 	defer cancel()
 	done := make(chan error, 1)
 	go func() {
-		done <- run(ctx, []string{"serve", "--data", filepath.Join(root, "served"), "--listen", "127.0.0.1:0", "--control-socket", socket})
+		done <- run(ctx, []string{"legacy-serve", "--data", filepath.Join(root, "served"), "--listen", "127.0.0.1:0", "--control-socket", socket})
 	}()
 	deadline := time.Now().Add(3 * time.Second)
 	for {

@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 )
 
+const MaxReportFiles = 24
+
 const ReportFileChunkBytes = 1024 * 1024
 const ReportFileBytes = 1024 * 1024 * 1024
 
@@ -36,7 +38,12 @@ func ReportFileData(data []byte) (ReportFile, error) {
 	if file.Schema != 1 || file.Kind != "report-file" || !IsHash(file.ReportID) || file.Encoding != "identity" || !IsHash(file.SHA256) || file.Bytes < 0 || file.Bytes > ReportFileBytes || file.Chunks == nil || len(file.Chunks) > 1024 {
 		return file, Invalid("invalid report file descriptor")
 	}
-	if file.Name == "report.tar.gz" {
+	retained := map[string]string{"retained-site-metadata.json": "application/json", "retained-producer-data.json": "application/json", "retained-producer-checksums.json": "application/json", "retained-site-report.json": "application/json", "retained-trials.json": "application/json", "retained-throughput.json": "application/json", "retained-receipt.json": "application/json", "retained-parent-index.json": "application/json", "retained-parent-metadata.json": "application/json", "retained-parent.tar.gz": "application/gzip", "retained-index.json": "application/json", "retained-history.json": "application/json", "retained-catalog.json": "application/json", "retained-collection-plan.json": "application/json", "retained-migration-map.json": "application/json"}
+	if media, ok := retained[file.Name]; ok {
+		if file.MediaType != media || file.PackingVersion != "" || file.SourceSealSHA256 != "" {
+			return file, Invalid("invalid retained file descriptor")
+		}
+	} else if file.Name == "report.tar.gz" {
 		if file.MediaType != "application/gzip" || file.PackingVersion != "sealed-files-tar-gzip-v1" || !IsHash(file.SourceSealSHA256) || file.Bytes == 0 {
 			return file, Invalid("invalid report archive descriptor")
 		}

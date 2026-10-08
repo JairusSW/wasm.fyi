@@ -1,5 +1,5 @@
 import { join, resolve } from "node:path";
-import { stat, mkdir, rm } from "node:fs/promises";
+import { stat, mkdir, rm, readFile, writeFile } from "node:fs/promises";
 import { site, command } from "./wasmbench.mjs";
 import { runCommand } from "./benchmark-process.mjs";
 export async function benchmarkSource(settings) {
@@ -51,6 +51,9 @@ export async function sourceBundle(source, revision, path, { signal } = {}) {
   const ref = "refs/wasm-fyi-benchmark/" + process.pid + "-" + randomUUID();
   await runCommand("git", ["update-ref", ref, revision], { cwd: source });
   try {
+    const shallowPath=(await runCommand("git",["rev-parse","--git-path","shallow"],{cwd:source})).output.trim();
+    const shallow=await readFile(resolve(source,shallowPath)).catch(error=>{if(error.code!=="ENOENT")throw error;return null;});
+    if(shallow)await writeFile(path+".shallow",shallow);else await rm(path+".shallow",{force:true});
     await runCommand("git", ["bundle", "create", path, ref], {
       cwd: source,
       signal,

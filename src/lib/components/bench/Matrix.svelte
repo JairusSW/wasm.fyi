@@ -1,11 +1,15 @@
 <script lang="ts">
+import {apiView,aggregateKey} from '$lib/api/controller.svelte';
+import {datasetView} from '$lib/api/view.svelte';
+ import { tipCard, tipWho } from '$lib/tip';
+import { CALL_PATHS } from '$lib/call-paths';
 import { CFG } from '$lib/data/runtimes';
 import { ST } from '$lib/data/status';
 	import { OV } from '$lib/data/snapshot';
 	import type { MetricKey, OvKey } from '$lib/data/types';
 	import { fmtUGroup, n0 } from '$lib/format';
 	import { heatCount, heatRatio } from '$lib/heat';
-	import { TOTAL_WORKLOADS, sharedCount, cov, absOf, disp, isOff, isVisible, ratio } from '$lib/model';
+	import { totalWorkloads, sharedCount, cov, absOf, disp, isOff, isVisible, ratio } from '$lib/model';
 import { ui } from '$lib/state.svelte';
 import { viewCell, viewData } from '$lib/view-data';
 	import Carousel from '../Carousel.svelte';
@@ -20,11 +24,11 @@ import { viewCell, viewData } from '$lib/view-data';
 	const g = $derived(OV[ui.group]);
 
 	const SHARED_NOTE: Record<OvKey, string> = {
-		calls: 'Two measured directions; round trip estimates their sum.',
-		lat: 'Successful shared contracts from one locked report.',
-		mem: 'Process lifetime peak RSS in each separate memory scenario.',
-		code: 'Extracted image bytes; unavailable collectors remain unmeasured.',
-		cov: `All ${TOTAL_WORKLOADS} measured contracts.`
+		calls: 'Two independently measured call paths; callback averages use a guest loop.',
+		lat: 'Shared exact contracts from explicit host-local report membership.',
+		mem: 'RSS retains its source pass and observation boundary.',
+		code: 'Shared code-size comparisons include engines with available native code; other engines show n/a.',
+		cov: `All ${totalWorkloads()} measured contracts.`
 	};
 
 	/** Badness of a count within its column across runtimes available on this machine, 0…1. */
@@ -36,7 +40,7 @@ import { viewCell, viewData } from '$lib/view-data';
 		return col === 0 ? 1 - t : t;
 	};
 
-	const callWorkloads = ['mechanisms/wasm-to-host-call', 'mechanisms/host-to-wasm-call'];
+	const callWorkloads = CALL_PATHS.map(p=>p.id);
 	function opsRate(milliseconds: number) {
 		const rate = 1000 / milliseconds;
 		if (rate >= 1e9) return (rate / 1e9).toFixed(1) + 'b';
@@ -44,20 +48,21 @@ import { viewCell, viewData } from '$lib/view-data';
 		if (rate >= 1e3) return (rate / 1e3).toFixed(1) + 'k';
 		return rate.toFixed(1);
 	}
-	const peakMemoryNote = 'Arithmetic mean of recorded whole-process RSS snapshots taken after each benchmark batch, across compilation, instantiation, first-call and steady workloads on this host and snapshot. Each available workload-phase measurement has equal weight. These are boundary samples, not a continuous time average. Missing current RSS observations remain not measured.';
-	const roundTripNote = 'Estimated sum of Wasm → host and Host → Wasm steady-state latencies; not an independently measured nested round trip.';
-	function roundTrip(a: ReturnType<typeof viewCell>, b: ReturnType<typeof viewCell>): ReturnType<typeof viewCell> {
-		if (a.st !== 'ok') return a;
-		if (b.st !== 'ok') return b;
-		if (a.v == null || b.v == null) return { ...a, st: 'nm', v: undefined };
-		return { ...a, v: a.v + b.v };
-	}
+	const peakMemoryPoints = [
+		'Arithmetic mean of available workload-phase peaks: compile, instantiate, first call, steady',
+		'Kernel-reported process-lifetime peak RSS is collected at process exit',
+		'This is an average of measured peaks; time-averaged process RSS is not collected',
+		'Equal weight per measurement; shared pages count per process',
+		'Transpiler compile peak uses max(transpiler, compiler)'
+	];
+	const peakMemoryNote = 'Kernel-reported process-lifetime peak RSS, collected at process exit. The average column is the arithmetic mean of available phase peaks; time-averaged RSS is not collected.';
 	const callCells = $derived.by(() => {
 		const configs = CFG.filter((c) => isVisible(ui.scope, c));
 		const raw = callWorkloads.map((workload) => configs.map((config) => viewCell(ui.machine, ui.snap, workload, config.id, 'steady')));
-		raw.push(raw[0].map((cell, i) => roundTrip(cell, raw[1][i])));
 		const baselines = callWorkloads.map(workload => viewCell(ui.machine, ui.snap, workload, ui.baseline, 'steady'));
-		baselines.push(roundTrip(baselines[0], baselines[1]));
+		const total=(cells:typeof baselines)=>cells.every(c=>c.st==='ok'&&c.v!=null)?{st:'ok' as const,v:cells.reduce((sum,c)=>sum+c.v!,0),report:''}:{st:'nm' as const,report:''};
+		raw.push(configs.map((_,index)=>total(raw.slice(0,2).map(cells=>cells[index]))));
+		baselines.push(total(baselines.slice(0,2)));
 		const values = raw.flatMap(cells => cells.map(cell => cell.st === 'ok' ? cell.v ?? null : null));
 		const formatted = fmtUGroup(values, 'ms');
 		return new Map(configs.map((config, configIndex) => [config.id, raw.map((cells, directionIndex) => {
@@ -90,23 +95,30 @@ import { viewCell, viewData } from '$lib/view-data';
 				const grp = ui.group as 'lat' | 'mem' | 'code';
 				const sourceIndex = grp === 'code' ? i + 3 : i;
 				const r = ratio(s, grp, c.id, sourceIndex);
-				if (!r) {
-					const interpreter=grp==='code'&&viewData.hosts[s.machine].configurations[c.id]?.backend==='interpreter';
-					return { text: interpreter?'n/a':disp(s,grp,c.id,sourceIndex)?.t || (off?'unavailable':'not measured'), bg:'transparent',color:'var(--fg3)' };
+                const absolute=absOf(s,grp,c.id,sourceIndex);
+				if (!absolute) {
+					const codeCells=Object.entries(viewData.hosts[s.machine].snapshots.s1).filter(([key])=>key.endsWith(`|${c.id}|code`));
+                    const interpreter=grp==='code'&&(/interpreter/.test(viewData.hosts[s.machine].configurations[c.id]?.backend||'')||(codeCells.length>0&&codeCells.every(([,cell])=>cell.st==='unsupported')));
+					const metric=grp==='mem'&&i===3?'rssAverage':g.metrics[i];
+					const key=aggregateKey(s,metric);
+					const status=apiView.aggregateErrors[key]?'unavailable':!apiView.aggregates[key]&&datasetView.revision?'loading…':'not measured';
+					return { text: interpreter?'n/a':disp(s,grp,c.id,sourceIndex)?.t || (off?'unavailable':ui.cohortMode==='shared'&&grp==='lat'?'No shared corpus':status), bg:'transparent',color:'var(--fg3)' };
 				}
-				return { text: commonTimes?.[i] || disp(s, grp, c.id, sourceIndex)!.t, bg: heatRatio(r.r), color: 'var(--fg)' };
+				return { text: commonTimes?.[i] || disp(s, grp, c.id, sourceIndex)!.t, bg: heatRatio(r?.r ?? null), color: 'var(--fg)' };
 			});
 			return {
 				c,
 				cells,
-				covShort: off ? '—' : n0(cv[0]) + ' / ' + TOTAL_WORKLOADS,
+				covShort: off ? '—' : n0(cv[0]) + ' / ' + totalWorkloads(),
 				covBg: off ? 'transparent' : heatCount(countBadness(0, cv[0]))
 			};
 		});
 	});
 
-	const snapTaken = $derived(ui.snap === 's1' ? 'Latest measured cells' : 'Previous measured cells');
-	const snapAgo = $derived(ui.group === 'calls' ? '2 measured call workloads' : `${sharedCount(ui.scope)} shared successful contracts in the latency cohort`);
+	const comparisonErrors=$derived(Object.entries(apiView.aggregateErrors).filter(([key])=>g.metrics.some(metric=>key===aggregateKey(ui.scope,metric))||ui.group==='mem'&&key===aggregateKey(ui.scope,'rssAverage')).map(([,reason])=>reason));
+ const interpretation=$derived(apiView.aggregates[aggregateKey(ui.scope,ui.group==='code'?'code':ui.group==='mem'?'rss':g.metrics[0])]?.interpretation);
+	const snapTaken = 'Latest snapshot per engine';
+	const snapAgo = $derived(ui.group === 'calls' ? '2 measured call workloads' : ui.group==='code'&&ui.cohortMode==='shared'?`${sharedCount(ui.scope,'code',3)} shared contracts across engines with native code` : ui.cohortMode==='shared'?`${sharedCount(ui.scope)} shared successful contracts in the latency cohort`:'Successful contracts per engine; populations can differ');
 </script>
 
 <div class="stack">
@@ -115,12 +127,15 @@ import { viewCell, viewData } from '$lib/view-data';
 		<div class="snap">
 			<span
 				class="mono taken"
-				data-tip={'Aggregates use a shared successful cohort in one sealed report. Individual workload cells retain their own report references.\nPick another snapshot in the scope bar.'}
+				data-tip-card={tipCard({ title: snapTaken, points: ['All metrics use the same latest source snapshot for each engine', 'Missing cells are not filled from older versions'], note: 'Older snapshots appear in History.' })}
 				>{snapTaken}</span
 			>
 			<span class="small fg3">{snapAgo}</span>
 		</div>
 	</Carousel>
+ {#if ui.group==='lat'&&ui.cohortMode==='shared'&&g.metrics.some((_,i)=>sharedCount(ui.scope,'lat',i)===0)}<p class="small fg3">Some phases have no corpus that passed on every selected engine. <button class="link-quiet" onclick={()=>ui.cohortMode='per-engine'}>Show averages of workloads passed per engine</button></p>{/if}
+	{#if comparisonErrors.length}<p class="small fg3" role="status">Comparison unavailable: {comparisonErrors.join(" · ")}</p>{/if}
+ {#if interpretation}<p class="small fg3">{interpretation.population} {interpretation.reports} {interpretation.weighting} Intervals: {interpretation.uncertainty}.</p>{/if}
 	<div class="tbl-wrap">
 		<table class="mx" style:min-width="720px">
 			<thead>
@@ -128,7 +143,7 @@ import { viewCell, viewData } from '$lib/view-data';
 					<th class="stick th-label">Runtime</th>
 					{#each g.cols as label, i (label)}
 						<th class="colh">
-							<button onclick={() => onmetric(g.metrics[i])} data-tip={ui.group === 'mem' && i === 3 ? peakMemoryNote : ui.group === 'calls' && i === 2 ? roundTripNote : `Open the per-benchmark ${label} matrix`}>{label}</button>
+							<button onclick={() => onmetric(g.metrics[i])} data-tip-card={tipCard(ui.group === 'mem' && i === 3 ? { title: label, points: peakMemoryPoints, action: `open the per-benchmark ${label} matrix` } : ui.group === 'calls' ? { title: label, note: (CALL_PATHS[i]?.note || 'Sum of both measured call directions.'), action: `open the per-benchmark ${label} matrix` } : { title: label, action: `open the per-benchmark ${label} matrix` })}>{label}</button>
 						</th>
 					{/each}
 					<th class="colh">Correct</th>
@@ -137,7 +152,7 @@ import { viewCell, viewData } from '$lib/view-data';
 			<tbody>
 				{#each rows as r (r.c.id)}
 					<tr>
-						<td class="stick rtcell"><RtLabel c={r.c} profile mono bold /></td>
+						<td class="stick rtcell"><RtLabel c={r.c} profile mono bold ver /></td>
 						{#each r.cells as x, i (i)}
 							<td class="p0">
 								<button
@@ -145,7 +160,7 @@ import { viewCell, viewData } from '$lib/view-data';
 									style:background={x.bg}
 									style:color={x.color}
 									onclick={() => onmetric(g.metrics[i])}
-									data-tip={`${r.c.rt} ${r.c.be} — ${g.cols[i]}\n${x.text}\n${'rate' in x && x.rate ? x.rate + '\n' : ''}${ui.group === 'mem' && i === 3 ? peakMemoryNote + '\n' : ui.group === 'calls' && i === 2 ? roundTripNote + '\n' : ''}Click to see per-workload results`}>{x.text}</button
+									data-tip-card={tipCard({ kicker: `${g.label} · ${g.cols[i]}`, who: tipWho(r.c), value: x.text, valueColor: x.color === 'var(--fg)' ? '' : x.color, heat: x.bg === 'transparent' ? '' : x.bg, stats: 'rate' in x && x.rate ? [['throughput', x.rate.replace(' · reciprocal of latency', '')]] : [], points: ui.group === 'mem' && i === 3 ? peakMemoryPoints : [], note: ui.group === 'calls' ? (CALL_PATHS[i]?.note || 'Sum of both measured call directions.') : '', action: 'see per-workload results' })}>{x.text}</button
 								>
 							</td>
 						{/each}

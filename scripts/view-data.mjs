@@ -1,4 +1,5 @@
-import { readFile, readdir, writeFile, access } from 'node:fs/promises';
+import {memoryObserver} from "./lib/memory-observers.mjs";
+import { readFile, readdir, writeFile, rename, access } from 'node:fs/promises';
 import { join } from 'node:path';
 import { featureCandidates, featureSupport, featureCasePassed, matchesCurrentFeature } from './lib/feature-support.mjs';
 import { validateV8Description } from './lib/v8-preflight.mjs';
@@ -42,10 +43,9 @@ for(const report of reports)for(const runtime of report.runtimes) {
 }
 // Historical WasmFX reports remain in the sealed evidence store, but the
 // configuration is intentionally excluded from new feature and benchmark views.
-const configurations = { A:'wasmtime', D:'wasmer-singlepass', E:'wazero', F:'v8', G:'wago', L:'wavm' };
+const configurations = { A:'wasmtime', D:'wasmer-singlepass', E:'wazero', F:'v8', G:'wago', L:'wavm', T:'wasm2c-gcc', U:'w2c2-gcc' };
 const scenarios = { compile:'compile', inst:'instantiate', first:'first-call', steady:'steady' };
 const memoryScenarios={rss:'steady',rssCompile:'compile',rssInst:'instantiate',rssFirst:'first-call',rssCurrent:'steady',rssCurrentCompile:'compile',rssCurrentInst:'instantiate',rssCurrentFirst:'first-call'};
-const memoryObservers=Object.fromEntries(Object.keys(memoryScenarios).map(metric=>[metric,metric.startsWith('rssCurrent')?'process.rss':'process.peak_rss']));
 const prepared=JSON.parse(await readFile(join(site,'corpora/catalog.json')));
 if(prepared.schema!==1)throw Error('Unknown prepared corpus schema');
 const preparedById=new Map(prepared.workloads.map(w=>[w.contractId,w]));
@@ -54,7 +54,7 @@ const preparedFeatures=JSON.parse(await readFile(join(featuresRoot,'manifest.jso
 const featuresById=new Map(preparedFeatures.map(w=>[w.id,w]));
 const catalogue = new Map();
 for (const report of reports) for (const w of report.workloads) {
-  const callMechanism = /^mechanisms\/(host-to-wasm-call|wasm-to-host-call)$/.test(w.id) && w.generator === 'wasmbench-host-call-v1';
+  const callMechanism = (/^mechanisms\/(host-to-wasm-call|wasm-to-host-call)$/.test(w.id) && w.generator === 'wasmbench-host-call-v1' || w.id==='mechanisms/wasm-host-wasm-loop' && w.generator==='wasmbench-callback-loop-v1');
   if (!/^(wago|features|applications|mechanisms)\//.test(w.id) || w.id.startsWith('features/stack-switching/') || catalogue.has(w.id) || (w.id.startsWith('features/') ? !matchesCurrentFeature(w,featuresById) : !callMechanism && preparedById.get(w.id)?.sha256!==w.sha256)) continue;
   const structure = report.artifactStructures?.find(a=>a.sha256===w.sha256);
   if(!structure || !Number.isSafeInteger(structure.bytes) || structure.bytes < 8)throw new Error('Missing measured artifact size: '+w.id);
@@ -119,7 +119,7 @@ for (const [machine, os] of [['m1','linux'],['m2','darwin']]) {
   output.hosts[machine]=view;
   for (const [slot,runtime] of Object.entries(configurations)) {
     const config=selected.flatMap(r=>r.runtimes).find(c=>c.id===runtime);
-    if (config) view.configurations[slot]={ runtime, version:runtime==='wago'&&config.description.runtime_version.startsWith(settings.collection.wagoRelease?.revision+'/')?settings.collection.wagoRelease.tag:runtime==='deno' && config.description.build?.startsWith('Deno ')?`${config.description.build.slice(5)} / V8 ${config.description.runtime_version}`:config.description.runtime_version, backend:config.description.backend };
+    if (config) view.configurations[slot]={ runtime, version:['wasm2c-gcc','w2c2-gcc'].includes(runtime)?'GCC '+(config.description.effective_configuration.compiler_version?.match(/\b\d+\.\d+\.\d+\b/)?.[0] || 'unknown'):runtime==='wago'&&config.description.runtime_version.startsWith(settings.collection.wagoRelease?.revision+'/')?settings.collection.wagoRelease.tag:config.description.runtime_version, backend:config.description.backend };
     for (const workload of output.catalogue) {
       // A newer failed/unsupported result wins. Never backfill it with a success.
       const sources=workload.id.startsWith('features/')?featureCandidates(selected,runtime,workload.id,workload.artifactSha256):selected;
@@ -128,20 +128,20 @@ for (const [machine, os] of [['m1','linux'],['m2','darwin']]) {
         // Partial sealed passes advance only metrics they actually measured.
         // A timing-only snapshot must not erase the last measured RSS or code image.
         const candidates=callTimingCandidates(cohort.filter(report=>memoryScenarios[metric]
-          ? report.memory.some(m=>m.runtime===runtime && m.workload===workload.id && m.scenario===memoryScenarios[metric] && m.metric===memoryObservers[metric])
+          ? report.memory.some(m=>m.runtime===runtime && m.workload===workload.id && m.scenario===memoryScenarios[metric] && m.metric===memoryObserver(runtime,metric))
           : metric==='code'
             ? report.codeRecords.some(c=>c.runtime===runtime && c.workload===workload.id)
             : report.summaries.some(s=>s.runtime===runtime && s.workload===workload.id && s.scenario===scenarios[metric] && s.profile==='timing')),workload.id,metric);
         for (const [i,snapshot] of ['s1','s2'].entries()) {
           const report=candidates[i];
           if (!report) continue;
-          const cell=memoryScenarios[metric]?measuredMemory(report,runtime,workload.id,workload.artifactSha256,memoryScenarios[metric],memoryObservers[metric]):
+          const cell=memoryScenarios[metric]?measuredMemory(report,runtime,workload.id,workload.artifactSha256,memoryScenarios[metric],memoryObserver(runtime,metric)):
             metric==='code'?measuredCodeImage(report,runtime,workload.id,workload.artifactSha256):
             measuredTiming(report,runtime,workload.id,workload.artifactSha256,scenarios[metric]);
           const factor=memoryScenarios[metric]?1024**2:metric==='code'?1024:1e6;
           const summary=report.summaries.find(s=>s.runtime===runtime && s.workload===workload.id && s.scenario===(scenarios[metric] || 'steady') && s.profile==='timing');
-          const memory=memoryScenarios[metric]?report.memory.find(m=>m.runtime===runtime && m.workload===workload.id && m.scenario===memoryScenarios[metric] && m.metric===memoryObservers[metric]):null;
-          const launchMedians=memoryScenarios[metric]?(memory?.launch_values || []).map(v=>v.bytes/factor):metric==='code'?[]:Object.values(summary?.launch_medians || {}).map(v=>v/factor);
+          const memory=memoryScenarios[metric]?report.memory.find(m=>m.runtime===runtime && m.workload===workload.id && m.scenario===memoryScenarios[metric] && m.metric===memoryObserver(runtime,metric)):null;
+          const launchMedians=memoryScenarios[metric]?(memory?.launch_values || []).map(v=>v.bytes/factor):metric==='code'?[]:Object.values(summary?.launch_medians || {}).map(v=>v/factor/(workload.id==='mechanisms/wasm-host-wasm-loop' && ['first','steady'].includes(metric)?1000000:1));
           view.snapshots[snapshot][`${workload.id}|${slot}|${metric}`]={st:status[cell.status], ...(cell.status==='ok'?{v:cell.value/factor, ...(cell.interval?{interval:cell.interval.map(v=>v/factor)}:{})}:{reason:reasonId(cell.reason)}),report:report.id,
             launchMedians};
         }
@@ -161,6 +161,11 @@ const interpreterRuntimeIds=new Set(reports.flatMap(report=>report.runtimes
   .map(runtime=>runtime.id)));
 output.applicationConfigurations=Object.keys(configurations).filter(slot=>settings.collection.runtimes.includes(configurations[slot]) &&
   !interpreterRuntimeIds.has(configurations[slot]) &&
+  // A local AOT validation subset is visible in workload/call tables, but
+  // must not narrow the established all-workload ranking/history cohort.
+  (!['wasm2c-gcc','w2c2-gcc'].includes(configurations[slot]) || prepared.workloads.every(w=>reports.some(r=>
+    r.workloads.some(item=>item.id===w.contractId && item.sha256===w.sha256) &&
+    r.summaries.some(summary=>summary.runtime===configurations[slot] && summary.workload===w.contractId && summary.scenario==='steady' && summary.profile==='timing')))) &&
   (latestApplicationRuntimeIds.linux.has(configurations[slot]) || latestApplicationRuntimeIds.darwin.has(configurations[slot])));
 // Compact feature version evidence; no trial arrays enter the browser bundle.
 const support=await featureSupport(root,reports);
@@ -261,7 +266,10 @@ for(const history of Object.values(output.history))for(const [key,cells] of Obje
   if(cells.every(c=>c.st==='nm'&&!c.report)){delete history.cells[key];continue;}
   history.cells[key]=cells.map(c=>[output.statuses.indexOf(c.st),reportIndex.get(c.report) ?? -1,c.v ?? null,c.interval ?? null,c.launchMedians ?? null,c.reason ?? null,c.role]);
 }
-await writeFile(join(site,'src/lib/data/measurements.json'),JSON.stringify(output)+'\n');
+const measurementsPath=join(site,'src/lib/data/measurements.json');
+const measurementsTemp=measurementsPath+'.tmp-'+process.pid;
+await writeFile(measurementsTemp,JSON.stringify(output)+'\n');
+await rename(measurementsTemp,measurementsPath);
 console.log(`Generated measured view catalogue: ${output.catalogue.length} contracts, ${Object.keys(output.hosts).length} hosts.`);
 
 // Project only checksum-verified plugin suite summaries; never add their

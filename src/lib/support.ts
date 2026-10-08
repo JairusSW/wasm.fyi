@@ -99,11 +99,10 @@ export function runtimeFeatureTrack(rid:string,f:FeatureRow,scope:Scope,channel:
 export type FeatureTrack = ReturnType<typeof runtimeFeatureTrack>;
 
 /** Official/plugin suite evidence remains separate from performance contracts. */
-import pluginInput from './data/plugin-tests.json';
 export interface PluginTestEvidence {scope?:string;label:string;official:boolean;passed:number;failed:number;skipped:number;total:number;created:string;version:string;engine:string;evidence:string}
-export const pluginTests=pluginInput as Record<'m1'|'m2',Partial<Record<string,PluginTestEvidence>>>;
+export const pluginTests:Record<'m1'|'m2'|'m3',Partial<Record<string,PluginTestEvidence>>>={m1:{},m2:{},m3:{}};
 
-export function pluginSupportEvidence(feature:string,machine:'m1'|'m2') {
+export function pluginSupportEvidence(feature:string,machine:'m1'|'m2'|'m3') {
   if(!WAGO_PLUGIN_SUPPORT[feature])return undefined;
   return pluginTests[machine][feature];
 }

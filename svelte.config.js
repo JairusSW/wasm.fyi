@@ -5,10 +5,11 @@ import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 const config = {
 	preprocess: vitePreprocess(),
 	kit: {
+		files: { assets: '.wasmfyi/frontend-assets' },
 		outDir: process.env.WASMFYI_KIT_OUT_DIR || '.svelte-kit',
 		adapter: adapter({ fallback: '404.html' }),
 		paths: { base: process.env.BASE_PATH || '' },
-		prerender: { handleHttpError: 'fail' }
+		prerender: { crawl: false, handleHttpError: 'fail' }
 	}
 };
 

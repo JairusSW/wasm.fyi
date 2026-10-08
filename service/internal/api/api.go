@@ -22,18 +22,28 @@ import (
 )
 
 type API struct {
-	requests    requestTelemetry
-	Store       *store.Store
-	Token       string
-	CursorKey   []byte
-	active      chan struct{}
-	limiter     *requestLimiter
-	frontend    http.Handler
-	cohorts     *cohortCache
-	calculating chan struct{}
-	results     *resultCache
-	selecting   chan struct{}
-	downloading chan struct{}
+	latencies    *latencyState
+	requests     requestTelemetry
+	Store        *store.Store
+	Token        string
+	CursorKey    []byte
+	active       chan struct{}
+	limiter      *requestLimiter
+	frontend     http.Handler
+	cohorts      *cohortCache
+	calculating  chan struct{}
+	results      *resultCache
+	selecting    chan struct{}
+	downloading  chan struct{}
+	historyIndex *store.HistoryReadIndex
+}
+
+func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) { a.serve(w, r) }
+func (a *API) Close() error {
+	if a.historyIndex != nil {
+		return a.historyIndex.Close()
+	}
+	return nil
 }
 
 var errQueryBusy = errors.New("result query concurrency limit")
@@ -48,6 +58,10 @@ func NewWithRequestLimits(s *store.Store, token string, key []byte, limits Reque
 // NewWithFrontend keeps static requests under the same bounded admission and
 // shutdown leases as API requests. A nil frontend retains API-only behavior.
 func NewWithFrontend(s *store.Store, token string, key []byte, limits RequestLimits, frontend http.Handler) (http.Handler, error) {
+	return NewWithPreparedPageData(s, token, key, limits, frontend, "")
+}
+
+func NewWithPreparedPageData(s *store.Store, token string, key []byte, limits RequestLimits, frontend http.Handler, directory string) (http.Handler, error) {
 	if !limits.valid() {
 		return nil, fmt.Errorf("invalid request limits")
 	}
@@ -56,12 +70,16 @@ func NewWithFrontend(s *store.Store, token string, key []byte, limits RequestLim
 		return nil, fmt.Errorf("admin token and at least 32 cursor-key bytes required")
 	}
 	a := &API{Store: s, Token: token, CursorKey: key, active: make(chan struct{}, 8), limiter: newRequestLimiter(limits), frontend: frontend}
+	a.SetLatencyDirectory("")
 	a.cohorts = &cohortCache{entries: map[string]*store.Cohort{}}
 	a.calculating = make(chan struct{}, 2)
 	a.results = &resultCache{entries: map[string]resultCacheEntry{}}
 	a.selecting = make(chan struct{}, 2)
 	a.downloading = make(chan struct{}, 2)
-	return http.HandlerFunc(a.serve), nil
+	if e := a.loadPreparedResults(directory); e != nil {
+		return nil, e
+	}
+	return a, nil
 }
 
 type cursor struct {
@@ -323,6 +341,10 @@ func (a *API) serveRequest(w http.ResponseWriter, r *http.Request) {
 		problem(w, r, e)
 		return
 	}
+	if path == "latency" {
+		a.latency(w, r)
+		return
+	}
 	if path == "history/series" {
 		a.historySeries(w, r)
 		return
@@ -417,7 +439,7 @@ func (a *API) serveRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if path == "manifest" {
-		respond(w, r, 200, map[string]any{"schema": 2, "revision": a.Store.Current(), "selectionAliases": map[string]string{"s1": "current", "s2": "previous"}, "limits": map[string]int{"defaultResults": 100, "maxResults": 1000, "jobManifestBytes": wire.JobBytes, "sessionPlanBytes": wire.SessionPlanBytes, "registeredSessions": store.RegistrationLimit, "decodedResponseBytes": wire.ResponseBytes, "decodedChunkBytes": wire.ChunkBytes, "scanKeys": store.ScanLimit, "decodedEvidenceResourceBytes": wire.ResourceBytes, "maxEvidenceFragments": wire.ResourceFragments, "nativeFunctionShards": 4096, "nativeFunctions": 1000000, "disassemblyLineChunks": 4096, "disassemblyChunkLines": 256, "disassemblyLineBytes": 16384, "cohortScopeBytes": 4096, "cohortComputations": 2, "resultComputations": 2, "resultCacheBytes": resultCacheBytes, "resultCacheEntries": resultCacheEntries, "cohortCells": 100000, "reportFileDownloads": 2, "reportFileDownloadSeconds": 300, "reportFileChunkBytes": wire.ReportFileChunkBytes, "reportFileBytes": wire.ReportFileBytes}, "endpoints": []string{"overview", "results", "reports", "features", "conformance", "conformance-contexts", "conformance-coverage", "metrics", "methods", "configurations", "environments", "workloads", "artifacts", "history", "history/coverage", "aggregates", "cohorts", "sessions", "collection/sessions", "files", "archives"}}, false)
+		respond(w, r, 200, map[string]any{"schema": 2, "revision": a.Store.Current(), "selectionAliases": map[string]string{"s1": "current", "s2": "previous"}, "limits": map[string]int{"defaultResults": 100, "maxResults": 1000, "jobManifestBytes": wire.JobBytes, "sessionPlanBytes": wire.SessionPlanBytes, "registeredSessions": store.RegistrationLimit, "decodedResponseBytes": wire.ResponseBytes, "decodedChunkBytes": wire.ChunkBytes, "scanKeys": store.ScanLimit, "decodedEvidenceResourceBytes": wire.ResourceBytes, "maxEvidenceFragments": wire.ResourceFragments, "nativeFunctionShards": 4096, "nativeFunctions": 1000000, "disassemblyLineChunks": 4096, "disassemblyChunkLines": 256, "disassemblyLineBytes": 16384, "cohortScopeBytes": 8192, "cohortComputations": 2, "resultComputations": 2, "resultCacheBytes": resultCacheBytes, "resultCacheEntries": resultCacheEntries, "cohortCells": 100000, "reportFileDownloads": 2, "reportFileDownloadSeconds": 300, "reportFileChunkBytes": wire.ReportFileChunkBytes, "reportFileBytes": wire.ReportFileBytes}, "endpoints": []string{"overview", "matrix", "corpus", "inspect", "availability", "feature-summary", "history/timeline", "tracks", "results", "reports", "features", "conformance", "conformance-contexts", "conformance-coverage", "metrics", "methods", "configurations", "environments", "workloads", "artifacts", "history", "history/coverage", "aggregates", "cohorts", "sessions", "collection/sessions", "files", "archives"}}, false)
 		return
 	}
 	if path == "overview" || path == "aggregates" || strings.HasPrefix(path, "cohorts/") {
@@ -450,6 +472,26 @@ func (a *API) serveRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	parts := strings.Split(path, "/")
+	if path == "corpus" || path == "inspect" || len(parts) == 2 && (parts[0] == "corpus" || parts[0] == "inspect") {
+		a.corpus(w, r, revision, immutable)
+		return
+	}
+	if path == "feature-summary" {
+		a.featureSummary(w, r, revision, immutable)
+		return
+	}
+	if path == "history/timeline" {
+		a.historyTimeline(w, r, revision, immutable)
+		return
+	}
+	if path == "availability" {
+		a.availability(w, r, revision, immutable)
+		return
+	}
+	if path == "matrix" {
+		a.matrix(w, r, revision, n, c, immutable)
+		return
+	}
 	if len(parts) == 3 && parts[0] == "history" && parts[1] == "jobs" {
 		if n > 100 {
 			problem(w, r, wire.Invalid("history context page limit exceeds ceiling"))
@@ -851,7 +893,7 @@ func (a *API) serveRequest(w http.ResponseWriter, r *http.Request) {
 	}
 	if path == "results" || path == "history" {
 		allowed := map[string]bool{}
-		for _, k := range []string{"revision", "selection", "environment", "runtime", "track", "definition", "method", "configuration", "contract", "workload", "metric", "scenario", "profile", "statistic", "sort", "limit", "cursor", "from", "until"} {
+		for _, k := range []string{"revision", "selection", "environment", "environments", "runtime", "track", "definition", "method", "configuration", "contract", "workload", "metric", "scenario", "profile", "statistic", "sort", "limit", "cursor", "from", "until"} {
 			allowed[k] = true
 		}
 		for k, v := range params {
@@ -880,6 +922,18 @@ func (a *API) serveRequest(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		q := store.Query{Revision: revision, Selection: selection, Environment: params.Get("environment"), Runtime: params.Get("runtime"), Track: params.Get("track"), Definition: params.Get("definition"), Method: params.Get("method"), Configuration: params.Get("configuration"), Contract: params.Get("contract"), Workload: params.Get("workload"), Metric: params.Get("metric"), Scenario: params.Get("scenario"), Profile: params.Get("profile"), Statistic: params.Get("statistic"), Sort: sortOrder, Limit: n, From: params.Get("from"), Until: params.Get("until")}
+		if params.Has("environments") {
+			if e = wire.Decode([]byte(params.Get("environments")), &q.Environments); e == nil && len(q.Environments) == 0 {
+				e = wire.Invalid("empty environment membership")
+			}
+			if e == nil {
+				q.Environments, e = a.Store.NormalizeHostEnvironments(revision, q.Environment, q.Environments)
+			}
+			if e != nil {
+				problem(w, r, e)
+				return
+			}
+		}
 		if path == "history" {
 			q, e = store.NormalizeHistoryQuery(q)
 			if e != nil {
@@ -1022,6 +1076,10 @@ func (a *API) admin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(parts) == 1 && parts[0] == "latency" && r.Method == "POST" {
+		a.publishLatency(w, r)
+		return
+	}
 	if len(parts) == 1 && parts[0] == "overview-presets" && r.Method == "GET" {
 		presets, e := a.Store.OverviewPresets(r.Context())
 		if e != nil {

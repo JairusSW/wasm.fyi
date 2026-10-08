@@ -1,23 +1,28 @@
 <script lang="ts">
+	import {shortVersion} from '$lib/version-identity';
+	import { tipCard, tipWho } from '$lib/tip';
 	import { CFG, MACH } from '$lib/data/runtimes';
-	import type { MachineId } from '$lib/data/types';
+	import type { MachineId, CfgId } from '$lib/data/types';
+	import {untrack} from 'svelte';
+	import {datasetView} from '$lib/api/view.svelte';
 	import { ui } from '$lib/state.svelte';
 	import Swatch from './Swatch.svelte';
 	import Seg from './Seg.svelte';
 	import { viewData } from '$lib/view-data';
 
 	const SNAP_OPTS = [
-		['s1', 'Latest measured cells'],
-		['s2', 'Previous measured cells']
+		['s1', 'Latest snapshot'],
 	] as const;
 
+	$effect(() => {datasetView.machine=ui.machine;untrack(()=>{const count=viewData.history[ui.machine].points.length;ui.histTo=Math.max(0,count-1);ui.histFrom=Math.min(ui.histFrom,Math.max(0,count-1));});});
+	$effect(() => { if (ui.snap !== 's1') ui.snap = 's1'; });
 	const someHidden = $derived(Object.values(ui.hide).some(Boolean));
 	const shown = $derived(CFG.filter((c) => !ui.hide[c.id]));
 	// Phones collapse the scope controls behind a one-line summary.
 	let open = $state(false);
 
 	function toggle(id: (typeof CFG)[number]['id']) {
-		const next = { ...ui.hide, [id]: !ui.hide[id] };
+		const next:Partial<Record<CfgId,boolean>> = { ...ui.hide, [id]: !ui.hide[id] };
 		if (CFG.every((x) => next[x.id])) return; // keep at least one runtime visible
 		ui.hide = next;
 	}
@@ -28,8 +33,8 @@
 
 	const advItems = $derived([
 		{ k: 'OS', v: MACH[ui.machine].os },
-		{ k: 'Runtimes', v: Object.values(viewData.hosts[ui.machine].configurations).map(c=>c!.runtime+' '+c!.version).join(' · ') },
-		{ k: 'Aggregation', v: 'geomean · '+ui.weighting+' weighting · shared successful cohort' },
+		{ k: 'Runtimes', v: Object.values(viewData.hosts[ui.machine].configurations).map(c=>c!.runtime+' '+shortVersion(c!.version)).join(' · ') },
+		{ k: 'Aggregation', v: 'geomean · '+ui.weighting+' weighting · '+(ui.cohortMode==='shared'?'passed on all shown engines':'passed per engine') },
 		{ k: 'Cache state', v: 'cold — no on-disk artifact cache' },
 		{ k: 'Compilation workers', v: 'Per-runtime configuration; CPU affinity uncontrolled' },
 		{ k: 'Warmup & sampling', v: 'Per-cell sealed report records launches, samples and warmups' },
@@ -46,7 +51,7 @@
 		</span>
 		<span class="sum-text">
 			<span class="sum-machine">{MACH[ui.machine].l}</span>
-			<span class="sum-meta fg3">{ui.snap === 's1' ? 'Latest' : 'Previous'} cells · {shown.length}/{CFG.length} runtimes · Δ {ui.deltaFormat === 'factor' ? '×' : '%'}</span>
+			<span class="sum-meta fg3">Latest snapshot · {shown.length}/{CFG.length} runtimes · Δ {ui.deltaFormat === 'factor' ? '×' : '%'}</span>
 		</span>
 		<span class="sum-action">{open ? 'Done' : 'Scope'}<span class="caret" aria-hidden="true">▾</span></span>
 	</button>
@@ -71,7 +76,7 @@
 						aria-pressed={on}
 						onclick={() => toggle(c.id)}
 						ondblclick={(e) => solo(e, c.id)}
-						data-tip={`${c.rt} ${viewData.hosts[ui.machine].configurations[c.id]?.version || 'not collected'} · ${c.be}\n${c.kind}\n${on ? 'Click to hide · double-click to show only this' : 'Hidden · click to show, double-click to solo'}`}
+						data-tip-card={tipCard({ who: tipWho(c, viewData.hosts[ui.machine].configurations[c.id]?.version || 'not collected'), note: c.kind, chips: on ? [] : ['hidden'], action: on ? 'hide · double-click to show only this' : 'show · double-click to solo' })}
 					>
 						<Swatch color={c.col} bg={c.hollow ? 'transparent' : c.col} />{c.rt}
 						<span class="be">{c.be}</span>
@@ -81,6 +86,10 @@
 			</div>
 		</div>
 		<div class="side">
+            <div class="delta-format">
+                <span class="small fg3">Average corpora</span>
+                <Seg options={[['per-engine', 'Passed per engine'], ['shared', 'Passed on all engines']]} value={ui.cohortMode} onselect={v=>ui.cohortMode=v as 'shared' | 'per-engine'} label="Average corpus selection" />
+            </div>
 			<div class="delta-format" data-tip="Relative deltas: 1.3× = +30%; 0.7× = −30%. Absolute values and counts stay in their own units.">
 				<span class="small fg3">Deltas</span>
 				<Seg options={['factor', 'percent'].map(v=>[v as 'factor' | 'percent',v==='factor'?'×':'%'])} value={ui.deltaFormat} onselect={v=>ui.deltaFormat=v} label="Delta format" mono />

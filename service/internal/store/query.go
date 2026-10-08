@@ -16,24 +16,25 @@ import (
 const ScanLimit = 100000
 
 type Query struct {
-	Revision      string `json:"revision"`
-	Selection     string `json:"selection"`
-	Environment   string `json:"environment,omitempty"`
-	Runtime       string `json:"runtime,omitempty"`
-	Track         string `json:"track,omitempty"`
-	Definition    string `json:"definition,omitempty"`
-	Method        string `json:"method,omitempty"`
-	Configuration string `json:"configuration,omitempty"`
-	Contract      string `json:"contract,omitempty"`
-	Workload      string `json:"workload,omitempty"`
-	Metric        string `json:"metric,omitempty"`
-	Scenario      string `json:"scenario,omitempty"`
-	Profile       string `json:"profile,omitempty"`
-	Statistic     string `json:"statistic,omitempty"`
-	Sort          string `json:"sort"`
-	Limit         int    `json:"limit"`
-	From          string `json:"from,omitempty"`
-	Until         string `json:"until,omitempty"`
+	Revision      string   `json:"revision"`
+	Selection     string   `json:"selection"`
+	Environment   string   `json:"environment,omitempty"`
+	Environments  []string `json:"environments,omitempty"`
+	Runtime       string   `json:"runtime,omitempty"`
+	Track         string   `json:"track,omitempty"`
+	Definition    string   `json:"definition,omitempty"`
+	Method        string   `json:"method,omitempty"`
+	Configuration string   `json:"configuration,omitempty"`
+	Contract      string   `json:"contract,omitempty"`
+	Workload      string   `json:"workload,omitempty"`
+	Metric        string   `json:"metric,omitempty"`
+	Scenario      string   `json:"scenario,omitempty"`
+	Profile       string   `json:"profile,omitempty"`
+	Statistic     string   `json:"statistic,omitempty"`
+	Sort          string   `json:"sort"`
+	Limit         int      `json:"limit"`
+	From          string   `json:"from,omitempty"`
+	Until         string   `json:"until,omitempty"`
 }
 
 func (q Query) Matches(r wire.Result) bool {
@@ -80,6 +81,15 @@ func (s *Store) Results(q Query, historical bool) ([]wire.Record, error) {
 	return s.ResultsContext(context.Background(), q, historical)
 }
 func (s *Store) ResultsContext(ctx context.Context, q Query, historical bool) (rows []wire.Record, err error) {
+	s = s.queryStore()
+	if !historical {
+		if prepared, found, err := s.preparedCurrent(ctx, q); found || err != nil {
+			return prepared, err
+		}
+	}
+	if len(q.Environments) != 0 {
+		return s.hostResultsContext(ctx, q, historical)
+	}
 	budget := ScanLimit
 	var records, dataBytes, matched uint64
 	index := 0
@@ -87,7 +97,11 @@ func (s *Store) ResultsContext(ctx context.Context, q Query, historical bool) (r
 		index = 1
 	}
 	defer func() {
-		c := &s.queryWork[index]
+		owner := s
+		if s.queryWorkOwner != nil {
+			owner = s.queryWorkOwner
+		}
+		c := &owner.queryWork[index]
 		c.queries.Add(1)
 		if err != nil {
 			c.failed.Add(1)
@@ -210,6 +224,11 @@ func (s *Store) ResultsContext(ctx context.Context, q Query, historical bool) (r
 	if (q.Sort == "value" || q.Sort == "-value") && (q.Metric == "" || q.Statistic == "") {
 		return nil, wire.Invalid("value sort requires metric and statistic")
 	}
+	sortResultRecords(out, q, historical)
+	return out, nil
+}
+
+func sortResultRecords(out []wire.Record, q Query, historical bool) {
 	sort.Slice(out, func(i, j int) bool {
 		if q.Sort == "value" || q.Sort == "-value" {
 			a, okA := value(out[i])
@@ -238,7 +257,6 @@ func (s *Store) ResultsContext(ctx context.Context, q Query, historical bool) (r
 		}
 		return out[i].ID < out[j].ID
 	})
-	return out, nil
 }
 func (s *Store) Catalog(revision, kind string) ([]wire.Record, error) {
 	return s.CatalogContext(context.Background(), revision, kind)

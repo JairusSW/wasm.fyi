@@ -16,6 +16,7 @@
 	import { PROPOSAL_IDS } from '$lib/links';
 	import { ui } from '$lib/state.svelte';
 	import { onMount } from 'svelte';
+	import {connectSite,closeSite,apiView} from '$lib/api/controller.svelte';
 
 	let { children } = $props();
 
@@ -46,6 +47,8 @@
 
 	onMount(() => {
 		ui.theme = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+		void connectSite();
+		const refresh=setInterval(()=>void connectSite(),30000);
 		// Prototype links used hash routes (#/benchmarks, #/bench/<id>, …).
 		const h = location.hash;
 		if (h.startsWith('#/')) {
@@ -62,6 +65,7 @@
 								: null;
 			if (path) goto(path, { replaceState: true });
 		}
+		return ()=>{clearInterval(refresh);closeSite()};
 	});
 
 	function onkeydown(e: KeyboardEvent) {
@@ -115,6 +119,7 @@
 	<Header />
 	{#if showScope}<ScopeBar />{/if}
 	<main id="main-content" tabindex="-1">
+		{#if apiView.error}<p class="fg3 small">{apiView.error}</p>{/if}
 		{@render children()}
 	</main>
 	<Footer />

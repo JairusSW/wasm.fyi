@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { CFG } from '$lib/data/runtimes';
+	import { tipCard, tipWho } from '$lib/tip';
+	import { CALL_PATHS } from '$lib/call-paths';
+import { CFG } from '$lib/data/runtimes';
 	import { ST } from '$lib/data/status';
 	import { fmtUGroup } from '$lib/format';
 	import { isVisible } from '$lib/model';
@@ -7,22 +9,19 @@
 	import { viewCell } from '$lib/view-data';
 	import RtLabel from '../RtLabel.svelte';
 
-	const directions = [
-		{ id: 'mechanisms/wasm-to-host-call', label: 'Wasm → host', note: 'A Wasm export makes one typed host callback.' },
-		{ id: 'mechanisms/host-to-wasm-call', label: 'Host → Wasm', note: 'The embedding calls one typed Wasm export.' }
-	] as const;
+	const directions = CALL_PATHS;
 
 	const rows = $derived.by(() => {
 		const configs = CFG.filter(c => isVisible(ui.scope, c));
 		const data = directions.map(direction => configs.map(config => viewCell(ui.machine, ui.snap, direction.id, config.id, 'steady')));
-		const formatted = fmtUGroup(data.flatMap(cells => cells.map(cell => cell.st === 'ok' ? cell.v ?? null : null)), 'ns');
+		const formatted = fmtUGroup(data.flatMap(cells => cells.map(cell => cell.st === 'ok' ? cell.v ?? null : null)), 'ms');
 		return configs.map((config, index) => ({
 			config,
 			cells: data.map((cells, directionIndex) => {
 				const cell = cells[index];
 				return cell.st === 'ok' && cell.v != null
-					? { text: formatted[directionIndex * configs.length + index], tip: `${directions[directionIndex].label} call · steady-state, one verified operation`, color: 'var(--fg)' }
-					: { text: ST[cell.st][1], tip: cell.reason == null ? `${directions[directionIndex].label} call measurement status` : `${directions[directionIndex].label} call · ${cell.reason}`, color: ST[cell.st][2] };
+					? { text: formatted[directionIndex * configs.length + index], tip: tipCard({ kicker: `${directions[directionIndex].label} call`, who: tipWho(config), value: formatted[directionIndex * configs.length + index], chips: ['steady state'], note: directions[directionIndex].note }), color: 'var(--fg)' }
+					: { text: ST[cell.st][1], tip: tipCard({ kicker: `${directions[directionIndex].label} call`, who: tipWho(config), value: ST[cell.st][1], valueColor: ST[cell.st][2], note: cell.reason == null ? '' : String(cell.reason) }), color: ST[cell.st][2] };
 			})
 		}));
 	});
@@ -36,13 +35,13 @@
 	<div class="tbl-wrap">
 		<table>
 			<thead>
-				<tr><th>Runtime</th>{#each directions as direction}<th class="r" data-tip={direction.note}>{direction.label}</th>{/each}</tr>
+				<tr><th>Runtime</th>{#each directions as direction}<th class="r" data-tip-card={tipCard({ title: direction.label, note: direction.note })}>{direction.label}</th>{/each}</tr>
 			</thead>
 			<tbody>
 				{#each rows as row (row.config.id)}
 					<tr>
 						<td><RtLabel c={row.config} profile mono /></td>
-						{#each row.cells as cell, index (index)}<td class="mono r" style:color={cell.color} data-tip={cell.tip}>{cell.text}</td>{/each}
+						{#each row.cells as cell, index (index)}<td class="mono r" style:color={cell.color} data-tip-card={cell.tip}>{cell.text}</td>{/each}
 					</tr>
 				{/each}
 			</tbody>

@@ -2,20 +2,27 @@ import {command} from './wasmbench.mjs';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {latestRelease,parseReleasePages} from './release-policy.mjs';
+import {firefoxReleases} from './firefox-releases.mjs';
+import {mergeGoModuleVersions} from './go-module-versions.mjs';
 const execFileAsync=promisify(execFile);
 export const engineSources={
+  wasmedge:{repository:"WasmEdge/WasmEdge",configurations:["wasmedge","wasmedge-jit"]},
+  chicory:{repository:"dylibso/chicory",configurations:["chicory"]},
+  wasm2c:{repository:"WebAssembly/wabt",configurations:["wasm2c-gcc"]},
+  w2c2:{repository:"turbolent/w2c2",configurations:["w2c2-gcc"]},
+  wasm2go:{repository:'ncruces/wasm2go',configurations:['wasm2go']},
+  libwasm:{repository:'LadybirdBrowser/ladybird',configurations:['libwasm']},
   wago:{repository:'wago-org/wago',configurations:['wago']},
   wazero:{repository:'tetratelabs/wazero',configurations:['wazero','wazero-interpreter']},
   wasmtime:{repository:'bytecodealliance/wasmtime',configurations:['wasmtime','wasmtime-winch']},
-  wasmer:{repository:'wasmerio/wasmer',configurations:['wasmer-singlepass']},
+  wasmer:{repository:'wasmerio/wasmer',configurations:['wasmer-singlepass','wasmer-llvm']},
   v8:{repository:'nodejs/node',provider:'node',configurations:['v8']},
   wasmi:{repository:'wasmi-labs/wasmi',configurations:['wasmi']},
-  wamr:{repository:'bytecodealliance/wasm-micro-runtime',configurations:['wamr']},
+  wamr:{repository:'bytecodealliance/wasm-micro-runtime',configurations:['wamr','wamr-fast-jit','wamr-llvm-jit']},
   wasm3:{repository:'wasm3/wasm3',configurations:['wasm3']},
   spidermonkey:{repository:'mozilla-firefox/firefox',provider:'firefox',configurations:['spidermonkey']},
-  jsc:{repository:'webkitgtk.org/releases',provider:'webkitgtk',configurations:['jsc'],platforms:['darwin','linux']},
+  jsc:{repository:'WebKit/WebKit',provider:'webkitgtk',configurations:['jsc'],platforms:['darwin','linux']},
   wavm:{repository:'WAVM/WAVM',configurations:['wavm'],platforms:['darwin','linux']},
-  deno:{repository:'denoland/deno',configurations:['deno']}
 };
 export async function releaseInventory(engine){
   const spec=engineSources[engine];
@@ -26,8 +33,7 @@ export async function releaseInventory(engine){
     return rows.map(r=>({tag_name:r.version,published_at:r.date+'T00:00:00Z',draft:false,prerelease:false,html_url:'https://nodejs.org/dist/'+r.version+'/',embeddedV8:r.v8,datePrecision:'day'}));
   }
   if(spec.provider==='firefox'){
-    const rows=JSON.parse(command('curl',['--fail','--silent','--show-error','https://product-details.mozilla.org/1.0/firefox_history_major_releases.json']).toString());
-    return Object.entries(rows).map(([version,date])=>({tag_name:version,published_at:date+'T00:00:00Z',draft:false,prerelease:false,html_url:'https://archive.mozilla.org/pub/firefox/releases/'+version+'/',datePrecision:'day'}));
+    return firefoxReleases(JSON.parse(command('curl',['--fail','--silent','--show-error','https://product-details.mozilla.org/1.0/firefox.json']).toString()));
   }
   if(spec.provider==='webkitgtk'){
     const html=command('curl',['--fail','--silent','--show-error','https://webkitgtk.org/releases/']).toString();
@@ -45,7 +51,14 @@ export async function releaseInventory(engine){
   // `gh api --slurp` is not available in every installed GitHub CLI release
   // (notably the version on Hub). Ask gh to emit one JSON object per release
   // instead; --paginate and --jq are supported by both hosts.
-  return parseReleasePages(command('gh',['api','--paginate',`repos/${spec.repository}/releases?per_page=100`,'--jq','. | tojson']).toString());
+  const releases=parseReleasePages(command('gh',['api','--paginate',`repos/${spec.repository}/releases?per_page=100`,'--jq','. | tojson']).toString());
+  if(!['wasm2go','wago','wazero'].includes(engine))return releases;
+  const base='https://proxy.golang.org/github.com/'+spec.repository+'/@v/';
+  const versions=command('curl',['--fail','--silent','--show-error',base+'list']).toString().trim().split(/\s+/),metadata=[];
+  for(let i=0;i<versions.length;i+=4)metadata.push(...await Promise.all(versions.slice(i,i+4).map(async version=>{
+   const {stdout}=await execFileAsync('curl',['--fail','--silent','--show-error','--retry','3','--max-time','60',base+encodeURIComponent(version)+'.info'],{encoding:'utf8',timeout:65_000,maxBuffer:1024*1024});return JSON.parse(stdout);
+  })));
+  return mergeGoModuleVersions(spec.repository,releases,metadata);
 }
 export async function pinMain(engine,dates){
   const spec=engineSources[engine];

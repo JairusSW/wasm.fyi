@@ -21,11 +21,16 @@ const MaxShellBytes = 2 << 20
 type WorkloadLookup func(context.Context, string) (bool, error)
 
 type Host struct {
-	root     *os.Root
-	shell    []byte
-	etag     string
-	workload WorkloadLookup
+	root          *os.Root
+	shell         []byte
+	etag          string
+	workload      WorkloadLookup
+	preparedPages bool
 }
+
+// Prepared pages embed their own immutable revision and require explicit
+// generation at publication/startup. Ordinary shell hosting keeps its behavior.
+func (h *Host) EnablePreparedPages() { h.preparedPages = true }
 
 // Open requires adapter-static's application shell. Prerendered HTML is never
 // used for application routes: data publication must not serve old measurements.
@@ -111,6 +116,36 @@ func (h *Host) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	// Imported workload routes have no prerendered route-data file. Serve the
+	// build's empty layout data for those known application routes, so SvelteKit
+	// can hydrate/navigate and then request the selected corpus from the API.
+	if strings.HasPrefix(p, "/bench/") && strings.HasSuffix(p, "/__data.json") {
+		workload := strings.TrimSuffix(strings.TrimPrefix(p, "/bench/"), "/__data.json")
+		known, err := h.workload(r.Context(), workload)
+		if err != nil {
+			http.Error(w, "workload catalog unavailable", 503)
+			return
+		}
+		if !known {
+			http.NotFound(w, r)
+			return
+		}
+		f, err := h.openFile("history/__data.json", 1024)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		defer f.Close()
+		info, err := f.Stat()
+		if err != nil {
+			http.Error(w, "route data unavailable", 503)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Cache-Control", "no-cache")
+		http.ServeContent(w, r, "__data.json", info.ModTime(), io.NewSectionReader(f, 0, info.Size()))
+		return
+	}
 	navigation := strings.TrimSuffix(p, "/")
 	app := false
 	switch navigation {
@@ -131,6 +166,27 @@ func (h *Host) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if app {
+		if h.preparedPages && (navigation == "" || navigation == "/benchmarks") {
+			name := "index.html"
+			if navigation == "/benchmarks" {
+				name = "benchmarks/index.html"
+			}
+			f, err := h.openFile(name, MaxShellBytes)
+			if err != nil {
+				http.Error(w, "prepared page unavailable", 503)
+				return
+			}
+			defer f.Close()
+			info, err := f.Stat()
+			if err != nil {
+				http.Error(w, "prepared page unavailable", 503)
+				return
+			}
+			w.Header().Set("Cache-Control", "no-cache")
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			http.ServeContent(w, r, name, info.ModTime(), io.NewSectionReader(f, 0, info.Size()))
+			return
+		}
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("ETag", h.etag)

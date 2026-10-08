@@ -12,6 +12,7 @@ type CohortCell struct {
 	Metric, Scenario, SourceProfile, ExactValue         string
 	Value                                               float64
 	Failed                                              bool
+	MethodUnavailable                                   bool
 }
 
 // CohortFixture constructs synthetic transport records, never benchmark proof.
@@ -90,6 +91,14 @@ func CohortFixture(seed string, date time.Time, cells []CohortCell) (wire.Job, m
 		if metric == "process.rss" {
 			method.CollectorStatus = "recorded"
 			method.Observations = []wire.ObservationIdentity{{DefinitionVersion: 1, Unit: "bytes", Scope: "adapter_process", Phase: scenario + "/after_batch", Collector: "procfs", CollectorVersion: "1", Quality: "boundary_snapshot_only", Profile: profile, Denominator: "process"}}
+		}
+		if cell.MethodUnavailable {
+			method.Status = "unavailable"
+			method.Reason = "Retained source recipe unavailable"
+			method.Recipe = nil
+			method.RecipeSHA256 = ""
+			method.CollectorStatus = "not_recorded"
+			method.Observations = []wire.ObservationIdentity{}
 		}
 		outcomes := map[string]int{"ok": 1}
 		if cell.Failed {

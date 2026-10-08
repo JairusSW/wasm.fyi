@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { aggregate, aggregateCohort } from './aggregates';
 import { fmtU } from './format';
 import { viewCell, viewData } from './view-data';
-import { historyCell, historyChange, historySegments, historyCurve, historySeries, historyCallDetails, historyReusesEvidence, historyCohort, historyVersionChanges, historyComparison, historyCoverage } from './history-values';
+import { historyCell, historyChange, historySegments, historyCurve, historySeries, historyCallDetails, historyReusesEvidence, historyCohort, historyVersionChanges, historyComparison, historyCoverage, historyVerdict, historyEndpoints } from './history-values';
 import { OTM_KEYS, historyPin } from './data/snapshot';
 import { readFileSync } from 'node:fs';
 import type { Scope } from './model';
@@ -81,20 +81,6 @@ describe('recorded weekly history',()=>{
                 expect(report.runtimes.find((r:{id:string})=>r.id==='wago').description.runtime_version).toMatch(/^9f01d145d54ac7ab458b6b2f6047db90a757410a\//);
             }
     });
-    it('uses recorded directional call medians and their estimated sum for every revision',()=>{
-        for(const machine of ['m1','m2'] as const){
-            const selected={...scope,machine};
-            const a=historySeries(selected,'G','wasmHost')!,b=historySeries(selected,'G','hostWasm')!,round=historySeries(selected,'G','roundTrip')!;
-            for(const [i] of viewData.history[machine].points.entries()){
-                const left=historyCell(machine,'mechanisms/wasm-to-host-call','G','steady',i),right=historyCell(machine,'mechanisms/host-to-wasm-call','G','steady',i);
-                if(left.st==='ok'&&right.st==='ok'){
-                    expect(a[i]).toBe(left.v);expect(b[i]).toBe(right.v);expect(round[i]).toBe(a[i]+b[i]);
-                }else expect(round[i]).toBeNaN();
-            }
-            const other=historySeries(selected,'A','roundTrip');
-            expect(other == null || Number.isNaN(other[betaIndex(machine)])).toBe(true);
-        }
-    });
     it('does not reuse erased comparison-engine measurements',()=>{
         for(const machine of ['m1','m2'] as const)for(const cid of ['A','D'] as const){
             expect(historyCell(machine,'applications/image-blur',cid,'steady',betaIndex(machine)).st).toBe('nm');
@@ -119,11 +105,11 @@ describe('recorded weekly history',()=>{
 });
 
 
-it('uses one round-trip history tab while keeping directional measurements in its details',()=>{
- expect(OTM_KEYS).toContain('roundTrip');expect(OTM_KEYS).not.toContain('wasmHost');expect(OTM_KEYS).not.toContain('hostWasm');
- expect(historyCallDetails({...scope,baseline:'G'},'G',betaIndex('m1'))).toContain('Wasm → host:');
- expect(historyCallDetails({...scope,baseline:'G'},'G',betaIndex('m1'))).toContain('Host → Wasm:');
- expect(historyCallDetails({...scope,baseline:'G'},'G',betaIndex('m1'))).toContain('not a measured nested round trip');
+it('offers measured paths and a distinct legacy callback history without a summed metric',()=>{
+ expect(OTM_KEYS).toContain('callTotal');expect(OTM_KEYS).not.toContain('wasmHostLoop');expect(OTM_KEYS).not.toContain('hostWasm');expect(OTM_KEYS).not.toContain('wasmHost');expect(OTM_KEYS).not.toContain('roundTrip');
+ expect(historyCallDetails({...scope,baseline:'G'},'G',betaIndex('m1'))).toContain('Wasm → host → Wasm');
+ expect(historyCallDetails({...scope,baseline:'G'},'G',betaIndex('m1'))).toContain('Host → Wasm → host');
+ expect(historyCallDetails({...scope,baseline:'G'},'G',betaIndex('m1'))).toContain('guest loop');
 });
 it('retains a newly recorded engine point without filling its older gap',()=>{
  const h=viewData.history.m1,last=h.points.length-1,beta=betaIndex('m1');
@@ -142,8 +128,8 @@ it('retains a newly recorded engine point without filling its older gap',()=>{
 
 it('identifies reused WAVM evidence without treating equal version labels as proof',()=>{
  const h=viewData.history.m2,a=h.points.findIndex(p=>p.date==='2026-09-26'),b=h.points.findIndex(p=>p.date==='2026-10-03');
- if(a>=0){expect(historyReusesEvidence('m2','L','roundTrip',a,b)).toBe(true);expect(historyReusesEvidence('m2','G','roundTrip',a,b)).toBe(false);}
- expect(historyReusesEvidence('m2','L','roundTrip',b,b)).toBe(false);
+ if(a>=0){expect(historyReusesEvidence('m2','L','hostWasm',a,b)).toBe(true);expect(historyReusesEvidence('m2','G','hostWasm',a,b)).toBe(false);}
+ expect(historyReusesEvidence('m2','L','hostWasm',b,b)).toBe(false);
 });
 
 it('anchors relative history to each machine first measured point while retaining its earlier gaps',()=>{
@@ -187,7 +173,9 @@ it('does not let another historical engine change Wago workload selection or its
 });
 it('identifies Wasmer partial WASI coverage and compares release/main on identical recorded workloads',()=>{
  for(const machine of ['m1','m2'] as const){
-  const selected:Scope={...scope,machine,weighting:'corpus'},h=viewData.history[machine];
+  // Keep the six-engine cohort for this WASI coverage regression: the C AOT
+  // engines do not execute WASI and would exclude those contracts entirely.
+  const selected:Scope={...scope,machine,hide:{...scope.hide,T:true,U:true},weighting:'corpus'},h=viewData.history[machine];
   const a=h.points.findIndex(p=>p.date==='2026-10-01'),b=h.points.findIndex(p=>p.date==='2026-10-03');
   expect(historyCoverage(selected,'D','exec',a).complete).toBe(true);
   const coverage=historyCoverage(selected,'D','exec',b);expect(coverage.complete).toBe(false);
@@ -277,4 +265,34 @@ it('shows all captured engine releases at publication dates using their exact cu
    }
   }
  }
+});
+
+describe('change report verdicts',()=>{
+ it('uses the point estimate when a capture has no interval',()=>{
+  expect(historyVerdict({delta:.1,fixed:false})).toEqual({verdict:'regressed',estimate:true});
+  expect(historyVerdict({delta:-.1,fixed:false})).toEqual({verdict:'improved',estimate:true});
+  expect(historyVerdict({delta:.01,fixed:false})).toEqual({verdict:'no practical change',estimate:true});
+ });
+ it('requires the whole interval to clear the threshold',()=>{
+  expect(historyVerdict({delta:.1,interval:[.05,.15],fixed:false}).verdict).toBe('regressed');
+  expect(historyVerdict({delta:.1,interval:[-.01,.15],fixed:false}).verdict).toBe('inconclusive');
+  expect(historyVerdict({delta:0,interval:[0,0],fixed:true}).verdict).toBe('reused evidence');
+ });
+ it('snaps report endpoints to measured points inside the range',()=>{
+  expect(historyEndpoints([NaN,NaN,1,NaN,2,NaN],0,5)).toEqual([2,4]);
+  expect(historyEndpoints([NaN,1,NaN],0,2)).toBeNull();
+  expect(historyEndpoints(null,0,2)).toBeNull();
+ });
+ it('reports real verdicts for every machine over its full range',()=>{
+  for(const machine of ['m1','m2'] as const){
+   const s:Scope={...scope,machine};
+   const series=historySeries(s,'A','exec');
+   const ends=historyEndpoints(series,0,series!.length-1)!;
+   expect(ends).not.toBeNull();
+   const after=new Set(historyCohort(s,'A','exec',ends[1]));
+   const verdicts=historyCohort(s,'A','exec',ends[0]).filter(w=>after.has(w)).map(w=>historyChange(historyCell(machine,w,'A','steady',ends[0]),historyCell(machine,w,'A','steady',ends[1]))).filter(c=>c!=null).map(c=>historyVerdict(c!).verdict);
+   expect(verdicts.length).toBeGreaterThan(0);
+   expect(new Set(verdicts).size).toBeGreaterThan(1);
+  }
+ });
 });

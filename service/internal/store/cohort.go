@@ -22,6 +22,10 @@ type CohortScope struct {
 	Revision            string           `json:"revision"`
 	Selection           string           `json:"selection"`
 	Environment         string           `json:"environment"`
+	Environments        []string         `json:"environments,omitempty"`
+	SourcePolicy        string           `json:"sourcePolicy,omitempty"`
+	Feature             string           `json:"feature,omitempty"`
+	MethodPolicy        string           `json:"methodPolicy,omitempty"`
 	Lanes               []string         `json:"lanes"`
 	LaneKind            string           `json:"laneKind"`
 	Baseline            string           `json:"baseline"`
@@ -53,6 +57,11 @@ func (s *Store) NormalizeCohort(scope CohortScope) (CohortScope, error) {
 	if _, e := s.Revision(scope.Revision); e != nil {
 		return scope, e
 	}
+	var err error
+	scope.Environments, err = s.NormalizeHostEnvironments(scope.Revision, scope.Environment, scope.Environments)
+	if err != nil {
+		return scope, err
+	}
 	if scope.Selection == "" || scope.Selection == "s1" {
 		scope.Selection = "current"
 	}
@@ -77,16 +86,29 @@ func (s *Store) NormalizeCohort(scope CohortScope) (CohortScope, error) {
 	if scope.Contracts != "latest-in-scope" && scope.Contracts != "all-exact-contracts" {
 		return scope, wire.Invalid("explicit workload contract policy required")
 	}
+	if scope.SourcePolicy != "" && scope.SourcePolicy != "latest-capture-memory-pass-preferred-v1" {
+		return scope, wire.Invalid("invalid source selection policy")
+	}
+	if scope.Feature != "" && (!wire.IsIdentity(scope.Feature) || len(scope.Feature) > 128) {
+		return scope, wire.Invalid("invalid feature population")
+	}
 	if scope.Workloads != "applications" && scope.Workloads != "all" {
 		return scope, wire.Invalid("explicit workload population required")
 	}
 	if scope.Weighting != "workload" && scope.Weighting != "corpus" {
 		return scope, wire.Invalid("invalid cohort weighting")
 	}
-	if scope.Policy != "shared-geometric-v1" && scope.Policy != "available-rss-arithmetic-v1" && scope.Policy != "matched-rss-arithmetic-v1" {
+	if scope.Policy != "shared-geometric-all-v1" && scope.Policy != "shared-geometric-v1" && scope.Policy != "available-geometric-v1" && scope.Policy != "available-rss-arithmetic-v1" && scope.Policy != "matched-rss-arithmetic-all-v1" && scope.Policy != "matched-rss-arithmetic-v1" {
 		return scope, wire.Invalid("invalid cohort policy")
 	}
-	if len(scope.Lanes) == 0 || len(scope.Lanes) > 32 || len(scope.Selectors) == 0 || len(scope.Selectors) > 4 || (scope.Policy == "shared-geometric-v1" && len(scope.Selectors) != 1) || (scope.Policy != "shared-geometric-v1" && scope.Weighting != "workload") {
+	if scope.MethodPolicy != "" && scope.MethodPolicy != "explicit-source-membership-v1" {
+		return scope, wire.Invalid("unsupported method membership policy")
+	}
+	maxSelectors := 4
+	if scope.MethodPolicy != "" {
+		maxSelectors = 32
+	}
+	if len(scope.Lanes) == 0 || len(scope.Lanes) > 32 || len(scope.Selectors) == 0 || len(scope.Selectors) > maxSelectors || ((scope.Policy == "shared-geometric-all-v1" || scope.Policy == "shared-geometric-v1" || scope.Policy == "available-geometric-v1") && scope.MethodPolicy == "" && len(scope.Selectors) != 1) || (scope.Policy != "shared-geometric-all-v1" && scope.Policy != "shared-geometric-v1" && scope.Policy != "available-geometric-v1" && scope.Weighting != "workload") {
 		return scope, wire.Invalid("invalid cohort scope bounds")
 	}
 	scope.Lanes = append([]string{}, scope.Lanes...)
@@ -118,6 +140,7 @@ func (s *Store) NormalizeCohort(scope CohortScope) (CohortScope, error) {
 }
 
 func (s *Store) ComputeCohort(ctx context.Context, scope CohortScope) (Cohort, error) {
+	s = s.queryStore()
 	c := Cohort{CategoryPolicy: comparison.CategoryVersion, EligibilityPolicy: "wasmfyi-summary-eligibility-v1", Excluded: map[string]int{}}
 	if e := ctx.Err(); e != nil {
 		return c, e
@@ -148,6 +171,12 @@ func (s *Store) ComputeCohort(ctx context.Context, scope CohortScope) (Cohort, e
 		Ambiguous bool
 	}
 	active := map[string]activeContract{}
+	var commonMetric string
+	var commonMethod *wire.MeasurementMethod
+	captureTimes := map[string]time.Time{}
+	captureProfiles := map[string]string{}
+	var lastSelection string
+	var lastMethods map[string][]wire.Record
 	for _, selector := range scope.Selectors {
 		definition, e := s.Record(scope.Revision, "metric", selector.Definition)
 		if e != nil {
@@ -168,11 +197,21 @@ func (s *Store) ComputeCohort(ctx context.Context, scope CohortScope) (Cohort, e
 		if e != nil {
 			return c, e
 		}
-		if method.Status != "available" {
+		if method.Status != "available" && !(metric.Name == "native.code_size" && scope.Collectors == "allow-unrecorded-native-size") {
 			return c, wire.Invalid("cohort method lacks source recipe")
+		}
+		if scope.SourcePolicy != "" && metric.Name != "process.rss" && metric.Name != "process.peak_rss" {
+			return c, wire.Invalid("memory source policy requires an RSS metric")
 		}
 		if method.Metric != metric.Name {
 			return c, wire.Invalid("cohort method differs from metric definition")
+		}
+		if scope.MethodPolicy != "" && (scope.Policy == "shared-geometric-all-v1" || scope.Policy == "shared-geometric-v1" || scope.Policy == "available-geometric-v1") {
+			if commonMethod != nil && (commonMetric != selector.Definition || commonMethod.Scenario != method.Scenario || (commonMethod.Profile != method.Profile && !(scope.SourcePolicy != "" && metric.Name == "process.peak_rss")) || commonMethod.Statistic != method.Statistic) {
+				return c, wire.Invalid("explicit geometric membership crosses metric or observation context")
+			}
+			commonMetric = selector.Definition
+			commonMethod = method
 		}
 		if method.CollectorStatus != "recorded" && !(metric.Name == "time.wall" && scope.Collectors == "allow-unrecorded-timing") && !(strings.HasPrefix(metric.Name, "native.") && scope.Collectors == "allow-unrecorded-native-size") {
 			return c, wire.Invalid("cohort collector not recorded")
@@ -192,13 +231,36 @@ func (s *Store) ComputeCohort(ctx context.Context, scope CohortScope) (Cohort, e
 				}
 			}
 		}
-		if scope.Policy != "shared-geometric-v1" && (metric.Name != "process.rss" || metric.Unit != "bytes") {
+		if scope.Policy != "shared-geometric-all-v1" && scope.Policy != "shared-geometric-v1" && scope.Policy != "available-geometric-v1" && (metric.Name != "process.rss" || metric.Unit != "bytes") {
 			return c, wire.Invalid("RSS policy requires current process RSS definitions")
 		}
-		selected, e := s.ResultsContext(ctx, Query{Revision: scope.Revision, Selection: scope.Selection, Environment: scope.Environment, Definition: selector.Definition, Method: selector.Method}, false)
-		if e != nil {
-			return c, e
+		// These fields are already established by the exact registered method.
+		// Supplying them selects a narrower posting set before host membership
+		// resolution; the exact method check remains in ResultsContext.
+		query := Query{Revision: scope.Revision, Selection: scope.Selection, Environment: scope.Environment, Environments: scope.Environments, Definition: selector.Definition, Metric: metric.Name, Scenario: method.Scenario, Profile: method.Profile, Statistic: method.Statistic}
+		encoded, _ := wire.Encode(query)
+		if string(encoded) != lastSelection {
+			selected, e := s.ResultsContext(ctx, query, false)
+			if e != nil {
+				return c, e
+			}
+			lastMethods = map[string][]wire.Record{}
+			for _, record := range selected {
+				var value wire.Result
+				if e = wire.Decode(record.Data, &value); e != nil {
+					return c, e
+				}
+				if value.MeasurementMethod != nil {
+					id := value.MeasurementMethod.ID()
+					lastMethods[id] = append(lastMethods[id], record)
+				}
+			}
+			lastSelection = string(encoded)
 		}
+		// Host selection already compares current/previous cells independently
+		// of producer method. Reuse that selection for source methods sharing
+		// one context, then preserve the exact method membership check.
+		selected := lastMethods[selector.Method]
 		for _, record := range selected {
 			if e = ctx.Err(); e != nil {
 				return c, e
@@ -225,6 +287,21 @@ func (s *Store) ComputeCohort(ctx context.Context, scope CohortScope) (Cohort, e
 			if v.AnalysisVersion != selector.Analysis {
 				return c, wire.Invalid("cohort crosses requested analysis version")
 			}
+			if scope.Feature != "" && !strings.HasPrefix(v.Workload, "features/"+scope.Feature+"/") {
+				continue
+			}
+			if scope.Feature != "" {
+				workload, err := s.Record(scope.Revision, "workload", v.ContractID)
+				if err != nil {
+					return c, err
+				}
+				var metadata struct{ Provenance struct{ Baseline bool } }
+				_ = json.Unmarshal(workload.Data, &metadata)
+				if metadata.Provenance.Baseline {
+					c.Excluded["feature-baseline"]++
+					continue
+				}
+			}
 			if scope.Workloads == "applications" && strings.HasPrefix(v.Workload, "features/") {
 				c.Excluded["feature-probe"]++
 				continue
@@ -240,7 +317,7 @@ func (s *Store) ComputeCohort(ctx context.Context, scope CohortScope) (Cohort, e
 					active[v.Workload] = prior
 				}
 			}
-			if v.MeasurementMethod == nil || v.MeasurementMethod.Status != "available" {
+			if v.MeasurementMethod == nil || (v.MeasurementMethod.Status != "available" && !(metric.Name == "native.code_size" && scope.Collectors == "allow-unrecorded-native-size")) {
 				return c, wire.Invalid("cohort method lacks source recipe")
 			}
 			m := v.MeasurementMethod
@@ -278,19 +355,53 @@ func (s *Store) ComputeCohort(ctx context.Context, scope CohortScope) (Cohort, e
 				}
 				contracts[v.ContractID] = group
 			}
-			keyBytes, _ := wire.Encode([]string{v.ContractID, selector.Definition, selector.Method, selector.Analysis})
+			rowMethod := selector.Method
+			if scope.MethodPolicy != "" {
+				rowMethod = v.Scenario + ":" + v.Profile + ":" + v.Statistic
+				if scope.SourcePolicy != "" && (v.Metric == "process.rss" || v.Metric == "process.peak_rss") {
+					rowMethod = v.Scenario + ":" + v.Statistic
+				}
+			}
+			keyBytes, _ := wire.Encode([]string{v.ContractID, selector.Definition, rowMethod, selector.Analysis})
 			key := wire.Hash(keyBytes)
 			row := rows[key]
 			if row == nil {
 				row = &comparison.Row{Key: key, Workload: v.Workload, Group: group, Cells: []comparison.Cell{}}
 				rows[key] = row
 			}
-			for _, prior := range row.Cells {
+			replace := -1
+			for i, prior := range row.Cells {
 				if prior.Configuration == lane {
-					return c, wire.Invalid("ambiguous selected workload within lane")
+					if scope.MethodPolicy == "" {
+						return c, wire.Invalid("ambiguous selected workload within lane")
+					}
+					priorTime := captureTimes[prior.Result]
+					if v.Created.Equal(priorTime) && scope.SourcePolicy != "" && captureProfiles[prior.Result] != v.Profile {
+						if v.Profile == "memory" {
+							replace = i
+						} else {
+							replace = -2
+						}
+						continue
+					}
+					if v.Created.Equal(priorTime) && prior.Result != record.ID {
+						return c, wire.Invalid("equal-time source membership is ambiguous")
+					}
+					if !v.Created.After(priorTime) {
+						replace = -2
+					} else {
+						replace = i
+					}
 				}
 			}
+			if replace == -2 {
+				continue
+			}
 			status, reason, e := s.cohortEligibility(scope.Revision, v)
+			if scope.Policy == "available-rss-arithmetic-v1" && (v.Runtime == "wasm2c-gcc" || v.Runtime == "w2c2-gcc") {
+				status = "unavailable"
+				reason = "compiler-inclusive-rss-policy-unavailable"
+			}
 			if e != nil {
 				return c, e
 			}
@@ -318,7 +429,14 @@ func (s *Store) ComputeCohort(ctx context.Context, scope CohortScope) (Cohort, e
 			if v.SamplingGroup != nil {
 				groupID = v.SamplingGroup.ID
 			}
-			row.Cells = append(row.Cells, comparison.Cell{Configuration: lane, ExactConfiguration: v.ConfigurationID, Contract: v.ContractID, Definition: v.MetricDefinitionID, Method: v.MeasurementMethodID, SamplingGroup: groupID, Result: record.ID, Report: v.ReportID, Status: status, Value: number, SourceValue: sourceSummary[v.Statistic], ApproximateValue: approximate})
+			cell := comparison.Cell{Configuration: lane, Environment: v.EnvironmentID, ExactConfiguration: v.ConfigurationID, Contract: v.ContractID, Definition: v.MetricDefinitionID, Method: v.MeasurementMethodID, SamplingGroup: groupID, Result: record.ID, Report: v.ReportID, Status: status, Value: number, SourceValue: sourceSummary[v.Statistic], ApproximateValue: approximate}
+			if replace >= 0 {
+				row.Cells[replace] = cell
+			} else {
+				row.Cells = append(row.Cells, cell)
+			}
+			captureTimes[record.ID] = v.Created
+			captureProfiles[record.ID] = v.Profile
 			total++
 			if total > comparison.MaxCells || len(rows) > 10000 {
 				return c, ErrLimit
@@ -395,7 +513,7 @@ func (s *Store) cohortEligibility(revision string, v wire.Result) (string, strin
 		if summary.Outcomes["ok"] <= 0 || summary.LatencyStatus == "failed_cell" || summary.Samples <= 0 || summary.Launches <= 0 {
 			return "unavailable", "no-eligible-timing-launches", nil
 		}
-		if v.Scenario == "compile" && (v.Runtime == "wazero" || strings.HasPrefix(v.Runtime, "v8-")) {
+		if v.Scenario == "compile" && (v.Runtime == "wazero" || v.Runtime == "v8" || strings.HasPrefix(v.Runtime, "v8-")) {
 			r, e := s.Record(revision, "configuration", v.ConfigurationID)
 			if e != nil {
 				return "", "", e
@@ -435,7 +553,10 @@ func (s *Store) cohortEligibility(revision string, v wire.Result) (string, strin
 			return "unavailable", "incomplete-memory-launch-coverage", nil
 		}
 	default:
-		if !strings.HasPrefix(v.Metric, "native.") || summary.Status != "available" {
+		var raw map[string]json.RawMessage
+		_ = json.Unmarshal(v.Summary, &raw)
+		measuredSize := v.Metric == "native.code_size" && v.Statistic == "size_bytes" && len(raw["size_bytes"]) > 0 && string(raw["size_bytes"]) != "null"
+		if !strings.HasPrefix(v.Metric, "native.") || summary.Status != "available" && !measuredSize {
 			return "unavailable", "unsupported-headline-metric", nil
 		}
 	}
@@ -507,4 +628,20 @@ func (s *Store) MethodContext(ctx context.Context, revision, definition, method 
 		return nil, err
 	}
 	return s.cohortMethod(ctx, revision, CohortSelector{Definition: definition, Method: method})
+}
+
+// SummaryEligibility applies website admission policy without altering producer
+// summaries. Recipes are resolved by their recorded method identity.
+func (s *Store) SummaryEligibility(ctx context.Context, revision string, value wire.Result) (string, string, error) {
+	if value.MeasurementMethod == nil && (value.Metric == "process.rss" || value.Metric == "process.peak_rss") {
+		if value.MeasurementMethodID == "" {
+			return "unavailable", "memory-method-unavailable", nil
+		}
+		method, err := s.MethodContext(ctx, revision, value.MetricDefinitionID, value.MeasurementMethodID)
+		if err != nil {
+			return "", "", err
+		}
+		value.MeasurementMethod = method
+	}
+	return s.cohortEligibility(revision, value)
 }

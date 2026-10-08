@@ -15,6 +15,7 @@ import {
 import { collectCorpusByCorpus } from "./lib/corpus-collection.mjs";
 import { runCommand } from "./lib/benchmark-process.mjs";
 import { retainCollectionParent } from "./lib/benchmark-parent-bundle.mjs";
+import {collectLatencies} from './lib/latency-capture.mjs';
 import { collectionVerdict } from "./lib/collection-verdict.mjs";
 const [directory, key] = process.argv.slice(2);
 if (!directory || !/^corpus-\d+$/.test(key))
@@ -77,7 +78,7 @@ const invoke = async (command, ...args) => {
       cwd: host.harness,
       env,
       signal: abort.signal,
-      log: join(dir, "commands.log"),
+      ...(plan.collection.capture!=="latency"?{log: join(dir, "commands.log")}:{}),
     },
   );
   return "";
@@ -88,6 +89,14 @@ const retainBundle = (event) => retainCollectionParent({
 try {
   const collection = { ...plan.collection };
   collection.siteExportV2 = plan.publication?.type === "api-v1";
+  if(collection.capture==='latency') {
+    const latency=await collectLatencies({directory:dir,workloads,engines:plan.engines,collection,run:invoke,platform:host.platform,onTiming:({runnerMs,captureMs})=>emit({status:"running",step:`runtime passes ${Math.round(runnerMs)} ms; capture ${Math.round(captureMs)} ms`})});
+    const summaries=latency.results.map(r=>({runtime:r.engine,workload:r.workload,scenario:r.phase,median_ns_per_operation:r.latencyNs,outcomes:{[r.latencyStatus==='not-measured'||r.latencyStatus==='disabled'?'unsupported':r.latencyStatus]:1}}));
+    const result={schema:1,corpus:key,workloads:workloads.map(w=>w.id),plan:plan.identity,latency,summaries,verdict:collectionVerdict(summaries,collection.scenarios?.split(',')||['steady']),finished:latency.capturedAt};
+    await atomicJSON(join(dir,'result.json'),result);
+    await rm(suite,{force:true});
+    emit({status:'completed',result});
+  } else {
   const reports = await collectCorpusByCorpus({
     directory: dir,
     suite,
@@ -119,6 +128,7 @@ try {
     checks["wasm-fyi-export.json"] = digest(bytes);
     await atomicJSON(join(report, "checksums.json"), checks);
   }
+  const verdictScenarios = plan.collection.scenarios?.split(",") || ["steady"];
   const result = {
     schema: 1,
     corpus: key,
@@ -129,11 +139,12 @@ try {
     summaries: rows,
     memory,
     code,
-    verdict: collectionVerdict(rows),
+    verdict: collectionVerdict(rows, verdictScenarios),
     finished: new Date().toISOString(),
   };
   await atomicJSON(join(dir, "result.json"), result);
   emit({ status: "completed", result });
+  }
 } catch (error) {
   await atomicJSON(join(dir, "error.json"), {
     message: error.message,

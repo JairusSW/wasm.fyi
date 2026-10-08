@@ -1,4 +1,8 @@
 <script lang="ts">
+	import {apiView,loadOverview,aggregateKey,trackId} from '$lib/api/controller.svelte';
+ import {datasetView} from '$lib/api/view.svelte';
+ import {metricSelectors} from '$lib/api/presentation';
+ import { tipCard, tipWho } from '$lib/tip';
  import PlugIcon from '$lib/components/PlugIcon.svelte';
  import FeatureResult from '$lib/components/FeatureResult.svelte';
  import FeatureEvidence from '$lib/components/FeatureEvidence.svelte';
@@ -36,13 +40,21 @@
 	// ── Spec tests ─────────────────────────────────────────────────────────
 	const cols = $derived(FEATURE_CFG.filter((c) => !ui.scope.hide[c.id] && engineFeatureVersions(c.rt,ui.scope,'stable').length>0));
 
-	// ── Proposal performance ───────────────────────────────────────────────
+	$effect(()=>{
+  if(!apiView.ready||ui.compatView!=='perf')return;
+  const metric=ui.perfMetric==='exec'?'steady':ui.perfMetric==='compile'?'compile':'rss';
+  const scope={machine:ui.machine,snapshot:ui.snap,metric,baseline:ui.baseline,weighting:'workload' as const,hide:{...ui.hide,...Object.fromEntries(FEATURE_CFG.filter(c=>!cols.some(v=>v.id===c.id)).map(c=>[c.id,true]))}};
+  const abort=new AbortController();for(const section of COMPAT)for(const family of section.fams)void loadOverview(scope as import('$lib/api/controller.svelte').PageScope,metric,family.id,abort.signal);
+  return ()=>abort.abort();
+ });
+ // ── Proposal performance ───────────────────────────────────────────────
 	const PERF_NOTE={exec:'Steady execution · shared successful execution contracts per family; compile-only probes excluded.',compile:'Compilation · shared successful contracts per family.',mem:'Steady process peak RSS · shared successful contracts; includes adapter process.'};
   const perfSecs=$derived.by(()=>{
     const metric=ui.perfMetric==='exec'?'steady':ui.perfMetric==='compile'?'compile':'rss';
     const unit=metric==='rss'?'MiB':'ms';
     return COMPAT.map(sec=>({sec:sec.sec,rows:sec.fams.map(f=>{
       const contracts=featureContracts(f.id).filter(w=>metric==='compile'||!['compile-only','compile-and-instantiate'].includes(w.evidenceScope || ''));
+      if(datasetView.revision){const scope={...ui.scope,weighting:'workload' as const,hide:{...ui.hide,...Object.fromEntries(FEATURE_CFG.filter(c=>!cols.some(v=>v.id===c.id)).map(c=>[c.id,true]))}};const overview=apiView.aggregates[aggregateKey(scope,metric)+'|feature:'+f.id];const values=cols.map(c=>{const card=overview?.cards.find(x=>x.lane===trackId(c.id));return card?.status==='available'&&card.value!=null?card.value/metricSelectors[metric].factor:null});const min=Math.min(...values.filter((v):v is number=>v!=null));return {f,corpus:`${overview?.cards.find(c=>c.count)?.count||0} shared contracts / ${contracts.length} eligible`,cells:values.map(v=>v==null?{text:'unavailable',sub:apiView.aggregateErrors[aggregateKey(scope,metric)+'|feature:'+f.id]||'loading comparison',bg:'transparent',color:'var(--fg3)',fw:400}:{text:fmtU(v,unit),sub:v===min?'lowest':relative(v/min,ui.deltaFormat)+' vs lowest',bg:heatRatio(v/min),color:'var(--fg)',fw:v===min?600:400})}}
       const participants=cols.filter(c=>contracts.some(w=>{const x=viewCell(ui.scope.machine,ui.scope.snapshot || 's1',w.id,c.id,metric);return x.st==='ok' && x.v!=null && x.v>0;}));
       const cohort=contracts.filter(w=>participants.length && participants.every(c=>{const x=viewCell(ui.scope.machine,ui.scope.snapshot || 's1',w.id,c.id,metric);return x.st==='ok' && x.v!=null && x.v>0;}));
       const values=cols.map(c=>participants.some(p=>p.id===c.id) && cohort.length?Math.exp(cohort.reduce((sum,w)=>sum+Math.log(viewCell(ui.scope.machine,ui.scope.snapshot || 's1',w.id,c.id,metric).v!),0)/cohort.length):null);
@@ -60,7 +72,7 @@
 <div class="head">
 	<span class="mono small fg3 path">wasm.fyi/features</span>
 	<h1>Features</h1>
-	<span class="s12 fg3 lim">Released engine compatibility and verified corpus results. <a class="link" href={siteHref('/wasmbench/conformance/index.json')}>Official suite evidence</a>.</span>
+	<span class="s12 fg3 lim">Released engine compatibility and verified corpus results. <a class="link" href={'/api/v1/conformance'}>Official suite evidence</a>.</span>
 </div>
 <div class="row">
 	<Seg
@@ -122,7 +134,7 @@
                   {@const versions=engineFeatureVersions(h.rt,ui.scope,channel)}
                   <div class="track-version micro">
                     <span>Release</span>
-                    <span title={versions[0]}>{versions[0]?.replace(/\/source-.*/, '').replace(/^([a-f0-9]{12})[a-f0-9]{28}$/, '$1').replace(/^Node (.*?) \/ V8 .*/, 'Node $1') || '—'}</span>
+                    <span data-tip={versions[0] ? `${channel} release\n${versions[0]}` : undefined}>{versions[0]?.replace(/\/source-.*/, '').replace(/^([a-f0-9]{12})[a-f0-9]{28}$/, '$1').replace(/^Node (.*?) \/ V8 .*/, 'Node $1') || '—'}</span>
                   </div>
                 {/each}
               {/if}
@@ -150,14 +162,14 @@
 								<td class="fcell">
                   {#if supportedPlugin}
                     <FeatureResult plugin passed={supportedPlugin.passed} total={supportedPlugin.total} failed={supportedPlugin.failed} skipped={supportedPlugin.skipped} measured={supportedPlugin.official}
-                      href={siteHref(supportedPlugin.official?supportedPlugin.evidence:'/wasmbench/conformance/index.json')}
+                      href={supportedPlugin.official?supportedPlugin.evidence:'/api/v1/conformance'}
                       label={`${r.f.name}, Wago plugin: ${supportedPlugin.official?`${supportedPlugin.passed} of ${supportedPlugin.total} official cases passed, ${supportedPlugin.failed} failed, ${supportedPlugin.skipped} skipped`:'official suite unmeasured'}. Open suite evidence`}
                       tooltip={JSON.stringify({title:`Wago · ${r.f.name}`,subtitle:`Official suite · released plugin ${supportedPlugin.version}`,rows:supportedPlugin.official?[{label:supportedPlugin.label,pass:supportedPlugin.passed,total:supportedPlugin.total,failed:supportedPlugin.failed,skipped:supportedPlugin.skipped,skippedLabel:'skipped',missing:0}]:[],hint:supportedPlugin.official?`${supportedPlugin.scope || 'Official upstream suite'}; skips count toward the total. Performance remains unmeasured.`:'Official suite not collected for this feature on this host. Performance remains unmeasured.'})} />
                   {:else if x.tracks}
                     {#each x.tracks as track}
                       {@const best=track.configurations.filter(c=>c.pass===track.pass).sort((a,b)=>a.failed-b.failed)[0]}
                       {#if track.text==='Node host API · unmeasured'}
-                        <div class="mono micro host-note" title={track.detail}>{track.text}</div>
+                        <div class="mono micro host-note" data-tip={track.detail}>{track.text}</div>
                       {:else}<FeatureResult passed={track.pass} total={track.expected} failed={best?.failed || 0} skipped={best?.skipped || 0} missing={best?.missing || 0} measured={!!track.configurations.length} flagged={track.text==='corpus passed · flag'}
                         label={`${r.f.name}, ${featCols[k].label}: ${track.pass} of ${track.expected} corpus tests passed. Open corpus results`}
                         tooltip={JSON.stringify({title:`${featCols[k].label} · ${r.f.name}`,subtitle:`Corpus tests · published release ${track.version || 'not collected'}`,rows:track.configurations.map(c=>({label:c.backend,pass:c.pass,total:c.total,failed:c.failed,skipped:c.skipped,missing:c.missing})),hint:track.configurations.length?'Click to inspect individual tests':'No measurements for this track'})}
@@ -175,7 +187,7 @@
 		</table>
 	</div>
 	<div class="note">
-    Released engines only. Counts show passed / total corpus tests for one configuration; click for backend and individual test results. ⚑ requires an experimental flag. Browser builds and plugin performance are unmeasured. Wago plugin cells show official cases passed / total, including failed and skipped cases. Official suite links show separate correctness results. <a href={siteHref('/wasmbench/feature-support.json')}>Full evidence</a>.
+    Released engines only. Counts show passed / total corpus tests for one configuration; click for backend and individual test results. ⚑ requires an experimental flag. Browser builds and plugin performance are unmeasured. Wago plugin cells show official cases passed / total, including failed and skipped cases. Official suite links show separate correctness results. <a href={'/api/v1/features'}>Full evidence</a>.
     <details><summary>Measurement scope</summary><p>Unreleased builds are excluded. The latest measured release is shown for each engine. Compilation and execution contracts use their declared oracles. Adapter-unsupported results do not establish that an engine lacks a feature; these representative tests do not establish complete specification conformance. Wago provides optional WASI and Component Model plugins, listed separately from measured results. Feature workloads never enter application averages.</p></details>
 	</div>
 {:else}
@@ -213,7 +225,7 @@
 									class="pcell r"
 									style:background={x.bg}
 									style:color={x.color}
-									data-tip={`${r.f.name} — ${cols[k].rt} ${cols[k].be}\n${[x.text, x.sub].filter(Boolean).join(' · ')}`}
+									data-tip-card={tipCard({ kicker: 'Feature performance', title: r.f.name, who: tipWho(cols[k]), value: x.text, valueColor: x.color === 'var(--fg)' ? '' : x.color, sub: x.sub, heat: x.bg === 'transparent' ? '' : x.bg, note: r.corpus })}
 								>
 									<div class="mono s12 nowrap" style:font-weight={x.fw}>{x.text}</div>
 									<div class="micro fg3 nowrap">{x.sub}</div>

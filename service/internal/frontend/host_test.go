@@ -17,7 +17,8 @@ func fixture(t *testing.T) string {
 	for name, content := range map[string]string{
 		"404.html": "<html>application shell</html>", "index.html": "stale homepage",
 		"benchmarks/index.html": "stale measurements", "_app/immutable/app.js": "console.log('build')",
-		"robots.txt": "User-agent: *", "og/card.png": "png fixture", ".secret": "secret",
+		"history/__data.json": `{"type":"data","nodes":[{"type":"data","data":[{"pageSeed":1},null],"uses":{"route":1}},null]}`,
+		"robots.txt":          "User-agent: *", "og/card.png": "png fixture", ".secret": "secret",
 	} {
 		p := filepath.Join(dir, name)
 		if e := os.MkdirAll(filepath.Dir(p), 0755); e != nil {
@@ -28,6 +29,24 @@ func fixture(t *testing.T) string {
 		}
 	}
 	return dir
+}
+
+func TestPreparedHTMLAndImportedWorkloadRouteData(t *testing.T) {
+	h, e := Open(fixture(t), func(_ context.Context, id string) (bool, error) { return id == "new-workload", nil })
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer h.Close()
+	h.EnablePreparedPages()
+	for route, body := range map[string]string{"/": "stale homepage", "/benchmarks/": "stale measurements", "/bench/new-workload/__data.json": `"pageSeed"`} {
+		w := request(h, "GET", route)
+		if w.Code != 200 || !strings.Contains(w.Body.String(), body) {
+			t.Fatal(route, w.Code, w.Body.String())
+		}
+	}
+	if w := request(h, "GET", "/bench/unknown/__data.json"); w.Code != 404 {
+		t.Fatal("unknown workload route data accepted")
+	}
 }
 
 func request(h http.Handler, method, target string) *httptest.ResponseRecorder {

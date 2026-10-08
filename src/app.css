@@ -15,6 +15,8 @@
 	--rt-v8: oklch(0.77 0.11 190);
 	--rt-wago: oklch(0.73 0.14 350);
 	--rt-wavm: oklch(0.72 0.14 285);
+	--rt-wasm2c: oklch(0.75 0.13 115);
+	--rt-w2c2: oklch(0.75 0.13 45);
 	--st-pass: oklch(0.72 0.14 150);
 	--st-fail: oklch(0.67 0.19 27);
 	--st-crash: oklch(0.62 0.21 5);
@@ -47,6 +49,8 @@
 	--rt-v8: oklch(0.57 0.11 195);
 	--rt-wago: oklch(0.57 0.18 355);
 	--rt-wavm: oklch(0.55 0.17 285);
+	--rt-wasm2c: oklch(0.55 0.15 115);
+	--rt-w2c2: oklch(0.55 0.15 45);
 	--st-pass: oklch(0.56 0.14 150);
 	--st-fail: oklch(0.55 0.2 27);
 	--st-crash: oklch(0.5 0.2 5);

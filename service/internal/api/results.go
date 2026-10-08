@@ -80,6 +80,16 @@ func (a *API) resultRows(ctx context.Context, q store.Query, historical bool) ([
 	if rows, ok := a.results.get(key); ok {
 		return rows, nil
 	}
+	if !historical && (q.Selection == "current" || q.Selection == "" || q.Selection == "s1") && a.historyIndex != nil {
+		selected, found, err := a.historyIndex.Reference(ctx, q)
+		if err != nil {
+			return nil, err
+		}
+		if found {
+			a.results.put(key, selected.Rows)
+			return selected.Rows, nil
+		}
+	}
 	select {
 	case a.selecting <- struct{}{}:
 		defer func() { <-a.selecting }()

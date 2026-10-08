@@ -68,11 +68,17 @@ Caddy. Install just, Caddy (`brew install just caddy` on macOS) and Go 1.27.1+.
 `just dev-caddy` is also available; `just dev-frontend` starts the frontend alone.
 Open `http://localhost:8080`. Ctrl+C stops all three services. API data and a
 private generated publisher token persist under `.wasmfyi/local/`; the website
-continues to use its current snapshot. See [service/README.md](service/README.md)
-for backend details.
+reads indexed current measurements from a compact database. An empty database
+shows an explicit empty state. Set `WASMFYI_DATA_DIR` to choose another private
+data root. See [service/README.md](service/README.md) and
+[database design](docs/benchmark-database.md).
+
+For the production build, run `just serve-local`. It serves Go and Caddy at the
+same address and accepts authenticated compact captures. No report import,
+prepared-page export or evidence audit is needed.
 
 The site uses Svelte 5 and SvelteKit. Production builds are static HTML and can
-be served by any static host, with `404.html` as the fallback for unknown paths.
+be served alongside the API by the Go service. Its application shell handles newly imported workload routes; unknown assets return 404. A static frontend host needs a same-origin proxy to the API.
 
 ```sh
 pnpm build
@@ -106,9 +112,20 @@ source edits, patches, toolchain versions and exact checks.
 
 ## Update measurements
 
-The site reads checksum-verified reports collected by
+The site reads compact measurements collected by
 [wasm-bench](https://github.com/JairusSW/wasm-bench). Correctness checks and
 performance collection are separate steps.
+
+`just bench` now defaults to compact latency capture: one timing pass for
+compilation, instantiation, first call and steady execution. Kernel peak RSS is captured
+when each timing process exits; code size needs only one cold compile sample.
+Report analysis, tool archives and evidence export are skipped. Correctness
+validation, warmups and configured samples remain enabled. Host-call fixtures
+retain calibrated batches. Captures publish directly to the local database with
+one atomic commit. The API has `/api/platforms`, `/api/benchmarks` with signed
+cursors, and authenticated `/api/captures`. Start `just serve-local` first; use `--api-url` for another
+server or `--no-live` for offline capture. `--full --no-live` retains legacy
+diagnostic reports outside the active database.
 
 With `just` installed and the benchmark harness configured:
 
@@ -116,17 +133,12 @@ With `just` installed and the benchmark harness configured:
 just bench-doctor        # inspect the host and adapters
 just bench-build         # build the measurement tools
 just corpus-check        # check results before timing
-just refresh             # collect on configured hosts and rebuild the site
+just bench               # capture latencies on configured hosts
 ```
 
-To import existing reports:
-
-```sh
-just update
-```
-
-Rebuilt artifacts need fresh measurements. Historical results keep their
-original artifact hashes; changing today's corpus does not rewrite the past.
+The database retains the latest cells and deduplicated metadata. Older retries
+cannot replace newer measurements. Historical data and evidence were cleared;
+there is no automatic migration from the former report store.
 
 See [updating results](docs/updating.md),
 [benchmark integration](docs/wasmbench-integration.md), and
@@ -134,6 +146,9 @@ See [updating results](docs/updating.md),
 publication workflows.
 
 ## Data access
+
+See [API.md](API.md) for the HTTP endpoint reference, authentication, pagination,
+comparison scopes and request examples.
 
 Every build generates `/llms.txt`, `/llms-full.txt`, `/data/llm/index.json`,
 benchmark JSON shards, `robots.txt` and `sitemap.xml` from the same verified data

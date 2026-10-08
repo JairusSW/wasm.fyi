@@ -52,7 +52,7 @@ func jobSummary(job wire.Job, id string, created time.Time) PublishedJob {
 	out.HistoryBindings = len(job.History)
 	out.HistoryCoverage = len(job.HistoryCoverage)
 	for _, export := range job.Exports {
-		if export.Manifest.Format != "site-v2" {
+		if export.Manifest.Format != "site-v2" && export.Manifest.Format != "site-v2-retained" {
 			continue
 		}
 		out.Reports = append(out.Reports, export.Manifest.ReportID)

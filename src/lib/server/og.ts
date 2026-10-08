@@ -116,7 +116,7 @@ function cardFor(slug: string): Card {
 		case 'benchmarks':
 			return { title: 'Benchmarks', panel: leaders(0, 'Fastest compilation') };
 		case 'history':
-			return { title: 'History', panel: { kind: 'stats', items: [[String(viewData.history.m1.points.length), 'weeks'], [String(measuredWorkloads()), 'workloads run'], [shortCount(viewData.statistics.timingSamples), 'samples'], [String(Object.keys(viewData.reports).length), 'reports']] } };
+			return { title: 'History', panel: { kind: 'stats', items: [[String(viewData.history.m1.points.length), 'weeks'], [String(measuredWorkloads()), 'workloads run'], [viewData.statistics.timingSamples==null?'—':shortCount(viewData.statistics.timingSamples), 'samples'], [String(Object.keys(viewData.reports).length), 'reports']] } };
 		case 'features':
 			return { title: 'Features', panel: { kind: 'stats', items: [[String(FEATS.length), 'features'], [String(enginesWithEvidence()), 'engines tested'], [shortCount(featureTests), 'tests'], [String(Object.keys(viewData.hosts).length), 'machines']] } };
 		case 'compare':

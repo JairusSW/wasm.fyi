@@ -5,11 +5,33 @@ import (
 	"context"
 	"github.com/JairusSW/wasm.fyi/service/internal/store"
 	"github.com/JairusSW/wasm.fyi/service/internal/testutil"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 )
+
+func TestReadOnlyServingRejectsWrites(t *testing.T) {
+	handler := readOnlyHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) }))
+	for _, method := range []string{"GET", "HEAD", "OPTIONS", "POST", "PUT", "PATCH", "DELETE"} {
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, httptest.NewRequest(method, "/admin/v1/imports", nil))
+		want := 405
+		if method == "GET" || method == "HEAD" || method == "OPTIONS" {
+			want = 204
+		}
+		if response.Code != want {
+			t.Fatalf("%s: got %d want %d", method, response.Code, want)
+		}
+	}
+	for _, args := range [][]string{{"serve", "--startup-verification", "roots"}, {"backup", "--read-only"}, {"serve", "--read-only", "--control-socket", "socket"}, {"serve", "--startup-verification", "invalid"}} {
+		if err := run(context.Background(), args); err == nil {
+			t.Fatalf("accepted unsafe startup combination: %v", args)
+		}
+	}
+}
 
 func TestOperationalCommands(t *testing.T) {
 	root := t.TempDir()

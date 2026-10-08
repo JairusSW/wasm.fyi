@@ -1,6 +1,6 @@
 import {readFile} from 'node:fs/promises';
 import {assertWeeklyParity} from './lib/weekly-parity.mjs';
-import {cloneCopy as cp} from './lib/copy.mjs';
+import {cloneCopy as cp, cloneFiles} from './lib/copy.mjs';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { site, exists, installDirectory } from './lib/wasmbench.mjs';
@@ -16,7 +16,7 @@ if(await exists(join(site,'data/history-calendar.json')))assertWeeklyParity(JSON
 await mkdir(resolve(destination, '..'), { recursive: true });
 const staged = await mkdtemp(join(resolve(destination, '..'), '.static-data-'));
 try {
-  for (const name of datasetFiles(index)) await cp(join(source, name), join(staged, name));
+  await cloneFiles(source, staged, datasetFiles(index));
   await writeFile(join(staged, 'feature-support.json'), JSON.stringify(await featureSupport(source, index.reports)) + '\n');
   await cp(join(site,'corpora/catalog.json'),join(staged,'corpus-catalog.json'));
   await stageAuxiliary(staged);

@@ -24,7 +24,7 @@ export async function processLock(path, fn, {legacyPid = false} = {}) {
   await writeFile(candidate, JSON.stringify(owner));
   let acquired = false;
   try {
-    for (let attempt = 0; attempt < 1200; attempt++) {
+    for (let attempt = 0; attempt < 14400; attempt++) {
       try {
         await link(candidate, path);
         acquired = true;

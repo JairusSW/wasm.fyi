@@ -199,6 +199,25 @@ test("source bundles transfer an exact older commit without a GitHub key or leak
   }
 });
 
+test("shallow source bundles retain their boundary for SSH transfer", async () => {
+ const {sourceBundle}=await import('./lib/benchmark-source.mjs');
+ const root=await mkdtemp(join(tmpdir(),'benchmark-shallow-'));
+ try {
+  const source=join(root,'source'), shallow=join(root,'shallow'), target=join(root,'target');
+  await mkdir(source);await mkdir(target);
+  const git=async(args,cwd=source)=>(await runCommand('git',args,{cwd})).output.trim();
+  await git(['init','--quiet']);await git(['config','user.name','Test']);await git(['config','user.email','test@example.invalid']);
+  await writeFile(join(source,'file'),'one');await git(['add','file']);await git(['commit','--quiet','-m','one']);
+  await writeFile(join(source,'file'),'two');await git(['commit','--quiet','-am','two']);
+  await git(['clone','--quiet','--depth','1','file://'+source,shallow]);
+  const revision=await git(['rev-parse','HEAD'],shallow),pack=join(root,'source.bundle');
+  const ref=await sourceBundle(shallow,revision,pack);
+  await git(['init','--quiet'],target);await writeFile(join(target,'.git/shallow'),await readFile(pack+'.shallow'));
+  await git(['fetch','--quiet',pack,ref],target);await git(['checkout','--quiet','--detach',revision],target);
+  assert.equal(await git(['rev-parse','HEAD'],target),revision);assert.equal(await readFile(join(target,'file'),'utf8'),'two');
+ } finally {await rm(root,{recursive:true,force:true});}
+});
+
 test("publisher lease survives contention and reclaims an interrupted owner", async () => {
   const { processLock } = await import("./lib/benchmark-lock.mjs");
   const root = await mkdtemp(join(tmpdir(), "benchmark-lock-"));
@@ -229,4 +248,12 @@ test("publisher lease survives contention and reclaims an interrupted owner", as
   } finally {
     await rm(root, { recursive: true, force: true });
   }
+});
+
+test('compile-only collection excludes sample overrides for unselected phases',async()=>{
+ const {selectedScenarioSamples}=await import('./lib/corpus-collection.mjs');
+ const scenarioSamples={'*':1,compile:3,instantiate:3,'first-call':1,steady:3};
+ assert.deepEqual(selectedScenarioSamples({scenarios:'compile',scenarioSamples}),{'*':1,compile:3});
+ assert.deepEqual(selectedScenarioSamples({scenarioSamples}),scenarioSamples);
+ assert.deepEqual(selectedScenarioSamples({scenarios:'compile'},JSON.stringify(scenarioSamples)),{'*':1,compile:3});
 });

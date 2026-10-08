@@ -30,10 +30,20 @@ func run(ctx context.Context, args []string) error {
 		action = args[0]
 		args = args[1:]
 	}
+	if action == "serve" || action == "ingest" || action == "remove-engine" || action == "remove-platform" {
+		return runCompact(ctx, action, args)
+	}
+	if action == "legacy-serve" {
+		action = "serve"
+	}
 	flags := flag.NewFlagSet("wasmfyi "+action, flag.ContinueOnError)
 	root := flags.String("data", ".wasmfyi", "private Pebble and content directory")
 	addr := flags.String("listen", "127.0.0.1:8090", "HTTP listen address")
 	frontendDirectory := flags.String("frontend", "", "optional fixed static build directory with 404.html application shell")
+	latencyData := flags.String("latency-data", "", "optional directory of compact latency captures")
+	pageData := flags.String("page-data", "", "optional checked server-side prepared page selections")
+	readOnly := flags.Bool("read-only", false, "serve browsing and downloads without publication or maintenance writes")
+	startupVerification := flags.String("startup-verification", "full", "full or roots; roots requires read-only serving and defers the complete content audit")
 	publisher := flags.String("publisher", "local-coordinator", "authenticated publisher identity")
 	output := flags.String("output", "", "new backup/restore/rebuild destination")
 	apply := flags.Bool("apply", false, "apply orphan quarantine/cleanup; gc defaults to preview")
@@ -57,6 +67,15 @@ func run(ctx context.Context, args []string) error {
 	}
 	if flags.NArg() != 0 {
 		return fmt.Errorf("unexpected positional arguments")
+	}
+	if *startupVerification != "full" && *startupVerification != "roots" {
+		return fmt.Errorf("startup-verification must be full or roots")
+	}
+	if (*readOnly || *startupVerification != "full") && (action != "serve" || *control != "" || *controlSocket != "") {
+		return fmt.Errorf("read-only startup is restricted to serve without maintenance control")
+	}
+	if *startupVerification == "roots" && !*readOnly {
+		return fmt.Errorf("roots startup verification requires --read-only")
 	}
 	if *trustedProxies != "" {
 		for _, cidr := range strings.Split(*trustedProxies, ",") {
@@ -100,7 +119,11 @@ func run(ctx context.Context, args []string) error {
 	}
 	// One process owns the database. CLI backups are offline; attempts to open a
 	// live owner's data fail on Pebble's lock rather than bypassing that owner.
-	s, e := store.OpenWithLimits(*root, *publisher, limits)
+	opener := store.OpenWithLimits
+	if *startupVerification == "roots" {
+		opener = store.OpenForReadOnlyServing
+	}
+	s, e := opener(*root, *publisher, limits)
 	if e != nil {
 		return e
 	}
@@ -150,11 +173,25 @@ func run(ctx context.Context, args []string) error {
 			return e
 		}
 		defer host.Close()
+		if *pageData != "" {
+			host.EnablePreparedPages()
+		}
 		static = host
 	}
-	handler, e := api.NewWithFrontend(s, token, cursorKey, requestLimits, static)
+	handler, e := api.NewWithPreparedPageData(s, token, cursorKey, requestLimits, static, *pageData)
 	if e != nil {
 		return e
+	}
+	if *latencyData != "" {
+		handler.(*api.API).SetLatencyDirectory(*latencyData)
+	}
+	if closer, ok := handler.(interface{ Close() error }); ok {
+		defer closer.Close()
+	}
+	var servingHandler http.Handler = handler
+	if *readOnly {
+		servingHandler = readOnlyHandler(handler)
+		log.Printf("read-only serving; startup verification=%s (full content audit is not asserted)", *startupVerification)
 	}
 	listener, e := net.Listen("tcp", *addr)
 	if e != nil {
@@ -168,7 +205,7 @@ func run(ctx context.Context, args []string) error {
 		}
 		defer controlServer.Close()
 	}
-	server := &http.Server{Handler: handler, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 * 1024, BaseContext: func(net.Listener) context.Context { return ctx }}
+	server := &http.Server{Handler: servingHandler, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 * 1024, BaseContext: func(net.Listener) context.Context { return ctx }}
 	done := make(chan error, 1)
 	go func() {
 		if *cert != "" {
@@ -196,6 +233,17 @@ func run(ctx context.Context, args []string) error {
 		}
 		return e
 	}
+}
+
+func readOnlyHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet && r.Method != http.MethodHead && r.Method != http.MethodOptions {
+			w.Header().Set("Allow", "GET, HEAD, OPTIONS")
+			http.Error(w, "local dataset is served read-only", http.StatusMethodNotAllowed)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

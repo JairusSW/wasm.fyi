@@ -24,9 +24,22 @@ func (s *Store) put(v any) (string, error) {
 		return "", fmt.Errorf("index object exceeds ceiling")
 	}
 	id := wire.Hash(b)
-	return id, s.installBytes(id, b)
+	if err := s.installBytes(id, b); err != nil {
+		return id, err
+	}
+	if err := s.trackOfflineMetadata(id, b, v); err != nil {
+		return id, err
+	}
+	return id, nil
 }
 func (s *Store) load(id string, v any) error {
+	if target, ok := v.(*node); ok && s.queryNodeReader != nil {
+		value, err := s.queryNodeReader(id)
+		if err == nil {
+			*target = value
+		}
+		return err
+	}
 	b, e := s.typedContent(id, v)
 	if e != nil {
 		return e

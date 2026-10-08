@@ -45,6 +45,10 @@ type Revision struct {
 }
 type Store struct {
 	queryWork         [2]queryCounters
+	queryWorkOwner    *Store
+	queryReadView     bool
+	preparedSelection *HistoryReadIndex
+	queryNodeReader   func(string) (node, error)
 	db                *pebble.DB
 	stalls            *writeStallMetrics
 	root              string
@@ -60,11 +64,18 @@ type Store struct {
 	fail              func(string) error
 	poisoned          atomic.Bool
 	objects           *os.Root
+	validationReader  func(context.Context, string, int) ([]byte, error)
 	users             sync.RWMutex
 	closed            bool
 	limits            Limits
 	contentMu         sync.Mutex
 	contentBytes      int64
+	offlineMu         sync.RWMutex
+	offline           bool
+	offlineFiles      map[string]string
+	offlineDerived    map[string]offlineMetadata
+	offlineInputs     map[string]bool
+	offlineDiscarded  int64
 }
 
 // Key fields are length-prefixed, versioned tuples, never slash concatenation.
@@ -80,6 +91,33 @@ func Open(root, publisher string) (*Store, error) {
 	return OpenWithLimits(root, publisher, DefaultLimits())
 }
 func OpenWithLimits(root, publisher string, limits Limits) (*Store, error) {
+	return openWithValidation(root, publisher, limits, true)
+}
+
+// OpenForReadOnlyServing checks durable revision roots without scanning all
+// existing content. Callers must prohibit publication and maintenance writes:
+// total content usage is unknown until a full inventory runs. Individual reads
+// retain their normal content hash and structural checks. Offline installation
+// is not enabled by this opener.
+func OpenForReadOnlyServing(root, publisher string, limits Limits) (*Store, error) {
+	return openWithValidation(root, publisher, limits, false)
+}
+
+// OpenForOfflineMigration defers the existing-content inventory and integrity
+// scans until migration completes. It owns the database exclusively and must never serve
+// HTTP traffic. Reopen with Open to validate everything before publication.
+// New imports still pass the normal validation and durable commit path.
+// ContentBytes bounds newly installed bytes in this migration process; the
+// caller must enforce free-space headroom. Open restores total usage accounting.
+func OpenForOfflineMigration(root, publisher string, limits Limits) (*Store, error) {
+	s, err := openWithValidation(root, publisher, limits, false)
+	if err == nil {
+		s.EnableOfflineImport()
+	}
+	return s, err
+}
+
+func openWithValidation(root, publisher string, limits Limits, verifyContent bool) (*Store, error) {
 	if err := validateLimits(limits); err != nil {
 		return nil, err
 	}
@@ -114,12 +152,14 @@ func OpenWithLimits(root, publisher string, limits Limits) (*Store, error) {
 		return nil, e
 	}
 	s := &Store{db: db, stalls: stalls, root: root, publisher: publisher, published: map[string]Revision{}, objects: objects, limits: limits}
-	if e = s.scanContentUsage(); e != nil {
-		db.Close()
-		objects.Close()
-		return nil, e
+	if verifyContent {
+		if e = s.scanContentUsage(); e != nil {
+			db.Close()
+			objects.Close()
+			return nil, e
+		}
 	}
-	if e = s.restore(); e != nil {
+	if e = s.restoreWithValidation(verifyContent); e != nil {
 		db.Close()
 		objects.Close()
 		return nil, e
@@ -161,6 +201,10 @@ func (s *Store) get(k []byte) ([]byte, error) {
 	return b, c.Close()
 }
 func (s *Store) restore() error {
+	return s.restoreWithValidation(true)
+}
+
+func (s *Store) restoreWithValidation(verifyContent bool) error {
 	if e := s.initializeOverviews(); e != nil {
 		return e
 	}
@@ -217,8 +261,10 @@ func (s *Store) restore() error {
 		if len(s.published) > 0 {
 			return fmt.Errorf("revision registry has no active pointer")
 		}
-		if _, e := s.reachable(false); e != nil {
-			return e
+		if verifyContent {
+			if _, e := s.reachable(false); e != nil {
+				return e
+			}
 		}
 		return s.portable("")
 	}
@@ -252,8 +298,10 @@ func (s *Store) restore() error {
 		id = r.Parent
 	}
 	// Shared persistent nodes are validated once across all retained revisions.
-	if _, e = s.reachable(false); e != nil {
-		return e
+	if verifyContent {
+		if _, e = s.reachable(false); e != nil {
+			return e
+		}
 	}
 	return s.portable(s.current)
 }
@@ -862,6 +910,9 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 	}
 	parent := s.Current()
 	rev := Revision{Parent: parent, Job: id, Publisher: s.publisher, Created: time.Now().UTC(), Integrity: "sha256-verified", SourceVerification: "producer-asserted", Qualification: "not-checked"}
+	if j.Kind == "retained-measurement" || j.Kind == "retained-history" {
+		rev.SourceVerification = "retained-projection-integrity-checked"
+	}
 	if j.Kind == "history-coverage" {
 		rev.SourceVerification = "publisher-asserted-metadata"
 	}
@@ -908,7 +959,7 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 			return "", e
 		}
 		if existing != "" && existing != digests[k] {
-			return "", wire.Invalid("immutable record collision")
+			return "", wire.Invalid(fmt.Sprintf("immutable record collision: %s (existing %s, incoming %s)", k, existing, digests[k]))
 		}
 	}
 	rev.Catalog, e = s.mapSetMany(ctx, rev.Catalog, digests, 0)
@@ -1009,6 +1060,10 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 		if e != nil {
 			return "", e
 		}
+		if j.Kind == "retained-history" {
+			pendingCells[cellKey] = c
+			continue
+		}
 		choices := []string{r.ID}
 		if c.Current != "" {
 			choices = append(choices, c.Current)
@@ -1103,6 +1158,9 @@ func (s *Store) CommitContext(ctx context.Context, id string) (string, error) {
 		return "", e
 	}
 	if e = ctx.Err(); e != nil {
+		return "", e
+	}
+	if e = s.flushOffline(revID, overviewRoot, s.registrationRoot()); e != nil {
 		return "", e
 	}
 	if e = batch.Commit(pebble.Sync); e != nil {

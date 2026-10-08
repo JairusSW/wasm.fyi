@@ -1,4 +1,11 @@
 <script lang="ts">
+ import ReportFiles from './ReportFiles.svelte';
+ import {sourceNumber} from '$lib/api/presentation';
+ import {currentClient} from '$lib/api/controller.svelte';
+ import type {WireRecord,ResultData} from '$lib/api/types';
+ import {sampleDistribution} from '$lib/sample-distribution';
+ import {shortVersion} from '$lib/version-identity';
+ import VersionLink from './VersionLink.svelte';
  import { configVersion } from '$lib/data/runtimes';
 	import { siteHref } from '$lib/links';
 	import { COMPAT, FLAGS, FT } from '$lib/data/features';
@@ -8,7 +15,7 @@
 	import { ST, ST_DESC } from '$lib/data/status';
 	import { fmtU, relative, n0, workloadName } from '$lib/format';
 	import { benchHref } from '$lib/links';
-	import { TOTAL_WORKLOADS, benchVal, cfgIndex, compatCell, cov, featureContracts, featureOutcome, kidCells, ratio, type PerfGroup } from '$lib/model';
+	import { totalWorkloads, benchVal, cfgIndex, compatCell, cov, featureContracts, featureOutcome, kidCells, ratio, type PerfGroup } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 	import Swatch from './Swatch.svelte';
 	import { viewCell, viewData, viewReason } from '$lib/view-data';
@@ -21,6 +28,32 @@
 		copied = false;
 	};
 
+
+ let detail=$state<{result:WireRecord;report:WireRecord;configuration:WireRecord;environment:WireRecord;workload:WireRecord}|null>(null);
+ let detailError=$state('');let detailLoading=$state(false);let evidence=$state('');let chunk=$state('');let evidenceLoading=$state(false);
+ $effect(()=>{
+  const selected=ui.drawer;if(selected?.type!=='cell'){detail=null;return}
+  const source=viewCell(ui.machine,ui.snap,selected.b,selected.c,selected.m);const client=currentClient();
+  detail=null;detailError='';evidence='';chunk='';if(!client||!source.result)return;
+  const abort=new AbortController();detailLoading=true;
+  void (async()=>{
+   const result=(await client.descriptor('results',source.result!,abort.signal)).record;
+   const data=result.data as ResultData;
+   const report=(await client.descriptor('reports',data.reportId,abort.signal)).record;
+   const configuration=(await client.descriptor('configurations',data.configurationId,abort.signal)).record;
+   const environment=(await client.descriptor('environments',data.environmentId,abort.signal)).record;
+   const workload=(await client.descriptor('workloads',data.contractId,abort.signal)).record;
+   abort.signal.throwIfAborted();detail={result,report,configuration,environment,workload};
+  })().catch(error=>{if(!abort.signal.aborted)detailError=String(error)}).finally(()=>{if(!abort.signal.aborted)detailLoading=false});
+  return ()=>abort.abort();
+ });
+ async function loadEvidence(){
+  const client=currentClient();if(!client||!detail||!chunk)return;evidenceLoading=true;detailError='';
+  try{const data=await client.evidence('results',detail.result.id,chunk);evidence=JSON.stringify(data,null,2);
+   const diagnostic=data as {kind?:string;data?:{launch_medians?:Record<string,unknown>}};
+   if(diagnostic.kind==='summary-diagnostics'&&diagnostic.data?.launch_medians){const values=Object.entries(diagnostic.data.launch_medians).sort(([a],[b])=>Number(a)-Number(b)).map(([,v])=>sourceNumber(v)!.value/1e6);const selected=ui.drawer;if(selected?.type==='cell')viewCell(ui.machine,ui.snap,selected.b,selected.c,selected.m).launchMedians=values}}catch(error){detailError=String(error)}finally{evidenceLoading=false}
+ }
+
 	// ── Result cell ────────────────────────────────────────────────────────
 	const cell = $derived.by(() => {
 		if (d?.type !== 'cell') return null;
@@ -31,18 +64,22 @@
 		const r = benchVal(s, b, c.id, d.m, d.cf);
 		const t = ST[r.st];
 		const measured = viewCell(s.machine,ui.snap,b.id,c.id,d.m);
-		const report = viewData.reports[measured.report];
-		const options = report?.options as {launches?:number;samples?:number;scenario_samples?:Record<string,number>;warmup?:number} | undefined;
+		const reference=viewData.reports[measured.report];const rawReport=detail?.report.data;
+  const report=reference?{...reference,runId:String(rawReport?.runId||reference.runId),created:String(rawReport?.created||reference.created),sha256:String(rawReport?.sourceReportSha256||reference.sha256)}:undefined;
+  const method=(detail?.result.data as ResultData|undefined)?.measurementMethod;
+		const options = (method?.recipe?.options||report?.options) as {launches?:number;samples?:number;scenario_samples?:Record<string,number>;warmup?:number} | undefined;
 		const scenario = ({compile:'compile',rssCompile:'compile',inst:'instantiate',rssInst:'instantiate',first:'first-call',steady:'steady',rss:'steady',code:'compile'} satisfies Partial<Record<MetricKey,string>>)[d.m];
 		const singleSamplePass = ['rss','rssCompile','rssInst','code'].includes(d.m);
 		const phaseSamples = scenario ? options?.scenario_samples?.[scenario] : undefined;
 		const sampleCount = singleSamplePass ? 1 : phaseSamples ?? options?.scenario_samples?.['*'] ?? options?.samples ?? 'unavailable';
-		const config = viewData.hosts[s.machine].configurations[c.id];
+		const rawConfig=detail?.configuration.data;const description=rawConfig?.description as Record<string,unknown>|undefined;
+  const config = rawConfig?{runtime:String(rawConfig.id),version:String(rawConfig.version||description?.runtime_version||'not recorded'),backend:String(rawConfig.backend||description?.backend||'not recorded')}:viewData.hosts[s.machine].configurations[c.id];
 		const ok = r.st === 'ok';
 		const v = ok ? r.v : 0;
-		const dots = ok && !['rss','rssCompile','rssInst','code'].includes(d.m) ? measured.launchMedians || [] : [];
-		const lo = dots.length ? Math.min(...dots) : v;
-		const hi = dots.length ? Math.max(...dots) : v;
+		const dots = ok && !['rss','rssCompile','rssInst','code'].includes(d.m) ? measured.samples || measured.launchMedians || [] : [];
+		const distribution=sampleDistribution(dots);
+		const lo = distribution?Math.max(0,Math.min(distribution.min,distribution.mean-(distribution.stdDev||0))):v;
+		const hi = distribution?Math.max(distribution.max,distribution.mean+(distribution.stdDev||0)):v;
 		const X = (x: number) => 10 + ((x - lo) / (hi - lo || 1)) * 400;
 		const sorted = [...dots].sort((a, b2) => a - b2);
         const cmd = report ? `just gather --rebuild /path/to/sealed/${report.runId}/report` : 'No sealed measurement for this cell';
@@ -52,35 +89,30 @@
 			b,
 			c,
 			ok,
-			metric: MET[d.m].short,
+			metric: MET[d.m].short,isLatency:!['rss','rssCompile','rssInst','rssFirst','code'].includes(d.m),
 			st: t,
 			stDesc: viewReason(measured) || ST_DESC[r.st] || '',
 			abs: ok ? fmtU(v, u) : '',
-			absCi: ok && measured.interval ? `95% CI ${fmtU(measured.interval[0],u)} – ${fmtU(measured.interval[1],u)}` : 'CI unavailable',
-			dots: dots.map((x, i) => ({ x: X(x).toFixed(1), y: (26 + (i % 3) * 4).toFixed(0) })),
+			absCi: ok && measured.interval ? `95% CI ${fmtU(measured.interval[0],u)} – ${fmtU(measured.interval[1],u)}` : '',
+			dots: dots.map((x, i) => ({ x: X(x).toFixed(1), y: (58 + i/Math.max(1,dots.length-1)*20).toFixed(0),value:fmtU(x,u) })),
 			medX: ok ? X(v).toFixed(1) : '0',
-			boxX: ok && measured.interval ? X(measured.interval[0]).toFixed(1) : '0',
-			boxW: ok && measured.interval ? Math.max(2,X(measured.interval[1])-X(measured.interval[0])).toFixed(1) : '0',
+			boxX: distribution?X(distribution.q1).toFixed(1):'0',
+            whiskerLo:distribution?X(distribution.whiskerLo).toFixed(1):'0',whiskerHi:distribution?X(distribution.whiskerHi).toFixed(1):'0',
+            sdX:distribution?X(Math.max(0,distribution.mean-(distribution.stdDev||0))).toFixed(1):'0',sdW:distribution?Math.max(1,X(distribution.mean+(distribution.stdDev||0))-X(Math.max(0,distribution.mean-(distribution.stdDev||0)))).toFixed(1):'0',
+			boxW: distribution?Math.max(2,X(distribution.q3)-X(distribution.q1)).toFixed(1):'0',
 			minL: ok ? fmtU(lo, u) : '',
 			maxL: ok ? fmtU(hi, u) : '',
-            stats: ok ? [
-              {k:'Independent launches',v:String(singleSamplePass ? 1 : options?.launches ?? 'unavailable')},
-              {k:'Samples requested / launch',v:String(sampleCount)},
-              {k:'Warmups / launch',v:String(singleSamplePass ? 0 : options?.warmup ?? 'unavailable')},
-              {k:'Median',v:fmtU(v,u)},
-              {k:'Observer',v:['rss','rssCompile','rssInst'].includes(d.m)?'process.peak_rss':d.m==='code'?'extracted native image':'verified embedding calls'},
-              {k:'Evidence',v:report?report.sha256.slice(0,12)+'…':'unavailable'}
-            ] : [],
+            stats: ok ? [{k:'Samples',v:String(distribution?.count??'not recorded')},{k:'Median',v:fmtU(v,u)},...(distribution?[{k:'Mean',v:fmtU(distribution.mean,u)},{k:'Sample standard deviation',v:distribution.stdDev!==null?fmtU(distribution.stdDev,u):'n/a'},{k:'Minimum',v:fmtU(distribution.min,u)},{k:'Maximum',v:fmtU(distribution.max,u)}]:[])] : [],
 			phaseNote: PHASE_NOTE[d.m],
             record: [
               {k:'Run',v:report?`${report.runId} · ${report.created}`:'not collected'},
-              {k:'Runtime',v:config?`${config.runtime} ${config.version}`:'not collected'},
+              {k:'Runtime',v:config?`${config.runtime} ${shortVersion(config.version)}`:'not collected'},
               {k:'Backend',v:config?.backend || 'not collected'},
-              {k:'Artifact',v:`${workloadName(b.id)} · ${n0(b.kb)} KiB · sha256 ${b.artifactSha256}`},
+              {k:'Artifact',v:`${workloadName(b.id)} · sha256 ${shortVersion(String(detail?.workload.data.sha256||b.artifactSha256))}`},
               {k:'Source',v:b.src || 'unavailable'},
-              {k:'Machine',v:MACH[s.machine].l},
-              {k:'Policy',v:'CPU affinity, scheduling and frequency uncontrolled'},
-              {k:'Evidence SHA-256',v:report?.sha256 || 'unavailable'}
+              {k:'Machine',v:detail?[detail.environment.data.cpu_description,detail.environment.data.hostname].filter(Boolean).join(' · '):MACH[s.machine].l},
+              {k:'Policy',v:JSON.stringify(detail?.environment.data.policy||viewData.hosts[s.machine].policy)||'not recorded'},
+
             ],
 			cmd
 		};
@@ -160,7 +192,7 @@
 		if (!tradeoffs.length) tradeoffs.push({ t: 'Not the highest on any aggregate in this scope.', v: '' });
 		const fams = COMPAT[1].fams;
 		const coverage = [
-			...cfgs.map((c) => ({ k: `${c.be} — correct workloads`, v: `${n0(cov(c.id,ui.scope)[0])} / ${TOTAL_WORKLOADS}` })),
+			...cfgs.map((c) => ({ k: `${c.be} — correct workloads`, v: `${n0(cov(c.id,ui.scope)[0])} / ${totalWorkloads()}` })),
 			...cfgs.map((c) => ({
 				k: `${c.be} — feature families with all corpus contracts passed`,
 				v: `${fams.filter(f=>{const x=compatCell(f.id,c.id,ui.scope);return x.run && x.total>0 && x.pass===x.total;}).length} / ${fams.length}`
@@ -215,7 +247,7 @@
 			{#if cell}
 				<div class="ident">
 					<Swatch color={cell.c.col} bg={cell.c.hollow ? 'transparent' : cell.c.col} size={9} />
-					<span class="w5">{cell.c.rt} {configVersion(ui.machine,cell.c.id)}</span>
+					<span class="w5">{cell.c.rt} <VersionLink id={cell.c.id} /></span>
 					<span class="mono small fg3">{cell.c.be} · {cell.metric}</span>
 				</div>
 				<div class="status" style:color={cell.st[2]}>
@@ -225,29 +257,32 @@
 				{#if cell.ok}
 					<div class="tiles">
 						<div class="pad">
-							<div class="small fg3">Absolute (median)</div>
+							<div class="small fg3">{d?.type==='cell'&&d.m==='code'?'Measured size':'Absolute (median)'}</div>
 							<div class="mono big">{cell.abs}</div>
 							<div class="mono small fg3">{cell.absCi}</div>
 						</div>
 					</div>
-					<div class="sect">
-						<div class="kicker">Distribution — independent process medians</div>
-						<svg viewBox="0 0 420 46" class="dist">
-							<line x1="10" x2="410" y1="30" y2="30" style="stroke:var(--line2)" />
+					{#if cell.isLatency}<div class="sect">
+						<div class="kicker">Measured sample distribution</div>
+						{#if cell.dots.length}
+ <svg viewBox="0 0 420 86" class="dist" role="img" aria-label="Box plot with measured samples and a band showing mean plus or minus one sample standard deviation">
+                            <rect x={cell.sdX} width={cell.sdW} y="10" height="42" style:fill={cell.c.col} opacity="0.10" />
+							<line x1={cell.whiskerLo} x2={cell.whiskerHi} y1="30" y2="30" style="stroke:var(--line2)" />
 							<rect x={cell.boxX} width={cell.boxW} y="18" height="24" style="fill:var(--bg3);stroke:var(--line2)" />
-							<line x1={cell.medX} x2={cell.medX} y1="14" y2="46" style="stroke:var(--fg);stroke-width:1.5" />
+							<line x1={cell.medX} x2={cell.medX} y1="18" y2="42" style="stroke:var(--fg);stroke-width:1.5" />
 							{#each cell.dots as dot, i (i)}
-								<circle cx={dot.x} cy={dot.y} r="3" style:fill={cell.c.col} opacity="0.85" />
+								<circle cx={dot.x} cy={dot.y} r="3" style:fill={cell.c.col} opacity="0.85"><title>Sample {i+1}: {dot.value}</title></circle>
 							{/each}
 						</svg>
 						<div class="minmax mono"><span>{cell.minL}</span><span>{cell.maxL}</span></div>
+ {:else}<p class="small fg3">Samples were not retained for this older measurement.</p>{/if}
 						<div class="stats">
 							{#each cell.stats as s (s.k)}
 								<div><span class="fg3">{s.k}</span><span class="mono">{s.v}</span></div>
 							{/each}
 						</div>
-						<div class="note">Recorded independent launch medians; missing distributions and intervals remain unavailable.</div>
-					</div>
+						<div class="note">Dots show measured samples. The box shows the middle 50%; the line is the median. Shading shows mean ± one sample standard deviation.</div>
+					</div>{/if}
 				{:else}
 					<div class="desc mono">{cell.stDesc}</div>
 				{/if}
@@ -258,13 +293,6 @@
 						<div class="kv" style:grid-template-columns="120px 1fr"><span class="fg3">{s.k}</span><span class="mono">{s.v}</span></div>
 					{/each}
 				</div>
-				<div class="sect">
-					<div class="between">
-						<span class="kicker">Reanalyze sealed report</span>
-						<button class="copy" onclick={copyCmd}>{copied ? 'Copied' : 'Copy'}</button>
-					</div>
-					<pre class="mono">{cell.cmd}</pre>
-				</div>
 				<div class="actions">
 					<a class="primary" href={siteHref(benchHref(cell.b.id))}>Open benchmark page</a>
 					<button class="outline" onclick={() => ui.openProfile(cell.c.rt)}>Runtime profile</button>
@@ -272,7 +300,7 @@
 			{:else if compat}
 				<div class="ident">
 					<Swatch color={compat.c.col} bg={compat.c.hollow ? 'transparent' : compat.c.col} size={9} />
-					<span class="w5">{compat.c.rt} {configVersion(ui.machine,compat.c.id)}</span>
+					<span class="w5">{compat.c.rt} <VersionLink id={compat.c.id} /></span>
 					<span class="mono small fg3">{compat.c.be}</span>
 				</div>
 				<div class="s12"><span class="fg3">Availability: </span>{compat.avail}</div>
@@ -311,7 +339,7 @@
 					{#each profile.cfgs as c (c.id)}
 						<div class="cfg-line">
 							<Swatch color={c.col} bg={c.hollow ? 'transparent' : c.col} />
-							<span class="mono">{configVersion(ui.machine,c.id)} · {c.be}</span><span class="fg3">{c.kind}</span>
+							<span class="mono"><VersionLink id={c.id} /> · {c.be}</span><span class="fg3">{c.kind}</span>
 						</div>
 					{/each}
 				</div>
@@ -516,20 +544,6 @@
 		display: flex;
 		justify-content: space-between;
 		gap: 8px;
-	}
-	.copy {
-		border: 1px solid var(--line2);
-		padding: 0 6px;
-		font-size: 11px;
-		color: var(--fg2);
-	}
-	pre {
-		margin: 0;
-		background: var(--bg3);
-		padding: 10px;
-		font-size: 11px;
-		white-space: pre-wrap;
-		word-break: break-all;
 	}
 	.actions {
 		display: flex;

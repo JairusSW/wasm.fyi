@@ -17,7 +17,7 @@ test('historical runtime evidence rejects current-SDK fallback and cached wazero
  assert.throws(()=>assertHistoricalRuntime({id:'wago',description:{runtime_version:'c'.repeat(40)+'/source-'+ 'b'.repeat(64)}},wago),/source differs/);
  const wasmer={engine:'wasmer',configuration:'wasmer-singlepass',version:'7.5.0'};
  assert.doesNotThrow(()=>assertHistoricalRuntime({id:'wasmer-singlepass',description:{runtime_version:'7.5.0',backend:'singlepass-jit'}},wasmer));
- assert.throws(()=>assertHistoricalRuntime({id:'wasmer-singlepass',description:{runtime_version:'7.5.0',backend:'cranelift'}},wasmer),/Singlepass/);
+ assert.throws(()=>assertHistoricalRuntime({id:'wasmer-singlepass',description:{runtime_version:'7.5.0',backend:'cranelift'}},wasmer),/selected compiler backend/);
  const wavm={engine:'wavm',configuration:'wavm',source:{adapterVersion:'nightly-2026-04-05-4e82bb9'}};
  assert.doesNotThrow(()=>assertHistoricalRuntime({id:'wavm',description:{runtime_version:wavm.source.adapterVersion}},wavm));
  const spider={engine:'spidermonkey',configuration:'spidermonkey',source:{binarySha256:'d'.repeat(64)}};
@@ -127,12 +127,16 @@ test('reuse identity includes source, host, corpus, recipe, options and configur
   for(const key of Object.keys(input))assert.notEqual(snapshotKey(input),snapshotKey({...input,[key]:'changed'}));
 });
 test('all release-capable benchmark configurations have explicit release sources',()=>{
-	assert.equal(Object.values(engineSources).reduce((n,source)=>n+source.configurations.length,0),14);
+ const configurations=Object.values(engineSources).flatMap(source=>source.configurations);
+ assert.equal(new Set(configurations).size,23);
+ assert.equal(configurations.length,23);
+ for(const configuration of ['wamr-fast-jit','wamr-llvm-jit','wasmedge-jit','wasmtime-winch','wasmer-llvm','wasm2go','libwasm'])assert(configurations.includes(configuration));
+ for(const excluded of ['deno','wasm2js','wasm2rs'])assert(!configurations.includes(excluded));
   for(const source of Object.values(engineSources)){assert(source.repository.includes('/'));assert(!source.branch);assert(source.configurations.length);}
 });
-test('both measured hosts select only the six supported configurations',()=>{
+test('both measured hosts retain the eight supported configurations',()=>{
  const settings=JSON.parse(readFileSync(new URL('../wasmbench.config.json',import.meta.url)));
- const expected=['wasmtime','v8','wasmer-singlepass','wazero','wavm','wago'].sort();
+ const expected=['wasmtime','v8','wasmer-singlepass','wazero','wavm','wago','wasm2c-gcc','w2c2-gcc'].sort();
  for(const platform of ['darwin','linux'])assert.deepEqual(featureConfigurations(settings,platform).sort(),expected);
 });
 test('default collection sample counts prioritize compile, instantiate and steady latency',()=>{

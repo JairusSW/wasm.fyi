@@ -1,4 +1,8 @@
 <script lang="ts">
+	import ReportFiles from '$lib/components/ReportFiles.svelte';
+ import ArtifactInspection from '$lib/components/ArtifactInspection.svelte';
+ let inspected=$state<string|null>(null);
+ import { tipCard, tipWho } from '$lib/tip';
 	import { base } from '$app/paths';
 	import { siteHref } from '$lib/links';
 	import RtLabel from '$lib/components/RtLabel.svelte';
@@ -11,10 +15,11 @@
 	import { benchVal, isVisible, otSeries } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 import { viewCell, viewData } from '$lib/view-data';
-import { historySegments } from '$lib/history-values';
+import { historySegments, historyEndpoints } from '$lib/history-values';
+import { RangeSelect } from '$lib/range-select.svelte';
 
 	let { data } = $props();
-	const b = $derived(data.bench);
+	const b = $derived(viewData.catalogue.find(w=>w.id===data.workload)!);
 	const vis = $derived(CFG.filter((c) => isVisible(ui.scope, c)));
 	const okC = $derived(vis.filter((c) => benchVal(ui.scope, b, c.id, 'steady').st === 'ok'));
 
@@ -71,23 +76,36 @@ import { historySegments } from '$lib/history-values';
       ? `${base}/wasmbench/code-inspection/${encodeURIComponent(report.codeSource.id)}/view.html?trial=${encodeURIComponent(native.trial)}`
       : null;
     const image=cell.st==='ok'&&cell.v!=null?fmtU(cell.v,'KiB'):cell.st==='na'?'n/a':cell.st==='unsupported'?'unsupported':cell.st==='failed'?'failed':'not measured';
-    return {c,inspect,cells:[image,'not collected','not collected','not collected']};
+    return {c,inspect,artifact:cell.artifact,cells:[image,'not collected','not collected','not collected']};
   }));
 
 	// ── History ────────────────────────────────────────────────────────────
+	const SX = (i: number) => 2 + i * (156 / Math.max(1,SNAPS.length-1));
+	const SSTEP = 156 / Math.max(1,SNAPS.length-1);
+	// Drag, or click then shift+click, on a sparkline to pick the Δ range.
+	const range = new RangeSelect(
+		(fx) => Math.max(0, Math.min(SNAPS.length - 1, Math.round((fx * 160 - 2) / SSTEP))),
+		(from, to) => {
+			ui.histFrom = from;
+			ui.histTo = to;
+		}
+	);
+	const full = $derived(ui.histFrom === 0 && ui.histTo === SNAPS.length - 1);
 	const spark = $derived(
 		vis.map((c) => {
 			const vals = otSeries(ui.scope, c.id, 'exec', b.id);
 			if (!vals) return { c, segments: [], now: 'not collected', delta: '', dColor: 'var(--fg3)' };
 			const lo = Math.min(...vals.filter(Number.isFinite));
 			const hi = Math.max(...vals.filter(Number.isFinite));
-			const X = (i: number) => 2 + i * (156 / Math.max(1,SNAPS.length-1));
 			const Y = (v: number) => 21 - ((v - lo) / (hi - lo || 1)) * 18;
-			const d = vals[SNAPS.length-1] / vals[0] - 1;
+			// Δ spans the selected range, snapped inward to measured points.
+			const ends = historyEndpoints(vals, ui.histFrom, ui.histTo);
+			const d = ends ? vals[ends[1]] / vals[ends[0]] - 1 : NaN;
+			const last = vals.findLastIndex((v, i) => i >= ui.histFrom && i <= ui.histTo && Number.isFinite(v));
 			return {
 				c,
-				segments: historySegments(vals,X,Y),
-				now: Number.isFinite(vals[SNAPS.length-1])?fmtU(vals[SNAPS.length-1], 'ms'):'not measured',
+				segments: historySegments(vals,SX,Y),
+				now: last >= 0 ? fmtU(vals[last], 'ms') : 'not measured',
 				delta: Number.isFinite(d)?relative(1+d,ui.deltaFormat):'not measured',
 				dColor: Math.abs(d) < 0.02 ? 'var(--fg3)' : d < 0 ? 'var(--good)' : 'var(--bad)'
 			};
@@ -98,7 +116,7 @@ import { historySegments } from '$lib/history-values';
   const collectionBundles=$derived([...new Map(references.flatMap(r=>r.collectionBundle?[[r.collectionBundle.url,r.collectionBundle] as const]:[])).values()]);
   const meta=$derived([
     {k:'Purpose',v:b.purpose || b.group},{k:'Input',v:b.input || 'not recorded'},
-    {k:'Wasm artifact',v:fmtU(b.kb,'KiB')+' · sha256 '+b.artifactSha256},
+    {k:'Wasm artifact',v:(b.kb==null?'size not recorded':fmtU(b.kb,'KiB'))+' · sha256 '+b.artifactSha256},
     {k:'Declared features',v:b.tags.join(' · ') || 'none recorded'},
     {k:'Imports',v:b.imports==null?'not collected':String(b.imports)+' declared imports · '+b.abi},
     {k:'Source / toolchain',v:b.src || 'not recorded'},
@@ -112,12 +130,12 @@ import { historySegments } from '$lib/history-values';
     {k:'Sampling / warmup',v:references.map(r=>r.runId+': '+JSON.stringify(r.options)).join(' · ')},
     {k:'Reset policy',v:b.reset || 'not recorded'},
     {k:'Correctness oracle',v:JSON.stringify(b.oracle) || 'not recorded'},
-    {k:'Collection bundles',v:references.map(r=>r.collectionBundle?.id).filter(Boolean).join(' · ') || 'legacy collection'},
-    {k:'Raw evidence',v:references.map(r=>r.evidence+' · sha256 '+r.sha256).join(' · ')},
     {k:'Provenance',v:'Collected on both named hosts; exact artifacts and adapter identities sealed per report.'}
   ]);
 	const tagHref = (t: string) => (t === 'simd' ? '/simd' : '/benchmarks?tag=' + encodeURIComponent(t) + '#workloads');
 </script>
+
+<svelte:window onkeydown={(e) => e.key === 'Escape' && range.clear()} />
 
 <svelte:head>
 	<title>{workloadName(b.id)} · wasm.fyi</title>
@@ -242,7 +260,7 @@ import { historySegments } from '$lib/history-values';
 						<tr>
 							<td class="fg2">{r.name}</td>
 							{#each r.cells as text, k (k)}
-								<td class="mono r" data-tip={`${r.name} — ${CB[sel[k]].rt} ${CB[sel[k]].be}\n${text}\nlifetime high-water record`}>{text}</td>
+								<td class="mono r" data-tip-card={tipCard({ kicker: 'Process peak RSS', title: r.name, who: tipWho(CB[sel[k]]), value: text, chips: ['lifetime high-water'] })}>{text}</td>
 							{/each}
 						</tr>
 					{/each}
@@ -253,14 +271,14 @@ import { historySegments } from '$lib/history-values';
 	<div class="note">Memory values come from matched memory-profile runs. Timing and memory are separate measurements; phase end values and physical reclamation are not inferred.</div>
 {:else if ui.bdTab === 'code'}
 	<div class="lede">
-		Extracted native image bytes from a separate code-profile pass. Images can include wrappers and data. Active-tier and cumulative breakdowns are not collected.
+		Native code-size measurements retain their actual source pass. Exported bytes and inspection have separate availability. Images can include wrappers and data. Active-tier and cumulative breakdowns are not collected.
 	</div>
 	<div class="tbl-wrap">
 		<table class="t" style:min-width="620px">
 			<thead>
 				<tr>
 					<th>Configuration</th>
-					<th class="r">Extracted image</th>
+					<th class="r">Native code size</th>
 					<th class="r">Cumulative emitted</th>
 					<th>Compiled functions</th>
 					<th>Tier</th>
@@ -270,18 +288,23 @@ import { historySegments } from '$lib/history-values';
 				{#each codeRows as r (r.c.id)}
 					<tr>
 						<td class="nowrap"><RtLabel c={r.c} /></td>
-					{#each r.cells as c, i (i)}<td class="mono fg2" class:r={i < 2}>{c}{#if i===0&&r.inspect}<br /><a href={r.inspect} target="_blank" rel="noreferrer">Inspect image</a>{/if}</td>{/each}
+					{#each r.cells as c, i (i)}<td class="mono fg2" class:r={i < 2}>{c}{#if i===0&&r.artifact}<br /><button class="link" onclick={()=>inspected=r.artifact!}>Inspect code record</button>{/if}{#if i===0&&r.inspect}<br /><a href={r.inspect} target="_blank" rel="noreferrer">Inspect image</a>{/if}</td>{/each}
 					</tr>
 				{/each}
 			</tbody>
 		</table>
 	</div>
+	{#if inspected}<ArtifactInspection artifact={inspected} />{/if}
 	<div class="note">“Inspect image” opens the exact extracted bytes and engine-reported function ranges. These bytes include any wrappers and embedded data; ranges are not instruction-only sizes.</div>
 {:else if ui.bdTab === 'history'}
+	<div class="range-hint small fg3">
+		Drag a sparkline, or click then shift+click, to set the Δ range.
+		{#if !full}<button class="link-quiet" onclick={() => { ui.histFrom = 0; ui.histTo = SNAPS.length - 1; }}>reset range</button>{/if}
+	</div>
 	<div class="tbl-wrap">
 		<table class="t" style:min-width="600px">
 			<thead>
-				<tr><th>Configuration</th><th>Steady exec · {SNAPS.length} retrospective points</th><th class="r">Now</th><th class="r">Δ first → last point</th></tr>
+				<tr><th>Configuration</th><th>Steady exec · {SNAPS.length} retrospective points</th><th class="r">{full ? 'Now' : `At ${SNAPS[ui.histTo]?.date.slice(5)||'unavailable'}`}</th><th class="r">{full ? 'Δ first → last point' : `Δ ${SNAPS[ui.histFrom]?.date.slice(5)||'unavailable'} → ${SNAPS[ui.histTo]?.date.slice(5)||'unavailable'}`}</th></tr>
 			</thead>
 			<tbody>
 				{#each spark as h (h.c.id)}
@@ -289,7 +312,11 @@ import { historySegments } from '$lib/history-values';
 						<td class="nowrap"><RtLabel c={h.c} /></td>
 						<td class="sp">
 							{#if h.segments.length}
-								<svg viewBox="0 0 160 24" class="mini">{#each h.segments as points}<polyline {points} style:stroke={h.c.col} style:stroke-dasharray={h.c.hollow ? '4 3' : 'none'} class="ln" />{/each}</svg>
+								<svg viewBox="0 0 160 24" preserveAspectRatio="none" class="mini" role="presentation" class:dragging={range.dragging} onpointerdown={range.down} onpointermove={range.move} onpointerup={range.up} onpointercancel={range.cancel}>
+									{#if !full}<rect class="sel-range" x={SX(ui.histFrom).toFixed(1)} y="0" width={(SX(ui.histTo) - SX(ui.histFrom)).toFixed(1)} height="24" />{/if}
+									{#if range.band}<rect class="drag-band" x={SX(range.band[0]).toFixed(1)} y="0" width={Math.max(0.5, SX(range.band[1]) - SX(range.band[0])).toFixed(1)} height="24" />{/if}
+									{#if range.anchor != null && !range.dragging}<line class="anchor" x1={SX(range.anchor).toFixed(1)} x2={SX(range.anchor).toFixed(1)} y1="0" y2="24" />{/if}
+									{#each h.segments as points}<polyline {points} style:stroke={h.c.col} style:stroke-dasharray={h.c.hollow ? '4 3' : 'none'} class="ln" />{/each}</svg>
 							{/if}
 						</td>
 						<td class="mono r">{h.now}</td>
@@ -304,7 +331,6 @@ import { historySegments } from '$lib/history-values';
 		{#each record as k (k.k)}
 			<div class="rec"><span class="fg3">{k.k}</span><span class="mono brk">{k.v}</span></div>
 		{/each}
-		<pre class="mono">just refresh</pre>
 	</div>
 {/if}
 
@@ -421,11 +447,38 @@ import { historySegments } from '$lib/history-values';
 		padding: 3px 12px;
 	}
 	.mini {
-		width: 160px;
-		height: 24px;
+		display: block;
+		width: 100%;
+		min-width: 240px;
+		height: 28px;
+		cursor: crosshair;
+		touch-action: pan-y;
+	}
+	.mini.dragging {
+		cursor: ew-resize;
 	}
 	.mini .ln {
 		stroke-width: 1.5;
+		vector-effect: non-scaling-stroke;
+	}
+	.sel-range {
+		fill: var(--bg3);
+	}
+	.drag-band {
+		fill: color-mix(in srgb, var(--fg) 10%, transparent);
+		stroke: var(--fg3);
+		stroke-dasharray: 3 3;
+		vector-effect: non-scaling-stroke;
+	}
+	.anchor {
+		stroke: var(--fg);
+		stroke-dasharray: 3 3;
+		vector-effect: non-scaling-stroke;
+	}
+	.range-hint {
+		display: flex;
+		gap: 10px;
+		align-items: baseline;
 	}
 	.run {
 		padding: 10px 14px;
@@ -439,15 +492,7 @@ import { historySegments } from '$lib/history-values';
 		font-size: 12px;
 		border-bottom: 1px solid var(--line);
 		padding: 4px 0;
-	}
-	pre {
-		margin: 10px 0 0;
-		background: var(--bg3);
-		padding: 10px;
-		font-size: 11px;
-		white-space: pre-wrap;
-	}
-</style>
+	}</style>
 
 {#each collectionBundles as bundle (bundle.url)}
   <p class="note"><a href={siteHref(bundle.url)}>Collection bundle {bundle.id} ({bundle.machine}) ↗</a> · exact adapters and run metadata</p>

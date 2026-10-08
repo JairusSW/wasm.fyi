@@ -12,7 +12,7 @@ const scope:Scope={machine:'m1',baseline:'G',hide:{},weighting:'corpus'};
 describe('existing workload views consume measured evidence',()=>{
   it('places call latency alongside the original latency tab',()=>{
     expect(Object.keys(OV).slice(0,2)).toEqual(['lat','calls']);
-    expect(OV.calls.cols).toEqual(['Wasm → host','Host → Wasm','Round trip']);
+    expect(OV.calls.cols).toEqual(['Wasm → host → Wasm','Host → Wasm → host']);
   });
   for(const machine of ['m1','m2'] as const)it(`exposes both ${machine} boundary-call timings with their original units`,async()=>{
     for(const id of ['mechanisms/host-to-wasm-call','mechanisms/wasm-to-host-call']) {
@@ -67,8 +67,8 @@ describe('existing workload views consume measured evidence',()=>{
 		expect(ALLB.some(b=>b.id==='sqlite-speedtest1')).toBe(false);
 	});
 	it('lists only the six supported benchmark configurations',()=>{
-        expect(CFG.map(config=>config.id)).toEqual(['A','D','E','F','G','L']);
-        expect(Object.keys(viewData.configurations)).toEqual(['A','D','E','F','G','L']);
+        expect(CFG.map(config=>config.id)).toEqual(['A','D','E','F','G','L','T','U']);
+        expect(Object.keys(viewData.configurations)).toEqual(['A','D','E','F','G','L','T','U']);
         expect(viewData.applicationConfigurations).toContain('G');
         expect(viewData.applicationConfigurations.every(slot=>CFG.some(config=>config.id===slot))).toBe(true);
         expect(CFG.find(config=>config.id==='A')?.be).toBe('cranelift');

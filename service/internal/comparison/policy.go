@@ -25,6 +25,7 @@ type Cell struct {
 	Configuration      string          `json:"configuration"`
 	ExactConfiguration string          `json:"exactConfiguration,omitempty"`
 	Contract           string          `json:"contract,omitempty"`
+	Environment        string          `json:"environment,omitempty"`
 	Method             string          `json:"method,omitempty"`
 	SamplingGroup      string          `json:"samplingGroup,omitempty"`
 	Definition         string          `json:"definition,omitempty"`
@@ -91,13 +92,13 @@ func Compute(ctx context.Context, input Input) (Output, error) {
 	if len(input.Configurations) == 0 || len(input.Configurations) > 32 || len(input.Rows) > 10000 {
 		return out, fmt.Errorf("cohort scope exceeds bounds")
 	}
-	if input.Policy != "shared-geometric-v1" && input.Policy != "available-rss-arithmetic-v1" && input.Policy != "matched-rss-arithmetic-v1" {
+	if input.Policy != "shared-geometric-all-v1" && input.Policy != "shared-geometric-v1" && input.Policy != "available-geometric-v1" && input.Policy != "available-rss-arithmetic-v1" && input.Policy != "matched-rss-arithmetic-all-v1" && input.Policy != "matched-rss-arithmetic-v1" {
 		return out, fmt.Errorf("unknown cohort policy")
 	}
 	if input.Weighting != "workload" && input.Weighting != "corpus" {
 		return out, fmt.Errorf("unknown weighting")
 	}
-	if input.Policy != "shared-geometric-v1" && input.Weighting != "workload" {
+	if input.Policy != "shared-geometric-all-v1" && input.Policy != "shared-geometric-v1" && input.Policy != "available-geometric-v1" && input.Weighting != "workload" {
 		return out, fmt.Errorf("RSS boundary cells use equal arithmetic weights")
 	}
 	requested := map[string]bool{}
@@ -150,7 +151,11 @@ func Compute(ctx context.Context, input Input) (Output, error) {
 	shared := []int{}
 	for i := range input.Rows {
 		ok := len(out.Participants) > 0
-		for _, c := range out.Participants {
+		sharedParticipants := out.Participants
+		if input.Policy == "shared-geometric-all-v1" || input.Policy == "matched-rss-arithmetic-all-v1" {
+			sharedParticipants = input.Configurations
+		}
+		for _, c := range sharedParticipants {
 			if !eligible(table[i][c]) {
 				ok = false
 				break
@@ -167,7 +172,7 @@ func Compute(ctx context.Context, input Input) (Output, error) {
 		}
 		population := Population{Configuration: configuration, Status: "unavailable", Reason: "no shared compatible cells", Members: []Member{}, Reports: []string{}}
 		indices := shared
-		if input.Policy == "available-rss-arithmetic-v1" {
+		if input.Policy == "available-rss-arithmetic-v1" || input.Policy == "available-geometric-v1" {
 			indices = []int{}
 			for i := range input.Rows {
 				if eligible(table[i][configuration]) {
@@ -197,7 +202,7 @@ func Compute(ctx context.Context, input Input) (Output, error) {
 			if input.Weighting == "corpus" {
 				weight = 1 / float64(len(groups)*groups[row.Group])
 			}
-			if input.Policy == "shared-geometric-v1" {
+			if input.Policy == "shared-geometric-all-v1" || input.Policy == "shared-geometric-v1" || input.Policy == "available-geometric-v1" {
 				sum += weight * math.Log(*cell.Value)
 			} else {
 				sum += *cell.Value
@@ -211,7 +216,7 @@ func Compute(ctx context.Context, input Input) (Output, error) {
 		population.Count, population.Workloads = len(indices), len(workloads)
 		if len(indices) > 0 {
 			v := sum / float64(len(indices))
-			if input.Policy == "shared-geometric-v1" {
+			if input.Policy == "shared-geometric-all-v1" || input.Policy == "shared-geometric-v1" || input.Policy == "available-geometric-v1" {
 				v = math.Exp(sum)
 			}
 			if math.IsInf(v, 0) || math.IsNaN(v) || v <= 0 {

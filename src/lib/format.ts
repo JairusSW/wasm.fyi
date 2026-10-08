@@ -2,7 +2,7 @@
 export const n0 = (n: number): string => Math.round(n).toLocaleString('en-US');
 
 /** Repository provenance stays in the evidence key, outside the workload name. */
-export const workloadName = (id: string): string => id.replace(/^(wago|applications)\//, '');
+export const workloadName = (id: string): string => id==='mechanisms/wasm-host-wasm-loop'?'Wasm → host → Wasm':id==='mechanisms/host-to-wasm-call'?'Host → Wasm → host':id.replace(/^(wago|applications)\//, '');
 
 /** Compact count for headline figures: `9,412`, `48.2K`, `1.38M`. Below 10,000 keeps commas. */
 export const shortCount = (n: number): string => {

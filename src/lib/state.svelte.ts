@@ -1,3 +1,4 @@
+import {datasetView} from './api/view.svelte';
 // Global UI state. Filters are URL-backed: scope keys (machine, snapshot,
 // runtimes) persist across pages; page keys reset to their defaults when a
 // URL omits them, so any view can be shared by copying the address bar.
@@ -53,8 +54,8 @@ const nullable = (param: string): Codec<string | null> => ({
 	ser: (v) => v ?? ''
 });
 
-const CFG_IDS = CFG.map((c) => c.id);
-const isCfg = (s: string): s is CfgId => (CFG_IDS as string[]).includes(s);
+const configIds = () => CFG.map((c) => c.id);
+const isCfg = (s: string): s is CfgId => (configIds() as string[]).includes(s);
 
 /** Hidden runtimes, serialized as the list of *shown* config ids so the default is empty. */
 const hideCodec: Codec<Partial<Record<CfgId, boolean>>> = {
@@ -63,9 +64,9 @@ const hideCodec: Codec<Partial<Record<CfgId, boolean>>> = {
 	parse: (s) => {
 		const on = s.split(',').filter(isCfg);
 		if (!on.length) return undefined;
-		return Object.fromEntries(CFG_IDS.map((id) => [id, !on.includes(id)]));
+		return Object.fromEntries(configIds().map((id) => [id, !on.includes(id)]));
 	},
-	ser: (v) => CFG_IDS.filter((id) => !v[id]).join(',')
+	ser: (v) => configIds().filter((id) => !v[id]).join(',')
 };
 const sortCodec: Codec<{ id: CfgId; dir: 1 | -1 } | null> = {
 	param: 'sort',
@@ -84,13 +85,14 @@ const memSelCodec: Codec<CfgId[]> = {
 	ser: (v) => v.join(',')
 };
 
-const OT_KEYS = ['exec', 'wasmHost', 'hostWasm', 'roundTrip', 'compile', 'inst', 'mem', 'code', 'cov'] as const;
+const OT_KEYS = ['exec', 'callTotal', 'hostWasm', 'wasmHostLoop', 'compile', 'inst', 'mem', 'code', 'cov'] as const;
 const METRICS = ['compile', 'rssCompile', 'inst', 'rssInst', 'first', 'steady', 'rss', 'code'] as const;
 
 /** Each URL-backed field: its codec and the routes it belongs to (`*` = scope, every route). */
 const FIELDS = {
+	cohortMode: { codec: str('cohort', 'per-engine', ['shared', 'per-engine'] as const), routes: '*' },
 	deltaFormat: { codec: str('delta', 'percent', ['factor', 'percent'] as const), routes: '*' },
-	machine: { codec: str<MachineId>('m', 'm1', ['m1', 'm2']), routes: '*' },
+	machine: { codec: str<MachineId>('m', 'm1', ['m1', 'm2', 'm3']), routes: '*' },
 	snap: { codec: str('snap', 's1', ['s1', 's2']), routes: '*' },
 	hide: { codec: hideCodec, routes: '*' },
 	group: { codec: str<OvKey>('view', 'lat', ['lat', 'calls', 'mem', 'code', 'cov']), routes: ['/benchmarks'] },
@@ -100,9 +102,9 @@ const FIELDS = {
 	sortBy: { codec: sortCodec, routes: ['/benchmarks'] },
 	otMetric: { codec: str<OtMetricKey>('ot', 'exec', OT_KEYS), routes: ['/benchmarks', '/history'] },
 	histMode: { codec: str('mode', 'ratio', ['ratio', 'change'] as const), routes: ['/history'] },
-	histFrom: { codec: int('from', 0, 0, Math.max(0,SNAPS.length-2)), routes: ['/history'] },
-	histTo: { codec: int('to', Math.max(0,SNAPS.length-1), Math.min(1,Math.max(0,SNAPS.length-1)), Math.max(0,SNAPS.length-1)), routes: ['/history'] },
-	histCfg: { codec: str<CfgId>('cfg', defaultConfig, CFG_IDS), routes: ['/history'] },
+	histFrom: { codec: int('from', 0, 0, 10000), routes: ['/history', '/benchmarks', '/bench/[...id]'] },
+	histTo: { codec: int('to', Math.max(0,SNAPS.length-1), 0, 10000), routes: ['/history', '/benchmarks', '/bench/[...id]'] },
+	histCfg: { codec: str<CfgId>('cfg', defaultConfig, configIds()), routes: ['/history'] },
 	compatView: { codec: str('view', 'support', ['support', 'tests', 'perf'] as const), routes: ['/features'] },
 	perfMetric: { codec: str('pm', 'exec', ['exec', 'compile', 'mem'] as const), routes: ['/features'] },
 	bdTab: {
@@ -129,6 +131,7 @@ class UiState {
 	hide = $state<Partial<Record<CfgId, boolean>>>({});
 	baseline = $derived(comparisonBaseline(defaultConfig, CFG.filter(c => viewData.hosts[this.machine].configurations[c.id]).map(c => c.id)));
 	weighting = $state<'corpus' | 'workload'>('corpus');
+	cohortMode = $state<'shared' | 'per-engine'>('per-engine');
 	adv = $state(false);
 	theme = $state<'dark' | 'light'>('dark');
 	drawer = $state<Drawer | null>(null);
@@ -148,7 +151,6 @@ class UiState {
 	histFrom = $state(0);
 	histTo = $state(SNAPS.length-1);
 	histCfg = $state<CfgId>(defaultConfig);
-	histPick = $state<'from' | 'to'>('to');
 
 	// features
 	compatView = $state<'support' | 'tests' | 'perf'>('support');
@@ -169,7 +171,7 @@ class UiState {
 	xReuse = $state<'single' | 'shared' | 'cached'>('single');
 	xLog = $state(2);
 
-	scope: Scope = $derived({ machine: this.machine, baseline: this.baseline, weighting: this.weighting, hide: this.hide, snapshot:this.snap });
+	scope: Scope = $derived({ machine: this.machine, baseline: this.baseline, weighting: this.weighting, cohortMode: this.cohortMode, hide: this.hide, snapshot:this.snap });
 
 	/** Applies URL params for `routeId`. Scope keys missing from the URL keep their current value. */
 	loadFromUrl(url: URL, routeId: string | null) {
@@ -183,13 +185,14 @@ class UiState {
 			else if (!global) (this as any)[key] = structuredClone(f.codec.def);
 			else if (raw != null) (this as any)[key] = structuredClone(f.codec.def);
 		}
-		if (this.otMetric === 'wasmHost' || this.otMetric === 'hostWasm') this.otMetric = 'roundTrip';
+		if (['roundTrip','hostWasm','wasmHostLoop'].includes(sp.get('ot')||'')) this.otMetric = 'callTotal';
 		if (this.histFrom >= this.histTo) this.histFrom = Math.max(0, this.histTo - 1);
 	}
 
 	/** Query string representing current state for `routeId`, omitting defaults. */
 	toSearch(routeId: string | null): string {
 		const sp = new URLSearchParams();
+        if(datasetView.revision)sp.set('revision',datasetView.revision);
 		for (const [key, f] of Object.entries(FIELDS) as [FieldKey, Fields[FieldKey]][]) {
 			if (f.routes !== '*' && !(routeId && (f.routes as string[]).includes(routeId))) continue;
 			const v = (this as any)[key];

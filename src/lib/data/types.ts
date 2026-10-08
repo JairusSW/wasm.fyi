@@ -1,11 +1,11 @@
-export type CfgId = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S';
-export type MachineId = 'm1' | 'm2';
+export type CfgId = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | `engine:${string}`;
+export type MachineId = 'm1' | 'm2' | 'm3';
 export type ProposalId = 'simd' | 'gc' | 'memory64' | 'threads';
 export type SupportCode = 'y' | 'f' | 'p' | 'n' | '?' | '-';
 export type Status = 'ok' | 'unsupported' | 'disabled' | 'failed' | 'crashed' | 'timeout' | 'nm' | 'na' | 'unavail';
 export type MetricKey = 'compile' | 'rssCompile' | 'inst' | 'rssInst' | 'first' | 'steady' | 'rss' | 'code';
 export type OvKey = 'lat' | 'calls' | 'mem' | 'code' | 'cov';
-export type OtMetricKey = 'exec' | 'wasmHost' | 'hostWasm' | 'roundTrip' | 'compile' | 'inst' | 'mem' | 'code' | 'cov';
+export type OtMetricKey = 'exec' | 'callTotal' | 'hostWasm' | 'wasmHostLoop' | 'compile' | 'inst' | 'mem' | 'code' | 'cov';
 
 /** A benchmarked runtime configuration: one runtime at one version with one backend. */
 export interface Cfg {
@@ -130,7 +130,7 @@ export interface BenchItem {
 	id: string;
 	artifactSha256?: string;
 	tags: string[];
-	kb: number;
+	kb: number | null;
 	ms: number | null;
 	cases?: [string, number][];
 	purpose?: string;

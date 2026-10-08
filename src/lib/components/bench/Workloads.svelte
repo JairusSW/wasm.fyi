@@ -1,4 +1,9 @@
 <script lang="ts">
+	import {apiView,loadPage,trackId} from '$lib/api/controller.svelte';
+ import {datasetView} from '$lib/api/view.svelte';
+ import {metricSelectors} from '$lib/api/presentation';
+ import {workloadBench} from '$lib/api/catalog';
+ import { tipCard, tipWho } from '$lib/tip';
 	import { siteHref } from '$lib/links';
 	import { goto } from '$lib/navigation';
 	import { CFG } from '$lib/data/runtimes';
@@ -14,16 +19,25 @@
 	import Swatch from '../Swatch.svelte';
 
 	const cols = $derived(CFG.filter((c) => isVisible(ui.scope, c)));
+	function more(){
+		if(apiView.pageLoading||!apiView.page?.nextCursor)return;
+		void loadPage({machine:ui.machine,snapshot:ui.snap,metric:ui.metric,hide:{...ui.hide},baseline:ui.baseline,weighting:ui.weighting,search:ui.q,tag:ui.tag,sortBy:ui.sortBy},apiView.pageIndex+1,true);
+	}
+	function watchMore(node:HTMLElement,_cursor:string|undefined){
+		const observer=new IntersectionObserver(entries=>{if(entries.some(e=>e.isIntersecting)&&!apiView.pageError)more()},{rootMargin:'300px'});
+		observer.observe(node);
+		return {update(){observer.unobserve(node);observer.observe(node)},destroy(){observer.disconnect()}};
+	}
 
 	const cellFor = (b: Bench, c: Cfg, cf: number, caseLabel?: string, formatted?:string, bg='transparent') => {
 		const s = ui.scope;
 		const m = ui.metric;
 		const u = MET[m].u;
 		const r = benchVal(s, b, c.id, m, cf);
-		const open = () => (ui.drawer = { type: 'cell', b: b.id, c: c.id, m, cf, caseLabel });
+		const open = () => {ui.drawer = { type: 'cell', b: b.id, c: c.id, m, cf, caseLabel };};
 		if (r.st !== 'ok') {
 			const t = ST[r.st];
-			return { text: t[0] + ' ' + t[1], sub: '', bg: 'transparent', color: t[2], open };
+			return { text: m==='code'&&r.st==='unsupported'?'n/a':t[0] + ' ' + t[1], sub: '', bg: 'transparent', color: t[2], open };
 		}
 		return {
 			text: formatted || fmtU(r.v, u),
@@ -60,6 +74,21 @@
 	const view = $derived.by(() => {
 		const s = ui.scope;
 		const m = ui.metric;
+        if(datasetView.revision){
+            const rows:Row[]=[];let previousGroup='';
+            for(const row of apiView.page?.items||[]){
+                const b=workloadBench(row.workload);b.group=row.group;
+                if(row.group!==previousGroup){
+                    previousGroup=row.group;const summary=apiView.page?.groups?.find(g=>g.name===row.group);
+                    const values=cols.map(c=>summary?.cells.find(x=>x.track===trackId(c.id)));
+                    const formatted=fmtUGroup(values.map(x=>x?.value==null?null:x.value/metricSelectors[m].factor),MET[m].u);
+                    rows.push({kind:'group',name:row.group,count:`${summary?.total||0} matching workloads`,open:!ui.collapsed[row.group],cells:values.map((x,i)=>({text:formatted[i]||'—',count:x?.count||0}))});
+                }
+                if(ui.collapsed[row.group])continue;
+                rows.push({kind:'item',b,name:workloadName(b.id),indent:'12px',cases:0,expanded:false,tags:b.tags,cells:cellsFor(b)});
+            }
+            return {rows,shown:apiView.page?.total||0};
+        }
 		const q = ui.q.trim().toLowerCase();
 		const match = (b: Bench) =>
 			(!q || b.id.toLowerCase().includes(q) || b.tags.some((t) => t.includes(q))) && (!ui.tag || b.tags.includes(ui.tag));
@@ -71,7 +100,8 @@
 			shown += items.length;
 			const collapsed = !!ui.collapsed[g.g];
 			const averages = cols.map((c) => {
-				const values=items.map(b=>benchVal(s,b,c.id,m)).flatMap(r=>r.st==='ok'?[r.v]:[]);
+				const eligible=ui.cohortMode==='shared'?items.filter(b=>cols.every(engine=>benchVal(s,b,engine.id,m).st==='ok')):items;
+				const values=eligible.map(b=>benchVal(s,b,c.id,m)).flatMap(r=>r.st==='ok'?[r.v]:[]);
 				return {value:values.length?values.reduce((a,b)=>a+b,0)/values.length:null,count:values.length};
 			});
 			const formatted=fmtUGroup(averages.map(a=>a.value),MET[m].u);
@@ -177,7 +207,7 @@
 							</button>
 						</td>
 						{#each r.cells as cell, k (k)}
-							<td class="mono small fg2 r gcell" data-tip={`${r.name} — ${cols[k].rt} ${cols[k].be}\n${cell.text}\nArithmetic mean of ${cell.count} successful workload measurements; each workload has equal weight.`}>{cell.text}</td>
+							<td class="mono small fg2 r gcell" data-tip-card={tipCard({ kicker: `${MET[ui.metric].l} · group mean`, title: r.name, who: tipWho(cols[k]), value: cell.text, stats: [['workloads', String(cell.count)], ['weighting', 'equal']], note: 'Arithmetic mean of successful measurements.' })}>{cell.text}</td>
 						{/each}
 					</tr>
 				{:else}
@@ -204,7 +234,7 @@
 									style:background={x.bg}
 									style:color={x.color}
 									onclick={x.open}
-									data-tip={`${r.name} — ${cols[k].rt} ${cols[k].be}\n${[x.text, x.sub].filter(Boolean).join(' · ')}\nClick for distribution & run record`}
+									data-tip-card={tipCard({ kicker: MET[ui.metric].l, title: r.name, who: tipWho(cols[k]), value: x.text, sub: x.sub, heat: x.bg === 'transparent' ? '' : x.bg, action: 'distribution & run record' })}
 								>
 									<span class="mono s12 nowrap">{x.text}</span>
 									<span class="mono micro fg3 nowrap">{x.sub}</span>
@@ -217,6 +247,12 @@
 		</tbody>
 	</table>
 </div>
+{#if datasetView.revision}
+ <div class="row" aria-label="Workload loading" use:watchMore={apiView.page?.nextCursor}>
+  <span class="small fg3">{apiView.page?.items.length||0} / {apiView.page?.total||0} workloads loaded</span>
+  {#if apiView.page?.nextCursor}<button class="btn-small" disabled={apiView.pageLoading} onclick={more}>{apiView.pageLoading?'Loading…':'Load more workloads'}</button>{/if}
+ </div>
+{/if}
 <div class="legend small">
 	{#each legend as [g, l, c] (l)}<span style:color={c}>{g} {l}</span>{/each}
 </div>

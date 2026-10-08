@@ -5,6 +5,13 @@ import {join} from 'node:path';
 import {digest} from './wasmbench.mjs';
 const replace=(text,from,to)=>{if(!text.includes(from))throw Error('Legacy compatibility source changed: '+from.slice(0,70));return text.replace(from,to);};
 const cut=(text,start,end)=>{const a=text.indexOf(start),b=text.indexOf(end,a);if(a<0||b<0)throw Error('Legacy compatibility boundary changed: '+start);return text.slice(0,a)+text.slice(b);};
+
+export function legacyIdentityImports(main) {
+ const helper=/func identityImports\(\) \*?wago\.Imports \{[\s\S]*?\n\}/;
+ if(!helper.test(main))throw Error('Typed identity helper missing from frozen Wago adapter');
+ return main.replace(helper,'func identityImports() wago.Imports {\n return wago.Imports{"wasmbench.identity": wago.HostFunc(func(_ wago.HostModule, p, r []uint64) { r[0] = p[0] })}\n}');
+}
+
 export async function adaptLegacyWago({root,base,module,run,api}){
  const wasi=join(root,'legacy-wasi');await mkdir(join(wasi,'internal/core'),{recursive:true});await mkdir(join(wasi,'p1'),{recursive:true});
  for(const file of await readdir(join(module.Dir,'internal/core')))if(file.endsWith('.go')&&!file.endsWith('_test.go')&&file!=='definition.go'){const target=join(wasi,'internal/core',file);await chmod(target,0o644).catch(()=>{});await cp(join(module.Dir,'internal/core',file),target);await chmod(target,0o644);}
@@ -33,8 +40,7 @@ export async function adaptLegacyWago({root,base,module,run,api}){
  main=main.replace(/\n\s*wagoplugin \"github.com\/wago-org\/wago\/plugin\"/g,'');
  main=main.replace('*wago.Imports','wago.Imports');main=cut(main,'\tcomponentRuntime *wago.Runtime','\n}');
  main=cut(main,'\tif a.componentCache != nil {','\tif a.hostIdentity != nil {');
- main=replace(main,'func(v int32) int32 { return v }','wago.HostFunc(func(_ wago.HostModule, p, r []uint64) { r[0] = p[0] })');
- main=replace(main,'wago.NewImports().Function("wasmbench", "identity", a.hostIdentity)','wago.Imports{"wasmbench.identity": a.hostIdentity}');
+ main=legacyIdentityImports(main);
  main=replace(main,'wago.HostCallFunc(func(call wago.HostCall) {','wago.HostFunc(func(_ wago.HostModule, p, _ []uint64) {');
  for(let i=0;i<4;i++)main=main.replaceAll(`uint32(call.I32(${i}))`,`uint32(p[${i}])`);
  main=replace(main,'wago.NewImports().Function("env", "abort", a.hostIdentity)','wago.Imports{"env.abort": a.hostIdentity}');

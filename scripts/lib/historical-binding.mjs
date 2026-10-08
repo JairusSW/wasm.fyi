@@ -1,7 +1,15 @@
-import {readFile,writeFile,mkdir,cp,readdir,symlink} from 'node:fs/promises';
+import {readFile,writeFile,mkdir,cp,readdir} from 'node:fs/promises';
 import {join,dirname} from 'node:path';
 import {command,digest,exists} from './wasmbench.mjs';
-import {releaseSource,assertReleasedSource,releaseCache,githubReleases} from './release-policy.mjs';
+import {releaseSource,assertReleasedSource,releaseCache,githubRelease} from './release-policy.mjs';
+import {configureWasmerLLVM} from './llvm-toolchain.mjs';
+import {buildWamrSDK} from './wamr-sdk.mjs';
+import {buildWasmEdgeSDK} from './wasmedge-sdk.mjs';
+import {buildChicorySDK} from './chicory-sdk.mjs';
+import {buildCTranspilerSDK} from './c-transpiler-sdk.mjs';
+import {buildWavmSDK} from './wavm-sdk.mjs';
+import {buildJavaScriptCoreSDK} from './jsc-sdk.mjs';
+import {runCommand} from './benchmark-process.mjs';
 
 export function pendingBindingReason(pin) {
   return pin.targetType==='main' ? 'No source-revision performance build binding has been qualified for this engine yet.' : null;
@@ -51,6 +59,7 @@ export async function copyHistoricalHarness(base,root) {
   await mkdir(root,{recursive:false});
   const files=command('git',['ls-files','-z','--cached','--others','--exclude-standard'],{cwd:base}).toString().split('\0').filter(Boolean);
   for(const path of files) {
+    if(path.startsWith('toolchains/') || path.split('/').some(part=>part==='__pycache__'))continue;
     if(path.startsWith('/') || path.split('/').includes('..'))throw Error('Unsafe harness input: '+path);
     await mkdir(dirname(join(root,path)),{recursive:true});
     await cp(join(base,path),join(root,path),{dereference:true});
@@ -71,6 +80,15 @@ export async function copyHistoricalHarness(base,root) {
   // older patch stack here rejects the current source or duplicates its
   // behavior. Preserve the copied source verbatim; the per-runtime release
   // binding below changes only the selected SDK/runtime input.
+}
+
+export async function restoreHistoricalHarnessSources(base,root) {
+ const files=command('git',['ls-files','-z','--cached','--others','--exclude-standard'],{cwd:base}).toString().split('\0').filter(Boolean);
+ for(const path of files) {
+  if(path.startsWith('toolchains/')||path.split('/').includes('__pycache__'))continue;
+  if(path.startsWith('/')||path.split('/').includes('..'))throw Error('Unsafe harness input');
+  await mkdir(dirname(join(root,path)),{recursive:true});await cp(join(base,path),join(root,path),{dereference:true});
+ }
 }
 
 export async function buildHistoricalBinding({root,pin,configuration,invoke,env}) {
@@ -97,6 +115,7 @@ export async function buildHistoricalBinding({root,pin,configuration,invoke,env}
     if(packages.length!==1 || !packages[0].includes('version = "'+version+'"'))throw Error('Historical Cargo SDK differs from its selected release');
     return {sdk:name,version,lockSha256:digest(lock)};
   };
+  const runSDK=(program,args,options={})=>runCommand(program,args,{cwd:root,env,log:join(root,'sdk-build.log'),signal:AbortSignal.timeout(90*60*1000),...options});
   let source;
   if(pin.engine==='v8') {
     const target=join(root,'toolchains','node-'+version),archiveName=`node-${pin.tag}-${process.platform==='darwin'?'darwin':'linux'}-${process.arch}.tar.xz`;
@@ -113,25 +132,8 @@ export async function buildHistoricalBinding({root,pin,configuration,invoke,env}
     command('tar',['-xJf',archive,'--strip-components=1','-C',target],{timeout:10*60*1000});
     const node=join(target,'bin','node'),nodeVersion=command(node,['-p','process.versions.node']).toString().trim(),embeddedV8=command(node,['-p','process.versions.v8']).toString().trim();
     if(nodeVersion!==version||!/^\d+\.\d+\.\d+/.test(embeddedV8))throw Error(`Node/V8 release identity mismatch: node ${nodeVersion}, V8 ${embeddedV8}`);
-    env.WASMBENCH_NODE=node;env.NODE_OPTIONS='';
+    env.WASMBENCH_NODE=node;env.NODE_OPTIONS='';env.WASMBENCH_V8_COMPILER_MODE='optimizing-only';
     source={nodeVersion,embeddedV8,plannedEmbeddedV8:pin.embeddedV8||null,archiveName,archiveSha256,nodeSha256:digest(await readFile(node)),checksumManifest:'https://nodejs.org/dist/'+pin.tag+'/SHASUMS256.txt'};
-  } else if(pin.engine==='deno') {
-    const assetName=process.platform==='darwin'&&process.arch==='arm64'?'deno-aarch64-apple-darwin.zip':process.platform==='linux'&&process.arch==='x64'?'deno-x86_64-unknown-linux-gnu.zip':null;
-    if(!assetName)throw Error('No qualified Deno release asset for '+process.platform+'/'+process.arch);
-    const release=JSON.parse(command('gh',['api',`repos/${pin.repository}/releases/tags/${pin.tag}`]).toString());
-    const asset=release.assets?.find(item=>item.name===assetName),expected=asset?.digest?.replace(/^sha256:/,'');
-    if(!asset?.browser_download_url||!/^[a-f0-9]{64}$/.test(expected||''))throw Error('Deno release has no qualified SHA-256 asset receipt: '+assetName);
-    const archive=join(root,'toolchains',assetName),target=join(root,'toolchains','deno-'+version);
-    await mkdir(join(root,'toolchains'),{recursive:true});
-    command('curl',['--fail','--location','--retry','3','--max-time','600',asset.browser_download_url,'-o',archive],{timeout:10*60*1000});
-    const archiveSha256=digest(await readFile(archive));if(archiveSha256!==expected)throw Error('Official Deno release archive checksum mismatch');
-    await mkdir(target,{recursive:true});command('unzip',['-oq',archive,'-d',target],{timeout:3*60*1000});
-    const deno=join(target,'deno');if(!await exists(deno))throw Error('Deno release archive did not contain the deno executable');
-    command('chmod',['+x',deno]);
-    const description=JSON.parse(command(deno,['eval','--no-config','console.log(JSON.stringify(Deno.version))']).toString().trim());
-    if(description.deno!==version||!description.v8)throw Error('Deno binary identity differs from its release tag');
-    env.WASMBENCH_DENO=deno;env.NODE_OPTIONS='';
-    source={assetName,assetUrl:asset.browser_download_url,archiveSha256,denoSha256:digest(await readFile(deno)),denoVersion:description.deno,v8Version:description.v8};
   } else if(pin.engine==='wago') {
     source=await releaseSource(pin.repository,{tag:pin.tag});
     if(source.publishedAt!==pin.publishedAt)throw Error('Wago publication metadata changed since planning');
@@ -156,8 +158,15 @@ export async function buildHistoricalBinding({root,pin,configuration,invoke,env}
     await replaceSourceTree('adapters/wasmtime/src','.rs','46.0.1');
     const major=Number(version.split('.')[0]);
     let compatibilityPatch=null;
-    if(major===36) {
+    if(major===24||major===36) {
       await replace('adapters/wasmtime/Cargo.toml','features = ["p1"]','features = ["preview1"]');
+      if(major===24){
+        await replace('adapters/wasmtime/Cargo.toml','wasmtime-internal-jit-icache-coherence = { version','wasmtime-internal-jit-icache-coherence = { package = "wasmtime-jit-icache-coherence", version');
+        await replace('adapters/wasmtime/Cargo.toml','component-async-probes = ["wasmtime/component-model-async"]','component-async-probes = []');
+        await replace('adapters/wasmtime/src/pooling.rs','.memory_reservation(16 * 1024 * 1024)','.static_memory_maximum_size(16 * 1024 * 1024)');
+        await replace('adapters/wasmtime/src/pooling.rs','.memory_guard_size(65536)','.static_memory_guard_size(65536).dynamic_memory_guard_size(65536)');
+        await replace('adapters/wasmtime/src/vectors.rs','Val::default_for_ty(&t)', 'match t { ValType::I32=>Some(Val::I32(0)), ValType::I64=>Some(Val::I64(0)), ValType::F32=>Some(Val::F32(0)), ValType::F64=>Some(Val::F64(0)), ValType::V128=>Some(Val::V128(0u128.into())), ValType::Ref(r) if r.is_nullable()=>Some(Val::null_ref(r.heap_type())), _=>None }');
+      }
       const files=[];
       const patchOldApi=async directory=>{
         for(const entry of await readdir(join(root,directory),{withFileTypes:true})) {
@@ -184,8 +193,8 @@ export async function buildHistoricalBinding({root,pin,configuration,invoke,env}
       await patchOldApi('adapters/wasmtime/src');
       await writeFile(join(root,'adapters/wasmtime/src/features.rs'),
         'use serde_json::{Value,json};\nuse wasmtime::Config;\n'+
-        'pub fn configure(config:&mut Config,winch:bool){config.wasm_tail_call(!winch);config.wasm_relaxed_simd(!winch);config.wasm_exceptions(false);config.wasm_legacy_exceptions(false);if winch&&cfg!(target_arch="aarch64"){config.wasm_simd(false);}}\n'+
-        'pub fn describe(winch:bool)->Value{json!({"namespace":"Wasmtime 36 Config defaults","enabled":{"TAIL_CALL":!winch,"RELAXED_SIMD":!winch,"SIMD":!(winch&&cfg!(target_arch="aarch64"))},"disabled":["GC","FUNCTION_REFERENCES","THREADS","STACK_SWITCHING","CM_ASYNC","CM_ASYNC_STACKFUL"]})}\n');
+        'pub fn configure(config:&mut Config,winch:bool){config.wasm_tail_call(!winch);config.wasm_relaxed_simd(!winch);'+(major===24?'':'config.wasm_exceptions(false);config.wasm_legacy_exceptions(false);')+'if winch&&cfg!(target_arch="aarch64"){config.wasm_simd(false);}}\n'+
+        'pub fn describe(winch:bool)->Value{json!({"namespace":"Wasmtime '+major+' Config defaults","enabled":{"TAIL_CALL":!winch,"RELAXED_SIMD":!winch,"SIMD":!(winch&&cfg!(target_arch="aarch64"))},"disabled":["GC","FUNCTION_REFERENCES","THREADS","STACK_SWITCHING","CM_ASYNC","CM_ASYNC_STACKFUL"]})}\n');
       await writeFile(join(root,'adapters/wasmtime/src/component_calls.rs'),
         'use serde_json::{Value,json};\nuse wasmtime::{Engine,Result};\n'+
         'pub const POLICY:&str="component-u64-v1";pub const BOUNDARIES:&str="not measured: features held";\n'+
@@ -195,7 +204,7 @@ export async function buildHistoricalBinding({root,pin,configuration,invoke,env}
         'use serde_json::{Value,json};\nuse wasmtime::{Engine,Result};\n'+
         'pub fn validate_workload(_: &Value)->Result<()>{Ok(())}\n'+
         'pub fn run(_: &Engine,_:&[u8],_:&Value,_:&Value)->Result<Value>{Ok(json!({"status":"unsupported","reason":"historical Component Model features held"}))}\n');
-      compatibilityPatch={adapterApi:'Wasmtime 36',wasiPreview1Feature:'preview1',components:'excluded from this feature-held suite',filesSha256:digest(JSON.stringify(await Promise.all(files.map(async path=>[path,digest(await readFile(join(root,path)))]))))};
+      compatibilityPatch={adapterApi:'Wasmtime '+major,wasiPreview1Feature:'preview1',components:'excluded from this feature-held suite',filesSha256:digest(JSON.stringify(await Promise.all(files.map(async path=>[path,digest(await readFile(join(root,path)))]))))};
     }
     if(major>=48) {
       await replace('adapters/wasmtime/src/commands.rs',
@@ -222,7 +231,7 @@ export async function buildHistoricalBinding({root,pin,configuration,invoke,env}
     source=await cargoReceipt('adapters/native/Cargo.lock','wasmi');
   } else if(pin.engine==='wasm3'||pin.engine==='wamr') {
     source=await releaseSource(pin.repository,{tag:pin.tag});assertReleasedSource(source.source,source);
-    const sdk=join(root,'toolchains',`${pin.engine}-${version}`);await mkdir(join(sdk,'include'),{recursive:true});await mkdir(join(sdk,'lib'),{recursive:true});
+    const sdk=join(root,'toolchains',`${configuration}-${version}`);await mkdir(join(sdk,'include'),{recursive:true});await mkdir(join(sdk,'lib'),{recursive:true});
     if(pin.engine==='wasm3'){
       const build=join(root,'toolchains',`wasm3-build-${version}`);
       // The tagged release keeps its project-level CMake file at the root;
@@ -233,72 +242,47 @@ export async function buildHistoricalBinding({root,pin,configuration,invoke,env}
       await cp(join(build,'source','libm3.a'),join(sdk,'lib','libm3.a'));
       env.WASMBENCH_WASM3_SDK=sdk;env.WASMBENCH_WASM3_VERSION=version;
     } else {
-      const build=join(root,'toolchains',`wamr-build-${version}`),flags=['-DCMAKE_BUILD_TYPE=Release','-DWAMR_BUILD_AOT=0','-DWAMR_DISABLE_STACK_HW_BOUND_CHECK=1','-DWAMR_BUILD_FAST_INTERP=0','-DWAMR_BUILD_GC=1','-DWAMR_BUILD_EXCE_HANDLING=1','-DWAMR_BUILD_LIBC_WASI=0','-DWAMR_BUILD_LIBC_BUILTIN=0','-DBUILD_SHARED_LIBS=ON'];
-      command('cmake',['-S',join(source.source,'product-mini','platforms',process.platform),'-B',build,...flags],{stdio:'inherit'});
-      command('cmake',['--build',build,'--target','vmlib','-j','4'],{stdio:'inherit'});
-      for(const name of await readdir(join(source.source,'core','iwasm','include')))if(name.endsWith('.h'))await cp(join(source.source,'core','iwasm','include',name),join(sdk,'include',name));
-      const library=(await readdir(build)).find(name=>/^libiwasm.*\.(?:dylib|so)(?:\.[\d.]+)?$/.test(name));
-      if(!library)throw Error('WAMR release build did not produce its shared runtime library');
-      await cp(join(build,library),join(sdk,'lib',library),{dereference:true});
-      const linkerName=process.platform==='darwin'?'libiwasm.dylib':'libiwasm.so';
-      if(library!==linkerName)await symlink(library,join(sdk,'lib',linkerName));
-      env.WASMBENCH_WAMR_SDK=sdk;env.WASMBENCH_WAMR_VERSION=version;
+      const target=join(root,'toolchains',`wamr-build-${configuration}-${version}`);
+      const isolated=join(root,'toolchains',`wamr-source-${configuration}-${version}`);
+      if(!await exists(isolated))command('git',['-C',source.source,'worktree','add','--detach',isolated,source.revision],{stdio:'inherit'});
+      let compiled;
+      try {compiled=await buildWamrSDK({source:isolated,sdk,target,configuration,version,env,run:runSDK});}
+      catch(error){if(error.code==='UNSUPPORTED_PLATFORM')error.proof={...error.proof,revision:source.revision};throw error;}
+      assertReleasedSource(source.source,source);
+      source={...source,buildFlags:compiled.flags,libraries:compiled.libraries,measurementPatch:compiled.measurementPatch,measurementSource:isolated};
     }
     invoke('build','--runtimes',configuration);
-    source={...source,version,sdk,buildFlags:pin.engine==='wamr'?['Release','classic interpreter','GC','exceptions','software stack bounds']:['Release','WASI disabled']};
+    source={...source,version,sdk,buildFlags:pin.engine==='wamr'?source.buildFlags:['Release','WASI disabled']};
+  } else if(['wasm2c','w2c2'].includes(pin.engine)) {
+    source=await releaseSource(pin.repository,{tag:pin.tag});assertReleasedSource(source.source,source);
+    if(source.publishedAt!==pin.publishedAt)throw Error('C transpiler publication metadata changed since planning');
+    const compiled=await buildCTranspilerSDK({source:source.source,sdk:join(root,'toolchains',`${pin.engine}-${version}`),target:join(root,'toolchains',`${pin.engine}-build-${version}`),engine:pin.engine,env,run:runSDK});
+    assertReleasedSource(source.source,source);invoke('build','--runtimes',configuration);source={...source,sdk:compiled};
+  } else if(pin.engine==='chicory') {
+    source=await releaseSource(pin.repository,{tag:pin.tag});assertReleasedSource(source.source,source);
+    if(source.publishedAt!==pin.publishedAt)throw Error('Chicory publication metadata changed since planning');
+    const compiled=await buildChicorySDK({source:source.source,root,version,env,run:runSDK});
+    assertReleasedSource(source.source,source);invoke('build','--runtimes',configuration);
+    source={...source,sdk:compiled};
+  } else if(pin.engine==='wasmedge') {
+    source=await releaseSource(pin.repository,{tag:pin.tag});assertReleasedSource(source.source,source);
+    if(source.publishedAt!==pin.publishedAt)throw Error('WasmEdge publication metadata changed since planning');
+    const isolated=join(root,'toolchains',`wasmedge-source-${configuration}-${version}`);
+    if(!await exists(isolated))command('git',['-C',source.source,'worktree','add','--detach',isolated,source.revision],{stdio:'inherit'});
+    const sdk=join(root,'toolchains',`wasmedge-${configuration}-${version}`),target=join(root,'toolchains',`wasmedge-build-${configuration}-${version}`);
+    let compiled;
+    try {compiled=await buildWasmEdgeSDK({source:isolated,sdk,target,configuration,env,run:runSDK});}
+    catch(error){if(error.code==='UNSUPPORTED_BACKEND')error.proof={...error.proof,revision:source.revision};throw error;}
+    assertReleasedSource(source.source,source);
+    invoke('build','--runtimes',configuration);
+    source={...source,sdk,measurementSource:isolated,buildFlags:compiled.flags,libraries:compiled.libraries,measurementPatch:compiled.measurementPatch};
   } else if(pin.engine==='jsc') {
-    const upstream=await webkitReleaseSource(pin.tag),sourceRoot=upstream.source;
-    let build,jsc,builder;
-    if(process.platform==='darwin'&&process.arch==='arm64') {
-      const sdk=command('xcrun',['--sdk','macosx','--show-sdk-path']).toString().trim();
-      build=join(sourceRoot,'WebKitBuild','MacJSCOnly','Release');
-      const cmakeArgs=['-S',sourceRoot,'-B',build,'-G','Ninja','-DPORT=Mac','-DCMAKE_BUILD_TYPE=Release',`-DCMAKE_OSX_SYSROOT=${sdk}`,
-        '-DENABLE_API_TESTS=OFF','-DENABLE_WEBKIT=OFF','-DENABLE_WEBKIT_LEGACY=OFF','-DENABLE_WEBKIT_TEST_RUNNER=OFF','-DENABLE_MINIBROWSER=OFF','-DENABLE_JAVASCRIPTCORE=ON'];
-      command('cmake',cmakeArgs,{timeout:30*60*1000});
-      command('cmake',['--build',build,'--target','jsc','-j','4'],{timeout:6*60*60*1000});
-      jsc=join(build,'jsc');builder=['cmake',...cmakeArgs,'--build','<build>','--target','jsc','-j','4'];
-      env.DYLD_FRAMEWORK_PATH=[build,env.DYLD_FRAMEWORK_PATH].filter(Boolean).join(':');
-    } else {
-      if(!['darwin-arm64','linux-x64'].includes(`${process.platform}-${process.arch}`))
-        throw Error('No qualified WebKit JSC build for '+process.platform+'/'+process.arch);
-      const script=join(sourceRoot,'Tools','Scripts','build-webkit');
-      builder=[script,'--jsc-only','--release'];
-      const buildEnv={...env};
-      // The Hub has no system Ruby package. Use the isolated Ruby runtime
-      // prepared for this host, and keep it scoped to WebKit build steps.
-      const rubyRoot=join(dirname(releaseCache()),'toolchains','ruby-3.2-local');
-      if(await exists(join(rubyRoot,'bin','ruby'))) {
-        buildEnv.PATH=[join(rubyRoot,'bin'),buildEnv.PATH].filter(Boolean).join(':');
-        buildEnv.LD_LIBRARY_PATH=[join(rubyRoot,'root/usr/lib/x86_64-linux-gnu'),buildEnv.LD_LIBRARY_PATH].filter(Boolean).join(':');
-        buildEnv.RUBYLIB=[join(rubyRoot,'root/usr/lib/ruby/3.2.0'),join(rubyRoot,'root/usr/lib/x86_64-linux-gnu/ruby/3.2.0'),buildEnv.RUBYLIB].filter(Boolean).join(':');
-      }
-      const cmakeArgs=['-DENABLE_API_TESTS=OFF',...(process.platform==='linux'?['-DCMAKE_CXX_FLAGS=-Wno-error=unused-const-variable']:[])];
-      builder.push('--cmakeargs='+cmakeArgs.join(' '));
-      try {
-        command('perl',builder,{cwd:sourceRoot,env:buildEnv,stdio:'inherit',timeout:6*60*60*1000});
-      } catch(error) {
-        // WebKitGTK 2.54.1's Unix Makefiles link JavaScriptCore against
-        // JavaScriptCoreJIT objects without ordering that object target
-        // first. Build that target explicitly, then retry the now-incremental
-        // upstream build. Genuine compile/link errors still fail the retry.
-        if(process.platform!=='linux'||!/^perl failed \(2\)$/.test(error.message))throw error;
-        build=join(sourceRoot,'WebKitBuild','JSCOnly','Release');
-        command('cmake',['--build',build,'--target','JavaScriptCoreJIT','-j','4'],{cwd:sourceRoot,env:buildEnv,stdio:'inherit',timeout:6*60*60*1000});
-        command('perl',builder,{cwd:sourceRoot,env:buildEnv,stdio:'inherit',timeout:6*60*60*1000});
-      }
-      build=join(sourceRoot,'WebKitBuild','JSCOnly','Release');
-      jsc=join(build,'bin','jsc');
-      env.LD_LIBRARY_PATH=[join(build,'lib'),env.LD_LIBRARY_PATH].filter(Boolean).join(':');
-      env.DYLD_FRAMEWORK_PATH=[build,env.DYLD_FRAMEWORK_PATH].filter(Boolean).join(':');
-    }
-    if(!await exists(jsc))throw Error('WebKit release build did not produce its JSC shell: '+jsc);
-    command(jsc,['-e','if(typeof WebAssembly!=="object"||!WebAssembly.validate(new Uint8Array([0,97,115,109,1,0,0,0])))throw Error("WebAssembly smoke check failed")']);
-    const binarySha256=digest(await readFile(jsc));
-    env.WASMBENCH_JSC=jsc;env.WASMBENCH_JSC_VERSION='WebKitGTK/'+version;
-    invoke('build','--runtimes',configuration);
-    source={...upstream,buildDirectory:build,builder,jsc,binarySha256};
+    const upstream=await webkitReleaseSource(pin.tag);
+    const sdk=await buildJavaScriptCoreSDK({source:upstream.source,target:join(root,'toolchains','jsc-'+version),revision:'WebKitGTK/'+version,env,run:runSDK});
+    assertReleasedSource(upstream.source,upstream);
+    source={...upstream,...sdk,jsc:sdk.binary};
   } else if(pin.engine==='spidermonkey') {
-    if(!/^\d+\.\d+$/.test(version))throw Error('Unqualified SpiderMonkey release: '+pin.tag);
+    if(!/^\d+\.\d+(?:\.\d+)?(?:b\d+|esr)?$/.test(version))throw Error('Unqualified SpiderMonkey release: '+pin.tag);
     const assetName=process.platform==='darwin'&&process.arch==='arm64'?'jsshell-mac.zip':process.platform==='linux'&&process.arch==='x64'?'jsshell-linux-x86_64.zip':null;
     if(!assetName)throw Error('No qualified SpiderMonkey release shell for '+process.platform+'/'+process.arch);
     const base=`https://archive.mozilla.org/pub/firefox/releases/${version}/`,relative=`jsshell/${assetName}`;
@@ -317,41 +301,24 @@ export async function buildHistoricalBinding({root,pin,configuration,invoke,env}
     source={archiveUrl:base+relative,archiveSha256,checksumManifest:base+'SHA256SUMS',binarySha256:digest(await readFile(js)),binary:js};
   } else if(pin.engine==='wavm') {
     if(!/^nightly\/\d{4}-\d{2}-\d{2}$/.test(pin.tag))throw Error('Unqualified WAVM nightly tag: '+pin.tag);
-    const releases=githubReleases(pin.repository),release=releases.find(item=>item.tag_name===pin.tag);
+    const release=githubRelease(pin.repository,pin.tag);
     if(!release||release.published_at!==pin.publishedAt)throw Error('WAVM nightly release metadata changed since planning');
-    const platform=process.platform==='darwin'&&process.arch==='arm64'?'macos-arm64':process.platform==='linux'&&process.arch==='x64'?'linux-x64':null;
-    if(!platform)throw Error('No qualified WAVM nightly archive for '+process.platform+'/'+process.arch);
-    const preferred=`wavm-${pin.tag.replace('/','-')}-${platform}.tar.gz`;
-    const legacy=process.platform==='darwin'?'wavm-0.0.0-prerelease-macos.tar.gz':'wavm-0.0.0-prerelease-linux.tar.gz';
-    const asset=release.assets?.find(item=>item.name===preferred)||release.assets?.find(item=>item.name===legacy),assetName=asset?.name;
-    const expected=asset?.digest?.replace(/^sha256:/,'');
-    if(!asset?.browser_download_url||expected&&!/^[a-f0-9]{64}$/.test(expected))throw Error('WAVM nightly has no usable release archive receipt: '+(assetName||preferred));
-    const archive=join(root,'toolchains',assetName),sdk=join(root,'toolchains',`wavm-${pin.tag.slice('nightly/'.length)}-${digest(Buffer.from(pin.tag+assetName)).slice(0,12)}`,'sdk');
-    await mkdir(dirname(sdk),{recursive:true});await mkdir(join(root,'toolchains'),{recursive:true});
-    command('curl',['--fail','--location','--retry','3','--max-time','600',asset.browser_download_url,'-o',archive],{timeout:10*60*1000});
-    const archiveBytes=await readFile(archive),archiveSha256=digest(archiveBytes);
-    if(expected&&archiveSha256!==expected)throw Error('Official WAVM nightly archive checksum mismatch');
-    if(Number.isSafeInteger(asset.size)&&archiveBytes.length!==asset.size)throw Error('WAVM release asset size differs from the official GitHub release metadata');
-    await mkdir(sdk,{recursive:true});command('tar',['-xzf',archive,'-C',sdk],{timeout:10*60*1000});
-    const api=join(sdk,'include/WAVM/wavm-c/wavm-c.h'),libraryDir=join(sdk,'lib');
-    const libraries=(await readdir(libraryDir)).filter(name=>/^libWAVM\.(?:dylib|so(?:\.[\d.]+)?|a)$/.test(name));
-    if(!await exists(api)||!libraries.length)throw Error('WAVM nightly archive lacks the C API or runtime library');
-    const binary=join(sdk,'bin','wavm'),binarySha256=digest(await readFile(binary)),binaryFormat=command('file',[binary]).toString().trim();
-    const native=process.platform==='darwin'?/Mach-O 64-bit executable arm64/.test(binaryFormat):/ELF 64-bit.*x86-64/.test(binaryFormat);
-    if(!native){const error=Error(`WAVM nightly asset is not native to ${process.platform}/${process.arch}: ${binaryFormat}`);error.code='BINDING_UNAVAILABLE';throw error;}
-    const versionText=command(binary,['version']).toString();if(!versionText.includes('WAVM version '))throw Error('WAVM nightly binary does not identify itself as WAVM');
     const tagCache=join(releaseCache(),pin.repository.replace('/','-'),pin.tag.replaceAll('/','-'));
-    await mkdir(dirname(tagCache),{recursive:true});
+    await mkdir(tagCache,{recursive:true});
     if(!await exists(join(tagCache,'.git'))){command('git',['init',tagCache]);command('git',['-C',tagCache,'remote','add','origin',`https://github.com/${pin.repository}.git`]);}
+    if(command('git',['-C',tagCache,'status','--porcelain','--untracked-files=no']).length)throw Error('WAVM nightly source contains tracked changes');
     command('git',['-C',tagCache,'fetch','--depth','1','--filter=blob:none','origin',`refs/tags/${pin.tag}`],{stdio:'inherit'});
     const revision=command('git',['-C',tagCache,'rev-parse','FETCH_HEAD^{commit}']).toString().trim();
+    const tagReceipt=join(tagCache,'.git/wasm-fyi-nightly.json');
+    if(await exists(tagReceipt)&&JSON.parse(await readFile(tagReceipt)).revision!==revision)throw Error('Published WAVM nightly tag moved');
     command('git',['-C',tagCache,'checkout','--detach',revision]);
+    await writeFile(tagReceipt,JSON.stringify({tag:pin.tag,revision,publishedAt:pin.publishedAt})+'\n');
     const adapterVersion=`nightly-${pin.tag.slice('nightly/'.length)}-${revision.slice(0,7)}`;
-    env.WASMBENCH_WAVM_SDK=sdk;env.WASMBENCH_WAVM_VERSION=adapterVersion;
-    invoke('build','--runtimes',configuration);
-    source={tag:pin.tag,revision,adapterVersion,assetId:asset.id,assetName,assetUrl:asset.browser_download_url,
-      upstreamSha256:expected||null,archiveSha256,checksumSource:expected?'GitHub release digest':'locally computed SHA-256; GitHub release metadata had no digest',
-      assetSize:asset.size,binaryFormat,binarySha256,runtimeLibrary:await Promise.all(libraries.map(async name=>({name,sha256:digest(await readFile(join(libraryDir,name)))}))),sdk};
+    const sdk=join(root,'toolchains',`wavm-${pin.tag.slice('nightly/'.length)}`,'sdk'),target=join(root,'toolchains',`wavm-build-${pin.tag.slice('nightly/'.length)}`);
+    const compiled=await buildWavmSDK({source:tagCache,sdk,target,env,run:runSDK});
+    env.WASMBENCH_WAVM_VERSION=adapterVersion;invoke('build','--runtimes',configuration);
+    assertReleasedSource(tagCache,{revision});
+    source={tag:pin.tag,revision,adapterVersion,publishedAt:pin.publishedAt,sdk,build:compiled,policy:'Native SDK built from the exact published nightly tag; no substituted archive or runtime'};
   } else if(pin.engine==='wasmer') {
     source=await releaseSource(pin.repository,{tag:pin.tag});
     if(source.publishedAt!==pin.publishedAt)throw Error('Wasmer publication metadata changed since planning');
@@ -360,7 +327,9 @@ export async function buildHistoricalBinding({root,pin,configuration,invoke,env}
     const napi=command('git',['rev-parse','HEAD:lib/napi'],{cwd:source.source}).toString().trim();
     if(command('git',['-C','lib/napi','rev-parse','HEAD'],{cwd:source.source}).toString().trim()!==napi)throw Error('Wasmer NAPI submodule differs from its published gitlink');
     const sdk=join(root,'toolchains',`wasmer-${version}`,'sdk'),target=join(root,'toolchains',`wasmer-${version}`,'target');
-    const features='sys-default,cranelift,singlepass,wasi,wasmer-artifact-create,wasmer-artifact-load';
+    let llvmToolchain=null;
+    if(configuration==='wasmer-llvm')llvmToolchain=await configureWasmerLLVM(source.source,env,async(program,args)=>({output:command(program,args,{cwd:root,env}).toString()}));
+    const features='sys-default,cranelift,singlepass,wasi,wasmer-artifact-create,wasmer-artifact-load'+(configuration==='wasmer-llvm'?',llvm':'');
     command('cargo',['build','--manifest-path',join(source.source,'lib/c-api/Cargo.toml'),'--release','--locked','--no-default-features','--features',features],{cwd:source.source,env:{...env,CARGO_TARGET_DIR:target},stdio:'inherit',timeout:90*60*1000});
     const libraryName=process.platform==='darwin'?'libwasmer.dylib':process.platform==='linux'?'libwasmer.so':null;
     if(!libraryName)throw Error('Unsupported Wasmer historical build platform');
@@ -371,7 +340,7 @@ export async function buildHistoricalBinding({root,pin,configuration,invoke,env}
     invoke('build','--runtimes',configuration);
     assertReleasedSource(source.source,source);
     if(command('git',['-C','lib/napi','rev-parse','HEAD'],{cwd:source.source}).toString().trim()!==napi)throw Error('Wasmer NAPI submodule changed during the build');
-    source={...source,sdk,features,napi,librarySha256:digest(await readFile(join(sdk,'lib',libraryName))),lockSha256:digest(await readFile(join(source.source,'Cargo.lock')))};
+    source={...source,sdk,features,napi,llvmToolchain,librarySha256:digest(await readFile(join(sdk,'lib',libraryName))),lockSha256:digest(await readFile(join(source.source,'Cargo.lock')))};
   } else {
     const error=Error('A release-specific performance build binding is still required for '+pin.engine+' '+pin.tag);
     error.code='BINDING_PENDING';throw error;
@@ -383,16 +352,16 @@ export function assertHistoricalRuntime(runtime,binding) {
   if(runtime.id!==binding.configuration)throw Error('Historical configuration does not match its release binding');
   const actual=runtime.description?.runtime_version;
   if(binding.engine==='v8') {
-    if(actual!==binding.source.embeddedV8||runtime.description?.build!=='v'+binding.source.nodeVersion||!runtime.description?.backend?.startsWith('production-default-tiering'))throw Error('Historical V8 does not match its release-pinned Node/V8 binary or production-default tier policy');
-  } else if(binding.engine==='deno') {
-    if(actual!==binding.source.v8Version||runtime.description?.build!=='Deno '+binding.version||runtime.description?.effective_configuration?.compiler_mode!=='optimizing-only')throw Error('Historical Deno release, embedded V8, or optimizing-only tier policy differs');
+    if(actual!==binding.source.embeddedV8||runtime.description?.build!=='v'+binding.source.nodeVersion||runtime.description?.backend!=='optimizing-only')throw Error('Historical V8 does not match its release-pinned Node/V8 binary or eager optimizing compiler policy');
   } else if(binding.engine==='jsc') {
     const binary='binary-sha256:'+binding.source.binarySha256;
     if(actual!=='WebKitGTK/'+binding.version||runtime.description?.build!==binary||!runtime.description?.backend?.includes('OMG'))throw Error('Historical JavaScriptCore release binary identity or forced OMG tier differs');
   } else if(binding.engine==='wago') {
     if(!actual?.startsWith(binding.source.revision+'/source-'))throw Error('Historical Wago source differs from its release');
+  } else if(['wasm2c','w2c2'].includes(binding.engine)) {
+    if(actual!==binding.configuration+':'+binding.source.sdk.translatorSha256||runtime.description?.backend!=='c-aot'||runtime.description?.effective_configuration?.translator_sha256!==binding.source.sdk.translatorSha256)throw Error('Historical C transpiler binary or backend differs');
   } else if(binding.engine==='wasmer') {
-    if(actual!==binding.version||runtime.description?.backend!=='singlepass-jit')throw Error('Historical Wasmer release or Singlepass backend differs');
+    if(actual!==binding.version||runtime.description?.backend!==(binding.configuration==='wasmer-llvm'?'llvm-jit':'singlepass-jit'))throw Error('Historical Wasmer release or selected compiler backend differs');
   } else if(binding.engine==='wavm') {
     if(actual!==binding.source.adapterVersion)throw Error('Historical WAVM nightly release differs');
   } else if(binding.engine==='spidermonkey') {

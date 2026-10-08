@@ -95,16 +95,22 @@ func ProjectOverview(c *Cohort, token string) OverviewResponse {
 		interpretation.ContractSelection = "All exact workload contracts in the requested lanes and workload population remain separate comparison cells."
 	}
 	switch out.Policy {
+	case "shared-geometric-all-v1":
+		interpretation.Population = "Only successful exact workload contracts shared by every requested lane enter the average."
 	case "shared-geometric-v1":
 		interpretation.Population = "Each participating lane uses the shared set of exact workload contracts. Requested lanes without eligible results are listed as omitted."
+	case "available-geometric-v1":
+		interpretation.Population = "Each lane uses its successful workload contracts; populations can differ. Counts are reported separately."
 	case "available-rss-arithmetic-v1":
 		interpretation.Population = "Each lane uses its available current-RSS boundary cells. Numerator and baseline populations can differ; counts are reported separately."
+	case "matched-rss-arithmetic-all-v1":
+		interpretation.Population = "Only successful exact workload-contract and RSS boundary cells shared by every requested lane enter the average."
 	case "matched-rss-arithmetic-v1":
 		interpretation.Population = "Each participating lane uses the shared set of exact workload-contract and current-RSS boundary cells."
 	}
 	if out.Weighting == "corpus" {
 		interpretation.Weighting = "Corpus groups receive equal weight; eligible workload contracts share their group's weight."
-	} else if out.Policy == "shared-geometric-v1" {
+	} else if out.Policy == "shared-geometric-all-v1" || out.Policy == "shared-geometric-v1" || out.Policy == "available-geometric-v1" {
 		interpretation.Weighting = "Eligible workload contracts receive equal weight in the geometric mean."
 	} else {
 		interpretation.Weighting = "Available boundary cells receive equal weight in the arithmetic mean."

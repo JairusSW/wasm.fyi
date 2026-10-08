@@ -27,7 +27,7 @@
 		<a href="https://github.com/JairusSW/wasm.fyi/blob/main/README.md">Contribute</a>
 		<a href="https://github.com/JairusSW/wasm.fyi">GitHub</a>
 		<a href={siteHref('/llms.txt')}>LLM reference</a>
-		<a href={siteHref('/data/llm/index.json')}>Machine-readable data</a>
+		<a href={'/api/platforms'}>Machine-readable data</a>
 	</div>
 </footer>
 

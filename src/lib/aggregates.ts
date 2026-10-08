@@ -1,14 +1,17 @@
+import {apiView,aggregateKey,trackId} from './api/controller.svelte';
+import {datasetView} from './api/view.svelte';
+import {metricSelectors} from './api/presentation';
 import { viewCell, viewData, type ViewCell } from './view-data';
 import type { CfgId } from './data/types';
 import type { PerfGroup, Scope } from './model';
-import { measuredCohort, cohortWeights, weightedGeometricMean } from './comparison-policy';
+import { measuredCohort, nativeCodeParticipants, cohortWeights, weightedGeometricMean } from './comparison-policy';
 export { measuredCohort, cohortWeights, weightedGeometricMean } from './comparison-policy';
 
 export interface Aggregate {
 	v:number; r:number; ci:number; ratioInterval?:[number,number]; interval?:[number,number];
 	count:number; report:string; reports:string[];
 }
-const metrics:Record<PerfGroup,(string|null)[]>={lat:['compile','inst','first','steady'],mem:['rssCompile','rssInst','rss',null],code:[null,null,null,'code',null]};
+const metrics:Record<PerfGroup,(string|null)[]>={lat:['compile','inst','first','steady'],mem:['rssCompile','rssInst','rss','rssAverage'],code:[null,null,null,'code',null]};
 const cache=new Map<string,Aggregate|null>();
 const median=(xs:number[])=>{const s=[...xs].sort((a,b)=>a-b);return s.length%2?s[s.length>>1]:(s[(s.length>>1)-1]+s[s.length>>1])/2;};
 const quantile=(xs:number[],q:number)=>{const s=[...xs].sort((a,b)=>a-b);const p=(s.length-1)*q;return s[Math.floor(p)]+(s[Math.ceil(p)]-s[Math.floor(p)])*(p%1);};
@@ -17,23 +20,38 @@ const quantile=(xs:number[],q:number)=>{const s=[...xs].sort((a,b)=>a-b);const p
 export function aggregateCohort(s:Scope,group:PerfGroup,cid:CfgId,col:number) {
  const metric=metrics[group][col];
  const ids=viewData.applicationConfigurations;
- const selected=[...new Set([...ids.filter(id=>!s.hide[id]),s.baseline])];
+ const selected=[...new Set([...ids.filter(id=>!s.hide[id]),s.baseline])].filter(id=>!!viewData.hosts[s.machine].configurations[id]);
  const workloads=group==='lat'?viewData.catalogue.filter(w=>!w.id.startsWith('features/')):viewData.catalogue;
- return measuredCohort(workloads,metric?selected:[],cid,(w,c)=>viewCell(s.machine,s.snapshot || 's1',w,c,metric || ''));
+ const cell=(w:string,c:CfgId)=>viewCell(s.machine,s.snapshot || 's1',w,c,metric || '');
+ const applicable=group==='code'?nativeCodeParticipants(workloads,selected,cell):selected;
+ return measuredCohort(workloads,metric?(s.cohortMode==='per-engine'?[cid]:applicable):[],cid,cell,s.cohortMode==='shared');
 }
 
 /** A host-local shared workload cohort merged from sealed reports; each cell retains its evidence. */
+export function compilerRSSCoverage(machine:Scope['machine'],snapshot:'s1'|'s2',cid:CfgId) {
+ if(viewData.hosts[machine].configurations[cid]?.backend!=='c-aot')return null;
+ const compiled=viewData.catalogue.filter(w=>viewCell(machine,snapshot,w.id,cid,'compile').st==='ok');
+ return {total:compiled.length,measured:compiled.filter(w=>viewCell(machine,snapshot,w.id,cid,'rssCurrentCompile').st==='ok').length};
+}
+
 export function aggregate(s:Scope,group:PerfGroup,cid:CfgId,col:number):Aggregate|null {
 	const metric=metrics[group][col];
+ if(datasetView.revision){
+  if(!metric)return null;
+  const overview=apiView.aggregates[aggregateKey(s,metric)],card=overview?.cards.find(c=>c.lane===trackId(cid));
+  if(!card||card.status!=='available'||card.value==null)return null;
+  const factor=metric==='rssAverage'?1024**2:metricSelectors[metric as keyof typeof metricSelectors].factor;
+  return {v:card.value/factor,r:card.ratio??Number.NaN,ci:Number.NaN,count:card.count,report:overview.cohort,reports:[]};
+ }
 	const ids=viewData.applicationConfigurations;
 	const visible=ids.filter(id=>!s.hide[id]);
-	const selected=[...new Set([...visible,s.baseline])];
-	const key=JSON.stringify([s.machine,s.snapshot || 's1',s.weighting,selected,cid,group,col]);
+	const selected=[...new Set([...visible,s.baseline])].filter(id=>!!viewData.hosts[s.machine].configurations[id]);
+	const key=JSON.stringify([datasetView.generation,s.machine,s.snapshot || 's1',s.weighting,s.cohortMode||'legacy',selected,cid,group,col]);
 	if(cache.has(key))return cache.get(key)!;
 	const remember=(value:Aggregate|null)=>{if(cache.size>512)cache.clear();cache.set(key,value);return value;};
 	if(group==='mem' && col===3) {
 		const average=(configuration:CfgId)=>{
-			const cells=viewData.catalogue.flatMap(w=>['rssCurrentCompile','rssCurrentInst','rssCurrentFirst','rssCurrent'].map(m=>viewCell(s.machine,s.snapshot || 's1',w.id,configuration,m)))
+			const cells=viewData.catalogue.flatMap(w=>['rssCompile','rssInst','rssFirst','rss'].filter(m=>s.cohortMode!=='shared'||selected.every(c=>{const cell=viewCell(s.machine,s.snapshot || 's1',w.id,c,m);return cell.st==='ok'&&!!cell.report&&cell.v!=null&&Number.isFinite(cell.v)&&cell.v>0})).map(m=>viewCell(s.machine,s.snapshot || 's1',w.id,configuration,m)))
 				.filter(c=>c.st==='ok' && !!c.report && c.v!=null && Number.isFinite(c.v) && c.v>0);
 			return {v:cells.length?cells.reduce((sum,c)=>sum+c.v!,0)/cells.length:Number.NaN,
 				count:cells.length,reports:[...new Set(cells.map(c=>c.report))]};
@@ -57,10 +75,10 @@ export function aggregate(s:Scope,group:PerfGroup,cid:CfgId,col:number):Aggregat
 	const report=[...reports].sort((a,b)=>viewData.reports[b].created.localeCompare(viewData.reports[a].created))[0];
 	const weights=cohortWeights(cohort,s.weighting);
 	const columns=(c:CfgId)=>cohort.map(w=>cell(w.id,c));
-	const numerator=columns(cid),denominator=columns(s.baseline);
+	const numerator=columns(cid),denominator=s.cohortMode==='per-engine'?[]:columns(s.baseline);
 	const mean=(cells:ViewCell[],draw?:number[])=>weightedGeometricMean(cells.map(c=>draw?median(draw.map(j=>c.launchMedians![j])):c.v!),weights);
 	const baselineAvailable=participants.includes(s.baseline);
-	const value=mean(numerator),base=baselineAvailable?mean(denominator):Number.NaN,ratio=cid===s.baseline?1:value/base;
+	const value=mean(numerator),base=s.cohortMode==='per-engine'?(cid===s.baseline?value:aggregate(s,group,s.baseline,col)?.v??Number.NaN):baselineAvailable?mean(denominator):Number.NaN,ratio=cid===s.baseline?1:value/base;
 	const result:Aggregate={v:value,r:ratio,ci:Number.NaN,count:cohort.length,report,reports};
 	const n=Math.min(...numerator.map(c=>c.launchMedians?.length || 0));
 	const d=Math.min(...denominator.map(c=>c.launchMedians?.length || 0));

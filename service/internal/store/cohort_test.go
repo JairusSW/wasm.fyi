@@ -298,3 +298,23 @@ func TestLatestContractSelectionIgnoresUnrequestedLanesAndExcludedWorkloads(t *t
 		})
 	}
 }
+
+func TestRetainedNativeSizeWithoutRecipeRequiresExplicitPolicy(t *testing.T) {
+	s := openTest(t, t.TempDir())
+	defer s.Close()
+	rev := publishCohort(t, s, "retained-size", []testutil.CohortCell{{Runtime: "a", Workload: "fixture/one", Metric: "native.code_size", ExactValue: "12345", MethodUnavailable: true}})
+	scope := cohortScope(t, s, rev)
+	scope.Collectors = "require-recorded"
+	scope.Definitions = "allow-unregistered-native-size"
+	if _, err := s.ComputeCohort(context.Background(), scope); err == nil {
+		t.Fatal("missing recipe admitted without explicit policy")
+	}
+	scope.Collectors = "allow-unrecorded-native-size"
+	c, err := s.ComputeCohort(context.Background(), scope)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(c.Comparison.Populations) != 1 || c.Comparison.Populations[0].Count != 1 || math.Abs(*c.Comparison.Populations[0].Value-12345) > 1e-8 || string(c.Comparison.Populations[0].Members[0].Cell.SourceValue) != `"12345"` {
+		t.Fatal("retained measured size lost", c.Comparison.Populations)
+	}
+}

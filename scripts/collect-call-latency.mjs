@@ -1,3 +1,4 @@
+import {collectCallBatches,callBatchOperations} from './lib/call-timing.mjs';
 import {mkdir,readFile,writeFile,rm,copyFile,readdir} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {harness,site} from './lib/wasmbench.mjs';
@@ -16,9 +17,7 @@ const manifest=join(directory,'calls.json');run('corpus','--suite','calls','--ou
 const reports=[];
 for(const [i,w] of parseCorpusJSON(await readFile(manifest,'utf8')).entries()) {
  const scratch=join(directory,'call-'+i);await mkdir(scratch);const suite=join(scratch,'suite.json');await writeFile(suite,JSON.stringify([w])+'\n');
- const timing=join(scratch,label+'-calls-'+i+'-'+Date.now());
- process.stdout.write(run('run','--archive-tools=true','--suite',suite,'--runtimes',runtimes,'--scenarios','steady','--profile','timing','--launches','1','--samples',String(samples),'--operations','1000000','--warmup','3','--workers','1','--timeout',process.env.WASMBENCH_TIMEOUT || settings.collection.timeout,'--validation-profile','all','--out',timing));
- run('verify','--run',timing);
+ const timing=await collectCallBatches({directory:scratch,evidenceDirectory:join(directory,'logs','call-'+i,'calibration'),prefix:label+'-calls-'+i+'-'+Date.now(),samples,operations:callBatchOperations(w),run:async(out,ops,samples)=>process.stdout.write(run('run','--archive-tools=true','--suite',suite,'--runtimes',runtimes,'--scenarios','steady','--profile','timing','--launches','1','--samples',String(samples),'--operations',String(ops),'--warmup','3','--workers','1','--timeout',process.env.WASMBENCH_TIMEOUT || settings.collection.timeout,'--validation-profile','all','--out',out)),verify:async(out)=>run('verify','--run',out),load:async(out)=>Promise.all((await readdir(join(out,'trials'))).filter(n=>n.endsWith('.json')).map(async(n)=>JSON.parse(await readFile(join(out,'trials',n)))))});
  const report=join(scratch,'report');run('report','--run',timing,'--out',report);run('verify-report','--dir',report);
  const data=JSON.parse(await readFile(join(report,'data.json')));
  if(process.env.WASMBENCH_WAGO_REVISION && selected.includes('wago') && !data.bundle.manifest.lock.runtime_configurations.find(r=>r.id==='wago')?.description.runtime_version.startsWith(process.env.WASMBENCH_WAGO_REVISION+'/'))throw Error('Call adapter does not match pinned Wago revision');

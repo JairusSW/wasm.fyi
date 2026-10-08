@@ -69,7 +69,8 @@
         "format": {
           "enum": [
             "site-v2",
-            "conformance-v1"
+            "conformance-v1",
+            "site-v2-retained"
           ]
         },
         "reportId": {
@@ -87,7 +88,8 @@
         "verification": {
           "enum": [
             "source-recomputed",
-            "source-integrity-checked"
+            "source-integrity-checked",
+            "retained-projection-integrity-checked"
           ]
         },
         "objects": {
@@ -160,11 +162,36 @@
                 "const": "source-recomputed"
               }
             }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "format": {
+                "const": "conformance-v1"
+              }
+            }
           },
-          "else": {
+          "then": {
             "properties": {
               "verification": {
                 "const": "source-integrity-checked"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "format": {
+                "const": "site-v2-retained"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "verification": {
+                "const": "retained-projection-integrity-checked"
               }
             }
           }
@@ -197,6 +224,9 @@
         },
         {
           "$ref": "#/$defs/HistoryCoverageJob"
+        },
+        {
+          "$ref": "#/$defs/RetainedCompletedJob"
         }
       ]
     },
@@ -691,7 +721,10 @@
       "type": "object",
       "properties": {
         "format": {
-          "const": "site-v2"
+          "enum": [
+            "site-v2",
+            "site-v2-retained"
+          ]
         },
         "binarySha256": {
           "$ref": "#/$defs/Digest"
@@ -930,7 +963,7 @@
         "selectors": {
           "type": "array",
           "minItems": 1,
-          "maxItems": 4,
+          "maxItems": 32,
           "items": {
             "$ref": "#/$defs/CohortSelector"
           }
@@ -944,7 +977,10 @@
         "policy": {
           "enum": [
             "shared-geometric-v1",
+            "available-geometric-v1",
+            "shared-geometric-all-v1",
             "available-rss-arithmetic-v1",
+            "matched-rss-arithmetic-all-v1",
             "matched-rss-arithmetic-v1"
           ]
         },
@@ -984,6 +1020,30 @@
             "latest-in-scope",
             "all-exact-contracts"
           ]
+        },
+        "environments": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Digest"
+          }
+        },
+        "methodPolicy": {
+          "enum": [
+            "explicit-source-membership-v1"
+          ]
+        },
+        "feature": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "sourcePolicy": {
+          "enum": [
+            "latest-capture-memory-pass-preferred-v1"
+          ]
         }
       },
       "required": [
@@ -1012,6 +1072,9 @@
         },
         {
           "$ref": "#/$defs/HistoryCoveragePublishedJob"
+        },
+        {
+          "$ref": "#/$defs/RetainedPublishedJob"
         }
       ]
     },
@@ -1249,7 +1312,7 @@
         },
         "cohort": {
           "type": "string",
-          "maxLength": 8192
+          "maxLength": 16384
         },
         "digest": {
           "$ref": "#/$defs/Digest"
@@ -1717,6 +1780,9 @@
         },
         "samplingGroup": {
           "$ref": "#/$defs/Digest"
+        },
+        "environment": {
+          "$ref": "#/$defs/Digest"
         }
       },
       "required": [
@@ -1874,13 +1940,29 @@
             "code-lifetimes.parquet",
             "memory-samples.parquet",
             "memory-observations.parquet",
-            "report.tar.gz"
+            "report.tar.gz",
+            "retained-site-report.json",
+            "retained-producer-data.json",
+            "retained-producer-checksums.json",
+            "retained-trials.json",
+            "retained-throughput.json",
+            "retained-receipt.json",
+            "retained-parent-index.json",
+            "retained-parent-metadata.json",
+            "retained-parent.tar.gz",
+            "retained-index.json",
+            "retained-history.json",
+            "retained-catalog.json",
+            "retained-collection-plan.json",
+            "retained-migration-map.json",
+            "retained-site-metadata.json"
           ]
         },
         "mediaType": {
           "enum": [
             "application/vnd.apache.parquet",
-            "application/gzip"
+            "application/gzip",
+            "application/json"
           ]
         },
         "encoding": {
@@ -1964,7 +2046,11 @@
           "else": {
             "properties": {
               "mediaType": {
-                "const": "application/vnd.apache.parquet"
+                "enum": [
+                  "application/vnd.apache.parquet",
+                  "application/json",
+                  "application/gzip"
+                ]
               }
             },
             "not": {
@@ -1980,6 +2066,72 @@
                   ]
                 }
               ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "enum": [
+                  "retained-site-report.json",
+                  "retained-producer-data.json",
+                  "retained-producer-checksums.json",
+                  "retained-trials.json",
+                  "retained-throughput.json",
+                  "retained-receipt.json",
+                  "retained-parent-index.json",
+                  "retained-parent-metadata.json",
+                  "retained-parent.tar.gz",
+                  "retained-index.json",
+                  "retained-history.json",
+                  "retained-catalog.json",
+                  "retained-collection-plan.json",
+                  "retained-migration-map.json",
+                  "retained-site-metadata.json"
+                ]
+              }
+            }
+          },
+          "then": {
+            "if": {
+              "properties": {
+                "name": {
+                  "const": "retained-parent.tar.gz"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "mediaType": {
+                  "const": "application/gzip"
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "mediaType": {
+                  "const": "application/json"
+                }
+              }
+            }
+          },
+          "else": {
+            "if": {
+              "properties": {
+                "name": {
+                  "not": {
+                    "const": "report.tar.gz"
+                  }
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "mediaType": {
+                  "const": "application/vnd.apache.parquet"
+                }
+              }
             }
           }
         }
@@ -2016,7 +2168,7 @@
           "items": {
             "$ref": "#/$defs/ReportFileRecord"
           },
-          "maxItems": 1000
+          "maxItems": 24
         },
         "nextCursor": {
           "type": "string"
@@ -2574,7 +2726,10 @@
         "policy": {
           "enum": [
             "shared-geometric-v1",
+            "available-geometric-v1",
+            "shared-geometric-all-v1",
             "available-rss-arithmetic-v1",
+            "matched-rss-arithmetic-all-v1",
             "matched-rss-arithmetic-v1"
           ]
         },
@@ -2650,7 +2805,7 @@
         "cohort": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 8192
+          "maxLength": 16384
         },
         "digest": {
           "$ref": "#/$defs/Digest"
@@ -3237,7 +3392,8 @@
           "enum": [
             "source",
             "release",
-            "unknown"
+            "unknown",
+            "fixed-baseline"
           ]
         },
         "release": {
@@ -3929,6 +4085,15 @@
         },
         "limit": {
           "const": 0
+        },
+        "environments": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Digest"
+          }
         }
       },
       "required": [
@@ -4029,7 +4194,7 @@
         "selectors": {
           "type": "array",
           "minItems": 1,
-          "maxItems": 4,
+          "maxItems": 32,
           "items": {
             "$ref": "#/$defs/CohortSelector"
           }
@@ -4043,7 +4208,10 @@
         "policy": {
           "enum": [
             "shared-geometric-v1",
+            "available-geometric-v1",
+            "shared-geometric-all-v1",
             "available-rss-arithmetic-v1",
+            "matched-rss-arithmetic-all-v1",
             "matched-rss-arithmetic-v1"
           ]
         },
@@ -4082,6 +4250,30 @@
           "enum": [
             "latest-in-scope",
             "all-exact-contracts"
+          ]
+        },
+        "environments": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Digest"
+          }
+        },
+        "methodPolicy": {
+          "enum": [
+            "explicit-source-membership-v1"
+          ]
+        },
+        "feature": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "sourcePolicy": {
+          "enum": [
+            "latest-capture-memory-pass-preferred-v1"
           ]
         }
       },
@@ -7703,6 +7895,1192 @@
         "reports",
         "kind",
         "historyCoverage"
+      ],
+      "additionalProperties": false
+    },
+    "MatrixGroupCell": {
+      "type": "object",
+      "properties": {
+        "track": {
+          "$ref": "#/$defs/Digest"
+        },
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "track",
+        "value",
+        "count"
+      ],
+      "additionalProperties": false
+    },
+    "MatrixGroup": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cells": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MatrixGroupCell"
+          }
+        }
+      },
+      "required": [
+        "name",
+        "total",
+        "cells"
+      ],
+      "additionalProperties": false
+    },
+    "MatrixRow": {
+      "type": "object",
+      "properties": {
+        "workload": {
+          "$ref": "#/$defs/WireRecord"
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/WireRecord"
+          }
+        },
+        "group": {
+          "type": "string"
+        },
+        "eligibility": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "status",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "workload",
+        "results",
+        "group",
+        "eligibility"
+      ],
+      "additionalProperties": false
+    },
+    "MatrixPage": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "scope": {
+          "type": "object"
+        },
+        "selectionPolicy": {
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MatrixRow"
+          }
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MatrixGroup"
+          }
+        },
+        "nextCursor": {
+          "type": "string"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "revision",
+        "scope",
+        "selectionPolicy",
+        "items",
+        "groups",
+        "nextCursor",
+        "complete",
+        "total"
+      ],
+      "additionalProperties": false
+    },
+    "AvailableMetric": {
+      "type": "object",
+      "properties": {
+        "metric": {
+          "type": "string"
+        },
+        "scenario": {
+          "type": "string"
+        },
+        "profile": {
+          "type": "string"
+        },
+        "statistic": {
+          "type": "string"
+        },
+        "selectors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CohortSelector"
+          }
+        },
+        "results": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "metric",
+        "scenario",
+        "profile",
+        "statistic",
+        "selectors",
+        "results"
+      ],
+      "additionalProperties": false
+    },
+    "AvailableLane": {
+      "type": "object",
+      "properties": {
+        "track": {
+          "$ref": "#/$defs/Digest"
+        },
+        "configurations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/WireRecord"
+          }
+        },
+        "metrics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AvailableMetric"
+          }
+        },
+        "coverage": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minItems": 5,
+          "maxItems": 5
+        }
+      },
+      "required": [
+        "track",
+        "configurations",
+        "metrics",
+        "coverage"
+      ],
+      "additionalProperties": false
+    },
+    "Availability": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "scope": {
+          "type": "object"
+        },
+        "selectionPolicy": {
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AvailableLane"
+          }
+        },
+        "workloads": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "revision",
+        "scope",
+        "selectionPolicy",
+        "items",
+        "workloads"
+      ],
+      "additionalProperties": false
+    },
+    "FrontendFeatureContract": {
+      "type": "object",
+      "properties": {
+        "workload": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "passed",
+            "failed",
+            "unsupported",
+            "unavailable"
+          ]
+        },
+        "scope": {
+          "type": "string"
+        },
+        "report": {
+          "$ref": "#/$defs/Digest"
+        },
+        "probe": {
+          "$ref": "#/$defs/Digest"
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "workload",
+        "status",
+        "scope",
+        "report",
+        "probe",
+        "reasons"
+      ],
+      "additionalProperties": false
+    },
+    "FrontendFeatureFamily": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pass": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unsupported": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "compiledOnly": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "executed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reports": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Digest"
+          }
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "contracts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FrontendFeatureContract"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "total",
+        "pass",
+        "failed",
+        "unsupported",
+        "compiledOnly",
+        "executed",
+        "reports",
+        "reasons",
+        "contracts"
+      ],
+      "additionalProperties": false
+    },
+    "FrontendFeatureVersion": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "identity": {
+          "$ref": "#/$defs/Digest"
+        },
+        "channel": {
+          "enum": [
+            "stable",
+            "development"
+          ]
+        },
+        "version": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "revision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "collectedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "description": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "features": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FrontendFeatureFamily"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "identity",
+        "channel",
+        "version",
+        "source",
+        "revision",
+        "collectedAt",
+        "description",
+        "features"
+      ],
+      "additionalProperties": false
+    },
+    "FrontendFeatureSummary": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FrontendFeatureVersion"
+          }
+        },
+        "policy": {
+          "const": "recorded-feature-trials-v1"
+        },
+        "selectionPolicy": {
+          "const": "latest-per-exact-configuration-workload-v1"
+        }
+      },
+      "required": [
+        "revision",
+        "items",
+        "policy",
+        "selectionPolicy"
+      ],
+      "additionalProperties": false
+    },
+    "TimelineLane": {
+      "type": "object",
+      "properties": {
+        "track": {
+          "$ref": "#/$defs/Digest"
+        },
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "measured": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reference": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "version": {
+          "type": "string"
+        },
+        "configuration": {
+          "type": "string"
+        },
+        "collectedAt": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        },
+        "release": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HistoryRelease"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reports": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Digest"
+          }
+        },
+        "evidence": {
+          "type": "string"
+        },
+        "sourceReports": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "track",
+        "value",
+        "measured",
+        "reference",
+        "version",
+        "configuration",
+        "collectedAt",
+        "role",
+        "release",
+        "reports",
+        "evidence",
+        "sourceReports"
+      ],
+      "additionalProperties": false
+    },
+    "TimelinePoint": {
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "lanes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TimelineLane"
+          }
+        }
+      },
+      "required": [
+        "date",
+        "lanes"
+      ],
+      "additionalProperties": false
+    },
+    "TimelineChange": {
+      "type": "object",
+      "properties": {
+        "track": {
+          "$ref": "#/$defs/Digest"
+        },
+        "before": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "after": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "track",
+        "before",
+        "after",
+        "count"
+      ],
+      "additionalProperties": false
+    },
+    "HistoryTimeline": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TimelinePoint"
+          }
+        },
+        "changes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TimelineChange"
+          }
+        },
+        "policy": {
+          "const": "declared-reference-geometric-v1"
+        },
+        "timeAxis": {
+          "const": "publisher-declared-target-date"
+        },
+        "uncertainty": {
+          "const": "unavailable"
+        },
+        "reference": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "weighting": {
+          "enum": [
+            "corpus",
+            "workload"
+          ]
+        },
+        "workloads": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "workload": {
+                "type": "string"
+              },
+              "group": {
+                "type": "string"
+              },
+              "before": {
+                "$ref": "#/$defs/WireRecord"
+              },
+              "after": {
+                "$ref": "#/$defs/WireRecord"
+              },
+              "ratio": {
+                "type": "number"
+              },
+              "reused": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "workload",
+              "group",
+              "before",
+              "after",
+              "ratio",
+              "reused"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "nextCursor": {
+          "type": "string"
+        },
+        "summaryCounts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "required": [
+        "revision",
+        "items",
+        "changes",
+        "policy",
+        "timeAxis",
+        "uncertainty",
+        "reference",
+        "weighting",
+        "workloads",
+        "total",
+        "nextCursor",
+        "summaryCounts"
+      ],
+      "additionalProperties": false
+    },
+    "RetainedCompletedJob": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 3
+        },
+        "session": {
+          "type": "string"
+        },
+        "machine": {
+          "type": "string"
+        },
+        "corpus": {
+          "type": "string"
+        },
+        "attempt": {
+          "type": "string"
+        },
+        "plan": {
+          "$ref": "#/$defs/Digest"
+        },
+        "status": {
+          "const": "completed"
+        },
+        "exports": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/ExportReference"
+              },
+              {
+                "properties": {
+                  "manifest": {
+                    "properties": {
+                      "format": {
+                        "const": "site-v2-retained"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 64
+        },
+        "kind": {
+          "enum": [
+            "retained-measurement",
+            "retained-history"
+          ]
+        },
+        "history": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "$ref": "#/$defs/HistoryBinding"
+          }
+        }
+      },
+      "required": [
+        "schema",
+        "session",
+        "machine",
+        "corpus",
+        "attempt",
+        "plan",
+        "status",
+        "exports",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "RetainedPublishedJob": {
+      "type": "object",
+      "properties": {
+        "session": {
+          "type": "string"
+        },
+        "machine": {
+          "type": "string"
+        },
+        "corpus": {
+          "type": "string"
+        },
+        "attempt": {
+          "type": "string"
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        },
+        "plan": {
+          "$ref": "#/$defs/Digest"
+        },
+        "collectionStatus": {
+          "const": "completed"
+        },
+        "publicationStatus": {
+          "const": "published"
+        },
+        "publishedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reports": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/Digest"
+          }
+        },
+        "kind": {
+          "enum": [
+            "retained-measurement",
+            "retained-history"
+          ]
+        },
+        "historyBindings": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "session",
+        "machine",
+        "corpus",
+        "attempt",
+        "id",
+        "plan",
+        "collectionStatus",
+        "publicationStatus",
+        "publishedAt",
+        "reports",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "CorpusResponse": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "workload": {
+          "type": "string"
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/WireRecord"
+          },
+          "maxItems": 512
+        },
+        "eligibility": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "status",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "configurations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/WireRecord"
+          },
+          "maxItems": 512
+        },
+        "contracts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/WireRecord"
+          },
+          "maxItems": 512
+        },
+        "selectionPolicy": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "revision",
+        "workload",
+        "results",
+        "eligibility",
+        "configurations",
+        "contracts",
+        "selectionPolicy"
+      ],
+      "additionalProperties": false
+    },
+    "InspectionItem": {
+      "type": "object",
+      "properties": {
+        "measurement": {
+          "$ref": "#/$defs/WireRecord"
+        },
+        "artifact": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/WireRecord"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "content": {
+          "type": "string"
+        },
+        "inspection": {
+          "type": "string"
+        },
+        "bytes": {
+          "type": "string"
+        },
+        "functions": {
+          "type": "string"
+        },
+        "disassembly": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "measurement",
+        "artifact",
+        "content",
+        "inspection"
+      ],
+      "additionalProperties": false
+    },
+    "InspectionResponse": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Digest"
+        },
+        "workload": {
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/InspectionItem"
+          },
+          "maxItems": 64
+        },
+        "eligibility": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "status",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "selectionPolicy": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "revision",
+        "workload",
+        "items",
+        "eligibility",
+        "selectionPolicy"
+      ],
+      "additionalProperties": false
+    },
+    "LatencyPlatform": {
+      "type": "object",
+      "properties": {
+        "os": {
+          "type": "string"
+        },
+        "arch": {
+          "type": "string"
+        },
+        "cpu": {
+          "type": "string"
+        },
+        "cores": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "kernel": {
+          "type": "string"
+        },
+        "memoryBytes": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "os",
+        "arch",
+        "cpu",
+        "cores",
+        "kernel"
+      ],
+      "additionalProperties": false
+    },
+    "LatencyRow": {
+      "type": "object",
+      "properties": {
+        "workload": {
+          "type": "string"
+        },
+        "wasm": {
+          "type": "string"
+        },
+        "artifactSha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "contractSha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "engine": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "backend": {
+          "type": "string"
+        },
+        "phase": {
+          "enum": [
+            "compile",
+            "instantiate",
+            "first-call",
+            "steady"
+          ]
+        },
+        "status": {
+          "enum": [
+            "ok",
+            "failed",
+            "unsupported",
+            "disabled",
+            "not-measured"
+          ]
+        },
+        "latencyNs": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "peakRssBytes": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "codeBytes": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "memoryStatus": {
+          "enum": [
+            "ok",
+            "failed",
+            "unsupported",
+            "disabled",
+            "not-measured"
+          ]
+        },
+        "codeStatus": {
+          "enum": [
+            "ok",
+            "failed",
+            "unsupported",
+            "disabled",
+            "not-measured"
+          ]
+        }
+      },
+      "required": [
+        "workload",
+        "wasm",
+        "artifactSha256",
+        "contractSha256",
+        "engine",
+        "version",
+        "backend",
+        "phase",
+        "status",
+        "latencyNs"
+      ],
+      "additionalProperties": false
+    },
+    "LatencyCapture": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 1
+        },
+        "capturedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "platform": {
+          "$ref": "#/$defs/LatencyPlatform"
+        },
+        "results": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4096,
+          "items": {
+            "$ref": "#/$defs/LatencyRow"
+          }
+        }
+      },
+      "required": [
+        "schema",
+        "capturedAt",
+        "platform",
+        "results"
+      ],
+      "additionalProperties": false
+    },
+    "LatencyPlatformChoice": {
+      "type": "object",
+      "properties": {
+        "os": {
+          "type": "string"
+        },
+        "arch": {
+          "type": "string"
+        },
+        "cpu": {
+          "type": "string"
+        },
+        "cores": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "kernel": {
+          "type": "string"
+        },
+        "memoryBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "id": {
+          "$ref": "#/$defs/Digest"
+        }
+      },
+      "required": [
+        "id",
+        "os",
+        "arch",
+        "cpu",
+        "cores",
+        "kernel"
+      ],
+      "additionalProperties": false
+    },
+    "LatencyPage": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 1
+        },
+        "revision": {
+          "type": "string"
+        },
+        "platform": {
+          "type": "string"
+        },
+        "platforms": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LatencyPlatformChoice"
+          }
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LatencyRow"
+          }
+        },
+        "total": {
+          "type": "integer"
+        },
+        "nextOffset": {
+          "type": "integer"
+        },
+        "complete": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "schema",
+        "revision",
+        "platform",
+        "platforms",
+        "items",
+        "total",
+        "nextOffset",
+        "complete"
       ],
       "additionalProperties": false
     }

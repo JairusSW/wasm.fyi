@@ -13,7 +13,7 @@ func ValidateMetricBinding(result Result, data json.RawMessage) error {
 		return Invalid("result metric differs from definition")
 	}
 	if result.MetricDefinitionStatus == "unregistered" {
-		if definition.Status != "unregistered" || result.Metric != "native.code_size" || definition.Reason == "" {
+		if definition.Status != "unregistered" || (result.Metric != "native.code_size" && result.Metric != "process_tree.rss.mean") || definition.Reason == "" {
 			return Invalid("invalid unregistered metric marker")
 		}
 		return nil

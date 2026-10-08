@@ -149,7 +149,7 @@ await processLock(join(site,'.wasmbench/performance-history.lock'),async()=>{
       const invoke=(...args)=>command(controller,args,{cwd:root,env,stdio:'inherit'});
       try {
         // Unsupported binding code is a pending task, not an engine failure.
-        if(!['wago','wazero','wasmtime','wasmi','v8','jsc','deno','wasm3','wamr','wasmer','wavm','spidermonkey'].includes(job.release.engine)) {
+        if(!['wago','wazero','wasmtime','wasmi','v8','jsc','wasm3','wamr','wasmer','wavm','spidermonkey'].includes(job.release.engine)) {
           entry.status='pending-binding';entry.reason='A release-specific performance build binding is required.';await save();continue;
         }
         await copyHistoricalHarness(base,root);

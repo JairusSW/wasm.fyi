@@ -8,7 +8,7 @@
 	import BarRow from '../BarRow.svelte';
 	import RtLabel from '../RtLabel.svelte';
 
-	const GC_W=featureContracts('gc').map(w=>[w.id,w.purpose || '',1] as [string,string,number]);
+	const GC_W=$derived(featureContracts('gc').map(w=>[w.id,w.purpose || '',1] as [string,string,number]));
   const GC_D=$derived(Object.fromEntries(CFG.map(c=>[c.id,{thr:familyValue(ui.scope,'gc',c.id),ratio:familyValue(ui.scope,'gc',c.id,'rss'),st:'not measured',col:'not collected'}])));
   const vis = $derived(CFG.filter((c) => isVisible(ui.scope, c)));
 	const thrMax = $derived(Math.max(...vis.map((c) => GC_D[c.id].thr || 0), 1));

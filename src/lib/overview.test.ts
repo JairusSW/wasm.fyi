@@ -6,7 +6,7 @@ describe('benchmark overview categories', () => {
 		const categories = Object.entries(OV);
 		const labels = categories.map(([, category]) => category.label);
 		expect(labels.indexOf('Call latency')).toBe(labels.indexOf('Latency') + 1);
-		expect(OV.calls.cols).toEqual(['Wasm → host', 'Host → Wasm', 'Round trip']);
+		expect(OV.calls.cols).toEqual(['Wasm → host → Wasm', 'Host → Wasm → host']);
 		expect(OV.lat.cols).toEqual(['Compilation', 'Instantiation', 'First call', 'Steady execution']);
 	});
 });

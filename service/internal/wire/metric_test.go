@@ -18,3 +18,15 @@ func TestMetricBindingDoesNotPermitLabelsToReplaceDefinitions(t *testing.T) {
 		t.Fatal(e)
 	}
 }
+
+func TestRetainedProcessTreeMetricPreservesRegistryOmission(t *testing.T) {
+	r := Result{Metric: "process_tree.rss.mean", MetricDefinitionStatus: "unregistered"}
+	marker := []byte(`{"name":"process_tree.rss.mean","status":"unregistered","reason":"source registry omission"}`)
+	if err := ValidateMetricBinding(r, marker); err != nil {
+		t.Fatal(err)
+	}
+	r.MetricDefinitionStatus = "available"
+	if ValidateMetricBinding(r, marker) == nil {
+		t.Fatal("omission promoted to registered definition")
+	}
+}

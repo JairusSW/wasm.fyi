@@ -1,3 +1,4 @@
+import {CALL_LOOP_WORKLOAD,CALL_LOOP_ITERATIONS,CALL_MIN_BATCH_NS} from './call-paths';
 /** Measured-data boundary. View slots and preview names are never runtime identities. */
 export interface MeasuredHost { hostname: string; os: string; arch: string }
 export interface SnapshotEntry {
@@ -16,7 +17,7 @@ export interface MeasuredWorkload {
 export interface TimingSummary {
 	runtime: string; workload: string; scenario: string; profile: string;
 	outcomes: Record<string, number>; latency_status: string;
-	median_ns_per_operation: number | null; ci95_low?: number | null; ci95_high?: number | null;
+	median_ns_per_operation: number | null; min_batch_elapsed_ns?:number; ci95_low?: number | null; ci95_high?: number | null;
 	independent_launches: number; sample_count: number;
 }
 export interface MeasuredSnapshot {
@@ -66,7 +67,7 @@ export function measuredHistory(history: MeasuredWeeklyHistory, snapshots: Measu
 }
 export interface EvidenceReference { report: string; runId: string; collectedAt: string; evidence: string; sha256: string }
 export type MeasuredCell =
-	| { status: 'ok'; value: number; unit: 'ns/invocation' | 'bytes'; interval?: [number, number]; evidence: EvidenceReference }
+	| { status: 'ok'; value: number; unit: 'ns/invocation' | 'ns/cycle' | 'bytes'; interval?: [number, number]; evidence: EvidenceReference }
 	| { status: 'unsupported' | 'failed' | 'not-measured' | 'not-collected' | 'not-applicable'; reason: string; evidence?: EvidenceReference };
 
 export const measuredHostKey = (host: MeasuredHost) => JSON.stringify([host.hostname, host.os, host.arch]);
@@ -111,7 +112,15 @@ export function measuredTiming(snapshot: MeasuredSnapshot, runtime: string, work
 	const summary = snapshot.summaries.find(item => item.runtime === runtime && item.workload === workload && item.scenario === scenario && item.profile === 'timing')!;
 	if (!finite(summary.median_ns_per_operation) || summary.latency_status === 'failed_cell' || summary.sample_count <= 0 || summary.independent_launches <= 0) throw new Error('Successful timing lacks valid measured samples');
 	if (summary.median_ns_per_operation <= 0) return {status: 'not-measured', reason: 'The operation completed below the timing clock resolution.', evidence: reference(snapshot)};
-	return { status: 'ok', value: summary.median_ns_per_operation, unit: 'ns/invocation', interval: interval(summary.ci95_low, summary.ci95_high), evidence: reference(snapshot) };
+	const loop=workload===CALL_LOOP_WORKLOAD && ['steady','first-call'].includes(scenario);
+ const units=loop?CALL_LOOP_ITERATIONS:1;
+ if(loop){
+  const contract=snapshot.workloads.find(w=>w.id===workload)!;
+  if(contract.units_per_invocation!==units || contract.work_unit!=='wasm-host-wasm_cycle')throw Error('Callback-loop count differs from its recorded work units');
+  if(scenario==='steady' && (summary.min_batch_elapsed_ns==null || summary.min_batch_elapsed_ns<CALL_MIN_BATCH_NS))return {status:'not-measured',reason:'Callback-loop batches must contain at least 0.5 ms of timed work.',evidence:reference(snapshot)};
+ }
+ const bounds=interval(summary.ci95_low,summary.ci95_high);
+ return { status:'ok', value:summary.median_ns_per_operation/units, unit:loop?'ns/cycle':'ns/invocation', interval:bounds?.map(v=>v/units) as [number,number]|undefined, evidence:reference(snapshot) };
 }
 
 /** Exact observer and scenario only: heap, RSS, PSS, totals and deltas are different metrics. */

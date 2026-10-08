@@ -274,3 +274,51 @@ func TestAggregatePrecisionIncludesBaselineAndExcludedInputs(t *testing.T) {
 		}
 	}
 }
+
+func TestPerEngineSuccessfulPopulation(t *testing.T) {
+	one, nine := 1.0, 9.0
+	cell := func(lane string, value *float64) Cell {
+		return Cell{Configuration: lane, Status: "ok", Value: value, Report: "report", Result: lane}
+	}
+	input := Input{Configurations: []string{"a", "b"}, Baseline: "a", Weighting: "workload", Policy: "available-geometric-v1", Rows: []Row{
+		{Key: "shared", Workload: "shared", Group: "corpus", Cells: []Cell{cell("a", &one), cell("b", &nine)}},
+		{Key: "a-only", Workload: "a-only", Group: "corpus", Cells: []Cell{cell("a", &nine)}},
+	}}
+	out, err := Compute(context.Background(), input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out.Populations[0].Count != 2 || math.Abs(*out.Populations[0].Value-3) > 1e-12 || out.Populations[1].Count != 1 {
+		t.Fatalf("unexpected per-engine populations: %+v", out.Populations)
+	}
+	input.Policy = "shared-geometric-v1"
+	out, err = Compute(context.Background(), input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out.Populations[0].Count != 1 || *out.Populations[0].Value != 1 || out.Populations[1].Count != 1 {
+		t.Fatalf("unexpected shared populations: %+v", out.Populations)
+	}
+	input.Policy = "available-geometric-v1"
+	input.Weighting = "corpus"
+	if _, err = Compute(context.Background(), input); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestAllEnginesIncludesUnavailableLane(t *testing.T) {
+	value := 2.0
+	input := Input{Configurations: []string{"a", "b"}, Baseline: "a", Weighting: "workload", Policy: "shared-geometric-all-v1", Rows: []Row{{Key: "one", Workload: "one", Group: "corpus", Cells: []Cell{{Configuration: "a", Status: "ok", Value: &value, Report: "report", Result: "result"}}}}}
+	out, err := Compute(context.Background(), input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out.Populations[0].Count != 0 || out.Populations[0].Value != nil {
+		t.Fatal("unavailable engine must prevent a shared passed population")
+	}
+	input.Policy = "available-geometric-v1"
+	out, err = Compute(context.Background(), input)
+	if err != nil || out.Populations[0].Count != 1 {
+		t.Fatalf("per-engine population lost successful result: %+v %v", out, err)
+	}
+}

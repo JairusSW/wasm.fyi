@@ -84,6 +84,7 @@ func (s *Store) backupReachability(ctx context.Context) (map[string]bool, map[st
 }
 
 func (s *Store) reachableScopes(ctx context.Context, includeStaging bool, required map[string]bool) (map[string]bool, error) {
+	s = s.validationStore()
 	var nativeProofs nativeValidationPass
 	if e := ctx.Err(); e != nil {
 		return nil, e
@@ -427,7 +428,7 @@ func (s *Store) reachableScopes(ctx context.Context, includeStaging bool, requir
 			featureIndexProofs[proof] = count
 			return nil
 		case "report-files":
-			if set.Count > 9 {
+			if set.Count > wire.MaxReportFiles {
 				return ErrLimit
 			}
 			return markMap(set.Root, "posting-report-file", func(name, id string) error {

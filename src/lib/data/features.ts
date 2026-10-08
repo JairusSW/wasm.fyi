@@ -1,4 +1,5 @@
 // Representative feature corpus identities; results come from sealed reports.
+import {liveArray} from "../api/live-array";
 import { viewData } from "../view-data";
 import type { CompatSection, FeatureRow, Proposal, ProposalId, SupportCode } from './types';
 import proposalSnapshot from './proposals.json';
@@ -67,17 +68,19 @@ export const PROPS: Record<ProposalId, Proposal> = {
   memory64: { title: 'Memory64', long: '64-bit linear memory addressing', q: 'What does 64-bit addressing cost compared to a matched 32-bit build?', repo: 'github.com/WebAssembly/memory64', ver: 'WebAssembly 3.0', hist: [['2018', 'Proposal started'], ['2021', 'Phase 3 — implementation'], ['2025', 'Phase 4 and WebAssembly 3.0']], tools: [['Emscripten', 'y', '-sMEMORY64'], ['clang / wasi-sdk', 'y', '--target=wasm64'], ['rustc', 'p', 'wasm64-unknown-unknown (tier 3)'], ['Binaryen', 'y', '--enable-memory64'], ['Go', 'n', '']] },
   threads: { title: 'Threads', long: 'Shared memory and atomics', q: 'How does throughput scale with worker count, and what does each worker cost?', repo: 'github.com/WebAssembly/threads', ver: 'Phase 4 (not yet in a release)', hist: [['2017', 'Proposal started'], ['2019', 'Shipped in Chrome 74'], ['2020', 'Shipped in Firefox 79'], ['2023', 'Phase 4']], tools: [['Emscripten', 'y', '-pthread'], ['clang / wasi-sdk', 'y', 'wasm32-wasip1-threads'], ['rustc', 'p', 'nightly, build-std'], ['Binaryen', 'y', '--enable-threads'], ['Go', 'n', '']] },
 };
-const familyIds=[...new Set(viewData.catalogue.filter(w=>w.id.startsWith('features/')).map(w=>w.id.split('/')[1]))];
-export const COMPAT: CompatSection[] = [
+export const COMPAT:CompatSection[]=liveArray(()=>{
+ const sections:CompatSection[]=[
   {sec:'Core instruction corpus',unit:'contracts',suite:'Original MIT corpus · independent exact oracles',fams:[]},
   {sec:'Feature and interface corpus',unit:'contracts',suite:'Original MIT corpus · independent exact oracles',fams:[]}
-];
-for(const id of familyIds) {
-  const workloads=viewData.catalogue.filter(w=>w.id.startsWith('features/'+id+'/') && !w.baseline);
-  const metadata=[...FEATS, ...CORPUS_FEATS].find(f=>f.id===id);
-  COMPAT[id.startsWith('core-')?0:1].fams.push({id,name:metadata?.name || id,total:workloads.length,page:metadata?.page,
-    kids:workloads.map(w=>[w.id,1]),r:[]});
-}
+ ];
+ const families=[...new Set(viewData.catalogue.filter(w=>w.id.startsWith('features/')).map(w=>w.id.split('/')[1]))];
+ for(const id of families){
+  const workloads=viewData.catalogue.filter(w=>w.id.startsWith('features/'+id+'/')&&!w.baseline);
+  const metadata=[...FEATS,...CORPUS_FEATS].find(f=>f.id===id);
+  sections[id.startsWith('core-')?0:1].fams.push({id,name:metadata?.name||id,total:workloads.length,page:metadata?.page,kids:workloads.map(w=>[w.id,1]),r:[]});
+ }
+ return sections;
+});
 // Browser release histories and uncollected engine defaults are not inferred
 // from a Node embedding or a configuration-specific corpus run.
 for(const f of [...FEATS, ...CORPUS_FEATS]){f.b=['?','?','?'];f.r='?????????';}

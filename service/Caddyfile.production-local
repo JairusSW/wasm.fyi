@@ -1,0 +1,12 @@
+{
+	admin off
+	grace_period 5s
+}
+
+http://localhost:8080 {
+	bind 127.0.0.1 ::1
+	encode gzip
+	reverse_proxy 127.0.0.1:8090 {
+		header_up X-Real-IP {remote_host}
+	}
+}

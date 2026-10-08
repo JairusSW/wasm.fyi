@@ -28,14 +28,15 @@ func (s *Store) openObject(id string) (*os.File, error) {
 	if !wire.IsHash(id) {
 		return nil, wire.Invalid("invalid digest")
 	}
-	info, e := s.objects.Lstat(id)
+	path := s.offlinePath(id)
+	info, e := s.objects.Lstat(path)
 	if e != nil {
 		return nil, e
 	}
 	if !info.Mode().IsRegular() || info.Size() > wire.BlobBytes {
 		return nil, fmt.Errorf("invalid content object %s", id)
 	}
-	f, e := s.objects.Open(id)
+	f, e := s.objects.Open(path)
 	if e != nil {
 		return nil, e
 	}
@@ -61,7 +62,11 @@ func (s *Store) Install(id string, r io.Reader) error {
 	if len(b) > wire.ChunkBytes || wire.Hash(b) != id {
 		return wire.Invalid("content digest or size mismatch")
 	}
-	return s.installBytes(id, b)
+	if err := s.installBytes(id, b); err != nil {
+		return err
+	}
+	s.protectOfflineInput(id)
+	return nil
 }
 func (s *Store) installBytes(id string, b []byte) error {
 	return s.installRepresentation(id, b, wire.ChunkBytes)
@@ -74,7 +79,11 @@ func (s *Store) InstallBinary(id string, r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	return s.installRepresentation(id, b, wire.BlobBytes)
+	if err := s.installRepresentation(id, b, wire.BlobBytes); err != nil {
+		return err
+	}
+	s.protectOfflineInput(id)
+	return nil
 }
 func (s *Store) installRepresentation(id string, b []byte, ceiling int) error {
 	s.contentMu.Lock()
@@ -85,6 +94,10 @@ func (s *Store) installRepresentation(id string, b []byte, ceiling int) error {
 	if old, e := s.representation(id, ceiling); e == nil {
 		if !bytes.Equal(old, b) {
 			return fmt.Errorf("corrupt existing content")
+		}
+		if s.offline {
+			s.stageOffline(id, s.offlinePath(id))
+			return nil
 		}
 		// An earlier directory-sync error must not turn a retry into an assertion
 		// that an existing filename is durable without syncing it again.
@@ -112,10 +125,24 @@ func (s *Store) installRepresentation(id string, b []byte, ceiling int) error {
 	if e != nil {
 		return e
 	}
-	defer os.Remove(f.Name())
+	keep := false
+	defer func() {
+		if !keep {
+			os.Remove(f.Name())
+		}
+	}()
 	if _, e = f.Write(b); e != nil {
 		f.Close()
 		return e
+	}
+	if s.offline {
+		if e = f.Close(); e != nil {
+			return e
+		}
+		s.stageOffline(id, filepath.Base(f.Name()))
+		s.contentBytes += int64(len(b))
+		keep = true
+		return nil
 	}
 	if e = f.Sync(); e != nil {
 		f.Close()
@@ -164,6 +191,9 @@ func (s *Store) representation(id string, ceiling int) ([]byte, error) {
 	return s.representationContext(context.Background(), id, ceiling)
 }
 func (s *Store) representationContext(ctx context.Context, id string, ceiling int) ([]byte, error) {
+	if s.validationReader != nil {
+		return s.validationReader(ctx, id, ceiling)
+	}
 	if e := ctx.Err(); e != nil {
 		return nil, e
 	}

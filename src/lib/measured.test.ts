@@ -21,6 +21,15 @@ const feature:MeasuredSnapshot={id:'fixture',runId:'fixture-run',created:'2026-1
  codeRecords:ids.filter(id=>id!=='wazero').map(runtime=>({runtime,workload:item.id,status:'available',image_bytes:100}))};
 
 describe('measured view boundary', () => {
+ it('normalizes callback-loop latency and bounds while requiring long enough batches',()=>{
+  const copy=structuredClone(feature), id='mechanisms/wasm-host-wasm-loop';
+  copy.workloads.push({...item,id,work_unit:'wasm-host-wasm_cycle',units_per_invocation:1000000});
+  copy.summaries.push({...copy.summaries[0],runtime:'wasmtime',workload:id,scenario:'steady',median_ns_per_operation:2000000,ci95_low:1500000,ci95_high:2500000,min_batch_elapsed_ns:500000});
+  expect(measuredTiming(copy,'wasmtime',id,item.sha256,'steady')).toMatchObject({status:'ok',value:2,interval:[1.5,2.5],unit:'ns/cycle'});
+  copy.summaries.at(-1)!.min_batch_elapsed_ns=499999;
+  expect(measuredTiming(copy,'wasmtime',id,item.sha256,'steady').status).toBe('not-measured');
+ });
+
 	it('reads actual host-specific timing and keeps engine IDs distinct from preview slots', () => {
 		const summary = feature.summaries.find(summary => summary.runtime === 'wasmtime' && summary.workload === item.id && summary.scenario === 'steady')!;
 		const cell = measuredTiming(feature, 'wasmtime', item.id, item.sha256, 'steady');

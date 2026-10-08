@@ -1,5 +1,5 @@
 import {stageHistoryArchive} from './stage-history-archive.mjs';
-import {cloneCopy as cp} from './copy.mjs';
+import {cloneCopy as cp, cloneFiles} from './copy.mjs';
 import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -79,7 +79,9 @@ export async function stageAuxiliary(destination) {
     if (!await exists(join(source,'index.json'))) continue;
     const index=await validateData(source);
     const weekly=JSON.parse(await readFile(join(source,'weekly.json'),'utf8'));
-    const ids=new Set(index.reports.map(r=>r.runId));
+    const reportsByRunId=new Map();
+    for(const report of index.reports)if(!reportsByRunId.has(report.runId))reportsByRunId.set(report.runId,report);
+    const ids=new Set(reportsByRunId.keys());
     assert(weekly.results.length===weekly.weeks.length,'Incomplete weekly inventory');
     for(const week of weekly.results) {
       if(week.engines){
@@ -90,7 +92,7 @@ export async function stageAuxiliary(destination) {
       assert(week.status==='measured' && receipts.length,'Missing historical measured evidence');
       for(const receipt of receipts) {
         assert(ids.has(receipt.runId),'Missing historical corpus shard');
-        const report=index.reports.find(r=>r.runId===receipt.runId);
+        const report=reportsByRunId.get(receipt.runId);
         assert.equal(report.created,receipt.collectedAt,'Backdated historical evidence');
         assert.equal(report.sourceReportSha256,receipt.reportSha256,'Historical source digest mismatch');
         assert(report.runtimes.some(r=>r.id==='wago' && r.description.runtime_version.startsWith(week.revision+'/')),'Historical revision mismatch');
@@ -100,7 +102,7 @@ export async function stageAuxiliary(destination) {
       assert(pin.status==='measured' && pin.reports?.length,'Missing per-engine historical evidence');
       assert(/^[a-f0-9]{40}$/.test(pin.revision),'Missing exact historical source revision');
       for(const receipt of pin.reports) {
-        const report=index.reports.find(r=>r.runId===receipt.runId);
+        const report=reportsByRunId.get(receipt.runId);
         assert(report,'Missing per-engine historical corpus shard');
         assert.equal(report.created,receipt.collectedAt,'Backdated engine history');
         assert.equal(report.sourceReportSha256,receipt.reportSha256,'Engine history source digest mismatch');
@@ -113,7 +115,7 @@ export async function stageAuxiliary(destination) {
     // Keep the comparison baseline with history; daily retention cannot remove it.
     assert(weekly.baseline && index.reports.some(r=>r.id===weekly.baseline.report && r.evidenceSha256===weekly.baseline.evidenceSha256),'Missing pinned historical comparison baseline');
     const target=join(destination,targetName);await mkdir(target,{recursive:true});
-    if(!await stageHistoryArchive(source,target,index))for(const name of [...datasetFiles(index),'weekly.json'])await cp(join(source,name),join(target,name));
+    if(!await stageHistoryArchive(source,target,index))await cloneFiles(source,target,[...datasetFiles(index),'weekly.json']);
   }
   const source=join(site,'data/threads');
   if(await exists(source)) {

@@ -199,16 +199,24 @@ func (j Job) Validate() error {
 	if e := j.ValidateHistory(); e != nil {
 		return e
 	}
+	retained := j.Schema == 3 && (j.Kind == "retained-measurement" || j.Kind == "retained-history")
 	conformance := j.Schema == 3 && j.Kind == "conformance"
 	coverage := j.Schema == 3 && j.Kind == "history-coverage"
 	validProducer := j.Schema == 2 && j.Kind == "" && IsHash(j.ParentBundleSHA256) && revisionPattern.MatchString(j.ConfiguredHarnessPin)
+	if retained {
+		validProducer = j.ParentBundleSHA256 == "" && j.ConfiguredHarnessPin == "" && j.ParentArchive == nil && j.SessionPlan == nil
+	}
 	if conformance || coverage {
 		validProducer = j.ParentBundleSHA256 == "" && j.ConfiguredHarnessPin == "" && j.ParentArchive == nil && j.SessionPlan == nil && len(j.History) == 0
 	}
 	if !coverage && len(j.HistoryCoverage) != 0 {
 		return Invalid("history coverage in measurement or suite job")
 	}
-	validExports := len(j.Exports) > 0 && len(j.Exports) <= 8
+	exportLimit := 8
+	if retained {
+		exportLimit = 64
+	}
+	validExports := len(j.Exports) > 0 && len(j.Exports) <= exportLimit
 	if coverage {
 		validExports = j.Exports != nil && len(j.Exports) == 0 && len(j.HistoryCoverage) > 0 && len(j.HistoryCoverage) <= 100
 	}
@@ -259,6 +267,9 @@ func (j Job) Validate() error {
 	for _, e := range j.Exports {
 		m := e.Manifest
 		validFormat := m.Format == "site-v2" && m.Verification == "source-recomputed"
+		if retained {
+			validFormat = m.Format == "site-v2-retained" && m.Verification == "retained-projection-integrity-checked"
+		}
 		if conformance {
 			validFormat = m.Format == "conformance-v1" && m.Verification == "source-integrity-checked"
 		}

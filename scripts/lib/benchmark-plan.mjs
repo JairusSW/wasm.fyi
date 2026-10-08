@@ -1,5 +1,5 @@
 import { readFile, writeFile, mkdir, rename, copyFile } from "node:fs/promises";
-import { join, resolve, dirname, relative } from "node:path";
+import { join, resolve, dirname, relative, basename } from "node:path";
 import { digest } from "./wasmbench.mjs";
 import { parseCorpusJSON, rebaseRetainedWorkload } from "./corpus.mjs";
 
@@ -47,7 +47,8 @@ export function selectWorkloads(
     throw Error("Kind must be non-feature, features, or both");
   const eligible = workloads.filter(
     (w) =>
-      kind === "both" || (kind === "features") === w.id.startsWith("features/"),
+      w.abi !== "wasi-command" && !/^features\/wasi(?:-|\/)/.test(w.id) &&
+      (kind === "both" || (kind === "features") === w.id.startsWith("features/")),
   );
   if (!corpus.length) return eligible;
   const matches = (w, selector) =>
@@ -77,6 +78,7 @@ export async function cacheWorkloads(root, workloads) {
       bytes = await readFile(w.artifact);
     if (digest(bytes) !== w.sha256)
       throw Error(`Artifact digest mismatch: ${w.id}; rebuild explicitly`);
+    w.artifactName ||= basename(w.artifact);
     w.artifact = `artifacts/${w.sha256}.wasm`;
     await writeFile(join(cache, w.artifact), bytes);
     for (const [name, file] of Object.entries(w.command?.files || {})) {

@@ -29,7 +29,12 @@ import {
 import { corpusGroups } from "./lib/corpus-collection.mjs";
 import { runCommand, quote } from "./lib/benchmark-process.mjs";
 import { publishCorpus } from "./lib/benchmark-publish.mjs";
-import { publishCompletedJob, publicationURL, registerSessionPlan, publishAttemptProgress, readAttemptProgress } from "./lib/api-publish.mjs";
+import { publishCompletedJob, registerSessionPlan, publishAttemptProgress, readAttemptProgress } from "./lib/api-publish.mjs";
+import {CALL_LOOP_WORKLOAD,CALL_LOOP_ITERATIONS} from "./lib/call-policy.mjs";
+import {latencyCollection} from './lib/latency-capture.mjs';
+import {benchmarkAPIOrigin as publicationURL,publishCapture} from './lib/benchmark-api.mjs';
+import { memoryObserver } from "./lib/memory-observers.mjs";
+import { publicationQueue } from "./lib/benchmark-publish-queue.mjs";
 import { benchmarkSource, sourceBundle } from "./lib/benchmark-source.mjs";
 import { verifyParentBundle } from "./lib/benchmark-bundle.mjs";
 import { verifySeal } from "./lib/verify-seal.mjs";
@@ -39,14 +44,19 @@ try {
   --history [--deploy]                  background four-month Saturday backfill on both hosts
   --corpus qoi,applications/image-blur (repeatable; exact IDs or family prefixes)
   --kind non-feature|features|both       default: non-feature
-  --engines wago,wazero,v8               default: all six supported engines
+  --engines wago,wazero,v8               default: all configured engines
   --machines local,hub,user@host         SSH aliases also read hosts in config
   --workers 25%                         default: quarter of admitted cores
   --workers local=25%,hub=50%            per-machine percentages or counts
   --id NAME --launches N --samples N --timeout 5m
+  --phase-barriers                      capture lifecycle RSS at adapter boundaries
+  --scenarios compile                  select timing scenarios (memory uses the same selection)
+  --no-code                            skip the separate code capture
+  --full                               retain full reports and evidence (default: compact latency/memory/code)
+  --calls-only                         calibrated call-latency timing; 0.5 ms minimum per batch
   --no-live                             retain reports without changing site
   --deploy                              commit results, push branch, deploy Pages
-  --api-url URL                         publish completed jobs to Go API (requires export-site harness)
+  --api-url URL                         publish completed captures to Go API (publisher token required)
 just bench-resume ID                 same immutable plan; completed corpora skipped
 just bench-status [ID]               durable progress and outcomes
 just bench-stop ID                  stop local and SSH host supervisors
@@ -70,7 +80,7 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
       continue;
     }
     const [key, equal] = arg.slice(2).split(/=(.*)/s);
-    if (["no-live", "deploy"].includes(key)) {
+    if (["no-live", "deploy", "phase-barriers", "no-code", "calls-only", "full"].includes(key)) {
       options[key] = true;
       continue;
     }
@@ -86,6 +96,7 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
         "samples",
         "timeout",
         "api-url",
+        "scenarios",
       ].includes(key)
     )
       throw Error("Unknown option: " + arg);
@@ -123,17 +134,17 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
       [...sshOptions, host.ssh, "bash -lc " + quote(script)],
       opts,
     );
-  const transfer = async (host, from, to, upload = false) =>
+  const transfer = async (host, from, to, upload = false, extra = []) =>
     runCommand("rsync", [
-      "-a",
+      "-a", "--compress", ...extra,
       "-e",
       ["ssh", ...sshOptions.map(quote)].join(" "),
       ...(upload
         ? [from, host.ssh + ":" + quote(to)]
         : [host.ssh + ":" + quote(from), to]),
-    ]);
+    ],{signal:abort.signal});
   const stopCode = (path) =>
-    `const fs=require('fs');const path=${JSON.stringify(path)};if(fs.existsSync(path)){const s=JSON.parse(fs.readFileSync(path));if(s.status==='running'){try{process.kill(s.pid,0);const cmd=require('child_process').execFileSync('ps',['-p',String(s.pid),'-o','command=']).toString();if(!cmd.includes('benchmark-host.mjs')||!cmd.includes(${JSON.stringify(path.replace(/\/state.json$/, ""))}))throw Error('PID does not own this session');process.kill(s.pid,'SIGTERM');console.log('Stopped '+s.machine);}catch(e){if(e.code!=='ESRCH')throw e;}}}}`;
+    `const fs=require('fs');const path=${JSON.stringify(path)};if(fs.existsSync(path)){const s=JSON.parse(fs.readFileSync(path));if(s.status==='running'){try{process.kill(s.pid,0);const cmd=require('child_process').execFileSync('ps',['-p',String(s.pid),'-o','command=']).toString();if(!cmd.includes('benchmark-host.mjs')||!cmd.includes(${JSON.stringify(path.replace(/\/state.json$/, ""))}))throw Error('PID does not own this session');process.kill(s.pid,'SIGTERM');console.log('Stopped '+s.machine);}catch(e){if(e.code!=='ESRCH')throw e;}}}`;
   const killScript = (path) => `node -e ${quote(stopCode(path))};`;
   async function stop(directory) {
     const coordinator = await readJSON(
@@ -221,6 +232,7 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
           ...contracts,
           { id: "mechanisms/host-to-wasm-call" },
           { id: "mechanisms/wasm-to-host-call" },
+          { id: CALL_LOOP_WORKLOAD },
         ].map((w) => [w.id, w]),
       );
       const selected = selectWorkloads([...inventory.values()], {
@@ -373,7 +385,10 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
       corpus: options.corpus,
     });
     if (!workloads.length) throw Error("Empty corpus selection");
+    if(options["calls-only"]&&workloads.some(w=>!/^mechanisms\/(host-to-wasm-call|wasm-to-host-call|wasm-host-wasm-loop)$/.test(w.id)))throw Error("--calls-only requires call fixtures; select --corpus mechanisms");
     await verifyWorkloads(workloads);
+    const names=new Map((await existingWorkloads(site,settings)).map(w=>[w.id,w]));
+    for(const workload of workloads){const original=names.get(workload.id);if(original?.sha256===workload.sha256)workload.artifactName=original.artifact.split('/').at(-1);}
     const engines = (
       options.engines || settings.collection.runtimes.join(",")
     ).split(",");
@@ -412,7 +427,16 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
     if (new Set(machines.map((m) => m.name)).size !== machines.length)
       throw Error("Duplicate machine");
     for (const m of machines) workerCount(m.workers, 1000000);
-    const collection = { ...settings.collection };
+    if(options.full&&(!options['no-live']||options['api-url']))throw Error('Full diagnostic capture requires --no-live and does not publish to the benchmark API');
+    const collection = options.full?{...settings.collection,capture:'full',memory:true,code:true,timingPeakRSS:true}:latencyCollection(settings.collection);
+    if (options['phase-barriers']) collection.phaseBarriers = true;
+    if (options['no-code']) collection.code = false;
+    if(options['calls-only'])Object.assign(collection,{callsOnly:true,scenarios:'steady',memory:false,code:false,callMinBatchNS:500000});
+    if (options.scenarios) {
+      if (!options.scenarios.split(',').every(s=>['compile','instantiate','first-call','steady'].includes(s))) throw Error('Invalid lifecycle scenarios');
+      if(options["calls-only"]&&options.scenarios!=="steady")throw Error("--calls-only requires steady timing");
+      collection.scenarios = options.scenarios;
+    }
     for (const key of ["launches", "samples"])
       if (options[key]) {
         if (!/^[1-9]\d*$/.test(options[key])) throw Error("Invalid " + key);
@@ -437,6 +461,13 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
         tag: settings.collection.wagoRelease.tag,
         betaPrerelease: true,
       });
+    if(collection.capture==='latency'&&!options['no-live']) {
+     if(options.deploy)throw Error('Compact benchmark data is published to the API; deploy the frontend separately');
+     if(!options['api-url']) {
+      options['api-url']='http://localhost:8080';
+      if(!process.env.WASMFYI_ADMIN_TOKEN)process.env.WASMFYI_ADMIN_TOKEN=(await readFile(join(site,'.wasmfyi/local/admin-token'),'utf8')).trim();
+     }
+    }
     plan = {
       schema: 1,
       id,
@@ -447,7 +478,7 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
       live: !options["no-live"],
       deploy: !!options.deploy,
       ...(options["api-url"] ? {
-        publication: { type: "api-v1", url: publicationURL(options["api-url"]) },
+        publication: { type: collection.capture==='latency'?'benchmarks':"api-v1", url: publicationURL(options["api-url"]) },
         configuredHarnessPin: settings.harnessSource.revision,
       } : {}),
       harnessRevision,
@@ -464,6 +495,8 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
         workloads: ws,
       })),
     };
+    if(plan.live&&plan.publication?.type==='benchmarks'&&plan.publication.url==='http://localhost:8080'&&!process.env.WASMFYI_ADMIN_TOKEN)process.env.WASMFYI_ADMIN_TOKEN=(await readFile(join(site,'.wasmfyi/local/admin-token'),'utf8')).trim();
+    if(plan.live && plan.publication && (!process.env.WASMFYI_ADMIN_TOKEN||process.env.WASMFYI_ADMIN_TOKEN.length<32))throw Error('API publication requires WASMFYI_ADMIN_TOKEN');
     if (plan.deploy && !plan.live)
       throw Error("--no-live cannot be combined with --deploy");
     plan.identity = planIdentity(plan);
@@ -492,9 +525,18 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
     `Run ${id}\n${plan.jobs.length} corpora · ${plan.engines.join(", ")} · ${plan.machines.map((m) => m.name + " " + m.workers).join(", ")}\nResume: just bench-resume ${id}\nStop: just bench-stop ${id}`,
   );
   const progressDeliveries=[];
-  let uploading = Promise.resolve(),
-    uploadError,
-    failed = false;
+  let uploadError;
+  let failed = false;
+  const uploads = publicationQueue(async events => {
+    const batch = [];
+    for (const {host,event} of events) await publish(host,event,batch);
+    if (!batch.length) return;
+    await publishCorpus(batch.flatMap(item=>item.paths));
+    for (const {host,event,marker} of batch) {
+      await atomicJSON(marker,{published:new Date().toISOString(),live:plan.live});
+      console.log(`[${host.name} ${event.corpus}] website updated`);
+    }
+  }, () => abort.abort());
   const human = (event) => {
     if (event.corpus) {
       const names =
@@ -515,17 +557,18 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
                 (r) =>
                   r.scenario === scenario && r.median_ns_per_operation != null,
               );
+              const value=r?.median_ns_per_operation/(plan.collection.capture!=='latency' && r?.workload===CALL_LOOP_WORKLOAD && scenario==='steady'?CALL_LOOP_ITERATIONS:1);
               return r
-                ? r.median_ns_per_operation < 1000
-                  ? `${r.median_ns_per_operation.toFixed(2)} ns`
-                  : `${(r.median_ns_per_operation / 1000).toFixed(3)} µs`
+                ? value < 1000
+                  ? `${value.toFixed(2)} ns`
+                  : `${(value / 1000).toFixed(3)} µs`
                 : "unavailable";
             };
           const rssRows =
               event.result.memory?.filter(
                 (r) =>
                   r.runtime === runtime &&
-                  r.metric === "process.rss" &&
+                  r.metric === memoryObserver(runtime,r.scenario === "compile" ? "rssCurrentCompile" : "rssCurrent") &&
                   r.median_bytes != null,
               ) || [],
             rss = rssRows.length
@@ -536,7 +579,7 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
               : null,
             code = event.result.code?.find((r) => r.runtime === runtime);
           console.log(
-            `  ${runtime}: compile ${metric("compile")} · instantiate ${metric("instantiate")} · steady ${metric("steady")} · average process RSS ${rss ?? "unavailable"} B · code ${code?.image_bytes ?? code?.size_bytes ?? "unavailable"} B`,
+            `  ${runtime}: compile ${metric("compile")} · instantiate ${metric("instantiate")} · first call ${metric("first-call")} · steady ${metric("steady")}${plan.collection.capture==='latency'?` · peak RSS ${event.result.latency?.results.find(r=>r.engine===runtime&&r.phase==='steady')?.peakRssBytes ?? 'unavailable'} B · code ${event.result.latency?.results.find(r=>r.engine===runtime)?.codeBytes ?? 'unavailable'} B`:` · average process RSS ${rss ?? "unavailable"} B · code ${code?.image_bytes ?? code?.size_bytes ?? "unavailable"} B`}`,
           );
         }
       }
@@ -545,28 +588,44 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
         `[${event.machine}] ${event.status}${event.workers ? " · " + event.workers + "/" + event.cores + " workers/cores" : ""}`,
       );
   };
-  async function publish(host, event) {
+  async function publish(host, event, batch) {
     const local = join(directory, "hosts", host.name),
       job = join(local, "jobs", event.corpus);
+    const marker = join(job, "published.json");
+    if (await stat(marker).catch(() => false)) return;
     if (host.ssh) {
       await mkdir(job, { recursive: true });
+      let basis;
+      for(const other of plan.jobs){if(other.id!==event.corpus&&await stat(join(local,'jobs',other.id,'result.json')).catch(()=>false)){basis=join(local,'jobs',other.id);break;}}
       await transfer(
         host,
         join(host.remote, "session/jobs", event.corpus) + "/",
-        job + "/",
+        job + "/",false,basis?["--checksum","--link-dest="+basis]:[],
       );
-      if (!(await stat(join(local, "bundle/index.json")).catch(() => false))) {
+      if (plan.collection.capture!=='latency' && !(await stat(join(local, "bundle/index.json")).catch(() => false))) {
         await mkdir(join(local, "bundle"), { recursive: true });
         await transfer(
           host,
           join(host.remote, "session/bundle") + "/",
-          join(local, "bundle") + "/",
+          join(local, "bundle") + "/",false,["--exclude=/bundle.tar.gz"],
         );
       }
     }
     const result = await readJSON(join(job, "result.json"));
     if (result.plan !== plan.identity)
       throw Error("Received result with wrong plan");
+    if(plan.collection.capture==='latency') {
+      if(!result.latency)throw Error('Missing compact latency result');
+      if(plan.live) {
+        if(plan.publication?.type==='benchmarks') {
+          await publishCapture({url:plan.publication.url,token:process.env.WASMFYI_ADMIN_TOKEN,capture:result.latency,signal:abort.signal});
+        } else {
+          throw Error('Compact captures require API publication; start just serve-local and create a new run');
+        }
+      }
+      await atomicJSON(marker,{published:new Date().toISOString(),live:plan.live});
+      return;
+    }
     const paths = result.reports.map((p) => {
       if (
         p.includes("..") ||
@@ -577,8 +636,6 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
     });
     await verifyParentBundle(join(local, "bundle"), plan, {signal: abort.signal});
     for (const path of paths) await verifySeal(path);
-    const marker = join(job, "published.json");
-    if (await stat(marker).catch(() => false)) return;
     if (plan.live) {
       if (plan.publication?.type === "api-v1") {
         const revision = await publishCompletedJob({
@@ -594,9 +651,8 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
       }
       const target = join(site, "data/benchmark-runs", id, host.name);
       await mkdir(target, { recursive: true });
-      await cp(join(local, "bundle"), join(target, "bundle"), {
-        recursive: true,
-      });
+      if (!await stat(join(target,"bundle/index.json")).catch(()=>false))
+        await cp(join(local, "bundle"), join(target, "bundle"), {recursive:true});
       await atomicJSON(join(target, event.corpus + ".json"), {
         ...result,
         reports: undefined,
@@ -604,8 +660,8 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
         memory: undefined,
         code: undefined,
       });
-      await publishCorpus(paths);
-      console.log(`[${host.name} ${event.corpus}] website updated`);
+      batch.push({host,event,marker,paths});
+      return;
     }
     await atomicJSON(marker, {
       published: new Date().toISOString(),
@@ -639,16 +695,10 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
         { cwd: host.harness, signal: abort.signal },
       );
       const { cloneCopy } = await import("./lib/copy.mjs");
-      if (
-        await stat(join(plan.harnessRoot, "adapters/wasmtime/target")).catch(
-          () => false,
-        )
-      )
-        await cloneCopy(
-          join(plan.harnessRoot, "adapters/wasmtime/target"),
-          join(host.harness, "adapters/wasmtime/target"),
-          { recursive: true },
-        );
+      for(const adapter of ['wasmtime','native']) {
+        const target=join(plan.harnessRoot,'adapters',adapter,'target');
+        if(await stat(target).catch(()=>false))await cloneCopy(target,join(host.harness,'adapters',adapter,'target'),{recursive:true});
+      }
       await mkdir(join(host.site, "corpora/features"), { recursive: true });
       await mkdir(join(host.site, ".wasmbench"), { recursive: true });
       for (const name of ["scripts", "patches", "adapters"])
@@ -693,7 +743,7 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
         "node-v" + plan.node.version + "-" + triplet,
       );
     host.remote = join(base, "benchmark-runs", id);
-    host.prefix = `export PATH=${quote(join(nodeDir, "bin"))}:"$HOME/.cargo/bin:$HOME/go/bin:$HOME/.local/bin:$PATH"; `;
+    host.prefix = `export CARGO_BUILD_JOBS=1 GOMAXPROCS=1; export PATH=${quote(join(nodeDir, "bin"))}:"$HOME/.cargo/bin:$HOME/go/bin:$HOME/.local/bin:$PATH"; `;
     host.harness = join(host.remote, "harness");
     host.wago = plan.wagoRevision ? join(host.remote, "wago") : undefined;
     host.controller = join(host.remote, "session/wasmbench");
@@ -721,9 +771,11 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
         signal: abort.signal,
       });
       await transfer(host, pack, join(host.remote, name + ".gitbundle"), true);
+      const shallow=await stat(pack+'.shallow').catch(()=>false);
+      if(shallow)await transfer(host,pack+'.shallow',join(host.remote,name+'.shallow'),true);
       await ssh(
         host,
-        `set -eu; mkdir -p ${quote(join(host.remote, name))}; git -C ${quote(join(host.remote, name))} init --quiet; git -C ${quote(join(host.remote, name))} fetch --quiet ${quote(join(host.remote, name + ".gitbundle"))} ${quote(ref)}; git -C ${quote(join(host.remote, name))} checkout --quiet --detach ${quote(revision)}`,
+        `set -eu; mkdir -p ${quote(join(host.remote, name))}; git -C ${quote(join(host.remote, name))} init --quiet; ${shallow?`cp ${quote(join(host.remote,name+".shallow"))} ${quote(join(host.remote,name,".git/shallow"))}; `:""}git -C ${quote(join(host.remote, name))} fetch --quiet ${quote(join(host.remote, name + ".gitbundle"))} ${quote(ref)}; git -C ${quote(join(host.remote, name))} checkout --quiet --detach ${quote(revision)}`,
         { signal: abort.signal },
       );
     }
@@ -871,12 +923,7 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
             human(event);
             if(progress){try{progress.record(event)}catch(e){uploadError??=e;abort.abort()}}
             if (event.status === "completed" && event.result)
-              uploading = uploading
-                .then(() => publish(host, event))
-                .catch((e) => {
-                  uploadError ??= e;
-                  abort.abort();
-                });
+              uploads.push({host,event});
           };
         try {
           try {
@@ -911,14 +958,14 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
         }
       }),
     );
-    const delivered=await Promise.allSettled([uploading,...progressDeliveries.map(progress=>progress.flush())]);
+    const delivered=await Promise.allSettled([uploads.drain(),...progressDeliveries.map(progress=>progress.flush())]);
     if (uploadError) throw uploadError;
     const deliveryFailure=delivered.find(result=>result.status==='rejected');if(deliveryFailure)throw deliveryFailure.reason;
     if (abort.signal.aborted)
       throw Error("Interrupted; resume with the saved ID");
     if (failed)
       throw Error("Some hosts are incomplete; resume with the saved ID");
-    if (plan.deploy && plan.publication?.type !== 'api-v1') {
+    if (plan.deploy && !plan.publication) {
       const dirty = command("git", ["diff", "--name-only", "HEAD"])
         .toString()
         .trim()
@@ -927,7 +974,7 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
         .filter(
           (p) =>
             !p.startsWith("data/wasmbench/") &&
-            !p.startsWith("data/benchmark-runs/") &&
+            !p.startsWith("data/benchmark-runs/") && !p.startsWith("data/latency/") &&
             !p.startsWith("static/wasmbench/"),
         );
       if (dirty.length)
@@ -941,7 +988,7 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
       if (!branch) throw Error("Deploy requires a named Git branch");
       await runCommand(
         "git",
-        ["add", "data/wasmbench", "data/benchmark-runs", "static/wasmbench"],
+        ["add", "data/wasmbench", "data/benchmark-runs", "static/wasmbench", ...(plan.collection.capture==='latency'?["data/latency"]:[])],
         { cwd: site },
       );
       const staged = await runCommand(

@@ -4,7 +4,7 @@ import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { command, digest, exists, installDirectory, site } from './wasmbench.mjs';
 
-const relevant=['wasmedge','wasm3','wamr','chicory','spidermonkey','deno','wavm','jsc'];
+const relevant=['wasmedge','wasm3','wamr','chicory','spidermonkey','wavm','jsc'];
 async function tree(directory,relative='') {
   const files={};
   for(const entry of await readdir(join(directory,relative),{withFileTypes:true})) {
@@ -44,11 +44,11 @@ export async function prepareFeatureTools(root,settings,ids) {
         else if(asset.format==='deb')command('dpkg-deb',['-x',archive,destination]);
         else command('tar',['-xzf',archive,...(name==='wasmedge'?[]:['--strip-components=1']),'-C',destination]);
       }
-      for(const name of ['wasmedge','spidermonkey','deno'])await cp(join(temp,name),join(sdk,name),{recursive:true,verbatimSymlinks:true});
+      for(const name of ['wasmedge','spidermonkey'])await cp(join(temp,name),join(sdk,name),{recursive:true,verbatimSymlinks:true});
       if(await exists(join(temp,'jsc-dev')))await cp(join(temp,'jsc-dev'),join(sdk,'jsc-dev'),{recursive:true,verbatimSymlinks:true});
       if(await exists(join(temp,'jsc-shell')))await cp(join(temp,'jsc-shell'),join(sdk,'jsc-shell'),{recursive:true,verbatimSymlinks:true});
       if(await exists(join(sdk,'wasmedge/lib64')) && !await exists(join(sdk,'wasmedge/lib')))await cp(join(sdk,'wasmedge/lib64'),join(sdk,'wasmedge/lib'),{recursive:true,verbatimSymlinks:true});
-      command('chmod',['+x',join(sdk,'spidermonkey/js'),join(sdk,'deno/deno')]);
+      command('chmod',['+x',join(sdk,'spidermonkey/js')]);
       if(reusableBuild) {
         for(const name of ['wasm3','wamr'])await cp(join(target,name),join(sdk,name),{recursive:true,verbatimSymlinks:true});
       } else {
@@ -72,7 +72,7 @@ export async function prepareFeatureTools(root,settings,ids) {
   process.env.WASMBENCH_WASMEDGE_SDK=join(target,'wasmedge');
   process.env.WASMBENCH_WASM3_SDK=join(target,'wasm3');process.env.WASMBENCH_WASM3_VERSION='0.5.0';
   process.env.WASMBENCH_WAMR_SDK=join(target,'wamr');process.env.WASMBENCH_WAMR_VERSION='2.4.5';
-  process.env.WASMBENCH_SPIDERMONKEY=join(target,'spidermonkey/js');process.env.WASMBENCH_DENO=join(target,'deno/deno');
+  process.env.WASMBENCH_SPIDERMONKEY=join(target,'spidermonkey/js');
   if(ids.includes('jsc')) {
     const jsc=pins.assets[platform]?.['jsc-dev'];
     if(process.platform==='darwin') {

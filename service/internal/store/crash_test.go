@@ -15,6 +15,9 @@ func TestStoreCrashHelper(t *testing.T) {
 		return
 	}
 	s := openTest(t, os.Getenv("WASMFYI_TEST_CRASH_ROOT"))
+	if os.Getenv("WASMFYI_TEST_OFFLINE") == "1" {
+		s.EnableOfflineImport()
+	}
 	date := time.Date(2026, 10, 5, 0, 0, 0, 0, time.UTC)
 	id := stage(t, s, "crash-new", date.Add(time.Hour))
 	s.fail = func(stage string) error {
@@ -29,6 +32,14 @@ func TestStoreCrashHelper(t *testing.T) {
 	t.Fatal("crash stage was not reached")
 }
 func TestActualProcessCrashPublicationStages(t *testing.T) {
+	testProcessCrashPublicationStages(t, false)
+}
+
+func TestActualOfflineCrashPublicationStages(t *testing.T) {
+	testProcessCrashPublicationStages(t, true)
+}
+
+func testProcessCrashPublicationStages(t *testing.T, offline bool) {
 	binary, e := os.Executable()
 	if e != nil {
 		t.Fatal(e)
@@ -46,6 +57,9 @@ func TestActualProcessCrashPublicationStages(t *testing.T) {
 			defer cancel()
 			command := exec.CommandContext(ctx, binary, "-test.run=^TestStoreCrashHelper$")
 			command.Env = append(os.Environ(), "WASMFYI_TEST_CRASH_STAGE="+stageName, "WASMFYI_TEST_CRASH_ROOT="+root)
+			if offline {
+				command.Env = append(command.Env, "WASMFYI_TEST_OFFLINE=1")
+			}
 			output, e := command.CombinedOutput()
 			exit, ok := e.(*exec.ExitError)
 			if !ok || exit.ExitCode() != 99 {

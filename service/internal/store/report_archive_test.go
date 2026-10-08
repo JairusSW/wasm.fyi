@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -22,9 +23,15 @@ func TestReportFileCatalogSupportsAllAnalyticalFilesAndArchive(t *testing.T) {
 	chunk := wire.Hash(payload)
 	objects[chunk] = payload
 	job.Exports[0].Manifest.Objects = append(job.Exports[0].Manifest.Objects, wire.Object{SHA256: chunk, Bytes: len(payload), Kind: "binary"})
-	names := []string{"samples.parquet", "throughput.parquet", "observations.parquet", "counters.parquet", "engine-events.parquet", "code-lifetimes.parquet", "memory-samples.parquet", "memory-observations.parquet", "report.tar.gz"}
+	names := []string{"samples.parquet", "throughput.parquet", "observations.parquet", "counters.parquet", "engine-events.parquet", "code-lifetimes.parquet", "memory-samples.parquet", "memory-observations.parquet", "report.tar.gz", "retained-site-report.json", "retained-producer-data.json", "retained-producer-checksums.json", "retained-trials.json", "retained-throughput.json", "retained-receipt.json", "retained-parent-index.json", "retained-parent-metadata.json", "retained-parent.tar.gz", "retained-index.json", "retained-history.json", "retained-catalog.json", "retained-collection-plan.json", "retained-migration-map.json", "retained-site-metadata.json"}
 	for _, name := range names {
 		file := wire.ReportFile{Schema: 1, Kind: "report-file", ReportID: job.Exports[0].Manifest.ReportID, Name: name, MediaType: "application/vnd.apache.parquet", Encoding: "identity", SHA256: chunk, Bytes: int64(len(payload)), Chunks: []wire.FileChunk{{SHA256: chunk, Bytes: len(payload)}}}
+		if strings.HasPrefix(name, "retained-") {
+			file.MediaType = "application/json"
+			if name == "retained-parent.tar.gz" {
+				file.MediaType = "application/gzip"
+			}
+		}
 		if name == "report.tar.gz" {
 			file.MediaType = "application/gzip"
 			file.PackingVersion = "sealed-files-tar-gzip-v1"
@@ -53,8 +60,8 @@ func TestReportFileCatalogSupportsAllAnalyticalFilesAndArchive(t *testing.T) {
 		t.Fatal(e)
 	}
 	files, e := s.ReportFiles(context.Background(), revision, job.Exports[0].Manifest.ReportID)
-	if e != nil || len(files) != 9 {
-		t.Fatal("ninth original resource lost", len(files), e)
+	if e != nil || len(files) != wire.MaxReportFiles {
+		t.Fatal("retained original resources lost", len(files), e)
 	}
 	backup := filepath.Join(t.TempDir(), "backup")
 	if _, e = s.Backup(context.Background(), backup); e != nil {
@@ -67,7 +74,7 @@ func TestReportFileCatalogSupportsAllAnalyticalFilesAndArchive(t *testing.T) {
 	recovered := openTest(t, rebuilt)
 	defer recovered.Close()
 	restored, e := recovered.ReportFiles(context.Background(), revision, job.Exports[0].Manifest.ReportID)
-	if e != nil || len(restored) != 9 {
-		t.Fatal("ninth resource lost on rebuild", e, len(restored))
+	if e != nil || len(restored) != wire.MaxReportFiles {
+		t.Fatal("retained resources lost on rebuild", e, len(restored))
 	}
 }

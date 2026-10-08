@@ -1,66 +1,21 @@
-import { checkAiMetadata } from './ai-metadata.mjs';
 import assert from 'node:assert/strict';
-import { readFile, readdir, mkdtemp, rm, stat } from 'node:fs/promises';
-import { join, resolve, relative } from 'node:path';
-import { siteUrl } from './lib/ai-metadata.mjs';
-import { tmpdir } from 'node:os';
-import { stageAuxiliary } from './lib/auxiliary-data.mjs';
-import { featureSupport } from './lib/feature-support.mjs';
-import { site, digest } from './lib/wasmbench.mjs';
-import { validateData } from './lib/validate-data.mjs';
-async function htmlFiles(directory) {
-  const paths = [];
-  for (const entry of await readdir(directory, { withFileTypes: true })) {
-    const path = join(directory, entry.name);
-    if (entry.isDirectory()) paths.push(...await htmlFiles(path));
-    else if (entry.name.endsWith('.html')) paths.push(path);
-  }
-  return paths;
-}
-assert(!(await readdir(join(site,'build'))).some(name=>name.includes('.previous-') || name.startsWith('.static-data-')), 'Build contains private transactional evidence backups');
-const index = await validateData(join(site, 'build/wasmbench'));
-assert.equal(digest(await readFile(join(site,'build/wasmbench/corpus-catalog.json'))),digest(await readFile(join(site,'corpora/catalog.json'))),'Stale prepared corpus inventory');
-const source = await validateData(join(site, 'data/wasmbench'));
-assert.deepEqual(index, source, 'Build contains stale benchmark snapshots');
-for (const r of index.reports) assert.equal(digest(await readFile(join(site, 'build/wasmbench', r.evidence))), r.evidenceSha256);
-assert.deepEqual(JSON.parse(await readFile(join(site,'build/wasmbench/feature-support.json'),'utf8')),await featureSupport(join(site,'data/wasmbench'),source.reports),'Stale feature support matrix');
-const expectedAux=await mkdtemp(join(tmpdir(),'wasm-fyi-build-aux-'));
-try {
-  await stageAuxiliary(expectedAux);
-  async function compare(directory,relative='') {
-    for(const entry of await readdir(directory,{withFileTypes:true})) {
-      const path=relative?relative+'/'+entry.name:entry.name;
-      if(entry.isDirectory()) await compare(join(directory,entry.name),path);
-      else assert.equal(digest(await readFile(join(directory,entry.name))),digest(await readFile(join(site,'build/wasmbench',path))),`Stale auxiliary evidence: ${path}`);
-    }
-  }
-  await compare(expectedAux);
-} finally {await rm(expectedAux,{recursive:true,force:true});}
-await checkAiMetadata(join(site, 'build'));
-const root = await readFile(join(site, 'build/index.html'), 'utf8');
-assert(root.includes('The reference for WebAssembly runtimes.'), 'Homepage was not prerendered');
-const pages = await htmlFiles(join(site, 'build'));
-const buildRoot = join(site, 'build');
-const publicRoot = siteUrl('', process.env.BASE_PATH || '');
-async function checkPublicLink(href, from = publicRoot) {
-  const url = new URL(href, from);
-  assert(url.href.startsWith(publicRoot), `Link leaves configured public root: ${url}`);
-  const pathname = decodeURIComponent(url.pathname.slice(new URL(publicRoot).pathname.length));
-  const target = resolve(buildRoot, pathname, url.pathname.endsWith('/') ? 'index.html' : '');
-  assert(target.startsWith(buildRoot + '/'), `Unsafe output link: ${url}`);
-  assert((await stat(target)).isFile(), `Missing output link: ${url}`);
-}
-const sitemap = await readFile(join(buildRoot, 'sitemap.xml'), 'utf8');
-for (const match of sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)) await checkPublicLink(match[1].replaceAll('&amp;', '&'));
-for (const path of pages) {
-  if (path.endsWith('/404.html')) continue;
-  if (path.includes('/wasmbench/code-inspection/')) continue;
-  const html = await readFile(path, 'utf8');
-  const canonical = /<link rel="canonical" href="([^"]+)"/.exec(html)?.[1];
-  assert.equal(canonical, new URL(relative(buildRoot, path).replace(/index\.html$/, ''), publicRoot).href, `Wrong canonical URL: ${path}`);
-  const alternateLinks = [...html.matchAll(/<link rel="alternate"[^>]+href="([^"]+)"/g)];
-  assert.equal(alternateLinks.length, 3, `Missing machine discovery links: ${path}`);
-  for (const [, href] of alternateLinks) await checkPublicLink(href, canonical);
-  assert(!/<h1[^>]*>500<\/h1>|500 Internal Error/.test(html), `Prerender error: ${path}`);
-}
-console.log(`Verified ${pages.length} static pages and ${index.reports.length} deployed evidence snapshots.`);
+import {readFile,readdir,stat} from 'node:fs/promises';
+import {join,relative} from 'node:path';
+import {brotliCompressSync} from 'node:zlib';
+import {siteUrl} from './lib/ai-metadata.mjs';
+
+const root=join(process.cwd(),'build');
+const names=await readdir(root);
+for(const name of names)assert(!['wasmbench','data'].includes(name)&&!name.includes('.previous-')&&!name.startsWith('.static-data-'),'Frontend build contains a measurement dataset or private backup');
+async function files(directory){const output=[];for(const entry of await readdir(directory,{withFileTypes:true})){const path=join(directory,entry.name);if(entry.isDirectory())output.push(...await files(path));else output.push(path)}return output}
+const paths=await files(root),html=paths.filter(p=>p.endsWith('.html'));
+assert(names.includes('404.html'),'Missing application shell for newly imported workloads');
+assert(names.includes('index.html'),'Missing homepage shell');
+for(const path of html){const body=await readFile(path,'utf8');assert(!/<h1[^>]*>500<\/h1>|500 Internal Error/.test(body),`Prerender error: ${path}`);if(path.endsWith('/404.html'))continue;assert(body.includes('/api/v1/manifest'),`Missing API discovery link: ${path}`);const canonical=/<link rel="canonical" href="([^"]+)"/.exec(body)?.[1];assert.equal(canonical,siteUrl(relative(root,path).replace(/index\.html$/,''),process.env.BASE_PATH||''),`Wrong canonical URL: ${path}`)}
+const sitemap=await readFile(join(root,'sitemap.xml'),'utf8'),publicRoot=siteUrl('',process.env.BASE_PATH||'');
+for(const [,link] of sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)){assert(link.startsWith(publicRoot),'Sitemap leaves configured public root');assert((await stat(join(root,link.slice(publicRoot.length),'index.html'))).isFile(),`Missing sitemap page: ${link}`)}
+for(const name of ['llms.txt','llms-full.txt'])assert((await readFile(join(root,name),'utf8')).includes('/api/v1/manifest'),'Machine-readable reference must resolve the API revision');
+let largest=0;
+for(const path of paths.filter(p=>p.endsWith('.js'))){const body=await readFile(path);assert(!body.includes(Buffer.from('indexed-cells-v1')),'Legacy measurement corpus found in client JavaScript');largest=Math.max(largest,brotliCompressSync(body).length)}
+assert(largest<=200*1024,`Client chunk exceeds compressed build budget: ${largest}`);
+console.log(`Verified ${html.length} application pages, no bundled measurements, largest compressed JavaScript chunk ${largest} bytes.`);

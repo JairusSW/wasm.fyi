@@ -68,3 +68,9 @@ test("reuses content-addressed Wasm and fixtures, detects mutations, and relocat
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test("WASI commands and Preview 1/2 benches never enter collection", () => {
+ const workloads=[{id:"wago/jq-json-transform",abi:"wasi-command"},{id:"features/wasi-p1/fd-write/1",abi:"core"},{id:"features/wasi-p2/clock/1",abi:"component"},{id:"applications/image-blur",abi:"core"},{id:"features/component-model/records/1",abi:"component"}];
+ assert.deepEqual(selectWorkloads(workloads,{kind:"both"}).map(w=>w.id),["applications/image-blur","features/component-model/records/1"]);
+ assert.throws(()=>selectWorkloads(workloads,{kind:"both",corpus:["wago/jq-json-transform"]}),/No both corpus matches/);
+});

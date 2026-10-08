@@ -34,7 +34,7 @@
 	const model = $derived.by(() => {
 		const workload=ALLB.find(b=>b.id===ui.xWork) || ALLB.find(b=>b.id==='wago/tiny/add')!;
     const W0=Object.fromEntries(CFG.map(c=>{
-      const cells=['compile','inst','first','steady'].map(metric=>viewCell(ui.machine,ui.snap,workload.id,c.id,metric));
+      const cells=['compile','inst','first','steady'].map(metric=>viewCell(ui.machine,ui.snap,workload?.id||'',c.id,metric));
       const sameReport=cells.every(x=>x.report===cells[0].report);
       return [c.id,sameReport && cells.every(x=>x.st==='ok' && x.v!=null)?[...cells.map(x=>x.v!),null]:null];
     }));

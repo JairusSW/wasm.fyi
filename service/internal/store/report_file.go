@@ -42,7 +42,7 @@ func (s *Store) ReportFiles(ctx context.Context, revision, report string) ([]wir
 	if err != nil {
 		return nil, err
 	}
-	if set.Count > 9 {
+	if set.Count > wire.MaxReportFiles {
 		return nil, ErrLimit
 	}
 	rows := []wire.Record{}

@@ -7,7 +7,7 @@
 	import { viewData } from '$lib/view-data';
 	import { EVENTS, SNAPS } from '$lib/data/snapshot';
 	import { PROPOSAL_IDS, href } from '$lib/links';
-	import { TOTAL_WORKLOADS, disp, isOff, isVisible, ratio } from '$lib/model';
+	import { totalWorkloads, disp, isOff, isVisible, ratio } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 	import { shortCount, n0 } from '$lib/format';
 
@@ -29,13 +29,13 @@
 		}));
 	});
 
-	const tiles: [number, string][] = [
+	const tiles: [number|null, string][] = $derived([
 		[RTS.length, 'runtimes & engines tracked'],
-		[TOTAL_WORKLOADS, 'measured contracts'],
+		[totalWorkloads(), 'measured contracts'],
 		[viewData.statistics.timingSamples, 'recorded timing samples'],
 		[FEATS.length, 'features tracked'],
-		[2, 'machines']
-	];
+		[viewData.statistics.machines??0, 'machines']
+	]);
 
 	const areas = [
 		{
@@ -123,7 +123,7 @@
 
 <section class="tiles-row">
 	{#each tiles as [v, l] (l)}
-		<div class="tile"><span class="mono tv" title={shortCount(v) === n0(v) ? undefined : n0(v)}>{shortCount(v)}</span><span class="fg3">{l}</span></div>
+		<div class="tile"><span class="mono tv" title={v==null?undefined:shortCount(v) === n0(v) ? undefined : n0(v)}>{v==null?'not collected':shortCount(v)}</span><span class="fg3">{l}</span></div>
 	{/each}
 </section>
 

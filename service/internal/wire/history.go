@@ -107,7 +107,7 @@ func (h HistoryBinding) Validate() error {
 		return Invalid("invalid history source revision")
 	}
 	switch h.BuildRole {
-	case "source", "unknown":
+	case "source", "unknown", "fixed-baseline":
 		if h.Release != nil {
 			return Invalid("release association requires release role")
 		}

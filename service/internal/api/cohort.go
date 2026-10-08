@@ -81,7 +81,7 @@ type cohortCapsule struct {
 
 func (a *API) signCohort(scope store.CohortScope) (string, error) {
 	b, e := wire.Encode(cohortCapsule{comparison.Version, comparison.CategoryVersion, scope})
-	if e != nil || len(b) > 4096 {
+	if e != nil || len(b) > 8192 {
 		return "", wire.Invalid("cohort scope exceeds ceiling")
 	}
 	mac := hmac.New(sha256.New, a.CursorKey)
@@ -92,11 +92,11 @@ func (a *API) signCohort(scope store.CohortScope) (string, error) {
 func (a *API) decodeCohort(token string) (store.CohortScope, error) {
 	var capsule cohortCapsule
 	parts := strings.Split(token, ".")
-	if len(parts) != 2 || len(token) > 8192 {
+	if len(parts) != 2 || len(token) > 16384 {
 		return capsule.Scope, wire.Invalid("invalid cohort identity")
 	}
 	b, e := base64.RawURLEncoding.DecodeString(parts[0])
-	if e != nil || len(b) > 4096 {
+	if e != nil || len(b) > 8192 {
 		return capsule.Scope, wire.Invalid("invalid cohort identity")
 	}
 	sig, e := base64.RawURLEncoding.DecodeString(parts[1])
@@ -119,7 +119,7 @@ func (a *API) cohort(w http.ResponseWriter, r *http.Request, path string, params
 	immutable := true
 	if path == "aggregates" || path == "overview" {
 		raw := params.Get("scope")
-		if raw == "" || len(raw) > 4096 {
+		if raw == "" || len(raw) > 8192 {
 			problem(w, r, wire.Invalid("bounded cohort scope required"))
 			return
 		}

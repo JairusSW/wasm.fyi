@@ -1,5 +1,6 @@
 import {mkdir,readFile,writeFile,rm,appendFile} from 'node:fs/promises';
 import {join,resolve,dirname} from 'node:path';
+import {collectCallBatches,callBatchOperations} from './call-timing.mjs';
 import {parseCorpusJSON} from './corpus.mjs';
 import {atomicJSON} from './benchmark-plan.mjs';
 import {exportWasmFyiReport} from './wasmfyi-export.mjs';
@@ -13,6 +14,12 @@ export function corpusGroups(workloads) {
     groups.get(key).push(workload);
   }
   return [...groups.values()];
+}
+
+export function selectedScenarioSamples(collection, overrides) {
+  const requested=overrides ? JSON.parse(overrides) : collection.scenarioSamples || {'*':1};
+  const selected=(collection.scenarios || 'compile,instantiate,first-call,steady').split(',');
+  return Object.fromEntries(Object.entries(requested).filter(([scenario])=>scenario==='*' || selected.includes(scenario)));
 }
 
 export async function collectCorpusByCorpus({directory,suite,runtimes,collection,run,number,site,onBundle}) {
@@ -43,14 +50,19 @@ export async function collectCorpusByCorpus({directory,suite,runtimes,collection
     console.log(`[${index+1}/${groups.length}] ${group.map(w=>w.id).join(', ')}: compile → instantiate → execute → log → cleanup`);
     const shared=['--archive-tools=true','--suite',manifest,'--runtimes',runtimes,'--workers','1','--timeout',collection.timeout,'--validation-profile',process.env.WASMBENCH_VALIDATION_PROFILE||collection.validationProfile||'all'];
     const prefix=directory.split('/').at(-1)+'-'+id+'-'+Date.now();
-    const timing=join(scratch,prefix+'-timing'),memory=join(scratch,prefix+'-memory'),code=join(scratch,prefix+'-code');
+    let timing=join(scratch,prefix+'-timing');
+    const memory=join(scratch,prefix+'-memory'),code=join(scratch,prefix+'-code');
     const timingRSS=collection.memory&&collection.timingPeakRSS!==false&&process.env.WASMBENCH_TIMING_ONLY!=='1';
-    const samples=process.env.WASMBENCH_SCENARIO_SAMPLES?JSON.parse(process.env.WASMBENCH_SCENARIO_SAMPLES):collection.scenarioSamples||{'*':1};
-    await pass('run',...shared,'--scenarios','compile,instantiate,first-call,steady',...(timingRSS?['--timing-peak-rss']:[]),'--profile','timing','--launches',String(number('WASMBENCH_LAUNCHES',collection.launches)),'--samples',String(number('WASMBENCH_SAMPLES',collection.samples)),'--samples-by-scenario',JSON.stringify(samples),'--operations',String(number('WASMBENCH_OPERATIONS',collection.operations)),'--warmup',String(number('WASMBENCH_WARMUP',collection.warmup,0)),'--out',timing);
+    const samples=selectedScenarioSamples(collection,process.env.WASMBENCH_SCENARIO_SAMPLES);
+    if(collection.callsOnly && group.every(w=>w.id.startsWith('mechanisms/'))) {
+      timing=await collectCallBatches({directory:scratch,prefix,evidenceDirectory:join(directory,'logs',id,'calibration'),samples:number('WASMBENCH_CALL_SAMPLES',collection.samples),operations:callBatchOperations(group[0]),run:async(out,operations,samples)=>pass('run',...shared,'--scenarios','steady','--profile','timing','--launches',String(number('WASMBENCH_LAUNCHES',collection.launches)),'--samples',String(samples),'--operations',String(operations),'--warmup','3','--out',out),verify:async(out)=>invoke('verify','--run',out),load:async(out)=>{const {readdir}=await import('node:fs/promises');return Promise.all((await readdir(join(out,'trials'))).filter(n=>n.endsWith('.json')).map(async(n)=>JSON.parse(await readFile(join(out,'trials',n)))));},onAttempt:async(attempt)=>appendFile(join(directory,'call-calibration.jsonl'),JSON.stringify(attempt)+'\n')});
+    } else {
+    await pass('run',...shared,'--scenarios',collection.scenarios || 'compile,instantiate,first-call,steady',...(timingRSS?['--timing-peak-rss']:[]),'--profile','timing','--launches',String(number('WASMBENCH_LAUNCHES',collection.launches)),'--samples',String(number('WASMBENCH_SAMPLES',collection.samples)),'--samples-by-scenario',JSON.stringify(samples),'--operations',String(number('WASMBENCH_OPERATIONS',collection.operations)),'--warmup',String(number('WASMBENCH_WARMUP',collection.warmup,0)),'--out',timing);
+    }
     await invoke('verify','--run',timing);
     const report=join(scratch,'report'),args=['report','--run',timing,'--out',report];
     if(collection.memory&&process.env.WASMBENCH_TIMING_ONLY!=='1') {
-      await pass('run',...shared,'--scenarios','compile,instantiate,first-call,steady','--profile','memory','--launches','1','--samples','1','--operations','1','--warmup','0',...(collection.phaseBarriers?['--phase-barriers']:[]),'--out',memory);
+      await pass('run',...shared,'--scenarios',collection.scenarios || 'compile,instantiate,first-call,steady','--profile','memory','--launches','1','--samples','1','--operations','1','--warmup','0',...(collection.phaseBarriers?['--phase-barriers']:[]),'--out',memory);
       await invoke('verify','--run',memory);args.push('--memory-run',memory);
     }
     if(collection.code&&process.env.WASMBENCH_TIMING_ONLY!=='1') {
@@ -66,10 +78,11 @@ export async function collectCorpusByCorpus({directory,suite,runtimes,collection
     const path=resolve(directory,'exports',exported.path);
     if(collection.siteExportV2)await invoke('export-site','--report',report,'--out',join(dirname(path),'site-v2'));
     const extraReports=[],extraBundles=[];
-    if(group.every(w=>w.id.startsWith('mechanisms/'))) {
-      const callTiming=join(scratch,prefix+'-call-timing'),callReport=join(scratch,id+'-call-latency','report');
+    if(!collection.callsOnly && (!collection.scenarios || collection.scenarios.split(',').includes('steady')) && group.every(w=>w.id.startsWith('mechanisms/'))) {
+      const callReport=join(scratch,id+'-call-latency','report');
+      const callTiming=await collectCallBatches({directory:scratch,prefix,evidenceDirectory:join(directory,'logs',id,'calibration'),samples:number('WASMBENCH_CALL_SAMPLES',3),operations:callBatchOperations(group[0]),run:async(out,operations,samples)=>pass('run',...shared,'--scenarios','steady','--profile','timing','--launches',String(number('WASMBENCH_LAUNCHES',collection.launches)),'--samples',String(samples),'--operations',String(operations),'--warmup','3','--out',out),verify:async(out)=>invoke('verify','--run',out),load:async(out)=>{const {readdir}=await import('node:fs/promises');return Promise.all((await readdir(join(out,'trials'))).filter(n=>n.endsWith('.json')).map(async(n)=>JSON.parse(await readFile(join(out,'trials',n)))));},onAttempt:async(attempt)=>appendFile(join(directory,'call-calibration.jsonl'),JSON.stringify(attempt)+'\n')});
       await mkdir(join(scratch,id+'-call-latency'));
-      await pass('run',...shared,'--scenarios','steady','--profile','timing','--launches',String(number('WASMBENCH_LAUNCHES',collection.launches)),'--samples',String(number('WASMBENCH_CALL_SAMPLES',3)),'--operations','1000000','--warmup','3','--out',callTiming);
+
       await invoke('verify','--run',callTiming);await invoke('report','--run',callTiming,'--out',callReport);await invoke('verify-report','--dir',callReport);
       const callData=JSON.parse(await readFile(join(callReport,'data.json'))),mainData=JSON.parse(await readFile(join(report,'data.json')));
       if(JSON.stringify(callData.bundle.manifest.lock.runtime_configurations)!==JSON.stringify(mainData.bundle.manifest.lock.runtime_configurations))throw Error('Call adapters changed within corpus collection');

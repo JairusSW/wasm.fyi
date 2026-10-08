@@ -8,7 +8,7 @@ import (
 )
 
 func strictQuery(raw string) (url.Values, error) {
-	if len(raw) > 16*1024 {
+	if len(raw) > 32*1024 {
 		return nil, wire.Invalid("query exceeds ceiling")
 	}
 	values, err := url.ParseQuery(raw)
@@ -19,7 +19,7 @@ func strictQuery(raw string) (url.Values, error) {
 		return nil, wire.Invalid("too many query fields")
 	}
 	for key, list := range values {
-		if len(list) != 1 || key == "" || !utf8.ValidString(key) || !utf8.ValidString(list[0]) || len(key) > 64 || len(list[0]) > 4096 || strings.ContainsRune(list[0], 0) {
+		if len(list) != 1 || key == "" || !utf8.ValidString(key) || !utf8.ValidString(list[0]) || len(key) > 64 || (len(list[0]) > 4096 && key != "scope" && key != "before" && key != "after" || len(list[0]) > 8192) || strings.ContainsRune(list[0], 0) {
 			return nil, wire.Invalid("ambiguous or oversized query")
 		}
 		switch key {
@@ -47,6 +47,24 @@ func allowedQuery(values url.Values, keys ...string) error {
 	return nil
 }
 func routeQuery(path string, values url.Values) error {
+	if path == "latency" {
+		return allowedQuery(values, "revision", "platform", "phase", "offset", "limit")
+	}
+	if path == "corpus" || strings.HasPrefix(path, "corpus/") || path == "inspect" || strings.HasPrefix(path, "inspect/") {
+		return allowedQuery(values, "revision", "environment", "environments", "selection", "workload", "tracks")
+	}
+	if path == "feature-summary" {
+		return allowedQuery(values, "revision", "environment", "environments", "feature", "configuration")
+	}
+	if path == "history/timeline" {
+		return allowedQuery(values, "revision", "environment", "environments", "metric", "scenario", "profile", "statistic", "workload", "tracks", "weighting", "from", "until", "before", "after", "detailsTrack", "outputTrack", "limit", "cursor", "datesOnly")
+	}
+	if path == "availability" {
+		return allowedQuery(values, "revision", "selection", "environment", "environments", "metric", "scenario", "profile", "statistic", "version")
+	}
+	if path == "matrix" {
+		return allowedQuery(values, "revision", "selection", "environment", "environments", "metric", "scenario", "profile", "statistic", "limit", "cursor", "tracks", "search", "tag", "sortTrack", "direction", "workload", "version", "cohortMode")
+	}
 	if strings.HasPrefix(path, "conformance/sources/") {
 		parts := strings.Split(path, "/")
 		if len(parts) < 3 || !wire.IsHash(parts[2]) {
@@ -163,10 +181,10 @@ func routeQuery(path string, values url.Values) error {
 		return allowedQuery(values)
 	}
 	if path == "history" {
-		return allowedQuery(values, "revision", "selection", "environment", "runtime", "track", "definition", "method", "configuration", "contract", "workload", "metric", "scenario", "profile", "statistic", "sort", "limit", "cursor", "from", "until")
+		return allowedQuery(values, "revision", "selection", "environment", "environments", "runtime", "track", "definition", "method", "configuration", "contract", "workload", "metric", "scenario", "profile", "statistic", "sort", "limit", "cursor", "from", "until")
 	}
 	if path == "results" {
-		return allowedQuery(values, "revision", "selection", "environment", "runtime", "track", "definition", "method", "configuration", "contract", "workload", "metric", "scenario", "profile", "statistic", "sort", "limit", "cursor")
+		return allowedQuery(values, "revision", "selection", "environment", "environments", "runtime", "track", "definition", "method", "configuration", "contract", "workload", "metric", "scenario", "profile", "statistic", "sort", "limit", "cursor")
 	}
 	if len(parts) == 1 {
 		return allowedQuery(values, "revision", "limit", "cursor")

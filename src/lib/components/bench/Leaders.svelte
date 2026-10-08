@@ -1,20 +1,35 @@
 <script lang="ts">
+	import {apiView,aggregateKey} from '$lib/api/controller.svelte';
+	import {datasetView} from '$lib/api/view.svelte';
 	import type { MetricKey, OvKey } from '$lib/data/types';
 	import { leader } from '$lib/model';
+	import { CFG } from '$lib/data/runtimes';
+	
 	import { ui } from '$lib/state.svelte';
 	import Swatch from '../Swatch.svelte';
+	import { relative } from '$lib/format';
+	import { tipCard, tipWho } from '$lib/tip';
 
 	let { onmetric, onoverview }: { onmetric: (m: MetricKey) => void; onoverview: (group: OvKey) => void } = $props();
 	let expanded = $state(false);
 
-	const rankingNote = 'Places rank measured means; overlapping uncertainty does not establish a clear lead.';
+
+	const rankingNote = 'Places rank measured means; overlapping uncertainty is not a clear lead';
 	const leaders = $derived([
-		{ ...leader(ui.scope, 'Fastest compilation', 'lat', 0, 'compile'), overview: null, note: rankingNote },
-		{ ...leader(ui.scope, 'Fastest instantiation', 'lat', 1, 'inst'), overview: null, note: rankingNote },
-		{ ...leader(ui.scope, 'Lowest average RSS', 'mem', 3, 'rss'), overview: 'mem' as OvKey,
-			note: 'Arithmetic mean of recorded whole-process RSS snapshots after benchmark batches across compilation, instantiation, first-call and steady workloads. Each available workload-phase measurement has equal weight. Lower is better. Boundary samples, not a continuous time average; missing observations remain unmeasured.' },
-		{ ...leader(ui.scope, 'Fastest execution', 'lat', 3, 'steady'), overview: null, note: rankingNote }
+		{ ...leader(ui.scope, 'Fastest compilation', 'lat', 0, 'compile'), overview: null, points: [rankingNote, 'Transpiler pipelines are excluded from fastest compilation; their full translate + compile times remain in the table.'] },
+		{ ...leader(ui.scope, 'Fastest instantiation', 'lat', 1, 'inst'), overview: null, points: [rankingNote] },
+		{ ...leader(ui.scope, 'Lowest average peak RSS', 'mem', 3, 'rss'), overview: 'mem' as OvKey,
+			points: [
+                'Arithmetic mean of available compile, instantiate, first-call and steady run peak RSS measurements',
+                'Kernel-reported process lifetime peaks; this is not time-averaged RSS',
+                'Equal weight per measured workload-phase; missing measurements are omitted',
+                'Transpiler compile peaks use max(transpiler, compiler); phase peaks are averaged, not added'
+			] },
+		{ ...leader(ui.scope, 'Fastest execution', 'lat', 3, 'steady'), overview: null, points: [rankingNote] }
 	]);
+	const ordinal = (n: number) => (n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : `${n}th`);
+	const placeTip = (l: (typeof leaders)[number], p: (typeof leaders)[number]['places'][number]) =>
+		tipCard({ kicker: `${l.label} · ${ordinal(p.place)}`, who: tipWho(p.cfg), value: p.value, sub: p.place > 1 ? `${relative(p.ratio / l.places[0].ratio, ui.deltaFormat)} vs 1st` : 'leader' });
 </script>
 
 <div class="leader-panel">
@@ -23,23 +38,26 @@
 		<button
 			class="leader hoverbg"
 			onclick={() => l.overview ? onoverview(l.overview) : onmetric(l.metric)}
-			data-tip={[l.label, l.note, 'Click to see the underlying results'].join('\n')}
+			data-tip-card={tipCard({ title: l.label, chips: l.places.length > 1 ? [l.clear ? 'clear lead' : 'intervals overlap'] : [], points: l.points, action: 'see the underlying results' })}
 		>
-			<span class="kicker">{l.label}</span>
 			{#if l.places.length}
 				{@const first = l.places[0]}
 				<span class="results">
-					<span class="first" title={`${first.cfg.rt} ${first.cfg.be} · ${first.value}`}>
-						<span class="mono value">{first.value}</span>
-						<span class="who">
-							<Swatch color={first.cfg.col} bg={first.cfg.hollow ? 'transparent' : first.cfg.col} size={9} />
-							<span class="w5">{first.cfg.rt}</span>
-							<span class="mono small fg3 backend">{first.cfg.be}</span>
+					<!-- Label sits in the leader column so the runner-up list can start at the top. -->
+					<span class="lead">
+						<span class="kicker">{l.label}</span>
+						<span class="first" data-tip-card={placeTip(l, first)}>
+							<span class="mono value">{first.value}</span>
+							<span class="who">
+								<Swatch color={first.cfg.col} bg={first.cfg.hollow ? 'transparent' : first.cfg.col} size={9} />
+								<span class="w5">{first.cfg.rt}</span>
+								<span class="mono small fg3 backend">{first.cfg.be}</span>
+							</span>
 						</span>
 					</span>
 					<span class="places" aria-label="Next places by measured mean">
-						{#each l.places.slice(1, expanded ? undefined : 3) as p (p.cfg.id)}
-							<span class="place" title={`${p.cfg.rt} ${p.cfg.be} · ${p.value}`}>
+						{#each l.places.slice(1, expanded ? undefined : 5) as p (p.cfg.id)}
+							<span class="place" data-tip-card={placeTip(l, p)}>
 								<span class="mono small fg3">{p.place === 2 ? '2nd' : p.place === 3 ? '3rd' : `${p.place}th`}</span>
 								<span class="entrant"><span class="who small"><Swatch color={p.cfg.col} bg={p.cfg.hollow ? 'transparent' : p.cfg.col} size={6} /><span>{p.cfg.rt}</span></span><span class="mono micro fg3 backend">{p.cfg.be}</span></span>
 								<span class="mono small result-value">{p.value}</span>
@@ -48,18 +66,24 @@
 					</span>
 				</span>
 			{:else}
-				<span class="unclear">No clear leader</span>
-				<span class="small fg3">{l.versus}</span>
+				<span class="kicker">{l.label}</span>
+				{@const key=aggregateKey(ui.scope,l.overview==='mem'?'rssAverage':l.metric)}
+				{@const error=apiView.aggregateErrors[key]}
+				{@const loading=!!datasetView.revision&&!apiView.aggregates[key]&&!error}
+				<span class="unclear">{loading?'Loading…':error?'Unavailable':'No clear leader'}</span>
+				<span class="small fg3">{loading?'Fetching the selected comparison.':error||l.versus}</span>
 			{/if}
+
 		</button>
 	{/each}
 </div>
 <button class="expand-bar hoverbg small" aria-expanded={expanded} aria-controls="benchmark-leader-results" onclick={() => expanded = !expanded}>
-	{expanded ? 'Show top three' : 'Show all results'} <span aria-hidden="true">{expanded ? '▴' : '▾'}</span>
+	{expanded ? 'Show top five' : 'Show all results'} <span aria-hidden="true">{expanded ? '▴' : '▾'}</span>
 </button>
 </div>
 
 <style>
+
 	.leader-panel {
 		min-width: 0;
 	}
@@ -114,6 +138,7 @@
 		min-width: 0;
 		flex: 1;
 	}
+	.lead,
 	.first,
 	.places {
 		display: flex;
@@ -121,13 +146,27 @@
 		gap: 6px;
 		min-width: 0;
 	}
+	.places {
+		gap: 4px;
+	}
 	.place {
 		display: grid;
 		grid-template-columns: 24px minmax(0, 1fr) auto;
 		gap: 5px;
-		align-items: start;
+		align-items: baseline;
 	}
+	/* Name and backend share one line so five places fit beside the leader. */
 	.entrant {
+		display: flex;
+		align-items: baseline;
+		gap: 5px;
+		min-width: 0;
+	}
+	.entrant .who {
+		flex: none;
+		max-width: 100%;
+	}
+	.entrant .backend {
 		min-width: 0;
 	}
 	.entrant .who {

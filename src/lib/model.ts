@@ -1,3 +1,6 @@
+import {compilationCandidate} from './ranking-policy';
+import {apiView} from './api/controller.svelte';
+import {datasetView} from './api/view.svelte';
 import { historySeries } from './history-values';
 import { aggregate } from './aggregates';
 import { viewCell, viewData } from './view-data';
@@ -12,12 +15,14 @@ export interface Scope {
 	machine: MachineId;
 	baseline: CfgId;
 	weighting: 'corpus' | 'workload';
+	cohortMode?: 'shared' | 'per-engine';
 	hide: Partial<Record<CfgId, boolean>>;
 	snapshot?: 's1' | 's2';
 }
 
 export type PerfGroup = 'lat' | 'mem' | 'code';
 
+export const totalWorkloads = ()=>viewData.catalogue.length;
 export const TOTAL_WORKLOADS = viewData.catalogue.length;
 
 /** Swatch/identity fields for a config, spread into view rows. */
@@ -38,19 +43,12 @@ export const mf = (m: MachineId, id: CfgId) => MACH[m].f[id] ?? 1;
 export const isOff = (s: Scope, id: CfgId) => !!MACH[s.machine].off[id];
 export const isVisible = (s: Scope, c: Cfg) => {
   if(!viewData.hosts[s.machine].configurations[c.id])return false;
-  const version=viewData.hosts[s.machine].configurations[c.id]?.version || '';
-  // Wago reports identify the sealed runtime by its source revision and source
-  // digest rather than a semantic version. Keep that measured configuration in
-  // the matrix; hash-pinned development builds from other engines stay hidden.
-  const hashPinnedDevelopment=c.rt!=='wago' && /^[a-f0-9]{40}(?:\/|$)/i.test(version);
-  // WAVM is the one explicitly approved prerelease in the benchmark cohort.
-  const approvedWavmPrerelease=c.rt==='wavm' && version==='nightly-2026-04-05-4e82bb9';
-  const unpublishedBuild=/nightly|snapshot|canary|0\.0\.0-prerelease/i.test(version);
-  return !s.hide[c.id] && !hashPinnedDevelopment && (!unpublishedBuild || approvedWavmPrerelease);
+  return !s.hide[c.id];
 };
 export const visibleCfgs = (s: Scope) => CFG.filter((c) => isVisible(s, c));
 
 export const cov = (cid: CfgId, scope?:Scope) => {
+  if(datasetView.revision)return apiView.coverage[cid]||[0,0,0,0,0];
   const counts=[0,0,0,0,0];
   for(const b of viewData.catalogue){
     const c=viewCell(scope?.machine || 'm1',scope?.snapshot || 's1',b.id,cid,'steady');
@@ -111,7 +109,8 @@ export function seriesFmt(key: OtMetricKey, format: DeltaFormat = 'percent') {
 
 /** Headline leader for one aggregate: clear only when the 95% intervals do not overlap. */
 export function leader(s: Scope, label: string, group: PerfGroup, col: number, metric: MetricKey) {
-	const list = CFG.map((c) => ({ c, x: ratio(s, group, c.id, col) }))
+	const list = CFG.filter(c => viewData.applicationConfigurations.includes(c.id) && compilationCandidate(c.rt,metric))
+		.map((c) => ({ c, x: ratio(s, group, c.id, col) }))
 		.filter((e): e is { c: Cfg; x: NonNullable<ReturnType<typeof ratio>> } => e.x != null && isVisible(s, e.c))
 		.sort((a, b) => a.x.r - b.x.r);
 	const top=list;
@@ -133,7 +132,7 @@ export function leader(s: Scope, label: string, group: PerfGroup, col: number, m
 		clear,
 		cfg: a.c,
 		value: firstText,
-		versus: b ? `${cn(a.c)} ${firstText} and ${cn(b.c)} ${secondText} — 95% intervals overlap` : ''
+		versus: b ? `${cn(a.c)} ${firstText} and ${cn(b.c)} ${secondText} · ${Number.isFinite(a.x.ci)&&Number.isFinite(b.x.ci)?'95% intervals overlap':'comparison interval unavailable'}` : ''
 	};
 }
 
@@ -158,6 +157,13 @@ export function featureOutcome(s:Scope,w:Bench,cid:CfgId) {
   return viewCell(s.machine,s.snapshot || 's1',w.id,cid,w.evidenceScope==='compile-only'?'compile':w.evidenceScope==='compile-and-instantiate'?'inst':'steady');
 }
 export function compatCell(family:string,cid:CfgId,s:Scope,workload?:string):CompatCell {
+  if(datasetView.revision){
+   const candidates=viewData.featureVersions[s.machine].filter(v=>v.id===viewData.configurations[cid]);
+   const f=candidates.map(v=>v.features.find(f=>f.id===family)).find(Boolean);
+   if(!f)return {av:'?',run:false,total:featureContracts(family).length,pass:0,fail:0,crash:0,skip:0};
+   if(workload){const cell=f.contracts.find(c=>c.workload===workload);return {av:cell?'d':'?',run:!!cell,total:1,pass:cell?.status==='passed'?1:0,fail:cell?.status==='failed'?1:0,crash:0,skip:cell?.status==='unsupported'?1:0}}
+   return {av:'d',run:true,total:f.total,pass:f.pass,fail:f.failed,crash:0,skip:f.total-f.pass-f.failed};
+  }
   const contracts=featureContracts(family).filter(w=>!workload || w.id===workload);
   const result:CompatCell={av:'?',run:false,total:contracts.length,pass:0,fail:0,crash:0,skip:0};
   for(const w of contracts){

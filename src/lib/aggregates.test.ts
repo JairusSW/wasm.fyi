@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { aggregate } from './aggregates';
 import { viewCell, viewData } from './view-data';
-import { sharedCount, type Scope } from './model';
+import { leader, sharedCount, type Scope } from './model';
 
 const scope:Scope={machine:'m1',baseline:'G',hide:{},weighting:'workload'};
 describe('recorded aggregate cohort',()=>{
+ it('keeps successful values per engine and requires every engine in shared mode',()=>{
+  const independent=aggregate({...scope,baseline:'C',cohortMode:'per-engine'},'code','G',3);
+  expect(independent?.v).toBeGreaterThan(0);
+  expect(Number.isNaN(independent?.r)).toBe(true);
+  expect(aggregate({...scope,baseline:'C',cohortMode:'shared'},'code','G',3)).toBeNull();
+ });
 	it('merges the successful host-local cohort across measured engines',()=>{
 		const result=aggregate(scope,'lat','G',3)!;
 		const nonFeatureWorkloads=viewData.catalogue.filter(w=>!w.id.startsWith('features/'));
@@ -44,6 +50,18 @@ describe('recorded aggregate cohort',()=>{
 	it('does not invent RSS for an uncollected engine',()=>{
         expect(aggregate({...scope,machine:'m2'},'mem','C',3)).toBeNull();
     });
+	it('keeps partial captures out of overall RSS rankings while retaining their measurements',()=>{
+		const selected={...scope,machine:'m2' as const};
+		const ranked=leader(selected,'Lowest average RSS','mem',3,'rss').places.map(p=>p.cfg.id);
+		for(const id of ['T','U'] as const){
+			const compiled=viewData.catalogue.filter(w=>viewCell(selected.machine,'s1',w.id,id,'compile').st==='ok');
+			const missingCompilerRSS=compiled.some(w=>viewCell(selected.machine,'s1',w.id,id,'rssCurrentCompile').st!=='ok');
+			expect(viewData.catalogue.some(w=>viewCell(selected.machine,'s1',w.id,id,'rssCurrent').st==='ok')).toBe(true);
+			if(missingCompilerRSS){expect(aggregate(selected,'mem',id,3)).toBeNull();expect(ranked).not.toContain(id);}
+			else expect(aggregate(selected,'mem',id,3)?.v).toBeGreaterThan(0);
+			if(!viewData.applicationConfigurations.includes(id))expect(ranked).not.toContain(id);
+		}
+	});
 	it('does not invent native code breakdowns',()=>{
 		expect(aggregate(scope,'code','G',0)).toBeNull();
 		expect(aggregate(scope,'code','G',4)).toBeNull();
@@ -57,8 +75,8 @@ describe('recorded aggregate cohort',()=>{
 	});
   it('limits application and history comparison cohorts to supported configurations',()=>{
     expect(viewData.applicationConfigurations).toContain('G');
-    expect(viewData.applicationConfigurations.every(slot=>['A','D','E','F','G','L'].includes(slot))).toBe(true);
-    expect(Object.keys(viewData.configurations)).toEqual(['A','D','E','F','G','L']);
+    expect(viewData.applicationConfigurations.every(slot=>['A','D','E','F','G','L','T','U'].includes(slot))).toBe(true);
+    expect(Object.keys(viewData.configurations)).toEqual(['A','D','E','F','G','L','T','U']);
     const result=aggregate(scope,'lat','G',3)!;
     expect(result).not.toBeNull();
     expect(viewData.applicationConfigurations.map(slot=>viewData.configurations[slot])).not.toContain('v8-wasmfx');

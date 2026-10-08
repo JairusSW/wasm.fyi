@@ -28,7 +28,7 @@ if(['build','collect','corpus-check'].includes(action)) {
   const unsupported=runtimes.split(',').filter(id=>!collection.runtimes.includes(id));
   if(unsupported.length)throw Error('Unsupported website benchmark configurations: '+unsupported.join(',')+'. Supported: '+collection.runtimes.join(',')+'.');
 }
-const extraToolsNeeded = runtimes.split(',').some(id => ['wasm3','wamr','spidermonkey','deno','jsc'].includes(id));
+const extraToolsNeeded = runtimes.split(',').some(id => ['wasm3','wamr','spidermonkey','jsc'].includes(id));
 if(runtimes.split(',').includes('wavm')) {
   process.env.WASMBENCH_WAVM_VERSION ||= 'nightly-2026-04-05-4e82bb9';
   process.env.WASMBENCH_WAVM_SDK ||= join(homedir(),'.local/share/wasm-fyi/toolchains/wavm-nightly-2026-04-05/sdk');

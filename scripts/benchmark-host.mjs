@@ -1,5 +1,5 @@
 // Resumable host supervisor. Each lane finishes one whole corpus before reuse.
-import { availableParallelism, platform } from "node:os";
+import { availableParallelism, platform, cpus as physicalCPUs, totalmem, release, arch } from "node:os";
 import { readFile, mkdir, rm, stat, appendFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { site } from "./lib/wasmbench.mjs";
@@ -8,6 +8,7 @@ import { runCommand } from "./lib/benchmark-process.mjs";
 const directory = resolve(process.argv[2]),
   plan = JSON.parse(await readFile(join(directory, "plan.json"))),
   host = JSON.parse(await readFile(join(directory, "host.json")));
+host.platform={os:platform(),arch:arch()==='x64'?'amd64':arch(),cpu:physicalCPUs()[0]?.model||'unknown',cores:physicalCPUs().length,kernel:release(),memoryBytes:totalmem()};
 await mkdir(join(directory, "jobs"), { recursive: true });
 const statePath = join(directory, "state.json"),
   prior = await readFile(statePath, "utf8").then(JSON.parse, (e) => {

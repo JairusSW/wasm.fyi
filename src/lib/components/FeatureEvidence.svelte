@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { tick } from 'svelte';
+  import {loadFeatures} from '$lib/api/controller.svelte';
+ import {ui} from '$lib/state.svelte';
+ import { tick,untrack } from 'svelte';
   import { benchHref, siteHref } from '$lib/links';
   import { viewData } from '$lib/view-data';
   import type { FeatureTrack } from '$lib/support';
@@ -8,6 +10,7 @@
   let active=$state('');
   $effect(()=>{
     active='';
+    if(selection)untrack(()=>{for(const configuration of selection.track.configurations){const identity=viewData.featureVersions[ui.machine].find(v=>v.id===configuration.id&&v.version===configuration.version)?.identity;if(identity)void loadFeatures({machine:ui.machine,snapshot:ui.snap,metric:ui.metric,hide:{...ui.hide},baseline:ui.baseline,weighting:ui.weighting},selection.feature,identity)}});
     if(selection)void tick().then(()=>{if(selection && !dialog.open)dialog.showModal();});
     else if(dialog?.open)dialog.close();
   });
@@ -30,14 +33,13 @@
         <div class="counts"><span class="passed">● {c.pass} passed</span><span class="failed">✕ {c.failed} failed</span><span>— {c.skipped} unsupported</span>{#if c.missing}<span>? {c.missing} uncollected</span>{/if}</div>
         <div class="micro fg3">Collected {c.collectedAt.slice(0,10)}{#if c.source} · <a href={c.source}>Build source</a>{/if}</div>
         <div class="contracts">
-          {#each c.contracts as contract (contract.workload)}
+          {#each (viewData.featureVersions[ui.machine].find(v=>v.id===c.id&&v.version===c.version)?.features.find(f=>f.id===selection.feature)?.contracts||c.contracts) as contract (contract.workload)}
             {@const report=viewData.reports[contract.report]}
             <div class="contract">
               <span class:passed={contract.status==='passed'} class:failed={contract.status==='failed'} class="status">{contract.status==='passed'?'●':contract.status==='failed'?'✕':'—'} {contract.status}</span>
               <div><a href={benchHref(contract.workload)}>{contract.workload.split('/').slice(2).join(' / ')}</a><div class="micro fg3">{contract.scope}</div>
                 {#if contract.reasons.length}<details><summary>Diagnostic</summary><pre>{contract.reasons.join('\n\n')}</pre></details>{/if}
               </div>
-              {#if report}<a class="micro fg3" href={siteHref('/wasmbench/'+report.evidence)}>Evidence ↗</a>{/if}
             </div>
           {/each}
         </div>
@@ -70,5 +72,5 @@
   details { font-size:11px;margin-top:5px; }summary { color:var(--fg3);cursor:pointer; }
   pre { white-space:pre-wrap;overflow-wrap:anywhere;max-height:160px;overflow:auto;font-size:10px; }
   footer,.empty { font-size:11px;color:var(--fg3);margin-top:16px; }
-  @media(max-width:480px) { .contract { grid-template-columns:70px 1fr; }.contract > a { grid-column:2; } }
+  @media(max-width:480px) { .contract { grid-template-columns:70px 1fr; } }
 </style>

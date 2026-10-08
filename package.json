@@ -4,12 +4,12 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "node scripts/stage-data.mjs && node scripts/view-data.mjs && vite dev",
-    "build": "node scripts/stage-data.mjs && node scripts/view-data.mjs && node scripts/ai-metadata.mjs && vite build && node scripts/ai-metadata.mjs --check",
+    "dev": "node scripts/frontend-assets.mjs && vite dev",
+    "build": "node scripts/frontend-assets.mjs && vite build",
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo ''",
-    "check": "node scripts/view-data.mjs && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-    "test": "node scripts/view-data.mjs && vitest run",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "test": "vitest run",
     "test:ai": "node --test scripts/ai-metadata.test.mjs",
     "sync:proposals": "node scripts/sync-proposals.mjs"
   },

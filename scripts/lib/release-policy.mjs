@@ -18,6 +18,19 @@ export function latestBetaRelease(releases,asOf=new Date().toISOString()) {
 }
 export const parseReleasePages=output=>output.trim().split('\n').filter(Boolean).flatMap(line=>JSON.parse(line));
 export const githubReleases=repository=>parseReleasePages(command('gh',['api','--paginate',`repos/${repository}/releases?per_page=100`,'--jq','. | tojson']).toString());
+export function githubRelease(repository,tag) {
+  const endpoint=`repos/${repository}/releases/tags/${encodeURIComponent(tag)}`;
+  let output;
+  try{output=command('gh',['api',endpoint]);}
+  catch(error){
+    // Public release metadata does not require private GitHub credentials.
+    if(!/^gh failed \((?:4|ENOENT)\)$/.test(error.message))throw error;
+    output=command('curl',['--fail','--silent','--show-error','--retry','3','--max-time','60','-H','Accept: application/vnd.github+json','https://api.github.com/'+endpoint]);
+  }
+  const release=JSON.parse(output.toString());
+  if(release.tag_name!==tag||release.draft||!release.published_at)throw Error('Requested published release metadata is missing or differs');
+  return release;
+}
 export const releaseCache=()=>process.env.WASMBENCH_RELEASE_CACHE || join(homedir(),'.cache/wasm-fyi/releases');
 export async function releaseSource(repository,{tag,asOf,taggedLibrary=false,betaPrerelease=false}={}) {
   let candidates;
@@ -26,7 +39,7 @@ export async function releaseSource(repository,{tag,asOf,taggedLibrary=false,bet
     const info=JSON.parse(command('go',['list','-m','-json',`github.com/${repository}@latest`],{env:{...process.env,GOWORK:'off',GOFLAGS:''}}).toString());
     if(!/^v[0-9]+\.[0-9]+\.[0-9]+(?:[-+].*)?$/.test(info.Version) || /-[0-9]{14}-[a-f0-9]+$/.test(info.Version))throw Error('Plugin has no released module version');
     candidates=[{tag_name:info.Version,published_at:info.Time,draft:false,prerelease:info.Version.includes('-'),html_url:`https://github.com/${repository}/tree/${info.Version}`}];
-  }else candidates=githubReleases(repository);
+  }else candidates=tag?[githubRelease(repository,tag)]:githubReleases(repository);
   const release=tag?candidates.find(r=>r.tag_name===tag && releasedBuild(r)):
     betaPrerelease?latestBetaRelease(candidates,asOf):latestRelease(candidates,asOf);
   if(!release)throw Error(`No published non-development release for ${repository}${tag?' at '+tag:''}`);

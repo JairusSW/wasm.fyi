@@ -45,7 +45,9 @@ if (action === 'hub') {
       if(await exists(link)){if(await realpath(link)!==library)throw new Error('LLVM compatibility zstd link differs');}
       else await symlink(library,link);
       const wrapper='#!/bin/sh\nset -eu\nout=$("$WASMBENCH_LLVM_CONFIG" "$@")\ncase " $* " in *" --system-libs "*) printf "%s\\n" "$out" | sed "s@/usr/lib/x86_64-linux-gnu/libzstd.a@-lzstd@g" ;; *) printf "%s\\n" "$out" ;; esac\n';
-      await writeFile(join(compat,'bin/llvm-config'),wrapper,{mode:0o755});
+      const wrapperPath=join(compat,'bin/llvm-config');
+      const existingWrapper=await readFile(wrapperPath,'utf8').catch(error=>{if(error.code!=='ENOENT')throw error;return null;});
+      if(existingWrapper!==wrapper)await writeFile(wrapperPath,wrapper,{mode:0o755});
       llvmBuildPrefix=compat;
       buildEnv.WASMBENCH_LLVM_CONFIG=join(llvm,'bin/llvm-config');
       buildEnv.RUSTFLAGS=(buildEnv.RUSTFLAGS || '')+' -Lnative='+join(compat,'lib');

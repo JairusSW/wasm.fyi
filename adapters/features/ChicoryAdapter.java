@@ -2,6 +2,8 @@ import com.dylibso.chicory.wasm.Parser;
 import com.dylibso.chicory.wasm.WasmModule;
 import com.dylibso.chicory.wasm.types.ValType;
 import com.dylibso.chicory.runtime.Instance;
+import com.dylibso.chicory.runtime.HostFunction;
+import com.dylibso.chicory.runtime.ImportValues;
 import org.json.*;
 import java.io.*;
 import java.nio.file.*;
@@ -13,6 +15,14 @@ import java.util.*;
 public final class ChicoryAdapter {
   private JSONObject preparation;
   private byte[] bytes;
+  private static Instance instance(WasmModule module,JSONObject workload){
+    var builder=Instance.builder(module);
+    if(workload.optString("host_profile","").equals("identity-v1")){
+      var identity=new HostFunction("wasmbench","identity",List.of(ValType.I32),List.of(ValType.I32),(inst,args)->new long[]{Integer.toUnsignedLong((int)args[0])});
+      builder.withImportValues(ImportValues.builder().addFunction(identity).build());
+    }
+    return builder.build();
+  }
   private static void require(boolean yes,String reason){if(!yes)throw new IllegalArgumentException(reason);}
   private static long[] values(JSONArray a){long[] out=new long[a.length()];for(int i=0;i<out.length;i++)out[i]=Long.parseUnsignedLong(a.getString(i));return out;}
   private static JSONArray decimals(long[] a){JSONArray out=new JSONArray();for(long v:a)out.put(Long.toUnsignedString(v));return out;}
@@ -38,7 +48,7 @@ public final class ChicoryAdapter {
   private JSONObject describe(){JSONObject description=new JSONObject("""
     {"runtime":"chicory","runtime_version":"1.7.5","backend":"interpreter","embedding":"Chicory JVM embedding",
      "abis":["core"],"features":["mvp"],"scenarios":["compile","instantiate","first-call","steady"],
-     "capabilities":{"can_compile_separately":true,"can_instantiate_separately":true},
+     "capabilities":{"can_compile_separately":true,"can_instantiate_separately":true,"can_host_function_calls_v1":true},
      "effective_configuration":{"compile_policy":"Parser.parse validation; interpreter machine construction occurs during instantiation; not native code generation",
       "call_policy":"export lookup, integer marshalling and result allocation included; exact scalar and memory oracles outside timer",
       "reset_policy":"fresh instance for lifecycle and fresh_instance_per_sample; retained instance for stateless steady",
@@ -55,7 +65,7 @@ public final class ChicoryAdapter {
         require(List.of("timing","memory").contains(p.getString("profile")),"unsupported: timing/memory only");
         require(w.getString("abi").equals("core")&&oracle.getString("kind").equals("exact_u64")&&List.of("stateless","fresh_instance_per_sample").contains(w.getString("reset")),"unsupported: core scalar exact-oracle contract required");
         for(String key:List.of("command","vectors","density","checkpoint","continuation","process_snapshot","guest_density","snapshot_density"))require(!w.has(key)||w.isNull(key)||w.optString(key,"").isEmpty(),"unsupported: extended workload contract "+key);
-        require(w.optString("host_profile","").isEmpty(),"unsupported: host imports are not implemented");
+        require(List.of("","identity-v1").contains(w.optString("host_profile","")),"unsupported: unknown host import profile");
         require(oracle.isNull("float")&&oracle.optString("expected_trap","").isEmpty(),"unsupported: extended oracle");
         values(w.getJSONArray("args"));values(oracle.getJSONArray("expected"));
         byte[] next=Files.readAllBytes(Path.of(p.getString("artifact")));
@@ -69,17 +79,17 @@ public final class ChicoryAdapter {
         require(scenario.equals("steady")||(operations==1&&warmup==0),"unsupported: lifecycle requires one operation and zero warmup");
         require(w.getString("reset").equals("stateless")||operations==1,"unsupported: fresh instance requires one operation");
         WasmModule shared=scenario.equals("compile")?null:Parser.parse(bytes);Instance steady=null;
-        if(scenario.equals("steady")&&w.getString("reset").equals("stateless")){steady=Instance.builder(shared).build();initialize(steady,w);verify(steady,w,call(steady,w.getString("export"),values(w.getJSONArray("args"))));}
+        if(scenario.equals("steady")&&w.getString("reset").equals("stateless")){steady=instance(shared,w);initialize(steady,w);verify(steady,w,call(steady,w.getString("export"),values(w.getJSONArray("args"))));}
         JSONArray out=new JSONArray();long[] args=values(w.getJSONArray("args"));
         for(int index=0;index<samples+warmup;index++){
           Instance target=steady;WasmModule module=shared;
-          if(scenario.equals("first-call")||(scenario.equals("steady")&&target==null)){target=Instance.builder(shared).build();initialize(target,w);}
+          if(scenario.equals("first-call")||(scenario.equals("steady")&&target==null)){target=instance(shared,w);initialize(target,w);}
           List<long[]> results=new ArrayList<>();long start=System.nanoTime();
           if(scenario.equals("compile"))module=Parser.parse(bytes);
-          else if(scenario.equals("instantiate"))target=Instance.builder(shared).build();
+          else if(scenario.equals("instantiate"))target=instance(shared,w);
           else for(int op=0;op<operations;op++)results.add(call(target,w.getString("export"),args));
           long elapsed=System.nanoTime()-start;require(elapsed>=0,"elapsed time overflow");
-          if(scenario.equals("compile"))target=Instance.builder(module).build();
+          if(scenario.equals("compile"))target=instance(module,w);
           if(scenario.equals("compile")||scenario.equals("instantiate")){initialize(target,w);results.add(call(target,w.getString("export"),args));}
           for(long[] result:results)verify(target,w,result);
           out.put(new JSONObject().put("index",index).put("warmup",index<warmup).put("elapsed_ns",elapsed).put("operations",scenario.equals("steady")?operations:1).put("sample_type",scenario.equals("steady")&&operations>1?"batch_average":"individual_operation").put("verified",true).put("result",decimals(results.get(results.size()-1))).put("observations",new JSONArray()));

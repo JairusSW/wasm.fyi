@@ -28,7 +28,7 @@ export type HistoryChangeRatio = Assert<Equal<HistoryChange['ratio'], number | n
 export type HistoryChangeNoEvidence = Assert<Equal<Extract<keyof HistoryChange, 'members' | 'samples' | 'reports'>, never>>;
 export type HistoryChangeUncertainty = Assert<Equal<HistoryChange['uncertainty'], 'unavailable'>>;
 
-export type HistoryBuildRole = Assert<Equal<HistoryBinding['buildRole'], 'source' | 'release' | 'unknown'>>;
+export type HistoryBuildRole = Assert<Equal<HistoryBinding['buildRole'], 'source' | 'release' | 'unknown' | 'fixed-baseline'>>;
 export type HistoryCollectionTime = Assert<Equal<HistoryContext['collectedAt'], string | null>>;
 export type HistoryInterpretationTrust = Assert<Equal<HistoryContext['interpretationSource'], 'trusted-publisher-assertion'>>;
 

@@ -20,6 +20,10 @@ dev-frontend:
 dev-caddy:
     bash scripts/dev-caddy.sh
 
+# Build and serve the compact benchmark database through Go and Caddy.
+serve-local:
+    bash scripts/serve-local.sh
+
 # Check Svelte and TypeScript.
 check:
     pnpm check
@@ -62,8 +66,8 @@ gather *reports:
 stage: data-check
     node scripts/stage-data.mjs
 
-# Build and verify the static site, including all evidence assets.
-build: data-check
+# Build and verify the API frontend independently of dataset publication.
+build:
     node scripts/build-site.mjs
 
 # Full verification without requiring a benchmark checkout.
