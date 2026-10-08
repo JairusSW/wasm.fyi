@@ -1,17 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { cohortWeights, weightedGeometricMean } from './aggregates';
+import { aggregate, aggregateCohort } from './aggregates';
 import { fmtU } from './format';
 import { viewCell, viewData } from './view-data';
-import { historyCell, historyChange, historySegments, historyCurve, historySeries, historyCallDetails, historyReusesEvidence, historyCohort, historyVersionChanges, historyComparison, historyCoverage, historyCatalogue, historyReferenceCohort } from './history-values';
+import { historyCell, historyChange, historySegments, historyCurve, historySeries, historyCallDetails, historyReusesEvidence, historyCohort, historyVersionChanges, historyComparison, historyCoverage } from './history-values';
 import { OTM_KEYS, historyPin } from './data/snapshot';
 import { readFileSync } from 'node:fs';
 import type { Scope } from './model';
 
-const referenceAggregate=(selected:Scope,cid:Parameters<typeof historyReferenceCohort>[1],key:Parameters<typeof historyReferenceCohort>[2])=>{
- const cohort=historyReferenceCohort(selected,cid,key),metric=key==='exec'?'steady':key==='inst'?'inst':'compile';
- const h=viewData.history[selected.machine];
- return {count:cohort.length,v:weightedGeometricMean(cohort.map(w=>(h.referenceCells?.[`${w.id}|${cid}|${metric}`] ?? viewCell(selected.machine,'s1',w.id,cid,metric)).v!),cohortWeights(cohort,selected.weighting))};
-};
 const betaIndex=(machine:'m1'|'m2')=>viewData.history[machine].points.findIndex(p=>p.date==='2026-09-29');
 const scope:Scope={machine:'m1',baseline:'A',hide:{},weighting:'workload'};
 it('marks measured versions without inventing version changes around gaps',()=>{
@@ -74,7 +69,7 @@ describe('recorded weekly history',()=>{
     });
     it('retains exact source-pinned beta.11 timing values in the canonical release capture',()=>{
         const reports=new Map<string,ReturnType<typeof JSON.parse>>();
-        for(const machine of ['m1','m2'] as const)for(const workload of historyCatalogue(machine))
+        for(const machine of ['m1','m2'] as const)for(const workload of viewData.catalogue)
             for(const [metric,scenario] of [['compile','compile'],['inst','instantiate'],['first','first-call'],['steady','steady']] as const){
                 const historical=historyCell(machine,workload.id,'G',metric,betaIndex(machine));
                 if(historical.st!=='ok')continue;
@@ -199,7 +194,7 @@ it('identifies Wasmer partial WASI coverage and compares release/main on identic
   expect(coverage.measured).toBeLessThan(coverage.reference);
   const comparison=historyComparison(selected,'D','exec',a,b)!;
   expect(comparison.count).toBe(coverage.measured);
-  const cells=historyCohort(selected,'D','exec',b).map(w=>({w: historyCatalogue(machine).find(item=>item.id===w)!,a:historyCell(machine,w,'D','steady',a).v!,b:historyCell(machine,w,'D','steady',b).v!}));
+  const cells=historyCohort(selected,'D','exec',b).map(w=>({w: viewData.catalogue.find(item=>item.id===w)!,a:historyCell(machine,w,'D','steady',a).v!,b:historyCell(machine,w,'D','steady',b).v!}));
   const groups=[...new Set(cells.map(c=>c.w.group))];
   const mean=(key:'a'|'b')=>Math.exp(groups.reduce((sum,g)=>{const xs=cells.filter(c=>c.w.group===g);return sum+xs.reduce((total,c)=>total+Math.log(c[key]),0)/xs.length;},0)/groups.length);
   expect(comparison.before).toBeCloseTo(mean('a'),10);expect(comparison.after).toBeCloseTo(mean('b'),10);
@@ -207,11 +202,11 @@ it('identifies Wasmer partial WASI coverage and compares release/main on identic
   expect(comparison.before).not.toBe(historySeries(selected,'D','exec')![a]);
  }
 });
-it('uses recorded reference cohorts for every engine and every aggregate metric',()=>{
+it('uses current reference cohorts for every engine and every aggregate metric',()=>{
  for(const machine of ['m1','m2'] as const)for(const [key,metric,group,col] of [['exec','steady','lat',3],['compile','compile','lat',0],['inst','inst','lat',1],['mem','rss','mem',2],['code','code','code',3]] as const){
   const selected:Scope={...scope,machine};
   for(const cid of viewData.applicationConfigurations){
-   const reference=historyReferenceCohort(selected,cid,key);if(!reference.length)continue;
+   const reference=aggregateCohort(selected,group,cid,col).cohort;if(!reference.length)continue;
    const h=viewData.history[machine];
    for(const [i] of h.points.entries()){
     const expected=reference.filter(w=>{const c=historyCell(machine,w.id,cid,metric,i);return !!c.report&&c.st==='ok'&&c.v!=null&&Number.isFinite(c.v)&&c.v>0;}).map(w=>w.id);
@@ -222,7 +217,7 @@ it('uses recorded reference cohorts for every engine and every aggregate metric'
  }
 });
 
-it('recalculates every sealed week on the recorded reference cohort, preserving missing measurements',()=>{
+it('recalculates every sealed week on the current reference cohort, preserving missing measurements',()=>{
  let checked=0;
  for(const machine of ['m1','m2'] as const)for(const weighting of ['corpus','workload'] as const){
   const selected:Scope={machine,baseline:'G',hide:{},weighting};
@@ -231,7 +226,7 @@ it('recalculates every sealed week on the recorded reference cohort, preserving 
    const series=new Map(viewData.applicationConfigurations.map(cid=>[cid,historySeries(selected,cid,key)]));
    for(const [i,point] of h.points.entries()){
     if(point.status!=='measured'||point.currentLatency)continue;
-    const workloads=historyReferenceCohort(selected,'G',key);
+    const workloads=aggregateCohort({...selected,snapshot:'s1'},'lat','G',key==='exec'?3:key==='compile'?0:1).cohort;
     const ok=(id:string,cid:typeof viewData.applicationConfigurations[number])=>{const c=historyCell(machine,id,cid,metric,i);return !!c.report&&c.st==='ok'&&c.v!=null&&Number.isFinite(c.v)&&c.v>0;};
     for(const cid of viewData.applicationConfigurations){
      const cohort=workloads.filter(w=>ok(w.id,cid));
@@ -251,13 +246,13 @@ it('recalculates every sealed week on the recorded reference cohort, preserving 
 
 
 for(const machine of ['m1','m2'] as const)for(const weighting of ['corpus','workload'] as const)
-it(`matches recorded reference and beta.11 history averages exactly on ${machine} with ${weighting} weighting`,()=>{
+it(`matches current and beta.11 history averages exactly on ${machine} with ${weighting} weighting`,()=>{
  for(const hide of [{},{A:true,D:true}])for(const baseline of ['A','G'] as const){
   const selected:Scope={machine,weighting,hide,baseline};
   const beta=betaIndex(machine);
   expect(viewData.history[machine].points[beta].currentLatency?.G).toBe('s1');
   for(const [key,col] of [['compile',0],['inst',1],['exec',3]] as const){
-   const current=referenceAggregate(selected,'G',key);
+   const current=aggregate(selected,'lat','G',col)!;
    const historical=historySeries(selected,'G',key)![beta];
    expect(historical).toBe(current.v);
    expect(fmtU(historical,'ms')).toBe(fmtU(current.v,'ms'));
@@ -266,7 +261,7 @@ it(`matches recorded reference and beta.11 history averages exactly on ${machine
  }
 });
 
-it('shows all captured engine releases at publication dates using their exact recorded evidence',()=>{
+it('shows all captured engine releases at publication dates using their exact current evidence',()=>{
  const releases=[['A','46.0.1','2026-06-24'],['D','7.5.0','2026-10-01'],['E','1.12.0','2026-05-29'],['F','14.6.202.34-node.21','2026-06-24'],['L','nightly-2026-04-05-4e82bb9','2026-04-05']] as const;
  for(const machine of ['m1','m2'] as const)for(const [cid,version,date] of releases){
   const h=viewData.history[machine],i=h.points.findIndex(p=>p.date===date);
@@ -274,9 +269,9 @@ it('shows all captured engine releases at publication dates using their exact re
   expect(h.points[i].releases?.[cid]?.version).toBe(version);
   const selected:Scope={...scope,machine};
   for(const [key,metric,col] of [['compile','compile',0],['inst','inst',1],['exec','steady',3]] as const){
-   expect(historySeries(selected,cid,key)![i]).toBe(referenceAggregate(selected,cid,key).v);
-   for(const w of historyCatalogue(machine).filter(w=>!w.id.startsWith('features/'))){
-    const current=h.referenceCells?.[`${w.id}|${cid}|${metric}`] ?? viewCell(machine,'s1',w.id,cid,metric);if(!current.report)continue;
+   expect(historySeries(selected,cid,key)![i]).toBe(aggregate(selected,'lat',cid,col)!.v);
+   for(const w of viewData.catalogue.filter(w=>!w.id.startsWith('features/'))){
+    const current=viewCell(machine,'s1',w.id,cid,metric);if(!current.report)continue;
     const captured=historyCell(machine,w.id,cid,metric,i);
     expect(captured.report).toBe(current.report);expect(captured.v).toBe(current.v);expect(captured.st).toBe(current.st);
    }

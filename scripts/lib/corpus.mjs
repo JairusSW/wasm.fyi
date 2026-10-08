@@ -3,7 +3,6 @@ import { join, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { applicationWorkloads } from './application-manifest.mjs';
 import { site, digest } from './wasmbench.mjs';
-import { assertMainCorpusContract } from './main-corpus-contract.mjs';
 
 // Protocol values are already decimal strings, but retained upstream contracts
 // can contain raw 64-bit JSON integers. Preserve their token before reserializing.
@@ -40,7 +39,7 @@ export function rebaseRetainedWorkload(workload, siteRoot = site) {
   return visit(workload);
 }
 
-export async function prepareCorpus(settings, run, directory, { includeBoundaryCalls = true } = {}) {
+export async function prepareCorpus(settings, run, directory) {
   const selected = process.env.WASMBENCH_SUITE || settings.collection.suite;
   if (selected !== 'wago' && selected !== 'all') return selected.endsWith('.json') ? resolve(site, selected) : selected;
   const corpus = settings.corpus;
@@ -77,10 +76,7 @@ export async function prepareCorpus(settings, run, directory, { includeBoundaryC
   const applicationIds = process.env.WASMBENCH_APPLICATION_IDS?.split(',').filter(Boolean);
   const applications = process.env.WASMBENCH_CORPUS_IDS && applicationIds === undefined ? [] : await applicationWorkloads(corpus.applications, applicationIds);
   workloads.push(...applications);
-  // Apply before boundary-call/feature fixtures are appended: those suites
-  // intentionally exercise host interfaces and are not application workloads.
-  if (corpus.requireCore) for (const w of workloads) assertMainCorpusContract(w, await readFile(w.artifact));
-  if(includeBoundaryCalls && (corpus.buildManifest||selected==='all')) {
+  if(corpus.buildManifest||selected==='all') {
     const callsManifest=join(output,'host-calls.json');
     process.stdout.write(run('corpus','--suite','calls','--out',callsManifest));
     workloads.push(...parseCorpusJSON(await readFile(callsManifest,'utf8')));

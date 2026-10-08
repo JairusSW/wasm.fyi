@@ -1,17 +1,12 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
-import { harness, site, config } from './lib/wasmbench.mjs';
+import { harness, site } from './lib/wasmbench.mjs';
 import { prepareCorpus } from './lib/corpus.mjs';
 import { workloadCategory, algorithmCoverage } from './lib/workload-category.mjs';
 
 if(process.env.WASMBENCH_CORPUS_IDS || process.env.WASMBENCH_APPLICATION_IDS || process.env.WASMBENCH_SUITE)throw Error('Corpus audit requires the complete configured inventory');
-const mainOnly=process.argv.includes('--main-only');
-const {settings,run}=mainOnly
-  ? {settings:await config(),run:()=>{throw Error('Main-only audit requires locally source-built artifacts');}}
-  : await harness();
-// Boundary fixtures are removed from this catalog below; do not bootstrap a
-// separate harness merely to generate and then discard them in main-only mode.
-const manifest=await prepareCorpus(settings,run,undefined,{includeBoundaryCalls:!mainOnly});
+const {settings,run}=await harness();
+const manifest=await prepareCorpus(settings,run);
 // Boundary-call fixtures have their own measurement category. They are not
 // additional application algorithms and do not change the 6–9 per-group rule.
 const ws=JSON.parse(await readFile(manifest)).filter(w=>!w.id.startsWith('mechanisms/'));
@@ -30,8 +25,8 @@ const catalog={schema:1,policy:'Prepared corpus inventory, not measured performa
   boundaries:[
     'CPU kernels represent the specified operations, not whole applications or user-visible frame rates.',
     'Graphics workloads measure CPU geometry, image processing and software rendering; WebGL/WebGPU drivers and GPU throughput are outside engine comparison.',
-    'The main application corpus requires core Wasm with no WASI or host I/O imports. Separate feature and conformance suites retain WASI coverage.',
-    'All main-corpus inputs and outputs are in memory. Archive traversal and extracted bitstream algorithms do not measure filesystem, disk, network or CLI throughput. Browser DOM and UI integration require host-specific end-to-end suites.',
+    'Command workloads require declared WASI host contracts; missing adapters are explicit, not inferred from feature compatibility.',
+    'Filesystem fixtures are deterministic sandbox inputs, not disk or network throughput. Browser DOM, network latency and UI integration require host-specific end-to-end suites.',
     'Video motion estimation and audio DSP are processing kernels; this corpus does not claim complete video-codec, speech recognition or font-shaping coverage.'
   ],
   workloads:await Promise.all(ws.map(async w=>({id:w.id.replace(/^(wago|applications)\//,''),contractId:w.id,algorithm:w.provenance.algorithm,category:workloadCategory(w),sha256:w.sha256,artifactBytes:(await readFile(w.artifact)).length,

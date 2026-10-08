@@ -57,27 +57,27 @@
       "category": "Calls & memory"
     },
     {
-      "id": "wago/wasm-tools-assemble-validate",
-      "algorithm": "wasm-assembly-validation",
+      "id": "wago/clang-cpp-kernels",
+      "algorithm": "clang-compilation",
       "category": "Compilers & development tools"
     },
     {
-      "id": "wago/tree-sitter-swift-parse",
-      "algorithm": "swift-parsing",
+      "id": "wago/swift-format-source",
+      "algorithm": "swift-formatting",
       "category": "Compilers & development tools"
     },
     {
-      "id": "wago/oxc-js-minify",
+      "id": "wago/esbuild-minify",
       "algorithm": "javascript-minification",
       "category": "Compilers & development tools"
     },
     {
-      "id": "wago/brotli-memory-roundtrip",
+      "id": "wago/brotli-compress",
       "algorithm": "brotli",
       "category": "Compression"
     },
     {
-      "id": "wago/xz-memory-decode",
+      "id": "wago/xzdec-decompress",
       "algorithm": "lzma",
       "category": "Compression"
     },
@@ -97,13 +97,13 @@
       "category": "Compression"
     },
     {
-      "id": "wago/sqlite-memory-query",
+      "id": "wago/sqlite3-query",
       "algorithm": "sqlite-sql-query",
       "category": "Databases & analytics"
     },
     {
-      "id": "wago/zip-directory-extract",
-      "algorithm": "zip-directory-extraction",
+      "id": "wago/tree-list",
+      "algorithm": "directory-tree-walk",
       "category": "Files & directories"
     },
     {
@@ -122,22 +122,22 @@
       "category": "Graphics & images"
     },
     {
-      "id": "wago/abc-isop-minimize",
-      "algorithm": "logic-minimization",
+      "id": "wago/yosys-counter",
+      "algorithm": "yosys-counter",
       "category": "Hardware design"
     },
     {
-      "id": "wago/icestorm-multiboot-memory",
+      "id": "wago/icemulti-image",
       "algorithm": "icemulti-image",
       "category": "Hardware design"
     },
     {
-      "id": "wago/icestorm-bitstream-memory",
+      "id": "wago/icepack-pack",
       "algorithm": "icepack-pack",
       "category": "Hardware design"
     },
     {
-      "id": "wago/trellis-pll-search",
+      "id": "wago/ecppll-clock",
       "algorithm": "ecppll-clock",
       "category": "Hardware design"
     },
@@ -162,13 +162,13 @@
       "category": "Hashing & cryptography"
     },
     {
-      "id": "wago/x25519-public",
+      "id": "wago/age-keygen-public",
       "algorithm": "x25519-key-derivation",
       "category": "Hashing & cryptography"
     },
     {
-      "id": "wago/rusttext-sort",
-      "algorithm": "utf8-line-sorting",
+      "id": "wago/coreutils-sort",
+      "algorithm": "coreutils-sorting",
       "category": "Integer & graph algorithms"
     },
     {
@@ -187,12 +187,12 @@
       "category": "Integer & graph algorithms"
     },
     {
-      "id": "wago/serde-json2csv",
+      "id": "wago/json2csv-people",
       "algorithm": "json-to-csv",
       "category": "JSON & serialization"
     },
     {
-      "id": "wago/jaq-json-query",
+      "id": "wago/jq-json-transform",
       "algorithm": "jq-query-transform",
       "category": "JSON & serialization"
     },
@@ -207,17 +207,17 @@
       "category": "JSON & serialization"
     },
     {
-      "id": "wago/mruby-memory-buckets",
-      "algorithm": "mruby-interpreter",
+      "id": "wago/ruby-buckets",
+      "algorithm": "ruby-interpreter",
       "category": "Language runtimes"
     },
     {
-      "id": "wago/lua-memory-buckets",
+      "id": "wago/lua-cli-buckets",
       "algorithm": "lua-interpreter",
       "category": "Language runtimes"
     },
     {
-      "id": "wago/quickjs-memory-events",
+      "id": "wago/quickjs-script",
       "algorithm": "javascript-interpreter",
       "category": "Language runtimes"
     },
@@ -262,7 +262,7 @@
       "category": "Numerical arithmetic"
     },
     {
-      "id": "wago/regex-source-scan",
+      "id": "wago/ripgrep-source",
       "algorithm": "regex-source-search",
       "category": "Search & indexing"
     },
@@ -292,13 +292,13 @@
       "category": "Stencils"
     },
     {
-      "id": "wago/base64-rfc4648",
+      "id": "wago/coreutils-base64",
       "algorithm": "base64-encoding",
       "category": "Text & parsing"
     },
     {
-      "id": "wago/unicode-wordcount",
-      "algorithm": "unicode-text-counting",
+      "id": "wago/coreutils-wc",
+      "algorithm": "word-count",
       "category": "Text & parsing"
     },
     {

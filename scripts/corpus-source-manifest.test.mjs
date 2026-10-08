@@ -63,16 +63,3 @@ test('retained artifacts and command inputs rebase across Mac and Linux checkout
   assert.equal(workload.artifact,'/home/hub/site/.wasmbench/upstream/build/artifacts/tiny.wasm');
   assert.equal(workload.command.files['input.c'].path,'/home/hub/site/corpora/upstream/wago/corpus/workloads/clang/input.c');
 });
-
-test('main-only inventory preserves every application and never invokes the separate boundary harness',async()=>{
-  await fixture(async({directory,settings})=>{
-    const artifact=join(directory,'tiny.wasm'),bytes=Buffer.from('0061736d01000000','hex');
-    await writeFile(artifact,bytes);
-    await writeFile(settings.corpus.buildManifest,JSON.stringify([{id:'wago/tiny/source',artifact,sha256:digest(bytes)}]));
-    const output=await prepareCorpus(settings,()=>{throw Error('Unnecessary harness invocation');},join(directory,'main-only'),{includeBoundaryCalls:false});
-    const workloads=JSON.parse(await readFile(output));
-    assert.equal(workloads.length,103);
-    assert.equal(workloads.filter(w=>w.id.startsWith('applications/')).length,102);
-    assert(!workloads.some(w=>w.id.startsWith('mechanisms/')));
-  });
-});

@@ -3,14 +3,6 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { config, site, digest } from './lib/wasmbench.mjs';
-import { selectRetainedSources } from './lib/upstream-source-selection.mjs';
-test('source refresh preserves new core ports and fails closed on unresolved selections',()=>{
-  const replacement={id:'lua-memory-buckets',replaces:'wago/lua-cli-buckets',group:'runtimes'};
-  const result=selectRetainedSources(['tiny','lua-memory-buckets'],[{id:'tiny'},{id:'lua-cli-buckets'}],[replacement]);
-  assert.deepEqual(result.selected,[{id:'tiny'}]);
-  assert.deepEqual(result.replacements,[replacement]);
-  assert.throws(()=>selectRetainedSources(['tiny','missing'],[{id:'tiny'}],[replacement]),/refusing to replace/);
-});
 test('retained upstream sources and recipes match the selected inventory and digests',async()=>{
   const lock=JSON.parse(await readFile(join(site,'corpora/upstream/sources.json'))),settings=await config();
   assert.deepEqual(lock.benchmarks.map(b=>b.id).sort(),[...settings.corpus.ids].sort());

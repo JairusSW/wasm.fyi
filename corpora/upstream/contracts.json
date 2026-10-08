@@ -1,1866 +1,2155 @@
 [
   {
     "schema": 1,
-    "id": "wago/mruby-memory-buckets",
+    "id": "wago/ruby-buckets",
     "family": "applications",
-    "artifact": "workloads/nonwasi/mruby-memory-buckets.wasm",
-    "abi": "core",
-    "export": "run",
-    "args": [],
-    "initialize": "__wasm_call_ctors",
+    "artifact": "workloads/applications/ruby/ruby.wasm",
+    "sha256": "de598f394e398763d2b147e3e51a6eeadf048128598ac4a3f992a97204c192b0",
+    "abi": "wasi-command",
+    "host_profile": "wasi-preview1-readonly-v1",
     "features": [],
-    "reset": "stateless",
-    "work_unit": "program",
-    "units_per_invocation": 1,
-    "oracle": {
-      "kind": "exact_u64",
-      "expected": [
-        "4009348093"
-      ]
-    },
-    "license": "MIT",
-    "source": "https://github.com/mruby/mruby.git",
-    "provenance": {
-      "scope": "execution",
-      "algorithm": "mruby-interpreter",
-      "category": "Language runtimes",
-      "description": "mruby 3.4.0 parses and executes the original Ruby Hash, Range, Enumerable and string-interpolation bucket program entirely in memory",
-      "replaces": "wago/ruby-buckets",
-      "input_sha256": "3a3ae9520f56cab00ed012b018a330d8a6f53f08c556a7baf9ea2da401e79fd9",
-      "reference_stdout_sha256": "a9cfd18aeeb61f448d9314c2687d0bf22b1a287a4a3b165a5aa676ff4b0de869",
-      "oracle_derivation": "FNV-1a of complete independently generated native reference stdout; hashes also match the retained WASI corpus reference",
-      "upstreamSource": {
-        "repository": "https://github.com/mruby/mruby.git",
-        "revision": "a309524d0bc90eef077a24634db2495a6f68e318",
-        "license": "MIT",
-        "toolchain": "WASI SDK 34 clang; core memory-only link"
-      }
+    "export": "_start",
+    "args": [],
+    "command": {
+      "argv": [
+        "ruby-buckets",
+        "--disable-gems",
+        "-"
+      ],
+      "stdin_file": "program.rb",
+      "files": {
+        "program.rb": {
+          "path": "corpora/upstream/wago/corpus/workloads/applications/ruby/inputs/program.rb",
+          "size": 136,
+          "sha256": "3a3ae9520f56cab00ed012b018a330d8a6f53f08c556a7baf9ea2da401e79fd9"
+        }
+      },
+      "exit_code": 0,
+      "stdout_sha256": "a9cfd18aeeb61f448d9314c2687d0bf22b1a287a4a3b165a5aa676ff4b0de869",
+      "output_limit_bytes": 16777216
     },
     "original_contract": {
-      "desc": "mruby 3.4.0 parses and executes the original Ruby Hash, Range, Enumerable and string-interpolation bucket program entirely in memory"
-    },
-    "sha256": "3a2c5465a34efbde3726d89f1639fc4a837ccf96880588e81856c7e1bb5ec5de",
-    "generator": "wasm-fyi-source-build-v1"
-  },
-  {
-    "schema": 1,
-    "id": "wago/wasm-tools-assemble-validate",
-    "family": "applications",
-    "artifact": "workloads/nonwasi/wasm-tools-assemble-validate.wasm",
-    "abi": "core",
-    "features": [],
-    "export": "run",
-    "args": [],
-    "reset": "stateless",
-    "oracle": {
-      "kind": "exact_u64",
-      "expected": [
-        "1659816563"
-      ]
-    },
-    "license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT",
-    "source": "https://github.com/bytecodealliance/wasm-tools",
-    "work_unit": "functions",
-    "units_per_invocation": 96,
-    "provenance": {
-      "kind": "upstream-library",
-      "algorithm": "wasm-assembly-validation",
-      "category": "Compilers & development tools",
-      "scope": "execution",
-      "replaces": "wago/clang-cpp-kernels",
-      "description": "wasm-tools WAT parser/encoder and wasmparser validation of 96 structured functions, table, globals, data and memory; replaces C++ compilation with WebAssembly assembly/validation.",
-      "oraclePolicy": "Committed native upstream/reference golden; zero imports; five calls including reset. Hardware full-output SHA-256; ABC exhaustive truth tables; generated JS/Wasm independently executed.",
-      "recipe": {
-        "source": "corpora/nonwasi/tooling",
-        "flags": [
-          "build",
-          "--lib",
-          "--locked",
-          "--release",
-          "--target",
-          "wasm32-unknown-unknown",
-          "--no-default-features",
-          "--features",
-          "assembler"
-        ],
-        "compiler": "Rust 1.90.0 wasm32-unknown-unknown"
+      "suite": "ruby",
+      "desc": "Ruby 3.2.2 groups five thousand integers into seventeen weighted buckets",
+      "id": "ruby-buckets",
+      "artifact": "workloads/applications/ruby/ruby.wasm",
+      "artifact_sha256": "de598f394e398763d2b147e3e51a6eeadf048128598ac4a3f992a97204c192b0",
+      "tags": [
+        "application",
+        "interpreter",
+        "ruby",
+        "c",
+        "wasi"
+      ],
+      "source": {
+        "repository": "https://github.com/vmware-labs/webassembly-language-runtimes/releases/tag/ruby%2F3.2.2%2B20230714-11be424",
+        "revision": "ruby/3.2.2+20230714-11be424",
+        "revision_date": "2023-07-14",
+        "license": "Apache-2.0 AND (BSD-2-Clause OR Ruby)",
+        "toolchain": "WLR slim WASI release",
+        "toolchain_version": "3.2.2"
       },
-      "upstreamSource": {
-        "repository": "https://github.com/bytecodealliance/wasm-tools",
-        "revision": "35f8671bce74190ef0b00ce36c399b053b490374",
-        "version": "wat 1.239.0 / wasmparser 0.239.0",
-        "cargoLockSha256": "ddc7277c847b0d0974740aba9c120c0acae8b62369a8b47594178e9888de1971",
-        "toolchain": "rustc 1.90.0 (1159e78c4 2025-09-14)",
-        "license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT"
+      "stages": [
+        "Decode",
+        "Validate",
+        "Compile",
+        "CompileFull",
+        "CommandExec"
+      ],
+      "command": {
+        "runtime": "wasi",
+        "platforms": [
+          "linux/amd64",
+          "linux/arm64",
+          "darwin/amd64",
+          "darwin/arm64"
+        ],
+        "export": "_start",
+        "args": [
+          "--disable-gems",
+          "-"
+        ],
+        "stdin": "program.rb",
+        "preopen": "workloads/applications/ruby/inputs",
+        "inputs": {
+          "program.rb": "3a3ae9520f56cab00ed012b018a330d8a6f53f08c556a7baf9ea2da401e79fd9"
+        },
+        "stdout_sha256": "a9cfd18aeeb61f448d9314c2687d0bf22b1a287a4a3b165a5aa676ff4b0de869"
       }
     },
-    "sha256": "fb014bf616d656b7971506edfb0d0b5971d783567631e50371c4d218cca74b84",
-    "generator": "wasm-fyi-source-build-v1"
+    "provenance": {
+      "catalog_sha256": "e02b20f2ccf9db3bc4649270c8d8eeff2b29bdb6acb6ecb47fab2697cd811a9f",
+      "importer": "wago-catalog-v1",
+      "source_revision": "9f01d145d54ac7ab458b6b2f6047db90a757410a",
+      "algorithm": "ruby-interpreter",
+      "category": "Language runtimes"
+    },
+    "work_unit": "command",
+    "units_per_invocation": 1,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "Apache-2.0 AND (BSD-2-Clause OR Ruby)",
+    "source": {
+      "repository": "https://github.com/vmware-labs/webassembly-language-runtimes/releases/tag/ruby%2F3.2.2%2B20230714-11be424",
+      "revision": "ruby/3.2.2+20230714-11be424",
+      "revision_date": "2023-07-14",
+      "license": "Apache-2.0 AND (BSD-2-Clause OR Ruby)",
+      "toolchain": "WLR slim WASI release",
+      "toolchain_version": "3.2.2"
+    },
+    "generator": "wago-catalog-v1"
   },
   {
     "schema": 1,
-    "id": "wago/lua-memory-buckets",
+    "id": "wago/clang-cpp-kernels",
     "family": "applications",
-    "artifact": "workloads/nonwasi/lua-memory-buckets.wasm",
-    "abi": "core",
-    "export": "run",
-    "args": [],
-    "initialize": "__wasm_call_ctors",
+    "artifact": "workloads/applications/clang/clang.wasm",
+    "sha256": "d817b7af8c2cc851527d5872256f27079d6905750a755668683293ec8e36b584",
+    "abi": "wasi-command",
+    "host_profile": "wasi-preview1-readonly-v1",
     "features": [],
-    "reset": "stateless",
-    "work_unit": "program",
-    "units_per_invocation": 1,
-    "oracle": {
-      "kind": "exact_u64",
-      "expected": [
-        "3845025982"
-      ]
+    "export": "_start",
+    "args": [],
+    "command": {
+      "argv": [
+        "clang-cpp-kernels",
+        "-cc1",
+        "-triple",
+        "wasm32-unknown-wasi",
+        "-x",
+        "c++",
+        "-std=c++17",
+        "-S",
+        "-emit-llvm",
+        "-O0",
+        "-o",
+        "-",
+        "-"
+      ],
+      "stdin_file": "kernels.cpp",
+      "files": {
+        "kernels.c": {
+          "path": "corpora/upstream/wago/corpus/workloads/applications/clang/inputs/kernels.c",
+          "size": 397,
+          "sha256": "825111006a2458ae38cc23cb3083b67071ef9b78bcf824a7b7f0d204d1282d6d"
+        },
+        "kernels.cpp": {
+          "path": "corpora/upstream/wago/corpus/workloads/applications/clang/inputs/kernels.cpp",
+          "size": 297,
+          "sha256": "fbe6a92a4ec0928dcbcd3db5474b597f35a9a4714e83a8005aff9b4ec4169c97"
+        }
+      },
+      "exit_code": 0,
+      "stdout_sha256": "9794c0c31f087bef054004adfc82595f4d00e2680ad0440c01f188d44c09a506",
+      "stdout_normalize": "llvm-ir-preds",
+      "output_limit_bytes": 16777216
     },
-    "license": "MIT",
-    "source": "https://www.lua.org/ftp/lua-5.4.6.tar.gz",
+    "original_contract": {
+      "suite": "clang",
+      "desc": "Clang 8 parses a C++17 function template and emits LLVM IR",
+      "id": "clang-cpp-kernels",
+      "artifact": "workloads/applications/clang/clang.wasm",
+      "artifact_sha256": "d817b7af8c2cc851527d5872256f27079d6905750a755668683293ec8e36b584",
+      "tags": [
+        "application",
+        "compiler",
+        "clang",
+        "c++",
+        "wasi"
+      ],
+      "source": {
+        "repository": "https://github.com/binji/wasm-clang",
+        "revision": "648c4a89997a351eef75cdaec3ef5b89d4937dec",
+        "revision_date": "2023-12-07",
+        "license": "Apache-2.0 WITH LLVM-exception",
+        "toolchain": "WABT import rename",
+        "toolchain_version": "Clang 8.0.1"
+      },
+      "stages": [
+        "Decode",
+        "Validate",
+        "Compile",
+        "CompileFull",
+        "CommandExec"
+      ],
+      "command": {
+        "runtime": "wasi",
+        "reference_runtime": "wasmtime",
+        "platforms": [
+          "linux/amd64",
+          "linux/arm64",
+          "darwin/amd64",
+          "darwin/arm64"
+        ],
+        "export": "_start",
+        "args": [
+          "-cc1",
+          "-triple",
+          "wasm32-unknown-wasi",
+          "-x",
+          "c++",
+          "-std=c++17",
+          "-S",
+          "-emit-llvm",
+          "-O0",
+          "-o",
+          "-",
+          "-"
+        ],
+        "stdin": "kernels.cpp",
+        "preopen": "workloads/applications/clang/inputs",
+        "inputs": {
+          "kernels.c": "825111006a2458ae38cc23cb3083b67071ef9b78bcf824a7b7f0d204d1282d6d",
+          "kernels.cpp": "fbe6a92a4ec0928dcbcd3db5474b597f35a9a4714e83a8005aff9b4ec4169c97"
+        },
+        "stdout_normalize": "llvm-ir-preds",
+        "stdout_sha256": "9794c0c31f087bef054004adfc82595f4d00e2680ad0440c01f188d44c09a506"
+      }
+    },
     "provenance": {
-      "scope": "execution",
+      "catalog_sha256": "e02b20f2ccf9db3bc4649270c8d8eeff2b29bdb6acb6ecb47fab2697cd811a9f",
+      "importer": "wago-catalog-v1",
+      "source_revision": "9f01d145d54ac7ab458b6b2f6047db90a757410a",
+      "algorithm": "clang-compilation",
+      "category": "Compilers & development tools"
+    },
+    "work_unit": "command",
+    "units_per_invocation": 1,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "Apache-2.0 WITH LLVM-exception",
+    "source": {
+      "repository": "https://github.com/binji/wasm-clang",
+      "revision": "648c4a89997a351eef75cdaec3ef5b89d4937dec",
+      "revision_date": "2023-12-07",
+      "license": "Apache-2.0 WITH LLVM-exception",
+      "toolchain": "WABT import rename",
+      "toolchain_version": "Clang 8.0.1"
+    },
+    "generator": "wago-catalog-v1"
+  },
+  {
+    "schema": 1,
+    "id": "wago/lua-cli-buckets",
+    "family": "applications",
+    "artifact": "workloads/applications/lua/lua.wasm",
+    "sha256": "51e8072539c5ba5f4e97e7e776ef852f9879cb5b97b4e5d0f9f1e9c3956ffbe2",
+    "abi": "wasi-command",
+    "host_profile": "wasi-preview1-readonly-v1",
+    "features": [],
+    "export": "_start",
+    "args": [],
+    "command": {
+      "argv": [
+        "lua-cli-buckets",
+        "/program.lua"
+      ],
+      "files": {
+        "program.lua": {
+          "path": "corpora/upstream/wago/corpus/workloads/applications/lua/inputs/program.lua",
+          "size": 1263,
+          "sha256": "3807a5f816795e9be766394e54b9f07e35717a19d9af91e10611c69e5e8e3c28"
+        }
+      },
+      "exit_code": 0,
+      "stdout_sha256": "0596a0eadbe52c645aa00bb7fca2ed57f1620d4041ce78dc40080b2b934468fb",
+      "output_limit_bytes": 16777216
+    },
+    "original_contract": {
+      "suite": "lua",
+      "desc": "standalone Lua 5.4.6 interpreter aggregates one million generated events into 257 ranked buckets",
+      "id": "lua-cli-buckets",
+      "artifact": "workloads/applications/lua/lua.wasm",
+      "artifact_sha256": "51e8072539c5ba5f4e97e7e776ef852f9879cb5b97b4e5d0f9f1e9c3956ffbe2",
+      "tags": [
+        "application",
+        "interpreter",
+        "lua",
+        "c",
+        "wasi"
+      ],
+      "source": {
+        "repository": "https://github.com/nalgeon/lua-wasi",
+        "revision": "@antonz/lua-wasi 5.4.6",
+        "revision_date": "2024-01-03",
+        "license": "MIT",
+        "toolchain": "wasienv plus WABT import rename",
+        "toolchain_version": "Lua 5.4.6"
+      },
+      "stages": [
+        "Decode",
+        "Validate",
+        "Compile",
+        "CompileFull",
+        "CommandExec"
+      ],
+      "command": {
+        "runtime": "wasi",
+        "reference_runtime": "wasmtime",
+        "platforms": [
+          "linux/amd64",
+          "linux/arm64",
+          "darwin/amd64",
+          "darwin/arm64"
+        ],
+        "export": "_start",
+        "args": [
+          "/program.lua"
+        ],
+        "preopen": "workloads/applications/lua/inputs",
+        "inputs": {
+          "program.lua": "3807a5f816795e9be766394e54b9f07e35717a19d9af91e10611c69e5e8e3c28"
+        },
+        "stdout_sha256": "0596a0eadbe52c645aa00bb7fca2ed57f1620d4041ce78dc40080b2b934468fb"
+      }
+    },
+    "provenance": {
+      "catalog_sha256": "e02b20f2ccf9db3bc4649270c8d8eeff2b29bdb6acb6ecb47fab2697cd811a9f",
+      "importer": "wago-catalog-v1",
+      "source_revision": "9f01d145d54ac7ab458b6b2f6047db90a757410a",
       "algorithm": "lua-interpreter",
-      "category": "Language runtimes",
-      "description": "Lua 5.4.6 parses and executes the original million-event ranked-bucket program entirely in memory",
-      "replaces": "wago/lua-cli-buckets",
-      "input_sha256": "3807a5f816795e9be766394e54b9f07e35717a19d9af91e10611c69e5e8e3c28",
-      "reference_stdout_sha256": "0596a0eadbe52c645aa00bb7fca2ed57f1620d4041ce78dc40080b2b934468fb",
-      "oracle_derivation": "FNV-1a of complete independently generated native reference stdout; hashes also match the retained WASI corpus reference",
-      "upstreamSource": {
-        "repository": "https://www.lua.org/ftp/lua-5.4.6.tar.gz",
-        "revision": "5.4.6",
-        "sha256": "7d5ea1b9cb6aa0b59ca3dde1c6adcb57ef83a1ba8e5432c0ecd06bf439b3ad88",
-        "license": "MIT",
-        "toolchain": "WASI SDK 34 clang; core memory-only link"
-      }
+      "category": "Language runtimes"
     },
-    "original_contract": {
-      "desc": "Lua 5.4.6 parses and executes the original million-event ranked-bucket program entirely in memory"
-    },
-    "sha256": "2249ae9a6f24c7baf9fce27313a477543a2c54566e3f1791c0613eabcc9ff5b5",
-    "generator": "wasm-fyi-source-build-v1"
-  },
-  {
-    "schema": 1,
-    "id": "wago/rusttext-sort",
-    "family": "applications",
-    "abi": "core",
-    "artifact": "workloads/nonwasi/rusttext-sort.wasm",
-    "source": "scripts/nonwasi-text.mjs",
-    "generator": "wasm-fyi-source-build-v1",
-    "features": [],
-    "work_unit": "lines",
-    "units_per_invocation": 4096,
-    "export": "benchmark",
-    "args": [],
-    "reset": "stateless",
+    "work_unit": "command",
+    "units_per_invocation": 1,
+    "reset": "fresh_instance_per_sample",
     "oracle": {
-      "kind": "exact_u64",
-      "expected": [
-        "1255930980181392765"
-      ]
-    },
-    "license": "MIT OR Apache-2.0",
-    "provenance": {
-      "algorithm": "rusttext-sort",
-      "category": "Integer & graph algorithms",
-      "scope": "execution",
-      "resetPolicy": "Invocation-local state; previous output allocation replaced",
-      "kind": "upstream-library",
-      "description": "Rust standard-library stable UTF-8 line sorting; replaces coreutils CLI sort without locale or filesystem",
-      "semanticMapping": {
-        "replaces": "wago/coreutils-sort",
-        "retained": "Rust standard-library stable UTF-8 line sorting; replaces coreutils CLI sort without locale or filesystem",
-        "excluded": "CLI, environment, filesystem, clocks and host entropy"
-      },
-      "upstreamPackages": [],
-      "recipe": {
-        "compiler": "rustc 1.90.0 (1159e78c4 2025-09-14)",
-        "target": "wasm32-unknown-unknown",
-        "targetCapabilities": [
-          "bulk-memory",
-          "sign-extension",
-          "saturating-float-to-int",
-          "reference-types"
-        ],
-        "cargoLockSha256": "ba221df50e64e2877ce76e79f292d2e137b866e99b0b2cbcfec4ce708b957c2e",
-        "source": "corpora/nonwasi/text",
-        "sourceSha256": "f9c19e30a9abb763b1f326cd90be56cb9e327161a02d67e39705d5fefc4c66d9",
-        "oracleSource": "scripts/nonwasi-text.mjs",
-        "oracleSourceSha256": "7c10239daddaf7f32b0794dd28afd34939cae81a97b585bb4966f6e1ed52ab67",
-        "features": [
-          "sort"
-        ],
-        "flags": [
-          "--locked",
-          "--release",
-          "--no-default-features"
-        ]
-      },
-      "input": {
-        "files": {
-          "lines.txt": {
-            "bytes": 57044,
-            "sha256": "4e4f40123f6a8d9b28109266a5ad2026f0218fbf346dc195563afcebf3039a2c"
-          },
-          "binary.bin": {
-            "bytes": 32771,
-            "sha256": "66436f86e3aa3d07899aed831881bbee6b3b8eff2be92bdc15658abee1f156ba"
-          },
-          "words.txt": {
-            "bytes": 21906,
-            "sha256": "b009a801e7f63e805f71720fc5a4e0b60e76d3b15e47b04d5484637d4ce7ecb3"
-          },
-          "source.txt": {
-            "bytes": 52285,
-            "sha256": "68994b517b4a5288fec2f4b7eca6a271d4415fc89ccb366d3310d8a488502eaa"
-          },
-          "people.json": {
-            "bytes": 21028,
-            "sha256": "01fd5070a40a40f9186576e096bab58621faa95c8a8741a3ad8f238a7870563a"
-          },
-          "tree.zip": {
-            "bytes": 22269,
-            "sha256": "e0c6ac0e517edd99110234af59a169c8d0e9defa99e86260f1e80951b255c039"
-          }
-        }
-      },
-      "oraclePolicy": "Independent Node.js reference; all output bytes compared on four repeated calls, including output lengths. FNV-1a-64 over the complete output is the runner contract.",
-      "output": {
-        "bytes": 57044,
-        "sha256": "1df84697b6fd633ee3778f1eee3829c693fb79d4f44b2a4bc202c341d8536203"
-      },
-      "upstreamSource": "corpora/nonwasi/text/src/lib.rs"
-    },
-    "sha256": "7b70d2ed1b438c1a7dbac9b500b4802f0f70753223f9a9cbcae8a5b506281e66"
-  },
-  {
-    "schema": 1,
-    "id": "wago/base64-rfc4648",
-    "family": "applications",
-    "abi": "core",
-    "artifact": "workloads/nonwasi/base64-rfc4648.wasm",
-    "source": "scripts/nonwasi-text.mjs",
-    "generator": "wasm-fyi-source-build-v1",
-    "features": [],
-    "work_unit": "bytes",
-    "units_per_invocation": 32771,
-    "export": "benchmark",
-    "args": [],
-    "reset": "stateless",
-    "oracle": {
-      "kind": "exact_u64",
-      "expected": [
-        "5541104720997837648"
-      ]
-    },
-    "license": "MIT OR Apache-2.0",
-    "provenance": {
-      "algorithm": "base64-rfc4648",
-      "category": "Text & parsing",
-      "scope": "execution",
-      "resetPolicy": "Invocation-local state; previous output allocation replaced",
-      "kind": "upstream-library",
-      "description": "base64 crate standard and URL-safe RFC4648 encoding plus both decodings; replaces coreutils base64 CLI",
-      "semanticMapping": {
-        "replaces": "wago/coreutils-base64",
-        "retained": "base64 crate standard and URL-safe RFC4648 encoding plus both decodings; replaces coreutils base64 CLI",
-        "excluded": "CLI, environment, filesystem, clocks and host entropy"
-      },
-      "upstreamPackages": [
-        {
-          "name": "base64",
-          "version": "0.22.1",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        }
-      ],
-      "recipe": {
-        "compiler": "rustc 1.90.0 (1159e78c4 2025-09-14)",
-        "target": "wasm32-unknown-unknown",
-        "targetCapabilities": [
-          "bulk-memory",
-          "sign-extension",
-          "saturating-float-to-int",
-          "reference-types"
-        ],
-        "cargoLockSha256": "ba221df50e64e2877ce76e79f292d2e137b866e99b0b2cbcfec4ce708b957c2e",
-        "source": "corpora/nonwasi/text",
-        "sourceSha256": "f9c19e30a9abb763b1f326cd90be56cb9e327161a02d67e39705d5fefc4c66d9",
-        "oracleSource": "scripts/nonwasi-text.mjs",
-        "oracleSourceSha256": "7c10239daddaf7f32b0794dd28afd34939cae81a97b585bb4966f6e1ed52ab67",
-        "features": [
-          "base64-work"
-        ],
-        "flags": [
-          "--locked",
-          "--release",
-          "--no-default-features"
-        ]
-      },
-      "input": {
-        "files": {
-          "lines.txt": {
-            "bytes": 57044,
-            "sha256": "4e4f40123f6a8d9b28109266a5ad2026f0218fbf346dc195563afcebf3039a2c"
-          },
-          "binary.bin": {
-            "bytes": 32771,
-            "sha256": "66436f86e3aa3d07899aed831881bbee6b3b8eff2be92bdc15658abee1f156ba"
-          },
-          "words.txt": {
-            "bytes": 21906,
-            "sha256": "b009a801e7f63e805f71720fc5a4e0b60e76d3b15e47b04d5484637d4ce7ecb3"
-          },
-          "source.txt": {
-            "bytes": 52285,
-            "sha256": "68994b517b4a5288fec2f4b7eca6a271d4415fc89ccb366d3310d8a488502eaa"
-          },
-          "people.json": {
-            "bytes": 21028,
-            "sha256": "01fd5070a40a40f9186576e096bab58621faa95c8a8741a3ad8f238a7870563a"
-          },
-          "tree.zip": {
-            "bytes": 22269,
-            "sha256": "e0c6ac0e517edd99110234af59a169c8d0e9defa99e86260f1e80951b255c039"
-          }
-        }
-      },
-      "oraclePolicy": "Independent Node.js reference; all output bytes compared on four repeated calls, including output lengths. FNV-1a-64 over the complete output is the runner contract.",
-      "output": {
-        "bytes": 152935,
-        "sha256": "aa586414b28e5d862ce7aa2bb3a4fb3e4c0825778f8cf0f945ac23e702bbaad1"
-      },
-      "upstreamSource": "corpora/nonwasi/text/src/lib.rs"
-    },
-    "sha256": "92cc175cd79f5365e70b30e0ff3f2ce912cd9f6dc6bc68a13b0007a6e3bc572f"
-  },
-  {
-    "schema": 1,
-    "id": "wago/unicode-wordcount",
-    "family": "applications",
-    "abi": "core",
-    "artifact": "workloads/nonwasi/unicode-wordcount.wasm",
-    "source": "scripts/nonwasi-text.mjs",
-    "generator": "wasm-fyi-source-build-v1",
-    "features": [],
-    "work_unit": "bytes",
-    "units_per_invocation": 21906,
-    "export": "benchmark",
-    "args": [],
-    "reset": "stateless",
-    "oracle": {
-      "kind": "exact_u64",
-      "expected": [
-        "9384383902334299188"
-      ]
-    },
-    "license": "MIT OR Apache-2.0",
-    "provenance": {
-      "algorithm": "unicode-wordcount",
-      "category": "Text & parsing",
-      "scope": "execution",
-      "resetPolicy": "Invocation-local state; previous output allocation replaced",
-      "kind": "upstream-library",
-      "description": "Rust text counting and Unicode grapheme segmentation; replaces coreutils wc CLI, adding codepoint/grapheme counts",
-      "semanticMapping": {
-        "replaces": "wago/coreutils-wc",
-        "retained": "Rust text counting and Unicode grapheme segmentation; replaces coreutils wc CLI, adding codepoint/grapheme counts",
-        "excluded": "CLI, environment, filesystem, clocks and host entropy"
-      },
-      "upstreamPackages": [
-        {
-          "name": "unicode-segmentation",
-          "version": "1.12.0",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        }
-      ],
-      "recipe": {
-        "compiler": "rustc 1.90.0 (1159e78c4 2025-09-14)",
-        "target": "wasm32-unknown-unknown",
-        "targetCapabilities": [
-          "bulk-memory",
-          "sign-extension",
-          "saturating-float-to-int",
-          "reference-types"
-        ],
-        "cargoLockSha256": "ba221df50e64e2877ce76e79f292d2e137b866e99b0b2cbcfec4ce708b957c2e",
-        "source": "corpora/nonwasi/text",
-        "sourceSha256": "f9c19e30a9abb763b1f326cd90be56cb9e327161a02d67e39705d5fefc4c66d9",
-        "oracleSource": "scripts/nonwasi-text.mjs",
-        "oracleSourceSha256": "7c10239daddaf7f32b0794dd28afd34939cae81a97b585bb4966f6e1ed52ab67",
-        "features": [
-          "wc"
-        ],
-        "flags": [
-          "--locked",
-          "--release",
-          "--no-default-features"
-        ]
-      },
-      "input": {
-        "files": {
-          "lines.txt": {
-            "bytes": 57044,
-            "sha256": "4e4f40123f6a8d9b28109266a5ad2026f0218fbf346dc195563afcebf3039a2c"
-          },
-          "binary.bin": {
-            "bytes": 32771,
-            "sha256": "66436f86e3aa3d07899aed831881bbee6b3b8eff2be92bdc15658abee1f156ba"
-          },
-          "words.txt": {
-            "bytes": 21906,
-            "sha256": "b009a801e7f63e805f71720fc5a4e0b60e76d3b15e47b04d5484637d4ce7ecb3"
-          },
-          "source.txt": {
-            "bytes": 52285,
-            "sha256": "68994b517b4a5288fec2f4b7eca6a271d4415fc89ccb366d3310d8a488502eaa"
-          },
-          "people.json": {
-            "bytes": 21028,
-            "sha256": "01fd5070a40a40f9186576e096bab58621faa95c8a8741a3ad8f238a7870563a"
-          },
-          "tree.zip": {
-            "bytes": 22269,
-            "sha256": "e0c6ac0e517edd99110234af59a169c8d0e9defa99e86260f1e80951b255c039"
-          }
-        }
-      },
-      "oraclePolicy": "Independent Node.js reference; all output bytes compared on four repeated calls, including output lengths. FNV-1a-64 over the complete output is the runner contract.",
-      "output": {
-        "bytes": 27,
-        "sha256": "0e1a5f52866f65e10b6e06931085bb57873d1c57a108f3ab96d74bdf5e6c001a"
-      },
-      "upstreamSource": "corpora/nonwasi/text/src/lib.rs"
-    },
-    "sha256": "909d9d755ebd44f057072a99909a741aaf63ed57260fb2bf5713243458bb6981"
-  },
-  {
-    "schema": 1,
-    "id": "wago/regex-source-scan",
-    "family": "applications",
-    "abi": "core",
-    "artifact": "workloads/nonwasi/regex-source-scan.wasm",
-    "source": "scripts/nonwasi-text.mjs",
-    "generator": "wasm-fyi-source-build-v1",
-    "features": [],
-    "work_unit": "bytes",
-    "units_per_invocation": 52285,
-    "export": "benchmark",
-    "args": [],
-    "reset": "stateless",
-    "oracle": {
-      "kind": "exact_u64",
-      "expected": [
-        "10611777627996008809"
-      ]
-    },
-    "license": "MIT OR Apache-2.0; Unlicense OR MIT",
-    "provenance": {
-      "algorithm": "regex-source-scan",
-      "category": "Search & indexing",
-      "scope": "execution",
-      "resetPolicy": "Invocation-local state; previous output allocation replaced",
-      "kind": "upstream-library",
-      "description": "Rust regex engine, four full-source searches with complete byte offsets and matched strings; replaces ripgrep traversal/CLI",
-      "semanticMapping": {
-        "replaces": "wago/ripgrep-source",
-        "retained": "Rust regex engine, four full-source searches with complete byte offsets and matched strings; replaces ripgrep traversal/CLI",
-        "excluded": "CLI, environment, filesystem, clocks and host entropy"
-      },
-      "upstreamPackages": [
-        {
-          "name": "aho-corasick",
-          "version": "1.1.5",
-          "license": "Unlicense OR MIT",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "memchr",
-          "version": "2.8.3",
-          "license": "Unlicense OR MIT",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "regex",
-          "version": "1.11.2",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "regex-automata",
-          "version": "0.4.18",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "regex-syntax",
-          "version": "0.8.11",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        }
-      ],
-      "recipe": {
-        "compiler": "rustc 1.90.0 (1159e78c4 2025-09-14)",
-        "target": "wasm32-unknown-unknown",
-        "targetCapabilities": [
-          "bulk-memory",
-          "sign-extension",
-          "saturating-float-to-int",
-          "reference-types"
-        ],
-        "cargoLockSha256": "ba221df50e64e2877ce76e79f292d2e137b866e99b0b2cbcfec4ce708b957c2e",
-        "source": "corpora/nonwasi/text",
-        "sourceSha256": "f9c19e30a9abb763b1f326cd90be56cb9e327161a02d67e39705d5fefc4c66d9",
-        "oracleSource": "scripts/nonwasi-text.mjs",
-        "oracleSourceSha256": "7c10239daddaf7f32b0794dd28afd34939cae81a97b585bb4966f6e1ed52ab67",
-        "features": [
-          "scan"
-        ],
-        "flags": [
-          "--locked",
-          "--release",
-          "--no-default-features"
-        ]
-      },
-      "input": {
-        "files": {
-          "lines.txt": {
-            "bytes": 57044,
-            "sha256": "4e4f40123f6a8d9b28109266a5ad2026f0218fbf346dc195563afcebf3039a2c"
-          },
-          "binary.bin": {
-            "bytes": 32771,
-            "sha256": "66436f86e3aa3d07899aed831881bbee6b3b8eff2be92bdc15658abee1f156ba"
-          },
-          "words.txt": {
-            "bytes": 21906,
-            "sha256": "b009a801e7f63e805f71720fc5a4e0b60e76d3b15e47b04d5484637d4ce7ecb3"
-          },
-          "source.txt": {
-            "bytes": 52285,
-            "sha256": "68994b517b4a5288fec2f4b7eca6a271d4415fc89ccb366d3310d8a488502eaa"
-          },
-          "people.json": {
-            "bytes": 21028,
-            "sha256": "01fd5070a40a40f9186576e096bab58621faa95c8a8741a3ad8f238a7870563a"
-          },
-          "tree.zip": {
-            "bytes": 22269,
-            "sha256": "e0c6ac0e517edd99110234af59a169c8d0e9defa99e86260f1e80951b255c039"
-          }
-        }
-      },
-      "oraclePolicy": "Independent Node.js reference; all output bytes compared on four repeated calls, including output lengths. FNV-1a-64 over the complete output is the runner contract.",
-      "output": {
-        "bytes": 74229,
-        "sha256": "aad5656868eae4ad858854dd8c2ad495450c6c1bfa85351036531f437eed15f4"
-      },
-      "upstreamSource": "corpora/nonwasi/text/src/lib.rs"
-    },
-    "sha256": "995e9b614602802b7fb001f7f894b712644c2e221c106c2921f7c3d0ca3d57af"
-  },
-  {
-    "schema": 1,
-    "id": "wago/abc-isop-minimize",
-    "family": "applications",
-    "artifact": "workloads/nonwasi/abc-isop-minimize.wasm",
-    "abi": "core",
-    "features": [],
-    "export": "run",
-    "args": [],
-    "reset": "stateless",
-    "oracle": {
-      "kind": "exact_u64",
-      "expected": [
-        "1213771677"
-      ]
-    },
-    "license": "LicenseRef-ABC-Berkeley",
-    "source": "https://github.com/berkeley-abc/abc.git",
-    "work_unit": "truth tables",
-    "units_per_invocation": 12,
-    "provenance": {
-      "kind": "upstream-library",
-      "algorithm": "logic-minimization",
-      "category": "Hardware design",
-      "scope": "execution",
-      "replaces": "wago/yosys-counter",
-      "description": "ABC Morreale ISOP minimization in both output polarities for 12 ten-input Boolean functions, with exhaustive independent cover evaluation; replaces full Yosys Verilog synthesis.",
-      "oraclePolicy": "Committed native upstream/reference golden; zero imports; five calls including reset. Hardware full-output SHA-256; ABC exhaustive truth tables; generated JS/Wasm independently executed.",
-      "recipe": {
-        "source": "corpora/nonwasi/tooling",
-        "flags": [
-          "-O2",
-          "-DNDEBUG",
-          "-mexec-model=reactor",
-          "-Wl,-z,stack-size=2097152",
-          "-Wl,--export=run",
-          "-Wl,--export=reset",
-          "-DABC_USE_STDINT_H",
-          "-I$BUILD_TREE/.tmp/abc-core/src"
-        ],
-        "compiler": "WASI SDK 34 clang, import-free dead-stripped core"
-      },
-      "upstreamSource": {
-        "repository": "https://github.com/berkeley-abc/abc",
-        "revision": "a3001b72edc5de22442e942165487fddf150e3d0",
-        "license": "LicenseRef-ABC-Berkeley"
-      }
-    },
-    "sha256": "28d372274cc6f04aa0ae32a455a08a463647678b0d9fd9116066d68d38317aad",
-    "generator": "wasm-fyi-source-build-v1"
-  },
-  {
-    "schema": 1,
-    "id": "wago/icestorm-multiboot-memory",
-    "family": "applications",
-    "artifact": "workloads/nonwasi/icestorm-multiboot-memory.wasm",
-    "abi": "core",
-    "features": [],
-    "export": "run",
-    "args": [],
-    "reset": "stateless",
-    "oracle": {
-      "kind": "exact_u64",
-      "expected": [
-        "3294422427"
-      ]
-    },
-    "license": "ISC",
-    "source": "https://github.com/YosysHQ/icestorm",
-    "work_unit": "output bytes",
-    "units_per_invocation": 45683,
-    "provenance": {
-      "kind": "upstream-library",
-      "algorithm": "fpga-multiboot-image",
-      "category": "Hardware design",
-      "scope": "execution",
-      "replaces": "wago/icemulti-image",
-      "description": "IceStorm multiboot image placement, alignment, five headers, padding and four image copies in memory; replaces file I/O with bounded byte buffers.",
-      "oraclePolicy": "Committed native upstream/reference golden; zero imports; five calls including reset. Hardware full-output SHA-256; ABC exhaustive truth tables; generated JS/Wasm independently executed.",
-      "recipe": {
-        "source": "corpora/nonwasi/tooling",
-        "flags": [
-          "-O2",
-          "-DNDEBUG",
-          "-mexec-model=reactor",
-          "-Wl,-z,stack-size=2097152",
-          "-Wl,--export=run",
-          "-Wl,--export=reset",
-          "-fno-exceptions",
-          "-fno-rtti",
-          "-nostdlib++",
-          "-Wl,--export=output_ptr",
-          "-Wl,--export=output_len"
-        ],
-        "compiler": "WASI SDK 34 clang, import-free dead-stripped core"
-      },
-      "upstreamSource": {
-        "repository": "https://github.com/YosysHQ/icestorm",
-        "revision": "45f5e5f3889afb07907bab439cf071478ee5a2a5",
-        "portSha256": "80cc818b7d11c69d6379a11be35b8736749143fd8b13821412bda2891de88f2e",
-        "license": "ISC"
-      }
-    },
-    "sha256": "ff9fe8e7efefb88f2ed1ad159bc7e59b51de760dbac5b9e2f8f22e3685bda9ef",
-    "generator": "wasm-fyi-source-build-v1"
-  },
-  {
-    "schema": 1,
-    "id": "wago/icestorm-bitstream-memory",
-    "family": "applications",
-    "artifact": "workloads/nonwasi/icestorm-bitstream-memory.wasm",
-    "abi": "core",
-    "features": [],
-    "export": "run",
-    "args": [],
-    "reset": "stateless",
-    "oracle": {
-      "kind": "exact_u64",
-      "expected": [
-        "2918599611"
-      ]
-    },
-    "license": "ISC",
-    "source": "https://github.com/YosysHQ/icestorm",
-    "work_unit": "output bytes",
-    "units_per_invocation": 32216,
-    "provenance": {
-      "kind": "upstream-library",
-      "algorithm": "fpga-bitstream-packing",
-      "category": "Hardware design",
-      "scope": "execution",
-      "replaces": "wago/icepack-pack",
-      "description": "IceStorm complete CRAM/BRAM bitstream serialization, command framing and CRC-16-CCITT in memory; ASCII parsing and file I/O are excluded.",
-      "oraclePolicy": "Committed native upstream/reference golden; zero imports; five calls including reset. Hardware full-output SHA-256; ABC exhaustive truth tables; generated JS/Wasm independently executed.",
-      "recipe": {
-        "source": "corpora/nonwasi/tooling",
-        "flags": [
-          "-O2",
-          "-DNDEBUG",
-          "-mexec-model=reactor",
-          "-Wl,-z,stack-size=2097152",
-          "-Wl,--export=run",
-          "-Wl,--export=reset",
-          "-fno-exceptions",
-          "-fno-rtti",
-          "-nostdlib++",
-          "-Wl,--export=output_ptr",
-          "-Wl,--export=output_len"
-        ],
-        "compiler": "WASI SDK 34 clang, import-free dead-stripped core"
-      },
-      "upstreamSource": {
-        "repository": "https://github.com/YosysHQ/icestorm",
-        "revision": "45f5e5f3889afb07907bab439cf071478ee5a2a5",
-        "portSha256": "a745b985ca7e63e66793004475cd4d29be4fb33c4c5c67dd86fe55277dfe37de",
-        "license": "ISC"
-      }
-    },
-    "sha256": "6c310a31a1c55047d16be44e91d1338af7ff76279b64c4a4dbff2103e77e90bc",
-    "generator": "wasm-fyi-source-build-v1"
-  },
-  {
-    "schema": 1,
-    "id": "wago/trellis-pll-search",
-    "family": "applications",
-    "artifact": "workloads/nonwasi/trellis-pll-search.wasm",
-    "abi": "core",
-    "features": [],
-    "export": "run",
-    "args": [],
-    "reset": "stateless",
-    "oracle": {
-      "kind": "exact_u64",
-      "expected": [
-        "1792084035"
-      ]
-    },
-    "license": "ISC",
-    "source": "https://github.com/YosysHQ/prjtrellis",
-    "work_unit": "clock pairs",
-    "units_per_invocation": 11,
-    "provenance": {
-      "kind": "upstream-library",
-      "algorithm": "pll-search",
-      "category": "Hardware design",
-      "scope": "execution",
-      "replaces": "wago/ecppll-clock",
-      "description": "Project Trellis actual PLL divider search and VCO tie-breaking for 11 clock pairs; command parsing and Verilog formatting are excluded.",
-      "oraclePolicy": "Committed native upstream/reference golden; zero imports; five calls including reset. Hardware full-output SHA-256; ABC exhaustive truth tables; generated JS/Wasm independently executed.",
-      "recipe": {
-        "source": "corpora/nonwasi/tooling",
-        "flags": [
-          "-O2",
-          "-DNDEBUG",
-          "-mexec-model=reactor",
-          "-Wl,-z,stack-size=2097152",
-          "-Wl,--export=run",
-          "-Wl,--export=reset",
-          "-fno-exceptions",
-          "-fno-rtti",
-          "-nostdlib++"
-        ],
-        "compiler": "WASI SDK 34 clang, import-free dead-stripped core"
-      },
-      "upstreamSource": {
-        "repository": "https://github.com/YosysHQ/prjtrellis",
-        "revision": "35f5affe10a2995bdace49e23fcbafb5723c5347",
-        "portSha256": "3e437e5b4da4510f43e9a62bbb53dd9aeb5c1020547a03118fed57f437b686c2",
-        "license": "ISC"
-      }
-    },
-    "sha256": "f4643caa473e0a79bb97a21074ead9908806a1410f5138a9827a7c92d42a08cf",
-    "generator": "wasm-fyi-source-build-v1"
-  },
-  {
-    "schema": 1,
-    "id": "wago/serde-json2csv",
-    "family": "applications",
-    "abi": "core",
-    "artifact": "workloads/nonwasi/serde-json2csv.wasm",
-    "source": "scripts/nonwasi-text.mjs",
-    "generator": "wasm-fyi-source-build-v1",
-    "features": [],
-    "work_unit": "records",
-    "units_per_invocation": 256,
-    "export": "benchmark",
-    "args": [],
-    "reset": "stateless",
-    "oracle": {
-      "kind": "exact_u64",
-      "expected": [
-        "4169614595595680379"
-      ]
-    },
-    "license": "MIT OR Apache-2.0; Unlicense/MIT; Unlicense OR MIT; Apache-2.0 OR BSL-1.0",
-    "provenance": {
-      "algorithm": "serde-json2csv",
-      "category": "JSON & serialization",
-      "scope": "execution",
-      "resetPolicy": "Invocation-local state; previous output allocation replaced",
-      "kind": "upstream-library",
-      "description": "serde_json parsing and csv serialization with embedded comma, quote and newline fields; replaces json2csv CLI",
-      "semanticMapping": {
-        "replaces": "wago/json2csv-people",
-        "retained": "serde_json parsing and csv serialization with embedded comma, quote and newline fields; replaces json2csv CLI",
-        "excluded": "CLI, environment, filesystem, clocks and host entropy"
-      },
-      "upstreamPackages": [
-        {
-          "name": "csv",
-          "version": "1.3.1",
-          "license": "Unlicense/MIT",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "csv-core",
-          "version": "0.1.13",
-          "license": "Unlicense/MIT",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "itoa",
-          "version": "1.0.18",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "memchr",
-          "version": "2.8.3",
-          "license": "Unlicense OR MIT",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "ryu",
-          "version": "1.0.23",
-          "license": "Apache-2.0 OR BSL-1.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "serde",
-          "version": "1.0.229",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "serde_core",
-          "version": "1.0.229",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "serde_json",
-          "version": "1.0.145",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        }
-      ],
-      "recipe": {
-        "compiler": "rustc 1.90.0 (1159e78c4 2025-09-14)",
-        "target": "wasm32-unknown-unknown",
-        "targetCapabilities": [
-          "bulk-memory",
-          "sign-extension",
-          "saturating-float-to-int",
-          "reference-types"
-        ],
-        "cargoLockSha256": "ba221df50e64e2877ce76e79f292d2e137b866e99b0b2cbcfec4ce708b957c2e",
-        "source": "corpora/nonwasi/text",
-        "sourceSha256": "f9c19e30a9abb763b1f326cd90be56cb9e327161a02d67e39705d5fefc4c66d9",
-        "oracleSource": "scripts/nonwasi-text.mjs",
-        "oracleSourceSha256": "7c10239daddaf7f32b0794dd28afd34939cae81a97b585bb4966f6e1ed52ab67",
-        "features": [
-          "csv-work"
-        ],
-        "flags": [
-          "--locked",
-          "--release",
-          "--no-default-features"
-        ]
-      },
-      "input": {
-        "files": {
-          "lines.txt": {
-            "bytes": 57044,
-            "sha256": "4e4f40123f6a8d9b28109266a5ad2026f0218fbf346dc195563afcebf3039a2c"
-          },
-          "binary.bin": {
-            "bytes": 32771,
-            "sha256": "66436f86e3aa3d07899aed831881bbee6b3b8eff2be92bdc15658abee1f156ba"
-          },
-          "words.txt": {
-            "bytes": 21906,
-            "sha256": "b009a801e7f63e805f71720fc5a4e0b60e76d3b15e47b04d5484637d4ce7ecb3"
-          },
-          "source.txt": {
-            "bytes": 52285,
-            "sha256": "68994b517b4a5288fec2f4b7eca6a271d4415fc89ccb366d3310d8a488502eaa"
-          },
-          "people.json": {
-            "bytes": 21028,
-            "sha256": "01fd5070a40a40f9186576e096bab58621faa95c8a8741a3ad8f238a7870563a"
-          },
-          "tree.zip": {
-            "bytes": 22269,
-            "sha256": "e0c6ac0e517edd99110234af59a169c8d0e9defa99e86260f1e80951b255c039"
-          }
-        }
-      },
-      "oraclePolicy": "Independent Node.js reference; all output bytes compared on four repeated calls, including output lengths. FNV-1a-64 over the complete output is the runner contract.",
-      "output": {
-        "bytes": 10878,
-        "sha256": "a8104a083a9143aecb25b79457850c1393a8b278cdfa62bc39bd9bdbc85c97ce"
-      },
-      "upstreamSource": "corpora/nonwasi/text/src/lib.rs"
-    },
-    "sha256": "9f6eed6cafb177143768b5226aadcd6470c418d1680e1a8411d7d70fafd38aaa"
-  },
-  {
-    "schema": 1,
-    "id": "wago/zip-directory-extract",
-    "family": "applications",
-    "abi": "core",
-    "artifact": "workloads/nonwasi/zip-directory-extract.wasm",
-    "source": "scripts/nonwasi-text.mjs",
-    "generator": "wasm-fyi-source-build-v1",
-    "features": [],
-    "work_unit": "entries",
-    "units_per_invocation": 64,
-    "export": "benchmark",
-    "args": [],
-    "reset": "stateless",
-    "oracle": {
-      "kind": "exact_u64",
-      "expected": [
-        "13898224540330878837"
-      ]
-    },
-    "license": "MIT OR Apache-2.0; Apache-2.0 OR MIT; Unlicense OR MIT; (MIT OR Apache-2.0) AND Unicode-3.0; MIT",
-    "provenance": {
-      "algorithm": "zip-directory-extract",
-      "category": "Files & directories",
-      "scope": "execution",
-      "resetPolicy": "Invocation-local state; previous output allocation replaced",
-      "kind": "upstream-library",
-      "description": "zip crate central-directory traversal and CRC-validated extraction of every stored file; replaces host filesystem tree traversal",
-      "semanticMapping": {
-        "replaces": "wago/tree-list",
-        "retained": "zip crate central-directory traversal and CRC-validated extraction of every stored file; replaces host filesystem tree traversal",
-        "excluded": "CLI, environment, filesystem, clocks and host entropy"
-      },
-      "upstreamPackages": [
-        {
-          "name": "cfg-if",
-          "version": "1.0.5",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "crc32fast",
-          "version": "1.5.2",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "displaydoc",
-          "version": "0.2.7",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "equivalent",
-          "version": "1.0.2",
-          "license": "Apache-2.0 OR MIT",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "hashbrown",
-          "version": "0.17.1",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "indexmap",
-          "version": "2.14.2",
-          "license": "Apache-2.0 OR MIT",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "memchr",
-          "version": "2.8.3",
-          "license": "Unlicense OR MIT",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "proc-macro2",
-          "version": "1.0.107",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "quote",
-          "version": "1.0.47",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "syn",
-          "version": "3.0.6",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "thiserror",
-          "version": "2.0.21",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "thiserror-impl",
-          "version": "2.0.21",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "unicode-ident",
-          "version": "1.0.26",
-          "license": "(MIT OR Apache-2.0) AND Unicode-3.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "zip",
-          "version": "2.4.2",
-          "license": "MIT",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        }
-      ],
-      "recipe": {
-        "compiler": "rustc 1.90.0 (1159e78c4 2025-09-14)",
-        "target": "wasm32-unknown-unknown",
-        "targetCapabilities": [
-          "bulk-memory",
-          "sign-extension",
-          "saturating-float-to-int",
-          "reference-types"
-        ],
-        "cargoLockSha256": "ba221df50e64e2877ce76e79f292d2e137b866e99b0b2cbcfec4ce708b957c2e",
-        "source": "corpora/nonwasi/text",
-        "sourceSha256": "f9c19e30a9abb763b1f326cd90be56cb9e327161a02d67e39705d5fefc4c66d9",
-        "oracleSource": "scripts/nonwasi-text.mjs",
-        "oracleSourceSha256": "7c10239daddaf7f32b0794dd28afd34939cae81a97b585bb4966f6e1ed52ab67",
-        "features": [
-          "zip-work"
-        ],
-        "flags": [
-          "--locked",
-          "--release",
-          "--no-default-features"
-        ]
-      },
-      "input": {
-        "files": {
-          "lines.txt": {
-            "bytes": 57044,
-            "sha256": "4e4f40123f6a8d9b28109266a5ad2026f0218fbf346dc195563afcebf3039a2c"
-          },
-          "binary.bin": {
-            "bytes": 32771,
-            "sha256": "66436f86e3aa3d07899aed831881bbee6b3b8eff2be92bdc15658abee1f156ba"
-          },
-          "words.txt": {
-            "bytes": 21906,
-            "sha256": "b009a801e7f63e805f71720fc5a4e0b60e76d3b15e47b04d5484637d4ce7ecb3"
-          },
-          "source.txt": {
-            "bytes": 52285,
-            "sha256": "68994b517b4a5288fec2f4b7eca6a271d4415fc89ccb366d3310d8a488502eaa"
-          },
-          "people.json": {
-            "bytes": 21028,
-            "sha256": "01fd5070a40a40f9186576e096bab58621faa95c8a8741a3ad8f238a7870563a"
-          },
-          "tree.zip": {
-            "bytes": 22269,
-            "sha256": "e0c6ac0e517edd99110234af59a169c8d0e9defa99e86260f1e80951b255c039"
-          }
-        }
-      },
-      "oraclePolicy": "Independent Node.js reference; all output bytes compared on four repeated calls, including output lengths. FNV-1a-64 over the complete output is the runner contract.",
-      "output": {
-        "bytes": 16861,
-        "sha256": "65f0053cc5e97d48bcf6ecc6f0bc0a59cddc269b58f51a95a98cc125a6b6940c"
-      },
-      "upstreamSource": "corpora/nonwasi/text/src/lib.rs"
-    },
-    "sha256": "88d681eee87a026a7267a08d79a049883923a3d30e08431abcf98aa1bae03019"
-  },
-  {
-    "schema": 1,
-    "id": "wago/brotli-memory-roundtrip",
-    "family": "applications",
-    "artifact": "workloads/nonwasi/brotli-memory-roundtrip.wasm",
-    "abi": "core",
-    "features": [],
-    "export": "benchmark",
-    "args": [],
-    "reset": "stateless",
-    "oracle": {
-      "kind": "exact_u64",
-      "expected": [
-        "2054591941"
-      ]
+      "kind": "exact_command",
+      "expected": []
     },
     "license": "MIT",
-    "source": "https://github.com/google/brotli.git",
-    "work_unit": "bytes",
-    "units_per_invocation": 65536,
-    "provenance": {
-      "algorithm": "brotli",
-      "category": "Compression",
-      "kind": "upstream-library",
-      "description": "Brotli quality-10 compresses 64 KiB of deterministic bytes, requires size reduction, decodes the stream and compares every output byte before hashing.",
-      "scope": "execution",
-      "replaces": "wago/brotli-compress",
-      "oraclePolicy": "Independent JavaScript input/aggregate reference and full-output FNV-1a; repeated Wasm calls. Brotli output also cross-decoded by Node zlib and compared byte-for-byte.",
-      "recipe": {
-        "source": "corpora/nonwasi/data",
-        "flags": [
-          "-O2",
-          "-DNDEBUG",
-          "-nostartfiles",
-          "-Wl,--no-entry",
-          "-Wl,--export=benchmark",
-          "-Wl,--export-memory",
-          "-Wl,--wrap=exit",
-          "-Wl,-z,stack-size=1048576",
-          "-Wl,--strip-all",
-          "-DBROTLI_BUILD_PORTABLE",
-          "-I$BUILD_TREE/.tmp/brotli-core/c/include"
-        ],
-        "compiler": "WASI SDK 34 clang; SDK libc is statically dead-stripped to an import-free core module."
+    "source": {
+      "repository": "https://github.com/nalgeon/lua-wasi",
+      "revision": "@antonz/lua-wasi 5.4.6",
+      "revision_date": "2024-01-03",
+      "license": "MIT",
+      "toolchain": "wasienv plus WABT import rename",
+      "toolchain_version": "Lua 5.4.6"
+    },
+    "generator": "wago-catalog-v1"
+  },
+  {
+    "schema": 1,
+    "id": "wago/coreutils-sort",
+    "family": "applications",
+    "artifact": "workloads/applications/coreutils/coreutils.wasm",
+    "sha256": "393da2c407ef0498be397f48d8b030cd4106bd30e0ddec504bfc75718486d034",
+    "abi": "wasi-command",
+    "host_profile": "wasi-preview1-readonly-v1",
+    "features": [],
+    "export": "_start",
+    "args": [],
+    "command": {
+      "argv": [
+        "coreutils",
+        "sort",
+        "/records.txt"
+      ],
+      "files": {
+        "records.txt": {
+          "path": "corpora/upstream/wago/corpus/workloads/applications/coreutils/inputs/records.txt",
+          "size": 187,
+          "sha256": "2d43a426486e8da09652655f188806ece6ce45006af911a36d000d4720770fa9"
+        }
       },
-      "upstreamSource": {
+      "exit_code": 0,
+      "stdout_sha256": "1fb05380888fbabe25a2193ad242ddca2dfe4c8f44d67c7f688f2f4f98df2f0a",
+      "output_limit_bytes": 16777216
+    },
+    "original_contract": {
+      "suite": "uutils/coreutils",
+      "desc": "Rust coreutils sorts a pinned twenty-four-record text file",
+      "id": "coreutils-sort",
+      "artifact": "workloads/applications/coreutils/coreutils.wasm",
+      "artifact_sha256": "393da2c407ef0498be397f48d8b030cd4106bd30e0ddec504bfc75718486d034",
+      "tags": [
+        "application",
+        "coreutils",
+        "sort",
+        "rust",
+        "wasi"
+      ],
+      "source": {
+        "repository": "https://github.com/uutils/coreutils/releases/tag/0.10.0",
+        "revision": "0.10.0",
+        "revision_date": "2026-08-05",
+        "license": "MIT",
+        "toolchain": "upstream wasm32-wasip1 release",
+        "toolchain_version": "0.10.0"
+      },
+      "stages": [
+        "Decode",
+        "Validate",
+        "Compile",
+        "CompileFull",
+        "CommandExec"
+      ],
+      "command": {
+        "runtime": "wasi",
+        "platforms": [
+          "linux/amd64",
+          "linux/arm64",
+          "darwin/amd64",
+          "darwin/arm64"
+        ],
+        "export": "_start",
+        "argv0": "coreutils",
+        "args": [
+          "sort",
+          "/records.txt"
+        ],
+        "preopen": "workloads/applications/coreutils/inputs",
+        "inputs": {
+          "records.txt": "2d43a426486e8da09652655f188806ece6ce45006af911a36d000d4720770fa9"
+        },
+        "stdout_sha256": "1fb05380888fbabe25a2193ad242ddca2dfe4c8f44d67c7f688f2f4f98df2f0a"
+      }
+    },
+    "provenance": {
+      "catalog_sha256": "e02b20f2ccf9db3bc4649270c8d8eeff2b29bdb6acb6ecb47fab2697cd811a9f",
+      "importer": "wago-catalog-v1",
+      "source_revision": "9f01d145d54ac7ab458b6b2f6047db90a757410a",
+      "algorithm": "coreutils-sorting",
+      "category": "Integer & graph algorithms"
+    },
+    "work_unit": "command",
+    "units_per_invocation": 1,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "MIT",
+    "source": {
+      "repository": "https://github.com/uutils/coreutils/releases/tag/0.10.0",
+      "revision": "0.10.0",
+      "revision_date": "2026-08-05",
+      "license": "MIT",
+      "toolchain": "upstream wasm32-wasip1 release",
+      "toolchain_version": "0.10.0"
+    },
+    "generator": "wago-catalog-v1"
+  },
+  {
+    "schema": 1,
+    "id": "wago/coreutils-base64",
+    "family": "applications",
+    "artifact": "workloads/applications/coreutils/coreutils.wasm",
+    "sha256": "393da2c407ef0498be397f48d8b030cd4106bd30e0ddec504bfc75718486d034",
+    "abi": "wasi-command",
+    "host_profile": "wasi-preview1-readonly-v1",
+    "features": [],
+    "export": "_start",
+    "args": [],
+    "command": {
+      "argv": [
+        "coreutils",
+        "base64",
+        "/records.txt"
+      ],
+      "files": {
+        "records.txt": {
+          "path": "corpora/upstream/wago/corpus/workloads/applications/coreutils/inputs/records.txt",
+          "size": 187,
+          "sha256": "2d43a426486e8da09652655f188806ece6ce45006af911a36d000d4720770fa9"
+        }
+      },
+      "exit_code": 0,
+      "stdout_sha256": "47e8fddc84646b6746eac8090d823f54cb37ed702cfc3d5902db88d2b618a59e",
+      "output_limit_bytes": 16777216
+    },
+    "original_contract": {
+      "suite": "uutils/coreutils",
+      "desc": "Rust coreutils base64-encodes a pinned text file",
+      "id": "coreutils-base64",
+      "artifact": "workloads/applications/coreutils/coreutils.wasm",
+      "artifact_sha256": "393da2c407ef0498be397f48d8b030cd4106bd30e0ddec504bfc75718486d034",
+      "tags": [
+        "application",
+        "coreutils",
+        "base64",
+        "rust",
+        "wasi"
+      ],
+      "source": {
+        "repository": "https://github.com/uutils/coreutils/releases/tag/0.10.0",
+        "revision": "0.10.0",
+        "revision_date": "2026-08-05",
+        "license": "MIT",
+        "toolchain": "upstream wasm32-wasip1 release",
+        "toolchain_version": "0.10.0"
+      },
+      "stages": [
+        "Decode",
+        "Validate",
+        "Compile",
+        "CompileFull",
+        "CommandExec"
+      ],
+      "command": {
+        "runtime": "wasi",
+        "platforms": [
+          "linux/amd64",
+          "linux/arm64",
+          "darwin/amd64",
+          "darwin/arm64"
+        ],
+        "export": "_start",
+        "argv0": "coreutils",
+        "args": [
+          "base64",
+          "/records.txt"
+        ],
+        "preopen": "workloads/applications/coreutils/inputs",
+        "inputs": {
+          "records.txt": "2d43a426486e8da09652655f188806ece6ce45006af911a36d000d4720770fa9"
+        },
+        "stdout_sha256": "47e8fddc84646b6746eac8090d823f54cb37ed702cfc3d5902db88d2b618a59e"
+      }
+    },
+    "provenance": {
+      "catalog_sha256": "e02b20f2ccf9db3bc4649270c8d8eeff2b29bdb6acb6ecb47fab2697cd811a9f",
+      "importer": "wago-catalog-v1",
+      "source_revision": "9f01d145d54ac7ab458b6b2f6047db90a757410a",
+      "algorithm": "base64-encoding",
+      "category": "Text & parsing"
+    },
+    "work_unit": "command",
+    "units_per_invocation": 1,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "MIT",
+    "source": {
+      "repository": "https://github.com/uutils/coreutils/releases/tag/0.10.0",
+      "revision": "0.10.0",
+      "revision_date": "2026-08-05",
+      "license": "MIT",
+      "toolchain": "upstream wasm32-wasip1 release",
+      "toolchain_version": "0.10.0"
+    },
+    "generator": "wago-catalog-v1"
+  },
+  {
+    "schema": 1,
+    "id": "wago/coreutils-wc",
+    "family": "applications",
+    "artifact": "workloads/applications/coreutils/coreutils.wasm",
+    "sha256": "393da2c407ef0498be397f48d8b030cd4106bd30e0ddec504bfc75718486d034",
+    "abi": "wasi-command",
+    "host_profile": "wasi-preview1-readonly-v1",
+    "features": [],
+    "export": "_start",
+    "args": [],
+    "command": {
+      "argv": [
+        "coreutils",
+        "wc",
+        "/records.txt"
+      ],
+      "files": {
+        "records.txt": {
+          "path": "corpora/upstream/wago/corpus/workloads/applications/coreutils/inputs/records.txt",
+          "size": 187,
+          "sha256": "2d43a426486e8da09652655f188806ece6ce45006af911a36d000d4720770fa9"
+        }
+      },
+      "exit_code": 0,
+      "stdout_sha256": "ca05ae34ead81ae715eb22e7081718ba5adb98146c6a7045c774bb9cce420377",
+      "output_limit_bytes": 16777216
+    },
+    "original_contract": {
+      "suite": "uutils/coreutils",
+      "desc": "Rust coreutils counts lines, words, and bytes in a pinned text file",
+      "id": "coreutils-wc",
+      "artifact": "workloads/applications/coreutils/coreutils.wasm",
+      "artifact_sha256": "393da2c407ef0498be397f48d8b030cd4106bd30e0ddec504bfc75718486d034",
+      "tags": [
+        "application",
+        "coreutils",
+        "text",
+        "rust",
+        "wasi"
+      ],
+      "source": {
+        "repository": "https://github.com/uutils/coreutils/releases/tag/0.10.0",
+        "revision": "0.10.0",
+        "revision_date": "2026-08-05",
+        "license": "MIT",
+        "toolchain": "upstream wasm32-wasip1 release",
+        "toolchain_version": "0.10.0"
+      },
+      "stages": [
+        "Decode",
+        "Validate",
+        "Compile",
+        "CompileFull",
+        "CommandExec"
+      ],
+      "command": {
+        "runtime": "wasi",
+        "platforms": [
+          "linux/amd64",
+          "linux/arm64",
+          "darwin/amd64",
+          "darwin/arm64"
+        ],
+        "export": "_start",
+        "argv0": "coreutils",
+        "args": [
+          "wc",
+          "/records.txt"
+        ],
+        "preopen": "workloads/applications/coreutils/inputs",
+        "inputs": {
+          "records.txt": "2d43a426486e8da09652655f188806ece6ce45006af911a36d000d4720770fa9"
+        },
+        "stdout_sha256": "ca05ae34ead81ae715eb22e7081718ba5adb98146c6a7045c774bb9cce420377"
+      }
+    },
+    "provenance": {
+      "catalog_sha256": "e02b20f2ccf9db3bc4649270c8d8eeff2b29bdb6acb6ecb47fab2697cd811a9f",
+      "importer": "wago-catalog-v1",
+      "source_revision": "9f01d145d54ac7ab458b6b2f6047db90a757410a",
+      "algorithm": "word-count",
+      "category": "Text & parsing"
+    },
+    "work_unit": "command",
+    "units_per_invocation": 1,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "MIT",
+    "source": {
+      "repository": "https://github.com/uutils/coreutils/releases/tag/0.10.0",
+      "revision": "0.10.0",
+      "revision_date": "2026-08-05",
+      "license": "MIT",
+      "toolchain": "upstream wasm32-wasip1 release",
+      "toolchain_version": "0.10.0"
+    },
+    "generator": "wago-catalog-v1"
+  },
+  {
+    "schema": 1,
+    "id": "wago/ripgrep-source",
+    "family": "applications",
+    "artifact": "workloads/applications/ripgrep/rg.wasm",
+    "sha256": "bd3d27817f2f34d625a3d24029eb2d5b16746ee4bb097d01eed8c99be9b83263",
+    "abi": "wasi-command",
+    "host_profile": "wasi-preview1-readonly-v1",
+    "features": [],
+    "export": "_start",
+    "args": [],
+    "command": {
+      "argv": [
+        "ripgrep-source",
+        "-N",
+        "const",
+        "/program.js"
+      ],
+      "files": {
+        "program.js": {
+          "path": "corpora/upstream/wago/corpus/workloads/applications/quickjs/inputs/program.js",
+          "size": 557,
+          "sha256": "cbf10aad91aced62c70121301fdcb3562929b08a6d9f2d3e0bfc28d90dea810f"
+        }
+      },
+      "exit_code": 0,
+      "stdout_sha256": "87e4b83d5cfbb0a94c499853477377489fd9e16bee3ac4a848381cd4a0d67ab0",
+      "output_limit_bytes": 16777216
+    },
+    "original_contract": {
+      "suite": "ripgrep",
+      "desc": "ripgrep searches a JavaScript program and returns exact matching source lines",
+      "id": "ripgrep-source",
+      "artifact": "workloads/applications/ripgrep/rg.wasm",
+      "artifact_sha256": "bd3d27817f2f34d625a3d24029eb2d5b16746ee4bb097d01eed8c99be9b83263",
+      "tags": [
+        "application",
+        "search",
+        "rust",
+        "wasi"
+      ],
+      "source": {
+        "repository": "https://github.com/holzschu/a-Shell-commands/releases/tag/0.1",
+        "revision": "rg asset 2025-03-15",
+        "revision_date": "2025-03-15",
+        "license": "MIT OR Unlicense",
+        "toolchain": "a-Shell release binary",
+        "toolchain_version": "ripgrep 14.1.1"
+      },
+      "stages": [
+        "Decode",
+        "Validate",
+        "Compile",
+        "CompileFull",
+        "CommandExec"
+      ],
+      "command": {
+        "runtime": "wasi",
+        "platforms": [
+          "linux/amd64",
+          "linux/arm64",
+          "darwin/amd64",
+          "darwin/arm64"
+        ],
+        "export": "_start",
+        "args": [
+          "-N",
+          "const",
+          "/program.js"
+        ],
+        "preopen": "workloads/applications/quickjs/inputs",
+        "inputs": {
+          "program.js": "cbf10aad91aced62c70121301fdcb3562929b08a6d9f2d3e0bfc28d90dea810f"
+        },
+        "stdout_sha256": "87e4b83d5cfbb0a94c499853477377489fd9e16bee3ac4a848381cd4a0d67ab0"
+      }
+    },
+    "provenance": {
+      "catalog_sha256": "e02b20f2ccf9db3bc4649270c8d8eeff2b29bdb6acb6ecb47fab2697cd811a9f",
+      "importer": "wago-catalog-v1",
+      "source_revision": "9f01d145d54ac7ab458b6b2f6047db90a757410a",
+      "algorithm": "regex-source-search",
+      "category": "Search & indexing"
+    },
+    "work_unit": "command",
+    "units_per_invocation": 1,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "MIT OR Unlicense",
+    "source": {
+      "repository": "https://github.com/holzschu/a-Shell-commands/releases/tag/0.1",
+      "revision": "rg asset 2025-03-15",
+      "revision_date": "2025-03-15",
+      "license": "MIT OR Unlicense",
+      "toolchain": "a-Shell release binary",
+      "toolchain_version": "ripgrep 14.1.1"
+    },
+    "generator": "wago-catalog-v1"
+  },
+  {
+    "schema": 1,
+    "id": "wago/yosys-counter",
+    "family": "applications",
+    "artifact": "workloads/applications/yosys/yosys.wasm",
+    "sha256": "7668d2963f8cc276ccd32980126dfddac961db1cd002cb93073506a694059493",
+    "abi": "wasi-command",
+    "host_profile": "wasi-preview1-readonly-v1",
+    "features": [],
+    "export": "_start",
+    "args": [],
+    "command": {
+      "argv": [
+        "yosys-counter",
+        "-Q",
+        "-T",
+        "-p",
+        "read_verilog /top.v; proc; stat"
+      ],
+      "files": {
+        "top.v": {
+          "path": "corpora/upstream/wago/corpus/workloads/applications/yosys/inputs/top.v",
+          "size": 184,
+          "sha256": "4a7476fb4229eb0d0e11940614597bb3ba25b96f9d44b28c835e060d3603af16"
+        }
+      },
+      "exit_code": 0,
+      "stdout_sha256": "f1f4df21f2a2ac6cef0901105824509beda35568271b07dbe6153df45b76b579",
+      "output_limit_bytes": 16777216
+    },
+    "original_contract": {
+      "suite": "yosys",
+      "desc": "Yosys parses a synchronous Verilog counter, converts processes, and reports exact cell statistics",
+      "id": "yosys-counter",
+      "artifact": "workloads/applications/yosys/yosys.wasm",
+      "artifact_sha256": "7668d2963f8cc276ccd32980126dfddac961db1cd002cb93073506a694059493",
+      "tags": [
+        "application",
+        "fpga",
+        "compiler",
+        "c++",
+        "wasi"
+      ],
+      "source": {
+        "repository": "https://pypi.org/project/yowasp-yosys/0.32.0.0.post560/",
+        "revision": "0.32.0.0.post560",
+        "revision_date": "2023-08-08",
+        "license": "ISC",
+        "toolchain": "YoWASP wheel",
+        "toolchain_version": "0.32.0.0.post560"
+      },
+      "stages": [
+        "Decode",
+        "Validate",
+        "Compile",
+        "CompileFull",
+        "CommandExec"
+      ],
+      "command": {
+        "runtime": "wasi",
+        "platforms": [
+          "linux/amd64",
+          "linux/arm64",
+          "darwin/amd64",
+          "darwin/arm64"
+        ],
+        "export": "_start",
+        "args": [
+          "-Q",
+          "-T",
+          "-p",
+          "read_verilog /top.v; proc; stat"
+        ],
+        "preopen": "workloads/applications/yosys/inputs",
+        "inputs": {
+          "top.v": "4a7476fb4229eb0d0e11940614597bb3ba25b96f9d44b28c835e060d3603af16"
+        },
+        "stdout_sha256": "f1f4df21f2a2ac6cef0901105824509beda35568271b07dbe6153df45b76b579"
+      }
+    },
+    "provenance": {
+      "catalog_sha256": "e02b20f2ccf9db3bc4649270c8d8eeff2b29bdb6acb6ecb47fab2697cd811a9f",
+      "importer": "wago-catalog-v1",
+      "source_revision": "9f01d145d54ac7ab458b6b2f6047db90a757410a",
+      "algorithm": "yosys-counter",
+      "category": "Hardware design"
+    },
+    "work_unit": "command",
+    "units_per_invocation": 1,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "ISC",
+    "source": {
+      "repository": "https://pypi.org/project/yowasp-yosys/0.32.0.0.post560/",
+      "revision": "0.32.0.0.post560",
+      "revision_date": "2023-08-08",
+      "license": "ISC",
+      "toolchain": "YoWASP wheel",
+      "toolchain_version": "0.32.0.0.post560"
+    },
+    "generator": "wago-catalog-v1"
+  },
+  {
+    "schema": 1,
+    "id": "wago/icemulti-image",
+    "family": "applications",
+    "artifact": "workloads/applications/icemulti/icemulti.wasm",
+    "sha256": "ac648e95ba42b44fc50fc6f3d6bb023e03063b6cace4dc6f4ffdefbe3a3820c2",
+    "abi": "wasi-command",
+    "host_profile": "wasi-preview1-readonly-v1",
+    "features": [],
+    "export": "_start",
+    "args": [],
+    "command": {
+      "argv": [
+        "icemulti-image",
+        "/example.bin"
+      ],
+      "files": {
+        "example.bin": {
+          "path": "corpora/upstream/wago/corpus/workloads/applications/icepack/unpack-inputs/example.bin",
+          "size": 32220,
+          "sha256": "d7d042ed25fffa14ebc0fca55ec393817bfee94ad817940310babb6560a777e3"
+        }
+      },
+      "exit_code": 0,
+      "stdout_sha256": "35c4d03a64a98671342f69a6af1207996878cdebcfac4f79a2099e01b432c087",
+      "output_limit_bytes": 16777216
+    },
+    "original_contract": {
+      "suite": "icestorm",
+      "desc": "icemulti packages a 1K FPGA bitstream as a multiboot image",
+      "id": "icemulti-image",
+      "artifact": "workloads/applications/icemulti/icemulti.wasm",
+      "artifact_sha256": "ac648e95ba42b44fc50fc6f3d6bb023e03063b6cace4dc6f4ffdefbe3a3820c2",
+      "tags": [
+        "application",
+        "fpga",
+        "c",
+        "wasi"
+      ],
+      "source": {
+        "repository": "https://pypi.org/project/yowasp-nextpnr-ice40/0.5.0.0.post399/",
+        "revision": "0.5.0.0.post399",
+        "revision_date": "2023-02-07",
+        "license": "ISC",
+        "toolchain": "YoWASP wheel",
+        "toolchain_version": "0.5.0.0.post399"
+      },
+      "stages": [
+        "Decode",
+        "Validate",
+        "Compile",
+        "CompileFull",
+        "CommandExec"
+      ],
+      "command": {
+        "runtime": "wasi",
+        "platforms": [
+          "linux/amd64",
+          "linux/arm64",
+          "darwin/amd64",
+          "darwin/arm64"
+        ],
+        "export": "_start",
+        "args": [
+          "/example.bin"
+        ],
+        "preopen": "workloads/applications/icepack/unpack-inputs",
+        "inputs": {
+          "example.bin": "d7d042ed25fffa14ebc0fca55ec393817bfee94ad817940310babb6560a777e3"
+        },
+        "stdout_sha256": "35c4d03a64a98671342f69a6af1207996878cdebcfac4f79a2099e01b432c087"
+      }
+    },
+    "provenance": {
+      "catalog_sha256": "e02b20f2ccf9db3bc4649270c8d8eeff2b29bdb6acb6ecb47fab2697cd811a9f",
+      "importer": "wago-catalog-v1",
+      "source_revision": "9f01d145d54ac7ab458b6b2f6047db90a757410a",
+      "algorithm": "icemulti-image",
+      "category": "Hardware design"
+    },
+    "work_unit": "command",
+    "units_per_invocation": 1,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "ISC",
+    "source": {
+      "repository": "https://pypi.org/project/yowasp-nextpnr-ice40/0.5.0.0.post399/",
+      "revision": "0.5.0.0.post399",
+      "revision_date": "2023-02-07",
+      "license": "ISC",
+      "toolchain": "YoWASP wheel",
+      "toolchain_version": "0.5.0.0.post399"
+    },
+    "generator": "wago-catalog-v1"
+  },
+  {
+    "schema": 1,
+    "id": "wago/icepack-pack",
+    "family": "applications",
+    "artifact": "workloads/applications/icepack/icepack.wasm",
+    "sha256": "079f96f2e21954af470ed085e2bc86f7c7fd4f95fb13324fcb9098e222934e3e",
+    "abi": "wasi-command",
+    "host_profile": "wasi-preview1-readonly-v1",
+    "features": [],
+    "export": "_start",
+    "args": [],
+    "command": {
+      "argv": [
+        "icepack-pack"
+      ],
+      "stdin_file": "example.asc",
+      "files": {
+        "example.asc": {
+          "path": "corpora/upstream/wago/corpus/workloads/applications/icepack/pack-inputs/example.asc",
+          "size": 200686,
+          "sha256": "52c9fda937ce54c49915ad8b0fcb9093c659e97ae1b24f0239fcf6de7f77c0d3"
+        }
+      },
+      "exit_code": 0,
+      "stdout_sha256": "d7d042ed25fffa14ebc0fca55ec393817bfee94ad817940310babb6560a777e3",
+      "output_limit_bytes": 16777216
+    },
+    "original_contract": {
+      "suite": "icestorm",
+      "desc": "icepack reconstructs a 1K FPGA bitstream from an ASCII configuration",
+      "id": "icepack-pack",
+      "artifact": "workloads/applications/icepack/icepack.wasm",
+      "artifact_sha256": "079f96f2e21954af470ed085e2bc86f7c7fd4f95fb13324fcb9098e222934e3e",
+      "tags": [
+        "application",
+        "fpga",
+        "c",
+        "wasi"
+      ],
+      "source": {
+        "repository": "https://pypi.org/project/yowasp-nextpnr-ice40/0.5.0.0.post399/",
+        "revision": "0.5.0.0.post399",
+        "revision_date": "2023-02-07",
+        "license": "ISC",
+        "toolchain": "YoWASP wheel",
+        "toolchain_version": "0.5.0.0.post399"
+      },
+      "stages": [
+        "Decode",
+        "Validate",
+        "Compile",
+        "CompileFull",
+        "CommandExec"
+      ],
+      "command": {
+        "runtime": "wasi",
+        "platforms": [
+          "linux/amd64",
+          "linux/arm64",
+          "darwin/amd64",
+          "darwin/arm64"
+        ],
+        "export": "_start",
+        "stdin": "example.asc",
+        "preopen": "workloads/applications/icepack/pack-inputs",
+        "inputs": {
+          "example.asc": "52c9fda937ce54c49915ad8b0fcb9093c659e97ae1b24f0239fcf6de7f77c0d3"
+        },
+        "stdout_sha256": "d7d042ed25fffa14ebc0fca55ec393817bfee94ad817940310babb6560a777e3"
+      }
+    },
+    "provenance": {
+      "catalog_sha256": "e02b20f2ccf9db3bc4649270c8d8eeff2b29bdb6acb6ecb47fab2697cd811a9f",
+      "importer": "wago-catalog-v1",
+      "source_revision": "9f01d145d54ac7ab458b6b2f6047db90a757410a",
+      "algorithm": "icepack-pack",
+      "category": "Hardware design"
+    },
+    "work_unit": "command",
+    "units_per_invocation": 1,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "ISC",
+    "source": {
+      "repository": "https://pypi.org/project/yowasp-nextpnr-ice40/0.5.0.0.post399/",
+      "revision": "0.5.0.0.post399",
+      "revision_date": "2023-02-07",
+      "license": "ISC",
+      "toolchain": "YoWASP wheel",
+      "toolchain_version": "0.5.0.0.post399"
+    },
+    "generator": "wago-catalog-v1"
+  },
+  {
+    "schema": 1,
+    "id": "wago/ecppll-clock",
+    "family": "applications",
+    "artifact": "workloads/applications/ecppll/ecppll.wasm",
+    "sha256": "a86ef23e6f447021fa26b9481d14c2d00fb097b58e8aa3cb246dbc53aa5c2900",
+    "abi": "wasi-command",
+    "host_profile": "wasi-preview1-readonly-v1",
+    "features": [],
+    "export": "_start",
+    "args": [],
+    "command": {
+      "argv": [
+        "ecppll-clock",
+        "-i",
+        "12",
+        "-o",
+        "24"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "63bdf4e757b2c3f08017ee17709385590645ec6515620e5ad727e59ae0a89160",
+      "output_limit_bytes": 16777216
+    },
+    "original_contract": {
+      "suite": "trellis",
+      "desc": "ecppll calculates ECP5 PLL divisors for a fixed 12 to 24 MHz clock request",
+      "id": "ecppll-clock",
+      "artifact": "workloads/applications/ecppll/ecppll.wasm",
+      "artifact_sha256": "a86ef23e6f447021fa26b9481d14c2d00fb097b58e8aa3cb246dbc53aa5c2900",
+      "tags": [
+        "application",
+        "fpga",
+        "c",
+        "wasi"
+      ],
+      "source": {
+        "repository": "https://pypi.org/project/yowasp-nextpnr-ecp5/0.5.0.0.post399/",
+        "revision": "0.5.0.0.post399",
+        "revision_date": "2023-02-07",
+        "license": "ISC",
+        "toolchain": "YoWASP wheel",
+        "toolchain_version": "0.5.0.0.post399"
+      },
+      "stages": [
+        "Decode",
+        "Validate",
+        "Compile",
+        "CompileFull",
+        "CommandExec"
+      ],
+      "command": {
+        "runtime": "wasi",
+        "platforms": [
+          "linux/amd64",
+          "linux/arm64",
+          "darwin/amd64",
+          "darwin/arm64"
+        ],
+        "export": "_start",
+        "args": [
+          "-i",
+          "12",
+          "-o",
+          "24"
+        ],
+        "stdout_sha256": "63bdf4e757b2c3f08017ee17709385590645ec6515620e5ad727e59ae0a89160"
+      }
+    },
+    "provenance": {
+      "catalog_sha256": "e02b20f2ccf9db3bc4649270c8d8eeff2b29bdb6acb6ecb47fab2697cd811a9f",
+      "importer": "wago-catalog-v1",
+      "source_revision": "9f01d145d54ac7ab458b6b2f6047db90a757410a",
+      "algorithm": "ecppll-clock",
+      "category": "Hardware design"
+    },
+    "work_unit": "command",
+    "units_per_invocation": 1,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "ISC",
+    "source": {
+      "repository": "https://pypi.org/project/yowasp-nextpnr-ecp5/0.5.0.0.post399/",
+      "revision": "0.5.0.0.post399",
+      "revision_date": "2023-02-07",
+      "license": "ISC",
+      "toolchain": "YoWASP wheel",
+      "toolchain_version": "0.5.0.0.post399"
+    },
+    "generator": "wago-catalog-v1"
+  },
+  {
+    "schema": 1,
+    "id": "wago/json2csv-people",
+    "family": "applications",
+    "artifact": "workloads/applications/json2csv/json2csv.wasm",
+    "sha256": "f1aacfb105c7d69b19b4c7dfcec0ebd2ed14a29588cfecbb0ce35a7b99a6f6cc",
+    "abi": "wasi-command",
+    "host_profile": "wasi-preview1-readonly-v1",
+    "features": [],
+    "export": "_start",
+    "args": [],
+    "command": {
+      "argv": [
+        "json2csv-people",
+        "-k",
+        "user.name,score,note",
+        "-p"
+      ],
+      "stdin_file": "people.ndjson",
+      "files": {
+        "people.ndjson": {
+          "path": "corpora/upstream/wago/corpus/workloads/applications/json2csv/inputs/people.ndjson",
+          "size": 265,
+          "sha256": "f30fab50db5af1c8403d093243cba9a96cfe080663d113485b0a1e80c428763a"
+        }
+      },
+      "exit_code": 0,
+      "stdout_sha256": "30cded600aa1a8739c9656c8bb271b7a760c764e090bba1345df61b77a8bfacc",
+      "output_limit_bytes": 16777216
+    },
+    "original_contract": {
+      "suite": "json2csv",
+      "desc": "json2csv CLI extracts nested fields from newline-delimited JSON into CSV",
+      "id": "json2csv-people",
+      "artifact": "workloads/applications/json2csv/json2csv.wasm",
+      "artifact_sha256": "f1aacfb105c7d69b19b4c7dfcec0ebd2ed14a29588cfecbb0ce35a7b99a6f6cc",
+      "tags": [
+        "application",
+        "json",
+        "csv",
+        "go",
+        "wasi"
+      ],
+      "source": {
+        "repository": "https://github.com/holzschu/a-Shell-commands/releases/tag/0.1",
+        "revision": "asset-68082085",
+        "revision_date": "2022-06-10",
+        "license": "MIT",
+        "toolchain": "upstream a-Shell release artifact",
+        "toolchain_version": "0.1"
+      },
+      "stages": [
+        "Decode",
+        "Validate",
+        "Compile",
+        "CompileFull",
+        "CommandExec"
+      ],
+      "command": {
+        "runtime": "wasi",
+        "platforms": [
+          "linux/amd64",
+          "linux/arm64",
+          "darwin/amd64",
+          "darwin/arm64"
+        ],
+        "export": "_start",
+        "args": [
+          "-k",
+          "user.name,score,note",
+          "-p"
+        ],
+        "stdin": "people.ndjson",
+        "preopen": "workloads/applications/json2csv/inputs",
+        "inputs": {
+          "people.ndjson": "f30fab50db5af1c8403d093243cba9a96cfe080663d113485b0a1e80c428763a"
+        },
+        "stdout_sha256": "30cded600aa1a8739c9656c8bb271b7a760c764e090bba1345df61b77a8bfacc"
+      }
+    },
+    "provenance": {
+      "catalog_sha256": "e02b20f2ccf9db3bc4649270c8d8eeff2b29bdb6acb6ecb47fab2697cd811a9f",
+      "importer": "wago-catalog-v1",
+      "source_revision": "9f01d145d54ac7ab458b6b2f6047db90a757410a",
+      "algorithm": "json-to-csv",
+      "category": "JSON & serialization"
+    },
+    "work_unit": "command",
+    "units_per_invocation": 1,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "MIT",
+    "source": {
+      "repository": "https://github.com/holzschu/a-Shell-commands/releases/tag/0.1",
+      "revision": "asset-68082085",
+      "revision_date": "2022-06-10",
+      "license": "MIT",
+      "toolchain": "upstream a-Shell release artifact",
+      "toolchain_version": "0.1"
+    },
+    "generator": "wago-catalog-v1"
+  },
+  {
+    "schema": 1,
+    "id": "wago/tree-list",
+    "family": "applications",
+    "artifact": "workloads/applications/tree/tree.wasm",
+    "sha256": "fbf2605dc5d03fcdce804b5e871d959951f7bc1e8c5ff3d0e74bfdb1ddbbd435",
+    "abi": "wasi-command",
+    "host_profile": "wasi-preview1-readonly-v1",
+    "features": [],
+    "export": "_start",
+    "args": [],
+    "command": {
+      "argv": [
+        "tree-list",
+        "-a",
+        "-n",
+        "."
+      ],
+      "files": {
+        "README.md": {
+          "path": "corpora/upstream/wago/corpus/workloads/applications/tree/inputs/README.md",
+          "size": 65,
+          "sha256": "3915e09920ad9ecd655f08d8f82115e0f47119e5fd12cc66e01a8ccda688befc"
+        },
+        "src/main.c": {
+          "path": "corpora/upstream/wago/corpus/workloads/applications/tree/inputs/src/main.c",
+          "size": 29,
+          "sha256": "2ad75d95660563887d8d3f1d0ae1dcf18c2379cbd83a5c72f5ab276351ee6949"
+        },
+        "src/util.c": {
+          "path": "corpora/upstream/wago/corpus/workloads/applications/tree/inputs/src/util.c",
+          "size": 35,
+          "sha256": "c900429992cb5e0aec6c5afb07278bc21c1480178c97f7496fcec1622401e0d0"
+        },
+        "test/main.c": {
+          "path": "corpora/upstream/wago/corpus/workloads/applications/tree/inputs/test/main.c",
+          "size": 34,
+          "sha256": "0de8b249a5ea6d580f90393b5b774d25f102a54653202057f313b337a3392751"
+        }
+      },
+      "exit_code": 0,
+      "stdout_sha256": "c5971133e94a69f88969b73cdaf35d23a298d81124248c18f694672c3d175f40",
+      "output_limit_bytes": 16777216
+    },
+    "original_contract": {
+      "suite": "tree",
+      "desc": "tree WASI CLI recursively lists a pinned source directory with an exact output oracle",
+      "id": "tree-list",
+      "artifact": "workloads/applications/tree/tree.wasm",
+      "artifact_sha256": "fbf2605dc5d03fcdce804b5e871d959951f7bc1e8c5ff3d0e74bfdb1ddbbd435",
+      "tags": [
+        "application",
+        "filesystem",
+        "c",
+        "wasi"
+      ],
+      "source": {
+        "repository": "https://github.com/Old-Man-Programmer/tree.git",
+        "revision": "d501b58ff9cbfd64272c8cbcad0bda36a3fada06",
+        "revision_date": "2024-11-25",
+        "license": "GPL-2.0-or-later",
+        "toolchain": "wasi-sdk",
+        "toolchain_version": "34.0"
+      },
+      "stages": [
+        "Decode",
+        "Validate",
+        "Compile",
+        "CompileFull",
+        "CommandExec"
+      ],
+      "command": {
+        "runtime": "wasi",
+        "platforms": [
+          "linux/amd64",
+          "linux/arm64",
+          "darwin/amd64",
+          "darwin/arm64"
+        ],
+        "export": "_start",
+        "args": [
+          "-a",
+          "-n",
+          "."
+        ],
+        "preopen": "workloads/applications/tree/inputs",
+        "inputs": {
+          "README.md": "3915e09920ad9ecd655f08d8f82115e0f47119e5fd12cc66e01a8ccda688befc",
+          "src/main.c": "2ad75d95660563887d8d3f1d0ae1dcf18c2379cbd83a5c72f5ab276351ee6949",
+          "src/util.c": "c900429992cb5e0aec6c5afb07278bc21c1480178c97f7496fcec1622401e0d0",
+          "test/main.c": "0de8b249a5ea6d580f90393b5b774d25f102a54653202057f313b337a3392751"
+        },
+        "stdout_sha256": "c5971133e94a69f88969b73cdaf35d23a298d81124248c18f694672c3d175f40"
+      }
+    },
+    "provenance": {
+      "catalog_sha256": "e02b20f2ccf9db3bc4649270c8d8eeff2b29bdb6acb6ecb47fab2697cd811a9f",
+      "importer": "wago-catalog-v1",
+      "source_revision": "9f01d145d54ac7ab458b6b2f6047db90a757410a",
+      "algorithm": "directory-tree-walk",
+      "category": "Files & directories"
+    },
+    "work_unit": "command",
+    "units_per_invocation": 1,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "GPL-2.0-or-later",
+    "source": {
+      "repository": "https://github.com/Old-Man-Programmer/tree.git",
+      "revision": "d501b58ff9cbfd64272c8cbcad0bda36a3fada06",
+      "revision_date": "2024-11-25",
+      "license": "GPL-2.0-or-later",
+      "toolchain": "wasi-sdk",
+      "toolchain_version": "34.0"
+    },
+    "generator": "wago-catalog-v1"
+  },
+  {
+    "schema": 1,
+    "id": "wago/brotli-compress",
+    "family": "applications",
+    "artifact": "workloads/applications/brotli/brotli.wasm",
+    "sha256": "9452cb53ecb2092847effd78a5a991cd8009cea6139b52a8561fe5889634f35c",
+    "abi": "wasi-command",
+    "host_profile": "wasi-preview1-readonly-v1",
+    "features": [],
+    "export": "_start",
+    "args": [],
+    "command": {
+      "argv": [
+        "brotli-compress",
+        "-q",
+        "10",
+        "-c",
+        "-n",
+        "-f"
+      ],
+      "stdin_file": "source.js",
+      "files": {
+        "source.js": {
+          "path": "corpora/upstream/wago/corpus/workloads/applications/javascript-source/inputs/source.js",
+          "size": 2160055,
+          "sha256": "ebc5d1b1cf40ddf6fcc2cee0d8bcb01090a1e935c79ac27c8a6f4aeabf78c0ce"
+        }
+      },
+      "exit_code": 0,
+      "stdout_sha256": "8407ca5c3b664e4244c2a6673307678420e9b261510056d6072cbc6b9eb240b1",
+      "output_limit_bytes": 16777216
+    },
+    "original_contract": {
+      "suite": "brotli",
+      "desc": "Brotli WASI CLI compresses 2.16 MB of generated JavaScript at quality 10 with an exact output oracle",
+      "id": "brotli-compress",
+      "artifact": "workloads/applications/brotli/brotli.wasm",
+      "artifact_sha256": "9452cb53ecb2092847effd78a5a991cd8009cea6139b52a8561fe5889634f35c",
+      "tags": [
+        "application",
+        "compression",
+        "c",
+        "wasi"
+      ],
+      "source": {
         "repository": "https://github.com/google/brotli.git",
         "revision": "028fb5a23661f123017c060daa546b55cf4bde29",
-        "license": "MIT"
-      }
-    },
-    "sha256": "f74681a2447f824580f7d0e16dd43648675365d6baf5ee29f7c0c24ed04e15b9",
-    "generator": "wasm-fyi-source-build-v1"
-  },
-  {
-    "schema": 1,
-    "id": "wago/jaq-json-query",
-    "family": "applications",
-    "abi": "core",
-    "artifact": "workloads/nonwasi/jaq-json-query.wasm",
-    "source": "scripts/nonwasi-text.mjs",
-    "generator": "wasm-fyi-source-build-v1",
-    "features": [],
-    "work_unit": "records",
-    "units_per_invocation": 256,
-    "export": "benchmark",
-    "args": [],
-    "reset": "stateless",
-    "oracle": {
-      "kind": "exact_u64",
-      "expected": [
-        "7762143283511603148"
-      ]
-    },
-    "license": "MIT OR Apache-2.0; Unlicense OR MIT; Apache-2.0 OR MIT; Zlib; MIT; Apache-2.0 OR BSL-1.0",
-    "provenance": {
-      "algorithm": "jaq-json-query",
-      "category": "JSON & serialization",
-      "scope": "execution",
-      "resetPolicy": "Invocation-local state; previous output allocation replaced",
-      "kind": "upstream-library",
-      "description": "jaq jq-language parser/compiler/interpreter executes selection, mapping, sorting, grouping and reduction; replaces libjq CLI",
-      "semanticMapping": {
-        "replaces": "wago/jq-json-transform",
-        "retained": "jaq jq-language parser/compiler/interpreter executes selection, mapping, sorting, grouping and reduction; replaces libjq CLI",
-        "excluded": "CLI, environment, filesystem, clocks and host entropy"
+        "revision_date": "2025-10-27",
+        "license": "MIT",
+        "toolchain": "wasi-sdk",
+        "toolchain_version": "34.0"
       },
-      "upstreamPackages": [
-        {
-          "name": "aho-corasick",
-          "version": "1.1.5",
-          "license": "Unlicense OR MIT",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "autocfg",
-          "version": "1.5.1",
-          "license": "Apache-2.0 OR MIT",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "base64",
-          "version": "0.22.1",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "chrono",
-          "version": "0.4.45",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "dyn-clone",
-          "version": "1.0.20",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "equivalent",
-          "version": "1.0.2",
-          "license": "Apache-2.0 OR MIT",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "foldhash",
-          "version": "0.1.5",
-          "license": "Zlib",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "hashbrown",
-          "version": "0.17.1",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "hifijson",
-          "version": "0.2.3",
-          "license": "MIT",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "indexmap",
-          "version": "2.14.2",
-          "license": "Apache-2.0 OR MIT",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "itoa",
-          "version": "1.0.18",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "jaq-core",
-          "version": "2.2.1",
-          "license": "MIT",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "jaq-json",
-          "version": "1.1.3",
-          "license": "MIT",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "jaq-std",
-          "version": "2.1.2",
-          "license": "MIT",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "libm",
-          "version": "0.2.16",
-          "license": "MIT",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "log",
-          "version": "0.4.34",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "memchr",
-          "version": "2.8.3",
-          "license": "Unlicense OR MIT",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "num-traits",
-          "version": "0.2.19",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "once_cell",
-          "version": "1.21.4",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "regex-lite",
-          "version": "0.1.9",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "ryu",
-          "version": "1.0.23",
-          "license": "Apache-2.0 OR BSL-1.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "serde_core",
-          "version": "1.0.229",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "serde_json",
-          "version": "1.0.145",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "typed-arena",
-          "version": "2.0.2",
-          "license": "MIT",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "urlencoding",
-          "version": "2.1.3",
-          "license": "MIT",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        }
+      "stages": [
+        "Decode",
+        "Validate",
+        "Compile",
+        "CompileFull",
+        "CommandExec"
       ],
-      "recipe": {
-        "compiler": "rustc 1.90.0 (1159e78c4 2025-09-14)",
-        "target": "wasm32-unknown-unknown",
-        "targetCapabilities": [
-          "bulk-memory",
-          "sign-extension",
-          "saturating-float-to-int",
-          "reference-types"
+      "command": {
+        "runtime": "wasi",
+        "platforms": [
+          "linux/amd64",
+          "linux/arm64",
+          "darwin/amd64",
+          "darwin/arm64"
         ],
-        "cargoLockSha256": "ba221df50e64e2877ce76e79f292d2e137b866e99b0b2cbcfec4ce708b957c2e",
-        "source": "corpora/nonwasi/text",
-        "sourceSha256": "f9c19e30a9abb763b1f326cd90be56cb9e327161a02d67e39705d5fefc4c66d9",
-        "oracleSource": "scripts/nonwasi-text.mjs",
-        "oracleSourceSha256": "7c10239daddaf7f32b0794dd28afd34939cae81a97b585bb4966f6e1ed52ab67",
-        "features": [
-          "query"
+        "export": "_start",
+        "args": [
+          "-q",
+          "10",
+          "-c",
+          "-n",
+          "-f"
         ],
-        "flags": [
-          "--locked",
-          "--release",
-          "--no-default-features"
-        ]
-      },
-      "input": {
-        "files": {
-          "lines.txt": {
-            "bytes": 57044,
-            "sha256": "4e4f40123f6a8d9b28109266a5ad2026f0218fbf346dc195563afcebf3039a2c"
-          },
-          "binary.bin": {
-            "bytes": 32771,
-            "sha256": "66436f86e3aa3d07899aed831881bbee6b3b8eff2be92bdc15658abee1f156ba"
-          },
-          "words.txt": {
-            "bytes": 21906,
-            "sha256": "b009a801e7f63e805f71720fc5a4e0b60e76d3b15e47b04d5484637d4ce7ecb3"
-          },
-          "source.txt": {
-            "bytes": 52285,
-            "sha256": "68994b517b4a5288fec2f4b7eca6a271d4415fc89ccb366d3310d8a488502eaa"
-          },
-          "people.json": {
-            "bytes": 21028,
-            "sha256": "01fd5070a40a40f9186576e096bab58621faa95c8a8741a3ad8f238a7870563a"
-          },
-          "tree.zip": {
-            "bytes": 22269,
-            "sha256": "e0c6ac0e517edd99110234af59a169c8d0e9defa99e86260f1e80951b255c039"
-          }
-        }
-      },
-      "oraclePolicy": "Independent Node.js reference; all output bytes compared on four repeated calls, including output lengths. FNV-1a-64 over the complete output is the runner contract.",
-      "output": {
-        "bytes": 3079,
-        "sha256": "d4b6cea58c84addaafea53ca627a771e282acc9f01fdf902b0f04847531b899b"
-      },
-      "upstreamSource": "corpora/nonwasi/text/src/lib.rs"
-    },
-    "sha256": "4672116d62e7942b59f2d626737a7d5ca75f3b6eca94c69a137be6a18f20ff4c"
-  },
-  {
-    "schema": 1,
-    "id": "wago/x25519-public",
-    "family": "applications",
-    "abi": "core",
-    "artifact": "workloads/nonwasi/x25519-public.wasm",
-    "source": "scripts/nonwasi-text.mjs",
-    "generator": "wasm-fyi-source-build-v1",
-    "features": [],
-    "work_unit": "public_keys",
-    "units_per_invocation": 64,
-    "export": "benchmark",
-    "args": [],
-    "reset": "stateless",
-    "oracle": {
-      "kind": "exact_u64",
-      "expected": [
-        "8709745635313900552"
-      ]
-    },
-    "license": "MIT OR Apache-2.0; BSD-3-Clause; (MIT OR Apache-2.0) AND Unicode-3.0; Apache-2.0 OR MIT",
-    "provenance": {
-      "algorithm": "x25519-public",
-      "category": "Hashing & cryptography",
-      "scope": "execution",
-      "resetPolicy": "Invocation-local state; previous output allocation replaced",
-      "kind": "upstream-library",
-      "description": "curve25519-dalek via x25519-dalek derives 64 deterministic public keys; replaces age keygen public-key stage, without entropy or Bech32",
-      "semanticMapping": {
-        "replaces": "wago/age-keygen-public",
-        "retained": "curve25519-dalek via x25519-dalek derives 64 deterministic public keys; replaces age keygen public-key stage, without entropy or Bech32",
-        "excluded": "CLI, environment, filesystem, clocks and host entropy"
-      },
-      "upstreamPackages": [
-        {
-          "name": "cfg-if",
-          "version": "1.0.5",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
+        "stdin": "source.js",
+        "preopen": "workloads/applications/javascript-source/inputs",
+        "inputs": {
+          "source.js": "ebc5d1b1cf40ddf6fcc2cee0d8bcb01090a1e935c79ac27c8a6f4aeabf78c0ce"
         },
-        {
-          "name": "curve25519-dalek",
-          "version": "4.1.3",
-          "license": "BSD-3-Clause",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "proc-macro2",
-          "version": "1.0.107",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "quote",
-          "version": "1.0.47",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "rand_core",
-          "version": "0.6.4",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "rustc_version",
-          "version": "0.4.1",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "semver",
-          "version": "1.0.28",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "serde",
-          "version": "1.0.229",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "serde_core",
-          "version": "1.0.229",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "serde_derive",
-          "version": "1.0.229",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "subtle",
-          "version": "2.6.1",
-          "license": "BSD-3-Clause",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "syn",
-          "version": "2.0.119",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "syn",
-          "version": "3.0.6",
-          "license": "MIT OR Apache-2.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "unicode-ident",
-          "version": "1.0.26",
-          "license": "(MIT OR Apache-2.0) AND Unicode-3.0",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "x25519-dalek",
-          "version": "2.0.1",
-          "license": "BSD-3-Clause",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "zeroize",
-          "version": "1.9.1",
-          "license": "Apache-2.0 OR MIT",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        },
-        {
-          "name": "zeroize_derive",
-          "version": "1.5.0",
-          "license": "Apache-2.0 OR MIT",
-          "source": "registry+https://github.com/rust-lang/crates.io-index"
-        }
-      ],
-      "recipe": {
-        "compiler": "rustc 1.90.0 (1159e78c4 2025-09-14)",
-        "target": "wasm32-unknown-unknown",
-        "targetCapabilities": [
-          "bulk-memory",
-          "sign-extension",
-          "saturating-float-to-int",
-          "reference-types"
-        ],
-        "cargoLockSha256": "ba221df50e64e2877ce76e79f292d2e137b866e99b0b2cbcfec4ce708b957c2e",
-        "source": "corpora/nonwasi/text",
-        "sourceSha256": "f9c19e30a9abb763b1f326cd90be56cb9e327161a02d67e39705d5fefc4c66d9",
-        "oracleSource": "scripts/nonwasi-text.mjs",
-        "oracleSourceSha256": "7c10239daddaf7f32b0794dd28afd34939cae81a97b585bb4966f6e1ed52ab67",
-        "features": [
-          "x25519"
-        ],
-        "flags": [
-          "--locked",
-          "--release",
-          "--no-default-features"
-        ]
-      },
-      "input": {
-        "files": {
-          "lines.txt": {
-            "bytes": 57044,
-            "sha256": "4e4f40123f6a8d9b28109266a5ad2026f0218fbf346dc195563afcebf3039a2c"
-          },
-          "binary.bin": {
-            "bytes": 32771,
-            "sha256": "66436f86e3aa3d07899aed831881bbee6b3b8eff2be92bdc15658abee1f156ba"
-          },
-          "words.txt": {
-            "bytes": 21906,
-            "sha256": "b009a801e7f63e805f71720fc5a4e0b60e76d3b15e47b04d5484637d4ce7ecb3"
-          },
-          "source.txt": {
-            "bytes": 52285,
-            "sha256": "68994b517b4a5288fec2f4b7eca6a271d4415fc89ccb366d3310d8a488502eaa"
-          },
-          "people.json": {
-            "bytes": 21028,
-            "sha256": "01fd5070a40a40f9186576e096bab58621faa95c8a8741a3ad8f238a7870563a"
-          },
-          "tree.zip": {
-            "bytes": 22269,
-            "sha256": "e0c6ac0e517edd99110234af59a169c8d0e9defa99e86260f1e80951b255c039"
-          }
-        }
-      },
-      "oraclePolicy": "Independent Node.js reference; all output bytes compared on four repeated calls, including output lengths. FNV-1a-64 over the complete output is the runner contract.",
-      "output": {
-        "bytes": 2048,
-        "sha256": "dbc16bbcbb5c518dba0fe1899cac8b2f20b09ebe1b3fdb99dd761d971b5076f3"
-      },
-      "upstreamSource": "corpora/nonwasi/text/src/lib.rs"
-    },
-    "sha256": "edff60bd0a57eaa0075512a948d41a92c25c3358229057adb381bfaaa00b945e"
-  },
-  {
-    "schema": 1,
-    "id": "wago/xz-memory-decode",
-    "family": "applications",
-    "artifact": "workloads/nonwasi/xz-memory-decode.wasm",
-    "abi": "core",
-    "features": [],
-    "export": "benchmark",
-    "args": [],
-    "reset": "stateless",
-    "oracle": {
-      "kind": "exact_u64",
-      "expected": [
-        "1888774247"
-      ]
-    },
-    "license": "0BSD",
-    "source": "https://github.com/tukaani-project/xz.git",
-    "work_unit": "bytes",
-    "units_per_invocation": 1010,
-    "provenance": {
-      "algorithm": "lzma",
-      "category": "Compression",
-      "kind": "upstream-library",
-      "description": "XZ Utils liblzma decodes the original pinned XZ fixture entirely in memory, validates checksums, consumes the complete stream and hashes all 1,010 decoded bytes.",
-      "scope": "execution",
-      "replaces": "wago/xzdec-decompress",
-      "oraclePolicy": "Full-output FNV-1a independently checked using Python lzma against the retained stream; repeated Wasm calls.",
-      "recipe": {
-        "source": "corpora/nonwasi/data",
-        "flags": [
-          "-O2",
-          "-DNDEBUG",
-          "-nostartfiles",
-          "-Wl,--no-entry",
-          "-Wl,--export=benchmark",
-          "-Wl,--export-memory",
-          "-Wl,--wrap=exit",
-          "-Wl,-z,stack-size=1048576",
-          "-Wl,--strip-all",
-          "-I$BUILD_TREE/.tmp/xz-core/src/liblzma/api"
-        ],
-        "compiler": "WASI SDK 34 clang; SDK libc is statically dead-stripped to an import-free core module."
-      },
-      "upstreamSource": {
-        "repository": "https://github.com/tukaani-project/xz.git",
-        "revision": "d3e650e63c110e830fd5391e7f8b45df0b91d3da",
-        "license": "0BSD"
+        "stdout_sha256": "8407ca5c3b664e4244c2a6673307678420e9b261510056d6072cbc6b9eb240b1"
       }
     },
-    "sha256": "489e0f84b0ef153398bd7630fe927e213e2f98b20e688e804e25dd2b7fa16f02",
-    "generator": "wasm-fyi-source-build-v1"
-  },
-  {
-    "schema": 1,
-    "id": "wago/sqlite-memory-query",
-    "family": "applications",
-    "artifact": "workloads/nonwasi/sqlite-memory-query.wasm",
-    "abi": "core",
-    "features": [],
-    "export": "benchmark",
-    "args": [],
-    "reset": "stateless",
-    "oracle": {
-      "kind": "exact_u64",
-      "expected": [
-        "178001307"
-      ]
-    },
-    "license": "Public-Domain",
-    "source": "https://www.sqlite.org/2026/sqlite-amalgamation-3530400.zip",
-    "work_unit": "rows",
-    "units_per_invocation": 10000,
     "provenance": {
-      "algorithm": "sqlite-sql-query",
-      "category": "Databases & analytics",
-      "kind": "upstream-library",
-      "description": "SQLite 3.53.4 inserts 10,000 recursive rows into an in-memory table, commits, rolls back an update and checks four complete SQL aggregates.",
-      "scope": "execution",
-      "replaces": "wago/sqlite3-query",
-      "oraclePolicy": "Independent JavaScript input/aggregate reference and full-output FNV-1a; repeated Wasm calls. Brotli output also cross-decoded by Node zlib and compared byte-for-byte.",
-      "recipe": {
-        "source": "corpora/nonwasi/data",
-        "flags": [
-          "-O2",
-          "-DNDEBUG",
-          "-nostartfiles",
-          "-Wl,--no-entry",
-          "-Wl,--export=benchmark",
-          "-Wl,--export-memory",
-          "-Wl,--wrap=exit",
-          "-Wl,-z,stack-size=1048576",
-          "-Wl,--strip-all",
-          "-DSQLITE_OS_OTHER=1",
-          "-DSQLITE_THREADSAFE=0",
-          "-DSQLITE_OMIT_LOAD_EXTENSION",
-          "-DSQLITE_OMIT_LOCALTIME",
-          "-DSQLITE_OMIT_WAL",
-          "-DSQLITE_TEMP_STORE=3",
-          "-I$BUILD_TREE/.tmp/sqlite-amalgamation-3530400"
-        ],
-        "compiler": "WASI SDK 34 clang; SDK libc is statically dead-stripped to an import-free core module."
-      },
-      "upstreamSource": {
-        "repository": "https://www.sqlite.org/2026/sqlite-amalgamation-3530400.zip",
-        "revision": "3.53.4",
-        "license": "Public-Domain"
-      }
+      "catalog_sha256": "e02b20f2ccf9db3bc4649270c8d8eeff2b29bdb6acb6ecb47fab2697cd811a9f",
+      "importer": "wago-catalog-v1",
+      "source_revision": "9f01d145d54ac7ab458b6b2f6047db90a757410a",
+      "algorithm": "brotli",
+      "category": "Compression"
     },
-    "sha256": "5f8dbdee9c1c0195a407f2a71f96563bd4b6d5e38d90f74460ed14a16ab791d3",
-    "generator": "wasm-fyi-source-build-v1"
-  },
-  {
-    "schema": 1,
-    "id": "wago/quickjs-memory-events",
-    "family": "applications",
-    "artifact": "workloads/nonwasi/quickjs-memory-events.wasm",
-    "abi": "core",
-    "export": "run",
-    "args": [],
-    "initialize": "__wasm_call_ctors",
-    "features": [],
-    "reset": "stateless",
-    "work_unit": "program",
+    "work_unit": "command",
     "units_per_invocation": 1,
+    "reset": "fresh_instance_per_sample",
     "oracle": {
-      "kind": "exact_u64",
-      "expected": [
-        "1062390962"
-      ]
+      "kind": "exact_command",
+      "expected": []
     },
     "license": "MIT",
-    "source": "https://github.com/bellard/quickjs.git",
-    "provenance": {
-      "scope": "execution",
-      "algorithm": "quickjs-interpreter",
-      "category": "Language runtimes",
-      "description": "QuickJS parses and executes the original 50,000-event regexp, aggregation and ranking JavaScript program in memory",
-      "replaces": "wago/quickjs-script",
-      "input_sha256": "5f2ea9684e195fc3f7bcbc8be4ad8b4c2540e6b10a560365176d3ce07c2ac92d",
-      "reference_stdout_sha256": "485ded1ee5ff38dee328f324894460d61da6914badb6cf5359a36a3e14ca865b",
-      "oracle_derivation": "FNV-1a of complete independently generated native reference stdout; hashes also match the retained WASI corpus reference",
-      "upstreamSource": {
-        "repository": "https://github.com/bellard/quickjs.git",
-        "revision": "535a7c250ff4a577ec36c3e103daab6dadeea650",
-        "license": "MIT",
-        "toolchain": "WASI SDK 34 clang; core memory-only link"
-      }
+    "source": {
+      "repository": "https://github.com/google/brotli.git",
+      "revision": "028fb5a23661f123017c060daa546b55cf4bde29",
+      "revision_date": "2025-10-27",
+      "license": "MIT",
+      "toolchain": "wasi-sdk",
+      "toolchain_version": "34.0"
+    },
+    "generator": "wago-catalog-v1"
+  },
+  {
+    "schema": 1,
+    "id": "wago/jq-json-transform",
+    "family": "applications",
+    "artifact": "workloads/applications/jq/jq.wasm",
+    "sha256": "e99e12da7947aa782137d61367fbe78264af6a6aa6fed6c5d73e327b81571d0e",
+    "abi": "wasi-command",
+    "host_profile": "wasi-preview1-readonly-v1",
+    "features": [],
+    "export": "_start",
+    "args": [],
+    "command": {
+      "argv": [
+        "jq-json-transform",
+        "-n",
+        "-c",
+        "-M",
+        "[range(0;50000) | {category:(. % 97), score:(((. * 48271) % 2147483647) % 100003), label:(\"event-\" + tostring)}] | sort_by(.category, .score) | group_by(.category) | map({category: .[0].category, count: length, total: (map(.score) | add), maximum: (map(.score) | max)}) | {groups:length, count:(map(.count)|add), total:(map(.total)|add), checksum:(map((.category + 1) * .maximum)|add)}"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "4f33b717f7ae401dc56e8b19b87ea14c04f718a38860ac970696c52d5abba25a",
+      "output_limit_bytes": 16777216
     },
     "original_contract": {
-      "desc": "QuickJS parses and executes the original 50,000-event regexp, aggregation and ranking JavaScript program in memory"
+      "suite": "jq",
+      "desc": "jq WASI CLI sorts, groups, and aggregates 50,000 generated JSON objects with an exact output oracle",
+      "id": "jq-json-transform",
+      "artifact": "workloads/applications/jq/jq.wasm",
+      "artifact_sha256": "e99e12da7947aa782137d61367fbe78264af6a6aa6fed6c5d73e327b81571d0e",
+      "tags": [
+        "application",
+        "json",
+        "query",
+        "c",
+        "wasi"
+      ],
+      "source": {
+        "repository": "https://github.com/jqlang/jq.git",
+        "revision": "34f7186b86743a083a589741b6cea95293524108",
+        "revision_date": "2026-06-20",
+        "license": "MIT AND BSD-2-Clause",
+        "toolchain": "wasi-sdk",
+        "toolchain_version": "34.0"
+      },
+      "stages": [
+        "Decode",
+        "Validate",
+        "Compile",
+        "CompileFull",
+        "CommandExec"
+      ],
+      "command": {
+        "runtime": "wasi",
+        "platforms": [
+          "linux/amd64",
+          "linux/arm64",
+          "darwin/amd64",
+          "darwin/arm64"
+        ],
+        "export": "_start",
+        "args": [
+          "-n",
+          "-c",
+          "-M",
+          "[range(0;50000) | {category:(. % 97), score:(((. * 48271) % 2147483647) % 100003), label:(\"event-\" + tostring)}] | sort_by(.category, .score) | group_by(.category) | map({category: .[0].category, count: length, total: (map(.score) | add), maximum: (map(.score) | max)}) | {groups:length, count:(map(.count)|add), total:(map(.total)|add), checksum:(map((.category + 1) * .maximum)|add)}"
+        ],
+        "stdout_sha256": "4f33b717f7ae401dc56e8b19b87ea14c04f718a38860ac970696c52d5abba25a"
+      }
     },
-    "sha256": "0118fa9891d17b9e24aa1f8553f64d7ce09886c25f54e25df0372de4d171ad8e",
-    "generator": "wasm-fyi-source-build-v1"
+    "provenance": {
+      "catalog_sha256": "e02b20f2ccf9db3bc4649270c8d8eeff2b29bdb6acb6ecb47fab2697cd811a9f",
+      "importer": "wago-catalog-v1",
+      "source_revision": "9f01d145d54ac7ab458b6b2f6047db90a757410a",
+      "algorithm": "jq-query-transform",
+      "category": "JSON & serialization"
+    },
+    "work_unit": "command",
+    "units_per_invocation": 1,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "MIT AND BSD-2-Clause",
+    "source": {
+      "repository": "https://github.com/jqlang/jq.git",
+      "revision": "34f7186b86743a083a589741b6cea95293524108",
+      "revision_date": "2026-06-20",
+      "license": "MIT AND BSD-2-Clause",
+      "toolchain": "wasi-sdk",
+      "toolchain_version": "34.0"
+    },
+    "generator": "wago-catalog-v1"
   },
   {
     "schema": 1,
-    "id": "wago/tree-sitter-swift-parse",
+    "id": "wago/age-keygen-public",
     "family": "applications",
-    "artifact": "workloads/nonwasi/tree-sitter-swift-parse.wasm",
-    "abi": "core",
+    "artifact": "workloads/applications/age/age-keygen.wasm",
+    "sha256": "b99e027e56ebd36dabf89ea0d1607682f957cbae3b5ba253fa86c228f2b9a035",
+    "abi": "wasi-command",
+    "host_profile": "wasi-preview1-readonly-v1",
     "features": [],
-    "export": "run",
+    "export": "_start",
     "args": [],
-    "reset": "stateless",
-    "oracle": {
-      "kind": "exact_u64",
-      "expected": [
-        "664666373"
-      ]
-    },
-    "license": "MIT",
-    "source": "https://github.com/tree-sitter/tree-sitter.git",
-    "work_unit": "parses",
-    "units_per_invocation": 24,
-    "provenance": {
-      "kind": "upstream-library",
-      "algorithm": "swift-parsing",
-      "category": "Compilers & development tools",
-      "scope": "execution",
-      "replaces": "wago/swift-format-source",
-      "description": "Actual tree-sitter Swift parser/scanner and full syntax-tree traversal, repeated 24 times over structs, enums, generics, closures, protocols and extensions; formatting is excluded.",
-      "oraclePolicy": "Committed native upstream/reference golden; zero imports; five calls including reset. Hardware full-output SHA-256; ABC exhaustive truth tables; generated JS/Wasm independently executed.",
-      "recipe": {
-        "source": "corpora/nonwasi/tooling",
-        "flags": [
-          "-O2",
-          "-DNDEBUG",
-          "-mexec-model=reactor",
-          "-Wl,-z,stack-size=2097152",
-          "-Wl,--export=run",
-          "-Wl,--export=reset",
-          "-D_POSIX_C_SOURCE=200809L",
-          "-I$BUILD_TREE/.tmp/nonwasi-tooling/tree-sitter-lib/include",
-          "-I$BUILD_TREE/.tmp/nonwasi-tooling/tree-sitter-lib/src",
-          "-I$BUILD_TREE/.tmp/package/src"
-        ],
-        "compiler": "WASI SDK 34 clang, import-free dead-stripped core"
+    "command": {
+      "argv": [
+        "age-keygen-public",
+        "-y",
+        "test-identity.txt"
+      ],
+      "files": {
+        "test-identity.txt": {
+          "path": "corpora/upstream/wago/corpus/workloads/applications/age/keygen-inputs/test-identity.txt",
+          "size": 153,
+          "sha256": "f3ceb70e4a35c314f8db06030660aecdb75b65cba4f144ac46b63eb43fe4abd5"
+        }
       },
-      "upstreamSource": {
-        "repository": "https://github.com/tree-sitter/tree-sitter",
-        "revision": "8261cea5e5098ad4b88f234dbaa224a916a34af3",
-        "grammar": {
-          "repository": "https://github.com/alex-pinkus/tree-sitter-swift",
-          "revision": "npm 0.7.1",
-          "sha256": "abd89284f1b0f1375ba5efaa9ddf99ad4b16ac91fc7751ef10c5f013cca06f8c"
+      "exit_code": 0,
+      "stdout_sha256": "3e88d7da0a7a6dce4879845f68b246802c0e6bec13452cec30bd2c27e8b3a470",
+      "output_limit_bytes": 16777216
+    },
+    "original_contract": {
+      "suite": "age-keygen",
+      "desc": "age-keygen WASI CLI derives the public recipient from a pinned test identity",
+      "id": "age-keygen-public",
+      "artifact": "workloads/applications/age/age-keygen.wasm",
+      "artifact_sha256": "b99e027e56ebd36dabf89ea0d1607682f957cbae3b5ba253fa86c228f2b9a035",
+      "tags": [
+        "application",
+        "encryption",
+        "go",
+        "wasi"
+      ],
+      "source": {
+        "repository": "https://github.com/FiloSottile/age.git",
+        "revision": "b74dce4cdbe35b5e5f66c06d9612b72f89028758",
+        "revision_date": "2026-08-29",
+        "license": "BSD-3-Clause",
+        "toolchain": "go",
+        "toolchain_version": "1.27.0"
+      },
+      "stages": [
+        "Decode",
+        "Validate",
+        "Compile",
+        "CompileFull",
+        "CommandExec"
+      ],
+      "command": {
+        "runtime": "wasi",
+        "platforms": [
+          "linux/amd64",
+          "linux/arm64",
+          "darwin/amd64",
+          "darwin/arm64"
+        ],
+        "export": "_start",
+        "args": [
+          "-y",
+          "test-identity.txt"
+        ],
+        "preopen": "workloads/applications/age/keygen-inputs",
+        "inputs": {
+          "test-identity.txt": "f3ceb70e4a35c314f8db06030660aecdb75b65cba4f144ac46b63eb43fe4abd5"
         },
-        "license": "MIT"
+        "stdout_sha256": "3e88d7da0a7a6dce4879845f68b246802c0e6bec13452cec30bd2c27e8b3a470"
       }
     },
-    "sha256": "9f2c6a2ffcaa982eb50df6fdae7eb1369793f60e80ccecd07b09e9a4bbc97a65",
-    "generator": "wasm-fyi-source-build-v1"
+    "provenance": {
+      "catalog_sha256": "e02b20f2ccf9db3bc4649270c8d8eeff2b29bdb6acb6ecb47fab2697cd811a9f",
+      "importer": "wago-catalog-v1",
+      "source_revision": "9f01d145d54ac7ab458b6b2f6047db90a757410a",
+      "algorithm": "x25519-key-derivation",
+      "category": "Hashing & cryptography"
+    },
+    "work_unit": "command",
+    "units_per_invocation": 1,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "BSD-3-Clause",
+    "source": {
+      "repository": "https://github.com/FiloSottile/age.git",
+      "revision": "b74dce4cdbe35b5e5f66c06d9612b72f89028758",
+      "revision_date": "2026-08-29",
+      "license": "BSD-3-Clause",
+      "toolchain": "go",
+      "toolchain_version": "1.27.0"
+    },
+    "generator": "wago-catalog-v1"
   },
   {
     "schema": 1,
-    "id": "wago/oxc-js-minify",
+    "id": "wago/xzdec-decompress",
     "family": "applications",
-    "artifact": "workloads/nonwasi/oxc-js-minify.wasm",
-    "abi": "core",
+    "artifact": "workloads/applications/xzdec/xzdec.wasm",
+    "sha256": "83248ab482a8aa2e05b9be965f775af7c8218058d2501d93b18d967f04eea572",
+    "abi": "wasi-command",
+    "host_profile": "wasi-preview1-readonly-v1",
     "features": [],
-    "export": "run",
+    "export": "_start",
     "args": [],
-    "reset": "stateless",
-    "oracle": {
-      "kind": "exact_u64",
-      "expected": [
-        "3819475620"
-      ]
-    },
-    "license": "MIT",
-    "source": "https://github.com/oxc-project/oxc",
-    "work_unit": "functions",
-    "units_per_invocation": 48,
-    "provenance": {
-      "kind": "upstream-library",
-      "algorithm": "javascript-minification",
-      "category": "Compilers & development tools",
-      "scope": "execution",
-      "replaces": "wago/esbuild-minify",
-      "description": "Oxc JavaScript parsing, semantic analysis, compression, local-variable mangling and code generation for 48 functions; replaces esbuild minification, without bundling or file resolution.",
-      "oraclePolicy": "Committed native upstream/reference golden; zero imports; five calls including reset. Hardware full-output SHA-256; ABC exhaustive truth tables; generated JS/Wasm independently executed.",
-      "recipe": {
-        "source": "corpora/nonwasi/tooling",
-        "flags": [
-          "build",
-          "--lib",
-          "--locked",
-          "--release",
-          "--target",
-          "wasm32-unknown-unknown",
-          "--no-default-features",
-          "--features",
-          "minifier"
-        ],
-        "compiler": "Rust 1.90.0 wasm32-unknown-unknown"
+    "command": {
+      "argv": [
+        "xzdec-decompress"
+      ],
+      "stdin_file": "source.js.xz",
+      "files": {
+        "source.js.xz": {
+          "path": "corpora/upstream/wago/corpus/workloads/applications/xzdec/inputs/source.js.xz",
+          "size": 556,
+          "sha256": "64f999ed9f0448036cd2d4842f87f5cee4edf3800e50ba085c4bb76ae711bcf1"
+        }
       },
-      "upstreamSource": {
-        "repository": "https://github.com/oxc-project/oxc",
-        "revision": "d25dc35b19971ee19dcc1645a19b3044283d18ea",
-        "version": "oxc 0.75.0",
-        "cargoLockSha256": "ddc7277c847b0d0974740aba9c120c0acae8b62369a8b47594178e9888de1971",
-        "toolchain": "rustc 1.90.0 (1159e78c4 2025-09-14)",
-        "license": "MIT"
+      "exit_code": 0,
+      "stdout_sha256": "15f4817d6bb6e105ef12c8b6d2383c32d1646a16824365d96935445f436afc89",
+      "output_limit_bytes": 16777216
+    },
+    "original_contract": {
+      "suite": "xzdec",
+      "desc": "XZ Utils decoder CLI decompresses a pinned XZ stream with an exact output oracle",
+      "id": "xzdec-decompress",
+      "artifact": "workloads/applications/xzdec/xzdec.wasm",
+      "artifact_sha256": "83248ab482a8aa2e05b9be965f775af7c8218058d2501d93b18d967f04eea572",
+      "tags": [
+        "application",
+        "compression",
+        "c",
+        "wasi"
+      ],
+      "source": {
+        "repository": "https://github.com/tukaani-project/xz.git",
+        "revision": "d3e650e63c110e830fd5391e7f8b45df0b91d3da",
+        "revision_date": "2026-09-09",
+        "license": "0BSD",
+        "toolchain": "wasi-sdk",
+        "toolchain_version": "34.0"
+      },
+      "stages": [
+        "Decode",
+        "Validate",
+        "Compile",
+        "CompileFull",
+        "CommandExec"
+      ],
+      "command": {
+        "runtime": "wasi",
+        "platforms": [
+          "linux/amd64",
+          "linux/arm64",
+          "darwin/amd64",
+          "darwin/arm64"
+        ],
+        "export": "_start",
+        "stdin": "source.js.xz",
+        "preopen": "workloads/applications/xzdec/inputs",
+        "inputs": {
+          "source.js.xz": "64f999ed9f0448036cd2d4842f87f5cee4edf3800e50ba085c4bb76ae711bcf1"
+        },
+        "stdout_sha256": "15f4817d6bb6e105ef12c8b6d2383c32d1646a16824365d96935445f436afc89"
       }
     },
-    "sha256": "e63ff937b6bb1fce917cc6e7cc6bec57201409678be14a5ea98b328ec62ba590",
-    "generator": "wasm-fyi-source-build-v1"
+    "provenance": {
+      "catalog_sha256": "e02b20f2ccf9db3bc4649270c8d8eeff2b29bdb6acb6ecb47fab2697cd811a9f",
+      "importer": "wago-catalog-v1",
+      "source_revision": "9f01d145d54ac7ab458b6b2f6047db90a757410a",
+      "algorithm": "lzma",
+      "category": "Compression"
+    },
+    "work_unit": "command",
+    "units_per_invocation": 1,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "0BSD",
+    "source": {
+      "repository": "https://github.com/tukaani-project/xz.git",
+      "revision": "d3e650e63c110e830fd5391e7f8b45df0b91d3da",
+      "revision_date": "2026-09-09",
+      "license": "0BSD",
+      "toolchain": "wasi-sdk",
+      "toolchain_version": "34.0"
+    },
+    "generator": "wago-catalog-v1"
+  },
+  {
+    "schema": 1,
+    "id": "wago/sqlite3-query",
+    "family": "applications",
+    "artifact": "workloads/applications/sqlite3/sqlite3.wasm",
+    "sha256": "bbfa28f00fea33bd95bd3bd573c92fd821173d03b280180b7e40dac0af91a669",
+    "abi": "wasi-command",
+    "host_profile": "wasi-preview1-readonly-v1",
+    "features": [],
+    "export": "_start",
+    "args": [],
+    "command": {
+      "argv": [
+        "sqlite3-query",
+        "-batch",
+        ":memory:",
+        "WITH RECURSIVE events(n,value) AS (VALUES(1,12345) UNION ALL SELECT n+1,(value+48271)%1000003 FROM events WHERE n<1000000) SELECT count(*),sum(value),sum(CASE WHEN value%257=0 THEN value ELSE 0 END),sum(value&4095) FROM events;"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "5531212e58a571b40d57b960e0d0e2dfa46d183496f18fb0389a7927ad48a897",
+      "output_limit_bytes": 16777216
+    },
+    "original_contract": {
+      "suite": "sqlite3",
+      "desc": "SQLite WASI shell recursively generates one million rows and computes four exact aggregates",
+      "id": "sqlite3-query",
+      "artifact": "workloads/applications/sqlite3/sqlite3.wasm",
+      "artifact_sha256": "bbfa28f00fea33bd95bd3bd573c92fd821173d03b280180b7e40dac0af91a669",
+      "tags": [
+        "application",
+        "database",
+        "sql",
+        "c",
+        "wasi"
+      ],
+      "source": {
+        "repository": "https://www.sqlite.org/2026/sqlite-amalgamation-3530400.zip",
+        "revision": "3.53.4",
+        "revision_date": "2026-07-24",
+        "license": "Public-Domain",
+        "toolchain": "wasi-sdk",
+        "toolchain_version": "34.0"
+      },
+      "stages": [
+        "Decode",
+        "Validate",
+        "Compile",
+        "CompileFull",
+        "CommandExec"
+      ],
+      "command": {
+        "runtime": "wasi",
+        "platforms": [
+          "linux/amd64",
+          "linux/arm64",
+          "darwin/amd64",
+          "darwin/arm64"
+        ],
+        "export": "_start",
+        "args": [
+          "-batch",
+          ":memory:",
+          "WITH RECURSIVE events(n,value) AS (VALUES(1,12345) UNION ALL SELECT n+1,(value+48271)%1000003 FROM events WHERE n<1000000) SELECT count(*),sum(value),sum(CASE WHEN value%257=0 THEN value ELSE 0 END),sum(value&4095) FROM events;"
+        ],
+        "stdout_sha256": "5531212e58a571b40d57b960e0d0e2dfa46d183496f18fb0389a7927ad48a897"
+      }
+    },
+    "provenance": {
+      "catalog_sha256": "e02b20f2ccf9db3bc4649270c8d8eeff2b29bdb6acb6ecb47fab2697cd811a9f",
+      "importer": "wago-catalog-v1",
+      "source_revision": "9f01d145d54ac7ab458b6b2f6047db90a757410a",
+      "algorithm": "sqlite-sql-query",
+      "category": "Databases & analytics"
+    },
+    "work_unit": "command",
+    "units_per_invocation": 1,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "Public-Domain",
+    "source": {
+      "repository": "https://www.sqlite.org/2026/sqlite-amalgamation-3530400.zip",
+      "revision": "3.53.4",
+      "revision_date": "2026-07-24",
+      "license": "Public-Domain",
+      "toolchain": "wasi-sdk",
+      "toolchain_version": "34.0"
+    },
+    "generator": "wago-catalog-v1"
+  },
+  {
+    "schema": 1,
+    "id": "wago/quickjs-script",
+    "family": "applications",
+    "artifact": "workloads/applications/quickjs/qjs.wasm",
+    "sha256": "e384f80f3dd492dab373d9eda08fb124cc4484945bbc2c9d03cbc7598e711a40",
+    "abi": "wasi-command",
+    "host_profile": "wasi-preview1-readonly-v1",
+    "features": [],
+    "export": "_start",
+    "args": [],
+    "command": {
+      "argv": [
+        "quickjs-script",
+        "program.js"
+      ],
+      "files": {
+        "program.js": {
+          "path": "corpora/upstream/wago/corpus/workloads/applications/js-runtime/inputs/program.js",
+          "size": 1961,
+          "sha256": "5f2ea9684e195fc3f7bcbc8be4ad8b4c2540e6b10a560365176d3ce07c2ac92d"
+        }
+      },
+      "exit_code": 0,
+      "stdout_sha256": "485ded1ee5ff38dee328f324894460d61da6914badb6cf5359a36a3e14ca865b",
+      "output_limit_bytes": 16777216
+    },
+    "original_contract": {
+      "suite": "quickjs",
+      "desc": "QuickJS WASI CLI parses and aggregates 50,000 generated service events",
+      "id": "quickjs-script",
+      "artifact": "workloads/applications/quickjs/qjs.wasm",
+      "artifact_sha256": "e384f80f3dd492dab373d9eda08fb124cc4484945bbc2c9d03cbc7598e711a40",
+      "tags": [
+        "application",
+        "interpreter",
+        "javascript",
+        "c",
+        "wasi"
+      ],
+      "source": {
+        "repository": "https://github.com/saghul/wasi-lab.git",
+        "revision": "05d2c175afeed626187f792c9dd1a8142e11f95a",
+        "revision_date": "2019-10-25",
+        "license": "MIT",
+        "toolchain": "wasi-sdk",
+        "toolchain_version": "34.0"
+      },
+      "stages": [
+        "Decode",
+        "Validate",
+        "Compile",
+        "CompileFull",
+        "CommandExec"
+      ],
+      "command": {
+        "runtime": "wasi",
+        "platforms": [
+          "linux/amd64",
+          "linux/arm64",
+          "darwin/amd64",
+          "darwin/arm64"
+        ],
+        "export": "_start",
+        "args": [
+          "program.js"
+        ],
+        "preopen": "workloads/applications/js-runtime/inputs",
+        "inputs": {
+          "program.js": "5f2ea9684e195fc3f7bcbc8be4ad8b4c2540e6b10a560365176d3ce07c2ac92d"
+        },
+        "stdout_sha256": "485ded1ee5ff38dee328f324894460d61da6914badb6cf5359a36a3e14ca865b"
+      }
+    },
+    "provenance": {
+      "catalog_sha256": "e02b20f2ccf9db3bc4649270c8d8eeff2b29bdb6acb6ecb47fab2697cd811a9f",
+      "importer": "wago-catalog-v1",
+      "source_revision": "9f01d145d54ac7ab458b6b2f6047db90a757410a",
+      "algorithm": "javascript-interpreter",
+      "category": "Language runtimes"
+    },
+    "work_unit": "command",
+    "units_per_invocation": 1,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "MIT",
+    "source": {
+      "repository": "https://github.com/saghul/wasi-lab.git",
+      "revision": "05d2c175afeed626187f792c9dd1a8142e11f95a",
+      "revision_date": "2019-10-25",
+      "license": "MIT",
+      "toolchain": "wasi-sdk",
+      "toolchain_version": "34.0"
+    },
+    "generator": "wago-catalog-v1"
+  },
+  {
+    "schema": 1,
+    "id": "wago/swift-format-source",
+    "family": "applications",
+    "artifact": "workloads/applications/swift-format/swift-format.wasm",
+    "sha256": "4f9c01a9569407766947c6fa6e9369dd9703f461f31dc9c79b49a6a6bcc5bc76",
+    "abi": "wasi-command",
+    "host_profile": "wasi-preview1-readonly-v1",
+    "features": [],
+    "export": "_start",
+    "args": [],
+    "command": {
+      "argv": [
+        "swift-format-source",
+        "format",
+        "source.swift"
+      ],
+      "files": {
+        "source.swift": {
+          "path": "corpora/upstream/wago/corpus/workloads/applications/swift-format/inputs/source.swift",
+          "size": 271,
+          "sha256": "aa42bbc4d55e53cc38902fbcaf6b8da46d1e9ca52202d487bbd6c0e17c461d74"
+        }
+      },
+      "exit_code": 0,
+      "stdout_sha256": "1248b3fde251be78256a4e080ead7992ab502c8715f4ba5162a914c91a48137a",
+      "output_limit_bytes": 16777216
+    },
+    "original_contract": {
+      "suite": "swift-format",
+      "desc": "Swift formatter CLI reformats source from stdin with an exact output oracle",
+      "id": "swift-format-source",
+      "artifact": "workloads/applications/swift-format/swift-format.wasm",
+      "artifact_sha256": "4f9c01a9569407766947c6fa6e9369dd9703f461f31dc9c79b49a6a6bcc5bc76",
+      "tags": [
+        "application",
+        "formatter",
+        "swift",
+        "wasi"
+      ],
+      "source": {
+        "repository": "https://github.com/kkebo/swift-format.git",
+        "revision": "92097d54ac3be47738fe77e38c918e9aabce0302",
+        "revision_date": "2026-07-01",
+        "license": "Apache-2.0 WITH Swift-exception",
+        "toolchain": "upstream WASI release artifact",
+        "toolchain_version": "603.0.0-wasm32-wasi"
+      },
+      "stages": [
+        "Decode",
+        "Validate",
+        "Compile",
+        "CompileFull",
+        "CommandExec"
+      ],
+      "command": {
+        "runtime": "wasi",
+        "platforms": [
+          "linux/amd64",
+          "linux/arm64",
+          "darwin/amd64",
+          "darwin/arm64"
+        ],
+        "export": "_start",
+        "args": [
+          "format",
+          "source.swift"
+        ],
+        "preopen": "workloads/applications/swift-format/inputs",
+        "inputs": {
+          "source.swift": "aa42bbc4d55e53cc38902fbcaf6b8da46d1e9ca52202d487bbd6c0e17c461d74"
+        },
+        "stdout_sha256": "1248b3fde251be78256a4e080ead7992ab502c8715f4ba5162a914c91a48137a"
+      }
+    },
+    "provenance": {
+      "catalog_sha256": "e02b20f2ccf9db3bc4649270c8d8eeff2b29bdb6acb6ecb47fab2697cd811a9f",
+      "importer": "wago-catalog-v1",
+      "source_revision": "9f01d145d54ac7ab458b6b2f6047db90a757410a",
+      "algorithm": "swift-formatting",
+      "category": "Compilers & development tools"
+    },
+    "work_unit": "command",
+    "units_per_invocation": 1,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "Apache-2.0 WITH Swift-exception",
+    "source": {
+      "repository": "https://github.com/kkebo/swift-format.git",
+      "revision": "92097d54ac3be47738fe77e38c918e9aabce0302",
+      "revision_date": "2026-07-01",
+      "license": "Apache-2.0 WITH Swift-exception",
+      "toolchain": "upstream WASI release artifact",
+      "toolchain_version": "603.0.0-wasm32-wasi"
+    },
+    "generator": "wago-catalog-v1"
+  },
+  {
+    "schema": 1,
+    "id": "wago/esbuild-minify",
+    "family": "applications",
+    "artifact": "workloads/applications/esbuild/esbuild.wasm",
+    "sha256": "a593128fc5b588cfc19d974ef8896ab9ad3bd3d8ccaaf392c981a26380617e8f",
+    "abi": "wasi-command",
+    "host_profile": "wasi-preview1-readonly-v1",
+    "features": [],
+    "export": "_start",
+    "args": [],
+    "command": {
+      "argv": [
+        "esbuild-minify",
+        "--minify",
+        "--loader=js"
+      ],
+      "stdin_file": "source.js",
+      "files": {
+        "source.js": {
+          "path": "corpora/upstream/wago/corpus/workloads/applications/javascript-source/inputs/source.js",
+          "size": 2160055,
+          "sha256": "ebc5d1b1cf40ddf6fcc2cee0d8bcb01090a1e935c79ac27c8a6f4aeabf78c0ce"
+        }
+      },
+      "exit_code": 0,
+      "stdout_sha256": "070f4effcdccfa95e41cca57494d11ddf329c48e9af6d535638a3b3d7a306203",
+      "output_limit_bytes": 16777216
+    },
+    "original_contract": {
+      "suite": "esbuild",
+      "desc": "esbuild WASI CLI minifies 2.16 MB of generated production-shaped JavaScript",
+      "id": "esbuild-minify",
+      "artifact": "workloads/applications/esbuild/esbuild.wasm",
+      "artifact_sha256": "a593128fc5b588cfc19d974ef8896ab9ad3bd3d8ccaaf392c981a26380617e8f",
+      "tags": [
+        "application",
+        "compiler",
+        "javascript",
+        "go",
+        "wasi"
+      ],
+      "source": {
+        "repository": "https://github.com/evanw/esbuild.git",
+        "revision": "f6058f8364fe7ab91ca57a83e02577ed74c9cae4",
+        "revision_date": "2026-08-09",
+        "license": "MIT",
+        "toolchain": "go",
+        "toolchain_version": "1.26.5"
+      },
+      "stages": [
+        "Decode",
+        "Validate",
+        "Compile",
+        "CompileFull",
+        "CommandExec"
+      ],
+      "command": {
+        "runtime": "wasi",
+        "platforms": [
+          "linux/amd64",
+          "linux/arm64",
+          "darwin/amd64",
+          "darwin/arm64"
+        ],
+        "export": "_start",
+        "args": [
+          "--minify",
+          "--loader=js"
+        ],
+        "stdin": "source.js",
+        "preopen": "workloads/applications/javascript-source/inputs",
+        "inputs": {
+          "source.js": "ebc5d1b1cf40ddf6fcc2cee0d8bcb01090a1e935c79ac27c8a6f4aeabf78c0ce"
+        },
+        "stdout_sha256": "070f4effcdccfa95e41cca57494d11ddf329c48e9af6d535638a3b3d7a306203"
+      }
+    },
+    "provenance": {
+      "catalog_sha256": "e02b20f2ccf9db3bc4649270c8d8eeff2b29bdb6acb6ecb47fab2697cd811a9f",
+      "importer": "wago-catalog-v1",
+      "source_revision": "9f01d145d54ac7ab458b6b2f6047db90a757410a",
+      "algorithm": "javascript-minification",
+      "category": "Compilers & development tools"
+    },
+    "work_unit": "command",
+    "units_per_invocation": 1,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_command",
+      "expected": []
+    },
+    "license": "MIT",
+    "source": {
+      "repository": "https://github.com/evanw/esbuild.git",
+      "revision": "f6058f8364fe7ab91ca57a83e02577ed74c9cae4",
+      "revision_date": "2026-08-09",
+      "license": "MIT",
+      "toolchain": "go",
+      "toolchain_version": "1.26.5"
+    },
+    "generator": "wago-catalog-v1"
   },
   {
     "schema": 1,

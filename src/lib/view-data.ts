@@ -22,8 +22,6 @@ interface ViewData {
 	statistics:{timingSamples:number};
 	history:Record<MachineId,{
 		points:{date:string;revision:string;collectedAt?:string;status:string;currentLatency?:Partial<Record<CfgId,'s1'>>;releases?:Partial<Record<CfgId,{version:string;publishedAt:string;url:string}>>}[];
-		/** Frozen baseline contracts and canonical sealed cells, independent of prepared inventory. */
-		catalogue?:Pick<Bench,'id'|'artifactSha256'|'group'|'abi'>[];referenceCells?:Record<string,ViewCell>;
 		workloads:string[];artifactSha256:Record<string,string>;versions:Record<CfgId,string[]>;
 		cells:Record<string,(ViewCell & {role:'retrospective-revision'|'fixed-comparison-baseline'})[]>;
 	}>;
