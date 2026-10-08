@@ -1,0 +1,873 @@
+{
+  "schema": 1,
+  "kind": "curated-positive-semantic-check",
+  "scope": "Selected ordinary positive assertions; not full official conformance and not performance evidence",
+  "collectedAt": "2026-10-07T01:10:27.754Z",
+  "runtime": {
+    "node": "v24.19.0",
+    "v8": "13.6.233.17-node.51",
+    "execArgv": [],
+    "platform": "linux",
+    "arch": "x64",
+    "executableSha256": "bc17c508ffeed0ec622934f9b7fa72f8e78da65350e63c3eceb56fa688aa5e12"
+  },
+  "sources": [
+    {
+      "id": "fac",
+      "upstreamUrl": "https://github.com/WebAssembly/spec/blob/970c4116e644e2bf7acb39aab8b733db14ccdf28/test/core/fac.wast",
+      "revision": "970c4116e644e2bf7acb39aab8b733db14ccdf28",
+      "upstreamSha256": "160f50dd99afe4c87f9a49424887e6fd94baa79b20f0e07567b867e866b583d2",
+      "localSha256": "7129dc508336d144f9f75f540bd994a372d264cc36ec61ac1a85bf784d570454",
+      "modules": [
+        {
+          "filename": "commands.0.wasm",
+          "sha256": "fc9df8b7db1083501963cc25810efa378f94e7ecaf8f06a236bcbc7924b3723e"
+        }
+      ],
+      "setupCount": 0,
+      "setupResults": [],
+      "results": [
+        {
+          "line": 109,
+          "export": "fac-rec",
+          "status": "passed"
+        },
+        {
+          "line": 111,
+          "export": "fac-iter",
+          "status": "passed"
+        },
+        {
+          "line": 113,
+          "export": "fac-rec-named",
+          "status": "passed"
+        },
+        {
+          "line": 115,
+          "export": "fac-iter-named",
+          "status": "passed"
+        },
+        {
+          "line": 117,
+          "export": "fac-opt",
+          "status": "passed"
+        },
+        {
+          "line": 119,
+          "export": "fac-ssa",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "id": "return_call",
+      "upstreamUrl": "https://github.com/WebAssembly/spec/blob/970c4116e644e2bf7acb39aab8b733db14ccdf28/test/core/return_call.wast",
+      "revision": "970c4116e644e2bf7acb39aab8b733db14ccdf28",
+      "upstreamSha256": "f3473155d523116912b9bf2a96902062043e1e66c3fe195248211c4bd203096e",
+      "localSha256": "1f8a557dc981fd5a4121bd1786be7f560b87aa5f4ea4e0dd5084483fd985dfd7",
+      "modules": [
+        {
+          "filename": "commands.0.wasm",
+          "sha256": "b57fff6ec6d7b0d10952123161e346c9230ba6c6200d3c844034b7128a7b5cb9"
+        }
+      ],
+      "setupCount": 0,
+      "setupResults": [],
+      "results": [
+        {
+          "line": 106,
+          "export": "type-i32",
+          "status": "passed"
+        },
+        {
+          "line": 108,
+          "export": "type-i64",
+          "status": "passed"
+        },
+        {
+          "line": 110,
+          "export": "type-f32",
+          "status": "passed"
+        },
+        {
+          "line": 112,
+          "export": "type-f64",
+          "status": "passed"
+        },
+        {
+          "line": 114,
+          "export": "type-first-i32",
+          "status": "passed"
+        },
+        {
+          "line": 116,
+          "export": "type-first-i64",
+          "status": "passed"
+        },
+        {
+          "line": 118,
+          "export": "type-first-f32",
+          "status": "passed"
+        },
+        {
+          "line": 120,
+          "export": "type-first-f64",
+          "status": "passed"
+        },
+        {
+          "line": 122,
+          "export": "type-second-i32",
+          "status": "passed"
+        },
+        {
+          "line": 124,
+          "export": "type-second-i64",
+          "status": "passed"
+        },
+        {
+          "line": 126,
+          "export": "type-second-f32",
+          "status": "passed"
+        },
+        {
+          "line": 128,
+          "export": "type-second-f64",
+          "status": "passed"
+        },
+        {
+          "line": 130,
+          "export": "fac-acc",
+          "status": "passed"
+        },
+        {
+          "line": 132,
+          "export": "fac-acc",
+          "status": "passed"
+        },
+        {
+          "line": 134,
+          "export": "fac-acc",
+          "status": "passed"
+        },
+        {
+          "line": 137,
+          "export": "fac-acc",
+          "status": "passed"
+        },
+        {
+          "line": 141,
+          "export": "count",
+          "status": "passed"
+        },
+        {
+          "line": 143,
+          "export": "count",
+          "status": "passed"
+        },
+        {
+          "line": 145,
+          "export": "even",
+          "status": "passed"
+        },
+        {
+          "line": 147,
+          "export": "even",
+          "status": "passed"
+        },
+        {
+          "line": 149,
+          "export": "even",
+          "status": "passed"
+        },
+        {
+          "line": 151,
+          "export": "even",
+          "status": "passed"
+        },
+        {
+          "line": 153,
+          "export": "odd",
+          "status": "passed"
+        },
+        {
+          "line": 155,
+          "export": "odd",
+          "status": "passed"
+        },
+        {
+          "line": 157,
+          "export": "odd",
+          "status": "passed"
+        },
+        {
+          "line": 159,
+          "export": "odd",
+          "status": "passed"
+        },
+        {
+          "line": 161,
+          "export": "tailprint_i32_f32",
+          "status": "passed"
+        },
+        {
+          "line": 163,
+          "export": "type-f64-i64-to-i32-f32",
+          "status": "passed"
+        },
+        {
+          "line": 165,
+          "export": "type-funcref",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "id": "return_call_indirect",
+      "upstreamUrl": "https://github.com/WebAssembly/spec/blob/970c4116e644e2bf7acb39aab8b733db14ccdf28/test/core/return_call_indirect.wast",
+      "revision": "970c4116e644e2bf7acb39aab8b733db14ccdf28",
+      "upstreamSha256": "23b17ea497e92342d33bf725e3a63f9414026f1d2b7b02614e42d1275afbf4ab",
+      "localSha256": "9fe2853eb7d1b89585f3b01e6bb53070557454de91b4fed79720edaac4ccf015",
+      "modules": [
+        {
+          "filename": "commands.0.wasm",
+          "sha256": "7ce2cc51170665a016b8dab9d0116d8a391cfaa6f34ae79b81e7feffd69614f4"
+        }
+      ],
+      "setupCount": 0,
+      "setupResults": [],
+      "results": [
+        {
+          "line": 252,
+          "export": "type-i32",
+          "status": "passed"
+        },
+        {
+          "line": 254,
+          "export": "type-i64",
+          "status": "passed"
+        },
+        {
+          "line": 256,
+          "export": "type-f32",
+          "status": "passed"
+        },
+        {
+          "line": 258,
+          "export": "type-f64",
+          "status": "passed"
+        },
+        {
+          "line": 260,
+          "export": "type-index",
+          "status": "passed"
+        },
+        {
+          "line": 262,
+          "export": "type-first-i32",
+          "status": "passed"
+        },
+        {
+          "line": 264,
+          "export": "type-first-i64",
+          "status": "passed"
+        },
+        {
+          "line": 266,
+          "export": "type-first-f32",
+          "status": "passed"
+        },
+        {
+          "line": 268,
+          "export": "type-first-f64",
+          "status": "passed"
+        },
+        {
+          "line": 270,
+          "export": "type-second-i32",
+          "status": "passed"
+        },
+        {
+          "line": 272,
+          "export": "type-second-i64",
+          "status": "passed"
+        },
+        {
+          "line": 274,
+          "export": "type-second-f32",
+          "status": "passed"
+        },
+        {
+          "line": 276,
+          "export": "type-second-f64",
+          "status": "passed"
+        },
+        {
+          "line": 278,
+          "export": "dispatch",
+          "status": "passed"
+        },
+        {
+          "line": 280,
+          "export": "dispatch",
+          "status": "passed"
+        },
+        {
+          "line": 282,
+          "export": "dispatch",
+          "status": "passed"
+        },
+        {
+          "line": 284,
+          "export": "dispatch",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "id": "table_get",
+      "upstreamUrl": "https://github.com/WebAssembly/spec/blob/970c4116e644e2bf7acb39aab8b733db14ccdf28/test/core/table_get.wast",
+      "revision": "970c4116e644e2bf7acb39aab8b733db14ccdf28",
+      "upstreamSha256": "30c289fd0d88affa4750387cd7ef300aa92543ec7e3670d74babe2f92644a97e",
+      "localSha256": "2b9b381602ba9d84c7191bd52dc04f5bff3a7ab558932393780c9f00e683c06c",
+      "modules": [
+        {
+          "filename": "commands.0.wasm",
+          "sha256": "9b3986c7902fea8150a56f76e6e4ed22603eb59e37033ae548302100cb10b196"
+        }
+      ],
+      "setupCount": 1,
+      "setupResults": [
+        {
+          "line": 30,
+          "export": "init",
+          "status": "passed"
+        }
+      ],
+      "results": [
+        {
+          "line": 32,
+          "export": "get-externref",
+          "status": "passed"
+        },
+        {
+          "line": 34,
+          "export": "get-externref",
+          "status": "passed"
+        },
+        {
+          "line": 36,
+          "export": "get-funcref",
+          "status": "passed"
+        },
+        {
+          "line": 38,
+          "export": "is_null-funcref",
+          "status": "passed"
+        },
+        {
+          "line": 40,
+          "export": "is_null-funcref",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "id": "table_set",
+      "upstreamUrl": "https://github.com/WebAssembly/spec/blob/970c4116e644e2bf7acb39aab8b733db14ccdf28/test/core/table_set.wast",
+      "revision": "970c4116e644e2bf7acb39aab8b733db14ccdf28",
+      "upstreamSha256": "8d41c2420113cc1e9fb04f30b4fd7b67acccbbd7f95d8c5bcc058091b6ed52ce",
+      "localSha256": "aee6de6fb9d4bb68b3393362fda815a299034c715593f8fae9aa9d11d7e600f1",
+      "modules": [
+        {
+          "filename": "commands.0.wasm",
+          "sha256": "85dcaa7244a626f0982bdd7a541d9c5a2600e960ecf227fcc0c0af6b71cef9f5"
+        }
+      ],
+      "setupCount": 0,
+      "setupResults": [],
+      "results": [
+        {
+          "line": 36,
+          "export": "get-externref",
+          "status": "passed"
+        },
+        {
+          "line": 38,
+          "export": "set-externref",
+          "status": "passed"
+        },
+        {
+          "line": 40,
+          "export": "get-externref",
+          "status": "passed"
+        },
+        {
+          "line": 42,
+          "export": "set-externref",
+          "status": "passed"
+        },
+        {
+          "line": 44,
+          "export": "get-externref",
+          "status": "passed"
+        },
+        {
+          "line": 46,
+          "export": "get-funcref",
+          "status": "passed"
+        },
+        {
+          "line": 48,
+          "export": "set-funcref-from",
+          "status": "passed"
+        },
+        {
+          "line": 50,
+          "export": "is_null-funcref",
+          "status": "passed"
+        },
+        {
+          "line": 52,
+          "export": "set-funcref",
+          "status": "passed"
+        },
+        {
+          "line": 54,
+          "export": "get-funcref",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "id": "gc-i31",
+      "upstreamUrl": "https://github.com/WebAssembly/spec/blob/970c4116e644e2bf7acb39aab8b733db14ccdf28/test/core/gc/i31.wast",
+      "revision": "970c4116e644e2bf7acb39aab8b733db14ccdf28",
+      "upstreamSha256": "5b315d36a0260257632d4a6d9b4520900ae6db45c824035f99bf9614b489709f",
+      "localSha256": "6b391fd604b6af5bb70fb4b59f6da8ae884c2f576bb0619d42af34eded9f1dfd",
+      "modules": [
+        {
+          "filename": "commands.0.wasm",
+          "sha256": "441946a11405da4e127c9589bedebd654959f95d379d235652edb9d67e2aec5e"
+        }
+      ],
+      "setupCount": 0,
+      "setupResults": [],
+      "results": [
+        {
+          "line": 40,
+          "export": "new",
+          "status": "passed",
+          "adapter": "wasm-to-wasm-assertion-wrapper",
+          "wrapperSource": "(module (import \"subject\" \"target\" (func $subject (param i32) (result (ref i31)))) (func (export \"check\") (result i32) (drop (i31.get_s (call $subject (i32.const 1)))) (i32.const 1)))",
+          "wrapperSourceSha256": "a7e0d4dea42676e2a93ab64e0bdb48d62537582113d56e7496056cce70e15d12",
+          "wrapperSha256": "07057af9ce3592e8fcaab4abbcf42755868f522673d26ada3eeca92b7297898c"
+        },
+        {
+          "line": 42,
+          "export": "get_u",
+          "status": "passed"
+        },
+        {
+          "line": 44,
+          "export": "get_u",
+          "status": "passed"
+        },
+        {
+          "line": 46,
+          "export": "get_u",
+          "status": "passed"
+        },
+        {
+          "line": 48,
+          "export": "get_u",
+          "status": "passed"
+        },
+        {
+          "line": 50,
+          "export": "get_u",
+          "status": "passed"
+        },
+        {
+          "line": 52,
+          "export": "get_u",
+          "status": "passed"
+        },
+        {
+          "line": 54,
+          "export": "get_u",
+          "status": "passed"
+        },
+        {
+          "line": 56,
+          "export": "get_u",
+          "status": "passed"
+        },
+        {
+          "line": 58,
+          "export": "get_s",
+          "status": "passed"
+        },
+        {
+          "line": 60,
+          "export": "get_s",
+          "status": "passed"
+        },
+        {
+          "line": 62,
+          "export": "get_s",
+          "status": "passed"
+        },
+        {
+          "line": 64,
+          "export": "get_s",
+          "status": "passed"
+        },
+        {
+          "line": 66,
+          "export": "get_s",
+          "status": "passed"
+        },
+        {
+          "line": 68,
+          "export": "get_s",
+          "status": "passed"
+        },
+        {
+          "line": 70,
+          "export": "get_s",
+          "status": "passed"
+        },
+        {
+          "line": 72,
+          "export": "get_s",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "id": "gc-array_copy",
+      "upstreamUrl": "https://github.com/WebAssembly/spec/blob/970c4116e644e2bf7acb39aab8b733db14ccdf28/test/core/gc/array_copy.wast",
+      "revision": "970c4116e644e2bf7acb39aab8b733db14ccdf28",
+      "upstreamSha256": "ab7001b78dfd3a4ba593fea582d6df85de10848f4c3795430d3456df89b59627",
+      "localSha256": "42eb76df60c4b2fe283bbddcb6be0680365d2a497e2e3527198e2087b8418719",
+      "modules": [
+        {
+          "filename": "commands.0.wasm",
+          "sha256": "bfc4330eea491ac790727a2d539a5faf1666bf07d895ef2bb91bed6ad6b3137f"
+        }
+      ],
+      "setupCount": 0,
+      "setupResults": [],
+      "results": [
+        {
+          "line": 50,
+          "export": "array_copy",
+          "status": "passed"
+        },
+        {
+          "line": 52,
+          "export": "array_copy",
+          "status": "passed"
+        },
+        {
+          "line": 54,
+          "export": "array_get_nth",
+          "status": "passed"
+        },
+        {
+          "line": 56,
+          "export": "array_get_nth",
+          "status": "passed"
+        },
+        {
+          "line": 58,
+          "export": "array_get_nth",
+          "status": "passed"
+        },
+        {
+          "line": 60,
+          "export": "array_copy",
+          "status": "passed"
+        },
+        {
+          "line": 62,
+          "export": "array_get_nth",
+          "status": "passed"
+        },
+        {
+          "line": 64,
+          "export": "array_get_nth",
+          "status": "passed"
+        },
+        {
+          "line": 66,
+          "export": "array_get_nth",
+          "status": "passed"
+        },
+        {
+          "line": 68,
+          "export": "array_copy_overlap_test-1",
+          "status": "passed"
+        },
+        {
+          "line": 70,
+          "export": "array_get_nth",
+          "status": "passed"
+        },
+        {
+          "line": 72,
+          "export": "array_get_nth",
+          "status": "passed"
+        },
+        {
+          "line": 74,
+          "export": "array_get_nth",
+          "status": "passed"
+        },
+        {
+          "line": 76,
+          "export": "array_get_nth",
+          "status": "passed"
+        },
+        {
+          "line": 78,
+          "export": "array_get_nth",
+          "status": "passed"
+        },
+        {
+          "line": 80,
+          "export": "array_get_nth",
+          "status": "passed"
+        },
+        {
+          "line": 82,
+          "export": "array_copy_overlap_test-2",
+          "status": "passed"
+        },
+        {
+          "line": 84,
+          "export": "array_get_nth",
+          "status": "passed"
+        },
+        {
+          "line": 86,
+          "export": "array_get_nth",
+          "status": "passed"
+        },
+        {
+          "line": 88,
+          "export": "array_get_nth",
+          "status": "passed"
+        },
+        {
+          "line": 90,
+          "export": "array_get_nth",
+          "status": "passed"
+        },
+        {
+          "line": 92,
+          "export": "array_get_nth",
+          "status": "passed"
+        },
+        {
+          "line": 94,
+          "export": "array_get_nth",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "id": "multi-memory-memory_copy1",
+      "upstreamUrl": "https://github.com/WebAssembly/spec/blob/970c4116e644e2bf7acb39aab8b733db14ccdf28/test/core/multi-memory/memory_copy1.wast",
+      "revision": "970c4116e644e2bf7acb39aab8b733db14ccdf28",
+      "upstreamSha256": "0c0a25890b3415d7cf0a0f43cd7904ad44e9e2fc6a1462fef48703102805e1bc",
+      "localSha256": "902cf3245a900879e4259be669971165759c0e82c229a91c84395e6add1a2b66",
+      "modules": [
+        {
+          "filename": "commands.0.wasm",
+          "sha256": "cd5b109927d40e3e8bb54fc8a905c6a068e23de546231ba5c2740ab47339e6de"
+        }
+      ],
+      "setupCount": 5,
+      "setupResults": [
+        {
+          "line": 24,
+          "export": "copy",
+          "status": "passed"
+        },
+        {
+          "line": 38,
+          "export": "copy",
+          "status": "passed"
+        },
+        {
+          "line": 40,
+          "export": "copy",
+          "status": "passed"
+        },
+        {
+          "line": 42,
+          "export": "copy",
+          "status": "passed"
+        },
+        {
+          "line": 44,
+          "export": "copy",
+          "status": "passed"
+        }
+      ],
+      "results": [
+        {
+          "line": 26,
+          "export": "load8_u",
+          "status": "passed"
+        },
+        {
+          "line": 28,
+          "export": "load8_u",
+          "status": "passed"
+        },
+        {
+          "line": 30,
+          "export": "load8_u",
+          "status": "passed"
+        },
+        {
+          "line": 32,
+          "export": "load8_u",
+          "status": "passed"
+        },
+        {
+          "line": 34,
+          "export": "load8_u",
+          "status": "passed"
+        },
+        {
+          "line": 36,
+          "export": "load8_u",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "id": "relaxed-simd-relaxed_dot_product",
+      "upstreamUrl": "https://github.com/WebAssembly/spec/blob/970c4116e644e2bf7acb39aab8b733db14ccdf28/test/core/relaxed-simd/relaxed_dot_product.wast",
+      "revision": "970c4116e644e2bf7acb39aab8b733db14ccdf28",
+      "upstreamSha256": "5de2c0cd58e7303f0e568d7484574385b5a697e3fbd06e71017840babe7ec66d",
+      "localSha256": "a399d334674ce7a47b161bcf4a11fe05357a393efa650fcaefa73906046c6aa1",
+      "modules": [
+        {
+          "filename": "commands.0.wasm",
+          "sha256": "39bfce051a54395cc1b6d2987286d8dd867c42e3a8813567ecb4f5ff9c47c6e8"
+        }
+      ],
+      "setupCount": 0,
+      "setupResults": [],
+      "results": [
+        {
+          "line": 22,
+          "export": "i16x8.relaxed_dot_i8x16_i7x16_s",
+          "status": "passed",
+          "adapter": "wasm-to-wasm-assertion-wrapper",
+          "wrapperSource": "(module (import \"subject\" \"target\" (func $subject (param v128) (param v128) (result v128))) (func (export \"check\") (result i32) (local $actual v128) (local.set $actual (call $subject (v128.const i8x16 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15) (v128.const i8x16 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15))) (i8x16.all_true (i8x16.eq (local.get $actual) (v128.const i16x8 1 13 41 85 145 221 313 421)))))",
+          "wrapperSourceSha256": "4a9958e14865cff25f766b929c1de01f16a3a5ea905b3d174ebb234aa39f9fdf",
+          "wrapperSha256": "8f7b9cd418ceee5f7b74a5e35b569151fbf38c0bfdfb369d9b9bf4ea6c6830ea"
+        },
+        {
+          "line": 27,
+          "export": "i16x8.relaxed_dot_i8x16_i7x16_s",
+          "status": "passed",
+          "adapter": "wasm-to-wasm-assertion-wrapper",
+          "wrapperSource": "(module (import \"subject\" \"target\" (func $subject (param v128) (param v128) (result v128))) (func (export \"check\") (result i32) (local $actual v128) (local.set $actual (call $subject (v128.const i8x16 -128 -128 127 127 0 0 0 0 0 0 0 0 0 0 0 0) (v128.const i8x16 127 127 127 127 0 0 0 0 0 0 0 0 0 0 0 0))) (i8x16.all_true (i8x16.eq (local.get $actual) (v128.const i16x8 -32512 32258 0 0 0 0 0 0)))))",
+          "wrapperSourceSha256": "70fb67d18b2730f75731543f69a243b9c329c80b8ea5076cf0d2a8b89ee2e4af",
+          "wrapperSha256": "9c2df63c5f97ae505d97516587cdf00d30fdbdb0e92dfa8a80104b1865539f80"
+        },
+        {
+          "line": 32,
+          "export": "i16x8.relaxed_dot_i8x16_i7x16_s",
+          "status": "passed",
+          "adapter": "wasm-to-wasm-assertion-wrapper",
+          "wrapperSource": "(module (import \"subject\" \"target\" (func $subject (param v128) (param v128) (result v128))) (func (export \"check\") (result i32) (local $actual v128) (local.set $actual (call $subject (v128.const i8x16 -128 -128 0 0 0 0 0 0 0 0 0 0 0 0 0 0) (v128.const i8x16 -127 -127 0 0 0 0 0 0 0 0 0 0 0 0 0 0))) (i32.or (i32.or (i8x16.all_true (i8x16.eq (local.get $actual) (v128.const i16x8 -32768 0 0 0 0 0 0 0))) (i8x16.all_true (i8x16.eq (local.get $actual) (v128.const i16x8 32512 0 0 0 0 0 0 0)))) (i8x16.all_true (i8x16.eq (local.get $actual) (v128.const i16x8 -32512 0 0 0 0 0 0 0))))))",
+          "wrapperSourceSha256": "d58dab0aaa7dc3518283138ed7e5269ddc32e227b5819a9089f62bb041137467",
+          "wrapperSha256": "c4563cd7f6fd6741cd2c92f0402f871fe8af24bb8258d3b79dcf753b50faef6e"
+        },
+        {
+          "line": 40,
+          "export": "i32x4.relaxed_dot_i8x16_i7x16_add_s",
+          "status": "passed",
+          "adapter": "wasm-to-wasm-assertion-wrapper",
+          "wrapperSource": "(module (import \"subject\" \"target\" (func $subject (param v128) (param v128) (param v128) (result v128))) (func (export \"check\") (result i32) (local $actual v128) (local.set $actual (call $subject (v128.const i8x16 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15) (v128.const i8x16 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15) (v128.const i32x4 0 1 2 3))) (i8x16.all_true (i8x16.eq (local.get $actual) (v128.const i32x4 14 127 368 737)))))",
+          "wrapperSourceSha256": "a4651a52f2219b7ceac2cadb707e5a1d728b6d95c7ecd73157c05d8730c86f49",
+          "wrapperSha256": "e0505cb1dce21090a7ce70fbdfc2f1f0032964f681e4927a8bedd0559a2f1c87"
+        },
+        {
+          "line": 47,
+          "export": "i32x4.relaxed_dot_i8x16_i7x16_add_s",
+          "status": "passed",
+          "adapter": "wasm-to-wasm-assertion-wrapper",
+          "wrapperSource": "(module (import \"subject\" \"target\" (func $subject (param v128) (param v128) (param v128) (result v128))) (func (export \"check\") (result i32) (local $actual v128) (local.set $actual (call $subject (v128.const i8x16 -128 -128 -128 -128 127 127 127 127 0 0 0 0 0 0 0 0) (v128.const i8x16 127 127 127 127 127 127 127 127 0 0 0 0 0 0 0 0) (v128.const i32x4 1 2 3 4))) (i8x16.all_true (i8x16.eq (local.get $actual) (v128.const i32x4 -65023 64518 3 4)))))",
+          "wrapperSourceSha256": "fc446700bcaa797a90e99923c4537020f74ad4491fd266bc196fb1c50bcc0aab",
+          "wrapperSha256": "77d07812f52e8ece46e1fe2f65560b0893e7910a04b62b919073a833a2033048"
+        },
+        {
+          "line": 54,
+          "export": "i32x4.relaxed_dot_i8x16_i7x16_add_s",
+          "status": "passed",
+          "adapter": "wasm-to-wasm-assertion-wrapper",
+          "wrapperSource": "(module (import \"subject\" \"target\" (func $subject (param v128) (param v128) (param v128) (result v128))) (func (export \"check\") (result i32) (local $actual v128) (local.set $actual (call $subject (v128.const i8x16 -128 -128 -128 -128 0 0 0 0 0 0 0 0 0 0 0 0) (v128.const i8x16 -127 -127 -127 -127 0 0 0 0 0 0 0 0 0 0 0 0) (v128.const i32x4 1 2 3 4))) (i32.or (i32.or (i32.or (i8x16.all_true (i8x16.eq (local.get $actual) (v128.const i32x4 -66047 2 3 4))) (i8x16.all_true (i8x16.eq (local.get $actual) (v128.const i32x4 -65535 2 3 4)))) (i8x16.all_true (i8x16.eq (local.get $actual) (v128.const i32x4 65025 2 3 4)))) (i8x16.all_true (i8x16.eq (local.get $actual) (v128.const i32x4 66049 2 3 4))))))",
+          "wrapperSourceSha256": "4e306813729d0ea2e4ed478df40ac47dd0bab7da5744abea7b870963f51a678a",
+          "wrapperSha256": "9b33a1eba65458a4a496b465f4b66c43624a1a475f6dff847a6ce1f8b46dbb4f"
+        },
+        {
+          "line": 64,
+          "export": "i16x8.relaxed_dot_i8x16_i7x16_s_cmp",
+          "status": "passed",
+          "adapter": "wasm-to-wasm-assertion-wrapper",
+          "wrapperSource": "(module (import \"subject\" \"target\" (func $subject (param v128) (param v128) (result v128))) (func (export \"check\") (result i32) (local $actual v128) (local.set $actual (call $subject (v128.const i8x16 -128 -128 127 127 0 0 0 0 0 0 0 0 0 0 0 0) (v128.const i8x16 127 127 127 127 0 0 0 0 0 0 0 0 0 0 0 0))) (i8x16.all_true (i8x16.eq (local.get $actual) (v128.const i16x8 -1 -1 -1 -1 -1 -1 -1 -1)))))",
+          "wrapperSourceSha256": "70f5d84aca1e9aebcb4edc6f7d3af5e83e1ede872fe24b56d150700db46bdce1",
+          "wrapperSha256": "5572c2d725cc203f39d180a72a17d39ade82669a0314664e4d962193a88fcb1a"
+        },
+        {
+          "line": 69,
+          "export": "i32x4.relaxed_dot_i8x16_i7x16_add_s_cmp",
+          "status": "passed",
+          "adapter": "wasm-to-wasm-assertion-wrapper",
+          "wrapperSource": "(module (import \"subject\" \"target\" (func $subject (param v128) (param v128) (param v128) (result v128))) (func (export \"check\") (result i32) (local $actual v128) (local.set $actual (call $subject (v128.const i8x16 -128 -128 -128 -128 127 127 127 127 0 0 0 0 0 0 0 0) (v128.const i8x16 127 127 127 127 127 127 127 127 0 0 0 0 0 0 0 0) (v128.const i32x4 1 2 3 4))) (i8x16.all_true (i8x16.eq (local.get $actual) (v128.const i32x4 -1 -1 -1 -1)))))",
+          "wrapperSourceSha256": "b621399efe18245acffd40ba6bdf09835af621f0052a81dc847697bb1b593174",
+          "wrapperSha256": "874de366736903f9300b54d48d93b3d9e0c35e7df960c8e88043c7daa855d546"
+        },
+        {
+          "line": 76,
+          "export": "i16x8.relaxed_dot_i8x16_i7x16_s_cmp",
+          "status": "passed",
+          "adapter": "wasm-to-wasm-assertion-wrapper",
+          "wrapperSource": "(module (import \"subject\" \"target\" (func $subject (param v128) (param v128) (result v128))) (func (export \"check\") (result i32) (local $actual v128) (local.set $actual (call $subject (v128.const i8x16 -128 -128 0 0 0 0 0 0 0 0 0 0 0 0 0 0) (v128.const i8x16 -127 -127 0 0 0 0 0 0 0 0 0 0 0 0 0 0))) (i8x16.all_true (i8x16.eq (local.get $actual) (v128.const i16x8 -1 -1 -1 -1 -1 -1 -1 -1)))))",
+          "wrapperSourceSha256": "4d4d877ef8c9e30a3f5382fb385c1e31a9eec4eb4f1cbc983db8d0bb870ea4f0",
+          "wrapperSha256": "890224a3dcbd60f4ba39c84bcc5b2e2d809443400620861c016490c237825a0c"
+        },
+        {
+          "line": 81,
+          "export": "i32x4.relaxed_dot_i8x16_i7x16_add_s_cmp",
+          "status": "passed",
+          "adapter": "wasm-to-wasm-assertion-wrapper",
+          "wrapperSource": "(module (import \"subject\" \"target\" (func $subject (param v128) (param v128) (param v128) (result v128))) (func (export \"check\") (result i32) (local $actual v128) (local.set $actual (call $subject (v128.const i8x16 -128 -128 -128 -128 0 0 0 0 0 0 0 0 0 0 0 0) (v128.const i8x16 -127 -127 -127 -127 0 0 0 0 0 0 0 0 0 0 0 0) (v128.const i32x4 1 2 3 4))) (i8x16.all_true (i8x16.eq (local.get $actual) (v128.const i32x4 -1 -1 -1 -1)))))",
+          "wrapperSourceSha256": "3fe61f6914ef3e014a7f250ad857e182d7a462a033d9ddba56b6f8dcb5382955",
+          "wrapperSha256": "69c5f5822695899c61fb40d88eb8db339e07c884209d0ece509fddc013da9f5f"
+        }
+      ]
+    }
+  ],
+  "tool": "wasm-tools 1.260.0 (3c92a0566 2026-09-30)",
+  "toolSha256": "18e1690b27d8242ace0ae362ebcdebad4a1d5fbf0c48ac136bdd517cf94a867e",
+  "indexSha256": "0b25d7f6eadd261afceb328b53589fafc8d438215749d386d8c17fef53a0eb5f",
+  "counts": {
+    "total": 123,
+    "passed": 123,
+    "failed": 0,
+    "unsupported": 0,
+    "skipped-adapter": 0,
+    "setupPassed": 6,
+    "setupFailed": 0
+  },
+  "status": "passed"
+}

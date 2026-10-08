@@ -1,0 +1,26 @@
+;; Original portable adapter for the selected positive V8 string vectors.
+;; Compile with {builtins: ['js-string'], importedStringConstants: 'strings'}.
+;; Every exported operation enters a Wasm function and calls the real builtin.
+(module
+  (import "wasm:js-string" "cast" (func $cast (param externref) (result (ref extern))))
+  (import "wasm:js-string" "test" (func $test (param externref) (result i32)))
+  (import "wasm:js-string" "substring" (func $substring (param externref i32 i32) (result (ref extern))))
+  (import "wasm:js-string" "length" (func $length (param externref) (result i32)))
+  (import "wasm:js-string" "concat" (func $concat (param externref externref) (result (ref extern))))
+  (import "wasm:js-string" "equals" (func $equals (param externref externref) (result i32)))
+  (import "wasm:js-string" "charCodeAt" (func $char-code-at (param externref i32) (result i32)))
+  (func (export "cast") (param externref) (result (ref extern))
+    (call $cast (local.get 0)))
+  (func (export "test") (param externref) (result i32)
+    (call $test (local.get 0)))
+  (func (export "substring") (param externref i32 i32) (result (ref extern))
+    (call $substring (local.get 0) (local.get 1) (local.get 2)))
+  (func (export "length") (param externref) (result i32)
+    (call $length (local.get 0)))
+  (func (export "concat") (param externref externref) (result (ref extern))
+    (call $concat (local.get 0) (local.get 1)))
+  (func (export "equals") (param externref externref) (result i32)
+    (call $equals (local.get 0) (local.get 1)))
+  (func (export "charCodeAt") (param externref i32) (result i32)
+    (call $char-code-at (local.get 0) (local.get 1)))
+)

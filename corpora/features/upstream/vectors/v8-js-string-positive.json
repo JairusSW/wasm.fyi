@@ -1,0 +1,363 @@
+{
+  "schema": 1,
+  "kind": "portable-semantic-vectors",
+  "source": "v8-imported-strings",
+  "license": "BSD-3-Clause",
+  "adaptation": "Positive JS-string operations and fixture shapes adapted from imported-strings.js. Native V8 string representation constructors and negative/trap paths excluded. These expected values are literal Unicode/string semantics, not candidate-Wasm output.",
+  "hostProfile": "js-string-builtins-v1",
+  "cases": [
+    {
+      "operation": "cast",
+      "args": [
+        "foo"
+      ],
+      "expected": "foo"
+    },
+    {
+      "operation": "test",
+      "args": [
+        "foo"
+      ],
+      "expected": 1
+    },
+    {
+      "operation": "test",
+      "args": [
+        123
+      ],
+      "expected": 0
+    },
+    {
+      "operation": "test",
+      "args": [
+        true
+      ],
+      "expected": 0
+    },
+    {
+      "operation": "test",
+      "args": [
+        null
+      ],
+      "expected": 0
+    },
+    {
+      "operation": "substring",
+      "args": [
+        "foo",
+        0,
+        0
+      ],
+      "expected": ""
+    },
+    {
+      "operation": "substring",
+      "args": [
+        "foo",
+        0,
+        1
+      ],
+      "expected": "f"
+    },
+    {
+      "operation": "substring",
+      "args": [
+        "foo",
+        0,
+        2
+      ],
+      "expected": "fo"
+    },
+    {
+      "operation": "substring",
+      "args": [
+        "foo",
+        0,
+        3
+      ],
+      "expected": "foo"
+    },
+    {
+      "operation": "substring",
+      "args": [
+        "foo",
+        0,
+        4
+      ],
+      "expected": "foo"
+    },
+    {
+      "operation": "substring",
+      "args": [
+        "foo",
+        1,
+        2
+      ],
+      "expected": "o"
+    },
+    {
+      "operation": "substring",
+      "args": [
+        "foo",
+        1,
+        3
+      ],
+      "expected": "oo"
+    },
+    {
+      "operation": "substring",
+      "args": [
+        "foo",
+        1,
+        100
+      ],
+      "expected": "oo"
+    },
+    {
+      "operation": "substring",
+      "args": [
+        "foo",
+        1,
+        0
+      ],
+      "expected": ""
+    },
+    {
+      "operation": "substring",
+      "args": [
+        "foo",
+        3,
+        4
+      ],
+      "expected": ""
+    },
+    {
+      "operation": "length",
+      "args": [
+        ""
+      ],
+      "expected": 0
+    },
+    {
+      "operation": "length",
+      "args": [
+        "ascii"
+      ],
+      "expected": 5
+    },
+    {
+      "operation": "length",
+      "args": [
+        "latin©1"
+      ],
+      "expected": 7
+    },
+    {
+      "operation": "length",
+      "args": [
+        "2 쳌 b"
+      ],
+      "expected": 5
+    },
+    {
+      "operation": "length",
+      "args": [
+        "a 𐀀 b"
+      ],
+      "expected": 6
+    },
+    {
+      "operation": "concat",
+      "args": [
+        "ascii",
+        "latin©1"
+      ],
+      "expected": "asciilatin©1"
+    },
+    {
+      "operation": "concat",
+      "args": [
+        "",
+        "ascii"
+      ],
+      "expected": "ascii"
+    },
+    {
+      "operation": "concat",
+      "args": [
+        "2 쳌 b",
+        "a 𐀀 b"
+      ],
+      "expected": "2 쳌 ba 𐀀 b"
+    },
+    {
+      "operation": "equals",
+      "args": [
+        "ascii",
+        "ascii"
+      ],
+      "expected": 1
+    },
+    {
+      "operation": "equals",
+      "args": [
+        "ascii",
+        ""
+      ],
+      "expected": 0
+    },
+    {
+      "operation": "equals",
+      "args": [
+        "latin©1",
+        "latin©1"
+      ],
+      "expected": 1
+    },
+    {
+      "operation": "charCodeAt",
+      "args": [
+        "ascii",
+        0
+      ],
+      "expected": 97
+    },
+    {
+      "operation": "charCodeAt",
+      "args": [
+        "ascii",
+        1
+      ],
+      "expected": 115
+    },
+    {
+      "operation": "charCodeAt",
+      "args": [
+        "ascii",
+        2
+      ],
+      "expected": 99
+    },
+    {
+      "operation": "charCodeAt",
+      "args": [
+        "ascii",
+        3
+      ],
+      "expected": 105
+    },
+    {
+      "operation": "charCodeAt",
+      "args": [
+        "ascii",
+        4
+      ],
+      "expected": 105
+    },
+    {
+      "operation": "charCodeAt",
+      "args": [
+        "latin©1",
+        0
+      ],
+      "expected": 108
+    },
+    {
+      "operation": "charCodeAt",
+      "args": [
+        "latin©1",
+        1
+      ],
+      "expected": 97
+    },
+    {
+      "operation": "charCodeAt",
+      "args": [
+        "latin©1",
+        2
+      ],
+      "expected": 116
+    },
+    {
+      "operation": "charCodeAt",
+      "args": [
+        "latin©1",
+        3
+      ],
+      "expected": 105
+    },
+    {
+      "operation": "charCodeAt",
+      "args": [
+        "latin©1",
+        4
+      ],
+      "expected": 110
+    },
+    {
+      "operation": "charCodeAt",
+      "args": [
+        "latin©1",
+        5
+      ],
+      "expected": 169
+    },
+    {
+      "operation": "charCodeAt",
+      "args": [
+        "latin©1",
+        6
+      ],
+      "expected": 49
+    },
+    {
+      "operation": "charCodeAt",
+      "args": [
+        "a 𐀀 b",
+        0
+      ],
+      "expected": 97
+    },
+    {
+      "operation": "charCodeAt",
+      "args": [
+        "a 𐀀 b",
+        1
+      ],
+      "expected": 32
+    },
+    {
+      "operation": "charCodeAt",
+      "args": [
+        "a 𐀀 b",
+        2
+      ],
+      "expected": 55296
+    },
+    {
+      "operation": "charCodeAt",
+      "args": [
+        "a 𐀀 b",
+        3
+      ],
+      "expected": 56320
+    },
+    {
+      "operation": "charCodeAt",
+      "args": [
+        "a 𐀀 b",
+        4
+      ],
+      "expected": 32
+    },
+    {
+      "operation": "charCodeAt",
+      "args": [
+        "a 𐀀 b",
+        5
+      ],
+      "expected": 98
+    }
+  ]
+}
+

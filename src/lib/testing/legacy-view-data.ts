@@ -24,6 +24,7 @@ interface ViewData {
 	configurations:Record<CfgId,string>;
 	statistics:{timingSamples:number};
 	history:Record<MachineId,{
+		catalogue?:Pick<Bench,'id'|'artifactSha256'|'group'|'abi'>[];referenceCells?:Record<string,ViewCell>;
 		points:{date:string;revision:string;collectedAt?:string;status:string;currentLatency?:Partial<Record<CfgId,'s1'>>;releases?:Partial<Record<CfgId,{version:string;publishedAt:string;url:string}>>}[];
 		workloads:string[];artifactSha256:Record<string,string>;versions:Record<CfgId,string[]>;
 		cells:Record<string,(ViewCell & {role:'retrospective-revision'|'fixed-comparison-baseline'})[]>;

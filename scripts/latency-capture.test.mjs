@@ -11,7 +11,7 @@ test('point estimate preserves the median-of-launch-medians and discards warmups
  const trials=[trial(0,[10,20,30]),trial(1,[80])];trials[0].samples.push({elapsed_ns:999,operations:1,verified:true,warmup:true},{elapsed_ns:888,operations:1,verified:false,warmup:false});
  const c=summarizeLatencies({manifest,trials,workloads:[workload],engines:['engine'],scenarios:['steady']});
  assert.equal(c.results[0].latencyNs,25);assert.equal(c.results[0].wasm,'test.wasm');assert.equal(c.results[0].latencyStatus,'ok');
- assert.deepEqual(Object.keys(c),['capturedAt','platform','results']);assert(!JSON.stringify(c).includes('samples'));assert(!JSON.stringify(c).includes('evidence'));
+ assert.deepEqual(Object.keys(c),['capturedAt','platform','results']);assert.deepEqual(c.results[0].samplesNs,[5,10,15,40]);assert.equal(c.results[0].timingSamples,4);assert(!JSON.stringify(c).includes('evidence'));
 });
 test('any failed launch or correctness check prevents a successful latency, while absent and unsupported results remain distinct',()=>{
  const summarize=trials=>summarizeLatencies({manifest,trials,workloads:[workload],engines:['engine'],scenarios:['steady']}).results[0];
