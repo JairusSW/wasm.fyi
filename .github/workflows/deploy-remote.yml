@@ -23,6 +23,8 @@ jobs:
             /src/
             /service/
             /scripts/
+            /corpora/catalog.json
+            /corpora/features/manifest.json
             /static/favicon.svg
       - uses: actions/setup-node@v4
         with:
