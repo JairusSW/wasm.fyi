@@ -7,8 +7,8 @@ test('complete source build resolves the pinned harness before the final audit',
   await buildCorpusFromSource({env,loadSettings:async()=>settings,
     resolveHarness:async value=>{assert.equal(value,settings);calls.push(['resolve']);return '/fresh/harness';},
     run:async(script,args,environment)=>calls.push([script,args,environment])});
-  assert.deepEqual(calls.map(c=>c[0]),['wasi-sdk-toolchain.mjs','application-corpus.mjs','feature-corpus.mjs','corpus-rebuild.mjs','corpus-v8.mjs','corpus-components-check.mjs','resolve','corpus-audit.mjs']);
-  assert.deepEqual(calls[4][1],['--from-source']);
+  assert.deepEqual(calls.map(c=>c[0]),['wasi-sdk-toolchain.mjs','application-corpus.mjs','feature-corpus.mjs','corpus-rebuild.mjs','main-corpus-check.mjs','corpus-v8.mjs','corpus-components-check.mjs','resolve','corpus-audit.mjs']);
+  assert.deepEqual(calls[5][1],['--from-source']);
   assert.deepEqual(calls.at(-1)[2],{PATH:'/tools',WASMBENCH_ROOT:'/fresh/harness'});
   assert.deepEqual(env,{PATH:'/tools'});
 });

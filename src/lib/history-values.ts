@@ -4,6 +4,7 @@ import { viewData, type ViewCell } from './view-data';
 import type { CfgId, MachineId, MetricKey, OtMetricKey } from './data/types';
 import type { Scope, PerfGroup } from './model';
 
+export const historyCatalogue=(machine:MachineId)=>viewData.history[machine].catalogue ?? viewData.catalogue;
 export const historyCell=(machine:MachineId,workload:string,cid:CfgId,metric:MetricKey,i:number):ViewCell=>viewData.history[machine].cells[`${workload}|${cid}|${metric}`]?.[i] || {st:'nm',report:''};
 /** Release labels receive markers; source revisions and unmeasured points do not. */
 export function historyVersionChanges(versions:string[],values:number[]):number[] {
@@ -76,11 +77,11 @@ export function historySeries(s:Scope,cid:CfgId,key:OtMetricKey,workload=''):num
 		if(!h.workloads.some(w=>series(w,cid).some(c=>c.report)))return null;
 		return h.points.map((_,i)=>h.workloads.some(w=>historyCell(s.machine,w,cid,'steady',i).report)?h.workloads.filter(w=>historyCell(s.machine,w,cid,'steady',i).st==='ok').length:Number.NaN);
 	}
-	const catalogue=new Map(viewData.catalogue.map(w=>[w.id,w]));
+	const catalogue=new Map(historyCatalogue(s.machine).map(w=>[w.id,w]));
 	const values=h.points.map((point,i)=>{
 		const current=point.currentLatency?.[cid];
 		const column=aggregateOf[key];
-		if(current && column?.[0]==='lat')return aggregate({...s,snapshot:current},column[0],cid,column[1])?.v ?? Number.NaN;
+		if(current && column?.[0]==='lat' && !h.referenceCells)return aggregate({...s,snapshot:current},column[0],cid,column[1])?.v ?? Number.NaN;
 		const cohort=historyCohort(s,cid,key,i);
 		if(point.status!=='measured'||!cohort.length)return Number.NaN;
 		return weightedGeometricMean(cohort.map(w=>historyCell(s.machine,w,cid,metric,i).v!),cohortWeights(cohort.map(w=>catalogue.get(w)!),s.weighting));
@@ -89,34 +90,47 @@ export function historySeries(s:Scope,cid:CfgId,key:OtMetricKey,workload=''):num
 }
 
 
-/** Use the current comparison cohort as a stable reference; retain each capture's gaps. */
+/** The canonical recorded reference is independent of new prepared source builds. */
+export function historyReferenceCohort(s:Scope,cid:CfgId,key:OtMetricKey) {
+ const h=viewData.history[s.machine],column=aggregateOf[key];
+ if(!column)return [];
+ if(!h.referenceCells)return aggregateCohort({...s,snapshot:'s1'},column[0],cid,column[1]).cohort;
+ const workloads=historyCatalogue(s.machine).filter(w=>column[0]!=='lat'||!w.id.startsWith('features/'));
+ const requested=[...new Set([...viewData.applicationConfigurations.filter(c=>!s.hide[c]),s.baseline])];
+ return measuredCohort(workloads,requested,cid,(w,c)=>h.referenceCells![`${w}|${c}|${metricOf[key]}`] || {st:'nm',report:''}).cohort;
+}
+
+/** Use the recorded comparison cohort as a stable reference; retain each capture's gaps. */
 export function historyCohort(s:Scope,cid:CfgId,key:OtMetricKey,i:number):string[] {
  const h=viewData.history[s.machine],metric=metricOf[key];
  const current=h.points[i]?.currentLatency?.[cid];
  const column=aggregateOf[key];
- if(current && column?.[0]==='lat')return aggregateCohort({...s,snapshot:current},column[0],cid,column[1]).cohort.map(w=>w.id);
+ if(current && column?.[0]==='lat' && !h.referenceCells)return aggregateCohort({...s,snapshot:current},column[0],cid,column[1]).cohort.map(w=>w.id);
  if(column){
-  const reference=aggregateCohort({...s,snapshot:'s1'},column[0],cid,column[1]).cohort;
+  const reference=historyReferenceCohort(s,cid,key);
   if(reference.length)return reference.filter(w=>{const c=historyCell(s.machine,w.id,cid,metric,i);return !!c.report&&valid(c);}).map(w=>w.id);
  }
+ // Without a shared canonical reference, retain dated shared evidence rather than invent a denominator.
  const recorded=new Set(h.workloads);
- const workloads=viewData.catalogue.filter(w=>recorded.has(w.id)&&(!['exec','compile','inst'].includes(key)||!w.id.startsWith('features/')));
+ const workloads=historyCatalogue(s.machine).filter(w=>recorded.has(w.id)&&(!['exec','compile','inst'].includes(key)||!w.id.startsWith('features/')));
  const requested=[...new Set([...viewData.applicationConfigurations.filter(c=>!s.hide[c]),s.baseline])];
  return measuredCohort(workloads,requested,cid,(w,c)=>historyCell(s.machine,w,c,metric,i)).cohort.map(w=>w.id);
 }
 export function historyAggregateDetails(s:Scope,cid:CfgId,key:OtMetricKey,i:number):string {
  const column=aggregateOf[key];if(!column)return '';
- const capture=viewData.history[s.machine].points[i]?.currentLatency?.[cid]?'Same canonical release capture and workload cohort as the current chart.':'Archived capture.';
+ const capture=viewData.history[s.machine].points[i]?.currentLatency?.[cid]?'Canonical recorded release capture.':'Archived capture.';
  const count=historyCohort(s,cid,key,i).length;
- const reference=aggregateCohort({...s,snapshot:'s1'},column[0],cid,column[1]).cohort.length;
- const coverage=reference?`${count} of ${reference} reference non-feature workloads${count<reference?'; partial coverage':''}`:`${count} successful non-feature workloads`;
- return `Geometric mean of ${coverage}; ${s.weighting} weighting. Reference cohort matches the current chart. ${capture}`;
+ const reference=historyReferenceCohort(s,cid,key).length;
+ const label=column[0]==='lat'?'non-feature workloads':'workloads';
+ const coverage=reference?`${count} of ${reference} reference ${label}${count<reference?'; partial coverage':''}`:`${count} successful ${label}`;
+ const basis=reference?'Reference cohort uses recorded artifact identities.':'No shared canonical reference is available; completeness is unknown.';
+ return `Geometric mean of ${coverage}; ${s.weighting} weighting. ${basis} ${capture}`;
 }
 
 export function historyCoverage(s:Scope,cid:CfgId,key:OtMetricKey,i:number) {
  const column=aggregateOf[key];
  if(!column)return {complete:true,measured:0,reference:0};
- const reference=aggregateCohort({...s,snapshot:'s1'},column[0],cid,column[1]).cohort.length;
+ const reference=historyReferenceCohort(s,cid,key).length;
  const measured=historyCohort(s,cid,key,i).length;
  return {complete:!reference||measured===reference,measured,reference};
 }
@@ -133,7 +147,7 @@ export function historyComparison(s:Scope,cid:CfgId,key:OtMetricKey,before:numbe
  const metric=metricOf[key];
  const matched=workloads.filter(w=>valid(historyCell(s.machine,w,cid,metric,before))&&valid(historyCell(s.machine,w,cid,metric,after)));
  if(!matched.length)return null;
- const catalogue=new Map(viewData.catalogue.map(w=>[w.id,w]));
+ const catalogue=new Map(historyCatalogue(s.machine).map(w=>[w.id,w]));
  const weights=cohortWeights(matched.map(w=>catalogue.get(w)!),s.weighting);
  const mean=(i:number)=>weightedGeometricMean(matched.map(w=>historyCell(s.machine,w,cid,metric,i).v!),weights);
  const a=mean(before),b=mean(after);return {before:a,after:b,ratio:b/a,count:matched.length};

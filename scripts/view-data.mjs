@@ -8,6 +8,7 @@ import { bindCurrentReleaseHistory } from './lib/current-release-history.mjs';
 import { bindCapturedReleases } from './lib/captured-release-history.mjs';
 import { alignHistoryDates, historyDate } from './lib/history-align.mjs';
 import { workloadCategory, compareWorkloads } from './lib/workload-category.mjs';
+import { historicalReference } from './lib/historical-reference.mjs';
 import { callTimingCandidates } from './lib/call-timing.mjs';
 import { measuredTiming, measuredMemory, measuredCodeImage, measuredHistory, historicalRuntimePoint } from '../src/lib/measured.ts';
 
@@ -110,17 +111,11 @@ for(const runId of codeInspectionDirectories){
   codeInspectionRuns.set(runId,new Set(index.records.map(record=>record.trial)));
 }
 for (const report of reports) output.reports[report.id] = { collectionBundle:report.collectionBundle, runId:report.runId, created:report.created, evidence:report.evidence, sha256:report.evidenceSha256, options:report.options,memorySource:report.memorySource,codeSource:report.codeSource,codeRecords:report.codeRecords.map(({runtime,workload,trial,status,report_record_index})=>({runtime,workload,trial,status,index:report_record_index,inspectable:codeInspectionRuns.get(report.codeSource?.id)?.has(trial) || false})),configurations:report.runtimes.map(c=>c.id),host:report.host.os };
-for (const [machine, os] of [['m1','linux'],['m2','darwin']]) {
-  const selected = reports.filter(r=>r.host.os===os);
-  if (!selected.length) throw new Error('Missing measured host: '+os);
-  const host = selected[0].host;
-  // These selector slots retain their URL encoding; their facts are measured.
-  const view = { label:`${host.cpu_description} · ${host.hostname}`, os:`${host.os}/${host.arch} · ${host.kernel}`, policy:host.policy, configurations:{}, snapshots:{s1:{},s2:{}} };
-  output.hosts[machine]=view;
-  for (const [slot,runtime] of Object.entries(configurations)) {
-    const config=selected.flatMap(r=>r.runtimes).find(c=>c.id===runtime);
-    if (config) view.configurations[slot]={ runtime, version:runtime==='wago'&&config.description.runtime_version.startsWith(settings.collection.wagoRelease?.revision+'/')?settings.collection.wagoRelease.tag:runtime==='deno' && config.description.build?.startsWith('Deno ')?`${config.description.build.slice(5)} / V8 ${config.description.runtime_version}`:config.description.runtime_version, backend:config.description.backend };
-    for (const workload of output.catalogue) {
+// Current and historical views share evidence selection, but never artifact identities.
+function projectSnapshots(workloads,selected) {
+  const snapshots={s1:{},s2:{}};
+  for(const [slot,runtime] of Object.entries(configurations)) {
+    for (const workload of workloads) {
       // A newer failed/unsupported result wins. Never backfill it with a success.
       const sources=workload.id.startsWith('features/')?featureCandidates(selected,runtime,workload.id,workload.artifactSha256):selected;
       const cohort=sources.map(report=>reportCells.get(report).get(JSON.stringify([runtime,workload.id]))).filter(report=>report?.workloads[0].sha256===workload.artifactSha256);
@@ -142,13 +137,28 @@ for (const [machine, os] of [['m1','linux'],['m2','darwin']]) {
           const summary=report.summaries.find(s=>s.runtime===runtime && s.workload===workload.id && s.scenario===(scenarios[metric] || 'steady') && s.profile==='timing');
           const memory=memoryScenarios[metric]?report.memory.find(m=>m.runtime===runtime && m.workload===workload.id && m.scenario===memoryScenarios[metric] && m.metric===memoryObservers[metric]):null;
           const launchMedians=memoryScenarios[metric]?(memory?.launch_values || []).map(v=>v.bytes/factor):metric==='code'?[]:Object.values(summary?.launch_medians || {}).map(v=>v/factor);
-          view.snapshots[snapshot][`${workload.id}|${slot}|${metric}`]={st:status[cell.status], ...(cell.status==='ok'?{v:cell.value/factor, ...(cell.interval?{interval:cell.interval.map(v=>v/factor)}:{})}:{reason:reasonId(cell.reason)}),report:report.id,
+          snapshots[snapshot][`${workload.id}|${slot}|${metric}`]={st:status[cell.status], ...(cell.status==='ok'?{v:cell.value/factor, ...(cell.interval?{interval:cell.interval.map(v=>v/factor)}:{})}:{reason:reasonId(cell.reason)}),report:report.id,
             launchMedians};
         }
       }
     }
   }
+  return snapshots;
 }
+for (const [machine, os] of [['m1','linux'],['m2','darwin']]) {
+  const selected = reports.filter(r=>r.host.os===os);
+  if (!selected.length) throw new Error('Missing measured host: '+os);
+  const host = selected[0].host;
+  // These selector slots retain their URL encoding; their facts are measured.
+  const view = { label:`${host.cpu_description} · ${host.hostname}`, os:`${host.os}/${host.arch} · ${host.kernel}`, policy:host.policy, configurations:{}, snapshots:{s1:{},s2:{}} };
+  output.hosts[machine]=view;
+  for (const [slot,runtime] of Object.entries(configurations)) {
+    const config=selected.flatMap(r=>r.runtimes).find(c=>c.id===runtime);
+    if (config) view.configurations[slot]={ runtime, version:runtime==='wago'&&config.description.runtime_version.startsWith(settings.collection.wagoRelease?.revision+'/')?settings.collection.wagoRelease.tag:runtime==='deno' && config.description.build?.startsWith('Deno ')?`${config.description.build.slice(5)} / V8 ${config.description.runtime_version}`:config.description.runtime_version, backend:config.description.backend };
+  }
+  view.snapshots=projectSnapshots(output.catalogue,selected);
+}
+
 // Leaderboards merge sealed application timing shards by host and exact
 // workload artifact. Every cell retains the report that measured it.
 const latestApplicationRuntimeIds=Object.fromEntries(['linux','darwin'].map(os=>{
@@ -195,14 +205,14 @@ for(const [machine,name] of [['m1','history-hub'],['m2','history']]) {
   const baseline=baselineReports[0];
   const baselineWorkloads=[...new Map(baselineReports.flatMap(s=>s.workloads).map(w=>[w.id,w])).values()];
   if(!baseline)throw new Error('Missing fixed history baseline');
-  const history={points:weekly.results.map(w=>({date:historyDate(w.targetWeek),revision:w.revision,collectedAt:w.collectedAt,status:w.status})),workloads:baselineWorkloads.filter(w=>catalogue.has(w.id)).map(w=>w.id),artifactSha256:Object.fromEntries(baselineWorkloads.filter(w=>catalogue.has(w.id)).map(w=>[w.id,w.sha256])),cells:{},versions:{}};
+  const reference=historicalReference(baselineWorkloads,workloads=>projectSnapshots(workloads,reports.filter(r=>r.host.os===baseline.host.os)));
+  const history={...reference,points:weekly.results.map(w=>({date:historyDate(w.targetWeek),revision:w.revision,collectedAt:w.collectedAt,status:w.status})),cells:{},versions:{}};
   output.history[machine]=history;
   for(const [slot,runtime] of Object.entries(configurations)) {
     const description=baseline.runtimes.find(c=>c.id===runtime)?.description;
     history.versions[slot]=weekly.results.map(w=>{const pin=historicalRuntimePoint(w,runtime);return pin?(pin.version || pin.revision):w.engines?'not collected':description?.runtime_version || 'not collected';});
     for(const w of baselineWorkloads) {
       // History owns its frozen artifact identity, independently of new source builds.
-      if(!catalogue.has(w.id))continue;
       const workloadSnapshots=snapshots.filter(s=>s.runtimes.some(c=>c.id===runtime)&&s.workloads.some(item=>item.id===w.id&&item.sha256===w.sha256));
       for(const [metric,scenario] of Object.entries({...scenarios,rss:'steady',code:'compile'})) {
         history.cells[`${w.id}|${slot}|${metric}`]=measuredHistory(weekly,workloadSnapshots,baseline.host,runtime,w.id,w.sha256,scenario).map((point,i)=>{
@@ -219,8 +229,13 @@ for(const [machine,name] of [['m1','history-hub'],['m2','history']]) {
     }
   }
 }
-bindCurrentReleaseHistory(output,reports,settings.collection.wagoRelease,scenarios);
-bindCapturedReleases(output,reports,settings.historyReleases || [],[...Object.keys(scenarios),...Object.keys(memoryScenarios),'code']);
+for(const [machine,h] of Object.entries(output.history)) {
+  if(!h.catalogue)continue;
+  // Bind canonical captures on the frozen contracts, not today's prepared inventory.
+  const recorded={...output,catalogue:h.catalogue,hosts:{[machine]:{snapshots:{s1:h.referenceCells}}},history:{[machine]:h}};
+  bindCurrentReleaseHistory(recorded,reports,settings.collection.wagoRelease,scenarios);
+  bindCapturedReleases(recorded,reports,settings.historyReleases || [],[...Object.keys(scenarios),...Object.keys(memoryScenarios),'code']);
+}
 alignHistoryDates(output.history);
 for(const [machine,name] of [['m1','linux-x64'],['m2','darwin-arm64']]) {
   if(!await access(join(site,'data/threads',name+'.json')).then(()=>true,()=>false)){output.threads[machine]={created:'',configuration:'not collected',node:'',v8:'',policy:'No thread measurements collected.',evidence:'',sha256:'',results:[]};continue;}

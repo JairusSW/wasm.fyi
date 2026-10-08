@@ -1,0 +1,21 @@
+[package]
+name = "tooling-core"
+version = "0.1.0"
+edition = "2021"
+[lib]
+crate-type = ["cdylib", "rlib"]
+[features]
+assembler = ["dep:wat", "dep:wasmparser"]
+minifier = ["dep:oxc_allocator", "dep:oxc_parser", "dep:oxc_span", "dep:oxc_minifier", "dep:oxc_codegen"]
+[dependencies]
+wat = { version = "=1.239.0", optional = true }
+wasmparser = { version = "=0.239.0", optional = true }
+oxc_allocator = { version = "=0.75.0", optional = true }
+oxc_parser = { version = "=0.75.0", optional = true }
+oxc_span = { version = "=0.75.0", optional = true }
+oxc_minifier = { version = "=0.75.0", optional = true }
+oxc_codegen = { version = "=0.75.0", optional = true }
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"

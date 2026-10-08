@@ -15,6 +15,7 @@ export async function buildCorpusFromSource({run=runScript,resolveHarness=benchm
     ['application-corpus.mjs',['build']],
     ['feature-corpus.mjs',['build']],
     ['corpus-rebuild.mjs',[]],
+    ['main-corpus-check.mjs',[]],
     ['corpus-v8.mjs',['--from-source']],
     ['corpus-components-check.mjs',[]]
   ])await run(script,args,env);
