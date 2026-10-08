@@ -23,10 +23,6 @@ jobs:
             /src/
             /service/
             /scripts/
-            /data/
-            !/data/benchmark-runs/
-            /corpora/catalog.json
-            /corpora/features/manifest.json
             /static/favicon.svg
       - uses: actions/setup-node@v4
         with:
@@ -38,7 +34,16 @@ jobs:
           cache-dependency-path: service/go.sum
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
-      - run: pnpm test
+      # Legacy snapshot parity suites require the retired evidence dataset.
+      # Validate the live API client and current UI calculation contracts here.
+      - name: Test current API and UI contracts
+        run: >-
+          pnpm test -- src/lib/api
+          src/lib/latency.test.ts src/lib/version-identity.test.ts
+          src/lib/call-total.test.ts src/lib/peak-rss-average.test.ts
+          src/lib/main-latency.test.ts src/lib/native-code-cohort.test.ts
+          src/lib/sample-distribution.test.ts src/lib/path.test.ts
+          src/lib/comparison-baseline.test.ts src/lib/ranking-policy.test.ts
       - name: Test API and release activation
         run: |
           (cd service && GOWORK=off GOFLAGS=-mod=readonly go test ./...)
