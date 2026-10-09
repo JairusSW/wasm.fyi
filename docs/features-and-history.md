@@ -130,3 +130,21 @@ archive index with immutable GitHub commit URLs and SHA-256 digests. The origina
 source index and weekly timeline are retained. Local unpublished evidence stays
 local. This keeps longer backfills within the Pages artifact limit without
 removing historical evidence or changing measured values.
+
+### WAMR LLVM JIT on Linux
+
+The LLVM development package also needs its exported dependencies: zstd, curl,
+libedit, and zlib development files. On Ubuntu these include `libzstd-dev`,
+`libcurl4-openssl-dev`, `libedit-dev`, and `zlib1g-dev`. A private extracted
+package prefix can be supplied through `CMAKE_PREFIX_PATH` when system package
+installation is unavailable.
+
+For LLVM packages configured with `LLVM_LINK_LLVM_DYLIB`, the WAMR SDK builder
+links the exported shared `LLVM` target. Linking all `LLVM_AVAILABLE_LIBS` can
+otherwise require optional GPU/offloading runtimes that the installed package
+does not supply. Static LLVM configurations retain their original requirements.
+The integration patch and its source digests are recorded in the SDK receipt.
+
+On an idle machine, or under its measurement lock, run
+`WASMFYI_WAMR_LINK_INTEGRATION=1 node --test scripts/wamr-llvm-link.test.mjs`
+to reproduce the missing-library failure and verify the shared/static behavior.

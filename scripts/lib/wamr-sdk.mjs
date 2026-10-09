@@ -1,4 +1,4 @@
-import {readFile,readdir,mkdir,cp,stat} from 'node:fs/promises';
+import {readFile,writeFile,readdir,mkdir,cp,stat} from 'node:fs/promises';
 import {join} from 'node:path';
 import {digest} from './wasmbench.mjs';
 import {instrumentWamrNativeSize} from './wamr-native-size.mjs';
@@ -17,6 +17,20 @@ export function wamrBuildFlags(configuration,llvmDirectory) {
  else throw Error('Unknown WAMR configuration '+configuration);
  return flags;
 }
+/** Honor distro LLVM's shared-link mode instead of linking optional tool/GPU libraries. */
+export async function configureWamrLLVMSharedLink(source,configuration) {
+ if(configuration!=='wamr-llvm-jit')return null;
+ const path=join(source,'product-mini/platforms',process.platform,'CMakeLists.txt');
+ const before=await readFile(path,'utf8');
+ const marker='# wasm.fyi: honor the LLVM package shared-link configuration';
+ if(before.includes(marker))return {path,sha256:digest(Buffer.from(before))};
+ const link=/target_link_libraries\s*\(\s*vmlib\s+\$\{LLVM_AVAILABLE_LIBS\}/;
+ if(!link.test(before))return null;
+ const guard=marker+'\nif (LLVM_LINK_LLVM_DYLIB AND TARGET LLVM)\n  set (LLVM_AVAILABLE_LIBS LLVM)\nendif ()\n\n';
+ const after=before.replace(link,match=>guard+match);
+ await writeFile(path,after);
+ return {path,originalSha256:digest(Buffer.from(before)),sha256:digest(Buffer.from(after))};
+}
 export async function buildWamrSDK({source,sdk,target,configuration,version,env,run}) {
  const unavailable=await wamrArchitectureUnavailable(source,configuration);
  if(unavailable){const error=Error(unavailable.reason);error.code='UNSUPPORTED_PLATFORM';error.proof=unavailable;throw error;}
@@ -24,6 +38,7 @@ export async function buildWamrSDK({source,sdk,target,configuration,version,env,
  if(configuration==='wamr-llvm-jit'&&!llvmDirectory){for(const prefix of ['/opt/homebrew/opt/llvm@18','/usr/lib/llvm-18'])if(await stat(join(prefix,'lib/cmake/llvm/LLVMConfig.cmake')).catch(()=>null)){llvmDirectory=join(prefix,'lib/cmake/llvm');break;}}
  const flags=wamrBuildFlags(configuration,llvmDirectory);
  const measurementPatch=await instrumentWamrNativeSize(source,configuration);
+ const llvmLinkPatch=await configureWamrLLVMSharedLink(source,configuration);
  await run('cmake',['-S',join(source,'product-mini/platforms',process.platform),'-B',target,...flags]);
  await run('cmake',['--build',target,'--target','vmlib','-j','2']);
  await mkdir(join(sdk,'include'),{recursive:true});await mkdir(join(sdk,'lib'),{recursive:true});
@@ -34,5 +49,5 @@ export async function buildWamrSDK({source,sdk,target,configuration,version,env,
  const linkerName=process.platform==='darwin'?'libiwasm.dylib':'libiwasm.so';
  if(!await stat(join(sdk,'lib',linkerName)).catch(()=>null))await cp(join(target,libraries[0]),join(sdk,'lib',linkerName),{dereference:true});
  env.WASMBENCH_WAMR_SDK=sdk;env.WASMBENCH_WAMR_VERSION=version;
- return {sdk,source,configuration,version,flags,measurementPatch,libraries:await Promise.all(libraries.map(async name=>({name,sha256:digest(await readFile(join(sdk,'lib',name)))})))};
+ return {sdk,source,configuration,version,flags,measurementPatch,llvmLinkPatch,libraries:await Promise.all(libraries.map(async name=>({name,sha256:digest(await readFile(join(sdk,'lib',name)))})))};
 }
