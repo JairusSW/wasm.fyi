@@ -24,3 +24,12 @@ test('versions sharing a commit and timestamp retain distinct source identities'
  assert.equal(reusableCapture(capture,workload,{...source,ref:'v1-canary'},12),false);
  assert.equal(reusableCapture(capture,workload,{...source,dateBasis:undefined},12),false);
 });
+
+test('startup failures with unknown versions are retried while recorded runtime failures are reused',()=>{
+ const source={asOf:'2026-10-04',repository:'WasmEdge/WasmEdge',kind:'release',ref:'0.18.0',revision:'a'};
+ const workload={sha256:'b'};
+ const capture={source,results:['compile','instantiate','first-call','steady'].map(phase=>({phase,artifactSha256:'b',latencyStatus:'failed',version:'unknown'}))};
+ assert.equal(reusableCapture(capture,workload,source,5),false);
+ for(const row of capture.results)row.version='0.18.0';
+ assert.equal(reusableCapture(capture,workload,source,5),true);
+});

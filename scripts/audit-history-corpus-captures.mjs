@@ -31,6 +31,7 @@ for(const [machine,directory] of [[template.machine,join(root,'captures')],['hub
    if(!hash||capture.results.length!==4)throw Error('Unexpected artifact or phase count');
    for(const phase of phases){
     const row=capture.results.find(r=>r.phase===phase);
+    if(!row?.version||row.version==='unknown')throw Error('Runtime startup failed before version qualification');
     if(!row||row.workload!==artifact||row.artifactSha256!==hash)throw Error('Shared artifact or required phase differs');
     if(!['ok','failed','unsupported','disabled'].includes(row.latencyStatus))throw Error('Timing phase was not captured');
     if(row.latencyStatus==='ok'&&(!Number.isSafeInteger(row.timingSamples)||row.timingSamples!==audit.minimumSamples||row.samplesNs?.length!==audit.minimumSamples||row.samplesNs.some(n=>!Number.isFinite(n)||n<0)||!Number.isFinite(row.latencyNs)||row.latencyNs<0))throw Error('Successful phase lacks the requested retained verified samples');

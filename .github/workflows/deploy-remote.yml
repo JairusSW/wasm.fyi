@@ -50,6 +50,7 @@ jobs:
         run: |
           (cd service && GOWORK=off GOFLAGS=-mod=readonly go test ./...)
           python3 scripts/activate-remote.test.py
+          node --test scripts/history-scope.test.mjs scripts/audit-history-corpus-captures.test.mjs
       - name: Build production frontend and static API
         run: |
           pnpm build
