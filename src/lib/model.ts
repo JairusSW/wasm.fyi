@@ -27,7 +27,7 @@ export const compileExcluded = (s: Scope, c: Cfg, metric: string) =>
 
 export type PerfGroup = 'lat' | 'mem' | 'code';
 
-export const totalWorkloads = ()=>viewData.catalogue.length;
+export const totalWorkloads = ()=>viewData.catalogue.filter(w=>!w.id.startsWith('features/')).length;
 export const TOTAL_WORKLOADS = viewData.catalogue.length;
 
 /** Swatch/identity fields for a config, spread into view rows. */
@@ -55,7 +55,7 @@ export const visibleCfgs = (s: Scope) => CFG.filter((c) => isVisible(s, c));
 export const cov = (cid: CfgId, scope?:Scope) => {
   if(datasetView.revision)return apiView.coverage[cid]||[0,0,0,0,0];
   const counts=[0,0,0,0,0];
-  for(const b of viewData.catalogue){
+  for(const b of viewData.catalogue.filter(w=>!w.id.startsWith('features/'))){
     const c=viewCell(scope?.machine || 'm1',scope?.snapshot || 's1',b.id,cid,'steady');
     const i=c.st==='ok'?0:c.st==='failed'?1:['crashed','timeout'].includes(c.st)?2:['unsupported','disabled'].includes(c.st)?3:4;
     counts[i]++;

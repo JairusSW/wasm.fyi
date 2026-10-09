@@ -9,7 +9,7 @@ if(!await stat(join(nativeBase,'adapters/native/Cargo.toml')).catch(()=>null))th
 const prepareOnly=process.argv.includes('--prepare-only'),selectedRefs=new Set(process.argv.slice(4).filter(value=>value!=='--prepare-only'));
 const source=join(tools,'libwasm-source'),project=join(tools,'libwasm-build-project'),deps=join(tools,'libwasm-deps');
 const env={...process.env,...template.env,GOWORK:'off',GOFLAGS:'-buildvcs=false',CARGO_BUILD_JOBS:template.env?.WASMFYI_BUILD_JOBS||'1',WASMBENCH_LIBWASM_DEPS:deps,WASMBENCH_LIBWASM_FASTFLOAT:join(tools,'libwasm-fastfloat/include')};
-if(process.platform==='linux'){const llvm=join(tools,'toolchains/llvm22');env.CC=env.WASMFYI_LIBWASM_CC||join(llvm,'usr/lib/llvm-22/bin/clang');env.CXX=env.WASMFYI_LIBWASM_CXX||join(llvm,'usr/lib/llvm-22/bin/clang++');env.LD_LIBRARY_PATH=join(llvm,'usr/lib/x86_64-linux-gnu')}else{env.CXX='/opt/homebrew/opt/llvm/bin/clang++';env.CC='/opt/homebrew/opt/llvm/bin/clang'}
+if(process.platform==='linux'){const llvm=join(tools,'toolchains/llvm22');env.CC=env.WASMFYI_LIBWASM_CC||join(llvm,'usr/lib/llvm-22/bin/clang');env.CXX=env.WASMFYI_LIBWASM_CXX||join(llvm,'usr/lib/llvm-22/bin/clang++');if(!env.WASMFYI_LIBWASM_CC)env.LD_LIBRARY_PATH=join(llvm,'usr/lib/x86_64-linux-gnu');else delete env.LD_LIBRARY_PATH}else{env.CXX='/opt/homebrew/opt/llvm/bin/clang++';env.CC='/opt/homebrew/opt/llvm/bin/clang'}
 const statusPath=join(root,prepareOnly?'libwasm-qualification-status.json':'libwasm-status.json');
 const status=await readFile(statusPath,'utf8').then(JSON.parse,()=>({started:new Date().toISOString(),completed:[],errors:[]}));
 for(const pin of plan.pins.filter(p=>p.engine==='libwasm'&&p.status==='planned'&&p.revision&&(!selectedRefs.size||selectedRefs.has(p.tag||p.revision))&&(!process.env.WASMFYI_LIBWASM_REVISION||p.revision===process.env.WASMFYI_LIBWASM_REVISION)).sort((a,b)=>Date.parse(b.targetWeek)-Date.parse(a.targetWeek))){
@@ -24,7 +24,7 @@ for(const pin of plan.pins.filter(p=>p.engine==='libwasm'&&p.status==='planned'&
   const actualRevision=command('git',['-C',checkout,'rev-parse','HEAD'],{env}).toString().trim();
   if(actualRevision!==pin.revision)throw Error('Libwasm checkout differs from source pin');
   command('git',['-C',checkout,'sparse-checkout','set','AK','Libraries/LibWasm','Libraries/LibMain','Libraries/LibCore','Libraries/LibGC','Libraries/LibThreading','Libraries/LibFileSystem','Libraries/LibUnicode','Libraries/LibTextCodec','Meta','Docs'],{env,stdio:'inherit'});
-  command('cmake',['-S',project,'-B',build,'-DSRC='+checkout,'-DCMAKE_PREFIX_PATH='+deps,'-DCMAKE_CXX_FLAGS=-Wno-invalid-constexpr'],{env,stdio:'inherit'});
+  command('cmake',['-S',project,'-B',build,'-DSRC='+checkout,'-DCMAKE_PREFIX_PATH='+deps,'-DCMAKE_CXX_FLAGS=-Wno-invalid-constexpr','-DCMAKE_C_COMPILER='+env.CC,'-DCMAKE_CXX_COMPILER='+env.CXX],{env,stdio:'inherit'});
   command('cmake',['--build',build,'--parallel',String(template.env?.WASMFYI_BUILD_JOBS||1)],{env,stdio:'inherit',timeout:90*60*1000});
   command('cargo',['build','--manifest-path',join(nativeBase,'adapters/native/Cargo.toml'),'--release','--no-default-features','--features','libwasm','--target-dir',join(dir,'native')],{env:{...env,WASMBENCH_LIBWASM_SOURCE:checkout,WASMBENCH_LIBWASM_BUILD:build,WASMBENCH_LIBWASM_VERSION:pin.revision},stdio:'inherit',timeout:90*60*1000});
   await mkdir(join(harness,'bin'),{recursive:true});await cp(join(dir,'native/release/adapter-native'),join(harness,'bin/adapter-libwasm'));

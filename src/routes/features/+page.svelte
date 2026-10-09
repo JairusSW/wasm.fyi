@@ -25,12 +25,12 @@
 	const toneOf=(g:string)=>TONES.find(([p])=>g.startsWith(p))?.[1] ?? 'var(--fg2)';
 
 	let evidence=$state<{feature:string;engine:string;track:FeatureTrack}|null>(null);
-  const channels=['stable'] as const;
+  const channels=['stable','development'] as const;
 	const propLinks = PROPOSAL_IDS.map((id) => ({ id, label: PROPS[id].title }));
 
 	// ── Support matrix ─────────────────────────────────────────────────────
 	const featCols = [
-		...FEATURE_ENGINES.map((id) => ({ label: RTB[id].name, sub: RTB[id].lang, rt: id }))
+		...FEATURE_ENGINES.map((id) => ({ label: RTB[id]?.name || id, sub: RTB[id]?.lang || '', rt: id }))
 	];
 	const groups = $derived([...new Set(FEATS.map(f=>f.g))].map(g=>({g,rows:FEATS.filter(f=>f.g===g).map(f=>{
     const contracts=featureContracts(f.id).length;
@@ -38,7 +38,7 @@
   })})));
 
 	// ── Spec tests ─────────────────────────────────────────────────────────
-	const cols = $derived(FEATURE_CFG.filter((c) => !ui.scope.hide[c.id] && engineFeatureVersions(c.rt,ui.scope,'stable').length>0));
+	const cols = $derived(FEATURE_CFG.filter((c) => !ui.scope.hide[c.id] && channels.some(channel=>engineFeatureVersions(c.rt,ui.scope,channel).length>0)));
 
 	$effect(()=>{
   if(!apiView.ready||ui.compatView!=='perf')return;
@@ -72,7 +72,7 @@
 <div class="head">
 	<span class="mono small fg3 path">wasm.fyi/features</span>
 	<h1>Features</h1>
-	<span class="s12 fg3 lim">Released engine compatibility and verified corpus results. <a class="link" href={'/api/v1/conformance'}>Official suite evidence</a>.</span>
+	<span class="s12 fg3 lim">Latest pinned engine compatibility and measured feature performance.</span>
 </div>
 <div class="row">
 	<Seg
@@ -133,8 +133,8 @@
                 {#each channels as channel}
                   {@const versions=engineFeatureVersions(h.rt,ui.scope,channel)}
                   <div class="track-version micro">
-                    <span>Release</span>
-                    <span data-tip={versions[0] ? `${channel} release\n${versions[0]}` : undefined}>{versions[0]?.replace(/\/source-.*/, '').replace(/^([a-f0-9]{12})[a-f0-9]{28}$/, '$1').replace(/^Node (.*?) \/ V8 .*/, 'Node $1') || '—'}</span>
+                    <span>{channel==='stable'?'Release':'Main'}</span>
+                    <span data-tip={versions[0] ? `${channel} snapshot\n${versions[0]}` : undefined}>{versions[0]?.replace(/\/source-.*/, '').replace(/^([a-f0-9]{12})[a-f0-9]{28}$/, '$1').replace(/^Node (.*?) \/ V8 .*/, 'Node $1') || '—'}</span>
                   </div>
                 {/each}
               {/if}
@@ -188,7 +188,7 @@
 	</div>
 	<div class="note">
     Released engines only. Counts show passed / total corpus tests for one configuration; click for backend and individual test results. ⚑ requires an experimental flag. Browser builds and plugin performance are unmeasured. Wago plugin cells show official cases passed / total, including failed and skipped cases. Official suite links show separate correctness results. <a href={'/api/v1/features'}>Full evidence</a>.
-    <details><summary>Measurement scope</summary><p>Unreleased builds are excluded. The latest measured release is shown for each engine. Compilation and execution contracts use their declared oracles. Adapter-unsupported results do not establish that an engine lacks a feature; these representative tests do not establish complete specification conformance. Wago provides optional WASI and Component Model plugins, listed separately from measured results. Feature workloads never enter application averages.</p></details>
+    <details><summary>Measurement scope</summary><p>The latest measured release or pinned main commit is shown for each engine. Compilation and execution contracts use their declared oracles. Adapter-unsupported results do not establish that an engine lacks a feature; these representative tests do not establish complete specification conformance. Wago provides optional WASI and Component Model plugins, listed separately from measured results. Feature workloads never enter application averages.</p></details>
 	</div>
 {:else}
 	<div class="s12 fg3">{PERF_NOTE[ui.perfMetric]}</div>

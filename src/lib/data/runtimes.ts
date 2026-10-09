@@ -51,7 +51,7 @@ const aotCFG: Cfg[] = [
 const configurations: Cfg[] = [...applicationCFG,...additionalCFG,...aotCFG];
 export const CFG: Cfg[] = new Proxy(configurations,{get:(target,key)=>{datasetView.generation;const value=Reflect.get(target,key);return typeof value==='function'?value.bind(target):value}});
 export const FEATURE_CFG: Cfg[] = CFG;
-export const FEATURE_ENGINES = ['v8',...SA];
+export const FEATURE_ENGINES = runtimeRegistry.map(r=>r.id);
 
 
 for(const c of FEATURE_CFG) {

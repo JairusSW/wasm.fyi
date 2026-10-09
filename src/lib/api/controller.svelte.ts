@@ -13,6 +13,7 @@ import {shortVersion} from '../version-identity';
 import {selectEngineVersions} from '../latency';
 import {platformGroups} from './platform-groups';
 import {machineLabel} from './machine-label';
+import {featureResults} from './feature-results';
 export type PageScope={machine:MachineId;snapshot:'s1'|'s2';metric:MetricKey;hide:Partial<Record<CfgId,boolean>>;baseline:CfgId;weighting:'corpus'|'workload';cohortMode?:'shared'|'per-engine';search?:string;tag?:string|null;sortBy?:{id:CfgId;dir:1|-1}|null;workload?:string};
 export const apiView=$state({ready:false,loading:false,error:'',pageLoading:false,pageError:'',page:null as MatrixPage|null,cursors:[''],pageIndex:0,aggregates:{} as Record<string,Overview>,aggregateErrors:{} as Record<string,string>,coverage:{} as Partial<Record<CfgId,[number,number,number,number,number]>>});
 export const aggregateKey=(scope:Scope,metric:string)=>JSON.stringify([scope.machine,scope.snapshot||'s1',scope.baseline,scope.weighting,scope.cohortMode||'shared',Object.keys(scope.hide).filter(k=>scope.hide[k as CfgId]).sort(),metric]);
@@ -58,6 +59,7 @@ async function rows(platform:string,phase:string,signal:AbortSignal,history=fals
 let historyAbort:AbortController|undefined;
 let historyBusy=false;
 function fillHistory(view:ReturnType<typeof emptyView>,machine:MachineId,historical:Result[]){
+   historical=historical.filter(row=>!row.workload.startsWith('features/'));
    const daily=new Map<string,Result[]>();for(const row of historical){const key=(row.source?.asOf||row.capturedAt).slice(0,10);const bucket=daily.get(key)||[];bucket.push(row);daily.set(key,bucket)}
    historical=[...daily.values()].flatMap(bucket=>selectEngineVersions(bucket)).sort((a,b)=>a.capturedAt.localeCompare(b.capturedAt));
    const dates=[...new Set(historical.map(r=>(r.source?.asOf||r.capturedAt).slice(0,10)))].sort();
@@ -94,13 +96,19 @@ export async function connectSite(_origin='',_revision?:string){
     const cid=slot(row.engine);const cfg=CFG.find(c=>c.id===cid)!;CB[cid]=cfg;host.configurations[cid]={runtime:cfg.rt,version:row.engine.startsWith('wago-')?row.engine.slice(5)+' · '+row.version:row.version,backend:row.backend,source:row.source};view.configurations[cid]=row.engine;
     const report=row.capturedAt+'|'+row.engine;view.reports[report]={runId:report,created:row.capturedAt,evidence:'',sha256:'',options:{},codeRecords:[],configurations:[row.engine],host:machine};
     // Host-call mechanism workloads feed the call-latency view only; they are not listed as workloads.
-    if(!row.workload.startsWith('mechanisms/')&&!catalogue.has(row.workload))catalogue.set(row.workload,{id:row.workload,artifactSha256:row.artifactSha256,tags:row.display?.tags||[],kb:row.display?.bytes?row.display.bytes/1024:null,ms:null,group:row.display?.group||(row.workload.startsWith('mechanisms/')?'Host calls':row.workload.split('/')[1]||'Other workloads'),purpose:row.display?.purpose||row.wasm,abi:row.display?.abi||'',src:row.display?.source,reset:row.display?.reset});
+    if(!row.workload.startsWith('mechanisms/')&&!catalogue.has(row.workload))catalogue.set(row.workload,{id:row.workload,artifactSha256:row.artifactSha256,tags:row.display?.tags||[],kb:row.display?.bytes?row.display.bytes/1024:null,ms:null,group:row.display?.group||(row.workload.startsWith('mechanisms/')?'Host calls':row.workload.split('/')[1]||'Other workloads'),purpose:row.display?.purpose||row.wasm,abi:row.display?.abi||'',src:row.display?.source,reset:row.display?.reset,evidenceScope:all.some(r=>r.engine===row.engine&&r.workload===row.workload&&r.phase==='steady')?'execution':all.some(r=>r.engine===row.engine&&r.workload===row.workload&&r.phase==='instantiate')?'compile-and-instantiate':'compile-only'});
     const base={report,created:row.capturedAt,contract:row.contractSha256,configuration:row.engine};
     const phase=({compile:'compile',instantiate:'inst','first-call':'first',steady:'steady'} as const)[row.phase];
     host.snapshots.s1[`${row.workload}|${cid}|${phase}`]={...base,samples:row.samplesNs?.map(value=>value/1e6),st:status(row.latencyStatus),...(row.latencyNs!=null?{v:row.latencyNs/1e6}:{})};
     const memory=({compile:'rssCompile',instantiate:'rssInst','first-call':'rssFirst',steady:'rss'} as const)[row.phase];
     host.snapshots.s1[`${row.workload}|${cid}|${memory}`]={...base,st:status(row.memoryStatus),...(row.peakRssBytes!=null?{v:row.peakRssBytes/1024**2}:{})};
     host.snapshots.s1[`${row.workload}|${cid}|code`]={...base,st:status(row.codeStatus),...(row.codeBytes!=null?{v:row.codeBytes/1024}:{})};
+   }
+   for(const engine of new Set(all.filter(r=>r.workload.startsWith('features/')).map(r=>r.engine))){
+    const measurements=all.filter(r=>r.engine===engine&&r.workload.startsWith('features/'));
+    const first=measurements[0],cid=slot(engine),runtime=CFG.find(c=>c.id===cid)!.rt;
+    const features=featureResults(measurements);
+    view.featureVersions[machine].push({id:engine,identity:first.version,channel:first.source?.kind==='release'?'stable':'development',version:first.source?.ref||first.version,source:first.source?.repository||'',revision:first.source?.revision||null,collectedAt:measurements.map(r=>r.capturedAt).sort().at(-1)!,description:{runtime,runtime_version:first.version,backend:first.backend,source:first.source},features});
    }
    view.history[machine]=datasetView.current.history[machine];
 

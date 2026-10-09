@@ -46,6 +46,8 @@ def main():
         paths += list((hub / "captures").glob("*.json"))
         for pattern in ("*/performance-*.json", "*/compile-*.json", "*/lifecycle-*.json"):
             paths += list((args.root / "features-seven-20261008").glob(pattern))
+        for pattern in ("*/performance-*.json", "*/compile-*.json", "*/lifecycle-*.json"):
+            paths += list((args.state / "hub-features").glob(pattern))
         published = 0
         for path in paths:
             try:
@@ -69,7 +71,7 @@ def main():
                     continue
                 # Main captures keep five samples. Feature captures keep five in
                 # each of three independent launches, without replaying compatibility logs.
-                expected = 15 if args.root / "features-seven-20261008" in path.parents else 5
+                expected = 15 if (args.root / "features-seven-20261008" in path.parents or args.state / "hub-features" in path.parents) else 5
                 if any(row.get("latencyStatus") == "ok" and
                        (row.get("timingSamples") != expected or len(row.get("samplesNs", [])) != expected)
                        for row in rows):

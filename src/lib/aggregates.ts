@@ -21,7 +21,7 @@ export function aggregateCohort(s:Scope,group:PerfGroup,cid:CfgId,col:number) {
  const metric=metrics[group][col];
  const ids=viewData.applicationConfigurations;
  const selected=[...new Set([...ids.filter(id=>!s.hide[id]),s.baseline])].filter(id=>!!viewData.hosts[s.machine].configurations[id]);
- const workloads=group==='lat'?viewData.catalogue.filter(w=>!w.id.startsWith('features/')):viewData.catalogue;
+ const workloads=viewData.catalogue.filter(w=>!w.id.startsWith('features/'));
  const cell=(w:string,c:CfgId)=>viewCell(s.machine,s.snapshot || 's1',w,c,metric || '');
  const applicable=group==='code'?nativeCodeParticipants(workloads,selected,cell):selected;
  return measuredCohort(workloads,metric?(s.cohortMode==='per-engine'?[cid]:applicable):[],cid,cell,s.cohortMode==='shared');
@@ -51,7 +51,7 @@ export function aggregate(s:Scope,group:PerfGroup,cid:CfgId,col:number):Aggregat
 	const remember=(value:Aggregate|null)=>{if(cache.size>512)cache.clear();cache.set(key,value);return value;};
 	if(group==='mem' && col===3) {
 		const average=(configuration:CfgId)=>{
-			const cells=viewData.catalogue.flatMap(w=>['rssCompile','rssInst','rssFirst','rss'].filter(m=>s.cohortMode!=='shared'||selected.every(c=>{const cell=viewCell(s.machine,s.snapshot || 's1',w.id,c,m);return cell.st==='ok'&&!!cell.report&&cell.v!=null&&Number.isFinite(cell.v)&&cell.v>0})).map(m=>viewCell(s.machine,s.snapshot || 's1',w.id,configuration,m)))
+			const cells=viewData.catalogue.filter(w=>!w.id.startsWith('features/')).flatMap(w=>['rssCompile','rssInst','rssFirst','rss'].filter(m=>s.cohortMode!=='shared'||selected.every(c=>{const cell=viewCell(s.machine,s.snapshot || 's1',w.id,c,m);return cell.st==='ok'&&!!cell.report&&cell.v!=null&&Number.isFinite(cell.v)&&cell.v>0})).map(m=>viewCell(s.machine,s.snapshot || 's1',w.id,configuration,m)))
 				.filter(c=>c.st==='ok' && !!c.report && c.v!=null && Number.isFinite(c.v) && c.v>0);
 			return {v:cells.length?cells.reduce((sum,c)=>sum+c.v!,0)/cells.length:Number.NaN,
 				count:cells.length,reports:[...new Set(cells.map(c=>c.report))]};
