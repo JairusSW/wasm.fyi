@@ -15,6 +15,7 @@ def main():
     parser.add_argument("--root", type=pathlib.Path, required=True)
     parser.add_argument("--state", type=pathlib.Path, required=True)
     parser.add_argument("--hub")
+    parser.add_argument("--api-url", default="http://127.0.0.1:8090")
     parser.add_argument("--interval", type=int, default=60)
     args = parser.parse_args()
     args.state.mkdir(parents=True, exist_ok=True)
@@ -77,7 +78,7 @@ def main():
                        for row in rows):
                     raise ValueError("missing retained timing samples")
                 request = urllib.request.Request(
-                    "http://127.0.0.1:8090/api/captures", data=body, method="POST",
+                    args.api_url.rstrip("/") + "/api/captures", data=body, method="POST",
                     headers={"Authorization": "Bearer " + token, "Content-Type": "application/json"},
                 )
                 with urllib.request.urlopen(request, timeout=15) as response:
