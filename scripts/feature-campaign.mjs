@@ -2,6 +2,7 @@
 import {readFile,writeFile,mkdir,readdir,stat} from 'node:fs/promises';
 import {join,basename,resolve} from 'node:path';
 import {spawn} from 'node:child_process';
+import {totalmem} from 'node:os';
 import {setTimeout as delay} from 'node:timers/promises';
 import {collectLatencies} from './lib/latency-capture.mjs';
 import {acquireMeasurementLock} from './lib/measurement-lock.mjs';
@@ -52,7 +53,8 @@ for(const family of source.order){
   }
   for(const [kind,workloads] of [['performance',performance],['compile',compile],['lifecycle',lifecycle]])for(const w of workloads){
    const file=join(dir,kind+'-'+digest(Buffer.from(w.id)).slice(0,16)+'.json');
-   if(await stat(file).catch(()=>null))continue;
+   const existing=await readFile(file,'utf8').then(JSON.parse,()=>null);
+   if(existing?.results?.length&&existing.results.every(row=>row.version&&row.version!=='unknown'))continue;
    state.current={engine,phase:kind,workload:w.id};await save();
    const release=await acquireMeasurementLock(join(main,'measurement-lock'));
    try{
@@ -60,6 +62,7 @@ for(const family of source.order){
     process.env.WASMBENCH_SOURCE_JSON=env.WASMBENCH_SOURCE_JSON;
     const scenarios=kind==='compile'?(w.provenance?.scope==='compile-and-instantiate'?'compile,instantiate':'compile'):'compile,instantiate,first-call,steady';
     const capture=await collectLatencies({directory:scratch,workloads:[w],engines:[engine],collection:{scenarios,timeout:'30s',launches:3,samples:5,operations:1,warmup:7,memory:true,code:true},run});
+    capture.platform.memoryBytes=totalmem();
     await writeFile(file,JSON.stringify(capture,null,2)+'\n');
    }catch(e){state.errors.push({engine,phase:kind,workload:w.id,error:String(e)})}finally{await release()}
   }
