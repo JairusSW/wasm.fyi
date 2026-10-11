@@ -12,6 +12,7 @@
 	<div class="col">
 		<span class="eyebrow">Data</span>
 		<a href={siteHref(`/benchmarks`)}>Benchmarks</a>
+		<a href={siteHref('/workloads/')}>Workload catalog</a>
 		<a href={siteHref(`/history`)}>History</a>
 		<a href={siteHref(`/features`)}>Features</a>
 	</div>
@@ -28,7 +29,9 @@
 		<a href="https://github.com/JairusSW/wasm.fyi/blob/main/README.md">Contribute</a>
 		<a href="https://github.com/JairusSW/wasm.fyi">GitHub</a>
 		<a href="https://github.com/sponsors/JairusSW">Sponsor</a>
+		<a href={siteHref('/docs/')}>API &amp; measurement guide</a>
 		<a href={siteHref('/llms.txt')}>LLM reference</a>
+		<a href={siteHref('/data/llm/index.json')}>API discovery</a>
 		<a href={'/api/platforms'}>Machine-readable data</a>
 		<a href={siteHref('/health')}>Status</a>
 	</div>

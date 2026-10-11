@@ -2,10 +2,10 @@
 
 The API stores current and source-pinned historical WebAssembly benchmark measurements. Capture and record contracts are defined
 by [OpenAPI](schemas/api-v1.openapi.json), [JSON Schema](schemas/benchmark.schema.json)
-and [generated TypeScript types](src/lib/api/benchmark-types.ts). Compact browsing
+and [generated TypeScript types](https://github.com/JairusSW/wasm.fyi/blob/main/src/lib/api/benchmark-types.ts). Compact browsing
 contracts are documented below, with client shapes in
-[compact-matrix.ts](src/lib/api/compact-matrix.ts) and
-[compact-history.ts](src/lib/api/compact-history.ts).
+[compact-matrix.ts](https://github.com/JairusSW/wasm.fyi/blob/main/src/lib/api/compact-matrix.ts) and
+[compact-history.ts](https://github.com/JairusSW/wasm.fyi/blob/main/src/lib/api/compact-history.ts).
 
 | Method | Route | Purpose |
 |---|---|---|
@@ -225,8 +225,8 @@ API does not reopen capture files or sample dumps when serving data.
 
 ### Dashboard sign-in and analytics
 
-`/dashboard` uses a separate GitHub browser session. The existing `/admin/v1/`
-bearer-token publishing API and its token are unchanged. No GitHub OAuth app has
+`/dashboard` uses a separate GitHub browser session. Capture publication at
+`/api/captures` uses the administrator bearer token, independently of dashboard sign-in. No GitHub OAuth app has
 been provisioned automatically; outside guarded local development, missing client credentials make the page say
 **Sign-in not configured**.
 

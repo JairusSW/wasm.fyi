@@ -2,62 +2,1008 @@
   "openapi": "3.1.0",
   "info": {
     "title": "wasm.fyi benchmark API",
-    "version": "2.0.0",
-    "description": "Current benchmark measurements with indexed cursor pagination and atomic capture publication."
+    "version": "2.1.0",
+    "description": "Public, read-only discovery and current/source-pinned historical WebAssembly benchmark queries; authenticated atomic capture publication. Start with /api/summary, then request a bounded /api/matrix or /api/history/summary scope. Durations are nanoseconds and resource sizes are bytes. Metric statuses are independent: only ok has a value; other values are null. Never compare measurements from different machines or unmatched workload cohorts as a controlled benchmark. Unknown and repeated query fields are rejected. JSON responses have a 1 MiB ceiling. All GET endpoints support exact ETag revalidation. The retired /api/v1/* and /admin/v1/* routes are not aliases."
   },
+  "servers": [
+    {
+      "url": "https://wasm.fyi",
+      "description": "Public production API"
+    }
+  ],
+  "security": [],
+  "tags": [
+    {
+      "name": "Discovery"
+    },
+    {
+      "name": "Current measurements"
+    },
+    {
+      "name": "History"
+    },
+    {
+      "name": "Publication"
+    },
+    {
+      "name": "Service"
+    }
+  ],
   "paths": {
-    "/api/platforms": {
+    "/api/summary": {
       "get": {
-        "summary": "List measured platforms",
+        "operationId": "summary",
+        "tags": [
+          "Discovery"
+        ],
+        "summary": "Discover platform specifications, counts and freshness",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IfNoneMatch"
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Platform catalog at the current revision",
+            "description": "Discover platform specifications, counts and freshness",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "compact-api.schema.json#/$defs/Summary"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Representation validator. Send this exact quoted value in If-None-Match on the same request and content encoding."
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-cache"
+                },
+                "description": "Stored responses must be revalidated."
+              },
+              "Vary": {
+                "schema": {
+                  "const": "Accept-Encoding"
+                },
+                "description": "ETags differ between identity and gzip representations."
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
+          "422": {
+            "$ref": "#/components/responses/ResponseTooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/RequestTimeout"
+          }
+        }
+      }
+    },
+    "/api/platforms": {
+      "get": {
+        "operationId": "platforms",
+        "tags": [
+          "Discovery"
+        ],
+        "summary": "List measured platforms",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IfNoneMatch"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List measured platforms",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "benchmark.schema.json#/$defs/PlatformList"
                 }
               }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Representation validator. Send this exact quoted value in If-None-Match on the same request and content encoding."
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-cache"
+                },
+                "description": "Stored responses must be revalidated."
+              },
+              "Vary": {
+                "schema": {
+                  "const": "Accept-Encoding"
+                },
+                "description": "ETags differ between identity and gzip representations."
+              }
             }
           },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
+          "422": {
+            "$ref": "#/components/responses/ResponseTooLarge"
+          },
           "429": {
-            "description": "Request budget exceeded",
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/RequestTimeout"
+          }
+        },
+        "description": "Catalog revision is global. An empty database returns items: []. Discover ids before requesting platform-scoped data."
+      }
+    },
+    "/api/matrix": {
+      "get": {
+        "operationId": "matrix",
+        "tags": [
+          "Current measurements"
+        ],
+        "summary": "Page compact current scalar measurements",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IfNoneMatch"
+          },
+          {
+            "$ref": "#/components/parameters/Platform"
+          },
+          {
+            "$ref": "#/components/parameters/Phase"
+          },
+          {
+            "$ref": "#/components/parameters/Workload"
+          },
+          {
+            "$ref": "#/components/parameters/Engine"
+          },
+          {
+            "$ref": "#/components/parameters/MatrixLimit"
+          },
+          {
+            "$ref": "#/components/parameters/Offset"
+          },
+          {
+            "$ref": "#/components/parameters/Revision"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Page compact current scalar measurements",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "benchmark.schema.json#/$defs/Problem"
+                  "$ref": "compact-api.schema.json#/$defs/MatrixPage"
                 }
               }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Representation validator. Send this exact quoted value in If-None-Match on the same request and content encoding."
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-cache"
+                },
+                "description": "Stored responses must be revalidated."
+              },
+              "Vary": {
+                "schema": {
+                  "const": "Accept-Encoding"
+                },
+                "description": "ETags differ between identity and gzip representations."
+              }
             }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
+          "409": {
+            "$ref": "#/components/responses/RevisionChanged"
+          },
+          "422": {
+            "$ref": "#/components/responses/ResponseTooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/RequestTimeout"
           }
-        }
+        },
+        "description": "Schema 2 uses 15-position tuples and page-local metadata dictionaries, without raw samples. Start at offset 0; follow nextOffset with the returned revision and identical filters until nextOffset is null. 409 requires restarting. Current values use one latest source snapshot per engine; older snapshots remain in history."
+      }
+    },
+    "/api/timeline": {
+      "get": {
+        "operationId": "timeline",
+        "tags": [
+          "History"
+        ],
+        "summary": "Page compact source-pinned historical measurements",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IfNoneMatch"
+          },
+          {
+            "$ref": "#/components/parameters/Platform"
+          },
+          {
+            "$ref": "#/components/parameters/Phase"
+          },
+          {
+            "$ref": "#/components/parameters/Workload"
+          },
+          {
+            "$ref": "#/components/parameters/Engine"
+          },
+          {
+            "$ref": "#/components/parameters/MatrixLimit"
+          },
+          {
+            "$ref": "#/components/parameters/Offset"
+          },
+          {
+            "$ref": "#/components/parameters/Revision"
+          },
+          {
+            "$ref": "#/components/parameters/From"
+          },
+          {
+            "$ref": "#/components/parameters/To"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Page compact source-pinned historical measurements",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "compact-api.schema.json#/$defs/MatrixPage"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Representation validator. Send this exact quoted value in If-None-Match on the same request and content encoding."
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-cache"
+                },
+                "description": "Stored responses must be revalidated."
+              },
+              "Vary": {
+                "schema": {
+                  "const": "Accept-Encoding"
+                },
+                "description": "ETags differ between identity and gzip representations."
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
+          "409": {
+            "$ref": "#/components/responses/RevisionChanged"
+          },
+          "422": {
+            "$ref": "#/components/responses/ResponseTooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/RequestTimeout"
+          }
+        },
+        "description": "Same schema and revision-bound offset pagination as /api/matrix. Rows are newest source date first. from/to include the full UTC source day. Browse scalars here; use /api/history/summary for a smaller graph-only response."
+      }
+    },
+    "/api/overview": {
+      "get": {
+        "operationId": "overview",
+        "tags": [
+          "Current measurements"
+        ],
+        "summary": "Read arithmetic scalar means by engine and phase",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IfNoneMatch"
+          },
+          {
+            "$ref": "#/components/parameters/Platform"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Read arithmetic scalar means by engine and phase",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "compact-api.schema.json#/$defs/Overview"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Representation validator. Send this exact quoted value in If-None-Match on the same request and content encoding."
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-cache"
+                },
+                "description": "Stored responses must be revalidated."
+              },
+              "Vary": {
+                "schema": {
+                  "const": "Accept-Encoding"
+                },
+                "description": "ETags differ between identity and gzip representations."
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
+          "422": {
+            "$ref": "#/components/responses/ResponseTooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/RequestTimeout"
+          }
+        },
+        "description": "Counts and arithmetic means of available measurements. Each metric independently omits unavailable values. This endpoint does not read sample vectors."
+      }
+    },
+    "/api/aggregates": {
+      "get": {
+        "operationId": "aggregates",
+        "tags": [
+          "Current measurements"
+        ],
+        "summary": "Compute scoped current engine comparisons",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IfNoneMatch"
+          },
+          {
+            "$ref": "#/components/parameters/Platform"
+          },
+          {
+            "name": "metric",
+            "in": "query",
+            "schema": {
+              "$ref": "compact-api.schema.json#/$defs/AggregateMetric",
+              "default": "steady"
+            },
+            "description": "Select one metric. Mutually exclusive with metrics."
+          },
+          {
+            "name": "metrics",
+            "in": "query",
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "compact-api.schema.json#/$defs/AggregateMetric"
+              },
+              "minItems": 1,
+              "maxItems": 12
+            },
+            "description": "Optional comma-separated batch (up to 12 metrics), mutually exclusive with metric. Returns {revision, items} instead of a single aggregate."
+          },
+          {
+            "$ref": "#/components/parameters/Engines"
+          },
+          {
+            "$ref": "#/components/parameters/Baseline"
+          },
+          {
+            "$ref": "#/components/parameters/Weighting"
+          },
+          {
+            "$ref": "#/components/parameters/Cohort"
+          },
+          {
+            "$ref": "#/components/parameters/Average"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Compute scoped current engine comparisons",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "compact-api.schema.json#/$defs/Aggregate"
+                    },
+                    {
+                      "$ref": "compact-api.schema.json#/$defs/AggregateBatch"
+                    }
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Representation validator. Send this exact quoted value in If-None-Match on the same request and content encoding."
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-cache"
+                },
+                "description": "Stored responses must be revalidated."
+              },
+              "Vary": {
+                "schema": {
+                  "const": "Accept-Encoding"
+                },
+                "description": "ETags differ between identity and gzip representations."
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
+          "409": {
+            "$ref": "#/components/responses/RevisionChanged"
+          },
+          "422": {
+            "$ref": "#/components/responses/ResponseTooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/RequestTimeout"
+          }
+        },
+        "description": "Main workloads only; feature probes and host-call mechanisms are excluded. Defaults to steady/corpus/shared/geo. Value units depend on metric; ratio is engine / baseline. rssAverage is always an arithmetic average over available workload-phase RSS measurements. Batch items must share a revision or the request returns 409."
+      }
+    },
+    "/api/observation": {
+      "get": {
+        "operationId": "observation",
+        "tags": [
+          "Current measurements"
+        ],
+        "summary": "Read one observation including ordered raw samples",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IfNoneMatch"
+          },
+          {
+            "$ref": "#/components/parameters/Platform"
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1,
+              "maximum": 9223372036854775807
+            },
+            "description": "Database-local observationId from a compact matrix row, not a commit hash."
+          },
+          {
+            "name": "asOf",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Exact source.asOf timestamp from the matrix source dictionary to select its historical/weekly alias."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Read one observation including ordered raw samples",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "benchmark.schema.json#/$defs/Result"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Representation validator. Send this exact quoted value in If-None-Match on the same request and content encoding."
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-cache"
+                },
+                "description": "Stored responses must be revalidated."
+              },
+              "Vary": {
+                "schema": {
+                  "const": "Accept-Encoding"
+                },
+                "description": "ETags differ between identity and gzip representations."
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
+          "422": {
+            "$ref": "#/components/responses/ResponseTooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/RequestTimeout"
+          }
+        },
+        "description": "Returns the full result, with samplesNs in acquisition order when recorded. sampling.retainedStart identifies an excluded initial prefix for displayed statistics; it does not remove raw observations. Source dates and capture dates are distinct."
+      }
+    },
+    "/api/history/summary": {
+      "get": {
+        "operationId": "historySummary",
+        "tags": [
+          "History"
+        ],
+        "summary": "Read source-date graph points and matched changes",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IfNoneMatch"
+          },
+          {
+            "$ref": "#/components/parameters/Platform"
+          },
+          {
+            "$ref": "#/components/parameters/HistoryMetric"
+          },
+          {
+            "$ref": "#/components/parameters/Engines"
+          },
+          {
+            "$ref": "#/components/parameters/Baseline"
+          },
+          {
+            "$ref": "#/components/parameters/Weighting"
+          },
+          {
+            "$ref": "#/components/parameters/Cohort"
+          },
+          {
+            "$ref": "#/components/parameters/Average"
+          },
+          {
+            "$ref": "#/components/parameters/HistoryWorkload"
+          },
+          {
+            "$ref": "#/components/parameters/From"
+          },
+          {
+            "$ref": "#/components/parameters/To"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Read source-date graph points and matched changes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "compact-api.schema.json#/$defs/HistoricalSummary"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Representation validator. Send this exact quoted value in If-None-Match on the same request and content encoding."
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-cache"
+                },
+                "description": "Stored responses must be revalidated."
+              },
+              "Vary": {
+                "schema": {
+                  "const": "Accept-Encoding"
+                },
+                "description": "ETags differ between identity and gzip representations."
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
+          "422": {
+            "$ref": "#/components/responses/ResponseTooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/RequestTimeout"
+          }
+        },
+        "description": "Returns dates and runtime lanes, without measurement rows or samples. The current workload reference cohort stays fixed across history. Optional previous/first pairs compare matched contracts. Revisions are shared with comparison/report for the same normalized scope; keep scope and revision together when combining responses."
+      }
+    },
+    "/api/history/comparison": {
+      "get": {
+        "operationId": "historyComparison",
+        "tags": [
+          "History"
+        ],
+        "summary": "Compare matched cohorts across a source-date range",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IfNoneMatch"
+          },
+          {
+            "$ref": "#/components/parameters/Platform"
+          },
+          {
+            "$ref": "#/components/parameters/HistoryMetric"
+          },
+          {
+            "$ref": "#/components/parameters/Engines"
+          },
+          {
+            "$ref": "#/components/parameters/Baseline"
+          },
+          {
+            "$ref": "#/components/parameters/Weighting"
+          },
+          {
+            "$ref": "#/components/parameters/Cohort"
+          },
+          {
+            "$ref": "#/components/parameters/Average"
+          },
+          {
+            "$ref": "#/components/parameters/HistoryWorkload"
+          },
+          {
+            "$ref": "#/components/parameters/From"
+          },
+          {
+            "$ref": "#/components/parameters/To"
+          },
+          {
+            "$ref": "#/components/parameters/FromDate"
+          },
+          {
+            "$ref": "#/components/parameters/ToDate"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Compare matched cohorts across a source-date range",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "compact-api.schema.json#/$defs/HistoricalComparison"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Representation validator. Send this exact quoted value in If-None-Match on the same request and content encoding."
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-cache"
+                },
+                "description": "Stored responses must be revalidated."
+              },
+              "Vary": {
+                "schema": {
+                  "const": "Accept-Encoding"
+                },
+                "description": "ETags differ between identity and gzip representations."
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
+          "422": {
+            "$ref": "#/components/responses/ResponseTooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/RequestTimeout"
+          }
+        },
+        "description": "Each runtime snaps inward to its first and last measured dates inside fromDate/toDate and the optional from/to source window. Before/after values use exactly matched contracts and the same reference cohort and weighting. ratio is after / before. Omitted engines have no usable distinct endpoints or matched values. Compare response revisions before combining with a graph."
+      }
+    },
+    "/api/history/report": {
+      "get": {
+        "operationId": "historyReport",
+        "tags": [
+          "History"
+        ],
+        "summary": "Read matched workload changes for one engine",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IfNoneMatch"
+          },
+          {
+            "$ref": "#/components/parameters/Platform"
+          },
+          {
+            "$ref": "#/components/parameters/HistoryMetric"
+          },
+          {
+            "$ref": "#/components/parameters/Engines"
+          },
+          {
+            "$ref": "#/components/parameters/Baseline"
+          },
+          {
+            "$ref": "#/components/parameters/Weighting"
+          },
+          {
+            "$ref": "#/components/parameters/Cohort"
+          },
+          {
+            "$ref": "#/components/parameters/Average"
+          },
+          {
+            "$ref": "#/components/parameters/HistoryWorkload"
+          },
+          {
+            "$ref": "#/components/parameters/From"
+          },
+          {
+            "$ref": "#/components/parameters/To"
+          },
+          {
+            "$ref": "#/components/parameters/FromDate"
+          },
+          {
+            "$ref": "#/components/parameters/ToDate"
+          },
+          {
+            "name": "engine",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "compact-api.schema.json#/$defs/Engine"
+            },
+            "description": "Engine to report. Keep the same engines filter and other scope as the summary/comparison so revisions remain comparable."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Read matched workload changes for one engine",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "compact-api.schema.json#/$defs/HistoricalReport"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Representation validator. Send this exact quoted value in If-None-Match on the same request and content encoding."
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-cache"
+                },
+                "description": "Stored responses must be revalidated."
+              },
+              "Vary": {
+                "schema": {
+                  "const": "Accept-Encoding"
+                },
+                "description": "ETags differ between identity and gzip representations."
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
+          "422": {
+            "$ref": "#/components/responses/ResponseTooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/RequestTimeout"
+          }
+        },
+        "description": "Only matched workload/group/before/after/ratio/reused fields. Returned endpoint dates are snapped to measured dates and can be empty when no data exists. Changing engine or comparison endpoints does not change the history scope revision."
       }
     },
     "/api/benchmarks": {
       "get": {
-        "summary": "Page current benchmark results for one platform and phase",
+        "operationId": "benchmarks",
+        "tags": [
+          "Current measurements"
+        ],
+        "summary": "Page current benchmark records",
         "parameters": [
+          {
+            "$ref": "#/components/parameters/IfNoneMatch"
+          },
           {
             "name": "platform",
             "in": "query",
             "schema": {
               "$ref": "benchmark.schema.json#/$defs/Digest"
             },
-            "description": "Required on the first page; carried by cursor thereafter"
+            "description": "Required on the first page; carried by cursor thereafter. If repeated with a cursor it must match."
           },
           {
             "name": "phase",
             "in": "query",
             "schema": {
-              "enum": [
-                "compile",
-                "instantiate",
-                "first-call",
-                "steady"
-              ],
+              "$ref": "compact-api.schema.json#/$defs/Phase",
               "default": "steady"
             },
-            "description": "Must match cursor when supplied"
+            "description": "Defaults to steady on the first page; carried by cursor thereafter. If supplied with a cursor it must match."
           },
           {
             "name": "cursor",
@@ -66,7 +1012,7 @@
               "type": "string",
               "maxLength": 4096
             },
-            "description": "Opaque signed continuation; binds platform, phase and revision"
+            "description": "Opaque signed continuation binding platform, phase, endpoint and revision. URL-encode it; never construct or decode it."
           },
           {
             "name": "limit",
@@ -77,66 +1023,265 @@
               "maximum": 1000,
               "default": 200
             },
-            "description": "Maximum rows; may change between pages"
+            "description": "Maximum records. May change between pages. Byte limits can produce shorter pages; always follow nextCursor."
           }
         ],
         "responses": {
           "200": {
-            "description": "Current page; nextCursor is null on the last page",
+            "description": "Page current benchmark records",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "benchmark.schema.json#/$defs/BenchmarkPage"
                 }
               }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Representation validator. Send this exact quoted value in If-None-Match on the same request and content encoding."
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-cache"
+                },
+                "description": "Stored responses must be revalidated."
+              },
+              "Vary": {
+                "schema": {
+                  "const": "Accept-Encoding"
+                },
+                "description": "ETags differ between identity and gzip representations."
+              }
             }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
           },
           "400": {
-            "description": "Invalid query or cursor",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "benchmark.schema.json#/$defs/Problem"
-                }
-              }
-            }
+            "$ref": "#/components/responses/InvalidRequest"
           },
           "404": {
-            "description": "Unknown platform",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "benchmark.schema.json#/$defs/Problem"
-                }
-              }
-            }
+            "$ref": "#/components/responses/NotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
           },
           "409": {
-            "description": "Revision changed; restart pagination",
+            "$ref": "#/components/responses/RevisionChanged"
+          },
+          "422": {
+            "$ref": "#/components/responses/ResponseTooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/RequestTimeout"
+          }
+        },
+        "description": "Follow nextCursor until null. Cursors survive server restarts and bind one platform revision: changes on another platform do not invalidate them, but changes to this platform, including another phase, do. A 409 revision_changed requires restarting the traversal. No pagination snapshots are retained. Prefer compact matrix/timeline endpoints for browsing without raw samples."
+      }
+    },
+    "/api/history": {
+      "get": {
+        "operationId": "history",
+        "tags": [
+          "History"
+        ],
+        "summary": "Page retained source-pinned benchmark records",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IfNoneMatch"
+          },
+          {
+            "name": "platform",
+            "in": "query",
+            "schema": {
+              "$ref": "benchmark.schema.json#/$defs/Digest"
+            },
+            "description": "Required on the first page; carried by cursor thereafter. If repeated with a cursor it must match."
+          },
+          {
+            "name": "phase",
+            "in": "query",
+            "schema": {
+              "$ref": "compact-api.schema.json#/$defs/Phase",
+              "default": "steady"
+            },
+            "description": "Defaults to steady on the first page; carried by cursor thereafter. If supplied with a cursor it must match."
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 4096
+            },
+            "description": "Opaque signed continuation binding platform, phase, endpoint and revision. URL-encode it; never construct or decode it."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 200
+            },
+            "description": "Maximum records. May change between pages. Byte limits can produce shorter pages; always follow nextCursor."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Page retained source-pinned benchmark records",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "benchmark.schema.json#/$defs/Problem"
+                  "$ref": "benchmark.schema.json#/$defs/BenchmarkPage"
                 }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Representation validator. Send this exact quoted value in If-None-Match on the same request and content encoding."
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-cache"
+                },
+                "description": "Stored responses must be revalidated."
+              },
+              "Vary": {
+                "schema": {
+                  "const": "Accept-Encoding"
+                },
+                "description": "ETags differ between identity and gzip representations."
               }
             }
           },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
+          "409": {
+            "$ref": "#/components/responses/RevisionChanged"
+          },
+          "422": {
+            "$ref": "#/components/responses/ResponseTooLarge"
+          },
           "429": {
-            "description": "Request budget exceeded",
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/RequestTimeout"
+          }
+        },
+        "description": "Follow nextCursor until null. Cursors survive server restarts and bind one platform revision: changes on another platform do not invalidate them, but changes to this platform, including another phase, do. A 409 revision_changed requires restarting the traversal. No pagination snapshots are retained. Prefer compact matrix/timeline endpoints for browsing without raw samples."
+      }
+    },
+    "/healthz": {
+      "get": {
+        "operationId": "healthz",
+        "tags": [
+          "Service"
+        ],
+        "summary": "Read database service readiness",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IfNoneMatch"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Read database service readiness",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "benchmark.schema.json#/$defs/Problem"
+                  "type": "object",
+                  "properties": {
+                    "ready": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "ready"
+                  ]
                 }
               }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Representation validator. Send this exact quoted value in If-None-Match on the same request and content encoding."
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-cache"
+                },
+                "description": "Stored responses must be revalidated."
+              },
+              "Vary": {
+                "schema": {
+                  "const": "Accept-Encoding"
+                },
+                "description": "ETags differ between identity and gzip representations."
+              }
             }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
+          "422": {
+            "$ref": "#/components/responses/ResponseTooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/RequestTimeout"
           }
         }
       }
     },
     "/api/captures": {
       "post": {
+        "operationId": "publishCapture",
+        "tags": [
+          "Publication"
+        ],
         "summary": "Atomically upsert a validated capture",
+        "description": "Privileged publisher endpoint, not required for reading data. Body must be application/json and at most 1 MiB. Publication is atomic; equal-time and older cells are ignored. Schema validation is supplemented by service-side consistency checks for statuses, values, sample counts and sampling policies. Read-only deployments reject publication.",
         "security": [
           {
             "publisherToken": []
@@ -154,7 +1299,7 @@
         },
         "responses": {
           "200": {
-            "description": "Durable acknowledgment; equal-time and older cells are ignored",
+            "description": "Durable publication acknowledgment",
             "content": {
               "application/json": {
                 "schema": {
@@ -164,17 +1309,28 @@
             }
           },
           "400": {
-            "description": "Invalid capture",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "benchmark.schema.json#/$defs/Problem"
-                }
-              }
-            }
+            "$ref": "#/components/responses/InvalidRequest"
           },
           "401": {
-            "description": "Publisher token required",
+            "description": "Publisher token required or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "benchmark.schema.json#/$defs/Problem"
+                }
+              }
+            },
+            "headers": {
+              "WWW-Authenticate": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Bearer authentication challenge."
+              }
+            }
+          },
+          "403": {
+            "description": "Read-only mode; capture publication is disabled.",
             "content": {
               "application/json": {
                 "schema": {
@@ -183,8 +1339,11 @@
               }
             }
           },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
           "413": {
-            "description": "Capture exceeds 1 MiB",
+            "description": "Capture body exceeds the 1 MiB limit.",
             "content": {
               "application/json": {
                 "schema": {
@@ -194,7 +1353,7 @@
             }
           },
           "415": {
-            "description": "Use application/json",
+            "description": "Use Content-Type: application/json.",
             "content": {
               "application/json": {
                 "schema": {
@@ -202,156 +1361,20 @@
                 }
               }
             }
+          },
+          "422": {
+            "$ref": "#/components/responses/ResponseTooLarge"
           },
           "429": {
-            "description": "Request budget exceeded",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "benchmark.schema.json#/$defs/Problem"
-                }
-              }
-            }
+            "$ref": "#/components/responses/RateLimited"
           },
-          "403": {
-            "description": "Read-only mode",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "benchmark.schema.json#/$defs/Problem"
-                }
-              }
-            }
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/RequestTimeout"
           }
         }
-      }
-    },
-    "/healthz": {
-      "get": {
-        "summary": "Database readiness",
-        "responses": {
-          "200": {
-            "description": "Ready",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "ready": {
-                      "const": true
-                    }
-                  },
-                  "required": [
-                    "ready"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/history": {
-      "get": {
-        "summary": "Paginated retained source versions for one platform and phase",
-        "parameters": [
-          {
-            "name": "platform",
-            "in": "query",
-            "schema": {
-              "$ref": "benchmark.schema.json#/$defs/Digest"
-            },
-            "description": "Required on the first page; carried by cursor thereafter"
-          },
-          {
-            "name": "phase",
-            "in": "query",
-            "schema": {
-              "enum": [
-                "compile",
-                "instantiate",
-                "first-call",
-                "steady"
-              ],
-              "default": "steady"
-            },
-            "description": "Must match cursor when supplied"
-          },
-          {
-            "name": "cursor",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "maxLength": 4096
-            },
-            "description": "Opaque signed continuation; binds platform, phase and revision"
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 1000,
-              "default": 200
-            },
-            "description": "Maximum rows; may change between pages"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Current page; nextCursor is null on the last page",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "benchmark.schema.json#/$defs/BenchmarkPage"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid query or cursor",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "benchmark.schema.json#/$defs/Problem"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Unknown platform",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "benchmark.schema.json#/$defs/Problem"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Revision changed; restart pagination",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "benchmark.schema.json#/$defs/Problem"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Request budget exceeded",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "benchmark.schema.json#/$defs/Problem"
-                }
-              }
-            }
-          }
-        },
-        "operationId": "history"
       }
     }
   },
@@ -359,9 +1382,316 @@
     "securitySchemes": {
       "publisherToken": {
         "type": "http",
-        "scheme": "bearer"
+        "scheme": "bearer",
+        "description": "Publisher credential required only for capture publication; public GET endpoints require no authentication."
       }
     },
-    "responses": {}
+    "parameters": {
+      "IfNoneMatch": {
+        "name": "If-None-Match",
+        "in": "header",
+        "schema": {
+          "type": "string"
+        },
+        "description": "Exact ETag from the same request and representation. A matching validator returns 304 without a body."
+      },
+      "Platform": {
+        "name": "platform",
+        "in": "query",
+        "required": true,
+        "schema": {
+          "$ref": "benchmark.schema.json#/$defs/Digest"
+        },
+        "description": "Platform id from /api/summary or /api/platforms."
+      },
+      "Phase": {
+        "name": "phase",
+        "in": "query",
+        "schema": {
+          "$ref": "compact-api.schema.json#/$defs/Phase",
+          "default": "steady"
+        }
+      },
+      "Workload": {
+        "name": "workload",
+        "in": "query",
+        "schema": {
+          "type": "string"
+        },
+        "description": "Exact workload identifier, including its category prefix."
+      },
+      "Engine": {
+        "name": "engine",
+        "in": "query",
+        "schema": {
+          "type": "string"
+        },
+        "description": "Exact engine identifier."
+      },
+      "MatrixLimit": {
+        "name": "limit",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4096,
+          "default": 4096
+        },
+        "description": "Maximum scalar rows in a page; reduce it if the response exceeds the 1 MiB ceiling."
+      },
+      "Offset": {
+        "name": "offset",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5000000,
+          "default": 0
+        },
+        "description": "Use the previous nextOffset. A nonzero offset requires revision and unchanged filters."
+      },
+      "Revision": {
+        "name": "revision",
+        "in": "query",
+        "schema": {
+          "$ref": "compact-api.schema.json#/$defs/Revision"
+        },
+        "description": "Returned scope revision. Required with offset > 0; a mismatch returns 409. Changing filters also changes this revision."
+      },
+      "From": {
+        "name": "from",
+        "in": "query",
+        "schema": {
+          "$ref": "compact-api.schema.json#/$defs/HistoryDate"
+        },
+        "description": "Inclusive UTC source-date lower bound; unbounded when omitted. Must not follow to."
+      },
+      "To": {
+        "name": "to",
+        "in": "query",
+        "schema": {
+          "$ref": "compact-api.schema.json#/$defs/HistoryDate"
+        },
+        "description": "Inclusive UTC source-date upper bound; unbounded when omitted."
+      },
+      "Engines": {
+        "name": "engines",
+        "in": "query",
+        "style": "form",
+        "explode": false,
+        "schema": {
+          "type": "array",
+          "items": {
+            "$ref": "compact-api.schema.json#/$defs/Engine"
+          },
+          "maxItems": 128
+        },
+        "description": "Comma-separated engine identifiers. Omit to include all available engines. Duplicates are deduplicated; do not repeat the query field."
+      },
+      "Baseline": {
+        "name": "baseline",
+        "in": "query",
+        "schema": {
+          "$ref": "compact-api.schema.json#/$defs/Engine"
+        },
+        "description": "Optional comparison baseline engine. Aggregate ratios are null when no usable baseline is selected. Included in history scope normalization."
+      },
+      "Weighting": {
+        "name": "weighting",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "corpus",
+            "workload"
+          ],
+          "default": "corpus"
+        },
+        "description": "corpus gives each group equal total weight; workload gives each contributing workload equal weight."
+      },
+      "Cohort": {
+        "name": "cohort",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "shared",
+            "per-engine"
+          ],
+          "default": "shared"
+        },
+        "description": "shared compares the common measured cohort; per-engine uses each engine's available measurements."
+      },
+      "Average": {
+        "name": "average",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "geo",
+            "mean"
+          ],
+          "default": "geo"
+        },
+        "description": "Geometric or arithmetic mean. rssAverage always uses its arithmetic workload-phase mean policy."
+      },
+      "HistoryMetric": {
+        "name": "metric",
+        "in": "query",
+        "schema": {
+          "$ref": "compact-api.schema.json#/$defs/HistoryMetric",
+          "default": "exec"
+        }
+      },
+      "HistoryWorkload": {
+        "name": "workload",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "description": "Exact workload, excluding features/. For call metrics, must be mechanisms/host-to-wasm-call or mechanisms/wasm-host-wasm-loop as applicable to the selected metric."
+      },
+      "FromDate": {
+        "name": "fromDate",
+        "in": "query",
+        "required": true,
+        "schema": {
+          "$ref": "compact-api.schema.json#/$defs/HistoryDate"
+        },
+        "description": "Comparison lower bound. Each engine snaps inward to its first measured date on or after this day. Must not follow toDate."
+      },
+      "ToDate": {
+        "name": "toDate",
+        "in": "query",
+        "required": true,
+        "schema": {
+          "$ref": "compact-api.schema.json#/$defs/HistoryDate"
+        },
+        "description": "Comparison upper bound. Each engine snaps inward to its last measured date on or before this day."
+      }
+    },
+    "responses": {
+      "NotModified": {
+        "description": "The exact If-None-Match value matches this representation. No response body.",
+        "headers": {
+          "ETag": {
+            "schema": {
+              "type": "string"
+            },
+            "description": "Representation validator. Send this exact quoted value in If-None-Match on the same request and content encoding."
+          },
+          "Cache-Control": {
+            "schema": {
+              "const": "no-cache"
+            },
+            "description": "Stored responses must be revalidated."
+          },
+          "Vary": {
+            "schema": {
+              "const": "Accept-Encoding"
+            },
+            "description": "ETags differ between identity and gzip representations."
+          }
+        }
+      },
+      "InvalidRequest": {
+        "description": "Invalid query, unknown/repeated query field, invalid cursor, or invalid request data. Inspect error.code and error.message.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "benchmark.schema.json#/$defs/Problem"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Unknown platform or observation; compact browsing endpoints also return 404 when SQL storage is unavailable.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "benchmark.schema.json#/$defs/Problem"
+            }
+          }
+        }
+      },
+      "RevisionChanged": {
+        "description": "error.code is revision_changed. Dataset or bound scope changed. Discard partial pages and restart from the first page; for a batch, retry the complete request.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "benchmark.schema.json#/$defs/Problem"
+            }
+          }
+        }
+      },
+      "MethodNotAllowed": {
+        "description": "Unsupported method.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "benchmark.schema.json#/$defs/Problem"
+            }
+          }
+        },
+        "headers": {
+          "Allow": {
+            "schema": {
+              "type": "string"
+            },
+            "description": "Supported method for this endpoint."
+          }
+        }
+      },
+      "ResponseTooLarge": {
+        "description": "Encoded response exceeds 1 MiB. Reduce limit or narrow filters/date range. This error is plain text, not the JSON Problem envelope.",
+        "content": {
+          "text/plain": {
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "RateLimited": {
+        "description": "Request rate or concurrency budget exceeded. Back off and retry.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "benchmark.schema.json#/$defs/Problem"
+            }
+          }
+        },
+        "headers": {
+          "Retry-After": {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]+$"
+            },
+            "description": "Wait this many seconds when supplied for a rate limit. Concurrency limits may omit it."
+          }
+        }
+      },
+      "InternalError": {
+        "description": "Internal service error.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "benchmark.schema.json#/$defs/Problem"
+            }
+          }
+        }
+      },
+      "RequestTimeout": {
+        "description": "Request canceled or exceeded the service deadline. Retry with a narrower scope if needed.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "benchmark.schema.json#/$defs/Problem"
+            }
+          }
+        }
+      }
+    }
   }
 }

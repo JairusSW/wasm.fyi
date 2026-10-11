@@ -130,7 +130,11 @@ func (a *benchmarkAPI) serveSQL(w http.ResponseWriter, r *http.Request) bool {
 			benchmarkError(w, r, 400, "invalid_query", "positive observation id required")
 			return true
 		}
-		value, err = db.Detail(r.Context(), q.Get("platform"), id, q.Get("asOf"))
+		if asOf := q.Get("asOf"); asOf != "" {
+			value, err = db.Detail(r.Context(), q.Get("platform"), id, asOf)
+		} else {
+			value, err = db.Detail(r.Context(), q.Get("platform"), id)
+		}
 	default:
 		limit := 4096
 		if q.Get("limit") != "" {

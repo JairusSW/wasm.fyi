@@ -101,6 +101,7 @@ CREATE TABLE IF NOT EXISTS history (
   PRIMARY KEY(platform_id,as_of,workload_id,configuration_id,phase)
 ) WITHOUT ROWID;
 CREATE INDEX IF NOT EXISTS history_scope ON history(platform_id,phase,as_of,configuration_id);
+CREATE INDEX IF NOT EXISTS history_workload ON history(workload_id);
 CREATE INDEX IF NOT EXISTS latest_engine ON latest(platform_id,engine_id,phase);
 CREATE INDEX IF NOT EXISTS snapshots_order ON snapshots(qualified,as_of_ns);
 

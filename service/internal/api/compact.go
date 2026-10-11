@@ -19,6 +19,7 @@ type BenchmarkStore interface {
 	Platforms(context.Context) (benchdb.Catalog, error)
 	Page(context.Context, benchdb.Query) (benchdb.Page, error)
 	Summary(context.Context) (benchdb.Summary, error)
+	HasWorkload(context.Context, string) (bool, error)
 }
 
 type benchmarkAPI struct {
