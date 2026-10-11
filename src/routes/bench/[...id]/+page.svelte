@@ -10,6 +10,7 @@
 	import Seg from '$lib/components/Seg.svelte';
 	import { CB, CFG, MACH } from '$lib/data/runtimes';
 	import { MET, PHASE_NOTE, PH_NAMES, SNAPS } from '$lib/data/snapshot';
+	import StatusLegend from '$lib/components/StatusLegend.svelte';
 	import { ST } from '$lib/data/status';
 	import type { CfgId, MetricKey } from '$lib/data/types';
 	import { fmtU, n0, pc, relative, workloadName } from '$lib/format';
@@ -59,9 +60,9 @@ import { RangeSelect } from '$lib/range-select.svelte';
   // unrelated process snapshots into a fabricated trace.
   const mem=$derived({yTicks:[] as {y:string;t:string;label:string}[],series:[] as {c:typeof CFG[number];points:string;pkX:string;pkY:string;pkL:string;pkLl:string;pkLt:string;ticks:string[]}[],bands:[] as {x:string;w:string;fill:string;label:string;ll:string}[],xTicks:[] as {l:string;tf:string;label:string}[],
     table:([['Compile process lifetime','rssCompile'],['Instantiate process lifetime','rssInst'],['First-call process lifetime','rssFirst'],['Steady process lifetime','rss']] as const).map(([name,metric])=>({name,cells:sel.map(id=>{
-      if(ui.memMetric!=='rss')return 'not collected';
+      if(ui.memMetric!=='rss')return ST.nm[0];
       const cell=viewCell(ui.machine,ui.snap,b.id,id,metric);
-      return cell.st==='ok' && cell.v!=null?fmtU(cell.v,'MiB'):'n/a';
+      return cell.st==='ok' && cell.v!=null?fmtU(cell.v,'MiB'):ST[cell.st==='ok'?'nm':cell.st][0];
     })}))});
 	const toggleMem = (id: CfgId) => {
 		const on = sel.includes(id);
@@ -79,8 +80,9 @@ import { RangeSelect } from '$lib/range-select.svelte';
     const inspect=report?.codeSource?.id&&native
       ? `${base}/wasmbench/code-inspection/${encodeURIComponent(report.codeSource.id)}/view.html?trial=${encodeURIComponent(native.trial)}`
       : null;
-    const image=cell.st==='ok'&&cell.v!=null?fmtU(cell.v,'KiB'):cell.st==='na'?'n/a':cell.st==='unsupported'?'unsupported':cell.st==='failed'?'failed':'n/a';
-    return {c,inspect,artifact:cell.artifact,cells:[image,'not collected','not collected','not collected']};
+    const result=benchVal(ui.scope,b,c.id,'code');
+    const image=result.st==='ok'?fmtU(result.v,'KiB'):ST[result.st][0];
+    return {c,inspect,artifact:cell.artifact,cells:[image,ST.nm[0],ST.nm[0],ST.nm[0]]};
   }));
 
 	// ── History ────────────────────────────────────────────────────────────
@@ -120,8 +122,8 @@ import { RangeSelect } from '$lib/range-select.svelte';
 			return {
 				c,
 				segments: historySegments(vals,SX,Y),
-				now: last >= 0 ? fmtU(vals[last], 'ms') : 'n/a',
-				delta: Number.isFinite(d)?relative(1+d,ui.deltaFormat):'n/a',
+				now: last >= 0 ? fmtU(vals[last], 'ms') : ST.unavail[0],
+				delta: Number.isFinite(d)?relative(1+d,ui.deltaFormat):ST.unavail[0],
 				dColor: Math.abs(d) < 0.02 ? 'var(--fg3)' : d < 0 ? 'var(--good)' : 'var(--bad)'
 			};
 		})
@@ -362,6 +364,7 @@ import { RangeSelect } from '$lib/range-select.svelte';
 
 {/if}
 
+<StatusLegend />
 <style>
 	.stack6 {
 		display: flex;

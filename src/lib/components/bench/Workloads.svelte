@@ -1,4 +1,5 @@
 <script lang="ts">
+ import StatusLegend from '../StatusLegend.svelte';
 	import {leastCoveredReference} from '$lib/comparison-policy';
 	import {viewData} from '$lib/view-data';
 	import {TableWindow} from '$lib/table-window.svelte';
@@ -41,7 +42,7 @@
 		if (r.st !== 'ok') {
 			const t = ST[r.st];
 			// Cells show just the status symbol; the tooltip spells it out.
-			return { text: m==='code'&&r.st==='unsupported'?'n/a':t[0], label: m==='code'&&r.st==='unsupported'?'':t[1], sub: '', bg: 'transparent', color: t[2], open, stats };
+			return { text: t[0], label: t[1], sub: '', bg: 'transparent', color: t[2], open, stats };
 		}
 		return {
 			text: formatted || fmtU(r.v, u),
@@ -163,7 +164,7 @@
 		if (t === 'simd') goto('/simd');
 		else ui.tag = ui.tag === t ? null : t;
 	};
-	const legend = Object.values(ST);
+
  const windowed=new TableWindow();
  const rowKey=(row:Row)=>row.kind==='group'?`group:${row.name}`:`item:${row.b.id}:${row.name}`;
  $effect(()=>windowed.setRows(view.rows.map(rowKey)));
@@ -282,9 +283,7 @@
   {#if apiView.page?.nextCursor}<button class="btn-small" disabled={apiView.pageLoading} onclick={more}>{apiView.pageLoading?'Loading…':'Load more workloads'}</button>{/if}
  </div>
 {/if}
-<div class="legend small">
-	{#each legend as [g, l, c] (l)}<span style:color={c}>{g} {l}</span>{/each}
-</div>
+<StatusLegend />
 
 <style>
  .spacer td{padding:0;border:0;}
@@ -404,11 +403,6 @@
 		justify-content: center;
 		padding: 3px 10px;
 		min-height: 28px;
-	}
-	.legend {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 4px 14px;
 	}
 	@media (max-width: 720px) {
 		/* Phones: no box-within-the-page vertical scroll; the table scrolls sideways only. */

@@ -271,7 +271,7 @@
 				{ k: 'Min', v: fmtU(distribution.min, u) },
 				{ k: 'Mean', v: '~' + fmtU(distribution.mean, u) },
 				{ k: 'Max', v: fmtU(distribution.max, u) },
-				{ k: 'Std dev', v: distribution.stdDev !== null ? fmtU(distribution.stdDev, u) : 'n/a', tip: 'Sample standard deviation' }
+				{ k: 'Std dev', v: distribution.stdDev !== null ? fmtU(distribution.stdDev, u) : ST.na[0], tip: 'Sample standard deviation' }
 			] : [],
 			phaseNote: PHASE_NOTE[d.m],
 			record: [
@@ -414,7 +414,7 @@
 				{ k: 'Min', v: fmtU(pdist.min, unit) },
 				{ k: 'Mean', v: '~' + fmtU(pdist.mean, unit) },
 				{ k: 'Max', v: fmtU(pdist.max, unit) },
-				{ k: 'Std dev', v: pdist.stdDev != null ? fmtU(pdist.stdDev, unit) : 'n/a', tip: perSample ? 'Sample standard deviation' : 'Standard deviation across contracts' }
+				{ k: 'Std dev', v: pdist.stdDev != null ? fmtU(pdist.stdDev, unit) : ST.na[0], tip: perSample ? 'Sample standard deviation' : 'Standard deviation across contracts' }
 			] : [],
 			rows: rows.map((r) => ({ ...r, value: fmtU(r.v, unit), rel: r.spread, open: () => (ui.drawer = { type: 'cell', b: r.w.id, c: c.id, m: metric, cf: 1, back: { drawer: d, label: f.name } }) }))
 		};
@@ -439,7 +439,7 @@
 		const active = configs.find((c) => supportPick?.for === d && c.id === supportPick.id) ?? configs[0];
 		const expected = track.expected;
 		const frac = expected ? track.pass / expected : 0;
-		const status: [string, string, string] = !configs.length ? ['–', 'n/a', 'var(--fg3)'] : frac === 1 ? ['✓', 'all passed', 'var(--st-pass)'] : track.pass ? ['◐', 'partial', 'var(--st-warn)'] : ['✕', 'none passed', 'var(--st-fail)'];
+		const status= !configs.length?ST.nm:frac===1?ST.ok:active?.failed?ST.failed:active?.skipped?ST.unsupported:ST.nm;
 		// Rank against the other configurations in the table on the same channel.
 		const peers = d.peers.filter((id) => CB[id]).map((id) => ({ id, pass: runtimeFeatureTrack(CB[id].rt, f, s, d.channel, undefined, id) })).filter((p) => p.pass.configurations.length);
 		const contracts = active
@@ -472,7 +472,7 @@
 			const openPerf = () => (ui.drawer = { type: 'feature', fam: f.id, c: d.c, m: 'steady', peers: d.peers });
 			perfRows.push({
 				k: 'Execution',
-				v: v != null ? `${fmtU(v, 'ms')} · ${ordinal(1 + ok.filter((e) => e.x < v).length)} of ${ok.length}` : perf.passed[pk] > 0 ? `unavailable · ${perf.passed[pk]}/${n} passed` : 'n/a',
+				v: v != null ? `${fmtU(v, 'ms')} · ${ordinal(1 + ok.filter((e) => e.x < v).length)} of ${ok.length}` : perf.passed[pk] > 0 ? `unavailable · ${perf.passed[pk]}/${n} passed` : ST.unavail[0],
 				action: openPerf,
 				tip: `Steady execution, ${s.average==='mean'?'arithmetic mean':'geometric mean'} over the selected contracts. Open the performance panel.`
 			});
@@ -659,7 +659,7 @@
 		wasmtime: 'https://wasmtime.dev', wasmer: 'https://wasmer.io', wazero: 'https://wazero.io', v8: 'https://v8.dev', wago: 'https://wago.sh',
 		wasmedge: 'https://wasmedge.org', spidermonkey: 'https://spidermonkey.dev', chicory: 'https://chicory.dev', graalwasm: 'https://www.graalvm.org/webassembly/', jsc: 'https://webkit.org'
 	};
-	const SUPPORT_TEXT: Record<string, string> = { y: 'yes', f: 'behind a flag', p: 'partial', n: 'no', '?': 'unknown', '-': 'n/a' };
+	const SUPPORT_TEXT: Record<string, string> = { y: 'yes', f: 'behind a flag', p: 'partial', n: 'no', '?': 'unknown', '-': ST.na[0] };
 	const profile = $derived.by(() => {
 		if (d?.type !== 'profile') return null;
 		const s = ui.scope;
@@ -753,7 +753,7 @@
 				{ k: 'Component Model', v: SUPPORT_TEXT[info.cm] ?? info.cm },
 				{ k: 'Embeds in', v: info.embed.join(' · ') },
 				...(info.lic && info.lic !== 'not reviewed' ? [{ k: 'License', v: info.lic }] : [])
-			].filter((r) => r.v && r.v !== 'n/a') : [],
+			].filter((r) => r.v && r.v !== ST.na[0]) : [],
 			notes: info?.notes ?? [],
 			machine: MACH[s.machine].l
 		};

@@ -81,7 +81,7 @@ import MarkerKey from '../MarkerKey.svelte';
 		const { fv, chg, col } = seriesFmt(ui.otMetric,ui.deltaFormat);
 		return CFG.filter((c) => !s.hide[c.id] && !compileExcluded(s, c, ui.otMetric) && (isVisible(s, c) || otSeries(s,c.id,ui.otMetric))).map((c) => {
 			const vals = otSeries(s, c.id, ui.otMetric);
-			if (!vals) return { c, na: true as const, now: isOff(s, c.id) ? 'unavailable' : 'n/a' };
+			if (!vals) return { c, na: true as const, now: isOff(s, c.id) ? 'unavailable' : '—' };
 			const finite=vals.filter(Number.isFinite);
 			const lo = Math.min(...finite);
 			const hi = Math.max(...finite);
@@ -127,9 +127,9 @@ import MarkerKey from '../MarkerKey.svelte';
 							tf: hi_ > 9 ? 'translate(calc(-100% - 10px), -50%)' : 'translate(10px, -50%)'
 						}
 					: null,
-				now: hv ? fv(vals[hi_]) : Number.isFinite(last)?fv(last):'n/a',
+				now: hv ? fv(vals[hi_]) : Number.isFinite(last)?fv(last):'—',
 				reused,
-				delta: reused ? '~' : hv ? (hd ? hd.t : '—') : d8?.t || 'n/a',
+				delta: reused ? '~' : hv ? (hd ? hd.t : '—') : d8?.t || '—',
 				dColor: reused ? 'var(--fg3)' : hv ? (hd ? col(hd) : 'var(--fg3)') : d8?col(d8):'var(--fg3)'
 			};
 		});

@@ -109,6 +109,7 @@ export function benchVal(s: Scope, b: Bench, cid: CfgId, m: MetricKey, caseF = 1
   // measured contract; never manufacture timing for an uncollected variant.
   if (caseF !== 1) return {st:'nm'};
   const cell=viewCell(s.machine,s.snapshot || 's1',b.id,cid,m);
+  if(m==='code'&&cell.st==='unsupported'&&/interpreter/.test(viewData.hosts[s.machine].configurations[cid]?.backend||''))return {st:'na'};
   if(cell.st !== 'ok' || cell.v == null) return {st:cell.st === 'ok'?'nm':cell.st};
   return {st:'ok',v:cell.v};
 }

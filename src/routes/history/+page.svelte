@@ -272,7 +272,7 @@ import TipCalls from '$lib/components/TipCalls.svelte';
 				...(cnt('reused evidence') ? [{ k: 'Reused evidence', v: cnt('reused evidence'), c: 'var(--fg3)' }] : [])
 			],
 			other: [
-				{ k: historicalCallWorkloads(M.key).length?M.l:`Matched ${ui.average === 'mean' ? 'mean' : 'geomean'} (${matched?.count??0} workloads)`, v: Number.isFinite(dt) && (SER[cid] || isCov) ? relative(dt,ui.deltaFormat) : 'n/a' },
+				{ k: historicalCallWorkloads(M.key).length?M.l:`Matched ${ui.average === 'mean' ? 'mean' : 'geomean'} (${matched?.count??0} workloads)`, v: Number.isFinite(dt) && (SER[cid] || isCov) ? relative(dt,ui.deltaFormat) : '—' },
 				{ k: 'Coverage', v: covText },
 				{ k: 'Process lifetime peak RSS', v: 'See recorded memory series; no inferred phase delta' },
 				{ k: 'Extracted native image', v: 'See recorded image series; no active-code inference' },

@@ -1,4 +1,5 @@
 <script lang="ts">
+ import StatusLegend from '$lib/components/StatusLegend.svelte';
 	import {apiView} from '$lib/api/controller.svelte';
  import { rankStats, tipCard, tipWho } from '$lib/tip';
  import PlugIcon from '$lib/components/PlugIcon.svelte';
@@ -54,7 +55,7 @@
 		const n = perf.contracts.length;
 		const v = perf.values[k];
 		const rs = rankStats(perf.values, k, engines.map((e) => `${e.rt} ${e.be}`), (x) => fmtU(x, 'ms'));
-		const head: [string, string] = v != null ? ['execution', `${fmtAverage(v, 'ms')} · ${rs[0][1]}`] : ['execution', perf.passed[k] > 0 ? `unavailable · ${perf.passed[k]}/${n} passed` : 'n/a'];
+		const head: [string, string] = v != null ? ['execution', `${fmtAverage(v, 'ms')} · ${rs[0][1]}`] : ['execution', perf.passed[k] > 0 ? `unavailable · ${perf.passed[k]}/${n} passed` : '—'];
 		return [head, ...rs.filter(([key]) => key === 'fastest')];
 	}
 	function compatView(f: (typeof FEATURE_ROWS)[number], e: Engine, contracts: number, perf: Perf, k: number): CompatView {
@@ -62,7 +63,7 @@
 		if (plugin) {
 			const frac = plugin.total ? plugin.passed / plugin.total : 0;
 			return {
-				text: plugin.official ? `${plugin.passed}/${plugin.total}` : '—',
+				text: plugin.official ? `${plugin.passed}/${plugin.total}` : ST.nm[0],
 				sub: 'plugin',
 				bg: plugin.official && plugin.total ? heatCorrectness(plugin.passed,plugin.total) : 'transparent',
 				color: plugin.official ? 'var(--fg)' : 'var(--fg3)',
@@ -71,7 +72,7 @@
 				tip: tipCard({ kicker: 'Feature compatibility · plugin', title: f.name, who: { rt: e.rt, be: 'plugin', col: e.col, hollow: e.hollow, ver: plugin.version }, value: plugin.official ? `${plugin.passed}/${plugin.total}` : 'unmeasured', sub: plugin.official ? `${plugin.failed} failed · ${plugin.skipped} skipped` : '', note: plugin.official ? `${plugin.scope || 'Official upstream suite'}; skips count toward the total. Performance remains unmeasured.` : 'Official suite not collected for this feature on this host.', action: 'open the suite evidence' })
 			};
 		}
-		const none = (why: string): CompatView => ({ text: '—', sub: '', bg: 'transparent', color: 'var(--fg3)', full: false, tip: tipCard({ kicker: 'Feature compatibility', title: f.name, who: { rt: e.rt, be: e.be, col: e.col, hollow: e.hollow }, value: 'not measured', note: why }) });
+		const none = (why: string): CompatView => ({ text: ST.nm[0], sub: '', bg: 'transparent', color: 'var(--fg3)', full: false, tip: tipCard({ kicker: 'Feature compatibility', title: f.name, who: { rt: e.rt, be: e.be, col: e.col, hollow: e.hollow }, value: 'not measured', note: why }) });
 		if (!contracts) return none('No corpus contracts for this feature yet.');
 		const rel = runtimeFeatureTrack(e.rt, f, ui.scope, 'stable', undefined, e.id);
 		const main = runtimeFeatureTrack(e.rt, f, ui.scope, 'development', undefined, e.id);
@@ -276,10 +277,7 @@
 			</tbody>
 		</table>
 	</div>
- <div class="legend small">
-  {#each Object.values(ST) as [glyph,label,color] (label)}<span style:color={color}>{glyph} {label}</span>{/each}
-  <span class="fg3">n/n = passed / total contracts</span>
- </div>
+ <StatusLegend note="n/n = passed / total contracts" />
 	<div class="note">
 		Representative corpus tests with independent oracles, not full specification conformance. Adapter-unsupported results do not establish that an engine lacks a feature. Browser builds and plugin performance are unmeasured. <a href={'/api/v1/features'}>Full evidence</a>.
 		<details><summary>Measurement scope</summary><p>The latest measured release is shown for each engine, with the pinned main commit in the tooltip and beneath the count when it differs. Compilation and execution contracts use their declared oracles. Wago provides optional WASI and Component Model plugins; their cells show official suite cases passed / total, including failed and skipped cases. Feature workloads never enter application averages.</p></details>
@@ -344,10 +342,7 @@
 			</tbody>
 		</table>
 	</div>
-	<div class="legend small">
-  {#each Object.values(ST) as [glyph,label,color] (label)}<span style:color={color}>{glyph} {label}</span>{/each}
-  <span class="fg3">~ = average · bold = lowest in row</span>
- </div>
+ <StatusLegend note="~ = average · bold = lowest in row" />
 	<div class="note">
 		Bold = lowest in row · heat = distance from the row's lowest measured value. Averages use {ui.average==='mean'?'arithmetic mean':'geometric mean'} over {ui.cohortMode==='shared'?'contracts passed on all shown engines':'contracts passed per engine'}.
 	</div>
@@ -370,14 +365,6 @@
 	}
 	.lim {
 		max-width: 760px;
-	}
-	.legend {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 6px 16px;
-		font-size: 12px;
-		color: var(--fg2);
-		align-items: center;
 	}
 	.plink {
 		font-size: 12px;
@@ -501,9 +488,6 @@
 		.item {padding-top:3px;padding-bottom:3px;line-height:1.3;}
 		.grp-btn > :last-child {
 			display: none;
-		}
-		.legend {
-			gap: 6px 12px;
 		}
 	}
 

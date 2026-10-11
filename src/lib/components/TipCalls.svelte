@@ -4,7 +4,7 @@
 	let { label, value, note, color }: { label:string;value:number|null;note:string;color:string } = $props();
 </script>
 <span class="calls">
- <span class="lbl"><span style:color>{label}</span><span class="mono">{value==null?'n/a':fmtU(value,'ms')}</span></span>
+ <span class="lbl"><span style:color>{label}</span><span class="mono">{value==null?'—':fmtU(value,'ms')}</span></span>
  <span>{note}</span>
 </span>
 

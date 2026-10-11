@@ -1,10 +1,11 @@
 <script lang="ts">
 import {apiView,aggregateKey,trackId} from '$lib/api/controller.svelte';
+import StatusLegend from '../StatusLegend.svelte';
+import {ST,ST_DESC} from '$lib/data/status';
 import {datasetView} from '$lib/api/view.svelte';
  import { rankStats, tipCard, tipWho } from '$lib/tip';
 import { CALL_PATHS } from '$lib/call-paths';
 import { CFG } from '$lib/data/runtimes';
-import { ST } from '$lib/data/status';
 	import { OV, UNIT } from '$lib/data/snapshot';
 	import type { MetricKey, OvKey } from '$lib/data/types';
 	import { fmtU, fmtUGroup, n0 } from '$lib/format';
@@ -27,7 +28,7 @@ import { viewCell, viewData } from '$lib/view-data';
 		calls: 'Two independently measured call paths; callback averages use a guest loop.',
 		lat: 'Shared exact contracts from explicit host-local report membership.',
 		mem: 'RSS retains its source pass and observation boundary.',
-		code: 'Shared code-size comparisons include engines with available native code; other engines show n/a.',
+		code: 'Shared code-size comparisons include engines with available native code; other engines show · (not applicable).',
 		cov: `All ${totalWorkloads()} measured contracts.`
 	};
 
@@ -141,16 +142,16 @@ import { viewCell, viewData } from '$lib/view-data';
 				}
 				const grp = ui.group as 'lat' | 'mem' | 'code';
 				const sourceIndex = grp === 'code' ? i + 3 : i;
-				if ((grp === 'lat' || grp === 'mem') && compileExcluded(s, c, g.metrics[i])) return { text: 'n/a', bg: 'transparent', color: 'var(--fg3)' };
+				if ((grp === 'lat' || grp === 'mem') && compileExcluded(s, c, g.metrics[i])) return { text: ST.na[0], note:ST_DESC.na, bg: 'transparent', color: 'var(--fg3)' };
                 const absolute=absOf(s,grp,c.id,sourceIndex);
 				if (!absolute) {
-					const codeCells=Object.entries(viewData.hosts[s.machine].snapshots.s1).filter(([key])=>key.endsWith(`|${c.id}|code`));
-                    const interpreter=grp==='code'&&(/interpreter/.test(viewData.hosts[s.machine].configurations[c.id]?.backend||'')||(codeCells.length>0&&codeCells.every(([,cell])=>cell.st==='unsupported')));
+					const interpreter=grp==='code'&&/interpreter/.test(viewData.hosts[s.machine].configurations[c.id]?.backend||'');
 					const metric=grp==='mem'&&i===3?'rssAverage':g.metrics[i];
 					const key=aggregateKey(s,metric);
 					const timingReason=apiView.precomputed[key]?.cards.find(card=>card.engine===trackId(c.id))?.unavailableReason;
-					const status=apiView.aggregateErrors[key]?'unavailable':!apiView.aggregates[key]&&datasetView.revision?'loading…':'n/a';
-					return { text: interpreter?'n/a':disp(s,grp,c.id,sourceIndex)?.t || (off?'unavailable':ui.cohortMode==='shared'&&grp==='lat'?(timingReason==='timer-resolution'?'Below timer resolution':'Incomplete reference measurements'):status), bg:'transparent',color:'var(--fg3)' };
+					const loading=!apiView.aggregateErrors[key]&&!apiView.aggregates[key]&&!!datasetView.revision;
+     const note=interpreter?ST_DESC.na:timingReason==='timer-resolution'?'Unavailable: retained samples are all zero at the recorded timer resolution; a positive geometric mean cannot be calculated.':timingReason==='incomplete-reference'?'Unavailable: this configuration has no usable measurement for every workload in the selected reference set.':apiView.aggregateErrors[key]||ST_DESC.unavail;
+     return {text:interpreter?ST.na[0]:loading?'loading…':ST.unavail[0],note,bg:'transparent',color:'var(--fg3)'};
 				}
 				return { text: commonTimes?.[i] ? '~'+commonTimes[i] : disp(s, grp, c.id, sourceIndex)!.t, bg: heatOf(i, c.id), color: 'var(--fg)' };
 			});
@@ -220,7 +221,7 @@ import { viewCell, viewData } from '$lib/view-data';
 									class="cellbtn mono val"
 									style:color={x.color}
 									onclick={() => openCell(r.c.id, i)}
-									data-tip-card={x.text === 'loading…' ? undefined : tipCard({ kicker: `${g.label} · ${g.cols[i]}`, who: tipWho(r.c), value: x.text, valueColor: x.color === 'var(--fg)' ? '' : x.color, heat: x.bg === 'transparent' ? '' : x.bg, stats: [...(ranks?.[i]?.get(r.c.id) ?? []), ...('rate' in x && x.rate ? [['throughput', x.rate.replace(' · reciprocal of latency', '')] as [string, string]] : [])], points: ui.group === 'mem' && i === 3 ? peakMemoryPoints : [], note: ui.group === 'calls' ? (CALL_PATHS[i]?.note || 'Sum of both measured call directions.') : '', action: ui.group === 'calls' || ui.group === 'cov' ? 'see per-workload results' : 'rank, spread & workloads' })}>{#if x.text === 'loading…'}<span class="skel" aria-label="loading"></span>{:else}{x.text}{/if}</button
+									data-tip-card={x.text === 'loading…' ? undefined : tipCard({ kicker: `${g.label} · ${g.cols[i]}`, who: tipWho(r.c), value: x.text, valueColor: x.color === 'var(--fg)' ? '' : x.color, heat: x.bg === 'transparent' ? '' : x.bg, stats: [...(ranks?.[i]?.get(r.c.id) ?? []), ...('rate' in x && x.rate ? [['throughput', x.rate.replace(' · reciprocal of latency', '')] as [string, string]] : [])], points: ui.group === 'mem' && i === 3 ? peakMemoryPoints : [], note: 'note' in x ? x.note : ui.group === 'calls' ? (CALL_PATHS[i]?.note || 'Sum of both measured call directions.') : '', action: ui.group === 'calls' || ui.group === 'cov' ? 'see per-workload results' : 'rank, spread & workloads' })}>{#if x.text === 'loading…'}<span class="skel" aria-label="loading"></span>{:else}{x.text}{/if}</button
 								>
 							</td>
 						{/each}
@@ -236,6 +237,7 @@ import { viewCell, viewData } from '$lib/view-data';
 			</tbody>
 		</table>
 	</div>
+ <StatusLegend />
 </div>
 
 <style>

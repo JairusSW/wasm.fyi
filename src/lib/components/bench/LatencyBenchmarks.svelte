@@ -1,4 +1,6 @@
 <script lang="ts">
+ import {statusTuple,ST} from '$lib/data/status';
+ import StatusLegend from '../StatusLegend.svelte';
  import {onMount,untrack} from 'svelte';
  import {ui} from '$lib/state.svelte';
  import {fmtU} from '$lib/format';
@@ -24,8 +26,8 @@
  function selectVersion(engine:string,key:string){selectedVersions={...selectedVersions,[engine]:key}}
  function setPhase(value:string){ui.metric=({compile:'compile',instantiate:'inst','first-call':'first',steady:'steady'} as const)[value as LatencyPhase]}
  function toggle(engine:string){if(hidden.includes(engine))hidden=hidden.filter(e=>e!==engine);else if(shown.length>1)hidden=[...hidden,engine]}
- function bytes(value:number|null|undefined,status:string|undefined){return value!=null?fmtU(value/1024,'KiB'):status||'not captured'}
- function value(row:LatencyRow|undefined){return row?.latencyStatus==='ok'&&row.latencyNs!=null?fmtU(row.latencyNs/1e6,'ms'):row?.latencyStatus||'n/a'}
+ function bytes(value:number|null|undefined,status:string|undefined){return value!=null?fmtU(value/1024,'KiB'):statusTuple(status)[0]}
+ function value(row:LatencyRow|undefined){return row?.latencyStatus==='ok'&&row.latencyNs!=null?fmtU(row.latencyNs/1e6,'ms'):statusTuple(row?.latencyStatus==='ok'?undefined:row?.latencyStatus)[0]}
  async function load(selected:string,current:LatencyPhase){
   controller?.abort();controller=new AbortController();const signal=controller.signal;
   const token=++generation;loading=rows.length===0;error='';
@@ -74,7 +76,7 @@
  <div class="table-scroll" id="workloads"><table>
   <thead><tr><th>Wasm workload</th>{#each shown as engine}<th>{engine}<span class="version" title={version(engine)}>{version(engine)}</span>{#if (versions.get(engine)?.length||0)>1}<select class="version-picker" aria-label={engine+' version'} value={(versions.get(engine)||[]).some(c=>c.key===selectedVersions[engine])?selectedVersions[engine]:''} onchange={e=>selectVersion(engine,e.currentTarget.value)}><option value="">Latest measured version</option>{#each versions.get(engine)||[] as config}<option value={config.key}>{config.version} · {config.backend}</option>{/each}</select>{/if}</th>{/each}</tr></thead>
   <tbody>
-   <tr class="average"><th>Average</th>{#each averages as a}<td>{a.value==null?'n/a':fmtU(a.value/1e6,'ms')}<span class="version">{a.count} passed workloads</span></td>{/each}</tr>
+   <tr class="average"><th>Average</th>{#each averages as a}<td>{a.value==null?ST.unavail[0]:fmtU(a.value/1e6,'ms')}<span class="version">{a.count} passed workloads</span></td>{/each}</tr>
    {#each workloads as workload}
     {@const sample=rows.find(r=>r.workload===workload)}
     <tr><th>{workload}<span class="version">{sample?.wasm}</span></th>{#each shown as engine}{@const cell=cells.get(workload+'|'+engine)}<td>{value(cell)}<span class="version">Peak RSS: {bytes(cell?.peakRssBytes,cell?.memoryStatus)}</span><span class="version">{codeSizeLabel(cell?.codeKind)}: {bytes(cell?.codeBytes,cell?.codeStatus)}</span></td>{/each}</tr>
@@ -83,6 +85,7 @@
  </table></div>
  {/if}
 </div>
+<StatusLegend />
 <style>
  .version-picker{display:block;max-width:220px;margin-top:6px;font-size:11px}h1{font-size:20px}.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.table-scroll{overflow:auto}table{width:100%;border-collapse:collapse}th,td{text-align:left;white-space:nowrap;padding:10px 12px;border-bottom:1px solid var(--bd)}th{font-weight:500}td{font-family:var(--mono);font-variant-numeric:tabular-nums}.version{display:block;max-width:220px;overflow:hidden;text-overflow:ellipsis;font:11px var(--mono);color:var(--fg3);margin-top:3px}.average{background:var(--bg2)}button[aria-pressed=false]{opacity:.45}select{max-width:100%;padding:6px;font:inherit;background:var(--bg);color:var(--fg);border:1px solid var(--bd);border-radius:4px}
 </style>

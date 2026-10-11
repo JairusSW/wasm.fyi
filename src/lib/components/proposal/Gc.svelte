@@ -51,7 +51,7 @@
 					{#each vis as c (c.id)}
 						{@const d = GC_D[c.id]}
             {@const v=featureValue(ui.scope,id,c.id)}
-            <td class="mono r pad">{v==null?'n/a':fmtU(v,'ms')}</td>
+            <td class="mono r pad">{v==null?'—':fmtU(v,'ms')}</td>
 					{/each}
 				</tr>
 			{/each}
