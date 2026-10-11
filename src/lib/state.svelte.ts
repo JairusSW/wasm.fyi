@@ -1,3 +1,4 @@
+import {isLocalComparison} from './local-comparison';
 import {datasetView} from './api/view.svelte';
 // Global UI state. Filters are URL-backed: scope keys (machine, snapshot,
 // runtimes) persist across pages; page keys reset to their defaults when a
@@ -58,7 +59,7 @@ const nullable = (param: string): Codec<string | null> => ({
 });
 
 const configIds = () => CFG.map((c) => c.id);
-const isCfg = (s: string): s is CfgId => (configIds() as string[]).includes(s) || /^engine:wago-(?:main-snapshot|arm64-branch)$/.test(s);
+const isCfg = (s: string): s is CfgId => (configIds() as string[]).includes(s) || s.startsWith('engine:') && isLocalComparison(s.slice(7));
 
 /** Hidden runtimes, serialized as the list of *shown* config ids so the default is empty. */
 const hideCodec: Codec<Partial<Record<CfgId, boolean>>> = {

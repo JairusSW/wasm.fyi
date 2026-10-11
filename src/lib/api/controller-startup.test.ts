@@ -18,3 +18,27 @@ it('publishes compact homepage metadata and reconnects after layout teardown', a
  expect(apiView.error).toBe('');expect(apiView.ready).toBe(true);
  closeSite();
 });
+it('keeps PR snapshots separate from main and ARM64 branch and accepts their initial URL filter', async () => {
+ const versions=['cea8f83f101fbdd0fcad634e9c7faad0377b676e','bcc3a019e350c5ae61787c43139c4f44597ad37e','fb66ce0f7235065333b31cb5594f9b84a155561d'];
+ const engines=['wago-main-snapshot','wago-arm64-branch','wago-pr906'];
+ const platform={id:'apple',cpu:'Apple M4 Max',os:'darwin',arch:'arm64',cores:16,kernel:'test',memoryBytes:68719476736,latestRevision:'latest'};
+ vi.stubGlobal('location',{pathname:'/benchmarks/',href:'http://localhost/benchmarks/?m=m2&rt=engine%3Awago-pr906%2Cengine%3Awago-main-snapshot'});
+ vi.stubGlobal('fetch',async(path:string)=>{
+  const url=new URL(path,'http://localhost');
+  if(url.pathname==='/api/summary')return Response.json({revision:'r',platforms:[platform]});
+  if(url.pathname==='/api/matrix')return Response.json({schema:2,revision:'r',platform:'apple',phase:url.searchParams.get('phase'),total:3,nextOffset:null,contracts:[{workload:'applications/test',wasm:'test.wasm',artifactSha256:'a',contractSha256:'c'}],configurations:engines.map((engine,i)=>({engine,version:versions[i],backend:'railshot'})),sources:versions.map((revision,i)=>({repository:'wago-org/wago',revision,ref:engines[i],kind:'snapshot',asOf:'2026-10-11'})),sampling:[null],capturedAt:['2026-10-11'],rows:engines.map((_,i)=>[i+1,0,i,i,0,1000,null,null,'ok','not-measured','not-measured',null,5,0,null])});
+  return Response.json({revision:'r',platform:'apple',metric:'steady',workloads:[],participants:engines,cards:[],items:[],lanes:[],weeks:[]});
+ });
+ const {ui}=await import('../state.svelte');
+ ui.loadFromUrl(new URL('http://localhost/benchmarks/?m=m2&rt=engine%3Awago-pr906%2Cengine%3Awago-main-snapshot'),'/benchmarks');
+ expect(ui.hide['engine:wago-pr906']).toBe(false);
+ const {connectSite,closeSite,apiView}=await import('./controller.svelte');
+ const {datasetView}=await import('./view.svelte');
+ await connectSite();
+ expect(apiView.error).toBe('');
+ for(const [i,engine] of engines.entries())expect(datasetView.current.hosts.m2.configurations[`engine:${engine}`]?.version).toBe(versions[i]);
+ expect(datasetView.current.configurations['engine:wago-pr906']).toBe('wago-pr906');
+ expect(ui.hide['engine:wago-pr906']).toBe(false);
+ expect(ui.hide['engine:wago-arm64-branch']).toBe(true);
+ closeSite();
+});
