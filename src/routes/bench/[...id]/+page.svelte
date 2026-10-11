@@ -20,6 +20,7 @@ import { historySegments, historyEndpoints } from '$lib/history-values';
 import { RangeSelect } from '$lib/range-select.svelte';
 
 	let { data } = $props();
+	const prepared = $derived(data.preparedWorkload);
 	// The catalogue arrives with the dataset; until then (or for an unknown id) a stub keeps every
 	// derived value safe and the page shows a placeholder instead of crashing.
 	const found = $derived(viewData.catalogue.find(w=>w.id===data.workload));
@@ -153,31 +154,62 @@ import { RangeSelect } from '$lib/range-select.svelte';
 <svelte:window onkeydown={(e) => e.key === 'Escape' && range.clear()} />
 
 <svelte:head>
-	<title>{workloadName(b.id)} · wasm.fyi</title>
-	<meta name="description" content={b.purpose || `${workloadName(b.id)} — ${b.group} workload on wasm.fyi`} />
+	<title>{prepared?.name ?? workloadName(b.id)} · wasm.fyi</title>
 </svelte:head>
 
+<div class="stack6">
+	<div class="crumbs s12 fg3"><a class="link-quiet" href={base + '/workloads/'}>Workload catalog</a> / {prepared?.category ?? b.group}</div>
+	<div class="title-line">
+		<h1 class="mono">{prepared?.name ?? workloadName(b.id)}</h1>
+		{#if found}
+			{#each b.tags as t (t)}
+				<a class="tag" href={siteHref(tagHref(t))} data-tip={t === 'simd' ? 'Open the SIMD page' : `Filter benchmarks to #${t}`}>#{t}</a>
+			{/each}
+		{/if}
+	</div>
+</div>
+
+{#if prepared}
+	<section class="panel prepared" aria-labelledby="prepared-contract">
+		<header>
+			<h2 id="prepared-contract">Prepared corpus contract</h2>
+			<p>{prepared.description}</p>
+			<p class="small fg3">{data.preparedCatalogPolicy} Measurement records below, when available, have their own artifact and contract identities; compare those identities before using these preparation details.</p>
+		</header>
+		<dl class="tiles meta">
+			<div class="mcell"><dt class="small fg3">API workload ID</dt><dd class="mono s12 brk">{prepared.id}</dd></div>
+			<div class="mcell"><dt class="small fg3">Category / algorithm</dt><dd class="s12">{prepared.category} · {prepared.algorithm}</dd></div>
+			<div class="mcell"><dt class="small fg3">ABI</dt><dd class="mono s12">{prepared.abi}</dd></div>
+			<div class="mcell"><dt class="small fg3">Work per invocation</dt><dd class="mono s12">{n0(prepared.unitsPerInvocation)} {prepared.workUnit}</dd></div>
+			<div class="mcell"><dt class="small fg3">Reset policy</dt><dd class="mono s12 brk">{prepared.reset}</dd></div>
+			<div class="mcell"><dt class="small fg3">Prepared artifact size</dt><dd class="mono s12">{n0(prepared.artifactBytes)} bytes</dd></div>
+			<div class="mcell"><dt class="small fg3">Prepared artifact SHA-256</dt><dd class="mono s12 brk">{prepared.artifactSha256}</dd></div>
+			<div class="mcell"><dt class="small fg3">License recorded by the corpus</dt><dd class="s12 brk">{prepared.license}</dd></div>
+		</dl>
+		<div class="source s12 brk">
+			<strong>Source provenance:</strong>
+			{#if prepared.source.repository}
+				<a href={prepared.source.repository}>{prepared.source.name ?? prepared.source.repository}</a>
+			{:else if prepared.source.path}
+				<span class="mono">{prepared.source.path}</span> (path recorded in the corpus)
+			{/if}
+			{#if prepared.source.revision}<span> · revision <span class="mono">{prepared.source.revision}</span></span>{/if}
+			{#if prepared.source.sha256}<span> · source SHA-256 <span class="mono">{prepared.source.sha256}</span></span>{/if}
+			{#if prepared.source.buildRecipe}<span> · recipe <span class="mono">{prepared.source.buildRecipe}</span></span>{/if}
+			<p><a href={data.preparedCatalogSource}>Committed corpus inventory and full source details</a> · <a href={base + '/docs/'}>How to read measurements</a></p>
+		</div>
+	</section>
+{/if}
+
 {#if !found}
-	<div class="stack6" aria-busy={!apiView.ready}>
-		<div class="crumbs s12 fg3"><a class="link-quiet" href={siteHref(`/benchmarks`)}>Benchmarks</a></div>
-		<h1 class="mono">{workloadName(data.workload)}</h1>
+	<div class="stack6">
 		{#if apiView.ready}
-			<p class="fg3 s12">This workload isn’t in the current dataset. <a class="link-quiet" href={siteHref(`/benchmarks`)}>Browse all workloads</a>.</p>
+			<p class="fg3 s12">This workload has no entry in the currently loaded measurement dataset. That does not establish runtime support. <a class="link-quiet" href={siteHref('/benchmarks')}>Browse measured workloads</a>.</p>
 		{:else}
-			<span class="skel" style:width="60%"></span>
-			<span class="skel" style:width="40%"></span>
+			<p class="fg3 s12">Current measurements load from the public API with JavaScript. Until they load, no runtime performance or support result is shown here. <a class="link-quiet" href={base + '/docs/'}>Read the API guide</a> to query the data directly.</p>
 		{/if}
 	</div>
 {:else}
-<div class="stack6">
-	<div class="crumbs s12 fg3"><a class="link-quiet" href={siteHref(`/benchmarks`)}>Benchmarks</a> / {b.group}</div>
-	<div class="title-line">
-		<h1 class="mono">{workloadName(b.id)}</h1>
-		{#each b.tags as t (t)}
-			<a class="tag" href={siteHref(tagHref(t))} data-tip={t === 'simd' ? 'Open the SIMD page' : `Filter benchmarks to #${t}`}>#{t}</a>
-		{/each}
-	</div>
-</div>
 <div class="tiles meta">
 	{#each meta as m (m.k)}
 		<div class="mcell"><div class="small fg3">{m.k}</div><div class="mono s12 brk">{m.v}</div></div>
@@ -363,6 +395,12 @@ import { RangeSelect } from '$lib/range-select.svelte';
 {/if}
 
 <style>
+	.prepared { padding:16px;display:flex;flex-direction:column;gap:14px; }
+	.prepared h2 { font-size:15px;font-weight:600;margin:0 0 6px; }
+	.prepared p { margin:6px 0;line-height:1.6; }
+	.prepared dl { margin:0; }
+	.prepared dd { margin:3px 0 0; }
+	.source { line-height:1.7; }
 	.stack6 {
 		display: flex;
 		flex-direction: column;

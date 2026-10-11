@@ -11,7 +11,8 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "test": "vitest run",
     "test:ai": "node --test scripts/ai-metadata.test.mjs",
-    "sync:proposals": "node scripts/sync-proposals.mjs"
+    "sync:proposals": "node scripts/sync-proposals.mjs",
+    "test:discovery": "node --test scripts/discovery.test.mjs scripts/api-schema.test.mjs scripts/prepared-workloads.test.mjs"
   },
   "devDependencies": {
     "@fontsource/ibm-plex-mono": "^5.3.0",

@@ -575,13 +575,24 @@
       ],
       "properties": {
         "method": {
-          "const": "same-process-stability-v1"
+          "enum": [
+            "same-process-stability-v1",
+            "feature-compatibility-v1"
+          ]
         },
         "groupSize": {
-          "const": 5
+          "enum": [
+            1,
+            5
+          ]
         },
         "maxSamples": {
-          "enum": [10, 25, 35]
+          "enum": [
+            1,
+            10,
+            25,
+            35
+          ]
         },
         "warmup": {
           "const": 0
@@ -594,10 +605,68 @@
         "stopReason": {
           "enum": [
             "stable",
-            "sample-cap"
+            "sample-cap",
+            "fixed-sample"
           ]
         }
-      }
+      },
+      "description": "Collection policy for ordered samples. Feature compatibility probes use one fixed sample; performance measurements use same-process adaptive sampling. The service also validates workload, phase, sample counts and retained-window consistency.",
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "method": {
+                "const": "feature-compatibility-v1"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "groupSize": {
+                "const": 1
+              },
+              "maxSamples": {
+                "const": 1
+              },
+              "retainedStart": {
+                "const": 0
+              },
+              "stopReason": {
+                "const": "fixed-sample"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "method": {
+                "const": "same-process-stability-v1"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "groupSize": {
+                "const": 5
+              },
+              "maxSamples": {
+                "enum": [
+                  10,
+                  25,
+                  35
+                ]
+              },
+              "stopReason": {
+                "enum": [
+                  "stable",
+                  "sample-cap"
+                ]
+              }
+            }
+          }
+        }
+      ]
     }
   }
 }

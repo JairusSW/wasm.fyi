@@ -139,9 +139,9 @@ func serveBenchmark(ctx context.Context, db api.BenchmarkStore, root, addr, asse
 	}
 	var static http.Handler
 	if assets != "" {
-		// The benchmark store has no workload index, so any well-formed workload path is served
-		// the application shell; the page itself reports a workload it cannot find.
-		h, e := frontend.Open(assets, func(_ context.Context, workload string) (bool, error) { return workload != "", nil })
+		// Resolve measured workload routes against current and historical bindings;
+		// the frontend also serves descriptive corpus pages from the build.
+		h, e := frontend.Open(assets, db.HasWorkload)
 		if e != nil {
 			return e
 		}

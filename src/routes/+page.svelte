@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { apiView } from '$lib/api/controller.svelte';
 	import Brand from '$lib/components/Brand.svelte';
  import { configVersion } from '$lib/data/runtimes';
 	import { siteHref } from '$lib/links';
@@ -32,12 +33,12 @@
 	});
 
 	const tiles: [number|null, string][] = $derived([
-		[RTS.length, 'runtimes & engines tracked'],
-		[totalWorkloads(), 'measured contracts'],
-		[viewData.statistics.timingSamples, 'latest-version timing samples · all machines'],
-		[viewData.statistics.allTimingSamples ?? null, 'all-version timing samples · all machines'],
+		[apiView.ready ? RTS.length : null, 'runtimes & engines tracked'],
+		[apiView.ready ? totalWorkloads() : null, 'measured contracts'],
+		[apiView.ready ? viewData.statistics.timingSamples : null, 'latest-version timing samples · all machines'],
+		[apiView.ready ? viewData.statistics.allTimingSamples ?? null : null, 'all-version timing samples · all machines'],
 		[FEATS.length, 'features tracked'],
-		[viewData.statistics.machines??0, 'machines']
+		[apiView.ready ? viewData.statistics.machines??0 : null, 'machines']
 	]);
 
 	const areas = [
@@ -91,7 +92,7 @@
 		<Brand width={204} />
 		<h1>The reference for WebAssembly runtimes.</h1>
 		<p class="lead">
-			Independent benchmarks, feature support and proposal performance. Every number links to the run that produced it.
+			Independent benchmarks, feature support and proposal performance. Explore platform-specific measurements, source revisions and sampling policies.
 		</p>
 		<div class="ctas">
 			<a class="btn-primary" href={siteHref(`/benchmarks`)}>Explore benchmarks</a>
@@ -101,7 +102,7 @@
 	<div class="panel board">
 		<div class="board-head">
 			<span class="w6">Fastest execution</span>
-			<span class="mono small fg3">{board[0]?viewData.reports[board[0].report].created.slice(0,10):'not measured'} · per invocation</span>
+			<span class="mono small fg3">{board[0]?viewData.reports[board[0].report].created.slice(0,10):apiView.ready?'not measured':'loading'} · per invocation</span>
 		</div>
 		<div class="board-rows">
 			{#each board as b (b.c.id)}
@@ -126,7 +127,7 @@
 
 <section class="tiles-row">
 	{#each tiles as [v, l] (l)}
-		<div class="tile"><span class="mono tv" title={v==null?undefined:shortCount(v) === n0(v) ? undefined : n0(v)}>{v==null?'not collected':shortCount(v)}</span> <span class="fg3">{l}</span></div>
+		<div class="tile"><span class="mono tv" title={v==null?undefined:shortCount(v) === n0(v) ? undefined : n0(v)}>{v==null?(apiView.ready?'not collected':'loading'):shortCount(v)}</span> <span class="fg3">{l}</span></div>
 	{/each}
 </section>
 
@@ -172,8 +173,8 @@
 		</div>
 		<div class="points">
 			<div>
-				<div class="w6 s14">Every number is reproducible</div>
-				<div class="fg2">Each result resolves to a run record with versions, flags, machine, harness revision and the exact command.</div>
+				<div class="w6 s14">Inspect the measurement context</div>
+				<div class="fg2">Each result records its workload contract, runtime version, platform, source identity and sampling policy.</div>
 			</div>
 			<div>
 				<div class="w6 s14">Scope is always visible</div>
@@ -181,7 +182,7 @@
 			</div>
 			<div>
 				<div class="w6 s14">Missing is never zero</div>
-				<div class="fg2">Unsupported, failed, crashed and not-measured stay distinct. Incorrect results get no performance credit.</div>
+				<div class="fg2">Unsupported, failed, disabled and not-measured stay distinct. Incorrect results get no performance credit.</div>
 			</div>
 		</div>
 	</div>

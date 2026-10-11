@@ -154,12 +154,15 @@ publication workflows.
 See [API.md](API.md) for the HTTP endpoint reference, authentication, pagination,
 comparison scopes and request examples.
 
-Every build generates `/llms.txt`, `/llms-full.txt`, `/data/llm/index.json`,
-benchmark JSON shards, `robots.txt` and `sitemap.xml` from the same verified data
-as the UI. Generation is deterministic and runs offline.
+Every build generates `/llms.txt`, an expanded `/llms-full.txt`, the
+`/data/llm/index.json` API discovery manifest, `robots.txt` and `sitemap.xml`.
+The public `/docs/` guide, `/workloads/` catalog, prepared workload contract pages,
+OpenAPI/JSON schemas and full HTTP reference are
+available without JavaScript. These are documentation, not measurement snapshots;
+fetch current or historical data through the live API.
 
-See [machine-readable access](docs/llm-access.md) for schemas, provenance and
-base-path behavior.
+See [machine-readable access](docs/llm-access.md) for units, pagination, provenance,
+cache behavior and base-path handling.
 
 ## Develop
 

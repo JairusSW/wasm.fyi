@@ -1,106 +1,116 @@
 # Machine-readable access
 
-Start at [`/llms.txt`](https://wasm.fyi/llms.txt) for the short navigation and
-interpretation guide, or [`/data/llm/index.json`](https://wasm.fyi/data/llm/index.json)
-for the versioned JSON manifest. These are ordinary static files and need no
-JavaScript, authentication, API key, or special crawler user-agent.
+Start at [the API and measurement guide](https://wasm.fyi/docs/) or
+[/llms.txt](https://wasm.fyi/llms.txt). Public reads do not need JavaScript,
+authentication, an API key or a special user agent. The current service stores
+indexed measurements and ordered timing samples in SQLite.
 
-## Published files
+## Discovery and contracts
 
-| Path | Contents |
+| URL | Purpose |
 | --- | --- |
-| `/llms.txt` | Concise resource index and measurement caveats |
-| `/llms-full.txt` | Expanded reference: complete workload catalogue, host/configuration labels, metric definitions, feature coverage, report provenance and links to all recorded benchmark values |
-| `/data/llm/index.json` | Schema version, units, hosts, configuration slots, source digests, shard URLs/checksums, evidence/history/worker links |
-| `/data/llm/workloads.json` | Artifact SHA-256, exact workload contract, reset/oracle, work unit and page URL; excludes the UI's implicit-baseline convenience timing |
-| `/data/llm/reports.json` | Report IDs, source metadata, raw evidence and summary URLs |
-| `/data/llm/benchmarks-<host>-<snapshot>-<metric>.json` | Explicit records with workload/configuration/metric, status, value, unit, interval, launch medians, reason and report ID |
-| `/data/llm/features.json` | Configuration-pinned coverage summary; links to all exact cases in `/wasmbench/feature-support.json` |
-| `/data/llm/schema.json` | JSON Schema 2020-12 for each benchmark shard |
-| `/sitemap.xml` | Canonical public routes, every measured workload page and the LLM text resources |
-| `/robots.txt` | Allow crawling, sitemap URL and commented LLM/JSON discovery links |
+| `/docs/` | Prerendered, human-readable API and interpretation guide |
+| `/llms.txt` | Short resource index and core interpretation rules |
+| `/llms-full.txt` | Expanded API navigation, pagination, units and provenance |
+| `/data/llm/index.json` | Versioned API discovery manifest; not a measurement snapshot |
+| `/schemas/api-v1.openapi.json` | Current OpenAPI 3.1 contract (the filename is retained for compatibility) |
+| `/schemas/benchmark.schema.json` | Record/capture schema, including status and sampling contracts |
+| `/workloads/` and `/bench/<contractId>/` | Prepared application corpus catalog and semantic contract pages |
+| `/data/llm/workloads.json` | Prepared corpus metadata, explicitly separate from measured results |
+| `/reference.md` | Published copy of the repository's full `API.md` |
+| `/api/platforms` | Live measured platform IDs and catalog revision |
+| `/api/summary` | Live counts, machine specifications and freshness |
+| `/sitemap.xml` | Canonical public information pages, including `/docs/` |
+| `/robots.txt` | Crawl permission and sitemap/discovery links |
 
-Benchmark shards are split by host, snapshot and metric so consumers can fetch only
-the relevant slice rather than download all metrics. The manifest records each
-shard’s byte size, record count and SHA-256.
+Prepared workload pages describe committed corpus artifacts, source identities and
+operation contracts. They do not freeze API measurements or establish runtime support.
+New live imports outside this build inventory still work as interactive detail pages.
 
-The HTML has canonical and alternate links, and the footer links directly to the
-LLM reference and data manifest. Crawlers are allowed; this does not guarantee
-that any particular search engine or LLM will crawl or use the files.
+The old static benchmark shards and `/api/v1/*` routes are retired. There is no
+archived report lookup or compatibility alias. Do not infer that the discovery
+manifest contains current measurements. Follow the live API links.
 
-## Interpretation contract
+## Read-only workflow
 
-- Shard records use the **same packed measurement projection as the UI**, decoded
-  without rounding. `ok` with numeric zero is a real zero. Non-ok values are
-  `null`, and reasons (including reason index zero) remain intact. Omitted
-  combinations are `not-measured`, never implicitly unsupported or zero.
-- `s1` means newest matching evidence **per configuration/workload/host**; `s2`
-  means previous matching evidence. They are not globally simultaneous runs.
-  A newer failure is not backfilled with an older successful value.
-- Resolve every record's `report` in `reports.json`. Use the exact configuration,
-  runtime identity, flags, host, collection timestamp, launch count and policy
-  in its sealed evidence before comparing results. The host's configuration label
-  is not a substitute for that per-record identity.
-- Timing is in `ms`, process lifetime peak RSS in `MiB`, extracted native images
-  in `KiB`. A timing is per reported operation/iteration, not necessarily per
-  invocation. Work unit and units per invocation are in the workload contract.
-  RSS is not a heap measurement or phase subtraction; extracted images are not
-  an active-code-only measurement.
-- Coverage counts are **metric cells**, not passed workloads. Feature evidence is
-  representative exact-oracle corpus coverage under pinned adapters, not whole
-  specification conformance. Compile-only does not mean executed. Core adapters
-  do not measure unloaded plugins or browser release support.
-- Historical Wago revisions were collected retrospectively. The comparison
-  engines are fixed baselines. Target week is not collection time.
-- There is no global winner summary, and no aggregate normalizes away missing
-  coverage. The full text is a reference with detailed values in linked JSON
-  shards rather than a single enormous table of measurements.
+1. Fetch `/api/platforms` and choose a returned `items[].id`.
+2. Request `/api/benchmarks?platform=ID&phase=steady&limit=20`.
+3. Follow opaque, URL-encoded `nextCursor` values until null. Record pages accept
+   limits of 1–1000. Keep the same query scope and restart on HTTP 409.
+4. Use `/api/history` for historical rows. `/api/matrix` and `/api/timeline` are
+   compact scalar alternatives: follow `nextOffset` and `revision` until null,
+   keeping scope fixed; their maximum page size is 4096.
+5. Fetch `/api/observation?platform=ID&id=OBSERVATION_ID` only when you need full
+   ordered samples. Forward `source.asOf` for an exact historical alias.
+6. Prefer `/api/summary`, `/api/overview`, `/api/aggregates` and the history
+   summary/comparison/report endpoints when aggregate information is enough.
 
-## Automatic build/deployment integration
+The platform catalog revision is global; result revisions are scoped. Never
+substitute one for another or join pages from changing revisions. Retain ETags
+per exact URL and use `If-None-Match`; a 304 response has no JSON body. Respect
+`Retry-After` on 429. Errors contain `{ "error": { "code", "message" } }` and are
+not measurement records. Do not issue writes to explore the dataset.
 
-`pnpm build` always performs these steps, in order:
+See [API.md](../API.md) for full queries, responses and publication boundaries.
 
-1. `stage-data.mjs` checksum-validates and stages canonical evidence plus feature,
-   history and worker evidence into `static/wasmbench/`
-2. `view-data.mjs` regenerates `src/lib/data/measurements.json` from validated inputs
-3. `ai-metadata.mjs` creates the text/JSON/crawler files from that exact measured
-   view and the newly staged feature evidence
-4. Vite/SvelteKit prerenders the site and copies the static files
-5. `ai-metadata.mjs --check` compares **every generated output byte-for-byte**
-   against the current inputs, failing the build if any file is missing or stale
+## Interpretation and citations
 
-The existing Pages workflow runs `just verify`, which reaches this build command
-and additionally verifies static HTML discovery links and deployed raw evidence.
-`check.yml` exercises the project-path build on pull requests. No deploy workflow
-branch, extra credential, network generation call, or publishing step is added.
-Deployments continue to use the existing workflow and permissions.
+- `latencyNs` is median **nanoseconds per operation**. `peakRssBytes` and
+  `codeBytes` are **bytes**. Display conversions are not API units.
+- Only `ok` status has a numeric value. Other statuses have null values. Missing
+  rows are not zero, and are not proof of unsupported behavior. Latency, memory
+  and code statuses are independent.
+- Compare matched platforms, artifact/contract hashes, phases, runtime
+  configurations and sampling policies. Preserve the full query, revision,
+  source revision, `capturedAt` and observation identity in citations.
+- Current results select the latest qualified source snapshot per engine; missing
+  cells stay missing. Historical `source.asOf` is a source target date, whereas
+  `capturedAt` is when the measurement ran.
+- Adaptive samples measure within-process repeatability, not independent-launch
+  confidence intervals. Inspect the retained-window sampling policy and ordered
+  samples. Saved legacy captures keep their original policy.
+- RSS is a process high-water mark, not heap allocation or a phase delta. Respect
+  `codeKind`: native images, engine-reported code and legacy unknown definitions
+  must not be treated as equivalent.
+- Feature probes establish exact corpus contracts, not full specification
+  conformance or browser support. Unmatched/incomplete coverage does not imply
+  a universal fastest runtime.
+- Measurements, metadata and timing samples are retained; execution evidence,
+  Wasm binaries and archived run reports are not. A capture receipt is not a
+  downloadable report.
 
-Generated files are ignored, never edited or checked in manually. Re-running the
-same build inputs produces identical bytes: no wall-clock timestamp is inserted.
-`latestEvidenceCollectedAt` is the maximum recorded collection time, not a claim
-that old benchmarks were refreshed during deployment. The source view and feature
-evidence SHA-256 values and per-shard SHA-256 values support provenance checks.
+## HTML and crawler behavior
 
-`BASE_PATH` is respected in **all** generated absolute URLs and HTML discovery
-links, including the existing `/wasm.fyi` project-path test build. The canonical
-origin lives in `src/lib/site.ts` and is shared by HTML and generated files. Change
-that one constant if the public origin changes. Per-page canonical links omit
-query/filter state; per-result report identity is retained in JSON.
+Public information pages serve the same prerendered semantic HTML to every user
+agent. Interactive measurements load from the live API; initial chart states do
+not establish data availability. Navigation uses ordinary links. Unique page
+metadata, canonical URLs, truthful WebPage/WebSite identity and the sitemap help
+discovery. Operational pages and unresolved application shells are noindex.
+No crawler-specific cloaking, fabricated dataset dates, search-ranking promise,
+new data license or indexing guarantee is introduced.
 
-## Validation
+Canonical landing-page URLs omit interactive filters; they are not citations
+for a particular platform or result. Preserve full API scope when citing data.
+
+## Build and regression checks
+
+`frontend-assets.mjs` generates documentation deterministically and copies the
+current OpenAPI/JSON schemas and HTTP reference. No live data is fetched and no
+wall-clock freshness timestamp is inserted. Builds clear only their generated
+asset directory to prevent stale shards from surviving a previous build.
+`BASE_PATH` applies to frontend/document URLs. API routes remain at the origin
+root, as in the existing UI deployment contract.
 
 ```sh
 pnpm check
-pnpm test
-pnpm test:ai
+pnpm test:discovery
 pnpm build
 node scripts/check-build.mjs
 BASE_PATH=/wasm.fyi pnpm build
 BASE_PATH=/wasm.fyi node scripts/check-build.mjs
 ```
 
-`pnpm test:ai` covers zero vs null, missing coverage, reason index zero, intervals,
-newest-failure handling, report provenance, URL escaping and base paths, corrupt
-inputs, deterministic rendering, source changes and stale/missing output checks.
-`just verify` also runs the existing evidence/adapter workflow tests. Native adapter
-checks remain conditional on those benchmark toolchains being installed, as before.
+The discovery checks cover base paths, deterministic content, schema resolution,
+HTML titles/descriptions/canonicals, semantic guide content, noindex boundaries,
+sitemap targets and absence of bundled measurement data. Go tests cover actual
+frontend status/redirect/cache behavior and observation-detail resolution.

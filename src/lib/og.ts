@@ -22,6 +22,10 @@ export const OG_PAGES: Record<string, OgPage> = {
 		title: 'Benchmarks · wasm.fyi',
 		description: 'Compilation, instantiation, execution, memory and machine code for WebAssembly runtimes across real programs and microbenchmarks.'
 	},
+	workloads: { title: 'Prepared workload catalog · wasm.fyi', description: 'Explore prepared WebAssembly application workloads, exact corpus artifacts, source identities and operation contracts. Inventory is separate from measured performance.' },
+	docs: { title: 'API and measurement guide · wasm.fyi', description: 'Read WebAssembly benchmark data without JavaScript: API discovery, pagination, units, provenance and fair comparison.' },
+	health: { title: 'Service status · wasm.fyi', description: 'Live API availability and measurement freshness for wasm.fyi.' },
+	dashboard: { title: 'Dashboard · wasm.fyi', description: 'Authorized administration for wasm.fyi.' },
 	history: { title: 'History · wasm.fyi', description: 'Every metric over time, with source revisions, recorded gaps and fixed comparison baselines.' },
 	features: { title: 'Features · wasm.fyi', description: 'Released engine compatibility, official suite results and feature performance across WebAssembly runtimes.' },
 	compare: { title: 'Startup vs throughput · wasm.fyi', description: 'When does a slow-starting fast runtime win? Estimated total cost as invocations grow.' }
@@ -56,6 +60,10 @@ export function ogFor(routeId: string | null, params: Record<string, string>, da
 		const p = PROPS[params.proposal as ProposalId];
 		return { slug: params.proposal, title: `${p.title} · wasm.fyi`, description: `${p.long}. ${p.q}` };
 	}
+	if (routeId === '/bench/[...id]' && data.preparedWorkload) {
+		const workload = data.preparedWorkload as { name: string; description: string };
+		return { slug: 'benchmarks', title: `${workload.name} · wasm.fyi`, description: `${workload.description}. Prepared corpus contract; live results depend on the selected platform and runtime.` };
+	}
 	if (routeId === '/bench/[...id]' && data.bench) {
 		const b = data.bench as Bench;
 		return {
@@ -63,6 +71,9 @@ export function ogFor(routeId: string | null, params: Record<string, string>, da
 			title: `${workloadName(b.id)} · wasm.fyi`,
 			description: b.purpose || `${workloadName(b.id)} — ${b.group} workload measured across WebAssembly runtimes.`
 		};
+	}
+	if (routeId === '/bench/[...id]' && typeof data.workload === 'string') {
+		return { slug: 'benchmarks', title: `${workloadName(data.workload)} · wasm.fyi`, description: 'WebAssembly workload measurements by platform, runtime and phase. Read the workload contract and measurement scope before comparing results.' };
 	}
 	const key = routeId === '/' || !routeId ? 'home' : routeId.slice(1);
 	const page = OG_PAGES[key] ?? OG_PAGES.home;

@@ -25,6 +25,11 @@
 	// Share-card text and image for this page (see src/lib/og.ts).
 	const og = $derived(ogFor(page.route.id, page.params, page.data));
 	// `base` is relative during SSR; resolve it against the page URL for an absolute path.
+	const canonical = $derived(SITE_ORIGIN + page.url.pathname.replace(/\/?$/, '/'));
+	const structuredData = $derived(JSON.stringify({
+		'@context': 'https://schema.org', '@type': 'WebPage', name: og.title, description: og.description, url: canonical,
+		isPartOf: { '@type': 'WebSite', name: 'wasm.fyi', url: SITE_ORIGIN + new URL(base + '/', page.url).pathname }
+	}).replaceAll('<', '\\u003c'));
 	const ogImage = $derived(SITE_ORIGIN + new URL(base + '/og/' + og.slug + '.png', page.url).pathname);
 
 	const SCOPED = ['/benchmarks', '/bench/[...id]', '/history', '/features', '/[proposal=proposal]'];
@@ -146,11 +151,17 @@
 </script>
 
 <svelte:head>
-	<meta name="description" content={SITE_DESCRIPTION} />
-	<link rel="canonical" href={SITE_ORIGIN + page.url.pathname} />
+	<meta name="description" content={og.description} />
+	<link rel="canonical" href={canonical} />
+	{#if page.route.id === '/dashboard' || page.route.id === '/health'}
+		<meta name="robots" content="noindex" />
+	{/if}
+	{#if page.status < 400 && page.route.id !== '/dashboard'}
+		{@html `<script type="application/ld+json">${structuredData}</script>`}
+	{/if}
 	<meta property="og:type" content="website" />
 	<meta property="og:site_name" content="wasm.fyi" />
-	<meta property="og:url" content={SITE_ORIGIN + page.url.pathname} />
+	<meta property="og:url" content={canonical} />
 	<meta property="og:title" content={og.title} />
 	<meta property="og:description" content={og.description} />
 	<meta property="og:image" content={ogImage} />
@@ -165,6 +176,8 @@
 	<link rel="alternate" type="text/plain" title="LLM reference" href={base + '/llms.txt'} />
 	<link rel="alternate" type="text/plain" title="Expanded LLM reference" href={base + '/llms-full.txt'} />
 	<link rel="alternate" type="application/json" title="Machine-readable data" href={base + '/data/llm/index.json'} />
+	<link rel="service-desc" type="application/vnd.oai.openapi+json" href={base + '/schemas/api-v1.openapi.json'} />
+	<link rel="describedby" type="text/html" href={base + '/docs/'} />
 	<link rel="sitemap" type="application/xml" href={base + '/sitemap.xml'} />
 </svelte:head>
 
@@ -175,6 +188,7 @@
 	<Header />
 	{#if showScope}<ScopeBar />{/if}
 	<main id="main-content" tabindex="-1">
+		<noscript><p class="data-note">Interactive charts and current measurements load from the public API with JavaScript. <a href={base + '/docs/'}>Read the API and measurement guide</a> or <a href="/api/platforms">discover measured platforms</a> to access the data directly. Initial empty chart states are not evidence of missing measurements.</p></noscript>
 		{#if apiView.error}<p class="fg3 small">{apiView.error}</p>{/if}
 		{@render children()}
 	</main>
@@ -184,6 +198,7 @@
 <Tooltip />
 
 <style>
+  .data-note { padding:12px;border:1px solid var(--line2);line-height:1.5; }
   .skip-link { position:fixed;top:8px;left:20px;z-index:10000;padding:8px 12px;background:var(--bg);color:var(--fg);border:1px solid var(--line2);transform:translateY(-200%); }
   .skip-link:focus { transform:translateY(0); }
 	.frame {

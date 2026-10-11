@@ -1,0 +1,1025 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wasm.fyi/schemas/compact-api.schema.json",
+  "title": "wasm.fyi compact browsing and history response contracts",
+  "$defs": {
+    "Revision": {
+      "type": "string",
+      "description": "Opaque revision of the response scope. Compare for equality; do not interpret as a source commit or timestamp."
+    },
+    "Phase": {
+      "type": "string",
+      "enum": [
+        "compile",
+        "instantiate",
+        "first-call",
+        "steady"
+      ]
+    },
+    "MetricStatus": {
+      "type": "string",
+      "enum": [
+        "ok",
+        "failed",
+        "unsupported",
+        "disabled",
+        "not-measured"
+      ],
+      "description": "Each metric has its own status. Only ok carries a numeric value; unavailable values are null, never zero substitutes."
+    },
+    "AggregateMetric": {
+      "type": "string",
+      "enum": [
+        "compile",
+        "inst",
+        "instantiate",
+        "first",
+        "first-call",
+        "steady",
+        "rssCompile",
+        "rssInst",
+        "rssFirst",
+        "rss",
+        "rssAverage",
+        "code"
+      ],
+      "description": "compile/inst/instantiate/first/first-call/steady: nanoseconds per operation; rssCompile/rssInst/rssFirst/rss/rssAverage: bytes of peak RSS; code: bytes of native code. rssAverage uses an arithmetic mean across available workload-phase measurements."
+    },
+    "HistoryMetric": {
+      "type": "string",
+      "enum": [
+        "exec",
+        "compile",
+        "inst",
+        "mem",
+        "code",
+        "cov",
+        "callTotal",
+        "hostWasm",
+        "wasmHostLoop"
+      ],
+      "description": "exec/compile/inst/callTotal/hostWasm/wasmHostLoop: nanoseconds per operation (per boundary call for host-call metrics); mem/code: bytes; cov: measured workload count. callTotal adds both call directions and is null when a required direction is missing."
+    },
+    "HistoryDate": {
+      "type": "string",
+      "anyOf": [
+        {
+          "format": "date"
+        },
+        {
+          "format": "date-time"
+        }
+      ],
+      "description": "YYYY-MM-DD or RFC 3339 timestamp, normalized to a UTC date. Bounds include the whole UTC source day, not the capture/import day."
+    },
+    "Engine": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+    },
+    "Summary": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "platforms": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PlatformSummary"
+          }
+        }
+      },
+      "required": [
+        "revision",
+        "platforms"
+      ],
+      "description": "Materialized machine specifications, counts and freshness. Does not load observation samples."
+    },
+    "PlatformSummary": {
+      "type": "object",
+      "properties": {
+        "os": {
+          "type": "string"
+        },
+        "arch": {
+          "type": "string"
+        },
+        "cpu": {
+          "type": "string"
+        },
+        "cores": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "kernel": {
+          "type": "string"
+        },
+        "memoryBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "id": {
+          "$ref": "benchmark.schema.json#/$defs/Digest"
+        },
+        "revision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "latestRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "historyRevision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "latestTimingSamples": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Acquired timing samples in the current view, deduplicated across aliases."
+        },
+        "allTimingSamples": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "All retained acquired timing samples, deduplicated across aliases."
+        },
+        "latestRows": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "historyRows": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "capturedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Latest original capture creation time; distinct from source.asOf and import time."
+        },
+        "importedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Actual import time when recorded."
+        }
+      },
+      "required": [
+        "id",
+        "os",
+        "arch",
+        "cpu",
+        "cores",
+        "kernel",
+        "latestTimingSamples",
+        "allTimingSamples",
+        "latestRows",
+        "historyRows"
+      ]
+    },
+    "MatrixContract": {
+      "type": "object",
+      "properties": {
+        "workload": {
+          "type": "string"
+        },
+        "wasm": {
+          "type": "string"
+        },
+        "artifactSha256": {
+          "$ref": "benchmark.schema.json#/$defs/Digest"
+        },
+        "contractSha256": {
+          "$ref": "benchmark.schema.json#/$defs/Digest"
+        },
+        "display": {
+          "$ref": "benchmark.schema.json#/$defs/Display"
+        }
+      },
+      "required": [
+        "workload",
+        "wasm",
+        "artifactSha256",
+        "contractSha256"
+      ]
+    },
+    "MatrixConfiguration": {
+      "type": "object",
+      "properties": {
+        "engine": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "backend": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "engine",
+        "version",
+        "backend"
+      ]
+    },
+    "RetainedSampleStats": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "title": "count",
+          "type": "integer",
+          "minimum": 1
+        },
+        {
+          "title": "meanNs",
+          "type": "number",
+          "minimum": 0
+        },
+        {
+          "title": "sampleStdDevNs",
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        {
+          "title": "minNs",
+          "type": "number",
+          "minimum": 0
+        },
+        {
+          "title": "maxNs",
+          "type": "number",
+          "minimum": 0
+        }
+      ],
+      "minItems": 5,
+      "maxItems": 5,
+      "items": false,
+      "description": "Statistics for the retained sample window only, in nanoseconds. Standard deviation uses the sample formula and is null for one sample. These are not independent-launch confidence intervals."
+    },
+    "MatrixRow": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "title": "observationId",
+          "type": "integer",
+          "minimum": 1,
+          "format": "int64",
+          "description": "Database-local detail key for /api/observation. Not a source commit."
+        },
+        {
+          "title": "contractIndex",
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "title": "configurationIndex",
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "title": "sourceIndex",
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "title": "capturedAtIndex",
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "title": "latencyNs",
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Median nanoseconds per operation."
+        },
+        {
+          "title": "peakRssBytes",
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Kernel-accounted peak resident set size in bytes."
+        },
+        {
+          "title": "codeBytes",
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Native image or engine-reported native code size in bytes."
+        },
+        {
+          "title": "latencyStatus",
+          "$ref": "#/$defs/MetricStatus"
+        },
+        {
+          "title": "memoryStatus",
+          "$ref": "#/$defs/MetricStatus"
+        },
+        {
+          "title": "codeStatus",
+          "$ref": "#/$defs/MetricStatus"
+        },
+        {
+          "title": "codeKind",
+          "enum": [
+            "native-image",
+            "engine-reported",
+            "unknown",
+            null
+          ]
+        },
+        {
+          "title": "timingSamples",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000000,
+          "description": "Acquired timing sample count, including any excluded prefix."
+        },
+        {
+          "title": "samplingIndex",
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "title": "retainedSampleStats",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RetainedSampleStats"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      ],
+      "minItems": 15,
+      "maxItems": 15,
+      "items": false,
+      "description": "Schema 2 scalar tuple: exactly 15 positions. All dictionary indexes are zero-based and local to this response page. Fetch raw samples separately from /api/observation; when present, pass the source dictionary entry asOf value for the exact history alias."
+    },
+    "MatrixPage": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 2
+        },
+        "revision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "platform": {
+          "$ref": "benchmark.schema.json#/$defs/Digest"
+        },
+        "phase": {
+          "$ref": "#/$defs/Phase"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "nextOffset": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Next offset, or null when pagination is complete."
+        },
+        "contracts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MatrixContract"
+          }
+        },
+        "configurations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MatrixConfiguration"
+          }
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "benchmark.schema.json#/$defs/Source"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "sampling": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "benchmark.schema.json#/$defs/Sampling"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "capturedAt": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MatrixRow"
+          }
+        }
+      },
+      "required": [
+        "schema",
+        "revision",
+        "platform",
+        "phase",
+        "total",
+        "nextOffset",
+        "contracts",
+        "configurations",
+        "sources",
+        "sampling",
+        "capturedAt",
+        "rows"
+      ],
+      "description": "Compact scalar matrix shared by /api/matrix and /api/timeline. Contains metadata dictionaries and no raw sample vectors. Reuse the same filters and returned revision with nextOffset."
+    },
+    "OverviewItem": {
+      "type": "object",
+      "properties": {
+        "engine": {
+          "type": "string"
+        },
+        "phase": {
+          "$ref": "#/$defs/Phase"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "passed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unsupported": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "averageLatencyNs": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Arithmetic mean of ok latency values, in nanoseconds."
+        },
+        "averageRssBytes": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Arithmetic mean of ok peak RSS values, in bytes."
+        },
+        "averageCodeBytes": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Arithmetic mean of ok code size values, in bytes."
+        }
+      },
+      "required": [
+        "engine",
+        "phase",
+        "total",
+        "passed",
+        "failed",
+        "unsupported",
+        "averageLatencyNs",
+        "averageRssBytes",
+        "averageCodeBytes"
+      ],
+      "description": "Counts grouped by engine and phase. Passed, failed and unsupported count latency statuses; disabled and not-measured can also contribute to total."
+    },
+    "Overview": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "platform": {
+          "$ref": "benchmark.schema.json#/$defs/Digest"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/OverviewItem"
+          }
+        }
+      },
+      "required": [
+        "revision",
+        "platform",
+        "items"
+      ]
+    },
+    "AggregateCard": {
+      "type": "object",
+      "properties": {
+        "engine": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "backend": {
+          "type": "string"
+        },
+        "source": {
+          "$ref": "benchmark.schema.json#/$defs/Source"
+        },
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Aggregate in the units selected by metric; null if no measured cohort is available."
+        },
+        "ratio": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Engine value divided by baseline value; dimensionless. Null without a usable baseline. Lower ratios mean less latency, memory or code."
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of contributing matched workload-contract cells, or workload-phase cells for rssAverage."
+        },
+        "latestCreated": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Latest capture creation time among contributing rows."
+        }
+      },
+      "required": [
+        "engine",
+        "version",
+        "backend",
+        "value",
+        "ratio",
+        "count"
+      ]
+    },
+    "Aggregate": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "platform": {
+          "$ref": "benchmark.schema.json#/$defs/Digest"
+        },
+        "metric": {
+          "$ref": "#/$defs/AggregateMetric"
+        },
+        "workloads": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "participants": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "cards": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/AggregateCard"
+          }
+        }
+      },
+      "required": [
+        "revision",
+        "platform",
+        "metric",
+        "workloads",
+        "participants",
+        "cards"
+      ],
+      "description": "Current main-workload comparison. Features and host-call mechanisms are excluded. Empty lists may serialize as null. revision tracks the platform latest dataset; keep request scope alongside it."
+    },
+    "AggregateBatch": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Aggregate"
+          }
+        }
+      },
+      "required": [
+        "revision",
+        "items"
+      ],
+      "description": "Returned when metrics is supplied. All items share a dataset revision; a concurrent revision change returns 409 instead."
+    },
+    "HistoricalPair": {
+      "type": "object",
+      "properties": {
+        "fromDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "toDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "before": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "after": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "ratio": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "after / before, dimensionless; below 1 means a decrease."
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Matched workload-contract count (zero for the coverage-count comparison)."
+        },
+        "reference": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Reference cohort size."
+        },
+        "reused": {
+          "type": "boolean",
+          "description": "Whether the compared observations have the same measurement fingerprints."
+        }
+      },
+      "required": [
+        "fromDate",
+        "toDate",
+        "before",
+        "after",
+        "ratio",
+        "count",
+        "reference",
+        "reused"
+      ],
+      "description": "Exact matched-cohort comparison using inward-snapped measured dates. before and after use the selected historical metric units."
+    },
+    "HistoricalChange": {
+      "type": "object",
+      "properties": {
+        "engine": {
+          "type": "string"
+        },
+        "fromDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "toDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "before": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "after": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "ratio": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "after / before, dimensionless; below 1 means a decrease."
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Matched workload-contract count (zero for the coverage-count comparison)."
+        },
+        "reference": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Reference cohort size."
+        },
+        "reused": {
+          "type": "boolean",
+          "description": "Whether the compared observations have the same measurement fingerprints."
+        }
+      },
+      "required": [
+        "engine",
+        "fromDate",
+        "toDate",
+        "before",
+        "after",
+        "ratio",
+        "count",
+        "reference",
+        "reused"
+      ]
+    },
+    "HistoricalCalls": {
+      "type": "object",
+      "properties": {
+        "hostWasm": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Host-to-Wasm nanoseconds per boundary call."
+        },
+        "wasmHostLoop": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Wasm-host-Wasm loop nanoseconds per boundary call."
+        }
+      },
+      "required": [
+        "hostWasm",
+        "wasmHostLoop"
+      ]
+    },
+    "HistoricalLane": {
+      "type": "object",
+      "properties": {
+        "engine": {
+          "type": "string"
+        },
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Value in selected historical metric units, or null when unmeasured."
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reference": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "source": {
+          "$ref": "benchmark.schema.json#/$defs/Source"
+        },
+        "version": {
+          "type": "string"
+        },
+        "backend": {
+          "type": "string"
+        },
+        "latestCreated": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "fingerprint": {
+          "type": "string",
+          "description": "Opaque measurement fingerprint; may be omitted when there are no measurements."
+        },
+        "previous": {
+          "$ref": "#/$defs/HistoricalPair"
+        },
+        "first": {
+          "$ref": "#/$defs/HistoricalPair"
+        },
+        "calls": {
+          "$ref": "#/$defs/HistoricalCalls"
+        }
+      },
+      "required": [
+        "engine",
+        "value",
+        "count",
+        "reference",
+        "version",
+        "backend"
+      ]
+    },
+    "HistoricalDatePoint": {
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "lanes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/HistoricalLane"
+          }
+        }
+      },
+      "required": [
+        "date",
+        "lanes"
+      ]
+    },
+    "HistoricalSummary": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "platform": {
+          "$ref": "benchmark.schema.json#/$defs/Digest"
+        },
+        "metric": {
+          "$ref": "#/$defs/HistoryMetric"
+        },
+        "workloads": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/HistoricalDatePoint"
+          }
+        }
+      },
+      "required": [
+        "revision",
+        "platform",
+        "metric",
+        "workloads",
+        "items"
+      ],
+      "description": "Source-date graph points, ordered oldest first. Holds the current reference cohort fixed through history and includes no observation rows or raw samples. Empty workloads may serialize as null."
+    },
+    "HistoricalComparison": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "fromDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "toDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/HistoricalChange"
+          }
+        }
+      },
+      "required": [
+        "revision",
+        "fromDate",
+        "toDate",
+        "items"
+      ],
+      "description": "Envelope dates are the requested UTC date bounds. Each item has its actual first/last measured dates inside that window. Engines without two usable distinct dates or a matched cohort are omitted."
+    },
+    "HistoricalReportRow": {
+      "type": "object",
+      "properties": {
+        "workload": {
+          "type": "string"
+        },
+        "group": {
+          "type": "string"
+        },
+        "before": {
+          "type": "number",
+          "minimum": 0
+        },
+        "after": {
+          "type": "number",
+          "minimum": 0
+        },
+        "ratio": {
+          "type": "number",
+          "minimum": 0,
+          "description": "after / before; dimensionless."
+        },
+        "reused": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "workload",
+        "group",
+        "before",
+        "after",
+        "ratio",
+        "reused"
+      ],
+      "description": "One matched workload-contract pair. before and after are in the selected historical metric units."
+    },
+    "HistoricalReport": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Revision"
+        },
+        "engine": {
+          "type": "string"
+        },
+        "fromDate": {
+          "type": "string",
+          "description": "Actual first measured UTC date in the range; empty string when no date exists."
+        },
+        "toDate": {
+          "type": "string",
+          "description": "Actual last measured UTC date in the range; empty string when no date exists."
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/HistoricalReportRow"
+          }
+        }
+      },
+      "required": [
+        "revision",
+        "engine",
+        "fromDate",
+        "toDate",
+        "items"
+      ],
+      "description": "Only matched workload values for one engine. items is empty if there are no distinct usable endpoint dates. The revision equals summary/comparison for the same history scope, regardless of comparison endpoints and report engine."
+    }
+  }
+}

@@ -19,6 +19,9 @@ jobs:
             /corpora/catalog.json
             /corpora/features/manifest.json
             /static/brand/
+            /static/favicon.svg
+            /schemas/
+            /docs/
           sparse-checkout-cone-mode: false
       - uses: actions/setup-node@v4
         with:
@@ -36,6 +39,18 @@ jobs:
           src/lib/comparison-baseline.test.ts src/lib/ranking-policy.test.ts
           src/lib/feature-average.test.ts src/lib/feature-leaders.test.ts
           src/lib/preferred-machine.test.ts src/lib/leader-card-keys.test.ts
+      - name: Test public API discovery contracts
+        run: pnpm test:discovery
+      - name: Verify crawlable production build
+        run: |
+          pnpm build
+          node scripts/check-build.mjs
+      - name: Verify project-path discovery
+        env:
+          BASE_PATH: /wasm.fyi
+        run: |
+          pnpm build
+          node scripts/check-build.mjs
   backend:
     runs-on: ubuntu-latest
     timeout-minutes: 20
