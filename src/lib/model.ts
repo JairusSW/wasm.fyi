@@ -133,17 +133,17 @@ export function seriesFmt(key: OtMetricKey, format: DeltaFormat = 'percent') {
 /** Headline leader for one aggregate: clear only when the 95% intervals do not overlap. */
 export function leader(s: Scope, label: string, group: PerfGroup, col: number, metric: MetricKey) {
 	const list = CFG.filter(c => viewData.applicationConfigurations.includes(c.id) && compilationCandidate(c.rt,metric) && !compileExcluded(s,c,metric))
-		.map((c) => ({ c, x: ratio(s, group, c.id, col) }))
-		.filter((e): e is { c: Cfg; x: NonNullable<ReturnType<typeof ratio>> } => e.x != null && isVisible(s, e.c))
-		.sort((a, b) => a.x.r - b.x.r);
+		.map((c) => ({ c, x: aggregate(s, group, c.id, col) }))
+		.filter((e): e is { c: Cfg; x: NonNullable<ReturnType<typeof aggregate>> } => e.x != null && Number.isFinite(e.x.v) && e.x.v>0 && isVisible(s, e.c))
+		.sort((a, b) => a.x.v - b.x.v);
 	const top=list;
 	const topValues=fmtUGroup(top.map(({c})=>absOf(s,group,c.id,col)?.v ?? null),UNIT[group]);
-	const places=top.map(({c,x},i)=>({place:i+1,cfg:c,value:topValues[i] ? '~'+topValues[i] : disp(s,group,c.id,col)!.t,ratio:x.r}));
+	const places=top.map(({c,x},i)=>({place:i+1,cfg:c,value:topValues[i] ? '~'+topValues[i] : disp(s,group,c.id,col)!.t,ratio:x.v/top[0].x.v}));
 	if (!list.length)
 		return { label, metric, places, clear: false as const, versus: 'No selected runtime has this measurement.' };
 	const a = list[0];
 	const b = list[1] ?? null;
-	const clear = !!b && Number.isFinite(a.x.ci) && Number.isFinite(b.x.ci) && a.x.r + a.x.ci < b.x.r - b.x.ci;
+	const clear = !!b && !!a.x.interval && !!b.x.interval && a.x.interval[1] < b.x.interval[0];
 	const da = disp(s, group, a.c.id, col)!;
 	const db = b ? disp(s, group, b.c.id, col)! : { t: '' };
 	const firstText=topValues[0] ? '~'+topValues[0] : da.t;
