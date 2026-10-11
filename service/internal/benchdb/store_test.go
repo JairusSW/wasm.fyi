@@ -343,7 +343,7 @@ func TestUnclassifiedExistingCodeRemainsUnknown(t *testing.T) {
 		t.Fatal(e)
 	}
 	var old measurement
-	if e = json.Unmarshal(raw, &old); e != nil {
+	if e = unmarshalMeasurement(s.db, raw, &old); e != nil {
 		t.Fatal(e)
 	}
 	old.CodeKind = nil
@@ -459,5 +459,89 @@ func TestTimingSamplesPersistAndRejectInvalidArrays(t *testing.T) {
 	c.Results[0].SamplesNs = []float64{1, 2}
 	if Validate(c) == nil {
 		t.Fatal("accepted a mismatched sample count")
+	}
+}
+
+func TestSameProcessSamplingRoundTrip(t *testing.T) {
+	c := fixture("2026-10-09T00:00:00Z", 10)
+	c.Results[0].Engine = "endive-jit"
+	c.Results[0].TimingSamples = 15
+	c.Results[0].SamplesNs = []float64{40, 35, 30, 25, 20, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10}
+	c.Results[0].Sampling = &Sampling{Method: "same-process-stability-v1", GroupSize: 5, MaxSamples: 35, Warmup: 0, RetainedStart: 5, StopReason: "stable"}
+	s, err := Open(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	if _, err = s.Put(context.Background(), c); err != nil {
+		t.Fatal(err)
+	}
+	page, err := s.Page(context.Background(), Query{Limit: 1, Platform: identifier(c.Platform), Phase: "steady"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(page.Items) != 1 || page.Items[0].Sampling == nil || *page.Items[0].Sampling != *c.Results[0].Sampling {
+		t.Fatal("sampling policy lost", page)
+	}
+	raw, _ := json.Marshal(page.Items[0].SamplesNs)
+	want, _ := json.Marshal(c.Results[0].SamplesNs)
+	if string(raw) != string(want) {
+		t.Fatal("acquisition order lost", string(raw))
+	}
+	c.Results[0].Sampling.RetainedStart = 6
+	if Validate(c) == nil {
+		t.Fatal("accepted fewer than ten retained observations")
+	}
+	c.Results[0].Sampling.RetainedStart = 5
+	c.Results[0].Sampling.StopReason = "sample-cap"
+	if Validate(c) == nil {
+		t.Fatal("accepted cap before 35 samples")
+	}
+}
+
+func TestPhaseSpecificSamplingCaps(t *testing.T) {
+	for _, phase := range []string{"compile", "instantiate", "first-call", "steady"} {
+		for _, cap := range []int{10, 25, 35} {
+			for _, reason := range []string{"stable", "sample-cap"} {
+				c := fixture("2026-10-09T00:00:00Z", 10)
+				r := &c.Results[0]
+				r.Phase = phase
+				r.TimingSamples = cap
+				r.SamplesNs = make([]float64, cap)
+				for i := range r.SamplesNs {
+					r.SamplesNs[i] = 10
+				}
+				r.Sampling = &Sampling{Method: "same-process-stability-v1", GroupSize: 5, MaxSamples: cap, StopReason: reason}
+				valid := cap == 35 || cap == 10 && (phase == "compile" || phase == "instantiate") || cap == 25 && (phase == "first-call" || phase == "steady")
+				if err := Validate(c); (err == nil) != valid {
+					t.Fatalf("phase=%s cap=%d reason=%s: %v", phase, cap, reason, err)
+				}
+				if !valid {
+					continue
+				}
+				// Early stability is valid; declaring the cap before reaching it is not.
+				r.TimingSamples = 5
+				r.SamplesNs = r.SamplesNs[:5]
+				r.Sampling.StopReason = "stable"
+				if err := Validate(c); err != nil {
+					t.Fatal(err)
+				}
+				r.Sampling.StopReason = "sample-cap"
+				if Validate(c) == nil {
+					t.Fatalf("accepted early cap for %s/%d", phase, cap)
+				}
+				r.Sampling.StopReason = "stable"
+				r.TimingSamples = cap + 5
+				r.SamplesNs = make([]float64, cap+5)
+				if Validate(c) == nil {
+					t.Fatalf("accepted samples above cap for %s/%d", phase, cap)
+				}
+				r.TimingSamples = 6
+				r.SamplesNs = r.SamplesNs[:6]
+				if Validate(c) == nil {
+					t.Fatalf("accepted partial group for %s/%d", phase, cap)
+				}
+			}
+		}
 	}
 }

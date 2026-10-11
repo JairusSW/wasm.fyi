@@ -9,6 +9,10 @@ export function cohortWeights(workloads:{group:string}[], weighting:'workload'|'
 	const counts=new Map<string,number>();for(const w of workloads)counts.set(w.group,(counts.get(w.group)||0)+1);
 	return workloads.map(w=>weighting==='workload'?1/workloads.length:1/(counts.size*counts.get(w.group)!));
 }
+/** Weights sum to 1, so this is the plain mean under the chosen weighting. */
+export const weightedArithmeticMean=(values:number[],weights:number[])=>values.reduce((sum,v,i)=>sum+weights[i]*v,0);
+/** The scope's choice of average. */
+export const weightedAverage=(kind:'geo'|'mean'|undefined)=>kind==='mean'?weightedArithmeticMean:weightedGeometricMean;
 export const weightedGeometricMean=(values:number[],weights:number[])=>Math.exp(values.reduce((sum,v,i)=>sum+weights[i]*Math.log(v),0));
 
 /** An explicit n/a does not participate in the native-code comparison. */

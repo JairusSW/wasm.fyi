@@ -66,7 +66,7 @@ just dev
 The default `just dev` command runs the website and Go API together behind local
 Caddy. Install just, Caddy (`brew install just caddy` on macOS) and Go 1.27.1+.
 `just dev-caddy` is also available; `just dev-frontend` starts the frontend alone.
-Open `http://localhost:8080`. Ctrl+C stops all three services. API data and a
+Open `http://localhost:8788`. Ctrl+C stops all three services. API data and a
 private generated publisher token persist under `.wasmfyi/local/`; the website
 reads indexed current measurements from a compact database. An empty database
 shows an explicit empty state. Set `WASMFYI_DATA_DIR` to choose another private
@@ -76,6 +76,10 @@ data root. See [service/README.md](service/README.md) and
 For the production build, run `just serve-local`. It serves Go and Caddy at the
 same address and accepts authenticated compact captures. No report import,
 prepared-page export or evidence audit is needed.
+
+The local dashboard at `/dashboard/` uses a guarded loopback-only development
+session; no GitHub OAuth app or credentials are needed locally. Production uses
+GitHub sign-in. See [API.md](API.md) for configuration and local port overrides.
 
 The site uses Svelte 5 and SvelteKit. Production builds are static HTML and can
 be served alongside the API by the Go service. Its application shell handles newly imported workload routes; unknown assets return 404. A static frontend host needs a same-origin proxy to the API.
@@ -193,3 +197,11 @@ For GitHub Pages, `just pages-build` builds with the project path and
 [Sponsor](https://github.com/sponsors/JairusSW)
 
 Capture, resume, SSH workers, cached corpus builds and deployment: [benchmark commands](docs/benchmark-workflow.md).
+
+## Production delivery
+
+Pushes to `main` run the same current-application CI used for pull requests: frontend type checks and UI/API-client regression tests, Go race tests and vet, release activation tests, and history-boundary checks. The production build and deployment depend on those checks passing. Failed checks leave production unchanged.
+
+`Deploy Remote` uploads the tested frontend and Linux API binary using the production environment's `REMOTE_HOST`, `REMOTE_USER`, `REMOTE_DEPLOY_KEY`, and pinned `REMOTE_KNOWN_HOSTS` secrets. Remote activates an immutable release, restarts the service, and rolls back if its health check fails. The SQLite benchmark and analytics databases and OAuth configuration stay on Remote and are never part of the release artifact.
+
+Use `just deploy-ci` to retry the committed `main` release, and `just deploy-status` to inspect delivery runs. Local credentials (`prod.env`, `local.env`), captures, databases, and generated caches are ignored by Git. Retired JSON sample dumps have been removed from the current tree; existing Git history remains available.

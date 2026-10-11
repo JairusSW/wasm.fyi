@@ -4,6 +4,17 @@ import type {Result} from './benchmark-types';
 
 const row=(workload:string,phase:Result['phase'],latencyStatus:Result['latencyStatus'])=>({workload,phase,latencyStatus,engine:'wago',capturedAt:'2026-10-08T00:00:00Z'} as Result);
 describe('feature capture projection',()=>{
+ it('counts first-call-only compatibility as verified execution alongside existing captures',()=>{
+  const [family]=featureResults([
+   row('features/simd/add/1','first-call','ok'),
+   row('features/simd/mul/1','first-call','failed'),
+   row('features/simd/div/1','first-call','unsupported'),
+   row('features/simd/add/performance','first-call','ok'),
+   row('features/simd/add/performance','steady','failed')
+  ]);
+  expect([family.total,family.pass,family.failed,family.unsupported,family.executed]).toEqual([4,1,2,1,1]);
+  expect(family.contracts.every(c=>c.scope==='execution')).toBe(true);
+ });
  it('counts each contract once and uses execution rather than compilation as its outcome',()=>{
   const [family]=featureResults([
    row('features/simd/add/performance','compile','ok'),

@@ -61,7 +61,7 @@ for(const family of source.order){
     const scratch=join(dir,'scratch');await mkdir(scratch,{recursive:true});await writeFile(join(scratch,'wago-suite.json'),JSON.stringify([w]));
     process.env.WASMBENCH_SOURCE_JSON=env.WASMBENCH_SOURCE_JSON;
     const scenarios=kind==='compile'?(w.provenance?.scope==='compile-and-instantiate'?'compile,instantiate':'compile'):'compile,instantiate,first-call,steady';
-    const capture=await collectLatencies({directory:scratch,workloads:[w],engines:[engine],collection:{scenarios,timeout:'30s',launches:3,samples:5,operations:1,warmup:7,memory:true,code:true},run});
+    const capture=await collectLatencies({directory:scratch,workloads:[w],engines:[engine],collection:{scenarios,timeout:'5m',launches:3,samples:5,operations:1,warmup:7,memory:true,code:true},run});
     capture.platform.memoryBytes=totalmem();
     await writeFile(file,JSON.stringify(capture,null,2)+'\n');
    }catch(e){state.errors.push({engine,phase:kind,workload:w.id,error:String(e)})}finally{await release()}

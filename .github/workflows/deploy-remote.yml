@@ -9,7 +9,10 @@ concurrency:
   group: wasm-fyi-production
   cancel-in-progress: false
 jobs:
+  verify:
+    uses: ./.github/workflows/verify-current.yml
   build:
+    needs: verify
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -26,6 +29,7 @@ jobs:
             /corpora/catalog.json
             /corpora/features/manifest.json
             /static/favicon.svg
+            /static/brand/
       - uses: actions/setup-node@v4
         with:
           node-version: '26.4.0'
@@ -35,28 +39,12 @@ jobs:
           go-version-file: service/go.mod
           cache-dependency-path: service/go.sum
       - run: pnpm install --frozen-lockfile
-      - run: pnpm check
-      # Legacy snapshot parity suites require the retired evidence dataset.
-      # Validate the live API client and current UI calculation contracts here.
-      - name: Test current API and UI contracts
-        run: >-
-          pnpm exec vitest run src/lib/api
-          src/lib/latency.test.ts src/lib/version-identity.test.ts
-          src/lib/call-total.test.ts src/lib/peak-rss-average.test.ts
-          src/lib/main-latency.test.ts src/lib/native-code-cohort.test.ts
-          src/lib/sample-distribution.test.ts src/lib/path.test.ts
-          src/lib/comparison-baseline.test.ts src/lib/ranking-policy.test.ts
-      - name: Test API and release activation
-        run: |
-          (cd service && GOWORK=off GOFLAGS=-mod=readonly go test ./...)
-          python3 scripts/activate-remote.test.py
-          node --test scripts/history-scope.test.mjs scripts/audit-history-corpus-captures.test.mjs
       - name: Build production frontend and static API
         run: |
           pnpm build
           mkdir -p release/frontend
           cp -a build/. release/frontend/
-          (cd service && CGO_ENABLED=0 GOWORK=off GOFLAGS=-mod=readonly go build -trimpath -ldflags='-s -w' -o ../release/wasmfyi ./cmd/wasmfyi)
+          (cd service && CGO_ENABLED=1 GOWORK=off GOFLAGS=-mod=readonly go build -tags sqlite_omit_load_extension,netgo,osusergo -trimpath -ldflags='-s -w -linkmode external -extldflags -static' -o ../release/wasmfyi ./cmd/wasmfyi)
         env:
           BASE_PATH: ''
       - uses: actions/upload-artifact@v4
@@ -65,7 +53,7 @@ jobs:
           path: release/
           retention-days: 7
   deploy:
-    needs: build
+    needs: [verify, build]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:

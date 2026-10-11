@@ -16,7 +16,7 @@ dev: dev-caddy
 dev-frontend:
     pnpm dev
 
-# Run the website and API behind loopback-only Caddy at http://localhost:8080.
+# Run the website and API behind loopback-only Caddy at http://localhost:8788.
 dev-caddy:
     bash scripts/dev-caddy.sh
 
@@ -184,8 +184,17 @@ automation-check:
     node scripts/automation.mjs check
 
 # Rebuild the original feature corpus with the pinned compiler and WASI adapter.
-features-build:
-    node scripts/feature-corpus.mjs build
+# Name families to rebuild only those, e.g. `just features-build core-glb sign-extension`.
+features-build *families:
+    node scripts/feature-corpus.mjs build {{ if families == "" { "" } else { "--family=" + replace(families, " ", ",") } }}
+
+# Check every feature artifact rebuilds byte-for-byte from source (scratch dir; writes nothing).
+features-verify *families:
+    node scripts/feature-corpus.mjs verify {{ if families == "" { "" } else { "--family=" + replace(families, " ", ",") } }}
+
+# List feature corpus family names accepted by features-build and features-verify.
+features-families:
+    node -e "import('./corpora/features/generator.mjs').then(m => console.log(m.featureIds.join('\n')))"
 
 # Build long, single-feature execution contracts separately from correctness probes.
 features-performance-build: features-build

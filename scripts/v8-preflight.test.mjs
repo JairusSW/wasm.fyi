@@ -18,6 +18,18 @@ function description(mode) {
 test('accepts separately verified legacy eager tiers',()=>{
   for(const mode of ['liftoff-only','optimizing-only'])validateV8Description(description(mode),pin,mode);
 });
+test('single-core collection accepts the complete policy and refuses altered/incomplete prefixes',()=>{
+ const prefix=['--single-threaded','--single-threaded-gc','--wasm-num-compilation-tasks=0'];
+ for(const mode of ['liftoff-only','optimizing-only']){
+  const d=description(mode),compiler=JSON.parse(d.effective_configuration.flags);
+  d.effective_configuration.flags=JSON.stringify([...prefix,...compiler]);
+  validateV8Description(d,pin,mode);
+  for(const invalid of [[...prefix.slice(1),...compiler],[...compiler,...prefix],[...prefix,...compiler,'--wasm-num-compilation-tasks=2']]){
+   d.effective_configuration.flags=JSON.stringify(invalid);
+   assert.throws(()=>validateV8Description(d,pin,mode));
+  }
+ }
+});
 test('accepts production-default V8 tiering without experimental feature flags',()=>{
   validateV8Description(description('production-default'),pin,'production-default');
   const flagged=description('production-default');

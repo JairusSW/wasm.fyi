@@ -52,7 +52,7 @@
 				conf: cc.run ? `${n0(cc.pass)}/${n0(cc.total)}` : 'not run',
 				confColor: cc.run && cc.pass < cc.total ? 'var(--st-fail)' : 'var(--fg)',
 				isa: 'not collected',
-				cc: sc && si ? relative(si/sc,ui.deltaFormat) : 'not measured',
+				cc: sc && si ? relative(si/sc,ui.deltaFormat) : 'n/a',
 				cs: code!=null ? fmtU(code,'KiB') : 'not collected'
 			};
 		})
@@ -63,15 +63,15 @@
 			cells: KER.map((k) => {
 				const t = kt(k, c);
 				return t.si == null
-					? { a: 'not measured', b: t.sc==null?'scalar not measured':'scalar '+fmtU(t.sc,'ms') }
-					: { a: fmtU(t.si, 'ms'), b: t.sc==null?'scalar not measured':`scalar ${fmtU(t.sc, 'ms')} · ${relative(t.sc / t.si,ui.deltaFormat)}` };
+					? { a: 'n/a', b: t.sc==null?'scalar n/a':'scalar '+fmtU(t.sc,'ms') }
+					: { a: fmtU(t.si, 'ms'), b: t.sc==null?'scalar n/a':`scalar ${fmtU(t.sc, 'ms')} · ${relative(t.sc / t.si,ui.deltaFormat)}` };
 			})
 		}))
 	);
   const hw=$derived(viewData.hosts[ui.machine].label+' · emitted ISA not collected');
   const RELAXED=$derived(['exact-madd','in-range-swizzle','all-bits-laneselect'].map(variant=>{
     const id=`features/relaxed-simd/${variant}/4096`;
-    return [variant,...(['A','C','F'] as const).map(c=>{const v=featureValue(ui.scope,id,c);return v==null?'not measured':fmtU(v,'ms');})];
+    return [variant,...(['A','C','F'] as const).map(c=>{const v=featureValue(ui.scope,id,c);return v==null?'n/a':fmtU(v,'ms');})];
   }));
 
 </script>
@@ -135,7 +135,7 @@
 					ok={!!r.sp}
 					w={r.sp ? ((r.sp / maxSp) * 100).toFixed(1) + '%' : '0%'}
 					text={r.sp ? relative(r.sp,ui.deltaFormat) : ''}
-					status="not measured"
+					status="n/a"
 					cols="130px 1fr 110px"
 					valueClass="fg2"
 				/>
@@ -149,7 +149,7 @@
 					ok={!!r.sp}
 					w={r.abs ? ((r.abs / maxAbs) * 100).toFixed(1) + '%' : '0%'}
 					text={r.abs ? absFmt(r.abs) : ''}
-					status="not measured"
+					status="n/a"
 					cols="130px 1fr 110px"
 				/>
 			{/each}

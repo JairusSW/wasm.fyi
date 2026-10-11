@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Brand from '$lib/components/Brand.svelte';
  import { configVersion } from '$lib/data/runtimes';
 	import { siteHref } from '$lib/links';
 	import Swatch from '$lib/components/Swatch.svelte';
@@ -24,6 +25,7 @@
 			c: x.c,
 			rank: i + 1,
             report:x.r!.report,
+			backend:viewData.hosts[s.machine].configurations[x.c.id]?.backend||x.c.be,
 			w: Math.max(4, (Math.log(x.r!.r / r0 + 1) / Math.log(rMax / r0 + 1)) * 100).toFixed(1) + '%',
 			val: disp(s, 'lat', x.c.id, 3)!.t
 		}));
@@ -32,7 +34,8 @@
 	const tiles: [number|null, string][] = $derived([
 		[RTS.length, 'runtimes & engines tracked'],
 		[totalWorkloads(), 'measured contracts'],
-		[viewData.statistics.timingSamples, 'recorded timing samples'],
+		[viewData.statistics.timingSamples, 'latest-version timing samples · all machines'],
+		[viewData.statistics.allTimingSamples ?? null, 'all-version timing samples · all machines'],
 		[FEATS.length, 'features tracked'],
 		[viewData.statistics.machines??0, 'machines']
 	]);
@@ -85,7 +88,7 @@
 
 <section class="hero">
 	<div class="intro">
-		<span class="mono fg3 s12">wasm.fyi</span>
+		<Brand width={204} />
 		<h1>The reference for WebAssembly runtimes.</h1>
 		<p class="lead">
 			Independent benchmarks, feature support and proposal performance. Every number links to the run that produced it.
@@ -104,20 +107,20 @@
 			{#each board as b (b.c.id)}
 				<button
 					class="board-row"
-					onclick={() => ui.openProfile(b.c.rt)}
-					data-tip={`${b.c.rt} ${configVersion(ui.machine,b.c.id)} · ${b.c.be}\n${b.c.kind}\nClick to open runtime profile`}
+					onclick={() => ui.openProfile(b.c.rt, b.c.id)}
+					data-tip={`${b.c.rt} ${configVersion(ui.machine,b.c.id)} · ${b.backend}\n${b.c.kind}\nClick to open runtime profile`}
 				>
 					<span class="mono small fg3">{b.rank}</span>
 					<span class="rtname">
 						<Swatch color={b.c.col} bg={b.c.hollow ? 'transparent' : b.c.col} />{b.c.rt}
-						<span class="small fg3">{b.c.be}</span>
+						<span class="small fg3">{b.backend}</span>
 					</span>
 					<span class="bar" style:width={b.w} style:background={b.c.col}></span>
 					<span class="mono r s12">{b.val}</span>
 				</button>
 			{/each}
 		</div>
-	<div class="board-foot small fg3">Geometric mean over measured application workloads · merged host-local reports</div>
+	<div class="board-foot small fg3">Geometric mean over measured application workloads · {viewData.hosts[ui.machine].label}</div>
 	</div>
 </section>
 

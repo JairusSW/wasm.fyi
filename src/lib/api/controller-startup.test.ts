@@ -1,0 +1,20 @@
+import {afterEach, expect, it, vi} from 'vitest';
+vi.unmock('../view-data');
+afterEach(() => {vi.unstubAllGlobals(); vi.resetModules()});
+it('publishes compact homepage metadata and reconnects after layout teardown', async () => {
+ const platform={id:'apple',cpu:'Apple M4 Max',os:'darwin',arch:'arm64',cores:16,kernel:'test',memoryBytes:68719476736,latestRevision:'latest',latestTimingSamples:25,allTimingSamples:50};
+ const request=vi.fn(async(path:string) => Response.json(path==='/api/summary' ? {revision:'r',platforms:[platform]} : {revision:'r',platform:'apple',metric:'steady',workloads:['applications/test'],participants:['wago'],cards:[{engine:'wago',version:'v1',backend:'railshot',value:1000,ratio:1,count:1,latestCreated:'2026-10-10T00:00:00Z'}]}));
+ vi.stubGlobal('fetch',request);vi.stubGlobal('location',{pathname:'/'});
+ const {ui}=await import('../state.svelte');ui.machine='m2';
+ const {connectSite,apiView,closeSite}=await import('./controller.svelte');
+ const {datasetView}=await import('./view.svelte');
+ await connectSite();
+ expect(apiView.error).toBe('');expect(apiView.ready).toBe(true);
+ expect(datasetView.current.statistics.machines).toBe(1);
+ expect(datasetView.current.statistics.allTimingSamples).toBe(50);
+ expect(datasetView.current.hosts.m2.label).toContain('Apple');
+ closeSite();
+ await connectSite();
+ expect(apiView.error).toBe('');expect(apiView.ready).toBe(true);
+ closeSite();
+});

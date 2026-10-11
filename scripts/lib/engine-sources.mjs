@@ -7,7 +7,13 @@ import {mergeGoModuleVersions} from './go-module-versions.mjs';
 const execFileAsync=promisify(execFile);
 export const engineSources={
   wasmedge:{repository:"WasmEdge/WasmEdge",configurations:["wasmedge","wasmedge-jit"]},
-  chicory:{repository:"dylibso/chicory",configurations:["chicory"]},
+  chicory:{repository:"dylibso/chicory",configurations:["chicory","chicory-jit"]},
+  endive:{repository:'bytecodealliance/endive',configurations:['endive-interpreter','endive-jit','endive-redline']},
+  wazy:{repository:'samyfodil/wazy',configurations:['wazy']},
+  chasm:{repository:'CharlieTap/chasm',configurations:['chasm']},
+  wizard:{repository:'titzer/wizard-engine',configurations:['wizard-v3-int','wizard-fast-int','wizard-spc']},
+  graalwasm:{repository:'oracle/graal',configurations:['graalwasm']},
+  zwasm:{repository:'zwasm/zwasm',configurations:['zwasm-interpreter','zwasm-jit']},
   wasm2c:{repository:"WebAssembly/wabt",configurations:["wasm2c-gcc"]},
   w2c2:{repository:"turbolent/w2c2",configurations:["w2c2-gcc"]},
   wasm2go:{repository:'ncruces/wasm2go',configurations:['wasm2go']},
@@ -15,7 +21,7 @@ export const engineSources={
   wago:{repository:'wago-org/wago',configurations:['wago']},
   wazero:{repository:'tetratelabs/wazero',configurations:['wazero','wazero-interpreter']},
   wasmtime:{repository:'bytecodealliance/wasmtime',configurations:['wasmtime','wasmtime-winch']},
-  wasmer:{repository:'wasmerio/wasmer',configurations:['wasmer-singlepass','wasmer-llvm']},
+  wasmer:{repository:'wasmerio/wasmer',configurations:['wasmer-singlepass','wasmer-llvm','wasmer-cranelift']},
   v8:{repository:'nodejs/node',provider:'node',configurations:['v8']},
   wasmi:{repository:'wasmi-labs/wasmi',configurations:['wasmi']},
   wamr:{repository:'bytecodealliance/wasm-micro-runtime',configurations:['wamr','wamr-fast-jit','wamr-llvm-jit']},

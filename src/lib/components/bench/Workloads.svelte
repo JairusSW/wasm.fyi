@@ -3,7 +3,7 @@
  import {datasetView} from '$lib/api/view.svelte';
  import {metricSelectors} from '$lib/api/presentation';
  import {workloadBench} from '$lib/api/catalog';
- import { tipCard, tipWho } from '$lib/tip';
+ import { rankStats, tipCard, tipWho } from '$lib/tip';
 	import { siteHref } from '$lib/links';
 	import { goto } from '$lib/navigation';
 	import { CFG } from '$lib/data/runtimes';
@@ -11,7 +11,7 @@
 	import { ST } from '$lib/data/status';
 	import type { Bench, Cfg, MetricKey } from '$lib/data/types';
 	import { fmtU, fmtUGroup, n0, workloadName } from '$lib/format';
-	import { heatCount } from '$lib/heat';
+	import { heatField } from '$lib/heat';
 	import { benchHref } from '$lib/links';
 	import { benchVal, compileExcluded, isVisible } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
@@ -29,7 +29,7 @@
 		return {update(){observer.unobserve(node);observer.observe(node)},destroy(){observer.disconnect()}};
 	}
 
-	const cellFor = (b: Bench, c: Cfg, cf: number, caseLabel?: string, formatted?:string, bg='transparent') => {
+	const cellFor = (b: Bench, c: Cfg, cf: number, caseLabel?: string, formatted?:string, bg='transparent', stats: [string, string][] = []) => {
 		const s = ui.scope;
 		const m = ui.metric;
 		const u = MET[m].u;
@@ -37,14 +37,16 @@
 		const open = () => {ui.drawer = { type: 'cell', b: b.id, c: c.id, m, cf, caseLabel };};
 		if (r.st !== 'ok') {
 			const t = ST[r.st];
-			return { text: m==='code'&&r.st==='unsupported'?'n/a':t[0] + ' ' + t[1], sub: '', bg: 'transparent', color: t[2], open };
+			// Cells show just the status symbol; the tooltip spells it out.
+			return { text: m==='code'&&r.st==='unsupported'?'n/a':t[0], label: m==='code'&&r.st==='unsupported'?'':t[1], sub: '', bg: 'transparent', color: t[2], open, stats };
 		}
 		return {
 			text: formatted || fmtU(r.v, u),
 			sub: '',
 			bg,
 			color: 'var(--fg)',
-			open
+			open,
+			stats
 		};
 	};
 	const cellsFor = (b:Bench,cf=1,caseLabel?:string) => {
@@ -53,9 +55,10 @@
 			const r=benchVal(s,b,c.id,m,cf);return r.st==='ok'?r.v:null;
 		});
 		const formatted=fmtUGroup(values,u);
-		const measured=values.filter((v):v is number=>v!=null);
-		const lo=Math.min(...measured),hi=Math.max(...measured);
-		return cols.map((c,i)=>cellFor(b,c,cf,caseLabel,formatted[i],values[i]!=null&&hi>lo?heatCount((values[i]!-lo)/(hi-lo)):'transparent'));
+		// Place within the row and the row's best, for the tooltip.
+		const names=cols.map(c=>`${c.rt} ${c.be}`);
+		const best=['rss','rssCompile','rssInst','code'].includes(m)?'smallest':'fastest';
+		return cols.map((c,i)=>cellFor(b,c,cf,caseLabel,formatted[i],heatField(values,i),rankStats(values,i,names,v=>fmtU(v,u),best)));
 	};
 
 	type Row =
@@ -155,11 +158,13 @@
 		else ui.tag = ui.tag === t ? null : t;
 	};
 	const legend = Object.values(ST);
+	// Before the dataset (or the first workload page) arrives, show placeholder rows.
+	const skeleton = $derived(!apiView.ready || (!view.rows.length && apiView.pageLoading));
 </script>
 
 <div class="head" id="workloads">
 	<h2>All workloads</h2>
-	<span class="s12 fg3">{MET[ui.metric].l} · {view.shown} workloads · group averages · click a cell for details</span>
+	<span class="s12 fg3">{MET[ui.metric].l} · {#if skeleton}<span class="skel" style:width="2em"></span>{:else}{view.shown}{/if} workloads · group averages · click a cell for details</span>
 </div>
 <div class="row">
 	<Seg
@@ -191,9 +196,20 @@
 						</button>
 					</th>
 				{/each}
+				{#if !cols.length && skeleton}
+					{#each { length: 8 } as _, k (k)}<th class="colh" aria-hidden="true"><span class="skel" style:width="{48 + ((k * 13) % 24)}px"></span></th>{/each}
+				{/if}
 			</tr>
 		</thead>
-		<tbody>
+		<tbody aria-busy={skeleton}>
+			{#if skeleton}
+				{#each { length: 12 } as _, ri (ri)}
+					<tr aria-hidden="true">
+						<td class="stick wl"><span class="skel" style:width="{110 + ((ri * 37) % 90)}px"></span></td>
+						{#each { length: cols.length || 8 } as _, k (k)}<td class="r skel-cell"><span class="skel" style:width="{34 + ((ri * 7 + k * 11) % 26)}px"></span></td>{/each}
+					</tr>
+				{/each}
+			{/if}
 			{#each view.rows as r, ri (ri)}
 				{#if r.kind === 'group'}
 					<tr class="sec">
@@ -228,13 +244,12 @@
 							</div>
 						</td>
 						{#each r.cells as x, k (k)}
-							<td class="p0">
+							<td class="p0" style:background={x.bg}>
 								<button
 									class="cellbtn wcell"
-									style:background={x.bg}
 									style:color={x.color}
 									onclick={x.open}
-									data-tip-card={tipCard({ kicker: MET[ui.metric].l, title: r.name, who: tipWho(cols[k]), value: x.text, sub: x.sub, heat: x.bg === 'transparent' ? '' : x.bg, action: 'distribution & run record' })}
+									data-tip-card={tipCard({ kicker: MET[ui.metric].l, title: r.name, who: tipWho(cols[k]), value: 'label' in x && x.label ? `${x.text} ${x.label}` : x.text, valueColor: x.color === 'var(--fg)' ? '' : x.color, sub: x.sub, heat: x.bg === 'transparent' ? '' : x.bg, stats: x.stats, action: 'distribution & run record' })}
 								>
 									<span class="mono s12 nowrap">{x.text}</span>
 									<span class="mono micro fg3 nowrap">{x.sub}</span>
@@ -304,7 +319,7 @@
 		}
 	}
 	.colh {
-		padding: 6px 10px;
+		padding: 4px 10px;
 		text-align: right;
 	}
 	.sort {
@@ -322,7 +337,7 @@
 	}
 	td.stick.grp {
 		background: var(--bg3);
-		padding: 6px 12px;
+		padding: 4px 12px;
 	}
 	.grp-btn {
 		display: flex;
@@ -333,10 +348,10 @@
 		width: 10px;
 	}
 	.gcell {
-		padding: 6px 10px;
+		padding: 4px 10px;
 	}
 	.item {
-		padding: 5px 12px;
+		padding: 3px 12px;
 	}
 	.item-line {
 		display: flex;
@@ -372,8 +387,8 @@
 		flex-direction: column;
 		align-items: flex-end;
 		justify-content: center;
-		padding: 5px 10px;
-		min-height: 34px;
+		padding: 3px 10px;
+		min-height: 28px;
 	}
 	.legend {
 		display: flex;
@@ -381,8 +396,9 @@
 		gap: 4px 14px;
 	}
 	@media (max-width: 720px) {
+		/* Phones: no box-within-the-page vertical scroll; the table scrolls sideways only. */
 		.scroll {
-			max-height: 72svh;
+			max-height: none;
 		}
 		.colh {
 			padding: 6px 8px;
@@ -425,5 +441,8 @@
 		.cases {
 			padding: 2px 6px;
 		}
+	}
+	.skel-cell {
+		padding: 6px 10px;
 	}
 </style>

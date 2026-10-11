@@ -4,11 +4,31 @@ import {mkdtemp,mkdir,writeFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {historyBuildKey,historyBuildDirectory} from './lib/history-build-cache.mjs';
-test('reuses identical SDK sources across weeks and Wasmtime backends only',()=>{
+test('shares compatible SDK builds while keeping incompatible backends separate',()=>{
  const pin={engine:'wasmtime',targetType:'main',revision:'a'.repeat(40),targetWeek:'2026-10-04'};
  assert.equal(historyBuildKey(pin,'wasmtime'),historyBuildKey({...pin,targetWeek:'2026-09-27'},'wasmtime-winch'));
  assert.notEqual(historyBuildKey(pin,'wasmtime'),historyBuildKey({...pin,revision:'b'.repeat(40)},'wasmtime'));
  assert.notEqual(historyBuildKey({...pin,engine:'wamr'},'wamr'),historyBuildKey({...pin,engine:'wamr'},'wamr-llvm-jit'));
+ const wasmer={...pin,engine:'wasmer'};
+ assert.equal(historyBuildKey(wasmer,'wasmer-singlepass'),historyBuildKey(wasmer,'wasmer-cranelift'));
+ assert.notEqual(historyBuildKey(wasmer,'wasmer-singlepass'),historyBuildKey(wasmer,'wasmer-llvm'));
+ const wizard={...pin,engine:'wizard'};
+ assert.equal(historyBuildKey(wizard,'wizard-fast-int'),historyBuildKey(wizard,'wizard-spc'));
+ assert.notEqual(historyBuildKey(wizard,'wizard-v3-int'),historyBuildKey(wizard,'wizard-spc'));
+});
+test('Cranelift reuses a source-pinned dual-compiler SDK but refuses a Singlepass-only cache',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'wasmer-dual-sdk-'));
+ try{
+  const pin={engine:'wasmer',targetType:'main',revision:'a'.repeat(40)};
+  const directory=join(root,'sdk-builds',historyBuildKey(pin,'wasmer-singlepass'));
+  const harness=join(directory,'harness','wasmer');
+  await mkdir(join(harness,'bin'),{recursive:true});
+  await writeFile(join(directory,'wasmer-build.json'),JSON.stringify({root:harness}));
+  assert.notEqual(await historyBuildDirectory(root,pin,'wasmer-cranelift'),directory);
+  await writeFile(join(harness,'bin','adapter-wasmer-cranelift'),'source-pinned compiler executable');
+  assert.equal(await historyBuildDirectory(root,pin,'wasmer-cranelift'),directory);
+  assert.equal(await historyBuildDirectory(root,pin,'wasmer-singlepass'),directory);
+ }finally{await rm(root,{recursive:true,force:true});}
 });
 test('resumes an existing qualified SDK build without recompiling it',async()=>{
  const root=await mkdtemp(join(tmpdir(),'history-sdk-'));

@@ -6,6 +6,12 @@ import { viewData } from '../view-data';
 import type { Cfg, CfgId, Machine, MachineId, Runtime } from './types';
 
 export const runtimeRegistry: Runtime[] = [
+  {"id":"endive","name":"Endive","lang":"Java","exec":["Interpreter","Compiler","AOT"],"tiers":"Interpreter \u00b7 JVM bytecode compiler \u00b7 experimental Redline/Cranelift","arch":["AMD64","ARM64"],"wasi":"not measured","cm":"?","repo":"github.com/bytecodealliance/endive","lic":"not reviewed","rel":"not collected","size":"not measured","embed":["Java"],"notes":[]},
+  {"id":"wazy","name":"Wazy","lang":"Go","exec":["Compiler"],"tiers":"Native compiler","arch":["AMD64","ARM64"],"wasi":"not measured","cm":"?","repo":"github.com/samyfodil/wazy","lic":"not reviewed","rel":"not collected","size":"not measured","embed":["Go"],"notes":[]},
+  {"id":"chasm","name":"Chasm","lang":"Kotlin","exec":["Interpreter"],"tiers":"JVM interpreter","arch":["AMD64","ARM64"],"wasi":"not measured","cm":"?","repo":"github.com/CharlieTap/chasm","lic":"not reviewed","rel":"not collected","size":"not measured","embed":["Kotlin"],"notes":[]},
+  {"id":"wizard","name":"Wizard","lang":"Virgil","exec":["Interpreter","JIT"],"tiers":"V3 interpreter \u00b7 fast interpreter \u00b7 SPC","arch":["AMD64","ARM64"],"wasi":"not measured","cm":"?","repo":"github.com/titzer/wizard-engine","lic":"not reviewed","rel":"not collected","size":"not measured","embed":["Virgil"],"notes":[]},
+  {"id":"graalwasm","name":"GraalWasm","lang":"Java","exec":["JIT"],"tiers":"Truffle/Graal","arch":["AMD64","ARM64"],"wasi":"not measured","cm":"?","repo":"github.com/oracle/graal","lic":"not reviewed","rel":"not collected","size":"not measured","embed":["Java"],"notes":[]},
+  {"id":"zwasm","name":"Zwasm","lang":"Zig","exec":["Interpreter","JIT","AOT"],"tiers":"Interpreter \u00b7 native JIT \u00b7 AOT","arch":["AMD64","ARM64"],"wasi":"not measured","cm":"?","repo":"github.com/zwasm/zwasm","lic":"not reviewed","rel":"not collected","size":"not measured","embed":["Zig"],"notes":[]},
   {id:'chicory',name:'Chicory',lang:'Java',exec:['Interpreter'],tiers:'Java interpreter',arch:['JVM targets'],wasi:'not measured',cm:'?',repo:'github.com/dylibso/chicory',lic:'Apache-2.0',rel:'not collected',size:'not measured',embed:['Java'],notes:[]},
   { id:'wasmedge',name:'WasmEdge',lang:'C++',exec:['Interpreter','JIT','AOT'],tiers:'Interpreter · LLVM JIT · LLVM AOT',arch:['x86-64','AArch64'],wasi:'0.1',cm:'?',repo:'github.com/WasmEdge/WasmEdge',lic:'Apache-2.0',rel:'not collected',size:'not measured',embed:['C','Rust','Go'],notes:['Interpreter and eager JIT are measured as separate configurations.'] },
   { id: 'wasmtime', name: 'Wasmtime', lang: 'Rust', exec: ['JIT', 'AOT'], tiers: 'Cranelift (optimizing) · Winch (baseline) · precompiled .cwasm', arch: ['x86-64', 'AArch64', 's390x', 'RISC-V 64'], wasi: '0.1 · 0.2', cm: 'y', repo: 'github.com/bytecodealliance/wasmtime', lic: 'Apache-2.0 WITH LLVM-exception', rel: '37.0.1', size: '9.4 MB', embed: ['Rust', 'C/C++', 'Python', '.NET', 'Go', 'Ruby'], cfg: ['A'], notes: ['Cranelift is shared with rustc_codegen_cranelift', 'Pooling allocator for high instance density', 'Fuel and epoch-based interruption', 'DRC and null collectors for WasmGC'] },
@@ -35,7 +41,7 @@ export const RTB: Record<string, Runtime> = Object.fromEntries(RTS.map(r => [r.i
 export const SA = ['wasmtime', 'wasmer', 'wazero', 'wago', 'wavm'];
 const applicationCFG: Cfg[] = [
   { id: 'A', rt: 'wasmtime', ver: '37.0.1', be: 'cranelift', kind: 'optimizing JIT', col: 'var(--rt-wasmtime)', hollow: false },
-  { id: 'D', rt: 'wasmer', ver: '6.1.0', be: 'singlepass', kind: 'single-pass JIT', col: 'var(--rt-wasmer)', hollow: true },
+  { id: 'D', rt: 'wasmer', ver: '6.1.0', be: 'singlepass-jit', kind: 'single-pass JIT', col: 'var(--rt-wasmer)', hollow: true },
   { id: 'E', rt: 'wazero', ver: '1.9.0', be: 'compiler', kind: 'Wazevo compiler', col: 'var(--rt-wazero)', hollow: false },
   { id: 'F', rt: 'v8', ver: 'not collected', be: 'turboshaft', kind: 'optimizing JIT', col: 'var(--rt-v8)', hollow: false },
   { id: 'G', rt: 'wago', ver: '0.4.2', be: 'railshot', kind: 'compiler', col: 'var(--rt-wago)', hollow: false, interp: false },
@@ -51,13 +57,21 @@ const aotCFG: Cfg[] = [
 const configurations: Cfg[] = [...applicationCFG,...additionalCFG,...aotCFG];
 export const CFG: Cfg[] = new Proxy(configurations,{get:(target,key)=>{datasetView.generation;const value=Reflect.get(target,key);return typeof value==='function'?value.bind(target):value}});
 export const FEATURE_CFG: Cfg[] = CFG;
+/** Alphanumeric order with letters before digits, so wasm2go follows wasmtime and w2c2 follows wizard. */
+const alnum=(a:string,b:string)=>{
+  const key=(s:string)=>[...s.toLowerCase()].map(ch=>/[0-9]/.test(ch)?'{'+ch:ch).join('');
+  const x=key(a),y=key(b);return x<y?-1:x>y?1:0;
+};
+/** Keeps every engine list on the site in alphanumeric order: runtime name, then backend. */
+export function sortCFG(){configurations.sort((a,b)=>alnum(a.rt,b.rt)||alnum(a.label??a.be??'',b.label??b.be??'')||a.id.localeCompare(b.id));}
+sortCFG();
 export const FEATURE_ENGINES = runtimeRegistry.map(r=>r.id);
 
 
 for(const c of FEATURE_CFG) {
   const measured=viewData.hosts.m1.configurations[c.id] || viewData.hosts.m2.configurations[c.id];
   const released=[...viewData.featureVersions.m1,...viewData.featureVersions.m2].find(v=>v.id===viewData.configurations[c.id] && v.channel==='stable' && v.description.runtime_version===measured?.version);
-  if(measured && (released || !/^[a-f0-9]{40}(?:\/|$)|nightly|snapshot|canary|0\.0\.0-prerelease/i.test(measured.version))){c.ver=shortVersion(released?.version || measured.version);c.be=['wasm2c','w2c2'].includes(c.rt)?'GCC':c.id==='R'?measured.backend+' + async':c.rt==='v8'&&measured.backend==='optimizing-only'?'turboshaft':measured.backend;}
+  if(measured && (released || !/^[a-f0-9]{40}(?:\/|$)|nightly|snapshot|canary|0\.0\.0-prerelease/i.test(measured.version))){c.ver=shortVersion(released?.version || measured.version);c.be=['wasm2c','w2c2'].includes(c.rt)?'GCC':c.id==='R'?measured.backend+' + async':measured.backend;}
   if(c.id==='E'||c.id==='G'){c.interp=false;c.kind='JIT compiler';}
 }
 for(const runtime of RTS) {
@@ -92,8 +106,9 @@ export function configVersion(machine:MachineId,id:CfgId){
 
 for(const c of CFG) {
  const displayBackend=c.be;
+ c.label??=displayBackend;
  Object.defineProperty(c,'ver',{enumerable:true,configurable:true,get:()=>shortVersion((viewData.hosts.m1.configurations[c.id]||viewData.hosts.m2.configurations[c.id]||viewData.hosts.m3.configurations[c.id])?.version||'not collected')});
- Object.defineProperty(c,'be',{enumerable:true,configurable:true,get:()=>{const backend=(viewData.hosts.m1.configurations[c.id]||viewData.hosts.m2.configurations[c.id]||viewData.hosts.m3.configurations[c.id])?.backend;return ['wasm2c','w2c2'].includes(c.rt)?'GCC':c.rt==='v8'&&backend==='optimizing-only'?'turboshaft':backend||displayBackend}});
+ Object.defineProperty(c,'be',{enumerable:true,configurable:true,get:()=>{const backend=(viewData.hosts.m1.configurations[c.id]||viewData.hosts.m2.configurations[c.id]||viewData.hosts.m3.configurations[c.id])?.backend;return ['wasm2c','w2c2'].includes(c.rt)?'GCC':backend||displayBackend}});
 }
 
 export function configIdentity(machine:MachineId,id:CfgId){const c=viewData.hosts[machine].configurations[id];return c?versionIdentity(c.version,c.source):{label:"not collected",url:null};}
@@ -101,4 +116,11 @@ export function configIdentity(machine:MachineId,id:CfgId){const c=viewData.host
 /** Execution model for the scope filter. Backend names decide; configurations without one fall back to runtimes that only interpret (e.g. LibWasm). */
 export type Exec = 'all' | 'compiler' | 'interpreter';
 export const execOf = (c: Cfg): Exclude<Exec, 'all'> =>
-	c.interp || /interp/i.test(c.be) || (!c.be && runtimeRegistry.find((r) => r.id === c.rt)?.exec.join() === 'Interpreter') ? 'interpreter' : 'compiler';
+	c.interp || /interp/i.test(c.label ?? c.be) || (!(c.label ?? c.be) && runtimeRegistry.find((r) => r.id === c.rt)?.exec.join() === 'Interpreter') ? 'interpreter' : 'compiler';
+
+/** Implementation language of a runtime, for the scope filter. C and C++ form one group. */
+const EXTRA_LANG: Record<string, string> = { endive: 'Java', chasm: 'Kotlin', wazy: 'Go', wizard: 'Virgil', graalwasm: 'Java', zwasm: 'Zig' };
+export const langOf = (c: Pick<Cfg, 'rt'>): string => {
+	const lang = runtimeRegistry.find((r) => r.id === c.rt)?.lang ?? EXTRA_LANG[c.rt] ?? 'Other';
+	return /^C(\+\+)?(\s*\/\s*C(\+\+)?)?$/.test(lang.replace(/\s+/g, '')) ? 'C/C++' : lang;
+};

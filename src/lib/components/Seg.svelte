@@ -7,7 +7,8 @@
 		mono = false,
 		size = 'sm',
 		label,
-		disabled = []
+		disabled = [],
+		tips = []
 	}: {
 		options: [T, string][];
 		value: T | null;
@@ -16,12 +17,14 @@
 		size?: 'sm' | 'md' | 'lg';
 		label?: string;
 		disabled?: T[];
+		/** Per-option tooltip card JSON (see tipCard), in option order. */
+		tips?: string[];
 	} = $props();
 </script>
 
 <div class="seg {size}" role="group" aria-label={label}>
-	{#each options as [v, text] (text)}
-		<button aria-pressed={v === value} class:mono disabled={disabled.includes(v)} onclick={() => onselect(v)}>{text}</button>
+	{#each options as [v, text], i (text)}
+		<button aria-pressed={v === value} class:mono disabled={disabled.includes(v)} onclick={() => onselect(v)} data-tip-card={tips[i] || undefined}>{text}</button>
 	{/each}
 </div>
 
@@ -36,6 +39,10 @@
 		padding: 3px 9px;
 		font-size: 12px;
 		color: var(--fg2);
+		transition: background-color 0.18s ease, color 0.18s ease;
+	}
+	button:hover:not(:disabled):not([aria-pressed='true']) {
+		color: var(--fg);
 	}
 	.md button {
 		padding: 4px 10px;

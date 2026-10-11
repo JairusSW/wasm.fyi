@@ -7,7 +7,7 @@ const config = {
 	kit: {
 		files: { assets: '.wasmfyi/frontend-assets' },
 		outDir: process.env.WASMFYI_KIT_OUT_DIR || '.svelte-kit',
-		adapter: adapter({ fallback: '404.html' }),
+		adapter: adapter({ pages: process.env.WASMFYI_FRONTEND_OUTPUT || 'build', assets: process.env.WASMFYI_FRONTEND_OUTPUT || 'build', fallback: '404.html' }),
 		paths: { base: process.env.BASE_PATH || '' },
 		prerender: { crawl: false, handleHttpError: 'fail' }
 	}

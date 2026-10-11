@@ -1,6 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { callTimingCandidates } from './call-timing.mjs';
+import {callBatchOperations,CALL_LOOP_WORKLOAD} from './call-timing.mjs';
+
+test('explicit collection batch operations remain visible and never change guest-loop invocation count',()=>{
+ const boundary={id:'mechanisms/host-to-wasm-call'};
+ assert.equal(callBatchOperations(boundary),1000000);
+ assert.equal(callBatchOperations(boundary,{callBatchOperations:10000}),10000);
+ assert.equal(callBatchOperations({id:CALL_LOOP_WORKLOAD},{callBatchOperations:10000}),1);
+ for(const value of [0,1000001,1.5,'10000'])assert.throws(()=>callBatchOperations(boundary,{callBatchOperations:value}),/Invalid explicit/);
+});
 
 test('whole-corpus single calls do not replace dedicated boundary-call batches', () => {
   const single = {options:{operations:1}};

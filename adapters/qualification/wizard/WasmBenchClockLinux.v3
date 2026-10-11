@@ -1,0 +1,12 @@
+// The native Virgil ticksNs implementation uses gettimeofday microseconds and
+// only the fractional second. It cannot measure short calls or long intervals.
+// Read the full Linux monotonic timespec directly, without changing SDK clocks.
+component WasmfyiWizardClock {
+    def buffer = Array<long>.new(2);
+    def now() -> u64 {
+        var status = Linux.syscall(LinuxConst.SYS_clock_gettime, (1, Pointer.atContents(buffer))).0;
+        if (status != 0) System.error("benchmark-clock", "CLOCK_MONOTONIC failed");
+        return u64.view(buffer[0]) * 1000000000uL + u64.view(buffer[1]);
+    }
+    def elapsed(start: u64) -> u64 { return now() - start; }
+}

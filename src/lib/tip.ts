@@ -24,6 +24,8 @@ export type TipCard = {
 	note?: string;
 	/** What clicking does, without the leading "Click to". */
 	action?: string;
+	/** A small built-in diagram in place of explanatory text. */
+	vis?: 'cohort-each' | 'cohort-shared' | 'avg-geo' | 'avg-mean';
 };
 
 export const tipWho = (c: Pick<Cfg, 'rt' | 'be' | 'col' | 'hollow'> & {id?:Cfg['id']}, ver?: string): TipCard['who'] => {
@@ -42,4 +44,20 @@ export function splitAction(lines: string[]): { lines: string[]; action: string 
 	const last = lines.at(-1) ?? '';
 	const m = /^(?:click|double-click)\s+(?:to\s+|for\s+)?(.*)$/i.exec(last);
 	return m && lines.length > 1 ? { lines: lines.slice(0, -1), action: m[1] } : { lines, action: '' };
+}
+
+const ordinal = (n: number) => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th');
+
+/**
+ * Tooltip rows placing one cell within its row: "place · 3rd of 12" and the row's best value with
+ * its engine. Lower is better. `values[i]` null means the cell itself has no comparable value.
+ */
+export function rankStats(values: (number | null)[], i: number, names: string[], fmt: (v: number) => string, best = 'fastest'): [string, string][] {
+	const ok = values.flatMap((x, k) => (x == null ? [] : [{ x, k }]));
+	if (!ok.length) return [];
+	const top = ok.reduce((a, b) => (b.x < a.x ? b : a));
+	const lead: [string, string] = [best, `${names[top.k]} · ${fmt(top.x)}`];
+	const v = values[i];
+	if (v == null) return [lead];
+	return [['place', `${ordinal(1 + ok.filter((e) => e.x < v).length)} of ${ok.length}`], lead];
 }

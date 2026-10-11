@@ -1,0 +1,85 @@
+// SDK phase boundaries for the persistent adapter. Transport and independent
+// scalar/memory oracle verification run outside these clocks.
+class WasmfyiWizardSession(engine: Engine, path: string, bytes: Array<byte>) {
+    var compiled: Module;
+    var retained: Instance;
+    var reason: string;
+
+    def compile() -> (Module, u64) {
+        reason = null;
+        var error = ErrorGen.new(path);
+        var start = WasmfyiWizardClock.now();
+        var limits = Limits.new().set(engine.extensions);
+        var parser = BinParser.new(engine.extensions, limits, error, path);
+        parser.tiering = Execute.tiering;
+        var module = parser.push(bytes, 0, bytes.length).finish();
+        var elapsed = WasmfyiWizardClock.elapsed(start);
+        if (error.error()) reason = error.error_msg;
+        return (module, elapsed);
+    }
+
+    def getCompiled() -> Module {
+        if (compiled == null) compiled = compile().0;
+        return compiled;
+    }
+
+    def instantiate(module: Module) -> (Instance, u64) {
+        reason = null;
+        if (module == null) { reason = "SDK module compilation failed"; return (null, 0uL); }
+        var error = ErrorGen.new(path);
+        var start = WasmfyiWizardClock.now();
+        var linker = ModuleLinker.new(engine, Array<string>.new(0), error);
+        linker.lookup.put(ModuleRegistry.get);
+        linker.named_modules.put(NamedModule(path, "guest", module));
+        var instances = linker.link();
+        var instance = if(instances != null && instances.length == 1, instances[0].instance);
+        if (error.ok() && instance != null && module.start_function >= 0) {
+            var result = Execute.call(instance.functions[module.start_function], Values.NONE);
+            if (!Result.Value.?(result)) reason = "SDK start function trapped";
+        }
+        var elapsed = WasmfyiWizardClock.elapsed(start);
+        if (error.error()) reason = error.error_msg;
+        if (reason != null) instance = null;
+        return (instance, elapsed);
+    }
+
+    def getRetained() -> Instance {
+        if (retained == null) retained = instantiate(getCompiled()).0;
+        return retained;
+    }
+
+    def find(instance: Instance, name: string) -> Function {
+        if (instance == null) return null;
+        for (i < instance.module.exports.length) {
+            if (Strings.equal(instance.module.exports[i].0, name)) {
+                var value = instance.exports[i];
+                if (Function.?(value)) return Function.!(value);
+            }
+        }
+        reason = "SDK function export not found";
+        return null;
+    }
+
+    def call(function: Function, arguments: Range<Value>, operations: int) -> (Result, u64) {
+        reason = null;
+        if (function == null || operations < 1) {
+            reason = "Invalid SDK call request";
+            return (Result.Throw(Trap.new(TrapReason.ERROR, reason, null)), 0uL);
+        }
+        var result: Result;
+        var start = WasmfyiWizardClock.now();
+        for (i < operations) {
+            result = Execute.call(function, arguments);
+            if (!Result.Value.?(result)) break;
+        }
+        var elapsed = WasmfyiWizardClock.elapsed(start);
+        if (!Result.Value.?(result)) reason = result.render(StringBuilder.new().puts("SDK guest call failed: ")).toString();
+        return (result, elapsed);
+    }
+
+    def close() {
+        // Release references; do not claim that RSS is physically reclaimed.
+        retained = null;
+        compiled = null;
+    }
+}

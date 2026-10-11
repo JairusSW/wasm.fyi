@@ -1,5 +1,7 @@
 <script lang="ts">
  import {localDate,selectableDate} from '$lib/api/calendar-date';
+ import {fly} from 'svelte/transition';
+ import {cubicOut} from 'svelte/easing';
  let {value=$bindable(''),label,min='',max='',dates}:{value?:string;label:string;min?:string;max?:string;dates?:string[]}=$props();
  const today=localDate();
  let open=$state(false);
@@ -30,9 +32,9 @@
 <svelte:window onpointerdown={(event)=>{if(open&&root&&!root.contains(event.target as Node))open=false}} />
 <div class="picker" bind:this={root}>
  <span class="label small fg3">{label}</span>
- <button class="trigger mono" aria-label={label} aria-haspopup="dialog" aria-expanded={open} onclick={toggle}>{value||'Choose date'}<span aria-hidden="true">▦</span></button>
+ <button class="trigger mono" aria-label={label} aria-haspopup="dialog" aria-expanded={open} onclick={toggle} class:open><span>{value||'Choose date'}</span><svg class="cal-icon" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="2" width="10" height="9" /><path d="M1 5h10M4 1v2M8 1v2" /></svg></button>
  {#if open}
-  <div class="calendar" role="dialog" aria-label={label} tabindex="-1" onkeydown={keyboard}>
+  <div class="calendar" role="dialog" aria-label={label} tabindex="-1" onkeydown={keyboard} transition:fly={{y:-4,duration:140,easing:cubicOut}}>
    <div class="month"><button aria-label="Previous month" onclick={()=>move(-1)}>‹</button><span>{monthName}</span><button aria-label="Next month" onclick={()=>move(1)}>›</button></div>
    <div class="grid">
     {#each ['Mo','Tu','We','Th','Fr','Sa','Su'] as day}<span class="weekday">{day}</span>{/each}
@@ -45,19 +47,24 @@
  {/if}
 </div>
 <style>
+ /* Square, hairline-bordered: the same language as the site's selects and segmented controls. */
  .picker{position:relative;display:flex;align-items:center;gap:8px}
- .trigger{display:flex;align-items:center;gap:18px;font-size:12px;padding:6px 9px;border:1px solid var(--line);border-radius:5px;background:var(--bg2);color:var(--fg);cursor:pointer}
- .trigger:hover{border-color:var(--fg3)}
- .calendar{position:absolute;left:0;top:calc(100% + 7px);z-index:60;width:252px;padding:12px;background:var(--bg2);border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 28px #0003;color:var(--fg)}
- .month{display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:10px}
- .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
- .weekday{font-size:10px;color:var(--fg3);padding:4px 0}
- button{font:inherit;color:var(--fg);background:transparent;border:1px solid transparent;border-radius:4px;cursor:pointer;padding:5px}
- .grid button{font-size:12px;aspect-ratio:1}
- button:hover:not(:disabled),button:focus-visible{border-color:var(--fg3);background:var(--bg)}
+ .label{font-size:12px}
+ .trigger{display:inline-flex;align-items:center;gap:12px;font-size:12px;padding:3px 9px;border:1px solid var(--line2);background:var(--bg2);color:var(--fg);cursor:pointer;transition:border-color .15s ease}
+ .trigger:hover,.trigger.open{border-color:var(--fg3)}
+ .cal-icon{width:11px;height:11px;fill:none;stroke:var(--fg3);stroke-width:1.1}
+ .calendar{position:absolute;left:0;top:calc(100% + 3px);z-index:60;width:244px;padding:10px;background:var(--bg2);border:1px solid var(--line2);box-shadow:0 10px 28px rgb(0 0 0 / .28);color:var(--fg)}
+ .month{display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-bottom:8px}
+ .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+ .weekday{font-size:10px;color:var(--fg3);padding:3px 0}
+ button{font:inherit;color:var(--fg);background:transparent;border:1px solid transparent;cursor:pointer;padding:4px}
+ .grid button{font-size:12px;aspect-ratio:1;font-family:var(--mono)}
+ button:hover:not(:disabled),button:focus-visible{background:var(--line2)}
  .selected{background:var(--fg)!important;color:var(--bg)!important}
- .today{border-color:var(--focus);font-weight:600}
- .today-label{margin-top:10px;font-size:11px}
+ .today{border-color:var(--fg3);font-weight:600}
+ .today-label{margin-top:8px;font-size:11px}
  button:disabled{opacity:.25;cursor:default}
- .actions{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:7px;margin-top:9px;font-size:11px}
+ .actions{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:6px;margin-top:8px;font-size:11px}
+ .actions button{color:var(--fg2)}
+ @media (max-width:720px){.trigger{padding:7px 10px;font-size:13px}}
 </style>

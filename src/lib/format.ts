@@ -2,7 +2,7 @@
 export const n0 = (n: number): string => Math.round(n).toLocaleString('en-US');
 
 /** Repository provenance stays in the evidence key, outside the workload name. */
-export const workloadName = (id: string): string => id==='mechanisms/wasm-host-wasm-loop'?'Wasm → host → Wasm':id==='mechanisms/host-to-wasm-call'?'Host → Wasm → host':id.replace(/^(wago|applications)\//, '');
+export const workloadName = (id: string): string => id==='mechanisms/wasm-host-wasm-loop'?'Wasm → host → Wasm':id==='mechanisms/host-to-wasm-call'?'Host → Wasm → host':id.replace(/^(wago|applications)\//, '').replace(/\/polybench_run$/, '');
 
 /** Compact count for headline figures: `9,412`, `48.2K`, `1.38M`. Below 10,000 keeps commas. */
 export const shortCount = (n: number): string => {
@@ -36,40 +36,32 @@ type TimeUnit=typeof timeUnits[number];
 const timeValue=(v:number,u:string)=>u==='µs'?v/1000:v;
 const timeIndex=(ms:number)=>ms<0.001?0:ms<1?1:ms<1000?2:3;
 const scaledTime=(ms:number,index:number)=>ms*[1e6,1e3,1,1/1000][index];
-const timeText=(value:number,unit:TimeUnit)=>{
-	const a=Math.abs(value),digits=a<10?2:a<100?1:0;
-	return compact(value,digits)+' '+unit;
-};
+/** At most three significant figures (trailing zeros dropped). */
+const sig3=(value:number)=>{const a=Math.abs(value);return compact(value,a<10?2:a<100?1:0);};
+const timeText=(value:number,unit:TimeUnit)=>sig3(value)+' '+unit;
 
 /** Value in its natural unit, rescaled to stay readable (ns ↔ µs ↔ ms ↔ s). */
 export const fmtU = (v: number, u: string): string => {
-	if (u === 'ms' || u === 'µs') {
-		const ms=timeValue(v,u),index=timeIndex(Math.abs(ms));
+	// Every unit: the largest one that keeps the value under 1000, at most three significant figures.
+	if (u === 'ms' || u === 'µs' || u === 'ns') {
+		const ms=u==='ns'?v/1e6:timeValue(v,u);
+		let index=timeIndex(Math.abs(ms));
+		// 999.7 µs rounds to "1000 µs"; step up so it reads "1 ms".
+		if(index<timeUnits.length-1&&Math.abs(Number(sig3(scaledTime(ms,index))))>=1000)index++;
 		return timeText(scaledTime(ms,index),timeUnits[index]);
 	}
-	if (u === 'ns') return timeText(v,'ns');
-	if (u === 'MB') return v.toFixed(1) + ' MB';
-	if (u === 'KB') return v >= 1024 ? (v / 1024).toFixed(2) + ' MB' : v.toFixed(0) + ' KB';
-	if (u === 'MiB') return v.toFixed(1) + ' MiB';
-	if (u === 'KiB') return v >= 1024 ? (v / 1024).toFixed(2) + ' MiB' : v < 1.5 ? n0(v * 1024) + ' B' : compact(v, 1) + ' KiB';
+	const scale=(value:number,units:string[])=>{let i=0;while(i<units.length-1&&Math.abs(Number(sig3(value)))>=1000){value/=1024;i++;}return sig3(value)+' '+units[i];};
+	if (u === 'MB' || u === 'KB') return scale(u === 'MB' ? v : v / 1024, ['MB', 'GB']).replace(/^(\S+) MB$/, (m, n) => (u === 'KB' && Number(n) < 1 ? sig3(v) + ' KB' : m));
+	if (u === 'MiB') return scale(v, ['MiB', 'GiB']);
+	if (u === 'KiB') return v * 1024 < 1000 ? n0(Math.round(v * 1024)) + ' B' : scale(v, ['KiB', 'MiB', 'GiB']);
 	return String(v);
 };
 
-/** Keep a row of comparable latencies in one unit when their range allows it. */
-export const fmtUGroup = (values:(number|null)[],u:string):string[] => {
-	if(u!=='ms'&&u!=='µs')return values.map(v=>v==null?'':fmtU(v,u));
-	const valid=values.filter((v):v is number=>v!=null&&Number.isFinite(v));
-	if(!valid.length)return values.map(()=>'');
-	const ms=valid.map(v=>timeValue(v,u));
-	const sorted=[...ms].sort((a,b)=>Math.abs(a)-Math.abs(b));
-	const median=Math.abs(sorted[sorted.length>>1]);
-	const preferred=timeIndex(median);
-	const min=Math.min(...ms.map(Math.abs)),max=Math.max(...ms.map(Math.abs));
-	const candidates=[preferred,preferred-1,preferred+1].filter(i=>i>=0&&i<timeUnits.length);
-	const shared=candidates.find(i=>scaledTime(min,i)>=1&&scaledTime(max,i)<10_000);
-	if(shared==null)return values.map(v=>v==null?'':fmtU(v,u));
-	return values.map(v=>v==null?'':timeText(scaledTime(timeValue(v,u),shared),timeUnits[shared]));
-};
+/** Mark a displayed aggregate mean without changing its units or precision. */
+export const fmtAverage = (v: number, u: string): string => '~' + fmtU(v, u);
+
+/** Format a row of values, each in its own best unit at three significant figures. */
+export const fmtUGroup = (values:(number|null)[],u:string):string[] => values.map(v=>v==null||!Number.isFinite(v)?'':fmtU(v,u));
 
 /** `v` as a percentage of `tot`, for positioning overlays on scaled SVGs. */
 export const pc = (v: number, tot: number): string => ((v / tot) * 100).toFixed(2) + '%';

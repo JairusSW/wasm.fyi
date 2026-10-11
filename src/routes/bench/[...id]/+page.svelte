@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { apiView,loadHistory,loadHistoryComparison } from '$lib/api/controller.svelte';
 	import ReportFiles from '$lib/components/ReportFiles.svelte';
  import ArtifactInspection from '$lib/components/ArtifactInspection.svelte';
  let inspected=$state<string|null>(null);
@@ -19,7 +20,10 @@ import { historySegments, historyEndpoints } from '$lib/history-values';
 import { RangeSelect } from '$lib/range-select.svelte';
 
 	let { data } = $props();
-	const b = $derived(viewData.catalogue.find(w=>w.id===data.workload)!);
+	// The catalogue arrives with the dataset; until then (or for an unknown id) a stub keeps every
+	// derived value safe and the page shows a placeholder instead of crashing.
+	const found = $derived(viewData.catalogue.find(w=>w.id===data.workload));
+	const b = $derived(found ?? ({ id: data.workload, group: '', tags: [], purpose: '' } as unknown as typeof viewData.catalogue[number]));
 	const vis = $derived(CFG.filter((c) => isVisible(ui.scope, c)));
 	const okC = $derived(vis.filter((c) => benchVal(ui.scope, b, c.id, 'steady').st === 'ok'));
 
@@ -57,7 +61,7 @@ import { RangeSelect } from '$lib/range-select.svelte';
     table:([['Compile process lifetime','rssCompile'],['Instantiate process lifetime','rssInst'],['First-call process lifetime','rssFirst'],['Steady process lifetime','rss']] as const).map(([name,metric])=>({name,cells:sel.map(id=>{
       if(ui.memMetric!=='rss')return 'not collected';
       const cell=viewCell(ui.machine,ui.snap,b.id,id,metric);
-      return cell.st==='ok' && cell.v!=null?fmtU(cell.v,'MiB'):'not measured';
+      return cell.st==='ok' && cell.v!=null?fmtU(cell.v,'MiB'):'n/a';
     })}))});
 	const toggleMem = (id: CfgId) => {
 		const on = sel.includes(id);
@@ -75,11 +79,22 @@ import { RangeSelect } from '$lib/range-select.svelte';
     const inspect=report?.codeSource?.id&&native
       ? `${base}/wasmbench/code-inspection/${encodeURIComponent(report.codeSource.id)}/view.html?trial=${encodeURIComponent(native.trial)}`
       : null;
-    const image=cell.st==='ok'&&cell.v!=null?fmtU(cell.v,'KiB'):cell.st==='na'?'n/a':cell.st==='unsupported'?'unsupported':cell.st==='failed'?'failed':'not measured';
+    const image=cell.st==='ok'&&cell.v!=null?fmtU(cell.v,'KiB'):cell.st==='na'?'n/a':cell.st==='unsupported'?'unsupported':cell.st==='failed'?'failed':'n/a';
     return {c,inspect,artifact:cell.artifact,cells:[image,'not collected','not collected','not collected']};
   }));
 
 	// ── History ────────────────────────────────────────────────────────────
+ $effect(()=>{
+  if(ui.bdTab!=='history'||!apiView.ready)return;apiView.historyRevision;
+  const scope={...ui.scope,snapshot:ui.snap,metric:ui.metric},workload=b.id;
+  void loadHistory(scope,'exec',workload);
+ });
+ $effect(()=>{
+  if(ui.bdTab!=='history'||!apiView.ready)return;
+  const from=SNAPS[ui.histFrom]?.date,to=SNAPS[ui.histTo]?.date;if(!from||!to)return;
+  const scope={...ui.scope,snapshot:ui.snap,metric:ui.metric},workload=b.id;
+  const timer=setTimeout(()=>void loadHistoryComparison(scope,'exec',from,to,workload),100);return ()=>clearTimeout(timer);
+ });
 	const SX = (i: number) => 2 + i * (156 / Math.max(1,SNAPS.length-1));
 	const SSTEP = 156 / Math.max(1,SNAPS.length-1);
 	// Drag, or click then shift+click, on a sparkline to pick the Δ range.
@@ -105,8 +120,8 @@ import { RangeSelect } from '$lib/range-select.svelte';
 			return {
 				c,
 				segments: historySegments(vals,SX,Y),
-				now: last >= 0 ? fmtU(vals[last], 'ms') : 'not measured',
-				delta: Number.isFinite(d)?relative(1+d,ui.deltaFormat):'not measured',
+				now: last >= 0 ? fmtU(vals[last], 'ms') : 'n/a',
+				delta: Number.isFinite(d)?relative(1+d,ui.deltaFormat):'n/a',
 				dColor: Math.abs(d) < 0.02 ? 'var(--fg3)' : d < 0 ? 'var(--good)' : 'var(--bad)'
 			};
 		})
@@ -142,6 +157,18 @@ import { RangeSelect } from '$lib/range-select.svelte';
 	<meta name="description" content={b.purpose || `${workloadName(b.id)} — ${b.group} workload on wasm.fyi`} />
 </svelte:head>
 
+{#if !found}
+	<div class="stack6" aria-busy={!apiView.ready}>
+		<div class="crumbs s12 fg3"><a class="link-quiet" href={siteHref(`/benchmarks`)}>Benchmarks</a></div>
+		<h1 class="mono">{workloadName(data.workload)}</h1>
+		{#if apiView.ready}
+			<p class="fg3 s12">This workload isn’t in the current dataset. <a class="link-quiet" href={siteHref(`/benchmarks`)}>Browse all workloads</a>.</p>
+		{:else}
+			<span class="skel" style:width="60%"></span>
+			<span class="skel" style:width="40%"></span>
+		{/if}
+	</div>
+{:else}
 <div class="stack6">
 	<div class="crumbs s12 fg3"><a class="link-quiet" href={siteHref(`/benchmarks`)}>Benchmarks</a> / {b.group}</div>
 	<div class="title-line">
@@ -298,7 +325,6 @@ import { RangeSelect } from '$lib/range-select.svelte';
 	<div class="note">“Inspect image” opens the exact extracted bytes and engine-reported function ranges. These bytes include any wrappers and embedded data; ranges are not instruction-only sizes.</div>
 {:else if ui.bdTab === 'history'}
 	<div class="range-hint small fg3">
-		Drag a sparkline, or click then shift+click, to set the Δ range.
 		{#if !full}<button class="link-quiet" onclick={() => { ui.histFrom = 0; ui.histTo = SNAPS.length - 1; }}>reset range</button>{/if}
 	</div>
 	<div class="tbl-wrap">
@@ -332,6 +358,8 @@ import { RangeSelect } from '$lib/range-select.svelte';
 			<div class="rec"><span class="fg3">{k.k}</span><span class="mono brk">{k.v}</span></div>
 		{/each}
 	</div>
+{/if}
+
 {/if}
 
 <style>
@@ -445,6 +473,8 @@ import { RangeSelect } from '$lib/range-select.svelte';
 	}
 	.sp {
 		padding: 3px 12px;
+		user-select: none;
+		-webkit-user-select: none;
 	}
 	.mini {
 		display: block;

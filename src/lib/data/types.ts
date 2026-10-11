@@ -18,6 +18,8 @@ export interface Cfg {
 	/** Alternate backend — drawn with a hollow swatch and dashed lines. */
 	hollow: boolean;
 	interp?: boolean;
+	/** Fixed backend label for chips, ordering and the compiler/interpreter split; never changes when data loads. */
+	label?: string;
 }
 
 export interface Runtime {

@@ -26,7 +26,8 @@ if(engine==='v8')validateV8Description(described,{version:receipt.provenance.ver
 if(engine==='wago' && !version.startsWith(pin.revision+'/source-'))throw Error('Wago source revision differs');
 if(engine==='wazero' && version!==receipt.provenance.module.Version.replace(/^v/,''))throw Error('Wazero source module differs');
 if(engine==='wasmtime' && (version!==pin.revision || described.backend!=='cranelift'))throw Error('Wasmtime source revision or compiler differs');
-if(engine==='v8' && (described.backend!=='optimizing-only' || version!==receipt.provenance.versions.v8 || !described.effective_configuration?.compiler_mode_probe))throw Error('Node/V8 source build or optimizing tier differs');
+if(engine==='v8' && receipt.provenance.wasmCompilerPolicy && (described.backend!=='turboshaft'||described.effective_configuration?.wasm_compiler_policy!==receipt.provenance.wasmCompilerPolicy))throw Error('Pinned V8 Turboshaft policy differs');
+if(engine==='v8' && (!['optimizing-only','turboshaft'].includes(described.backend) || version!==receipt.provenance.versions.v8 || !described.effective_configuration?.compiler_mode_probe))throw Error('Node/V8 source build or optimizing tier differs');
 if(engine==='wasmer' && described.backend!=='singlepass-jit')throw Error('Wasmer compiler differs');
 if(engine==='wasmer' && receipt.provenance.sdkVersion && version!==receipt.provenance.sdkVersion)throw Error('Wasmer SDK version differs from its pinned source');
 if(engine==='wavm' && (!version.endsWith(pin.revision.slice(0,7)) || described.backend!=='llvm-jit'))throw Error('WAVM source or compiler differs');

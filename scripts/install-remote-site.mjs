@@ -8,12 +8,16 @@ if(!releaseDirectory?.startsWith('/opt/wasmfyi/releases/'))throw Error('Staged r
 const abort=new AbortController();
 for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>abort.abort());
 const prebuilt=await access(releaseDirectory+'/wasmfyi',constants.X_OK).then(()=>true,()=>false);
+const benchmarkRoot=process.env.WASMFYI_BENCHMARK_ROOT || '/root/.cache/wasm-fyi/six-month-campaign-20261009';
+if(!benchmarkRoot.startsWith('/') || benchmarkRoot.includes('\0'))throw Error('An absolute benchmark root is required');
 console.log(prebuilt?'Installing prebuilt release; no compilation on Remote':'Waiting for Remote build/measurement lock');
-const release=prebuilt?async()=>{}:await acquireMeasurementLock('/root/.cache/wasm-fyi/release-five-20261008/measurement-lock',abort.signal);
+const release=prebuilt?async()=>{}:await acquireMeasurementLock(benchmarkRoot+'/measurement-lock',abort.signal);
 try {
  console.log(prebuilt?'Configuring production services on CPUs 0–1':'Installing and building remote site under exclusive host lock');
  await new Promise((ok,fail)=>{
-  const child=spawn('taskset',['-c',prebuilt?'0,1':'3,4','bash',releaseDirectory+'/source/scripts/install-remote-site.sh',releaseDirectory],{stdio:'inherit',detached:true});
+  const install=['bash',releaseDirectory+'/source/scripts/install-remote-site.sh',releaseDirectory];
+  const command=prebuilt?['taskset','-c','0,1',...install]:install;
+  const child=spawn(command[0],command.slice(1),{stdio:'inherit',detached:true});
   const cancel=()=>{try{process.kill(-child.pid,'SIGTERM')}catch(error){if(error.code!=='ESRCH')throw error}};
   abort.signal.addEventListener('abort',cancel,{once:true});
   if(abort.signal.aborted)cancel();

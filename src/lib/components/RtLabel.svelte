@@ -26,7 +26,7 @@
 
 <span class="label">
 {#if profile}
-	<button class="rl" onclick={() => ui.openProfile(c.rt)} data-tip={tip} data-tip-card={tip ? undefined : defaultTip}>
+	<button class="rl" onclick={() => ui.openProfile(c.rt, c.id)} data-tip={tip} data-tip-card={tip ? undefined : defaultTip}>
 		<Swatch color={c.col} {bg} {size} />
 		<span class:bold>{c.rt}</span>
 		<span class="be" class:mono>{c.be}</span>
@@ -59,5 +59,15 @@
 	}
 	.bold {
 		font-weight: 500;
+	}
+	/* Phones: the version sits under the name instead of squeezing beside it. */
+	@media (max-width: 720px) {
+		.label {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 1px;
+			min-width: 0;
+			max-width: 100%;
+		}
 	}
 </style>

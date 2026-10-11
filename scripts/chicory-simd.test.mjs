@@ -1,0 +1,3 @@
+import{test}from'node:test';import assert from'node:assert/strict';import{withChicorySimd}from'./lib/chicory-simd.mjs';
+test('SIMD machine installation preserves interpreter and reports explicit identity',()=>{const source='var builder=Instance.builder(module);\n {"effective_configuration":{"tiering":"Wasm interpreter"}}';const got=withChicorySimd(source);assert.match(got,/withMachineFactory\(com.dylibso.chicory.simd.SimdInterpreterMachine::new\)/);assert.match(got,/"interpreter_machine":"SimdInterpreterMachine; JDK incubator vector enabled"/);assert.match(got,/"tiering":"Wasm interpreter"/);assert.equal(withChicorySimd(got),got);});
+test('unknown instance factory cannot silently skip SIMD wiring',()=>assert.throws(()=>withChicorySimd('var builder=unknown();')));

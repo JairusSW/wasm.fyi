@@ -5,7 +5,7 @@ import {engineSources,releaseInventory} from './lib/engine-sources.mjs';
 import {saturdays,monthsBefore} from './lib/weekly-history.mjs';
 import {nearestCommit,nearestCommitSearchUntil,everyVersion,historyEngineOrder} from './lib/history-scope.mjs';
 import {atomicJSON} from './lib/benchmark-plan.mjs';
-const exec=promisify(execFile),root=resolve(process.argv[2]),anchor=process.argv[3]||new Date().toISOString(),cutoff=process.argv[4]||monthsBefore(anchor,12),samples=Number(process.argv[5]||12);
+const exec=promisify(execFile),root=resolve(process.argv[2]),anchor=process.argv[3]||new Date().toISOString(),cutoff=process.argv[4]||monthsBefore(anchor,12),samples=Number(process.argv[5]||5);
 const sourceCutoff=monthsBefore(anchor,12);
 await mkdir(root,{recursive:true});const dates=saturdays(new Date(anchor),53).filter(d=>Date.parse(d)>=Date.parse(cutoff)).reverse();
 const plan=await readFile(join(root,'source-plan.json'),'utf8').then(JSON.parse,()=>({schema:1,status:'planning',anchor,cutoff,zone:'America/New_York',samples,policy:'Closest default-branch commit to each Saturday 23:59 Eastern, plus every published version including prereleases, within one year. Ties use the earlier commit. Repeated exact revisions are benchmarked once per configuration.',order:historyEngineOrder,finishedEngines:[],engines:[],pins:[]}));

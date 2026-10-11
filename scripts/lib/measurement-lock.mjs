@@ -2,8 +2,8 @@ import {mkdir,writeFile,readFile,stat,rm} from 'node:fs/promises';
 import {join} from 'node:path';
 import {setTimeout as delay} from 'node:timers/promises';
 
-// All collectors on one host share this directory. Builds may proceed while
-// another job measures, but two collectors never measure simultaneously.
+// Builders and collectors on one host share this directory. SDK compilation
+// and measurements are mutually exclusive; measurements also run one at a time.
 export async function acquireMeasurementLock(path,signal) {
  const owner=join(path,'owner');
  for(;;) {
@@ -30,4 +30,10 @@ export async function acquireMeasurementLock(path,signal) {
    await delay(250,undefined,{signal});
   }
  }
+}
+
+/** Run SDK preparation under the same exclusion lock as timing collection. */
+export async function withBuildLock(root, action) {
+ const release = await acquireMeasurementLock(join(root, "measurement-lock"));
+ try { return await action(); } finally { await release(); }
 }

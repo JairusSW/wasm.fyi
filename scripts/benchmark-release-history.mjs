@@ -6,7 +6,7 @@ import {command} from './lib/wasmbench.mjs';
 import {readCache} from './lib/benchmark-plan.mjs';
 const [rootArg,baseArg]=process.argv.slice(2),root=resolve(rootArg),base=resolve(baseArg);
 const source=JSON.parse(await readFile(join(root,'source-plan.json'))),template=JSON.parse(await readFile(join(root,'collection-template.json')));
-const env={...process.env,...template.env,GOWORK:'off',GOFLAGS:'-buildvcs=false',GOMAXPROCS:'1',CARGO_BUILD_JOBS:'1'};
+const env={...process.env,...template.env,GOWORK:'off',GOFLAGS:'-buildvcs=false',...(template.env?.WASMFYI_BUILD_JOBS?{CARGO_BUILD_JOBS:template.env.WASMFYI_BUILD_JOBS,GOMAXPROCS:template.env.WASMFYI_BUILD_JOBS}:{})};
 const suite=(await readCache(template.corpusRoot)).filter(w=>w.id==='wago/tiny/add');
 const status={started:new Date().toISOString(),completed:[],errors:[]};
 for(const engine of ['wasmtime','v8','wasmer','wavm','wamr','wasmi','wasm3','jsc','spidermonkey','wasmedge','chicory','wasm2c','w2c2']){

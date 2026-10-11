@@ -104,6 +104,22 @@ func (h *Host) openFile(name string, ceiling int64) (*os.File, error) {
 	return nil, os.ErrNotExist
 }
 
+// notFoundPage answers a missing page with the application shell and a 404
+// status, so the site renders its own not-found page. Missing assets (any path
+// with a non-HTML file extension) keep the plain 404.
+func (h *Host) notFoundPage(w http.ResponseWriter, r *http.Request) {
+	if ext := path.Ext(r.URL.Path); ext != "" && !strings.EqualFold(ext, ".html") {
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusNotFound)
+	if r.Method != "HEAD" {
+		w.Write(h.shell)
+	}
+}
+
 func (h *Host) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	if r.Method != "GET" && r.Method != "HEAD" {
@@ -149,7 +165,7 @@ func (h *Host) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	navigation := strings.TrimSuffix(p, "/")
 	app := false
 	switch navigation {
-	case "", "/benchmarks", "/compare", "/history", "/features", "/simd", "/gc", "/memory64", "/threads":
+	case "", "/benchmarks", "/dashboard", "/compare", "/history", "/features", "/health", "/simd", "/gc", "/memory64", "/threads":
 		app = true
 	default:
 		if strings.HasPrefix(navigation, "/bench/") {
@@ -160,7 +176,7 @@ func (h *Host) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			if !app {
-				http.NotFound(w, r)
+				h.notFoundPage(w, r)
 				return
 			}
 		}
@@ -197,12 +213,12 @@ func (h *Host) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// HTML belongs to application routing; never expose stale prerendered pages
 	// or use a missing asset as an application-shell request.
 	if strings.HasSuffix(p, "/") || strings.EqualFold(path.Ext(name), ".html") || name == "" {
-		http.NotFound(w, r)
+		h.notFoundPage(w, r)
 		return
 	}
 	f, e := h.openFile(name, MaxAssetBytes)
 	if e != nil {
-		http.NotFound(w, r)
+		h.notFoundPage(w, r)
 		return
 	}
 	defer f.Close()

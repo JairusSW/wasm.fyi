@@ -19,5 +19,5 @@ export const PHASE_NOTE: Record<MetricKey, string> = {
   first: 'First call: the first invocation of the entry export (e.g. _start), measured separately. Includes lazy compilation and tier-up triggered by the call.',
   steady: 'Steady execution after warmup; each plotted sample is normalized per iteration.',
   rss: 'Process-lifetime peak RSS from its recorded source pass. Includes adapter and runtime; timing-pass RSS stays tied to its trial. No phase subtraction or heap substitution.',
-  code: 'Producer-reported native code size. Measurement, exported bytes and function inspection have separate availability. The record identifies whether size comes from an engine report or an extracted image.',
+  code: 'Producer-reported native code size. Measurement, exported bytes and function inspection have separate availability. The record identifies whether size comes from an engine report or an extracted image. For wasm2c and w2c2, this is the linked executable-section footprint, including bridge/runtime support and padding.',
 };

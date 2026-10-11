@@ -441,6 +441,7 @@ just corpus-build [--corpus ... --kind both]    explicit source build + hashed c
       if (options[key]) {
         if (!/^[1-9]\d*$/.test(options[key])) throw Error("Invalid " + key);
         collection[key] = Number(options[key]);
+        collection.adaptiveSampling = false;
         if (key === "samples")
           collection.scenarioSamples = { "*": Number(options[key]) };
       }

@@ -2,7 +2,7 @@ import {datasetView} from './api/view.svelte';
 // Global UI state. Filters are URL-backed: scope keys (machine, snapshot,
 // runtimes) persist across pages; page keys reset to their defaults when a
 // URL omits them, so any view can be shared by copying the address bar.
-import { CFG, execOf, type Exec } from './data/runtimes';
+import { CFG, execOf, langOf, type Exec } from './data/runtimes';
 import { viewData } from './view-data';
 import { comparisonBaseline } from './comparison-baseline';
 const defaultConfig=CFG.find(c=>viewData.hosts.m1.configurations[c.id]||viewData.hosts.m2.configurations[c.id])?.id||'A';
@@ -11,9 +11,12 @@ import type { CfgId, MachineId, MetricKey, OtMetricKey, OvKey } from './data/typ
 import type { Scope } from './model';
 
 export type Drawer =
-	| { type: 'cell'; b: string; c: CfgId; m: MetricKey; cf: number; caseLabel?: string }
+	| { type: 'cell'; b: string; c: CfgId; m: MetricKey; cf: number; caseLabel?: string; back?: { drawer: Drawer; label: string } }
+	| { type: 'feature'; fam: string; c: CfgId; m: 'steady' | 'compile' | 'rss'; peers: CfgId[] }
+	| { type: 'support'; fam: string; c: CfgId; channel: 'stable' | 'development'; peers: CfgId[] }
+	| { type: 'aggregate'; c: CfgId; group: 'lat' | 'mem' | 'code'; col: number }
 	| { type: 'compat'; fam: string; cid: CfgId; kid?: number }
-	| { type: 'profile'; rt: string };
+	| { type: 'profile'; rt: string; c?: CfgId };
 
 type Codec<T> = { param: string; def: T; parse: (s: string) => T | undefined; ser: (v: T) => string };
 
@@ -91,11 +94,13 @@ const METRICS = ['compile', 'rssCompile', 'inst', 'rssInst', 'first', 'steady', 
 /** Each URL-backed field: its codec and the routes it belongs to (`*` = scope, every route). */
 const FIELDS = {
 	cohortMode: { codec: str('cohort', 'per-engine', ['shared', 'per-engine'] as const), routes: '*' },
+	average: { codec: str('avg', 'geo', ['geo', 'mean'] as const), routes: '*' },
 	deltaFormat: { codec: str('delta', 'percent', ['factor', 'percent'] as const), routes: '*' },
 	machine: { codec: str<MachineId>('m', 'm1', ['m1', 'm2', 'm3']), routes: '*' },
 	snap: { codec: str('snap', 's1', ['s1', 's2']), routes: '*' },
 	hide: { codec: hideCodec, routes: '*' },
 	exec: { codec: str<Exec>('exec', 'compiler', ['all', 'compiler', 'interpreter']), routes: '*' },
+	lang: { codec: str('lang', 'all'), routes: '*' },
 	group: { codec: str<OvKey>('view', 'lat', ['lat', 'calls', 'mem', 'code', 'cov']), routes: ['/benchmarks'] },
 	metric: { codec: str<MetricKey>('metric', 'steady', METRICS), routes: ['/benchmarks'] },
 	tag: { codec: nullable('tag'), routes: ['/benchmarks'] },
@@ -132,10 +137,18 @@ class UiState {
 	hide = $state<Partial<Record<CfgId, boolean>>>({});
 	/** Execution-model filter; combined with the per-runtime `hide` choices in `scope.hide`. */
 	exec = $state<Exec>('compiler');
-	shownHide = $derived(this.exec === 'all' ? this.hide : { ...this.hide, ...Object.fromEntries(CFG.filter((c) => execOf(c) !== this.exec).map((c) => [c.id, true])) });
+	/** Implementation-language filter ('all' or a langOf group); combined like `exec`. */
+	lang = $state('all');
+	shownHide = $derived({
+		...this.hide,
+		...Object.fromEntries(CFG.filter((c) => (this.exec !== 'all' && execOf(c) !== this.exec) || (this.lang !== 'all' && langOf(c) !== this.lang)).map((c) => [c.id, true]))
+	});
 	baseline = $derived(comparisonBaseline(defaultConfig, CFG.filter(c => viewData.hosts[this.machine].configurations[c.id]).map(c => c.id)));
-	weighting = $state<'corpus' | 'workload'>('corpus');
+	// Every workload counts equally in averages; no per-corpus weighting.
+	weighting = $state<'corpus' | 'workload'>('workload');
 	cohortMode = $state<'shared' | 'per-engine'>('per-engine');
+	/** How workload results combine into one number: geometric mean (default) or plain mean. */
+	average = $state<'geo' | 'mean'>('geo');
 	adv = $state(false);
 	theme = $state<'dark' | 'light'>('dark');
 	drawer = $state<Drawer | null>(null);
@@ -175,7 +188,7 @@ class UiState {
 	xReuse = $state<'single' | 'shared' | 'cached'>('single');
 	xLog = $state(2);
 
-	scope: Scope = $derived({ machine: this.machine, baseline: this.baseline, weighting: this.weighting, cohortMode: this.cohortMode, hide: this.shownHide, snapshot:this.snap, exec: this.exec });
+	scope: Scope = $derived({ machine: this.machine, baseline: this.baseline, weighting: this.weighting, cohortMode: this.cohortMode, average: this.average, hide: this.shownHide, snapshot:this.snap, exec: this.exec });
 
 	/** Applies URL params for `routeId`. Scope keys missing from the URL keep their current value. */
 	loadFromUrl(url: URL, routeId: string | null) {
@@ -202,14 +215,16 @@ class UiState {
 			const v = (this as any)[key];
 			const s = (f.codec.ser as (v: unknown) => string)(v);
 			const d = (f.codec.ser as (v: unknown) => string)(f.codec.def);
+			if(key==='machine'){sp.set(f.codec.param,s);continue;}
 			if (s !== d && s !== '') sp.set(f.codec.param, s);
 		}
 		const out = sp.toString();
 		return out ? '?' + out : '';
 	}
 
-	openProfile(rt: string) {
-		this.drawer = { type: 'profile', rt };
+	/** Open a runtime profile for one backend; without `c` the runtime's first backend on this machine. */
+	openProfile(rt: string, c?: CfgId) {
+		this.drawer = { type: 'profile', rt, c };
 	}
 }
 

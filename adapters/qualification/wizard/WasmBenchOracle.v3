@@ -1,0 +1,113 @@
+// Independent typed result/memory checks for the persistent SDK adapter.
+// Callers perform these checks after the phase clock stops.
+component WasmfyiWizardJson {
+    def field(value: JsonValue, key: string) -> JsonValue {
+        if (JsonValue.JObject.?(value)) return JsonValue.JObject.!(value).v[key];
+        return JsonValue.Null;
+    }
+    def text(value: JsonValue) -> string {
+        if (JsonValue.String.?(value)) {
+            var result = JsonValue.String.!(value).v;
+            if (result != null) return result;
+        }
+        return "";
+    }
+    def array(value: JsonValue) -> Array<JsonValue> {
+        if (JsonValue.JArray.?(value)) return JsonValue.JArray.!(value).v;
+        return Array<JsonValue>.new(0);
+    }
+    def number(value: JsonValue) -> int {
+        if (JsonValue.Int.?(value)) return JsonValue.Int.!(value).v;
+        return 0;
+    }
+    def unsigned(value: string) -> (u64, bool) {
+        return decimal(value, false);
+    }
+    def argument(value: string) -> (u64, bool) {
+        return decimal(value, true);
+    }
+    def decimal(value: string, allowNegative: bool) -> (u64, bool) {
+        if (value.length == 0) return (0uL, false);
+        var negative = allowNegative && value[0] == '-';
+        var first = if(negative, 1, 0);
+        if (first == value.length) return (0uL, false);
+        var result = 0uL;
+        for (i = first; i < value.length; i++) {
+            var c = value[i];
+            if (c < '0' || c > '9') return (0uL, false);
+            var digit = u64.view(c - '0');
+            if (result > (0xffff_ffff_ffff_ffffuL - digit) / 10uL) return (0uL, false);
+            result = result * 10uL + digit;
+        }
+        return (if(negative, 0uL - result, result), true);
+    }
+    def nibble(c: byte) -> int {
+        if (c >= '0' && c <= '9') return int.view(c - '0');
+        if (c >= 'a' && c <= 'f') return int.view(c - 'a') + 10;
+        if (c >= 'A' && c <= 'F') return int.view(c - 'A') + 10;
+        return -1;
+    }
+    def hex(value: string) -> Array<byte> {
+        if (value.length % 2 != 0) return null;
+        var bytes = Array<byte>.new(value.length / 2);
+        for (i < bytes.length) {
+            var hi = nibble(value[i * 2]), lo = nibble(value[i * 2 + 1]);
+            if (hi < 0 || lo < 0) return null;
+            bytes[i] = byte.view(hi * 16 + lo);
+        }
+        return bytes;
+    }
+}
+
+component WasmfyiWizardOracle {
+    def arguments(function: Function, raw: Array<JsonValue>) -> Array<Value> {
+        if (function == null || raw.length != function.sig.params.length) return null;
+        var values = Array<Value>.new(raw.length);
+        for (i < raw.length) {
+            var parsed = WasmfyiWizardJson.argument(WasmfyiWizardJson.text(raw[i]));
+            if (!parsed.1) return null;
+            match (function.sig.params[i]) {
+                I32 => values[i] = Value.I32(u32.view(parsed.0));
+                I64 => values[i] = Value.I64(parsed.0);
+                F32 => values[i] = Value.F32(u32.view(parsed.0));
+                F64 => values[i] = Value.F64(parsed.0);
+                _ => return null;
+            }
+        }
+        return values;
+    }
+    def bits(value: Value) -> (u64, bool) {
+        match (value) {
+            I32(v) => return (u64.view(v), true);
+            I64(v) => return (v, true);
+            F32(v) => return (u64.view(v), true);
+            F64(v) => return (v, true);
+            _ => return (0uL, false);
+        }
+    }
+    def scalar(result: Result, expected: Array<JsonValue>) -> bool {
+        if (!Result.Value.?(result)) return false;
+        var values = Result.Value.!(result).vals;
+        if (values.length != expected.length) return false;
+        for (i < values.length) {
+            var actual = bits(values[i]);
+            var wanted = WasmfyiWizardJson.unsigned(WasmfyiWizardJson.text(expected[i]));
+            if (!actual.1 || !wanted.1 || actual.0 != wanted.0) return false;
+        }
+        return true;
+    }
+    def memory(instance: Instance, offset: u64, expected: Array<byte>) -> bool {
+        if (instance == null || instance.memories.length == 0 || expected == null) return false;
+        var range = instance.memories[0].range_ol_64(offset, u64.view(expected.length));
+        if (range.reason != TrapReason.NONE) return false;
+        for (i < expected.length) if (range.result[i] != expected[i]) return false;
+        return true;
+    }
+    def write(instance: Instance, offset: u64, bytes: Array<byte>) -> bool {
+        if (instance == null || instance.memories.length == 0 || bytes == null) return false;
+        var range = instance.memories[0].range_ol_64(offset, u64.view(bytes.length));
+        if (range.reason != TrapReason.NONE) return false;
+        for (i < bytes.length) range.result[i] = bytes[i];
+        return true;
+    }
+}

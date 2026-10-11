@@ -4,6 +4,7 @@
  import {fmtU} from '$lib/format';
  import {latencyAverages,engineVersions,selectEngineVersions,codeSizeLabel,type LatencyPage,type LatencyRow,type LatencyPhase,type LatencyPlatform} from '$lib/latency';
  import Seg from '../Seg.svelte';
+ import Select from '../Select.svelte';
  const phases=[['compile','Compilation'],['instantiate','Instantiation'],['first-call','First call'],['steady','Steady execution']] as const;
  const metricPhase={compile:'compile',inst:'instantiate',first:'first-call',steady:'steady'} as const;
  const phase=$derived(metricPhase[ui.metric as keyof typeof metricPhase]||'steady');
@@ -24,7 +25,7 @@
  function setPhase(value:string){ui.metric=({compile:'compile',instantiate:'inst','first-call':'first',steady:'steady'} as const)[value as LatencyPhase]}
  function toggle(engine:string){if(hidden.includes(engine))hidden=hidden.filter(e=>e!==engine);else if(shown.length>1)hidden=[...hidden,engine]}
  function bytes(value:number|null|undefined,status:string|undefined){return value!=null?fmtU(value/1024,'KiB'):status||'not captured'}
- function value(row:LatencyRow|undefined){return row?.latencyStatus==='ok'&&row.latencyNs!=null?fmtU(row.latencyNs/1e6,'ms'):row?.latencyStatus||'not measured'}
+ function value(row:LatencyRow|undefined){return row?.latencyStatus==='ok'&&row.latencyNs!=null?fmtU(row.latencyNs/1e6,'ms'):row?.latencyStatus||'n/a'}
  async function load(selected:string,current:LatencyPhase){
   controller?.abort();controller=new AbortController();const signal=controller.signal;
   const token=++generation;loading=rows.length===0;error='';
@@ -61,7 +62,7 @@
 <div class="stack">
  <h1>Benchmarks</h1>
  <div class="controls">
-  <select bind:value={platform} aria-label="Platform">{#each platforms as p}<option value={p.id}>{p.cpu} · {p.os}/{p.arch}</option>{/each}</select>
+  <Select label="Platform" options={platforms.map((p): [string, string] => [p.id, `${p.cpu} · ${p.os}/${p.arch}`])} value={platform} onselect={(v) => (platform = v)} />
   <Seg options={phases.map(([id,label])=>[id,label])} value={phase} onselect={setPhase} label="Latency phase" />
   <Seg options={[['per-engine','Passed per engine'],['shared','Passed on all engines']]} value={ui.cohortMode} onselect={v=>ui.cohortMode=v as 'shared'|'per-engine'} label="Average corpus selection" />
  </div>
@@ -73,7 +74,7 @@
  <div class="table-scroll" id="workloads"><table>
   <thead><tr><th>Wasm workload</th>{#each shown as engine}<th>{engine}<span class="version" title={version(engine)}>{version(engine)}</span>{#if (versions.get(engine)?.length||0)>1}<select class="version-picker" aria-label={engine+' version'} value={(versions.get(engine)||[]).some(c=>c.key===selectedVersions[engine])?selectedVersions[engine]:''} onchange={e=>selectVersion(engine,e.currentTarget.value)}><option value="">Latest measured version</option>{#each versions.get(engine)||[] as config}<option value={config.key}>{config.version} · {config.backend}</option>{/each}</select>{/if}</th>{/each}</tr></thead>
   <tbody>
-   <tr class="average"><th>Average</th>{#each averages as a}<td>{a.value==null?'not measured':fmtU(a.value/1e6,'ms')}<span class="version">{a.count} passed workloads</span></td>{/each}</tr>
+   <tr class="average"><th>Average</th>{#each averages as a}<td>{a.value==null?'n/a':fmtU(a.value/1e6,'ms')}<span class="version">{a.count} passed workloads</span></td>{/each}</tr>
    {#each workloads as workload}
     {@const sample=rows.find(r=>r.workload===workload)}
     <tr><th>{workload}<span class="version">{sample?.wasm}</span></th>{#each shown as engine}{@const cell=cells.get(workload+'|'+engine)}<td>{value(cell)}<span class="version">Peak RSS: {bytes(cell?.peakRssBytes,cell?.memoryStatus)}</span><span class="version">{codeSizeLabel(cell?.codeKind)}: {bytes(cell?.codeBytes,cell?.codeStatus)}</span></td>{/each}</tr>

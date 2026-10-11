@@ -3,10 +3,10 @@
 	grace_period 5s
 }
 
-http://localhost:8080 {
+http://localhost:{$WASMFYI_LOCAL_PORT:8788} {
 	bind 127.0.0.1 ::1
 	encode gzip
-	reverse_proxy 127.0.0.1:8090 {
+	reverse_proxy 127.0.0.1:{$WASMFYI_LOCAL_API_PORT:8789} {
 		header_up X-Real-IP {remote_host}
 	}
 }

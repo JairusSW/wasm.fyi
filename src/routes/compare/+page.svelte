@@ -217,10 +217,20 @@
 	}
 	.brow {
 		display: grid;
-		grid-template-columns: 18px 130px 1fr 80px;
+		grid-template-columns: 18px minmax(0, 170px) 1fr 80px;
 		gap: 8px;
 		align-items: center;
 		font-size: 12px;
+	}
+	/* long backend names are cut short instead of running into the bars */
+	.brow > :global(.label) {
+		min-width: 0;
+		overflow: hidden;
+	}
+	.brow :global(.rl) {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 	.bar {
 		height: 8px;

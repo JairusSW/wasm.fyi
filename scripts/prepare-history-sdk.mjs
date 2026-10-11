@@ -11,7 +11,7 @@ const pin=plan.pins.filter(p=>p.engine===engine&&p.targetType==='main'&&p.status
 if(!pin)throw Error('No planned snapshot for '+configuration);
 const directory=await historyBuildDirectory(root,pin,configuration);
 await mkdir(directory,{recursive:true});
-const env={...process.env,...template.env,GOWORK:'off',GOFLAGS:'-buildvcs=false',CARGO_BUILD_JOBS:'2'};
+const env={...process.env,...template.env,GOWORK:'off',GOFLAGS:'-buildvcs=false'};
 const run=(program,args)=>runCommand(program,args,{cwd:process.cwd(),env,log:join(directory,'prepare.log')});
 const source=join(directory,'sources',engine);await mkdir(source,{recursive:true});
 if(!await stat(join(source,'.git')).catch(()=>null)){await run('git',['init',source]);await run('git',['-C',source,'remote','add','origin','https://github.com/'+pin.repository+'.git']);}

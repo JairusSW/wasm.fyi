@@ -1,0 +1,69 @@
+name: Verify current application
+on:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            /*
+            !/*/
+            /src/
+            /scripts/
+            /service/
+            /corpora/catalog.json
+            /corpora/features/manifest.json
+            /static/brand/
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.4.0'
+      - uses: pnpm/action-setup@v4
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - name: Test live API clients and UI calculations
+        run: >-
+          pnpm exec vitest run src/lib/api
+          src/lib/latency.test.ts src/lib/version-identity.test.ts
+          src/lib/call-total.test.ts src/lib/peak-rss-average.test.ts
+          src/lib/main-latency.test.ts src/lib/native-code-cohort.test.ts
+          src/lib/sample-distribution.test.ts src/lib/path.test.ts
+          src/lib/comparison-baseline.test.ts src/lib/ranking-policy.test.ts
+          src/lib/feature-average.test.ts src/lib/feature-leaders.test.ts
+          src/lib/preferred-machine.test.ts src/lib/leader-card-keys.test.ts
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            /*
+            !/*/
+            /service/
+            /scripts/
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: service/go.mod
+          cache-dependency-path: service/go.sum
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.4.0'
+      - name: Test and vet backend
+        working-directory: service
+        env:
+          GOWORK: 'off'
+          GOFLAGS: -mod=readonly
+        run: |
+          go test -race -timeout 15m ./...
+          go vet ./...
+      - name: Test release activation and history boundaries
+        run: |
+          python3 scripts/activate-remote.test.py
+          node --test scripts/history-scope.test.mjs scripts/audit-history-corpus-captures.test.mjs

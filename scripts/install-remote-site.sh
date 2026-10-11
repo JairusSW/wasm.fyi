@@ -17,7 +17,7 @@ if ! command -v caddy >/dev/null; then
   apt-get install -y --no-install-recommends caddy
 fi
 if [[ ! -x "$release/wasmfyi" ]]; then
-  (cd "$release/source/service" && CGO_ENABLED=0 GOWORK=off GOMAXPROCS=2 GOFLAGS=-mod=readonly go build -p 2 -o "$release/wasmfyi" ./cmd/wasmfyi)
+  (cd "$release/source/service" && CGO_ENABLED=1 GOWORK=off GOMAXPROCS=2 GOFLAGS=-mod=readonly go build -p 2 -o "$release/wasmfyi" ./cmd/wasmfyi)
 fi
 getent passwd wasmfyi >/dev/null || adduser --system --group --home /var/lib/wasmfyi --no-create-home wasmfyi
 install -d -m 755 /etc/wasmfyi /var/lib/wasmfyi /var/lib/wasmfyi-publisher /root/.ssh

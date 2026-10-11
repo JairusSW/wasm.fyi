@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Brand from '$lib/components/Brand.svelte';
 	import { siteHref } from '$lib/links';
 	import { goto } from '$lib/navigation';
 	import { page } from '$app/state';
@@ -42,6 +43,7 @@
 	function toggleTheme() {
 		ui.theme = ui.theme === 'dark' ? 'light' : 'dark';
 		document.documentElement.dataset.theme = ui.theme;
+		document.documentElement.dataset.themePreference = ui.theme;
 		document.querySelector('meta[name="theme-color"]')?.setAttribute('content', ui.theme === 'light' ? '#f6f6f4' : '#0d0e10');
 		try {
 			localStorage.setItem('theme', ui.theme);
@@ -52,7 +54,7 @@
 </script>
 
 <header class:search-open={searchOpen || !!ui.q}>
-	<a class="brand mono" href={siteHref(`/`)}>wasm.fyi</a>
+	<a class="brand" href={siteHref(`/`)} aria-label="wasm.fyi home"><Brand mark /></a>
 	<nav aria-label="Primary">
 		{#each NAV as [path, label, routes] (path)}
 			<a href={siteHref(path)} aria-current={active(routes) ? 'page' : undefined}>{label}</a>

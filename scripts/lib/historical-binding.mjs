@@ -1,3 +1,5 @@
+import {applyWasm3Sampling} from './wasm3-sampling.mjs';
+import {applyLegacyWasmtimeAPI} from './wasmtime-legacy-api.mjs';
 import {readFile,writeFile,mkdir,cp,readdir} from 'node:fs/promises';
 import {join,dirname} from 'node:path';
 import {command,digest,exists} from './wasmbench.mjs';
@@ -157,55 +159,7 @@ export async function buildHistoricalBinding({root,pin,configuration,invoke,env}
     await replace('adapters/wasmtime/Cargo.toml','=46.0.1','='+version);
     await replaceSourceTree('adapters/wasmtime/src','.rs','46.0.1');
     const major=Number(version.split('.')[0]);
-    let compatibilityPatch=null;
-    if(major===24||major===36) {
-      await replace('adapters/wasmtime/Cargo.toml','features = ["p1"]','features = ["preview1"]');
-      if(major===24){
-        await replace('adapters/wasmtime/Cargo.toml','wasmtime-internal-jit-icache-coherence = { version','wasmtime-internal-jit-icache-coherence = { package = "wasmtime-jit-icache-coherence", version');
-        await replace('adapters/wasmtime/Cargo.toml','component-async-probes = ["wasmtime/component-model-async"]','component-async-probes = []');
-        await replace('adapters/wasmtime/src/pooling.rs','.memory_reservation(16 * 1024 * 1024)','.static_memory_maximum_size(16 * 1024 * 1024)');
-        await replace('adapters/wasmtime/src/pooling.rs','.memory_guard_size(65536)','.static_memory_guard_size(65536).dynamic_memory_guard_size(65536)');
-        await replace('adapters/wasmtime/src/vectors.rs','Val::default_for_ty(&t)', 'match t { ValType::I32=>Some(Val::I32(0)), ValType::I64=>Some(Val::I64(0)), ValType::F32=>Some(Val::F32(0)), ValType::F64=>Some(Val::F64(0)), ValType::V128=>Some(Val::V128(0u128.into())), ValType::Ref(r) if r.is_nullable()=>Some(Val::null_ref(r.heap_type())), _=>None }');
-      }
-      const files=[];
-      const patchOldApi=async directory=>{
-        for(const entry of await readdir(join(root,directory),{withFileTypes:true})) {
-          const path=join(directory,entry.name);
-          if(entry.isDirectory())await patchOldApi(path);
-          else if(path.endsWith('.rs')) {
-            let text=await readFile(join(root,path),'utf8');
-            text=text.replaceAll('wasmtime_wasi::p1','wasmtime_wasi::preview1').replaceAll('p1::{self','preview1::{self')
-              .replaceAll('wasmtime::bail!','anyhow::bail!').replaceAll('wasmtime::ensure!','anyhow::ensure!')
-              .replaceAll('wasmtime::format_err!','anyhow::anyhow!');
-            text=text.replace(/use wasmtime::\{[^;]*\};/gs,clause=>clause
-              .replace(/([,{])\s*(?:bail|ensure|format_err(?:\s+as\s+\w+)?)\s*,/g,'$1')
-              .replace(/,\s*(?:bail|ensure|format_err(?:\s+as\s+\w+)?)\s*(?=})/g,'')
-              .replace(/\{\s*}/g,'{}'));
-            text=text.replace(/use wasmtime::(?:bail|ensure|format_err(?:\s+as\s+\w+)?)\s*;/g,'')
-              .replace(/(?<!:)\bbail!/g,'anyhow::bail!').replace(/(?<!:)\bensure!/g,'anyhow::ensure!')
-              .replace(/(?<!:)\bformat_err!/g,'anyhow::anyhow!').replace(/(?<![:\w])anyhow!/g,'anyhow::anyhow!')
-              .replace('preview1::{self,','preview1::{self as p1,')
-              .replace('use crate::{Result, Val, Value, anyhow, bail, bits};','use crate::{Result, Val, Value, bits};');
-            await writeFile(join(root,path),text);files.push(path);
-          }
-        }
-      };
-      await patchOldApi('adapters/wasmtime/src');
-      await writeFile(join(root,'adapters/wasmtime/src/features.rs'),
-        'use serde_json::{Value,json};\nuse wasmtime::Config;\n'+
-        'pub fn configure(config:&mut Config,winch:bool){config.wasm_tail_call(!winch);config.wasm_relaxed_simd(!winch);'+(major===24?'':'config.wasm_exceptions(false);config.wasm_legacy_exceptions(false);')+'if winch&&cfg!(target_arch="aarch64"){config.wasm_simd(false);}}\n'+
-        'pub fn describe(winch:bool)->Value{json!({"namespace":"Wasmtime '+major+' Config defaults","enabled":{"TAIL_CALL":!winch,"RELAXED_SIMD":!winch,"SIMD":!(winch&&cfg!(target_arch="aarch64"))},"disabled":["GC","FUNCTION_REFERENCES","THREADS","STACK_SWITCHING","CM_ASYNC","CM_ASYNC_STACKFUL"]})}\n');
-      await writeFile(join(root,'adapters/wasmtime/src/component_calls.rs'),
-        'use serde_json::{Value,json};\nuse wasmtime::{Engine,Result};\n'+
-        'pub const POLICY:&str="component-u64-v1";pub const BOUNDARIES:&str="not measured: features held";\n'+
-        'pub fn validate(_: &Value)->Result<()>{Ok(())}\n'+
-        'pub fn run(_: &Engine,_:&[u8],_:&Value,_:&Value,_:&mut dyn FnMut(u64,&str)->Result<()>)->Result<Value>{Ok(json!({"status":"unsupported","reason":"historical Component Model features held"}))}\n');
-      await writeFile(join(root,'adapters/wasmtime/src/components.rs'),
-        'use serde_json::{Value,json};\nuse wasmtime::{Engine,Result};\n'+
-        'pub fn validate_workload(_: &Value)->Result<()>{Ok(())}\n'+
-        'pub fn run(_: &Engine,_:&[u8],_:&Value,_:&Value)->Result<Value>{Ok(json!({"status":"unsupported","reason":"historical Component Model features held"}))}\n');
-      compatibilityPatch={adapterApi:'Wasmtime '+major,wasiPreview1Feature:'preview1',components:'excluded from this feature-held suite',filesSha256:digest(JSON.stringify(await Promise.all(files.map(async path=>[path,digest(await readFile(join(root,path)))]))))};
-    }
+    const compatibilityPatch=await applyLegacyWasmtimeAPI(root,major);
     if(major>=48) {
       await replace('adapters/wasmtime/src/commands.rs',
         'use wasmtime_wasi::{DirPerms, FilePerms, I32Exit, WasiCtxBuilder};',
@@ -241,6 +195,7 @@ export async function buildHistoricalBinding({root,pin,configuration,invoke,env}
       for(const name of await readdir(join(source.source,'source')))if(name.endsWith('.h'))await cp(join(source.source,'source',name),join(sdk,'include',name));
       await cp(join(build,'source','libm3.a'),join(sdk,'lib','libm3.a'));
       env.WASMBENCH_WASM3_SDK=sdk;env.WASMBENCH_WASM3_VERSION=version;
+      await applyWasm3Sampling(root);
     } else {
       const target=join(root,'toolchains',`wamr-build-${configuration}-${version}`);
       const isolated=join(root,'toolchains',`wamr-source-${configuration}-${version}`);
@@ -326,11 +281,23 @@ export async function buildHistoricalBinding({root,pin,configuration,invoke,env}
     command('git',['submodule','update','--init','--depth','1','lib/napi'],{cwd:source.source,stdio:'inherit'});
     const napi=command('git',['rev-parse','HEAD:lib/napi'],{cwd:source.source}).toString().trim();
     if(command('git',['-C','lib/napi','rev-parse','HEAD'],{cwd:source.source}).toString().trim()!==napi)throw Error('Wasmer NAPI submodule differs from its published gitlink');
+    // Keep the release pristine; this observer only exposes complete function byte counts.
+    const measurementSource=join(root,'toolchains',`wasmer-measurement-${version}`);
+    if(!await exists(measurementSource))await cp(source.source,measurementSource,{recursive:true,filter:path=>!['.git','target'].includes(path.split('/').at(-1))});
+    const api=await readFile(join(measurementSource,'lib/api/src/backend/sys/entities/module.rs'),'utf8');
+    const artifact=await readFile(join(measurementSource,'lib/compiler/src/engine/artifact.rs'),'utf8');
+    const cModule=join(measurementSource,'lib/c-api/src/wasm_c_api/module.rs');
+    const getter=await readFile(join(root,'adapters/native/wasmer-native-size.rs'),'utf8');
+    let measurementPatchSha256=null;
+    if(api.includes('pub fn sys_artifact')&&artifact.includes('pub fn finished_function_extents')){
+      const current=await readFile(cModule,'utf8');if(!current.includes('fn wasmbench_module_native_function_size'))await writeFile(cModule,current+getter);
+      measurementPatchSha256=digest(Buffer.from(getter));
+    }
     const sdk=join(root,'toolchains',`wasmer-${version}`,'sdk'),target=join(root,'toolchains',`wasmer-${version}`,'target');
     let llvmToolchain=null;
     if(configuration==='wasmer-llvm')llvmToolchain=await configureWasmerLLVM(source.source,env,async(program,args)=>({output:command(program,args,{cwd:root,env}).toString()}));
     const features='sys-default,cranelift,singlepass,wasi,wasmer-artifact-create,wasmer-artifact-load'+(configuration==='wasmer-llvm'?',llvm':'');
-    command('cargo',['build','--manifest-path',join(source.source,'lib/c-api/Cargo.toml'),'--release','--locked','--no-default-features','--features',features],{cwd:source.source,env:{...env,CARGO_TARGET_DIR:target},stdio:'inherit',timeout:90*60*1000});
+    command('cargo',['build','--manifest-path',join(measurementSource,'lib/c-api/Cargo.toml'),'--release','--locked','--no-default-features','--features',features],{cwd:measurementSource,env:{...env,CARGO_TARGET_DIR:target},stdio:'inherit',timeout:90*60*1000});
     const libraryName=process.platform==='darwin'?'libwasmer.dylib':process.platform==='linux'?'libwasmer.so':null;
     if(!libraryName)throw Error('Unsupported Wasmer historical build platform');
     await mkdir(join(sdk,'include'),{recursive:true});await mkdir(join(sdk,'lib'),{recursive:true});
@@ -340,7 +307,7 @@ export async function buildHistoricalBinding({root,pin,configuration,invoke,env}
     invoke('build','--runtimes',configuration);
     assertReleasedSource(source.source,source);
     if(command('git',['-C','lib/napi','rev-parse','HEAD'],{cwd:source.source}).toString().trim()!==napi)throw Error('Wasmer NAPI submodule changed during the build');
-    source={...source,sdk,features,napi,llvmToolchain,librarySha256:digest(await readFile(join(sdk,'lib',libraryName))),lockSha256:digest(await readFile(join(source.source,'Cargo.lock')))};
+    source={...source,sdk,features,napi,llvmToolchain,measurementSource,measurementPatchSha256,librarySha256:digest(await readFile(join(sdk,'lib',libraryName))),lockSha256:digest(await readFile(join(source.source,'Cargo.lock')))};
   } else {
     const error=Error('A release-specific performance build binding is still required for '+pin.engine+' '+pin.tag);
     error.code='BINDING_PENDING';throw error;
@@ -352,7 +319,7 @@ export function assertHistoricalRuntime(runtime,binding) {
   if(runtime.id!==binding.configuration)throw Error('Historical configuration does not match its release binding');
   const actual=runtime.description?.runtime_version;
   if(binding.engine==='v8') {
-    if(actual!==binding.source.embeddedV8||runtime.description?.build!=='v'+binding.source.nodeVersion||runtime.description?.backend!=='optimizing-only')throw Error('Historical V8 does not match its release-pinned Node/V8 binary or eager optimizing compiler policy');
+    if(actual!==binding.source.embeddedV8||runtime.description?.build!=='v'+binding.source.nodeVersion||!['optimizing-only','turboshaft'].includes(runtime.description?.backend))throw Error('Historical V8 does not match its release-pinned Node/V8 binary or eager optimizing compiler policy');
   } else if(binding.engine==='jsc') {
     const binary='binary-sha256:'+binding.source.binarySha256;
     if(actual!=='WebKitGTK/'+binding.version||runtime.description?.build!==binary||!runtime.description?.backend?.includes('OMG'))throw Error('Historical JavaScriptCore release binary identity or forced OMG tier differs');

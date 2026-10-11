@@ -1,3 +1,21 @@
+/* Metric-matched fallbacks: until IBM Plex arrives, local fonts scaled to Plex's widths and line
+   metrics stand in, so the swap doesn't reflow chips, tables or headings. */
+@font-face {
+	font-family: 'Plex Sans Fallback';
+	src: local('Arial'), local('Helvetica'), local('Liberation Sans');
+	size-adjust: 102%;
+	ascent-override: 100%;
+	descent-override: 26.5%;
+	line-gap-override: 0%;
+}
+@font-face {
+	font-family: 'Plex Mono Fallback';
+	src: local('Menlo'), local('Consolas'), local('Liberation Mono'), local('Courier New');
+	size-adjust: 99.7%;
+	ascent-override: 102.3%;
+	descent-override: 27.1%;
+	line-gap-override: 0%;
+}
 /* Design tokens — dark is the default theme. */
 :root {
 	--bg: #0d0e10;
@@ -25,8 +43,8 @@
 	--good: oklch(0.72 0.11 170);
 	--bad: oklch(0.72 0.13 45);
 	--focus: oklch(0.82 0.14 95);
-	--sans: 'IBM Plex Sans', system-ui, sans-serif;
-	--mono: 'IBM Plex Mono', ui-monospace, monospace;
+	--sans: 'IBM Plex Sans', 'Plex Sans Fallback', system-ui, sans-serif;
+	--mono: 'IBM Plex Mono', 'Plex Mono Fallback', ui-monospace, monospace;
 	--shadow-float: 0 6px 18px rgba(0, 0, 0, 0.28);
 	/* Widest content column; chrome (header, scope bar, footer) aligns its contents to it. */
 	--content-max: 1680px;
@@ -272,7 +290,7 @@ table.t {
 }
 table.t th {
 	text-align: left;
-	padding: 6px 12px;
+	padding: 4px 12px;
 	font-weight: 500;
 	font-size: 11px;
 	color: var(--fg3);
@@ -280,7 +298,7 @@ table.t th {
 	white-space: nowrap;
 }
 table.t td {
-	padding: 5px 12px;
+	padding: 3px 12px;
 	border-bottom: 1px solid var(--line);
 }
 table.t .r {
@@ -325,7 +343,7 @@ table.mx tr.sec td {
 }
 .th-label {
 	text-align: left;
-	padding: 8px 12px;
+	padding: 5px 12px;
 	font-size: 11px;
 	color: var(--fg3);
 }
@@ -337,10 +355,30 @@ table.mx tr.sec td {
 	border: 0;
 	text-align: right;
 }
+/* Cell buttons in tables: the heat background sits on the cell itself, which always spans
+   the full row height in every browser. The button's ::after covers the whole cell so the
+   click target and hover outline match it, however tall the row grows. */
+td:has(> .cellbtn) {
+	position: relative;
+	padding: 0;
+}
+td > .cellbtn {
+	position: static;
+	background: transparent;
+}
+td > .cellbtn::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+}
 @media (hover: hover) {
-	.cellbtn:hover {
+	.cellbtn:hover,
+	td:has(> .cellbtn:hover) {
 		outline: 1px solid var(--fg3);
 		outline-offset: -1px;
+	}
+	td > .cellbtn:hover {
+		outline: none;
 	}
 	.hoverbg:hover {
 		background: var(--hover);
@@ -379,7 +417,8 @@ table.mx tr.sec td {
 /* Touch: hover affordances stick after a tap, so give a press state instead. */
 @media (hover: none) {
 	.hoverbg:active,
-	.cellbtn:active {
+	.cellbtn:active,
+	td:has(> .cellbtn:active) {
 		outline: 1px solid var(--fg3);
 		outline-offset: -1px;
 	}
@@ -464,4 +503,33 @@ table.mx tr.sec td {
 	.th-label {
 		padding: 8px 10px;
 	}
+}
+
+/* Range selection on history charts: dragging never selects text, on the chart or anywhere it passes. */
+:root.range-dragging,
+:root.range-dragging * {
+	-webkit-user-select: none !important;
+	user-select: none !important;
+}
+
+/* Skeleton placeholders while the dataset loads: a muted bar with a slow sheen. */
+.skel {
+	display: inline-block;
+	height: 0.72em;
+	width: 4em;
+	max-width: 100%;
+	border-radius: 3px;
+	vertical-align: middle;
+	background: linear-gradient(90deg, var(--bg3) 0%, color-mix(in srgb, var(--fg) 9%, var(--bg3)) 50%, var(--bg3) 100%) 0 0 / 300% 100%;
+	animation: skel-sheen 1.6s ease-in-out infinite;
+}
+.skel.block {
+	display: block;
+}
+@keyframes skel-sheen {
+	from { background-position: 100% 0; }
+	to { background-position: 0 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+	.skel { animation: none; }
 }

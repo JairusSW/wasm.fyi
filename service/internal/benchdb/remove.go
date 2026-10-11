@@ -47,7 +47,7 @@ func (s *Store) removeMeasurements(ctx context.Context, id string, byPlatform bo
 				return 0, err
 			}
 			var m measurement
-			if err = json.Unmarshal(it.Value(), &m); err != nil {
+			if err = unmarshalMeasurement(b, it.Value(), &m); err != nil {
 				it.Close()
 				return 0, err
 			}

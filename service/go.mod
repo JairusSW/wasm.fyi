@@ -3,6 +3,7 @@ module github.com/JairusSW/wasm.fyi/service
 go 1.27.1
 
 require (
+	github.com/oschwald/maxminddb-golang v1.13.1
 	github.com/cockroachdb/pebble/v2 v2.1.7
 	golang.org/x/sys v0.44.0
 )
@@ -26,6 +27,7 @@ require (
 	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
+	github.com/mattn/go-sqlite3 v1.14.52 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/minio/minlz v1.0.1-0.20250507153514-87eb42fe8882 // indirect
 	github.com/pkg/errors v0.9.1 // indirect

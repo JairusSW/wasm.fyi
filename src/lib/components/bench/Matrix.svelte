@@ -1,15 +1,15 @@
 <script lang="ts">
 import {apiView,aggregateKey} from '$lib/api/controller.svelte';
 import {datasetView} from '$lib/api/view.svelte';
- import { tipCard, tipWho } from '$lib/tip';
+ import { rankStats, tipCard, tipWho } from '$lib/tip';
 import { CALL_PATHS } from '$lib/call-paths';
 import { CFG } from '$lib/data/runtimes';
 import { ST } from '$lib/data/status';
-	import { OV } from '$lib/data/snapshot';
+	import { OV, UNIT } from '$lib/data/snapshot';
 	import type { MetricKey, OvKey } from '$lib/data/types';
-	import { fmtUGroup, n0 } from '$lib/format';
-	import { heatCount, heatRatio } from '$lib/heat';
-	import { totalWorkloads, sharedCount, cov, absOf, disp, isOff, isVisible, ratio, compileExcluded } from '$lib/model';
+	import { fmtU, fmtUGroup, n0 } from '$lib/format';
+	import { heatCount, heatField } from '$lib/heat';
+	import { totalWorkloads, sharedCount, cov, absOf, disp, isOff, isVisible, compileExcluded } from '$lib/model';
 import { ui } from '$lib/state.svelte';
 import { viewCell, viewData } from '$lib/view-data';
 	import Carousel from '../Carousel.svelte';
@@ -59,21 +59,66 @@ import { viewCell, viewData } from '$lib/view-data';
 	const callCells = $derived.by(() => {
 		const configs = CFG.filter((c) => isVisible(ui.scope, c));
 		const raw = callWorkloads.map((workload) => configs.map((config) => viewCell(ui.machine, ui.snap, workload, config.id, 'steady')));
-		const baselines = callWorkloads.map(workload => viewCell(ui.machine, ui.snap, workload, ui.baseline, 'steady'));
-		const total=(cells:typeof baselines)=>cells.every(c=>c.st==='ok'&&c.v!=null)?{st:'ok' as const,v:cells.reduce((sum,c)=>sum+c.v!,0),report:''}:{st:'nm' as const,report:''};
+		const total=(cells:(typeof raw)[number])=>cells.every(c=>c.st==='ok'&&c.v!=null)?{st:'ok' as const,v:cells.reduce((sum,c)=>sum+c.v!,0),report:''}:{st:'nm' as const,report:''};
 		raw.push(configs.map((_,index)=>total(raw.slice(0,2).map(cells=>cells[index]))));
-		baselines.push(total(baselines.slice(0,2)));
 		const values = raw.flatMap(cells => cells.map(cell => cell.st === 'ok' ? cell.v ?? null : null));
 		const formatted = fmtUGroup(values, 'ms');
 		return new Map(configs.map((config, configIndex) => [config.id, raw.map((cells, directionIndex) => {
 			const cell = cells[configIndex];
-			const baseline = baselines[directionIndex];
 			if (cell.st !== 'ok' || cell.v == null) return {text: ST[cell.st][1], bg: 'transparent', color: ST[cell.st][2]};
-			const baselineValue = baseline.st === 'ok' ? baseline.v : null;
-			const rel = baselineValue && baselineValue > 0 ? cell.v / baselineValue : null;
-			return {text: formatted[directionIndex * configs.length + configIndex] || '—', rate: cell.v > 0 ? `${opsRate(cell.v)} ops/s · reciprocal of latency` : '', bg: heatRatio(rel), color: 'var(--fg)'};
+			return {text: formatted[directionIndex * configs.length + configIndex] || '—', rate: cell.v > 0 ? `${opsRate(cell.v)} ops/s · reciprocal of latency` : '', bg: heatField(values.slice(directionIndex * configs.length, (directionIndex + 1) * configs.length), configIndex), color: 'var(--fg)'};
 		})]));
 	});
+
+	// Each aggregate column's values across the shown runtimes, for heat, place and column leader.
+	const columns = $derived.by(() => {
+		if (ui.group !== 'lat' && ui.group !== 'mem' && ui.group !== 'code') return null;
+		const s = ui.scope;
+		const grp = ui.group;
+		const cfgs = CFG.filter((c) => isVisible(s, c));
+		return g.cols.map((_, i) => ({ cfgs, vals: cfgs.map((c) => (compileExcluded(s, c, g.metrics[i]) ? null : (absOf(s, grp, c.id, grp === 'code' ? i + 3 : i)?.v ?? null))) }));
+	});
+	// Tooltip place and column leader for each aggregate cell, keyed by column then config id.
+	const ranks = $derived.by(() => {
+		if (!columns) return null;
+		const grp = ui.group as 'lat' | 'mem' | 'code';
+		return columns.map(({ cfgs, vals }) => {
+			const names = cfgs.map((c) => `${c.rt} ${c.be}`);
+			return new Map(cfgs.map((c, k) => [c.id, rankStats(vals, k, names, (v) => fmtU(v, UNIT[grp]), grp === 'lat' ? 'fastest' : 'smallest')]));
+		});
+	});
+	const heatOf = (i: number, cid: (typeof CFG)[number]['id']) => {
+		const col = columns?.[i];
+		return col ? heatField(col.vals, col.cfgs.findIndex((c) => c.id === cid)) : 'transparent';
+	};
+
+	// End-to-end on the Latency tab: compile + instantiate + first call + one steady call,
+	// the sum of the four phase aggregates shown in the row. Missing or excluded phases give no total.
+	const e2eOf = (s: typeof ui.scope, c: (typeof CFG)[number]) => {
+		const parts = g.metrics.map((m, i) => (compileExcluded(s, c, m) ? null : (absOf(s, 'lat', c.id, i)?.v ?? null)));
+		return parts.every((v) => v != null) ? { total: (parts as number[]).reduce((a, b) => a + b, 0), parts: parts as number[] } : null;
+	};
+	const e2e = $derived.by(() => {
+		if (ui.group !== 'lat') return null;
+		const s = ui.scope;
+		const cfgs = CFG.filter((c) => isVisible(s, c));
+		const totals = cfgs.map((c) => e2eOf(s, c));
+		const names = cfgs.map((c) => `${c.rt} ${c.be}`);
+		const values = totals.map((t) => t?.total ?? null);
+		const formatted = fmtUGroup(values, 'ms');
+		return new Map(cfgs.map((c, k) => {
+			const t = totals[k];
+			return [c.id, t
+				? { text: '~' + formatted[k], bg: heatField(values, k), color: 'var(--fg)', stats: [...rankStats(values, k, names, (v) => fmtU(v, 'ms')), ...g.cols.map((label, i): [string, string] => [label.toLowerCase(), fmtU(t.parts[i], 'ms')])] }
+				: { text: '—', bg: 'transparent', color: 'var(--fg3)', stats: [] as [string, string][] }];
+		}));
+	});
+
+	// Latency, memory and code cells open the aggregate side panel; others keep switching the table.
+	const openCell = (cid: (typeof CFG)[number]['id'], i: number) => {
+		if (ui.group === 'lat' || ui.group === 'mem' || ui.group === 'code') ui.drawer = { type: 'aggregate', c: cid, group: ui.group, col: ui.group === 'code' ? i + 3 : i };
+		else onmetric(g.metrics[i]);
+	};
 
 	const rows = $derived.by(() => {
 		const s = ui.scope;
@@ -95,17 +140,16 @@ import { viewCell, viewData } from '$lib/view-data';
 				const grp = ui.group as 'lat' | 'mem' | 'code';
 				const sourceIndex = grp === 'code' ? i + 3 : i;
 				if ((grp === 'lat' || grp === 'mem') && compileExcluded(s, c, g.metrics[i])) return { text: 'n/a', bg: 'transparent', color: 'var(--fg3)' };
-				const r = ratio(s, grp, c.id, sourceIndex);
                 const absolute=absOf(s,grp,c.id,sourceIndex);
 				if (!absolute) {
 					const codeCells=Object.entries(viewData.hosts[s.machine].snapshots.s1).filter(([key])=>key.endsWith(`|${c.id}|code`));
                     const interpreter=grp==='code'&&(/interpreter/.test(viewData.hosts[s.machine].configurations[c.id]?.backend||'')||(codeCells.length>0&&codeCells.every(([,cell])=>cell.st==='unsupported')));
 					const metric=grp==='mem'&&i===3?'rssAverage':g.metrics[i];
 					const key=aggregateKey(s,metric);
-					const status=apiView.aggregateErrors[key]?'unavailable':!apiView.aggregates[key]&&datasetView.revision?'loading…':'not measured';
+					const status=apiView.aggregateErrors[key]?'unavailable':!apiView.aggregates[key]&&datasetView.revision?'loading…':'n/a';
 					return { text: interpreter?'n/a':disp(s,grp,c.id,sourceIndex)?.t || (off?'unavailable':ui.cohortMode==='shared'&&grp==='lat'?'No shared corpus':status), bg:'transparent',color:'var(--fg3)' };
 				}
-				return { text: commonTimes?.[i] || disp(s, grp, c.id, sourceIndex)!.t, bg: heatRatio(r?.r ?? null), color: 'var(--fg)' };
+				return { text: commonTimes?.[i] ? '~'+commonTimes[i] : disp(s, grp, c.id, sourceIndex)!.t, bg: heatOf(i, c.id), color: 'var(--fg)' };
 			});
 			return {
 				c,
@@ -147,24 +191,42 @@ import { viewCell, viewData } from '$lib/view-data';
 							<button onclick={() => onmetric(g.metrics[i])} data-tip-card={tipCard(ui.group === 'mem' && i === 3 ? { title: label, points: peakMemoryPoints, action: `open the per-benchmark ${label} matrix` } : ui.group === 'calls' ? { title: label, note: (CALL_PATHS[i]?.note || 'Sum of both measured call directions.'), action: `open the per-benchmark ${label} matrix` } : { title: label, action: `open the per-benchmark ${label} matrix` })}>{label}</button>
 						</th>
 					{/each}
+					{#if e2e}
+						<th class="colh"><span data-tip-card={tipCard({ title: 'End-to-end', note: 'Compilation + instantiation + first call + one steady call: the sum of this row’s phase averages. Shown only when every phase is measured.' })}>End-to-end</span></th>
+					{/if}
 					<th class="colh">Correct</th>
 				</tr>
 			</thead>
-			<tbody>
+			<tbody aria-busy={!apiView.ready}>
+				{#if !apiView.ready}
+					{#each [62, 48, 70, 55, 66, 44, 58, 50] as w (w)}
+						<tr aria-hidden="true">
+							<td class="stick rtcell"><span class="skel" style:width="0.6em"></span> <span class="skel" style:width="{w * 1.6}px"></span></td>
+							{#each { length: g.cols.length + (e2e ? 2 : 1) } as _, i (i)}
+								<td class="r val-skel"><span class="skel" style:width="{36 + ((w + i * 17) % 30)}px"></span></td>
+							{/each}
+						</tr>
+					{/each}
+				{/if}
 				{#each rows as r (r.c.id)}
 					<tr>
 						<td class="stick rtcell"><RtLabel c={r.c} profile mono bold ver /></td>
 						{#each r.cells as x, i (i)}
-							<td class="p0">
+							<td class="p0" style:background={x.bg}>
 								<button
 									class="cellbtn mono val"
-									style:background={x.bg}
 									style:color={x.color}
-									onclick={() => onmetric(g.metrics[i])}
-									data-tip-card={tipCard({ kicker: `${g.label} · ${g.cols[i]}`, who: tipWho(r.c), value: x.text, valueColor: x.color === 'var(--fg)' ? '' : x.color, heat: x.bg === 'transparent' ? '' : x.bg, stats: 'rate' in x && x.rate ? [['throughput', x.rate.replace(' · reciprocal of latency', '')]] : [], points: ui.group === 'mem' && i === 3 ? peakMemoryPoints : [], note: ui.group === 'calls' ? (CALL_PATHS[i]?.note || 'Sum of both measured call directions.') : '', action: 'see per-workload results' })}>{x.text}</button
+									onclick={() => openCell(r.c.id, i)}
+									data-tip-card={x.text === 'loading…' ? undefined : tipCard({ kicker: `${g.label} · ${g.cols[i]}`, who: tipWho(r.c), value: x.text, valueColor: x.color === 'var(--fg)' ? '' : x.color, heat: x.bg === 'transparent' ? '' : x.bg, stats: [...(ranks?.[i]?.get(r.c.id) ?? []), ...('rate' in x && x.rate ? [['throughput', x.rate.replace(' · reciprocal of latency', '')] as [string, string]] : [])], points: ui.group === 'mem' && i === 3 ? peakMemoryPoints : [], note: ui.group === 'calls' ? (CALL_PATHS[i]?.note || 'Sum of both measured call directions.') : '', action: ui.group === 'calls' || ui.group === 'cov' ? 'see per-workload results' : 'rank, spread & workloads' })}>{#if x.text === 'loading…'}<span class="skel" aria-label="loading"></span>{:else}{x.text}{/if}</button
 								>
 							</td>
 						{/each}
+						{#if e2e}
+							{@const x = e2e.get(r.c.id) ?? { text: '—', bg: 'transparent', color: 'var(--fg3)', stats: [] }}
+							<td class="p0 e2e" style:background={x.bg}>
+								<button class="cellbtn mono val" style:color={x.color} onclick={() => (ui.drawer = { type: 'aggregate', c: r.c.id, group: 'lat', col: -1 })} data-tip-card={tipCard({ kicker: 'Latency · End-to-end', who: tipWho(r.c), value: x.text, heat: x.bg === 'transparent' ? '' : x.bg, stats: x.stats, note: `Sum of the four phase averages (${ui.average === 'mean' ? 'means' : 'geometric means'}), not a per-workload total.`, action: 'rank, spread & workloads' })}>{x.text}</button>
+							</td>
+						{/if}
 						<td class="mono r corr" style:background={r.covBg}>{r.covShort}</td>
 					</tr>
 				{/each}
@@ -174,6 +236,9 @@ import { viewCell, viewData } from '$lib/view-data';
 </div>
 
 <style>
+	.e2e {
+		border-left: 1px solid var(--line2);
+	}
 	.snap {
 		display: flex;
 		align-items: center;
@@ -205,24 +270,27 @@ import { viewCell, viewData } from '$lib/view-data';
 	}
 	.colh {
 		text-align: right;
-		padding: 8px 12px;
+		padding: 5px 12px;
 		font-size: 12px;
 	}
 	.colh button {
 		font-weight: 500;
 	}
 	.rtcell {
-		padding: 7px 12px;
+		padding: 4px 12px;
 		white-space: nowrap;
 	}
 	.p0 {
 		padding: 0;
 	}
 	.val {
-		padding: 7px 12px;
+		padding: 4px 12px;
 	}
 	.corr {
-		padding: 7px 12px;
+		padding: 4px 12px;
 		font-size: 12px;
+	}
+	.val-skel {
+		padding: 6px 12px;
 	}
 </style>

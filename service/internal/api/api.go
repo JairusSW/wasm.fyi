@@ -22,24 +22,29 @@ import (
 )
 
 type API struct {
-	latencies    *latencyState
-	requests     requestTelemetry
-	Store        *store.Store
-	Token        string
-	CursorKey    []byte
-	active       chan struct{}
-	limiter      *requestLimiter
-	frontend     http.Handler
-	cohorts      *cohortCache
-	calculating  chan struct{}
-	results      *resultCache
-	selecting    chan struct{}
-	downloading  chan struct{}
-	historyIndex *store.HistoryReadIndex
+	dashboard      *dashboard
+	requestHandler http.Handler
+	latencies      *latencyState
+	requests       requestTelemetry
+	Store          *store.Store
+	Token          string
+	CursorKey      []byte
+	active         chan struct{}
+	limiter        *requestLimiter
+	frontend       http.Handler
+	cohorts        *cohortCache
+	calculating    chan struct{}
+	results        *resultCache
+	selecting      chan struct{}
+	downloading    chan struct{}
+	historyIndex   *store.HistoryReadIndex
 }
 
 func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) { a.serve(w, r) }
 func (a *API) Close() error {
+	if a.dashboard != nil {
+		_ = a.dashboard.analytics.Close()
+	}
 	if a.historyIndex != nil {
 		return a.historyIndex.Close()
 	}
@@ -255,6 +260,9 @@ func limit(r *http.Request) (int, error) {
 	return n, nil
 }
 func (a *API) serveRequest(w http.ResponseWriter, r *http.Request) {
+	if a.dashboardRequest(w, r) {
+		return
+	}
 	finish, e := a.Store.Lease()
 	if e != nil {
 		problem(w, r, e)

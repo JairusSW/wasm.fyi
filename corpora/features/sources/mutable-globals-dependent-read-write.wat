@@ -1,0 +1,11 @@
+(module (global $state (export "state") (mut i32) (i32.const 0))
+  (func (export "benchmark") (param $n i32) (result i32)
+    (local $i i32) (local $a i32) 
+    (global.set $state (i32.const -1640531527))
+    (loop $loop
+      (local.set $a (i32.add (local.get $a) (block (result i32)
+      (global.set $state (i32.xor (i32.rotl (global.get $state) (i32.const 5))
+        (i32.add (local.get $i) (i32.const 17)))) (global.get $state))))
+      (local.set $i (i32.add (local.get $i) (i32.const 1)))
+      (br_if $loop (i32.lt_u (local.get $i) (local.get $n))))
+    (local.get $a)))

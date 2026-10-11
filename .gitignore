@@ -6,6 +6,9 @@ node_modules
 .env
 .env.*
 !.env.example
+# Private OAuth configuration for local and production deployments.
+/local.env
+/prod.env
 vite.config.*.timestamp-*
 
 # Local immutable benchmark runs and workflow staging
@@ -38,3 +41,9 @@ src/lib/data/plugin-tests.json
 
 # API transport chunks of existing parent archives.
 /.cache/collection-api-parent/
+
+# Generated caches, temporary datasets, and nested service state.
+**/__pycache__/
+**/.wasmfyi/
+/static/.static-data-*/
+*.pyc

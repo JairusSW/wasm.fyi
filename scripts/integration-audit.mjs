@@ -23,7 +23,7 @@ const runtimeIds = { A: 'wasmtime', D: 'wasmer-singlepass', E: 'wazero', F: 'v8'
 const configurations = CFG.map(cfg => {
   const matches = reports.flatMap(report => report.runtimes.filter(runtime => runtime.id === runtimeIds[cfg.id]).map(runtime => ({ host: report.host.os + '/' + report.host.arch, backend: runtime.description.backend, version: runtime.description.runtime_version })));
   const measured = [...new Map(matches.map(match => [JSON.stringify(match), match])).values()];
-  return { viewId: cfg.id, runtime: cfg.rt, displayedBackend: cfg.be, displayedVersion: cfg.ver, measured, backendMatches: measured.length > 0 && measured.every(match => match.backend === ({F:'optimizing-only',H:'liftoff-only'}[cfg.id] || cfg.be)) };
+  return { viewId: cfg.id, runtime: cfg.rt, displayedBackend: cfg.be, displayedVersion: cfg.ver, measured, backendMatches: measured.length > 0 && measured.every(match => match.backend === ({H:'liftoff-only'}[cfg.id] || cfg.be)) };
 });
 const ids = new Set(reports.flatMap(report => report.workloads.map(workload => workload.id+'|'+workload.sha256)));
 const workloads = ALLB.map(workload => ({ id: workload.id, artifactSha256:workload.artifactSha256, exactMeasuredContract: ids.has(workload.id+'|'+workload.artifactSha256) }));

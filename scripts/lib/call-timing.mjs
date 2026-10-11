@@ -11,7 +11,12 @@ export function callTimingCandidates(candidates, workload, metric) {
   return batches.length ? batches : candidates;
 }
 
-export function callBatchOperations(workload) {return workload.id===CALL_LOOP_WORKLOAD?1:1000000;}
+export function callBatchOperations(workload,collection={}) {
+ if(workload.id===CALL_LOOP_WORKLOAD)return 1;
+ const operations=collection.callBatchOperations??1000000;
+ if(!Number.isInteger(operations)||operations<1||operations>1000000)throw Error('Invalid explicit call batch operation count');
+ return operations;
+}
 export function minimumCallBatch(trials) {
  const samples=trials.filter(t=>t.block>=0 && t.status==='ok' && t.profile==='timing' && t.scenario==='steady').flatMap(t=>t.samples || []).filter(s=>s.verified && s.operations>0);
  return samples.length?Math.min(...samples.map(s=>s.elapsed_ns)):null;

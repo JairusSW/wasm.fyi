@@ -9,13 +9,15 @@ import { viewCell, viewData } from './view-data';
 import { CB, CFG, FEATURE_CFG, MACH, WF, execOf, type Exec } from './data/runtimes';
 import { MET, OTM, UNIT } from './data/snapshot';
 import type { Bench, Cfg, CfgId, MachineId, MetricKey, OtMetricKey, RatioCi, Status } from './data/types';
-import { fmtU, fmtUGroup, fx, n0, relative, type DeltaFormat } from './format';
+import { fmtU, fmtAverage, fmtUGroup, fx, n0, relative, type DeltaFormat } from './format';
 
 export interface Scope {
 	machine: MachineId;
 	baseline: CfgId;
 	weighting: 'corpus' | 'workload';
 	cohortMode?: 'shared' | 'per-engine';
+	/** Geometric mean (default) or plain mean across workloads. */
+	average?: 'geo' | 'mean';
 	hide: Partial<Record<CfgId, boolean>>;
 	snapshot?: 's1' | 's2';
 	exec?: Exec;
@@ -27,7 +29,7 @@ export const compileExcluded = (s: Scope, c: Cfg, metric: string) =>
 
 export type PerfGroup = 'lat' | 'mem' | 'code';
 
-export const totalWorkloads = ()=>viewData.catalogue.filter(w=>!w.id.startsWith('features/')).length;
+export const totalWorkloads = ()=>viewData.statistics.measuredWorkloads??viewData.catalogue.filter(w=>!w.id.startsWith('features/')).length;
 export const TOTAL_WORKLOADS = viewData.catalogue.length;
 
 /** Swatch/identity fields for a config, spread into view rows. */
@@ -73,12 +75,13 @@ export function absOf(s:Scope,group:PerfGroup,cid:CfgId,col:number) {
   return a?{v:a.v,ci:a.interval?Math.max(Math.abs(a.v-a.interval[0]),Math.abs(a.interval[1]-a.v)):Number.NaN,interval:a.interval,count:a.count,report:a.report}:null;
 }
 export function sharedCount(s:Scope,group:PerfGroup='lat',col=3) {
-  const application=CFG.filter(c=>viewData.applicationConfigurations.includes(c.id));
+  // Shown engines only: a hidden engine's cohort says nothing about the comparison on screen.
+  const application=CFG.filter(c=>viewData.applicationConfigurations.includes(c.id)&&!s.hide[c.id]);
   return application.map(c=>aggregate(s,group,c.id,col)).find(a=>a)?.count || 0;
 }
 export function disp(s:Scope,group:PerfGroup,cid:CfgId,col:number) {
   const a=absOf(s,group,cid,col);
-  return a && {t:fmtU(a.v,UNIT[group]),ci:a.interval?`95% CI ${fmtU(a.interval[0],UNIT[group])} – ${fmtU(a.interval[1],UNIT[group])}`:'CI unavailable'};
+  return a && {t:fmtAverage(a.v,UNIT[group]),ci:a.interval?`95% CI ${fmtU(a.interval[0],UNIT[group])} – ${fmtU(a.interval[1],UNIT[group])}`:'CI unavailable'};
 }
 
 export type BenchResult = { st: 'ok'; v: number } | { st: Exclude<Status, 'ok'> };
@@ -103,7 +106,7 @@ export function otSeries(s:Scope,cid:CfgId,key:OtMetricKey,workload=''):number[]
 export function seriesFmt(key: OtMetricKey, format: DeltaFormat = 'percent') {
 	const M = OTM[key];
 	const isCov = M.g === 'cov';
-	const fv = (v: number) => (isCov ? n0(v) + ' measured contracts' : fmtU(v, M.u));
+	const fv = (v: number) => (isCov ? n0(v) + ' measured contracts' : (['callTotal','wasmHostLoop','hostWasm'].includes(key)?fmtU:fmtAverage)(v, M.u));
 	const chg = (x: number, y: number) =>
 		isCov
 			? { t: (x - y >= 0 ? '+' : '−') + Math.abs(x - y), good: x > y, flat: x === y }
@@ -120,7 +123,7 @@ export function leader(s: Scope, label: string, group: PerfGroup, col: number, m
 		.sort((a, b) => a.x.r - b.x.r);
 	const top=list;
 	const topValues=fmtUGroup(top.map(({c})=>absOf(s,group,c.id,col)?.v ?? null),UNIT[group]);
-	const places=top.map(({c,x},i)=>({place:i+1,cfg:c,value:topValues[i] || disp(s,group,c.id,col)!.t,ratio:x.r}));
+	const places=top.map(({c,x},i)=>({place:i+1,cfg:c,value:topValues[i] ? '~'+topValues[i] : disp(s,group,c.id,col)!.t,ratio:x.r}));
 	if (!list.length)
 		return { label, metric, places, clear: false as const, versus: 'No selected runtime has this measurement.' };
 	const a = list[0];
@@ -128,8 +131,8 @@ export function leader(s: Scope, label: string, group: PerfGroup, col: number, m
 	const clear = !!b && Number.isFinite(a.x.ci) && Number.isFinite(b.x.ci) && a.x.r + a.x.ci < b.x.r - b.x.ci;
 	const da = disp(s, group, a.c.id, col)!;
 	const db = b ? disp(s, group, b.c.id, col)! : { t: '' };
-	const firstText=topValues[0] || da.t;
-	const secondText=topValues[1] || db.t;
+	const firstText=topValues[0] ? '~'+topValues[0] : da.t;
+	const secondText=topValues[1] ? '~'+topValues[1] : db.t;
 	return {
 		label,
 		metric,

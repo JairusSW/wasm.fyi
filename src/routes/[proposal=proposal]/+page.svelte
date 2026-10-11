@@ -44,7 +44,6 @@
 </svelte:head>
 
 <div class="stack6">
-	<span class="mono small fg3">wasm.fyi/{data.id}</span>
 	<div class="title-line">
 		<h1>{P.title}</h1>
 		<span class="fg2 s13">{P.long}</span>

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-for tool in caddy go pnpm openssl curl; do
+for tool in caddy go pnpm openssl curl python3; do
   if ! command -v "$tool" >/dev/null; then
     echo "Missing $tool. Install prerequisites first (macOS: brew install caddy)." >&2
     exit 1
@@ -12,6 +12,7 @@ done
 umask 077
 state="$PWD/.wasmfyi/local"
 mkdir -p "$state"
+source "$PWD/scripts/dashboard-env.sh"
 if [[ ! -f "$state/admin-token" ]]; then
   openssl rand -hex 32 > "$state/admin-token"
 fi
@@ -29,12 +30,12 @@ cleanup() {
 trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
-"$state/wasmfyi" serve --data "$data_directory" --listen 127.0.0.1:8090 \
+"$state/wasmfyi" serve --data "$data_directory" --listen "127.0.0.1:$WASMFYI_LOCAL_API_PORT" \
   --trusted-proxies 127.0.0.1/32 &
 pids+=("$!")
 # Launch Vite directly so cleanup owns its process.
 node scripts/frontend-assets.mjs
-node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 5174 --strictPort &
+node node_modules/vite/bin/vite.js --host 127.0.0.1 --port "$WASMFYI_LOCAL_VITE_PORT" --strictPort &
 pids+=("$!")
 wait_http() {
   local url="$1" attempt pid
@@ -53,13 +54,13 @@ wait_http() {
 }
 # Do not expose a proxy that returns 502 while Vite is still starting.
 echo "Starting benchmark database…"
-wait_http http://127.0.0.1:8090/healthz
+wait_http "http://127.0.0.1:$WASMFYI_LOCAL_API_PORT/healthz"
 wait_http http://127.0.0.1:5174/@vite/client
 XDG_CONFIG_HOME="$state/caddy/config" XDG_DATA_HOME="$state/caddy/data" \
   caddy run --config service/Caddyfile.local --adapter caddyfile &
 pids+=("$!")
-wait_http http://localhost:8080/healthz
-echo "Website: http://localhost:8080 | API health: http://localhost:8080/healthz"
+wait_http "http://localhost:$WASMFYI_LOCAL_PORT/healthz"
+echo "Website: http://localhost:$WASMFYI_LOCAL_PORT | API health: http://localhost:$WASMFYI_LOCAL_PORT/healthz"
 echo "Local publisher token: $state/admin-token (or set WASMFYI_ADMIN_TOKEN)"
 echo "Ctrl+C stops all three services. API data persists in $data_directory."
 while true; do

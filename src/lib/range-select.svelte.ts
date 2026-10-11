@@ -20,6 +20,14 @@ export class RangeSelect {
 		private onselect: (from: number, to: number) => void
 	) {}
 
+	/** While a range drag is held, nothing on the page can be text-selected. */
+	private hold(on: boolean) {
+		if (typeof document === 'undefined') return;
+		document.documentElement.classList.toggle('range-dragging', on);
+		// Also on release: a shift+click would otherwise extend an earlier text selection.
+		document.getSelection()?.removeAllRanges();
+	}
+
 	private at(e: PointerEvent) {
 		const r = (e.currentTarget as Element).getBoundingClientRect();
 		return this.toIndex(r.width ? (e.clientX - r.left) / r.width : 0);
@@ -34,6 +42,7 @@ export class RangeSelect {
 		}
 		const i = this.at(e);
 		this.drag = { a: i, b: i };
+		this.hold(true);
 	};
 
 	move = (e: PointerEvent) => {
@@ -44,6 +53,7 @@ export class RangeSelect {
 		if (!this.drag) return;
 		const { a, b } = this.drag;
 		this.drag = null;
+		this.hold(false);
 		if (a !== b) this.select(a, b);
 		else if (e.shiftKey && this.anchor != null && this.anchor !== a) this.select(this.anchor, a);
 		else this.anchor = a;
@@ -51,6 +61,7 @@ export class RangeSelect {
 
 	cancel = () => {
 		this.drag = null;
+		this.hold(false);
 	};
 
 	clear = () => {

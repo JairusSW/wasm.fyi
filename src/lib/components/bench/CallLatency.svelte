@@ -54,7 +54,7 @@ import { CFG } from '$lib/data/runtimes';
 	.heading { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
 	h2 { margin: 0; font-size: 14px; font-weight: 600; }
 	table { width: 100%; border-collapse: collapse; }
-	th, td { padding: 7px 10px; border-bottom: 1px solid var(--line); }
+	th, td { padding: 5px 10px; border-bottom: 1px solid var(--line); }
 	th { font-size: 12px; color: var(--fg2); font-weight: 500; text-align: left; }
 	th.r, td.r { text-align: right; }
 	tr:last-child td { border-bottom: 0; }

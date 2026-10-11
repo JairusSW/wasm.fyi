@@ -13,9 +13,14 @@ transport='ssh -o BatchMode=yes -o ConnectTimeout=10 -o ControlMaster=auto -o Co
 ssh "${ssh_options[@]}" "$host" "mkdir -p '$release/source/scripts'"
 rsync -az -e "$transport" service/ "$host:$release/source/service/"
 rsync -az -e "$transport" build/ "$host:$release/frontend/"
-for script in install-remote-site.sh install-remote-site.mjs publish-host-captures.py; do
+for script in install-remote-site.sh install-remote-site.mjs publish-host-captures.py apply-dashboard-production-env.py; do
   rsync -az -e "$transport" "scripts/$script" "$host:$release/source/scripts/$script"
 done
+if [[ -f prod.env ]]; then
+  # Credentials travel through encrypted stdin, never shell arguments or logs.
+  python3 scripts/dashboard-env.py prod.env |
+    ssh "${ssh_options[@]}" "$host" "python3 '$release/source/scripts/apply-dashboard-production-env.py'"
+fi
 ssh "${ssh_options[@]}" "$host" "nohup /usr/local/bin/node '$release/source/scripts/install-remote-site.mjs' '$release' > '$release/deployment.log' 2>&1 < /dev/null & echo \$! > '$release/deployment.pid'"
 echo "Deployment queued on $host: $release/deployment.log"
 echo "Watch: ssh $host tail -f $release/deployment.log"

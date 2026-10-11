@@ -20,10 +20,11 @@ const mem = '(memory (export "memory") 2 256)';
 const address = `(i32.shl (i32.and ${i} (i32.const 8191)) (i32.const 2))`;
 const index = `(i32.and ${i} (i32.const 15))`;
 const triangular = n => (n * (n - 1) / 2) >>> 0;
-export const featureIds = ['core-num', 'core-mem', 'core-ctl', 'core-tab', 'core-val',
+export const featureIds = ['core-num', 'core-mem', 'core-ctl', 'core-tab', 'core-val', 'core-glb',
+  'sign-extension', 'saturating-float-to-int', 'mutable-globals',
   'bulk-memory', 'reference-types', 'multi-value', 'simd', 'gc', 'memory64',
   'exceptions', 'tail-call', 'relaxed-simd', 'multi-memory', 'extended-const',
-  'js-string-builtins', 'threads',
+  'js-string-builtins', 'jspi', 'threads',
   'component-model', 'cm-abi', 'cm-res', 'cm-async'];
 
 export function fixtures() {
@@ -52,6 +53,78 @@ export function fixtures() {
   loop('core-ctl', 'direct-call', `(call $f ${i})`, x => x * 3 + 1, '(func $f (param i32) (result i32) local.get 0 i32.const 3 i32.mul i32.const 1 i32.add)');
   const indirect = '(type $t (func (param i32) (result i32))) (table 2 funcref) (elem (i32.const 0) $f $g) (func $f (type $t) local.get 0 i32.const 1 i32.add) (func $g (type $t) local.get 0 i32.const 3 i32.add)';
   loop('core-tab', 'indirect-call', `(call_indirect (type $t) ${i} (i32.and ${i} (i32.const 1)))`, x => x + (x & 1 ? 3 : 1), indirect);
+  // MVP globals. Mutable state is reset on entry so repeated invocations of one
+  // instance agree with the stateless oracle.
+  const globalFamily = (feature, exported) => {
+    const ex = name => exported ? `(export "${name}")` : '';
+    loop(feature, exported ? 'exported-read' : 'immutable-constant', '(global.get $k)', () => 41, `(global $k ${ex('k')} ${exported ? '(mut i32)' : 'i32'} (i32.const 41))`);
+    loop(feature, 'mutable-accumulate', `(block (result i32) (global.set $g (i32.add (global.get $g) ${i})) (global.get $g))`, x => (x * (x + 1) / 2) >>> 0,
+      `(global $g ${ex('g')} (mut i32) (i32.const 0))`, '', '(global.set $g (i32.const 0))');
+    loop(feature, 'i64-global-split', `(block (result i32) (global.set $w (i64.mul (i64.extend_i32_u ${i}) (i64.const 4294967297))) (i32.add (i32.wrap_i64 (global.get $w)) (i32.wrap_i64 (i64.shr_u (global.get $w) (i64.const 32)))))`, x => 2 * x,
+      `(global $w ${ex('w')} (mut i64) (i64.const 0))`);
+    loop(feature, 'f64-global-scale', `(block (result i32) (global.set $f (f64.mul (f64.convert_i32_u ${i}) (f64.const 0.5))) (i32.trunc_f64_u (f64.mul (global.get $f) (f64.const 4))))`, x => 2 * x,
+      `(global $f ${ex('f')} (mut f64) (f64.const 0))`);
+    loop(feature, 'global-swap', `(block (result i32) (global.set $a ${i}) (global.set $b (i32.add ${i} (i32.const 3))) (global.set $t (global.get $a)) (global.set $a (global.get $b)) (global.set $b (global.get $t)) (i32.sub (global.get $a) (global.get $b)))`, () => 3,
+      `(global $a ${ex('a')} (mut i32) (i32.const 0)) (global $b ${ex('b')} (mut i32) (i32.const 0)) (global $t (mut i32) (i32.const 0))`);
+    add(feature, 'dependent-read-write', scalarLoop(`(block (result i32)
+      (global.set $state (i32.xor (i32.rotl (global.get $state) (i32.const 5))
+        (i32.add ${i} (i32.const 17)))) (global.get $state))`,
+      `(global $state ${ex('state')} (mut i32) (i32.const 0))`, '', '(global.set $state (i32.const -1640531527))'), n => {
+      let state = 0x9e3779b9, checksum = 0;
+      for (let j = 0; j < n; j++) { state = (((state << 5) | (state >>> 27)) ^ (j + 17)) >>> 0; checksum = (checksum + state) >>> 0; }
+      return checksum;
+    });
+    add(feature, 'i64-carry-overflow', scalarLoop(`(block (result i32)
+      (global.set $wide (i64.add (global.get $wide) (i64.const 4294967313)))
+      (i32.xor (i32.wrap_i64 (global.get $wide))
+        (i32.wrap_i64 (i64.shr_u (global.get $wide) (i64.const 32)))))`,
+      `(global $wide ${ex('wide')} (mut i64) (i64.const 0))`, '', '(global.set $wide (i64.const -16))'), n => {
+      let wide = 0xfffffffffffffff0n, checksum = 0;
+      for (let j = 0; j < n; j++) { wide = BigInt.asUintN(64, wide + 4294967313n); checksum = (checksum + Number(BigInt.asUintN(32, wide ^ (wide >> 32n)))) >>> 0; }
+      return checksum;
+    });
+    add(feature, 'f32-rounding-state', scalarLoop(`(block (result i32)
+      (global.set $single (f32.add (global.get $single)
+        (f32.convert_i32_u (i32.add (i32.const 1) (i32.shl (i32.and ${i} (i32.const 1)) (i32.const 1))))))
+      (i32.reinterpret_f32 (global.get $single)))`,
+      `(global $single ${ex('single')} (mut f32) (f32.const 0))`, '', '(global.set $single (f32.const 16777216))'), n => {
+      const view = new DataView(new ArrayBuffer(4)); let single = 16777216, checksum = 0;
+      for (let j = 0; j < n; j++) { single = Math.fround(single + (j % 2 ? 3 : 1)); view.setFloat32(0, single, true); checksum = (checksum + view.getUint32(0, true)) >>> 0; }
+      return checksum;
+    });
+  };
+  globalFamily('core-glb', false);
+  // Import/export of mutable globals: the same algorithms over exported mutable globals.
+  globalFamily('mutable-globals', true);
+
+  // JS Promise Integration. The host (profile jspi-v1) supplies WebAssembly.Suspending
+  // imports: step(i) and double(i) resolve asynchronously, so each call suspends the Wasm
+  // stack; immediate(i) returns synchronously and must not suspend. The export is called
+  // through WebAssembly.promising and awaited.
+  const jspi = '(import "jspi" "step" (func $step (param i32) (result i32))) (import "jspi" "double" (func $double (param i32) (result i32))) (import "jspi" "immediate" (func $immediate (param i32) (result i32)))';
+  const jspiOptions = { hostProfile: 'jspi-v1' };
+  loop('jspi', 'suspend-every-call', `(call $step ${i})`, x => x * 3 + 1, jspi, '', '', jspiOptions);
+  loop('jspi', 'suspend-alternate', `(if (result i32) (i32.and ${i} (i32.const 1)) (then (call $step ${i})) (else ${i}))`, x => x & 1 ? x * 3 + 1 : x, jspi, '', '', jspiOptions);
+  loop('jspi', 'two-imports', `(i32.add (call $step ${i}) (call $double ${i}))`, x => x * 5 + 1, jspi, '', '', jspiOptions);
+  loop('jspi', 'state-across-suspension', `(block (result i32) (i32.store ${address} ${i}) (drop (call $step ${i})) (i32.add (i32.load ${address}) (call $double ${i})))`, x => x * 3,
+    jspi + ' ' + mem, '', '', jspiOptions);
+  loop('jspi', 'immediate-resolve', `(call $immediate ${i})`, x => x + 7, jspi, '', '', jspiOptions);
+
+  // Sign-extension operators (Wasm 2.0).
+  const sext = (v, bits) => (v << (32 - bits)) >> (32 - bits);
+  loop('sign-extension', 'i32-extend8', `(i32.extend8_s ${i})`, x => sext(x, 8));
+  loop('sign-extension', 'i32-extend16', `(i32.extend16_s (i32.mul ${i} (i32.const 97)))`, x => sext(Math.imul(x, 97), 16));
+  loop('sign-extension', 'i64-extend8', `(i32.wrap_i64 (i64.extend8_s (i64.extend_i32_u (i32.mul ${i} (i32.const 13)))))`, x => sext(Math.imul(x, 13), 8));
+  loop('sign-extension', 'i64-extend16', `(i32.wrap_i64 (i64.extend16_s (i64.extend_i32_u (i32.mul ${i} (i32.const 31)))))`, x => sext(Math.imul(x, 31), 16));
+  loop('sign-extension', 'i64-extend32-high-word', `(i32.wrap_i64 (i64.shr_s (i64.extend32_s (i64.extend_i32_u (i32.mul ${i} (i32.const 1048583)))) (i64.const 32)))`, x => (Math.imul(x, 1048583) < 0 ? -1 : 0));
+
+  // Non-trapping (saturating) float-to-int conversions (Wasm 2.0).
+  loop('saturating-float-to-int', 'f32-in-range', `(i32.trunc_sat_f32_s (f32.mul (f32.convert_i32_u ${i}) (f32.const 1.5)))`, x => Math.trunc(x * 1.5));
+  loop('saturating-float-to-int', 'f32-overflow-clamp', `(i32.trunc_sat_f32_s (f32.mul (f32.convert_i32_u (i32.add ${i} (i32.const 1))) (f32.const 1e10)))`, () => 2147483647);
+  loop('saturating-float-to-int', 'f64-unsigned-negative-clamp', `(i32.add ${i} (i32.trunc_sat_f64_u (f64.neg (f64.convert_i32_u ${i}))))`, x => x);
+  loop('saturating-float-to-int', 'nan-and-infinity', `(i32.trunc_sat_f32_s (f32.div (f32.convert_i32_u ${i}) (f32.const 0)))`, x => (x === 0 ? 0 : 2147483647));
+  loop('saturating-float-to-int', 'i64-in-range', `(i32.wrap_i64 (i64.trunc_sat_f64_s (f64.mul (f64.convert_i32_u ${i}) (f64.const 3.25))))`, x => Math.trunc(x * 3.25));
+
   loop('reference-types', 'table-null-check', `(i32.eqz (ref.is_null (table.get (i32.and ${i} (i32.const 1)))))`, () => 1, indirect);
   for (const count of [1, 32, 256]) {
     const functions = Array.from({ length: count }, (_, k) => `(func $f${k} (param i32) (result i32) local.get 0 i32.const ${k} i32.add)`).join('\n');

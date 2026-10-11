@@ -1,6 +1,11 @@
+import {CompactClient} from './compact-client';
+import {apiHistory,historyKey,type Timeline} from './history.svelte';
+import {historyFactor,scaledChange,type HistoricalSummary,type HistoricalComparison,type HistoricalReport} from './compact-history';
+import {unpackMatrix,type CompactMatrix,type ScalarResult,type CompactAggregate} from './compact-matrix';
+import {computationCheckpoint} from '../computation';
 import {datasetView,emptyView,viewData} from './view.svelte';
 import {ui} from '../state.svelte';
-import {CFG,CB,RTS,RTB,runtimeRegistry,WF} from '../data/runtimes';
+import {CFG,CB,RTS,RTB,runtimeRegistry,WF,sortCFG} from '../data/runtimes';
 import {legacySlots} from './catalog';
 import type {CfgId,MachineId,MetricKey,OtMetricKey,Cfg,Bench} from '../data/types';
 import type {Scope} from '../model';
@@ -14,13 +19,15 @@ import {selectEngineVersions} from '../latency';
 import {platformGroups} from './platform-groups';
 import {machineLabel} from './machine-label';
 import {featureResults} from './feature-results';
-export type PageScope={machine:MachineId;snapshot:'s1'|'s2';metric:MetricKey;hide:Partial<Record<CfgId,boolean>>;baseline:CfgId;weighting:'corpus'|'workload';cohortMode?:'shared'|'per-engine';search?:string;tag?:string|null;sortBy?:{id:CfgId;dir:1|-1}|null;workload?:string};
-export const apiView=$state({ready:false,loading:false,error:'',pageLoading:false,pageError:'',page:null as MatrixPage|null,cursors:[''],pageIndex:0,aggregates:{} as Record<string,Overview>,aggregateErrors:{} as Record<string,string>,coverage:{} as Partial<Record<CfgId,[number,number,number,number,number]>>});
-export const aggregateKey=(scope:Scope,metric:string)=>JSON.stringify([scope.machine,scope.snapshot||'s1',scope.baseline,scope.weighting,scope.cohortMode||'shared',Object.keys(scope.hide).filter(k=>scope.hide[k as CfgId]).sort(),metric]);
+export type PageScope={machine:MachineId;snapshot:'s1'|'s2';metric:MetricKey;hide:Partial<Record<CfgId,boolean>>;baseline:CfgId;weighting:'corpus'|'workload';cohortMode?:'shared'|'per-engine';average?:'geo'|'mean';search?:string;tag?:string|null;sortBy?:{id:CfgId;dir:1|-1}|null;workload?:string};
+export const apiView=$state({ready:false,loading:false,error:'',pageLoading:false,pageError:'',page:null as MatrixPage|null,cursors:[''],pageIndex:0,aggregates:{} as Record<string,Overview>,aggregateErrors:{} as Record<string,string>,coverage:{} as Partial<Record<CfgId,[number,number,number,number,number]>>,precomputed:{} as Record<string,CompactAggregate>,historyRevision:'',historyLoading:false,historyLoaded:{} as Partial<Record<MachineId,boolean>>});
+/** History arrives after the main dataset; true while the selected machine's history is still on its way. */
+export const historyPending=(machine:MachineId)=>!apiView.ready||(apiView.historyLoading&&!apiView.historyLoaded[machine]);
+export const aggregateKey=(scope:Scope,metric:string)=>JSON.stringify([scope.machine,scope.snapshot||'s1',scope.baseline,scope.weighting,scope.cohortMode||'shared',scope.average||'geo',Object.keys(scope.hide).filter(k=>scope.hide[k as CfgId]).sort(),metric]);
 let abort:AbortController|undefined;
 let machines:MachineId[]=[];
 const slots=new Map<string,CfgId>();
-const plannedBackends:Record<string,string>={'wasmtime-winch':'winch','wasmer-llvm':'llvm-jit','wasmer-singlepass':'singlepass-jit','wazero-interpreter':'interpreter','wamr':'interpreter','wamr-fast-jit':'fast-jit','wamr-llvm-jit':'llvm-jit','wasmedge':'interpreter','wasmedge-jit':'jit','wasmi':'interpreter','wasm3':'interpreter','chicory':'interpreter','wasm2c-gcc':'GCC','w2c2-gcc':'GCC','wasm2go':'Go compiler'};
+const plannedBackends:Record<string,string>={'wasmtime-winch':'winch','wasmer-llvm':'llvm-jit','wasmer-singlepass':'singlepass-jit','wasmer-cranelift':'cranelift-jit','chicory-jit':'jvm-bytecode-compiler','endive-interpreter':'jvm-interpreter','endive-jit':'jvm-bytecode-compiler','endive-redline':'cranelift-aot','wazy':'native-jit','chasm':'jvm-interpreter','wizard-v3-int':'v3-interpreter','wizard-fast-int':'fast-interpreter','wizard-spc':'spc','graalwasm':'truffle-graal','zwasm-interpreter':'interpreter','zwasm-jit':'jit','wazero-interpreter':'interpreter','wamr':'interpreter','wamr-fast-jit':'fast-jit','wamr-llvm-jit':'llvm-jit','wasmedge':'interpreter','wasmedge-jit':'jit','wasmi':'interpreter','wasm3':'interpreter','chicory':'interpreter','wasm2c-gcc':'GCC','w2c2-gcc':'GCC','wasm2go':'native-go-aot','jsc':'OMG (forced tier-up)','libwasm':'interpreter','spidermonkey':'ion-only'};
 const status=(s:string):ViewCell['st']=>s==='not-measured'?'nm':s as ViewCell['st'];
 function engineColor(engine:string){let hash=0;for(const c of engine)hash=(Math.imul(hash,31)+c.charCodeAt(0))>>>0;return `hsl(${hash%360} 65% 60%)`;}
 function slot(engine:string):CfgId{
@@ -31,75 +38,163 @@ function slot(engine:string):CfgId{
  if(engine==='wago-beta.11')id='C';
  if(!id){const available='HIJKMNOPQRS'.split('').find(c=>!CFG.some(x=>x.id===c));id=available?available as CfgId:`engine:${engine}`}
  if(!CFG.some(c=>c.id===id)){
-  const runtime=engine.startsWith('wago-')?'wago':engine.startsWith('wasmtime-')?'wasmtime':engine.startsWith('wasmer-')?'wasmer':engine.startsWith('wazero-')?'wazero':engine.startsWith('wamr-')?'wamr':engine.startsWith('wasmedge-')?'wasmedge':engine.endsWith('-gcc')?engine.slice(0,-4):engine;
+  const runtime=engine.startsWith('wago-')?'wago':engine.startsWith('wasmtime-')?'wasmtime':engine.startsWith('wasmer-')?'wasmer':engine.startsWith('wazero-')?'wazero':engine.startsWith('wamr-')?'wamr':engine.startsWith('wasmedge-')?'wasmedge':engine.startsWith('chicory-')?'chicory':engine.startsWith('endive-')?'endive':engine.startsWith('wizard-')?'wizard':engine.startsWith('zwasm-')?'zwasm':engine.endsWith('-gcc')?engine.slice(0,-4):engine;
   const template=CFG.find(c=>c.rt===runtime);
   const known=runtimeRegistry.find(r=>r.id===runtime);if(known&&!RTB[runtime]){RTS.push(known);RTB[runtime]=known}
-  const cfg={...template,id,rt:runtime,ver:'not collected',be:plannedBackends[engine]||'',kind:'',col:engineColor(engine),hollow:engine==='wago-beta.11',interp:plannedBackends[engine]==='interpreter'} as Cfg;
+  const cfg={...template,id,rt:runtime,ver:'not collected',be:plannedBackends[engine]||'',kind:'',col:engineColor(engine),hollow:engine==='wago-beta.11',interp:/interpreter/.test(plannedBackends[engine]||''),label:plannedBackends[engine]||''} as Cfg;
   Object.defineProperty(cfg,'ver',{enumerable:true,get:()=> (viewData.hosts.m1.configurations[cfg.id]||viewData.hosts.m2.configurations[cfg.id]||viewData.hosts.m3.configurations[cfg.id])?.version?shortVersion((viewData.hosts.m1.configurations[cfg.id]||viewData.hosts.m2.configurations[cfg.id]||viewData.hosts.m3.configurations[cfg.id])!.version):'not collected'});
   Object.defineProperty(cfg,'be',{enumerable:true,get:()=> (viewData.hosts.m1.configurations[cfg.id]||viewData.hosts.m2.configurations[cfg.id]||viewData.hosts.m3.configurations[cfg.id])?.backend||plannedBackends[engine]||''});
-  CFG.push(cfg);
+  CFG.push(cfg);sortCFG();
  }
  WF[id]=1;slots.set(engine,id);return id;
 }
-for(const engine of ['wago','wasmtime','wasmtime-winch','wasmer-singlepass','wasmer-llvm','wazero','wazero-interpreter','v8','wavm','spidermonkey','jsc','wasmi','wamr','wamr-fast-jit','wamr-llvm-jit','wasm3','wasmedge','wasmedge-jit','chicory','wasm2go','wasm2c-gcc','w2c2-gcc','libwasm'])slot(engine);
-async function get<T>(path:string,signal:AbortSignal):Promise<T>{
- for(let attempt=0;;attempt++){
-  const response=await fetch(path,{signal});
-  if((response.status===429||response.status===503)&&attempt<4){const seconds=Number(response.headers.get('Retry-After'));await new Promise(resolve=>setTimeout(resolve,Number.isFinite(seconds)&&seconds>0?Math.min(seconds,10)*1000:1000));signal.throwIfAborted();continue;}
-  if(!response.ok){const body=await response.json().catch(()=>null);const error=Object.assign(Error(body?.error?.message||'Could not load measurements'),{status:response.status});throw error;}return response.json();
- }
-}
+for(const engine of ['wago','wasmtime','wasmtime-winch','wasmer-singlepass','wasmer-llvm','wazero','wazero-interpreter','v8','wavm','spidermonkey','jsc','wasmi','wamr','wamr-fast-jit','wamr-llvm-jit','wasm3','wasmedge','wasmedge-jit','chicory','wasm2go','wasm2c-gcc','w2c2-gcc','libwasm','wasmer-cranelift','chicory-jit','endive-interpreter','endive-jit','endive-redline','wazy','chasm','wizard-v3-int','wizard-fast-int','wizard-spc','graalwasm','zwasm-interpreter','zwasm-jit'])slot(engine);
+let compactClient=new CompactClient();
+async function get<T>(path:string,signal:AbortSignal,revalidate=false):Promise<T>{return compactClient.load<T>(path,signal,revalidate)}
 async function rows(platform:string,phase:string,signal:AbortSignal,history=false){
  for(let attempt=0;;attempt++){
-  const all:Result[]=[];let cursor:string|null=null;
-  try{do{const page:BenchmarkPage=await get<BenchmarkPage>((history?'/api/history?':'/api/benchmarks?')+new URLSearchParams(cursor?{cursor,limit:'1000'}:{platform,phase,limit:'1000'}),signal);all.push(...page.items);cursor=page.nextCursor;if(all.length>1000000)throw Error('Measurement scope exceeds display limit');}while(cursor);return all.filter(row=>!['wasm2js','deno','wasm2rs'].includes(row.engine));}
-  catch(error){if((error as {status?:number}).status!==409||attempt>=3)throw error;await new Promise(resolve=>setTimeout(resolve,500));signal.throwIfAborted();}
+  const all:ScalarResult[]=[];let offset=0;let revision='';
+  try{do{
+   const query=new URLSearchParams({platform,phase,limit:'1000',...(offset?{offset:String(offset),revision}:{})});
+   const page=await get<CompactMatrix>((history?'/api/timeline?':'/api/matrix?')+query,signal);
+   all.push(...unpackMatrix(page));revision=page.revision;offset=page.nextOffset??0;
+   if(all.length>1000000)throw Error('Measurement scope exceeds display limit');
+  }while(offset);return all.filter(row=>!['wasm2js','deno','wasm2rs'].includes(row.engine));
+  }catch(error){if((error as {status?:number}).status!==409||attempt>=3)throw error;compactClient.invalidate();signal.throwIfAborted();}
  }
 }
+type Summary={revision:string;platforms:(PlatformChoice&{capturedAt?:string;importedAt?:string;revision?:string;latestRevision?:string;historyRevision?:string;latestRows?:number;latestTimingSamples?:number;allTimingSamples?:number})[]};
+let summary:Summary|undefined;
+const metadataMachines=new Map<MachineId,string>();
+const machineRevision=(machine:MachineId,value=summary)=>JSON.stringify(platformTargets.find(target=>target.machine===machine)?.platforms.map(id=>{const p=value?.platforms.find(p=>p.id===id);return p?.latestRevision||p?.revision||value?.revision}));
+const loadedMachines=new Map<MachineId,string>();
+let platformTargets:{platforms:string[];machine:MachineId}[]=[];
 let historyAbort:AbortController|undefined;
-let historyBusy=false;
-function fillHistory(view:ReturnType<typeof emptyView>,machine:MachineId,historical:Result[]){
-   historical=historical.filter(row=>!row.workload.startsWith('features/'));
-   const daily=new Map<string,Result[]>();for(const row of historical){const key=(row.source?.asOf||row.capturedAt).slice(0,10);const bucket=daily.get(key)||[];bucket.push(row);daily.set(key,bucket)}
-   historical=[...daily.values()].flatMap(bucket=>selectEngineVersions(bucket)).sort((a,b)=>a.capturedAt.localeCompare(b.capturedAt));
-   const dates=[...new Set(historical.map(r=>(r.source?.asOf||r.capturedAt).slice(0,10)))].sort();
-   const history=view.history[machine];history.points=dates.map(date=>({date,revision:'',status:'measured'}));history.workloads=[...new Set(historical.map(r=>r.workload))];
-   for(const row of historical){const cid=slot(row.engine),index=dates.indexOf((row.source?.asOf||row.capturedAt).slice(0,10));const phase=({compile:'compile',instantiate:'inst','first-call':'first',steady:'steady'} as const)[row.phase];const memory=({compile:'rssCompile',instantiate:'rssInst','first-call':'rssFirst',steady:'rss'} as const)[row.phase];history.versions[cid]||=dates.map(()=> 'not collected');history.versions[cid][index]=row.source?.ref||row.version;history.sources||={} ;history.sources[cid]||=dates.map(()=>undefined);history.sources[cid][index]=row.source;history.artifactSha256[row.workload]=row.artifactSha256;
-    const report=row.capturedAt+'|'+row.engine;view.reports[report]||={runId:report,created:row.capturedAt,evidence:'',sha256:'',options:{},codeRecords:[],configurations:[row.engine],host:machine};
-    for(const [metric,value,measured,factor] of [[phase,row.latencyNs,row.latencyStatus,1e6],[memory,row.peakRssBytes,row.memoryStatus,1024**2],['code',row.codeBytes,row.codeStatus,1024]] as const){const key=`${row.workload}|${cid}|${metric}`;history.cells[key]||=dates.map(()=>({st:'nm',report:'',role:'retrospective-revision'}));history.cells[key][index]={st:status(measured),...(value!=null?{v:value/factor}:{}),...(metric===phase?{samples:row.samplesNs?.map(value=>value/1e6)}:{}),report,created:row.capturedAt,configuration:row.engine,role:'retrospective-revision'};}
-   }
+let historyScope='';
+function historicalQuery(scope:PageScope,metric:OtMetricKey,workload=''){
+ const target=platformTargets.find(target=>target.machine===scope.machine);if(!target)return null;
+ const engines=[...slots].filter(([,id])=>!scope.hide[id]&&!!viewData.hosts[scope.machine].configurations[id]).map(([engine])=>engine);
+ return new URLSearchParams({platform:target.platforms[0],metric,engines:engines.join(','),baseline:trackId(scope.baseline)||'',weighting:scope.weighting,cohort:scope.cohortMode||'shared',average:scope.average||'geo',from:apiHistory.from,to:apiHistory.until,...(workload?{workload}:{})});
 }
-async function refreshHistory(targets:{platforms:string[];machine:MachineId}[]){
- if(historyBusy)return;historyBusy=true;historyAbort=new AbortController();const signal=historyAbort.signal;
- try{for(const {platforms,machine} of targets){
-  const historical=(await Promise.all(platforms.flatMap(platform=>['steady','compile','instantiate','first-call'].map(phase=>rows(platform,phase,signal,true))))).flat().map(row=>row.engine.startsWith('wago-')?{...row,engine:'wago'}:row);
-  signal.throwIfAborted();const historyView=emptyView();fillHistory(historyView,machine,historical);
-  const previousEnd=Math.max(0,datasetView.current.history[machine].points.length-1);
-  const followEnd=ui.histTo>=previousEnd;
-  datasetView.current.history[machine]=historyView.history[machine];Object.assign(datasetView.current.reports,historyView.reports);datasetView.generation++;
-  if(machine===ui.machine){const end=Math.max(0,historyView.history[machine].points.length-1);ui.histTo=followEnd?end:Math.min(ui.histTo,end);ui.histFrom=Math.min(ui.histFrom,ui.histTo);}
- }}catch(error){if(!signal.aborted)apiView.aggregateErrors.history=String(error)}finally{historyBusy=false;}
+function rememberHistoryChange(key:string,change:import('./compact-history').HistoricalChange,metric:OtMetricKey){
+ const value=scaledChange(change,metric);if(!value||!change.fromDate||!change.toDate)return;
+ apiHistory.changes[JSON.stringify([key,slot(change.engine),change.fromDate,change.toDate])]=value;
+}
+function registerHistoricalSummary(scope:PageScope,result:HistoricalSummary,workload=''){
+ const key=historyKey(scope,result.metric,workload);
+  const history=emptyView().history[scope.machine];history.workloads=result.workloads||[];
+  const timeline:Timeline={revision:result.revision,items:[],changes:[],reference:history.workloads.length,policy:'Fixed current reference cohort; matched comparisons',timeAxis:'source snapshot date',uncertainty:'Not inferred'};
+  for(const point of result.items){
+   const releases:NonNullable<typeof history.points[number]['releases']>={};
+   const lanes:Timeline['items'][number]['lanes']=[];
+   for(const lane of point.lanes){
+    const cid=slot(lane.engine);apiHistory.slots[cid]=lane.engine;
+    const version=lane.source?.kind==='release'?(lane.source.ref||lane.version):lane.source?.revision||lane.version;
+    history.versions[cid]||=result.items.map(()=> 'not collected');history.versions[cid][timeline.items.length]=version;
+    history.sources||={};history.sources[cid]||=result.items.map(()=>undefined);history.sources[cid]![timeline.items.length]=lane.source;
+    if(lane.source?.kind==='release')releases[cid]={version,publishedAt:point.date,url:lane.source.repository};
+    lanes.push({track:lane.engine,calls:lane.calls,value:lane.value,measured:lane.count,reference:lane.reference,version,configuration:lane.engine,collectedAt:lane.latestCreated,role:'retrospective-revision',release:null,sourceReports:0,reports:[],evidence:lane.fingerprint});
+    if(lane.previous)rememberHistoryChange(key,{...lane.previous,engine:lane.engine},result.metric);if(lane.first)rememberHistoryChange(key,{...lane.first,engine:lane.engine},result.metric);
+   }
+   history.points.push({date:point.date,revision:result.revision,status:'measured',...(Object.keys(releases).length?{releases}:{})});
+   timeline.items.push({date:point.date,lanes});
+  }
+
+ apiHistory.series[key]=timeline;apiHistory.active[scope.machine+'|'+result.metric]=key;apiHistory.captureDates[scope.machine+'|'+result.metric+'|'+workload]=result.items.map(p=>p.date);
+ return history;
+}
+async function refreshHistory(scope:PageScope,metric:OtMetricKey,workload=''){
+ const query=historicalQuery(scope,metric,workload);if(!query)return;
+ const platform=query.get('platform')!,metadata=summary?.platforms.find(p=>p.id===platform),key=historyKey(scope,metric,workload);
+ const requestScope=JSON.stringify([key,metadata?.latestRevision,metadata?.historyRevision]);if(historyScope===requestScope)return;
+ historyAbort?.abort();apiView.historyLoading=true;apiHistory.loading=true;apiHistory.error='';historyAbort=new AbortController();const signal=historyAbort.signal;
+ apiView.historyLoaded[scope.machine]=false;
+ try{
+  const result=await get<HistoricalSummary>('/api/history/summary?'+query,signal);signal.throwIfAborted();
+  const history=registerHistoricalSummary(scope,result,workload);
+  if(metric==='cov'){const extra=new URLSearchParams(query);extra.set('metric','exec');const execution=await get<HistoricalSummary>('/api/history/summary?'+extra,signal);signal.throwIfAborted();registerHistoricalSummary(scope,execution,workload)}
+  const previousEnd=Math.max(0,datasetView.current.history[scope.machine].points.length-1),followEnd=ui.histTo>=previousEnd;
+  apiHistory.compact=true;
+  const keys=Object.keys(apiHistory.series);while(keys.length>24){const oldest=keys.shift()!;delete apiHistory.series[oldest];for(const change of Object.keys(apiHistory.changes))if(JSON.parse(change)[0]===oldest)delete apiHistory.changes[change]}
+  datasetView.current={...datasetView.current,history:{...datasetView.current.history,[scope.machine]:history}};datasetView.generation++;
+  apiView.historyLoaded[scope.machine]=true;historyScope=requestScope;
+  if(scope.machine===ui.machine){const end=Math.max(0,history.points.length-1);ui.histTo=followEnd?end:Math.min(ui.histTo,end);ui.histFrom=Math.min(ui.histFrom,ui.histTo)}
+ }catch(error){if(!signal.aborted){apiHistory.error=String(error);apiView.aggregateErrors.history=String(error)}}finally{if(!signal.aborted){apiView.historyLoading=false;apiHistory.loading=false}}
+}
+let comparisonAbort:AbortController|undefined;
+let comparisonScope='';
+export async function loadHistoryComparison(scope:PageScope,metric:OtMetricKey,fromDate:string,toDate:string,workload=''){
+ if(!fromDate||!toDate||fromDate===toDate)return;
+ const query=historicalQuery(scope,metric,workload);if(!query)return;
+ const key=historyKey(scope,metric,workload),revision=apiHistory.series[key]?.revision;if(!revision)return;
+ const requestScope=JSON.stringify([key,revision,fromDate,toDate]);if(comparisonScope===requestScope)return;
+ comparisonAbort?.abort();comparisonAbort=new AbortController();const signal=comparisonAbort.signal;
+ query.set('fromDate',fromDate);query.set('toDate',toDate);
+ try{const result=await get<HistoricalComparison>('/api/history/comparison?'+query,signal);signal.throwIfAborted();if(result.revision!==revision){historyScope='';await refreshHistory(scope,metric,workload);return}for(const change of result.items)rememberHistoryChange(key,change,metric);comparisonScope=requestScope}
+ catch(error){if(!signal.aborted)apiHistory.error=String(error)}
 }
 export async function connectSite(_origin='',_revision?:string){
  abort?.abort();abort=new AbortController();const signal=abort.signal;apiView.loading=true;apiView.error='';
  try{
-  const platforms=await get<PlatformList>('/api/platforms',signal);const view=emptyView();const catalogue=new Map<string,Bench>();const historyTargets:{platforms:string[];machine:MachineId}[]=[];let timingSamples=0;let timingSamplesComplete=true;machines=[];
+  const checkpoint=computationCheckpoint(signal);
+  const fresh=await get<Summary>('/api/summary',signal,true);
+  if(summary&&summary.revision!==fresh.revision){
+   for(const p of fresh.platforms){const previous=summary.platforms.find(old=>old.id===p.id);
+    const latestChanged=(previous?.latestRevision||previous?.revision||summary.revision)!==(p.latestRevision||p.revision||fresh.revision);
+    const historyChanged=(previous?.historyRevision||previous?.revision||summary.revision)!==(p.historyRevision||p.revision||fresh.revision);
+    compactClient.invalidate(path=>{const url=new URL(path,'http://localhost');return url.searchParams.get('platform')===p.id&&(url.pathname==='/api/timeline'?historyChanged:url.pathname.startsWith('/api/history/')?(historyChanged||latestChanged):latestChanged&&url.pathname!=='/api/observation')});
+    if(latestChanged)for(const [key,result] of Object.entries(apiView.precomputed))if(result.platform===p.id)delete apiView.precomputed[key];
+   }
+  }
+  summary=fresh;apiView.historyRevision=fresh.revision;
+  const platforms:PlatformList={revision:fresh.revision,items:fresh.platforms};
+  platformTargets=platformGroups(platforms.items).map(group=>({machine:group.machine,platforms:group.platforms.map(p=>p.id)}));
+  machines=platformTargets.map(group=>group.machine);
+  if(!machines.includes(ui.machine)&&machines.length)ui.machine=machines[0];
+  const light=typeof location!=='undefined'&&['/','/health','/health/','/history','/history/'].includes(location.pathname)&&!ui.drawer;
+  const selectedRevision=machineRevision(ui.machine,fresh);
+  datasetView.current.statistics.timingSamples=fresh.platforms.reduce((n,p)=>n+(p.latestTimingSamples||0),0);
+  datasetView.current.statistics.allTimingSamples=fresh.platforms.reduce((n,p)=>n+(p.allTimingSamples||0),0);
+  for(const target of platformTargets){const p=fresh.platforms.find(p=>p.id===target.platforms[0]);if(p){const host=datasetView.current.hosts[target.machine];host.capturedAt=p.capturedAt;host.importedAt=p.importedAt;host.latestRows=p.latestRows}}
+  if(light){
+   if(metadataMachines.get(ui.machine)===selectedRevision){apiView.ready=true;return}
+   const view={...datasetView.current,hosts:{...datasetView.current.hosts},reports:{...datasetView.current.reports},statistics:{...datasetView.current.statistics}};
+   for(const {machine,platforms:group} of platformGroups(platforms.items)){
+    const p=group[0] as Summary['platforms'][number];view.hosts[machine]={...view.hosts[machine],label:machineLabel(p.cpu),os:`${p.os}/${p.arch} · ${p.kernel}`,policy:{cores:String(p.cores),memory:p.memoryBytes?`${(p.memoryBytes/1024**3).toFixed(1)} GiB`:'not collected'},capturedAt:p.capturedAt,importedAt:p.importedAt,latestRows:p.latestRows};
+   }
+   const platform=platformTargets.find(target=>target.machine===ui.machine)!.platforms[0];
+   const metadata=await get<CompactAggregate>('/api/aggregates?'+new URLSearchParams({platform,metric:'steady'}),signal);
+   const host=view.hosts[ui.machine];host.configurations={};
+   for(const card of metadata.cards){const cid=slot(card.engine),cfg=CFG.find(cfg=>cfg.id===cid)!;CB[cid]=cfg;view.configurations[cid]=card.engine;host.configurations[cid]={runtime:cfg.rt,version:card.version,backend:card.backend,source:card.source};if(card.latestCreated){const report=card.latestCreated+'|'+card.engine;view.reports[report]={runId:report,created:card.latestCreated,evidence:'',sha256:'',options:{},codeRecords:[],configurations:[card.engine],host:ui.machine}}}
+   view.applicationConfigurations=[...slots.values()];view.statistics={...view.statistics,machines:platformTargets.length,measuredWorkloads:metadata.workloads?.length,timingSamples:fresh.platforms.reduce((n,p)=>n+(p.latestTimingSamples||0),0),allTimingSamples:fresh.platforms.reduce((n,p)=>n+(p.allTimingSamples||0),0)};
+   signal.throwIfAborted();datasetView.current=view;datasetView.generation++;metadataMachines.set(ui.machine,selectedRevision);apiView.ready=true;
+   if(typeof location==='undefined'||!location.pathname.startsWith('/history'))await loadOverview({...ui.scope,machine:ui.machine,snapshot:ui.snap,metric:ui.metric},'steady','',signal);return;
+  }
+  if(loadedMachines.get(ui.machine)===selectedRevision){apiView.ready=true;return}
+  const view={...datasetView.current,hosts:{...datasetView.current.hosts},reports:{...datasetView.current.reports},featureVersions:{...datasetView.current.featureVersions}};const catalogue=new Map<string,Bench>();const historyTargets:{platforms:string[];machine:MachineId}[]=[];let timingSamples=0;let timingSamplesComplete=true;
   for(const {machine,platforms:group} of platformGroups(platforms.items)){
-   const platform=group[0];machines.push(machine);
-   const host=view.hosts[machine];host.label=machineLabel(platform.cpu);host.os=`${platform.os}/${platform.arch} · ${platform.kernel}`;host.policy={cores:String(platform.cores),memory:platform.memoryBytes?`${(platform.memoryBytes/1024**3).toFixed(1)} GiB`:'not collected'};
-   const normalize=(row:Result):Result=>row.engine.startsWith('wago-')?{...row,engine:'wago'}:row;
+   const platform=group[0];
+   const host=(machine===ui.machine?{...view.hosts[machine],configurations:{},snapshots:{s1:{},s2:{}}}:{...view.hosts[machine]}) as typeof view.hosts[MachineId];
+   view.hosts[machine]=host;host.capturedAt=(platform as Summary['platforms'][number]).capturedAt;host.importedAt=(platform as Summary['platforms'][number]).importedAt;host.latestRows=(platform as Summary['platforms'][number]).latestRows;host.label=machineLabel(platform.cpu);host.os=`${platform.os}/${platform.arch} · ${platform.kernel}`;host.policy={cores:String(platform.cores),memory:platform.memoryBytes?`${(platform.memoryBytes/1024**3).toFixed(1)} GiB`:'not collected'};
+   if(machine!==ui.machine)continue;
+   view.featureVersions[machine]=[];
+   const normalize=(row:ScalarResult):ScalarResult=>row.engine.startsWith('wago-')?{...row,engine:'wago'}:row;
    const current=await Promise.all(group.flatMap(platform=>['compile','instantiate','first-call','steady'].map(phase=>rows(platform.id,phase,signal))));
-   const all=selectEngineVersions(current.flat().map(normalize));
+   const raw=current.flat().map(normalize);
+   const all=[...selectEngineVersions(raw.filter(row=>!row.workload.startsWith('features/'))),...selectEngineVersions(raw.filter(row=>row.workload.startsWith('features/')))] as ScalarResult[];
    historyTargets.push({platforms:group.map(p=>p.id),machine});
+   const phases=new Map<string,Set<string>>();
+   for(const row of all){const key=JSON.stringify([row.engine,row.workload]);const set=phases.get(key)||new Set<string>();set.add(row.phase);phases.set(key,set);const pause=checkpoint();if(pause)await pause;}
    for(const row of all){
-    if(row.latencyStatus==='ok'){if(row.samplesNs?.length)timingSamples+=row.samplesNs.length;else timingSamplesComplete=false;}
-    const cid=slot(row.engine);const cfg=CFG.find(c=>c.id===cid)!;CB[cid]=cfg;host.configurations[cid]={runtime:cfg.rt,version:row.engine.startsWith('wago-')?row.engine.slice(5)+' · '+row.version:row.version,backend:row.backend,source:row.source};view.configurations[cid]=row.engine;
+    const pause=checkpoint();if(pause)await pause;
+    if(row.latencyStatus==='ok'){if(row.samplesNs?.length||row.timingSamples)timingSamples+=row.samplesNs?.length||row.timingSamples||0;else timingSamplesComplete=false;}
+    const cid=slot(row.engine);const cfg=CFG.find(c=>c.id===cid)!;CB[cid]=cfg;if(!row.workload.startsWith('features/')||!host.configurations[cid])host.configurations[cid]={runtime:cfg.rt,version:row.engine.startsWith('wago-')?row.engine.slice(5)+' · '+row.version:row.version,backend:row.backend,source:row.source};view.configurations[cid]=row.engine;
     const report=row.capturedAt+'|'+row.engine;view.reports[report]={runId:report,created:row.capturedAt,evidence:'',sha256:'',options:{},codeRecords:[],configurations:[row.engine],host:machine};
     // Host-call mechanism workloads feed the call-latency view only; they are not listed as workloads.
-    if(!row.workload.startsWith('mechanisms/')&&!catalogue.has(row.workload))catalogue.set(row.workload,{id:row.workload,artifactSha256:row.artifactSha256,tags:row.display?.tags||[],kb:row.display?.bytes?row.display.bytes/1024:null,ms:null,group:row.display?.group||(row.workload.startsWith('mechanisms/')?'Host calls':row.workload.split('/')[1]||'Other workloads'),purpose:row.display?.purpose||row.wasm,abi:row.display?.abi||'',src:row.display?.source,reset:row.display?.reset,evidenceScope:all.some(r=>r.engine===row.engine&&r.workload===row.workload&&r.phase==='steady')?'execution':all.some(r=>r.engine===row.engine&&r.workload===row.workload&&r.phase==='instantiate')?'compile-and-instantiate':'compile-only'});
-    const base={report,created:row.capturedAt,contract:row.contractSha256,configuration:row.engine};
+    if(!row.workload.startsWith('mechanisms/')&&!catalogue.has(row.workload))catalogue.set(row.workload,{id:row.workload,artifactSha256:row.artifactSha256,tags:row.display?.tags||[],kb:row.display?.bytes?row.display.bytes/1024:null,ms:null,group:row.display?.group||(row.workload.startsWith('mechanisms/')?'Host calls':row.workload.split('/')[1]||'Other workloads'),purpose:row.display?.purpose||row.wasm,abi:row.display?.abi||'',src:row.display?.source,reset:row.display?.reset,evidenceScope:phases.get(JSON.stringify([row.engine,row.workload]))?.has('steady')?'execution':phases.get(JSON.stringify([row.engine,row.workload]))?.has('instantiate')?'compile-and-instantiate':'compile-only'});
+    const base={report,created:row.capturedAt,contract:row.contractSha256,configuration:row.engine,observationId:row.observationId,platformId:row.platformId,asOf:row.source?.asOf};
     const phase=({compile:'compile',instantiate:'inst','first-call':'first',steady:'steady'} as const)[row.phase];
-    host.snapshots.s1[`${row.workload}|${cid}|${phase}`]={...base,samples:row.samplesNs?.map(value=>value/1e6),st:status(row.latencyStatus),...(row.latencyNs!=null?{v:row.latencyNs/1e6}:{})};
+    host.snapshots.s1[`${row.workload}|${cid}|${phase}`]={...base,...(row.sampleStats?{sampleStats:{count:row.sampleStats.count,mean:row.sampleStats.mean/1e6,stdDev:row.sampleStats.stdDev==null?null:row.sampleStats.stdDev/1e6,min:row.sampleStats.min/1e6,max:row.sampleStats.max/1e6}}:{}),sampling:row.sampling,samples:row.samplesNs?.map(value=>value/1e6),st:status(row.latencyStatus),...(row.latencyNs!=null?{v:row.latencyNs/1e6}:{})};
     const memory=({compile:'rssCompile',instantiate:'rssInst','first-call':'rssFirst',steady:'rss'} as const)[row.phase];
     host.snapshots.s1[`${row.workload}|${cid}|${memory}`]={...base,st:status(row.memoryStatus),...(row.peakRssBytes!=null?{v:row.peakRssBytes/1024**2}:{})};
     host.snapshots.s1[`${row.workload}|${cid}|code`]={...base,st:status(row.codeStatus),...(row.codeBytes!=null?{v:row.codeBytes/1024}:{})};
@@ -114,11 +209,22 @@ export async function connectSite(_origin='',_revision?:string){
 
   }
   if(signal.aborted)return;
-  view.catalogue=[...catalogue.values()];view.applicationConfigurations=[...new Set([...slots.values()])];view.statistics.machines=machines.length;view.statistics.timingSamples=timingSamplesComplete?timingSamples:null;
+  view.catalogue=[...new Map([...view.catalogue,...catalogue.values()].map(b=>[b.id,b])).values()];view.applicationConfigurations=[...new Set([...slots.values()])];view.statistics={machines:platformTargets.length,timingSamples:fresh.platforms.reduce((n,p)=>n+(p.latestTimingSamples||0),0),allTimingSamples:fresh.platforms.reduce((n,p)=>n+(p.allTimingSamples||0),0)};
   if(!apiView.ready&&typeof location!=='undefined'){const shown=new URL(location.href).searchParams.get('rt');if(shown){const ids=shown.split(',');ui.hide=Object.fromEntries(CFG.map(c=>[c.id,!ids.includes(c.id)]));}}
-  datasetView.current=view;datasetView.revision='';datasetView.generation++;apiView.ready=true;void refreshHistory(historyTargets);
+  datasetView.current=view;sortCFG();datasetView.revision='';datasetView.generation++;apiView.ready=true;loadedMachines.set(ui.machine,selectedRevision);
   if(!machines.includes(ui.machine)&&machines.length)ui.machine=machines[0];datasetView.machine=ui.machine;
  }catch(error){if(!signal.aborted)apiView.error=String(error)}finally{if(!signal.aborted)apiView.loading=false}
+}
+export async function loadCellSamples(machine:MachineId,snapshot:'s1'|'s2',workload:string,cid:CfgId,metric:MetricKey,signal:AbortSignal){
+ const cell=datasetView.current.hosts[machine].snapshots[snapshot][`${workload}|${cid}|${metric}`];
+ if(!cell?.observationId||!cell.platformId||cell.samples||!['compile','inst','first','steady'].includes(metric))return;
+ const query=new URLSearchParams({platform:cell.platformId,id:String(cell.observationId),...(cell.asOf?{asOf:cell.asOf}:{})});
+ const result=await get<Result>('/api/observation?'+query,signal);
+ signal.throwIfAborted();
+ const current=datasetView.current,host=current.hosts[machine],key=`${workload}|${cid}|${metric}`;
+ if(host.snapshots[snapshot][key]?.observationId!==cell.observationId)return;
+ const updated={...cell,samples:result.samplesNs?.map(value=>value/1e6),sampling:result.sampling};
+ datasetView.current={...current,hosts:{...current.hosts,[machine]:{...host,snapshots:{...host.snapshots,[snapshot]:{...host.snapshots[snapshot],[key]:updated}}}}};
 }
 export function firstMachine(){return machines[0]}
 export function activatePageSeed(_seed:PageSeed){}
@@ -126,11 +232,42 @@ export async function loadPage(_scope:PageScope,_index=0,_append=false){}
 export async function loadCalls(_scope:PageScope){}
 export async function loadWorkload(_scope:PageScope){}
 export async function loadFeatures(_scope:PageScope,_feature?:string,_configuration?:string){}
-export async function loadHistory(_scope:PageScope,_metric:OtMetricKey,_workload='',_before?:string,_after?:string){}
+export async function loadHistory(scope:PageScope,metric:OtMetricKey,workload='',_before?:string,_after?:string){await refreshHistory(scope,metric,workload)}
 export async function loadProposal(_scope:PageScope,_feature:string){}
-export async function loadHistoryReport(_scope:PageScope,_metric:OtMetricKey,_cid:CfgId,_before:string,_after:string,_cursor=''){}
-export async function loadOverview(_scope:PageScope,_metric:MetricKey|'rssAverage',_feature='',_signal?:AbortSignal){}
+let reportAbort:AbortController|undefined;
+export async function loadHistoryReport(scope:PageScope,metric:OtMetricKey,cid:CfgId,before:string,after:string,_cursor=''){
+ const query=historicalQuery(scope,metric),engine=trackId(cid);if(!query||!engine||!before||!after)return;
+ const timelineKey=historyKey(scope,metric),revision=apiHistory.series[timelineKey]?.revision;if(!revision)return;
+ const key=JSON.stringify([timelineKey,cid,before,after,revision]);if(apiHistory.reportKey===key)return;
+ reportAbort?.abort();reportAbort=new AbortController();const signal=reportAbort.signal;apiHistory.reportLoading=true;apiHistory.reportError='';
+ query.set('engine',engine);query.set('fromDate',before);query.set('toDate',after);
+ try{
+  const result=await get<HistoricalReport>('/api/history/report?'+query,signal);signal.throwIfAborted();
+  if(result.revision!==revision){historyScope='';await refreshHistory(scope,metric);return}
+  apiHistory.compactReport=result;apiHistory.reportKey=key;
+ }catch(error){if(!signal.aborted)apiHistory.reportError=String(error)}finally{if(!signal.aborted)apiHistory.reportLoading=false}
+}
+
+export async function loadOverview(scope:PageScope,metric:MetricKey|'rssAverage',feature='',signal?:AbortSignal){
+ if(feature)return;await loadOverviews(scope,[metric],signal);
+}
+export async function loadOverviews(scope:PageScope,metrics:(MetricKey|'rssAverage')[],signal?:AbortSignal){
+ const target=platformTargets.find(target=>target.machine===scope.machine);if(!target||!metrics.length)return;
+ const engines=[...slots].filter(([,id])=>!scope.hide[id]&&!!viewData.hosts[scope.machine].configurations[id]).map(([engine])=>engine);
+ const query=new URLSearchParams({platform:target.platforms[0],...(metrics.length===1?{metric:metrics[0]}:{metrics:metrics.join(',')}),weighting:scope.weighting,cohort:scope.cohortMode||'shared',average:scope.average||'geo',engines:engines.join(','),baseline:trackId(scope.baseline)||''});
+ let results:CompactAggregate[]=[];
+ for(let attempt=0;;attempt++){
+  try{if(metrics.length===1)results=[await get<CompactAggregate>('/api/aggregates?'+query,signal||new AbortController().signal)];else results=(await get<{items:CompactAggregate[]}>('/api/aggregates?'+query,signal||new AbortController().signal)).items;break}
+  catch(error){if((error as {status?:number}).status!==409||attempt>=2)throw error;signal?.throwIfAborted()}
+ }
+ if(signal?.aborted)return;
+ for(const result of results){const key=aggregateKey(scope,result.metric);apiView.precomputed[key]=result;
+  for(const card of result.cards){const report=(card.latestCreated||'')+'|'+card.engine;if(card.latestCreated&&!datasetView.current.reports[report])datasetView.current.reports[report]={runId:report,created:card.latestCreated,evidence:'',sha256:'',options:{},codeRecords:[],configurations:[card.engine],host:scope.machine}}
+ }
+ const keys=Object.keys(apiView.precomputed);while(keys.length>64)delete apiView.precomputed[keys.shift()!];
+}
+
 export function trackId(id:CfgId){return datasetView.current.configurations[id]}
 export function resetPages(){apiView.cursors=[''];apiView.pageIndex=0}
 export function currentClient():SiteDataset|null{return null}
-export function closeSite(){abort?.abort();historyAbort?.abort();apiView.ready=false}
+export function closeSite(){abort?.abort();historyAbort?.abort();comparisonAbort?.abort();reportAbort?.abort();compactClient.close();compactClient=new CompactClient();apiView.ready=false}

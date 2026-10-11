@@ -2,7 +2,7 @@
 	import { CFG } from '$lib/data/runtimes';
 	import { featureValue, familyValue } from '$lib/feature-values';
  import { featureContracts } from '$lib/model';
- import { fmtU } from '$lib/format';
+ import { fmtU, fmtAverage } from '$lib/format';
 	import { isVisible } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 	import BarRow from '../BarRow.svelte';
@@ -24,14 +24,14 @@
 		<div><div class="card-title">Memory64 execution</div><div class="note">geomean across complete Memory64 corpus · lower is better</div></div>
 		{#each vis as c (c.id)}
 			{@const d = M64_D[c.id]}
-			<BarRow {c} ok={d?.[0]!=null} w={w(d?.[0] ?? 0, execMax)} text={d?.[0]==null?'':fmtU(d[0],'ms')} status="not measured" />
+			<BarRow {c} ok={d?.[0]!=null} w={w(d?.[0] ?? 0, execMax)} text={d?.[0]==null?'':fmtAverage(d[0],'ms')} status="n/a" />
 		{/each}
 	</div>
 	<div class="card">
 		<div><div class="card-title">Memory64 compilation</div><div class="note">lower is better</div></div>
 		{#each vis as c (c.id)}
 			{@const d = M64_D[c.id]}
-			<BarRow {c} ok={d?.[1]!=null} w={w(d?.[1] ?? 0, compMax)} text={d?.[1]==null?'':fmtU(d[1],'ms')} status="not measured" />
+			<BarRow {c} ok={d?.[1]!=null} w={w(d?.[1] ?? 0, compMax)} text={d?.[1]==null?'':fmtAverage(d[1],'ms')} status="n/a" />
 		{/each}
 	</div>
 </div>
@@ -50,7 +50,7 @@
 					{#each vis as c (c.id)}
 						{@const d = M64_D[c.id]}
             {@const value=featureValue(ui.scope,id,c.id)}
-            <td class="mono r pad">{value==null?'not measured':fmtU(value,'ms')}</td>
+            <td class="mono r pad">{value==null?'n/a':fmtU(value,'ms')}</td>
 					{/each}
 				</tr>
 			{/each}

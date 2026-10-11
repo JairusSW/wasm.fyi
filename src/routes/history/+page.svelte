@@ -2,7 +2,7 @@
 	import VersionLink from '$lib/components/VersionLink.svelte';
 	import {CALL_PATHS} from '$lib/call-paths';
 	import {apiHistory,historyKey} from '$lib/api/history.svelte';
- import {loadHistoryReport} from '$lib/api/controller.svelte';
+ import {historyPending,loadHistoryReport,loadHistoryComparison} from '$lib/api/controller.svelte';
  import {datasetView} from '$lib/api/view.svelte';
  import {presentResult} from '$lib/api/presentation';
  import HistoryWindow from '$lib/components/HistoryWindow.svelte';
@@ -17,8 +17,10 @@
 	import { benchVal, otSeries } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 import { viewData } from '$lib/view-data';
-import { historyCell, historyChange, historySegments, historyCurve, historicalCallWorkloads, historyPointInfo, historyVersionChanges, historyCoverage, historyComparison, historyCohort, historyEndpoints, historyVerdict, type HistoryVerdict } from '$lib/history-values';
+import { historyCell, historyChange, historySegments, historyCurve, commitPinned, historicalCallWorkloads, historyPointInfo, historyVersionChanges, historyCoverage, historyComparison, historyCohort, historyEndpoints, historyVerdict, type HistoryVerdict } from '$lib/history-values';
 import HistoryMarker from '$lib/components/HistoryMarker.svelte';
+import MarkerKey from '$lib/components/MarkerKey.svelte';
+import Select from '$lib/components/Select.svelte';
 import { onscreen } from '$lib/onscreen';
 import { RangeSelect } from '$lib/range-select.svelte';
 import { tipCard, tipWho } from '$lib/tip';
@@ -26,6 +28,8 @@ import TipDelta from '$lib/components/TipDelta.svelte';
 import TipCoverage from '$lib/components/TipCoverage.svelte';
 import TipCalls from '$lib/components/TipCalls.svelte';
 
+	// Until the dataset and its first history arrive, the chart and report show skeletons.
+	const booting = $derived(historyPending(ui.machine));
 	const W = 860;
 	const HC = 280;
 	const pl = 46;
@@ -119,7 +123,7 @@ import TipCalls from '$lib/components/TipCalls.svelte';
 				sel,
 				width: sel ? 2.2 : 1.2,
 				op: sel ? 1 : 0.7,
-                points: SNAPS.filter(p=>Number.isFinite(val(c.id,p.i))).map(p=>({i:p.i,x:X(p.i),y:Y(val(c.id,p.i)),version:versions.has(p.i)?verAt(c.id,p.i,ui.machine):'',partial:!historyCoverage(ui.scope,c.id,M.key,p.i).complete})),
+                points: SNAPS.filter(p=>Number.isFinite(val(c.id,p.i))).map(p=>({i:p.i,x:X(p.i),y:Y(val(c.id,p.i)),version:versions.has(p.i)?verAt(c.id,p.i,ui.machine):'',commit:commitPinned(viewData.history[ui.machine].versions[c.id]?.[p.i]),partial:!historyCoverage(ui.scope,c.id,M.key,p.i).complete})),
                 segs:historySegments(SNAPS.map(p=>val(c.id,p.i)),X,Y,true),
 				bumps: SNAPS.filter((p) => versions.has(p.i)).map((p) => {
 					const x = X(p.i);
@@ -182,7 +186,7 @@ import TipCalls from '$lib/components/TipCalls.svelte';
 		});
 		const archived = rows.filter((r) => r.info.archived).length;
 		const notes = [
-			historicalCallWorkloads(M.key).length ? M.key==='callTotal'?'sum of both recorded call directions':'recorded median per call path' : isCov ? '' : `geomean · ${ui.scope.weighting} weighting`,
+			historicalCallWorkloads(M.key).length ? M.key==='callTotal'?'sum of both recorded call directions':'recorded median per call path' : isCov ? '' : `${ui.average === 'mean' ? 'mean' : 'geomean'} · every workload weighted equally`,
 			'Δ vs previous matched point',
 			archived ? (archived === rows.length ? 'archived capture' : `${archived}/${rows.length} archived`) : ''
 		].filter(Boolean);
@@ -194,7 +198,7 @@ import TipCalls from '$lib/components/TipCalls.svelte';
 			l: pc(X(hi), W),
 			tf: hi > 8 ? 'translateX(calc(-100% - 14px))' : 'translateX(14px)',
 			date: 'snap-' + SNAPS[hi]?.date,
-			ev: EVENTS.filter((e) => e.i === hi).map((e) => e.label),
+			ev: [] as string[],
 			rows
 		};
 	});
@@ -214,11 +218,20 @@ import TipCalls from '$lib/components/TipCalls.svelte';
 		const snapped = !!ends && (f !== ui.histFrom || t !== ui.histTo);
 		const matched = ends ? historyComparison(s, cid, key, f, t) : null;
 		const dt = matched?.ratio ?? NaN;
+        if(apiHistory.compact){
+         const beforeDate=SNAPS[f]?.date,afterDate=SNAPS[t]?.date,timelineKey=historyKey(s,key);
+         const ready=apiHistory.reportKey===JSON.stringify([timelineKey,cid,beforeDate,afterDate,apiHistory.series[timelineKey]?.revision]);
+         const report=ready?apiHistory.compactReport:null;
+         const factor=key==='mem'?1024**2:key==='code'?1024:1e6;
+         const colors:Record<HistoryVerdict,string>={improved:'var(--good)',regressed:'var(--bad)','no practical change':'var(--fg3)','reused evidence':'var(--fg3)',inconclusive:'var(--fg2)'};
+         const rows=(report?.items||[]).map(row=>{const verdict:HistoryVerdict=row.reused?'reused evidence':row.ratio<0.98?'improved':row.ratio>1.02?'regressed':'no practical change';return {name:workloadName(row.workload),group:row.group,tip:'',before:fmtU(row.before/factor,MET[RM].u),after:fmtU(row.after/factor,MET[RM].u),d:row.ratio-1,delta:relative(row.ratio,ui.deltaFormat),ci:row.reused?'not applicable':'unavailable',verdict,estimate:!row.reused,vColor:colors[verdict]}});
+         return {c,empty:!ends,title:`${c.rt} ${c.be}: ${verAt(cid,f,ui.machine)} → ${verAt(cid,t,ui.machine)}`,range:`${beforeDate||'unavailable'} → ${afterDate||'unavailable'}`,snapped,estimates:rows.filter(r=>r.estimate).length,spans:false,rows,moreN:report?`${rows.length} matched workloads`:'Loading matched workload report',sums:(['improved','regressed','no practical change','reused evidence'] as HistoryVerdict[]).map(k=>({k,v:rows.filter(row=>row.verdict===k).length,c:colors[k]})),other:[{k:`Matched ${ui.average === 'mean' ? 'mean' : 'geomean'} (${matched?.count||0} workloads)`,v:matched?relative(matched.ratio,ui.deltaFormat):'unavailable'},{k:'Policy',v:'Same current reference cohort and exact matched contracts at both dates.'},{k:'Uncertainty',v:'Comparison interval unavailable.'}]};
+        }
         if(datasetView.revision){
          const beforeDate=SNAPS[f]?.date,afterDate=SNAPS[t]?.date;const ready=apiHistory.reportKey===JSON.stringify([historyKey(s,key),cid,beforeDate,afterDate]);const report=ready?apiHistory.report:null;
          const colors:Record<string,string>={improved:'var(--good)',regressed:'var(--bad)','no practical change':'var(--fg3)','reused evidence':'var(--fg3)'};
          const rows=(report?.workloads||[]).map(row=>{const a=presentResult(row.before),b=presentResult(row.after);const verdict:HistoryVerdict=row.reused?'reused evidence':row.ratio<0.98?'improved':row.ratio>1.02?'regressed':'no practical change';return {name:workloadName(row.workload),group:row.group,tip:'',before:a.v==null?'unavailable':fmtU(a.v,MET[RM].u),after:b.v==null?'unavailable':fmtU(b.v,MET[RM].u),d:row.ratio-1,delta:relative(row.ratio,ui.deltaFormat),ci:row.reused?'not applicable':'unavailable',verdict,estimate:!row.reused,vColor:colors[verdict]}});
-         return {c,empty:!ends,title:`${c.rt} ${c.be}: ${verAt(cid,f,ui.machine)} → ${verAt(cid,t,ui.machine)}`,range:`${beforeDate||'unavailable'} → ${afterDate||'unavailable'}`,snapped,estimates:rows.filter(r=>r.estimate).length,spans:false,rows,moreN:report?`${report.total} matched workloads`:'Loading matched workload report',sums:['improved','regressed','no practical change','reused evidence'].map(k=>({k,v:report?.summaryCounts[k]||0,c:colors[k]})),other:[{k:`Matched geomean (${matched?.count||0} workloads)`,v:matched?relative(matched.ratio,ui.deltaFormat):'unavailable'},{k:'Policy',v:'Exact contracts and compatible recorded contexts; reused observations keep their identities.'},{k:'Uncertainty',v:'Comparison interval unavailable.'}]};
+         return {c,empty:!ends,title:`${c.rt} ${c.be}: ${verAt(cid,f,ui.machine)} → ${verAt(cid,t,ui.machine)}`,range:`${beforeDate||'unavailable'} → ${afterDate||'unavailable'}`,snapped,estimates:rows.filter(r=>r.estimate).length,spans:false,rows,moreN:report?`${report.total} matched workloads`:'Loading matched workload report',sums:['improved','regressed','no practical change','reused evidence'].map(k=>({k,v:report?.summaryCounts[k]||0,c:colors[k]})),other:[{k:`Matched ${ui.average === 'mean' ? 'mean' : 'geomean'} (${matched?.count||0} workloads)`,v:matched?relative(matched.ratio,ui.deltaFormat):'unavailable'},{k:'Policy',v:'Exact contracts and compatible recorded contexts; reused observations keep their identities.'},{k:'Uncertainty',v:'Comparison interval unavailable.'}]};
         }
 		const callIds = historicalCallWorkloads(M.key);
 		// Rows use the same matched cohort as the headline geomean.
@@ -259,7 +272,7 @@ import TipCalls from '$lib/components/TipCalls.svelte';
 				...(cnt('reused evidence') ? [{ k: 'Reused evidence', v: cnt('reused evidence'), c: 'var(--fg3)' }] : [])
 			],
 			other: [
-				{ k: historicalCallWorkloads(M.key).length?M.l:`Matched geomean (${matched?.count??0} workloads)`, v: Number.isFinite(dt) && (SER[cid] || isCov) ? relative(dt,ui.deltaFormat) : 'not measured' },
+				{ k: historicalCallWorkloads(M.key).length?M.l:`Matched ${ui.average === 'mean' ? 'mean' : 'geomean'} (${matched?.count??0} workloads)`, v: Number.isFinite(dt) && (SER[cid] || isCov) ? relative(dt,ui.deltaFormat) : 'n/a' },
 				{ k: 'Coverage', v: covText },
 				{ k: 'Process lifetime peak RSS', v: 'See recorded memory series; no inferred phase delta' },
 				{ k: 'Extracted native image', v: 'See recorded image series; no active-code inference' },
@@ -269,11 +282,13 @@ import TipCalls from '$lib/components/TipCalls.svelte';
 	});
 
  $effect(()=>{
-  if(!datasetView.revision)return;
-  const series=otSeries(ui.scope,ui.histCfg,ui.otMetric),ends=historyEndpoints(series,ui.histFrom,ui.histTo);if(!ends)return;
+  if(!datasetView.revision&&!apiHistory.compact)return;
+  const metric=ui.otMetric==='cov'?'exec':ui.otMetric;
+  const series=otSeries(ui.scope,ui.histCfg,metric),ends=historyEndpoints(series,ui.histFrom,ui.histTo);if(!ends)return;
   const before=SNAPS[ends[0]]?.date,after=SNAPS[ends[1]]?.date;if(!before||!after)return;
-  const scope={...ui.scope,snapshot:ui.snap,metric:ui.metric};const metric=ui.otMetric,cid=ui.histCfg;
-  const timer=setTimeout(()=>void loadHistoryReport(scope,metric,cid,before,after),150);return ()=>clearTimeout(timer);
+  const scope={...ui.scope,snapshot:ui.snap,metric:ui.metric},cid=ui.histCfg;
+  const from=SNAPS[ui.histFrom]?.date,to=SNAPS[ui.histTo]?.date;
+  const timer=setTimeout(()=>{if(from&&to)void loadHistoryComparison(scope,metric,from,to);void loadHistoryReport(scope,metric,cid,before,after)},150);return ()=>clearTimeout(timer);
  });
 
 	const f = $derived(ui.histFrom);
@@ -305,22 +320,22 @@ import TipCalls from '$lib/components/TipCalls.svelte';
 		value={ui.histMode}
 		onselect={(v) => (ui.histMode = v as 'ratio' | 'change')}
 	/>
-	<span class="small fg3">Drag to select a range · or click, then shift+click</span>
-	<label class="sel"
-		>From
-		<select value={String(f)} onchange={(e) => (ui.histFrom = Math.min(+e.currentTarget.value, ui.histTo - 1))}>
-			{#each SNAPS as p (p.i)}<option value={String(p.i)}>snap-{p.date}</option>{/each}
-		</select>
-	</label>
-	<label class="sel"
-		>To
-		<select value={String(t)} onchange={(e) => (ui.histTo = Math.max(+e.currentTarget.value, ui.histFrom + 1))}>
-			{#each SNAPS as p (p.i)}<option value={String(p.i)}>snap-{p.date}</option>{/each}
-		</select>
-	</label>
+	<span class="sel">From <Select mono label="From" options={SNAPS.map((p): [number, string] => [p.i, p.date])} value={f} onselect={(v) => (ui.histFrom = Math.min(v, ui.histTo - 1))} /></span>
+	<span class="sel">To <Select mono label="To" options={SNAPS.map((p): [number, string] => [p.i, p.date])} value={t} onselect={(v) => (ui.histTo = Math.max(v, ui.histFrom + 1))} /></span>
 </div>
 
 <div class="panel chart-panel">
+	{#if booting}
+	<div class="chart chart-skel" aria-busy="true" aria-label="Loading history">
+		<svg viewBox="0 0 {W} {HC}" aria-hidden="true">
+			{#each [80, 130, 180, 230] as y (y)}<line x1="66" x2={W - 20} y1={y} y2={y} class="skel-grid" />{/each}
+			{#each [[150, 60, 120, 0.9], [190, 140, 170, 0.7], [110, 95, 70, 0.5]] as [a, b, c, o], k (k)}
+				<path class="skel-line" style:opacity={o} d={`M70 ${a} C 260 ${b}, 420 ${c}, 560 ${(a + c) / 2} S 760 ${b + 20}, ${W - 24} ${c}`} />
+			{/each}
+		</svg>
+		{#each [80, 130, 180, 230] as y (y)}<span class="skel axis-skel" style:top="{(y / HC) * 100}%"></span>{/each}
+	</div>
+	{:else}
 	<div class="chart" role="presentation" onmouseleave={() => (hover = null)} onpointerdown={scrub} onpointermove={scrub} onpointerup={endScrub} onpointercancel={endScrub}>
 		<svg viewBox="0 0 {W} {HC}" role="presentation" class:dragging={range.dragging} onpointerdown={(e) => e.pointerType === 'mouse' && range.down(e)} onpointermove={(e) => e.pointerType === 'mouse' && range.move(e)} onpointerup={(e) => e.pointerType === 'mouse' && range.up(e)} onpointercancel={range.cancel}>
 			<rect x={X(f).toFixed(1)} y="38" width={(X(t) - X(f)).toFixed(1)} height="216" style="fill:var(--bg3)" />
@@ -349,7 +364,6 @@ import TipCalls from '$lib/components/TipCalls.svelte';
 			<line x1={X(t).toFixed(1)} x2={X(t).toFixed(1)} y1="38" y2="254" style="stroke:var(--fg)" />
             {#if tip}
 				<line x1={tip.x} x2={tip.x} y1="30" y2="254" style="stroke:var(--fg3)" />
-				{#each tip.rows as d (d.c.id)}<circle cx={tip.x} cy={d.y} r={d.r} style:stroke={d.c.col} style="fill:var(--bg2);stroke-width:2" />{/each}
 			{/if}
 			{#each hits as h (h.i)}
 				<rect
@@ -364,7 +378,7 @@ import TipCalls from '$lib/components/TipCalls.svelte';
 			{/each}
 		</svg>
 		{#each lines as l (l.c.id)}
-			{#each l.points as p (p.i)}<HistoryMarker x={pc(p.x,W)} y={pc(p.y,HC)} color={l.c.col} version={p.version} selected={l.sel} partial={p.partial} />{/each}
+			{#each l.points as p (p.i)}<HistoryMarker x={pc(p.x,W)} y={pc(p.y,HC)} color={l.c.col} version={p.version} commit={p.commit} selected={l.sel} partial={p.partial} hot={p.i === hover} />{/each}
 		{/each}
 		{#if tip}
 			<div class="htip float" role="tooltip" style:left={tip.l} style:transform={tip.tf} use:onscreen={tip}>
@@ -414,11 +428,10 @@ import TipCalls from '$lib/components/TipCalls.svelte';
 			{#if h.show}<span class="axis-label" style:left={h.l} style:top="94%" style:transform="translateX(-50%)">{h.label}</span>{/if}
 		{/each}
 	</div>
+	{/if}
 	<div class="keys">
 		<span class="key"><span class="k-range"></span>Change-report range — click chart or use From / To</span>
-		<span class="key"><span class="k-diamond"></span>Release version · circle = source snapshot</span>
-		<span class="key">○ Partial workload coverage · changes use matched workloads</span>
-		<span class="key"><span class="k-event"></span>Retrospective source revision — hover for details</span>
+		<MarkerKey note="changes use matched workloads" />
 	</div>
 	<div class="report-for">
 		<span class="small fg3 nowrap">Report for</span>
@@ -427,12 +440,21 @@ import TipCalls from '$lib/components/TipCalls.svelte';
 				<Swatch color={c.col} bg={c.hollow ? 'transparent' : c.col} />{c.rt} <span class="small fg3">{c.be}</span>
 			</button>
 		{/each}
+		<!-- phones: one dropdown instead of a wall of chips -->
+		<span class="report-pick"><Select label="Report for" options={plotC.map((c): [CfgId, string] => [c.id, `${c.rt} ${c.be}`])} value={ui.histCfg} onselect={(v) => (ui.histCfg = v)} /></span>
 	</div>
 	<div class="note">Revision markers identify retrospectively measured engine source. The corpus is frozen; current source rebuilds do not change these measurements.</div>
 </div>
 
 <HistoryWindow />
 <div class="panel report">
+	{#if booting}
+	<div class="rep-head" aria-busy="true"><span class="skel" style:width="22em" style:height="1em"></span><span class="skel" style:width="12em"></span></div>
+	<div class="sums">{#each { length: 4 } as _, k (k)}<div class="sum"><span class="skel" style:width="6em"></span><span class="skel block" style:width="2em" style:height="1.3em" style:margin-top="6px"></span></div>{/each}</div>
+	<div class="ox"><table class="t" style:min-width="680px"><tbody>
+		{#each { length: 8 } as _, k (k)}<tr aria-hidden="true"><td class="pl14"><span class="skel" style:width="{140 + ((k * 41) % 120)}px"></span></td>{#each { length: 4 } as _, j (j)}<td class="r"><span class="skel" style:width="{40 + ((k + j * 3) % 5) * 6}px"></span></td>{/each}<td class="pl14"><span class="skel" style:width="7em"></span></td></tr>{/each}
+	</tbody></table></div>
+	{:else}
 	<div class="rep-head">
 		<span class="rep-title"><Swatch color={rep.c.col} bg={rep.c.hollow ? 'transparent' : rep.c.col} size={9} />Change report — {rep.title}</span>
 		<span class="mono small fg3">{rep.range}</span>
@@ -472,6 +494,9 @@ import TipCalls from '$lib/components/TipCalls.svelte';
 				</tr>
 			</thead>
 			<tbody>
+				{#if apiHistory.reportLoading && !rep.rows.length}
+					{#each { length: 6 } as _, k (k)}<tr aria-hidden="true"><td class="pl14"><span class="skel" style:width="{140 + ((k * 41) % 120)}px"></span></td>{#each { length: 4 } as _, j (j)}<td class="r"><span class="skel" style:width="{40 + ((k + j * 3) % 5) * 6}px"></span></td>{/each}<td class="pl14"><span class="skel" style:width="7em"></span></td></tr>{/each}
+				{/if}
 				{#each rep.rows as r (r.name)}
 					<tr>
 						<td class="pl14" data-tip-card={r.tip || undefined}><span class="mono">{r.name}</span> <span class="small fg3">{r.group}</span></td>
@@ -491,9 +516,34 @@ import TipCalls from '$lib/components/TipCalls.svelte';
   {#if apiHistory.report?.nextCursor}<button class="btn-small" disabled={apiHistory.reportLoading} onclick={()=>loadHistoryReport({...ui.scope,snapshot:ui.snap,metric:ui.metric},ui.otMetric,ui.histCfg,SNAPS[ui.histFrom]?.date,SNAPS[ui.histTo]?.date,apiHistory.report!.nextCursor)}>Next workloads</button>{/if}
  {/if}
 	<div class="more note">{rep.moreN}{#if rep.estimates}{rep.moreN ? ' · ' : ''}* {rep.estimates} {rep.estimates === 1 ? 'verdict uses' : 'verdicts use'} the point estimate against ±2%: a comparison interval is unavailable.{/if}</div>
+	{/if}
 </div>
 
 <style>
+	.chart-skel svg {
+		width: 100%;
+		height: auto;
+		display: block;
+	}
+	.skel-grid {
+		stroke: var(--line);
+	}
+	.skel-line {
+		fill: none;
+		stroke: var(--bg3);
+		stroke-width: 3;
+		vector-effect: non-scaling-stroke;
+		animation: skel-pulse 1.6s ease-in-out infinite;
+	}
+	@keyframes skel-pulse {
+		50% { stroke: color-mix(in srgb, var(--fg) 14%, var(--bg3)); }
+	}
+	.axis-skel {
+		position: absolute;
+		left: 1.5%;
+		width: 3%;
+		transform: translateY(-50%);
+	}
 	.head {
 		display: flex;
 		flex-wrap: wrap;
@@ -529,6 +579,8 @@ import TipCalls from '$lib/components/TipCalls.svelte';
 	}
 	.chart {
 		position: relative;
+		user-select: none;
+		-webkit-user-select: none;
 	}
 	svg {
 		width: 100%;
@@ -573,7 +625,8 @@ import TipCalls from '$lib/components/TipCalls.svelte';
 		padding: 8px 10px;
 		min-width: min(320px, calc(100vw - 16px));
 		max-width: calc(100vw - 16px);
-		pointer-events: auto;
+		/* Click-through, so hovering and range selection keep tracking the chart underneath. */
+		pointer-events: none;
 		overflow-wrap: anywhere;
 		z-index: 3;
 	}
@@ -692,18 +745,8 @@ import TipCalls from '$lib/components/TipCalls.svelte';
 		border-right: 1px solid var(--fg);
 		background: var(--bg3);
 	}
-	.k-diamond {
-		flex-shrink: 0;
-		width: 7px;
-		height: 7px;
-		background: var(--fg2);
-		transform: rotate(45deg);
-	}
-	.k-event {
-		flex-shrink: 0;
-		width: 1px;
-		height: 10px;
-		border-left: 1px dashed var(--fg3);
+	.report-pick {
+		display: none;
 	}
 	.report-for {
 		display: flex;
@@ -786,11 +829,26 @@ import TipCalls from '$lib/components/TipCalls.svelte';
 	}
 	/* Phones: a taller stretched chart, a pinned readout instead of a floating tip, compact controls. */
 	@media (max-width: 720px) {
+		/* version labels crowd each other at this width; the tooltip still names each point */
+		.ver {
+			display: none;
+		}
+		.report-for .chip {
+			display: none;
+		}
+		.report-pick {
+			display: inline-flex;
+			flex: 1;
+			min-width: 0;
+		}
+		.report-pick :global(.select) {
+			width: 100%;
+		}
 		.sel {
 			flex: 1 1 140px;
 			font-size: 13px;
 		}
-		.sel select {
+		.sel :global(.select) {
 			flex: 1;
 			min-width: 0;
 		}
@@ -803,9 +861,6 @@ import TipCalls from '$lib/components/TipCalls.svelte';
 		}
 		svg {
 			height: 240px;
-		}
-		svg circle {
-			display: none;
 		}
 		.htip {
 			top: auto;

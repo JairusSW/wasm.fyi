@@ -1,12 +1,73 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp,writeFile,mkdir,readdir,rm} from 'node:fs/promises';
+import {mkdtemp,readFile,writeFile,mkdir,readdir,rm} from 'node:fs/promises';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {collectLatencies,summarizeLatencies,latencyIdentity} from './lib/latency-capture.mjs';
 const workload={id:'applications/test',artifact:'/cache/artifacts/test.wasm',artifactName:'test.wasm',sha256:'a'.repeat(64),abi:'core',export:'benchmark',args:['7']};
 const manifest={host:{os:'linux',arch:'amd64',cpu_description:'Fixture CPU',logical_cpus:4,kernel:'fixture'},lock:{runtime_configurations:[{id:'engine',description:{runtime_version:'1.0',backend:'compiler'}}]}};
 const trial=(block,values,status='ok')=>({id:'trial-'+block,block,profile:'timing',runtime_configuration:'engine',workload:workload.id,scenario:'steady',status,samples:values.map(n=>({elapsed_ns:n,operations:2,verified:true,warmup:false}))});
+for(const batchOperations of [1000000,10000])test('adaptive call capture submits four phases once with explicit steady batch '+batchOperations,async()=>{
+ const directory=await mkdtemp(join(tmpdir(),'adaptive-call-capture-'));const commands=[];
+ const callWorkload={...workload,id:'mechanisms/host-to-wasm-call'};
+ try{
+  await writeFile(join(directory,'wago-suite.json'),JSON.stringify([callWorkload]));
+  const capture=await collectLatencies({directory,workloads:[callWorkload],engines:['engine'],collection:{adaptiveSampling:{groupSize:5,maxSamples:35,warmup:0},supportsSteadyOperations:true,callBatchOperations:batchOperations,timeout:'1s',operations:1},run:async(command,...args)=>{
+   commands.push([command,...args]);assert.equal(command,'run');
+   assert.equal(args[args.indexOf('--operations')+1],'1');
+   assert.equal(args[args.indexOf('--steady-operations')+1],String(batchOperations));
+   assert.equal(args[args.indexOf('--scenarios')+1],'compile,instantiate,first-call,steady');
+   assert.equal(args[args.indexOf('--launches')+1],'1');
+   assert.equal(args[args.indexOf('--warmup')+1],'0');
+   const out=args[args.indexOf('--out')+1];await mkdir(join(out,'trials'),{recursive:true});await writeFile(join(out,'manifest.json'),JSON.stringify(manifest));
+   for(const scenario of ['compile','instantiate','first-call','steady']){
+    const operations=scenario==='steady'?batchOperations:1;
+    const sample={elapsed_ns:100*operations,operations,verified:true,warmup:false};
+    await writeFile(join(out,'trials',scenario+'.json'),JSON.stringify({...trial(0,[]),workload:callWorkload.id,scenario,samples:Array.from({length:5},()=>sample)}));
+   }
+  }});
+  assert.equal(commands.length,1);
+  assert.deepEqual(capture.results.map(row=>[row.phase,row.timingSamples,row.latencyNs]),['compile','instantiate','first-call','steady'].map(phase=>[phase,5,100]));
+ }finally{await rm(directory,{recursive:true,force:true})}
+});
+
+test('an unupgraded controller keeps the legacy call path without unsupported flags',async()=>{
+ const directory=await mkdtemp(join(tmpdir(),'legacy-call-controller-'));const commands=[];
+ const callWorkload={...workload,id:'mechanisms/host-to-wasm-call'};
+ try{
+  await writeFile(join(directory,'wago-suite.json'),JSON.stringify([callWorkload]));
+  await collectLatencies({directory,workloads:[callWorkload],engines:['engine'],collection:{adaptiveSampling:{groupSize:5,maxSamples:35,warmup:0},timeout:'1s',operations:1},run:async(command,...args)=>{
+   commands.push([command,...args]);assert(!args.includes('--steady-operations'));
+   const out=args[args.indexOf('--out')+1];await mkdir(join(out,'trials'),{recursive:true});await writeFile(join(out,'manifest.json'),JSON.stringify(manifest));
+   for(const scenario of args[args.indexOf('--scenarios')+1].split(','))await writeFile(join(out,'trials',scenario+'.json'),JSON.stringify({...trial(0,[100,100,100,100,100]),workload:callWorkload.id,scenario}));
+  }});
+  assert.equal(commands.length,2);
+ }finally{await rm(directory,{recursive:true,force:true})}
+});
+
+test('missing live RSS uses one deterministic legacy pass and never publishes its timing samples',async()=>{
+ const directory=await mkdtemp(join(tmpdir(),'shared-session-rss-'));const commands=[];
+ const apple=structuredClone(manifest);apple.host.os='darwin';apple.host.arch='arm64';
+ try{
+  await writeFile(join(directory,'wago-suite.json'),JSON.stringify([workload]));
+  const capture=await collectLatencies({directory,workloads:[workload],engines:['engine'],collection:{adaptiveSampling:{groupSize:5,maxSamples:35,warmup:0},supportsSteadyOperations:true,memory:true,timeout:'1s',operations:1},run:async(command,...args)=>{
+   commands.push([command,...args]);const adaptive=args.includes('--adaptive-samples');
+   const out=args[args.indexOf('--out')+1];await mkdir(join(out,'trials'),{recursive:true});await writeFile(join(out,'manifest.json'),JSON.stringify(apple));
+   assert.equal(args[args.indexOf('--launches')+1],'1');assert.equal(args[args.indexOf('--warmup')+1],'0');
+   if(!adaptive){assert.equal(args[args.indexOf('--samples')+1],'1');assert.equal(args[args.indexOf('--samples-by-scenario')+1],'{"*":1}');assert.equal(args[args.indexOf('--operations')+1],'1')}
+   for(const scenario of args[args.indexOf('--scenarios')+1].split(',')){
+    const t={...trial(0,adaptive?[100,100,100,100,100]:[987654321]),scenario};
+    t.samples.forEach(sample=>sample.operations=1);
+    t.observations=[{metric:'process.peak_rss',status:adaptive?'unavailable':'available',...(adaptive?{}:{value:67108864})}];
+    await writeFile(join(out,'trials',scenario+'.json'),JSON.stringify(t));
+   }
+  }});
+  assert.equal(commands.length,2);
+  for(const row of capture.results){assert.equal(row.latencyNs,100);assert.equal(row.timingSamples,5);assert.deepEqual(row.samplesNs,[100,100,100,100,100]);assert.equal(row.peakRssBytes,67108864)}
+  const policy=JSON.parse(await readFile(join(directory,'rss-capture.json'),'utf8'));
+  assert.equal(policy.latencySamplesPublished,false);assert.equal(policy.samplesPerPhase,1);
+ }finally{await rm(directory,{recursive:true,force:true})}
+});
 test('point estimate preserves the median-of-launch-medians and discards warmups, unverified samples, observations and evidence',()=>{
  const trials=[trial(0,[10,20,30]),trial(1,[80])];trials[0].samples.push({elapsed_ns:999,operations:1,verified:true,warmup:true},{elapsed_ns:888,operations:1,verified:false,warmup:false});
  const c=summarizeLatencies({manifest,trials,workloads:[workload],engines:['engine'],scenarios:['steady']});
@@ -81,11 +142,13 @@ test('code-size definitions retain their meaning and full images take precedence
  const mixed=summarize([code,{...code,code_image:{data:Buffer.from('native').toString('base64')}}]);assert.equal(mixed.codeStatus,'failed');assert.equal(mixed.codeBytes,null);assert.equal(mixed.codeKind,null);
 });
 
-test('transpiler compilation memory is max of translator and compiler, excluding adapter RSS',()=>{
+test('transpiler compilation memory uses the largest kernel peak without summing processes',()=>{
  const t={...trial(0,[10]),scenario:'compile',observations:[{metric:'process.peak_rss',status:'available',value:9000}]};
  t.samples[0].observations=[{metric:'aot.transpile.peak_rss',status:'available',value:2000},{metric:'aot.native_compile.peak_rss',status:'available',value:3000}];
  const row=summarizeLatencies({manifest,trials:[t],workloads:[workload],engines:['engine'],scenarios:['compile']}).results[0];
- assert.equal(row.peakRssBytes,3000);
+ assert.equal(row.peakRssBytes,9000);
+ t.observations[0].value=1000;
+ assert.equal(summarizeLatencies({manifest,trials:[t],workloads:[workload],engines:['engine'],scenarios:['compile']}).results[0].peakRssBytes,3000);
 });
 
 test('peak RSS retains the maximum across measured trials',()=>{
@@ -131,4 +194,55 @@ test('feature capture warms long steady batches and retains only the duration-qu
   assert.equal(calls,2);assert.equal(capture.results[0].timingSamples,15);assert.deepEqual(capture.results[0].samplesNs,Array(15).fill(2000000));
   assert.deepEqual(await readdir(directory),['wago-suite.json']);
  }finally{await rm(directory,{recursive:true,force:true})}
+});
+
+test('capture preserves manifest execution order instead of trial filename order',async()=>{
+ const directory=await mkdtemp(join(tmpdir(),'ordered-capture-'));
+ try{
+  await writeFile(join(directory,'wago-suite.json'),JSON.stringify([workload]));
+  const capture=await collectLatencies({directory,workloads:[workload],engines:['engine'],scenarios:['steady'],collection:{samples:1,launches:2,warmup:0,operations:1},run:async(command,...args)=>{
+   const out=args[args.indexOf('--out')+1];await mkdir(join(out,'trials'),{recursive:true});
+   await writeFile(join(out,'manifest.json'),JSON.stringify({...manifest,trial_order:['later-file','earlier-file']}));
+   await writeFile(join(out,'trials','a.json'),JSON.stringify({...trial(1,[40]),id:'earlier-file'}));
+   await writeFile(join(out,'trials','z.json'),JSON.stringify({...trial(0,[10]),id:'later-file'}));
+  }});
+  assert.deepEqual(capture.results.find(row=>row.phase==='steady').samplesNs,[5,20]);
+ }finally{await rm(directory,{recursive:true,force:true})}
+});
+
+test('native execution memory prefers the actual worker and refuses a wrapper substitute',()=>{
+ const t={...trial(0,[10]),observations:[{metric:'process.peak_rss',status:'available',value:9000}]};
+ t.samples[0].observations=[{metric:'aot.native_worker.peak_rss',status:'available',value:2000}];
+ const summarize=()=>summarizeLatencies({manifest,trials:[t],workloads:[workload],engines:['engine'],scenarios:['steady']}).results[0];
+ assert.equal(summarize().peakRssBytes,2000);
+ t.samples[0].observations[0]={metric:'aot.native_worker.peak_rss',status:'unavailable',reason:'live phase RSS unsupported'};
+ assert.equal(summarize().peakRssBytes,null);assert.equal(summarize().memoryStatus,'unsupported');
+});
+
+test('transpiled native RSS fallback is memory-only and discards all pass timings',async()=>{
+ const directory=await mkdtemp(join(tmpdir(),'native-worker-rss-'));const commands=[];
+ const recorded=structuredClone(manifest);recorded.lock.runtime_configurations[0].id='wasm2go';
+ try{
+  await writeFile(join(directory,'wago-suite.json'),JSON.stringify([workload]));
+  const capture=await collectLatencies({directory,workloads:[workload],engines:['wasm2go'],collection:{adaptiveSampling:{groupSize:5,maxSamples:35,warmup:0},supportsSteadyOperations:true,memory:true,phaseBarriers:true,timeout:'1s',operations:1},run:async(command,...args)=>{
+   commands.push(args);const adaptive=args.includes('--adaptive-samples'),profile=args[args.indexOf('--profile')+1];
+   const out=args[args.indexOf('--out')+1];await mkdir(join(out,'trials'),{recursive:true});await writeFile(join(out,'manifest.json'),JSON.stringify(recorded));
+   if(!adaptive){assert.equal(profile,'memory');assert(!args.includes('--phase-barriers'));assert.equal(args[args.indexOf('--samples')+1],'1');assert.equal(args[args.indexOf('--warmup')+1],'0')}
+   for(const scenario of args[args.indexOf('--scenarios')+1].split(',')){
+    const t={...trial(0,adaptive?[100,100,100,100,100]:[987654321]),runtime_configuration:'wasm2go',scenario,profile};t.samples.forEach(sample=>sample.operations=1);
+    t.observations=[{metric:'process.peak_rss',status:'available',value:9000}];
+    t.samples[0].observations=scenario==='compile'?[{metric:'aot.pipeline.peak_rss',status:'available',value:12000}]:[{metric:'aot.native_worker.peak_rss',status:adaptive?'unavailable':'available',...(adaptive?{reason:'Darwin live phase RSS unsupported'}:{value:2000})}];
+    await writeFile(join(out,'trials',scenario+'.json'),JSON.stringify(t));
+   }
+  }});
+  assert.equal(commands.length,2);assert.equal(commands[1][commands[1].indexOf('--scenarios')+1],'instantiate,first-call,steady');
+  for(const row of capture.results){assert.equal(row.timingSamples,5);assert.deepEqual(row.samplesNs,[100,100,100,100,100]);assert.equal(row.peakRssBytes,row.phase==='compile'?12000:2000)}
+ }finally{await rm(directory,{recursive:true,force:true})}
+});
+test('phase-specific caps survive normalization and preserve legacy records',()=>{
+ for(const [phase,cap] of [['compile',10],['instantiate',10],['first-call',25],['steady',25],['steady',35]]){
+  const measured={...trial(0,Array.from({length:cap},(_,i)=>i%2?100:200)),scenario:phase,sampling:{method:'same-process-stability-v1',maxSamples:cap}};
+  const row=summarizeLatencies({manifest,trials:[measured],workloads:[workload],engines:['engine'],scenarios:[phase]}).results[0];
+  assert.equal(row.sampling.maxSamples,cap);assert.equal(row.sampling.stopReason,'sample-cap');assert.equal(row.timingSamples,cap);
+ }
 });

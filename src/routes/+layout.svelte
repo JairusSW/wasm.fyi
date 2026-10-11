@@ -16,7 +16,9 @@
 	import { PROPOSAL_IDS } from '$lib/links';
 	import { ui } from '$lib/state.svelte';
 	import { onMount } from 'svelte';
-	import {connectSite,closeSite,apiView} from '$lib/api/controller.svelte';
+	import { preferredMachine } from '$lib/preferred-machine';
+	import { animateFavicon } from '$lib/favicon';
+	import {connectSite,closeSite,apiView,loadHistory,loadOverview,loadOverviews} from '$lib/api/controller.svelte';
 
 	let { children } = $props();
 
@@ -31,8 +33,14 @@
 	// URL ⇄ state. Reading happens after each navigation; writing mirrors state
 	// changes back into the address bar without adding history entries.
 	let synced = $state(false);
+	let architectureReady = $state(false);
 	beforeNavigate(() => (synced = false));
 	afterNavigate(({ to }) => {
+		if (browser && navigator.doNotTrack !== '1' && !(navigator as Navigator & {globalPrivacyControl?: boolean}).globalPrivacyControl && !location.pathname.startsWith('/dashboard')) {
+   let referrer='';try{referrer=document.referrer ? new URL(document.referrer).host : ''}catch{}
+   const width=window.screen.width;const screenClass=width<768?'Mobile':width<1024?'Tablet':'Desktop';
+   navigator.sendBeacon('/api/event',new Blob([JSON.stringify({path:location.pathname,referrer,screen:screenClass})],{type:'application/json'}));
+  }
 		// `to.route` is empty on the initial hydration, so use the settled page route.
 		const routeId = to?.route.id ?? page.route.id;
 		if (to?.url && routeId) ui.loadFromUrl(to.url, routeId);
@@ -40,15 +48,63 @@
 		synced = true;
 	});
 	$effect(() => {
-		if (!browser || !synced) return;
+		if (!browser || !synced || !architectureReady) return;
 		const search = ui.toSearch(page.route.id);
 		if (search !== location.search) replaceState(location.pathname + search + location.hash, page.state);
 	});
 
+ $effect(()=>{
+  if(!browser||!apiView.ready||page.route.id==='/dashboard')return;
+  const machine=ui.machine;const route=page.route.id;const drawer=ui.drawer;
+  void connectSite();
+  apiView.historyRevision;
+  if(route==='/history')void loadHistory({...ui.scope,machine,snapshot:ui.snap,metric:ui.metric},ui.otMetric);
+ });
+
+ $effect(()=>{
+  if(!browser||!apiView.ready||page.route.id==='/dashboard')return;
+  const route=page.route.id,scope={...ui.scope,machine:ui.machine,snapshot:ui.snap,metric:ui.metric};
+  const metrics=route==='/'?['steady']:route==='/benchmarks'?['compile','inst','first','steady','rssCompile','rssInst','rss','rssAverage','code']:[];
+  const abort=new AbortController();const timer=setTimeout(()=>{void loadOverviews(scope,metrics as (import('$lib/data/types').MetricKey|'rssAverage')[],abort.signal).catch(error=>{if(!abort.signal.aborted)apiView.aggregateErrors.overview=String(error)})},80);
+  return ()=>{clearTimeout(timer);abort.abort()};
+ });
+
+ $effect(()=>{if(browser&&architectureReady&&page.route.id!=='/dashboard'&&!apiView.ready)void connectSite()});
 	onMount(() => {
 		ui.theme = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
-		void connectSite();
-		const refresh=setInterval(()=>void connectSite(),30000);
+		const deviceTheme = window.matchMedia('(prefers-color-scheme: dark)');
+		const applyTheme = (theme: 'light' | 'dark') => {
+			ui.theme = theme;
+			document.documentElement.dataset.theme = theme;
+			document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'light' ? '#f6f6f4' : '#0d0e10');
+		};
+		const followDeviceTheme = () => {
+			if (!document.documentElement.dataset.themePreference) applyTheme(deviceTheme.matches ? 'dark' : 'light');
+		};
+		const syncTheme = (event: StorageEvent) => {
+			if (event.key !== 'theme' && event.key !== null) return;
+			if (event.newValue === 'light' || event.newValue === 'dark') {
+				document.documentElement.dataset.themePreference = event.newValue;
+				applyTheme(event.newValue);
+			} else {
+				delete document.documentElement.dataset.themePreference;
+				followDeviceTheme();
+			}
+		};
+		deviceTheme.addEventListener('change', followDeviceTheme);
+		window.addEventListener('storage', syncTheme);
+		let mounted=true;
+		const stopFavicon=animateFavicon();
+		const explicitMachine=new URL(location.href).searchParams.has('m');
+		void (async()=>{
+			if(!explicitMachine){
+				const preferred=await preferredMachine(navigator);
+				if(!mounted)return;
+				if(!new URL(location.href).searchParams.has('m'))ui.machine=preferred;
+			}
+			if(mounted)architectureReady=true;
+		})();
+		const refresh=setInterval(()=>{if(page.route.id!=='/dashboard')void connectSite()},30000);
 		// Prototype links used hash routes (#/benchmarks, #/bench/<id>, …).
 		const h = location.hash;
 		if (h.startsWith('#/')) {
@@ -65,7 +121,7 @@
 								: null;
 			if (path) goto(path, { replaceState: true });
 		}
-		return ()=>{clearInterval(refresh);closeSite()};
+		return ()=>{mounted=false;deviceTheme.removeEventListener('change', followDeviceTheme);window.removeEventListener('storage', syncTheme);clearInterval(refresh);stopFavicon();closeSite()};
 	});
 
 	function onkeydown(e: KeyboardEvent) {

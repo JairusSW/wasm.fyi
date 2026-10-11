@@ -25,3 +25,30 @@ export const heatCount = (b: number): string =>
 		: b < 0.6
 			? heatColor('mid', 0.1 + b * 0.25)
 			: heatColor('bad', 0.1 + b * 0.25);
+
+/**
+ * Diverging scale for field cells, `t` in -1 (best) … 1 (worst). Near 0 stays transparent;
+ * further from the middle the green or red gets stronger and lighter.
+ */
+export const heatDiverge = (t: number): string => {
+	const m = Math.min(1, Math.abs(t));
+	if (m < 0.06) return 'transparent';
+	// A little past the shared cap at the far ends, for more variation across the field.
+	return `oklch(0.76 0.13 ${t < 0 ? 160 : 28} / ${(0.06 + 0.38 * m).toFixed(3)})`;
+};
+
+/**
+ * Field cells (lower is better): the mean of the shown runtimes is the neutral middle. Values
+ * are compared on a log scale when all are positive, so the mean is the geometric mean and one
+ * outlier doesn't wash out the rest. The best value is the darkest green, the worst the darkest red.
+ */
+export const heatField = (values: readonly (number | null | undefined)[], i: number): string => {
+	const v = values[i];
+	const measured = values.filter((x): x is number => x != null && Number.isFinite(x));
+	if (v == null || !Number.isFinite(v) || measured.length < 2) return 'transparent';
+	const f = measured.every((x) => x > 0) ? Math.log : (x: number) => x;
+	const xs = measured.map(f);
+	const mid = xs.reduce((a, b) => a + b, 0) / xs.length;
+	const lo = Math.min(...xs), hi = Math.max(...xs), d = f(v) - mid;
+	return heatDiverge(d < 0 ? (mid > lo ? d / (mid - lo) : 0) : hi > mid ? d / (hi - mid) : 0);
+};

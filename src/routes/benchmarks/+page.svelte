@@ -6,10 +6,13 @@
 	import OverTime from '$lib/components/bench/OverTime.svelte';
 	import Workloads from '$lib/components/bench/Workloads.svelte';
 	import type { MetricKey, OvKey } from '$lib/data/types';
-	import { sharedCount } from '$lib/model';
+	import { sharedCount, totalWorkloads } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
+	import { apiView } from '$lib/api/controller.svelte';
 
-	const nShared = $derived(`${sharedCount(ui.scope)} shared application workloads`);
+	// Passed per engine: every engine averages its own passed workloads out of the whole corpus.
+	// Passed on all engines: only the workloads every shown engine passed.
+	const nShared = $derived(ui.cohortMode === 'shared' ? `${sharedCount(ui.scope)} application workloads passed on all shown engines` : `${totalWorkloads()} application workloads, each engine's passed ones`);
 
 	async function showOverview(group: OvKey) {
 		ui.group = group;
@@ -30,9 +33,8 @@
 </svelte:head>
 
 <div class="head">
-	<span class="mono small fg3 path">wasm.fyi/benchmarks</span>
 	<h1>Benchmarks</h1>
-	<span class="s12 fg3">Geometric mean over {nShared} · lower is better</span>
+	<span class="s12 fg3">{ui.average === 'mean' ? 'Mean' : 'Geometric mean'} over {#if apiView.ready}{nShared}{:else}<span class="skel" style:width="3em"></span> application workloads{/if} · lower is better</span>
 	<a class="link-quiet push" href={siteHref(`/compare`)}>Startup vs throughput model →</a>
 </div>
 
@@ -47,9 +49,6 @@
 		flex-wrap: wrap;
 		align-items: baseline;
 		gap: 6px 14px;
-	}
-	.path {
-		width: 100%;
 	}
 	h1 {
 		font-size: 18px;

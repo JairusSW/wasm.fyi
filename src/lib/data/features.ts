@@ -12,6 +12,7 @@ const CORE: FeatureRow[] = [
   { g: '', id: 'core-mem', name: 'MVP · Memory instructions', phase: 'Core corpus', b: [], r: '', url: 'https://webassembly.github.io/spec/core/syntax/instructions.html#memory-instructions' },
   { g: '', id: 'core-ctl', name: 'MVP · Control flow', phase: 'Core corpus', b: [], r: '', url: 'https://webassembly.github.io/spec/core/syntax/instructions.html#control-instructions' },
   { g: '', id: 'core-tab', name: 'MVP · Tables', phase: 'Core corpus', b: [], r: '', url: 'https://webassembly.github.io/spec/core/syntax/instructions.html#table-instructions' },
+  { g: '', id: 'core-glb', name: 'MVP · Globals', phase: 'Core corpus', b: [], r: '', url: 'https://webassembly.github.io/spec/core/syntax/instructions.html#variable-instructions' },
   { g: '', id: 'core-val', name: 'MVP · Structural validation', phase: 'Compile / instantiate probes', b: [], r: '', url: 'https://webassembly.github.io/spec/core/valid/index.html' },
 ];
 const SYSTEM: FeatureRow[] = [
@@ -37,6 +38,9 @@ const KNOWN: Record<string, { id: string; page?: ProposalId }> = {
   jsStringBuiltins: { id: 'js-string-builtins' },
   threads: { id: 'threads', page: 'threads' },
   componentModel: { id: 'component-model' },
+  mutableGlobals: { id: 'mutable-globals' },
+  signExtensions: { id: 'sign-extension' },
+  saturatedFloatToInt: { id: 'saturating-float-to-int' },
 };
 /** Group order follows webassembly.org/features: phase 5 → 1, then inactive. */
 export const PHASE_GROUPS = [
@@ -61,6 +65,9 @@ export const FEATS: FeatureRow[] = PHASE_GROUPS.flatMap(([phase, g]) =>
 );
 /** Measured corpus families outside the proposal list (core MVP, WASI, Component Model parts). Not listed on the features page. */
 export const CORPUS_FEATS: FeatureRow[] = [...CORE.map((f) => ({ ...f, g: 'Core' })), ...SYSTEM];
+export const MVP_GROUP = 'Wasm 1.0 · MVP';
+/** Rows of the Features tables: the Wasm 1.0 MVP families first, then proposals by phase. */
+export const FEATURE_ROWS: FeatureRow[] = [...CORE.map((f) => ({ ...f, g: MVP_GROUP })), ...FEATS];
 export const SUPC: Record<SupportCode, [string, string]> = { y: ['●', 'yes'], f: ['⚑', 'flag'], p: ['◐', 'partial'], n: ['—', 'no'], '?': ['?', 'unknown'], '-': ['·', 'n/a'] };
 export const PROPS: Record<ProposalId, Proposal> = {
   simd: { title: 'SIMD', long: 'Fixed-width 128-bit SIMD', q: 'How much faster does SIMD actually make Wasm?', repo: 'github.com/WebAssembly/simd', ver: 'WebAssembly 2.0', hist: [['2017', 'Proposal repository created'], ['2020', 'Phase 3 — implementation'], ['2021', 'Phase 4 — standardize'], ['2022', 'Merged into WebAssembly 2.0 draft']], tools: [['Emscripten', 'y', '-msimd128'], ['clang / wasi-sdk', 'y', '-msimd128'], ['rustc', 'y', '-C target-feature=+simd128'], ['TinyGo', 'p', 'limited auto-vectorization'], ['Go (wasip1)', 'n', ''], ['Binaryen', 'y', '--enable-simd'], ['AssemblyScript', 'y', '--enable simd']] },
@@ -83,6 +90,6 @@ export const COMPAT:CompatSection[]=liveArray(()=>{
 });
 // Browser release histories and uncollected engine defaults are not inferred
 // from a Node embedding or a configuration-specific corpus run.
-for(const f of [...FEATS, ...CORPUS_FEATS]){f.b=['?','?','?'];f.r='?????????';}
+for(const f of [...FEATS, ...CORPUS_FEATS, ...FEATURE_ROWS]){f.b=['?','?','?'];f.r='?????????';}
 export const FLAGS: Record<string,string> = {};
 export const FT: Record<string,[string,string,string,string,string,string][]> = {};

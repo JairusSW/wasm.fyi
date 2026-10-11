@@ -33,7 +33,18 @@ type Display struct {
 	Source  string   `json:"source"`
 	Reset   string   `json:"reset"`
 }
+
+// Sampling preserves the same-process collection policy alongside raw acquisition order.
+type Sampling struct {
+	Method        string `json:"method"`
+	GroupSize     int    `json:"groupSize"`
+	MaxSamples    int    `json:"maxSamples"`
+	Warmup        int    `json:"warmup"`
+	RetainedStart int    `json:"retainedStart"`
+	StopReason    string `json:"stopReason"`
+}
 type Row struct {
+	Sampling      *Sampling `json:"sampling,omitempty"`
 	Source        *Source   `json:"source,omitempty"`
 	Display       *Display  `json:"display,omitempty"`
 	TimingSamples int       `json:"timingSamples,omitempty"`
@@ -93,6 +104,18 @@ func Validate(c Capture) error {
 		for _, sample := range r.SamplesNs {
 			if sample < 0 || math.IsNaN(sample) || math.IsInf(sample, 0) {
 				return wire.Invalid("invalid timing sample")
+			}
+		}
+		if r.Sampling != nil {
+			p := r.Sampling
+			n := len(r.SamplesNs)
+			validCap := p.MaxSamples == 35 || p.MaxSamples == 10 && (r.Phase == "compile" || r.Phase == "instantiate") || p.MaxSamples == 25 && (r.Phase == "first-call" || r.Phase == "steady")
+			if p.Method == "feature-compatibility-v1" {
+				if !strings.HasPrefix(r.Workload, "features/") || n != 1 || r.TimingSamples != 1 || p.GroupSize != 1 || p.MaxSamples != 1 || p.Warmup != 0 || p.RetainedStart != 0 || p.StopReason != "fixed-sample" {
+					return wire.Invalid("invalid feature compatibility sampling policy")
+				}
+			} else if p.Method != "same-process-stability-v1" || p.GroupSize != 5 || !validCap || p.Warmup != 0 || n < 5 || n > p.MaxSamples || n%5 != 0 || p.RetainedStart < 0 || p.RetainedStart > n-5 || p.RetainedStart > 0 && (n < 15 || n-p.RetainedStart < 10) || p.StopReason != "stable" && p.StopReason != "sample-cap" || p.StopReason == "sample-cap" && n != p.MaxSamples {
+				return wire.Invalid("invalid same-process sampling policy")
 			}
 		}
 		if r.TimingSamples < 0 || r.TimingSamples > 10000000 {

@@ -4,17 +4,31 @@ export type LatencyRow=Result;
 export type LatencyPlatform=PlatformChoice;
 export type LatencyPage=BenchmarkPage;
 
-export const engineVersionKey=(row:Pick<LatencyRow,'engine'|'version'|'backend'> & Partial<Pick<LatencyRow,'source'>>)=>JSON.stringify([row.engine,row.version,row.backend,row.source?.revision.match(/^[a-f0-9]{40}(?=\/|$)/i)?.[0]||row.source?.revision||'',row.source?.asOf||'']);
+export const engineVersionKey=(row:Pick<LatencyRow,'engine'|'version'|'backend'> & Partial<Pick<LatencyRow,'source'>>)=>{
+ const source=row.source,revision=source?.revision.match(/^[a-f0-9]{40}(?=\/|$)/i)?.[0]||source?.revision||'';
+ // Failed captures can only report fallback producer labels. A pinned source
+ // identifies the complete snapshot, including those failures.
+ if(source&&(source.kind!=='current'||/^[a-f0-9]{40}(?:\/|$)/i.test(source.revision)))return JSON.stringify([row.engine,source.repository,revision,source.asOf]);
+ return JSON.stringify([row.engine,row.version,row.backend,revision,source?.asOf||'']);
+};
 // Preserve the producer's nanosecond ordering when timestamps share a millisecond.
 const captureTimeCompare=(a:string,b:string)=>Date.parse(a)-Date.parse(b)||Number((a.match(/\.(\d+)(?:Z|[+-]\d{2}:\d{2})$/)?.[1]||'').slice(3,9).padEnd(6,'0'))-Number((b.match(/\.(\d+)(?:Z|[+-]\d{2}:\d{2})$/)?.[1]||'').slice(3,9).padEnd(6,'0'));
 export function engineVersions(rows:LatencyRow[]) {
  const engines=new Map<string,Map<string,{key:string;version:string;backend:string;capturedAt:string;qualified:boolean}>>();
- for(const row of rows){const key=engineVersionKey(row);if(!engines.has(row.engine))engines.set(row.engine,new Map());const configs=engines.get(row.engine)!;const current=configs.get(key);if(!current||captureTimeCompare(row.source?.asOf||row.capturedAt,current.capturedAt)>0)configs.set(key,{key,version:row.version,backend:row.backend,capturedAt:row.source?.asOf||row.capturedAt,qualified:!!row.source&&(row.source.kind!=='current'||/^[a-f0-9]{40}(?:\/|$)/i.test(row.source.revision))})}
+ for(const row of rows){const key=engineVersionKey(row);if(!engines.has(row.engine))engines.set(row.engine,new Map());const configs=engines.get(row.engine)!;const current=configs.get(key);if(!current||captureTimeCompare(row.source?.asOf||row.capturedAt,current.capturedAt)>0||(row.engine==='v8'&&row.backend==='turboshaft'&&current.backend!=='turboshaft'&&captureTimeCompare(row.source?.asOf||row.capturedAt,current.capturedAt)===0))configs.set(key,{key,version:row.version,backend:row.backend,capturedAt:row.source?.asOf||row.capturedAt,qualified:!!row.source&&(row.source.kind!=='current'||/^[a-f0-9]{40}(?:\/|$)/i.test(row.source.revision))})}
  return new Map([...engines].map(([id,configs])=>[id,[...configs.values()].sort((a,b)=>Number(b.qualified)-Number(a.qualified)||captureTimeCompare(b.capturedAt,a.capturedAt)||a.key.localeCompare(b.key))]));
 }
 export function selectEngineVersions(rows:LatencyRow[],selected:Record<string,string>={}) {
  const versions=engineVersions(rows),chosen=new Map([...versions].map(([id,configs])=>[id,configs.find(c=>c.key===selected[id])?.key||configs[0].key]));
- return rows.filter(row=>engineVersionKey(row)===chosen.get(row.engine));
+ const picked=rows.filter(row=>engineVersionKey(row)===chosen.get(row.engine));
+ // A corrected compiler identity can preserve the original source/date and
+ // sample timestamps. Keep its measurements separate from the retained legacy
+ // optimizer rows, regardless of transport order. Unknown failed labels remain
+ // visible where no corrected cell exists.
+ const turboshaft=picked.filter(row=>row.engine==='v8'&&row.backend==='turboshaft');
+ if(!turboshaft.length)return picked;
+ const correctedCells=new Set(turboshaft.map(row=>JSON.stringify([row.workload,row.phase])));
+ return picked.filter(row=>row.engine!=='v8'||row.backend==='turboshaft'||(row.backend!=='optimizing-only'&&!correctedCells.has(JSON.stringify([row.workload,row.phase]))));
 }
 export function codeSizeLabel(kind:LatencyRow['codeKind']|undefined) {
  return kind==='native-image'?'Native image':kind==='engine-reported'?'Engine-reported code':kind==='unknown'?'Code (definition unknown)':'Code size';

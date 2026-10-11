@@ -22,6 +22,7 @@ import (
 
 	"github.com/JairusSW/wasm.fyi/service/internal/wire"
 	"github.com/cockroachdb/pebble/v2"
+	"github.com/cockroachdb/pebble/v2/sstable"
 )
 
 var ErrChanged = errors.New("capture revision changed")
@@ -43,6 +44,7 @@ type contract struct {
 	Artifact string
 }
 type measurement struct {
+	Sampling      *Sampling `json:"sp,omitempty"`
 	Source        *Source   `json:"o,omitempty"`
 	Display       *Display  `json:"d,omitempty"`
 	TimingSamples int       `json:"n,omitempty"`
@@ -94,7 +96,11 @@ func Open(directory string) (*Store, error) {
 	}
 	cache := pebble.NewCache(8 << 20)
 	defer cache.Unref()
-	db, err := pebble.Open(filepath.Join(directory, "benchmarks"), &pebble.Options{Cache: cache, MemTableSize: 4 << 20, MaxOpenFiles: 64})
+	options := &pebble.Options{Cache: cache, MemTableSize: 4 << 20, MaxOpenFiles: 64}
+	options.ApplyCompressionSettings(func() pebble.DBCompressionSettings {
+		return pebble.UniformDBCompressionSettings(sstable.ZstdCompression)
+	})
+	db, err := pebble.Open(filepath.Join(directory, "benchmarks"), options)
 	if err != nil {
 		return nil, err
 	}
@@ -103,11 +109,11 @@ func Open(directory string) (*Store, error) {
 	if errors.Is(err, pebble.ErrNotFound) {
 		b := db.NewBatch()
 		defer b.Close()
-		_ = b.Set([]byte("meta/schema"), []byte("1"), nil)
+		_ = b.Set([]byte("meta/schema"), []byte("2"), nil)
 		seed := wire.Hash([]byte(strconv.FormatInt(time.Now().UnixNano(), 10)))
 		_ = b.Set([]byte("meta/revision"), []byte(seed), nil)
 		err = b.Commit(pebble.Sync)
-	} else if err == nil && string(version) != "1" {
+	} else if err == nil && string(version) != "1" && string(version) != "2" {
 		err = fmt.Errorf("unsupported benchmark database schema %s", version)
 	}
 	if err != nil {
@@ -198,7 +204,19 @@ func qualifiedSource(source *Source) bool {
 	return true
 }
 
-// Put atomically replaces newer cells, deduplicates metadata and ignores old retries.
+// nativeCodeEnrichment accepts only a missing code measurement becoming known.
+// Capture time, source, timings, samples, RSS and every other field must match.
+func nativeCodeEnrichment(old, next measurement) bool {
+	if old.Status != "ok" || old.CodeStatus == "ok" || next.CodeStatus != "ok" || next.Code == nil || *next.Code <= 0 || next.CodeKind == nil {
+		return false
+	}
+	old.Code, next.Code = nil, nil
+	old.CodeKind, next.CodeKind = nil, nil
+	old.CodeStatus, next.CodeStatus = "", ""
+	return bytes.Equal(encode(old), encode(next))
+}
+
+// Put atomically replaces newer cells and permits exact code-only enrichment.
 func (s *Store) Put(ctx context.Context, c Capture) (string, error) {
 	if e := Validate(c); e != nil {
 		return "", e
@@ -236,7 +254,7 @@ func (s *Store) Put(ctx context.Context, c Capture) (string, error) {
 		}
 		cfg := engine{r.Engine, r.Version, r.Backend}
 		cfgID := identifier(cfg)
-		value := measurement{Source: r.Source, Display: r.Display, TimingSamples: r.TimingSamples, SamplesNs: r.SamplesNs, Contract: r.Contract, Engine: cfgID, CapturedAt: c.CapturedAt, Status: r.Status, Latency: r.Value, PeakRSS: r.PeakRSS, Code: r.CodeBytes, CodeKind: r.CodeKind, MemoryStatus: r.MemoryStatus, CodeStatus: r.CodeStatus}
+		value := measurement{Sampling: r.Sampling, Source: r.Source, Display: r.Display, TimingSamples: r.TimingSamples, SamplesNs: r.SamplesNs, Contract: r.Contract, Engine: cfgID, CapturedAt: c.CapturedAt, Status: r.Status, Latency: r.Value, PeakRSS: r.PeakRSS, Code: r.CodeBytes, CodeKind: r.CodeKind, MemoryStatus: r.MemoryStatus, CodeStatus: r.CodeStatus}
 		recipeCheck := contract{r.Workload, r.Wasm, r.Artifact}
 		if prior, err := get(b, "contracts/"+r.Contract); err == nil {
 			if !bytes.Equal(prior, encode(recipeCheck)) {
@@ -250,13 +268,13 @@ func (s *Store) Put(ctx context.Context, c Capture) (string, error) {
 			prior, err := get(b, archiveKey)
 			var previous measurement
 			if err == nil {
-				if e = json.Unmarshal(prior, &previous); e != nil {
+				if e = unmarshalMeasurement(b, prior, &previous); e != nil {
 					return "", e
 				}
 			} else if !errors.Is(err, pebble.ErrNotFound) {
 				return "", err
 			}
-			if previous.CapturedAt == "" || later(c.CapturedAt, previous.CapturedAt) {
+			if previous.CapturedAt == "" || later(c.CapturedAt, previous.CapturedAt) || nativeCodeEnrichment(previous, value) {
 				if previous.CapturedAt == "" {
 					rows++
 					n, err := count(b, "historycount/"+platform+"/"+r.Phase)
@@ -289,7 +307,7 @@ func (s *Store) Put(ctx context.Context, c Capture) (string, error) {
 				if e = b.Set([]byte("engines/"+cfgID), encode(cfg), nil); e != nil {
 					return "", e
 				}
-				if e = b.Set([]byte(archiveKey), encode(value), nil); e != nil {
+				if e = writeMeasurement(b, archiveKey, value); e != nil {
 					return "", e
 				}
 				changed = true
@@ -300,7 +318,7 @@ func (s *Store) Put(ctx context.Context, c Capture) (string, error) {
 		oldBytes, err := get(b, key)
 		var old measurement
 		if err == nil {
-			if err = json.Unmarshal(oldBytes, &old); err != nil {
+			if err = unmarshalMeasurement(b, oldBytes, &old); err != nil {
 				return "", err
 			}
 			oldTime, err := time.Parse(time.RFC3339Nano, old.CapturedAt)
@@ -323,7 +341,7 @@ func (s *Store) Put(ctx context.Context, c Capture) (string, error) {
 				}
 			}
 			newTime, _ := time.Parse(time.RFC3339Nano, c.CapturedAt)
-			if !sourceAhead && !newTime.After(oldTime) {
+			if !sourceAhead && !newTime.After(oldTime) && !nativeCodeEnrichment(old, value) {
 				if !newTime.Equal(oldTime) || (old.Source != nil || r.Source == nil) && (old.Display != nil || r.Display == nil) {
 					continue
 				}
@@ -383,13 +401,22 @@ func (s *Store) Put(ctx context.Context, c Capture) (string, error) {
 		if e = b.Set([]byte("engines/"+cfgID), encode(cfg), nil); e != nil {
 			return "", e
 		}
-		if e = b.Set([]byte(key), encode(value), nil); e != nil {
+		if e = writeMeasurement(b, key, value); e != nil {
 			return "", e
 		}
 		changed = true
 	}
 	if !changed {
 		return id, nil
+	}
+	if e = b.Set([]byte("meta/schema"), []byte("2"), nil); e != nil {
+		return "", e
+	}
+	if e = prepareCaptureTime(b, platform, c.CapturedAt); e != nil {
+		return "", e
+	}
+	if e = b.Set([]byte("prepared/imported/"+platform), []byte(time.Now().UTC().Format(time.RFC3339Nano)), nil); e != nil {
+		return "", e
 	}
 	if rows > 5000000 {
 		return "", wire.Invalid("benchmark row limit exceeded")
@@ -582,7 +609,7 @@ func (s *Store) Page(ctx context.Context, q Query) (Page, error) {
 			return page, e
 		}
 		var m measurement
-		if e = json.Unmarshal(iter.Value(), &m); e != nil {
+		if e = unmarshalMeasurement(snap, iter.Value(), &m); e != nil {
 			return page, e
 		}
 		recipe, ok := recipes[m.Contract]
@@ -611,7 +638,7 @@ func (s *Store) Page(ctx context.Context, q Query) (Page, error) {
 			kind := "unknown"
 			m.CodeKind = &kind
 		}
-		item := Result{Row: Row{Source: m.Source, Display: m.Display, TimingSamples: m.TimingSamples, SamplesNs: m.SamplesNs, Workload: recipe.Workload, Wasm: recipe.Wasm, Artifact: recipe.Artifact, Contract: m.Contract, Engine: cfg.ID, Version: cfg.Version, Backend: cfg.Backend, Phase: q.Phase, Status: m.Status, Value: m.Latency, PeakRSS: m.PeakRSS, CodeBytes: m.Code, CodeKind: m.CodeKind, MemoryStatus: m.MemoryStatus, CodeStatus: m.CodeStatus}, CapturedAt: m.CapturedAt}
+		item := Result{Row: Row{Sampling: m.Sampling, Source: m.Source, Display: m.Display, TimingSamples: m.TimingSamples, SamplesNs: m.SamplesNs, Workload: recipe.Workload, Wasm: recipe.Wasm, Artifact: recipe.Artifact, Contract: m.Contract, Engine: cfg.ID, Version: cfg.Version, Backend: cfg.Backend, Phase: q.Phase, Status: m.Status, Value: m.Latency, PeakRSS: m.PeakRSS, CodeBytes: m.Code, CodeKind: m.CodeKind, MemoryStatus: m.MemoryStatus, CodeStatus: m.CodeStatus}, CapturedAt: m.CapturedAt}
 		itemBytes := len(encode(item)) + 1
 		// Reserve space for page metadata and the signed continuation cursor.
 		if len(page.Items) > 0 && responseBytes+itemBytes > wire.ResponseBytes-(32<<10) {

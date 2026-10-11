@@ -1,10 +1,11 @@
 <script lang="ts">
+	import Brand from '$lib/components/Brand.svelte';
 	import { siteHref } from '$lib/links';
 </script>
 
 <footer>
 	<div class="col">
-		<span class="mono brand">wasm.fyi</span>
+		<span class="brand"><Brand /></span>
 		<span class="fg3 s12">The reference for WebAssembly runtimes.</span>
 		<span class="small warn">Measured adapters · representative corpora.</span>
 	</div>
@@ -29,6 +30,7 @@
 		<a href="https://github.com/sponsors/JairusSW">Sponsor</a>
 		<a href={siteHref('/llms.txt')}>LLM reference</a>
 		<a href={'/api/platforms'}>Machine-readable data</a>
+		<a href={siteHref('/health')}>Status</a>
 	</div>
 	<p class="sponsor-note">
 		💖 wasm.fyi is built and run free of charge. If it's useful to you or your company, or you'd like it to keep going,

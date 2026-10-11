@@ -1,8 +1,9 @@
 import {CALL_PATHS,CALL_LOOP_WORKLOAD} from './call-paths';
 import {apiHistory,historyKey,timelineLane} from './api/history.svelte';
 import {datasetView} from './api/view.svelte';
-import { aggregate, aggregateCohort, measuredCohort, cohortWeights, weightedGeometricMean } from './aggregates';
+import { aggregate, aggregateCohort, measuredCohort, cohortWeights, weightedAverage } from './aggregates';
 import { fmtU } from './format';
+import { shortVersion } from './version-identity';
 import { viewData, type ViewCell } from './view-data';
 import type { CfgId, MachineId, MetricKey, OtMetricKey } from './data/types';
 import type { Scope, PerfGroup } from './model';
@@ -13,7 +14,7 @@ export function historyVersionChanges(versions:string[],values:number[],releaseP
  let previous='';const changes:number[]=[];
  for(const [i,value] of values.entries()){
   const version=versions[i];
-  if(datasetView.revision&&!releasePoints?.has(i))continue;
+  if((datasetView.revision||apiHistory.compact)&&!releasePoints?.has(i))continue;
   if(!Number.isFinite(value)||!version||version==='not collected'||/^[a-f0-9]{7,40}(?:$|\/)/i.test(version))continue;
   if(version!==previous)changes.push(i);
   previous=version;
@@ -38,7 +39,7 @@ export const historicalCallWorkloads=(key:OtMetricKey):string[]=>key==='callTota
 const valid=(c:ViewCell)=>c.st==='ok' && c.v!=null && Number.isFinite(c.v) && c.v>0;
 export function historyReusesEvidence(machine:MachineId,cid:CfgId,key:OtMetricKey,before:number,after:number) {
   if(before<0 || before===after)return false;
-  if(datasetView.revision){const timeline=apiHistory.series[apiHistory.active[machine+'|'+key]];const a=timeline?.items[before]?.lanes.find(l=>l.track===apiHistory.slots[cid]),b=timeline?.items[after]?.lanes.find(l=>l.track===apiHistory.slots[cid]);return !!a?.evidence&&a.evidence===b?.evidence}
+  if(datasetView.revision||apiHistory.compact){const timeline=apiHistory.series[apiHistory.active[machine+'|'+key]];const a=timeline?.items[before]?.lanes.find(l=>l.track===apiHistory.slots[cid]),b=timeline?.items[after]?.lanes.find(l=>l.track===apiHistory.slots[cid]);return !!a?.evidence&&a.evidence===b?.evidence}
   const calls=historicalCallWorkloads(key),workloads=calls.length?calls:viewData.history[machine].workloads;
   const pairs=workloads.map(w=>[historyCell(machine,w,cid,metricOf[key],before),historyCell(machine,w,cid,metricOf[key],after)]);
   const recorded=pairs.filter(([a,b])=>a.report || b.report);
@@ -66,8 +67,26 @@ export function historyCurve(points:string):string {
 }
 
 /** A measured cohort for each date; missing points stay gaps. */
+const seriesCache=new Map<string,number[]|null>();
+let cachedHistory:typeof viewData.history|undefined;
+let cachedGeneration=-1;
 export function historySeries(s:Scope,cid:CfgId,key:OtMetricKey,workload=''):number[]|null {
- if(datasetView.revision){const timeline=apiHistory.series[historyKey(s,key,workload)];if(!timeline)return null;const factor=key==='mem'?1024**2:key==='code'?1024:key==='cov'?1:1e6;const values=timeline.items.map(p=>{const lane=p.lanes.find(l=>l.track===apiHistory.slots[cid]);return lane?.value==null?Number.NaN:lane.value/factor});return values.some(Number.isFinite)?values:null}
+ if(datasetView.revision||apiHistory.compact)return calculateHistorySeries(s,cid,key,workload);
+ const history=viewData.history;
+ if(cachedHistory!==history||cachedGeneration!==datasetView.generation){seriesCache.clear();cachedHistory=history;cachedGeneration=datasetView.generation;}
+ const cacheKey=JSON.stringify([s.machine,s.snapshot,s.baseline,s.weighting,s.cohortMode,s.average,Object.keys(s.hide).filter(id=>s.hide[id as CfgId]).sort(),cid,key,workload]);
+ if(seriesCache.has(cacheKey))return seriesCache.get(cacheKey)!;
+ const result=calculateHistorySeries(s,cid,key,workload);
+ if(seriesCache.size>=128)seriesCache.clear();seriesCache.set(cacheKey,result);return result;
+}
+function calculateHistorySeries(s:Scope,cid:CfgId,key:OtMetricKey,workload=''):number[]|null {
+ if(datasetView.revision||apiHistory.compact){
+  const direct=apiHistory.series[historyKey(s,key,workload)],directions=key==='hostWasm'||key==='wasmHostLoop';
+  const timeline=direct||(directions?apiHistory.series[historyKey(s,'callTotal',workload)]:undefined);if(!timeline)return null;
+  const factor=key==='mem'?1024**2:key==='code'?1024:key==='cov'?1:1e6;
+  const values=timeline.items.map(p=>{const lane=p.lanes.find(l=>l.track===apiHistory.slots[cid]);const value=direct?lane?.value:directions?lane?.calls?.[key as 'hostWasm'|'wasmHostLoop']:null;return value==null?Number.NaN:value/factor});
+  return values.some(Number.isFinite)?values:null;
+ }
 	const h=viewData.history[s.machine];const metric=metricOf[key];
 	const series=(w:string,c:CfgId)=>h.points.map((_,i)=>historyCell(s.machine,w,c,metric,i));
 	const calls=historicalCallWorkloads(key);
@@ -89,7 +108,7 @@ export function historySeries(s:Scope,cid:CfgId,key:OtMetricKey,workload=''):num
 		if(current && column?.[0]==='lat')return aggregate({...s,snapshot:current},column[0],cid,column[1])?.v ?? Number.NaN;
 		const cohort=historyCohort(s,cid,key,i);
 		if(point.status!=='measured'||!cohort.length)return Number.NaN;
-		return weightedGeometricMean(cohort.map(w=>historyCell(s.machine,w,cid,metric,i).v!),cohortWeights(cohort.map(w=>catalogue.get(w)!),s.weighting));
+		return weightedAverage(s.average)(cohort.map(w=>historyCell(s.machine,w,cid,metric,i).v!),cohortWeights(cohort.map(w=>catalogue.get(w)!),s.weighting));
 	});
 	return values.some(Number.isFinite)?values:null;
 }
@@ -113,6 +132,7 @@ export function historyCohort(s:Scope,cid:CfgId,key:OtMetricKey,i:number):string
 }
 export function historyAggregateDetails(s:Scope,cid:CfgId,key:OtMetricKey,i:number):string {
  const column=aggregateOf[key];if(!column)return '';
+ if(apiHistory.compact){const lane=timelineLane(s,cid,key,i);return lane?`${lane.measured} of ${lane.reference} current reference workloads; ${s.weighting} weighting. Archived capture.`:'Not measured';}
  const capture=viewData.history[s.machine].points[i]?.currentLatency?.[cid]?'Same canonical release capture and workload cohort as the current chart.':'Archived capture.';
  const count=historyCohort(s,cid,key,i).length;
  const reference=aggregateCohort({...s,snapshot:'s1'},column[0],cid,column[1]).cohort.length;
@@ -121,7 +141,7 @@ export function historyAggregateDetails(s:Scope,cid:CfgId,key:OtMetricKey,i:numb
 }
 
 export function historyCoverage(s:Scope,cid:CfgId,key:OtMetricKey,i:number) {
- if(datasetView.revision){const lane=timelineLane(s,cid,key,i);return {complete:!!lane&&lane.measured===lane.reference,measured:lane?.measured||0,reference:lane?.reference||0}}
+ if(datasetView.revision||apiHistory.compact){const lane=timelineLane(s,cid,key,i);return {complete:!!lane&&lane.measured===lane.reference,measured:lane?.measured||0,reference:lane?.reference||0}}
  const column=aggregateOf[key];
  if(!column)return {complete:true,measured:0,reference:0};
  const reference=aggregateCohort({...s,snapshot:'s1'},column[0],cid,column[1]).cohort.length;
@@ -132,7 +152,7 @@ export function historyCoverage(s:Scope,cid:CfgId,key:OtMetricKey,i:number) {
 /** Compare recorded values on exactly the same workloads at both dates. */
 export function historyComparison(s:Scope,cid:CfgId,key:OtMetricKey,before:number,after:number) {
  if(before<0||after<0)return null;
- if(datasetView.revision){const timeline=apiHistory.series[historyKey(s,key)];const a=timeline?.items[before]?.date,b=timeline?.items[after]?.date;return a&&b?apiHistory.changes[JSON.stringify([historyKey(s,key),cid,a,b])]||null:null}
+ if(datasetView.revision||apiHistory.compact){const timeline=apiHistory.series[historyKey(s,key)];const a=timeline?.items[before]?.date,b=timeline?.items[after]?.date;if(before===after){const lane=timeline?.items[before]?.lanes.find(l=>l.track===apiHistory.slots[cid]);if(lane?.value!=null){const factor=key==='mem'?1024**2:key==='code'?1024:key==='cov'?1:1e6;return {before:lane.value/factor,after:lane.value/factor,ratio:1,count:lane.measured}}}return a&&b?apiHistory.changes[JSON.stringify([historyKey(s,key),cid,a,b])]||null:null}
  if(!aggregateOf[key]){
   const values=historySeries(s,cid,key),a=values?.[before],b=values?.[after];
   return a!=null&&b!=null&&Number.isFinite(a)&&Number.isFinite(b)?{before:a,after:b,ratio:b/a,count:0}:null;
@@ -144,7 +164,7 @@ export function historyComparison(s:Scope,cid:CfgId,key:OtMetricKey,before:numbe
  if(!matched.length)return null;
  const catalogue=new Map(viewData.catalogue.map(w=>[w.id,w]));
  const weights=cohortWeights(matched.map(w=>catalogue.get(w)!),s.weighting);
- const mean=(i:number)=>weightedGeometricMean(matched.map(w=>historyCell(s.machine,w,cid,metric,i).v!),weights);
+ const mean=(i:number)=>weightedAverage(s.average)(matched.map(w=>historyCell(s.machine,w,cid,metric,i).v!),weights);
  const a=mean(before),b=mean(after);return {before:a,after:b,ratio:b/a,count:matched.length};
 }
 
@@ -191,3 +211,6 @@ export function historyEndpoints(values:number[]|null|undefined,from:number,to:n
  for(let i=from;i<=to;i++)if(Number.isFinite(values[i])){if(a<0)a=i;b=i;}
  return a>=0&&b>a?[a,b]:null;
 }
+
+/** A version pinned to a source commit (main@…, bare or pseudo-version hashes) rather than a release. */
+export const commitPinned=(version:string|undefined)=>!!version&&(/^main@/.test(version)||/^[a-f0-9]{7,12}$/i.test(shortVersion(version)));

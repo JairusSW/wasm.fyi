@@ -1,0 +1,11 @@
+import {readFile} from 'node:fs/promises';
+import {checkSDKStartup} from './lib/sdk-startup.mjs';
+import {atomicJSON} from './lib/benchmark-plan.mjs';
+const [planPath,output]=process.argv.slice(2);
+if(!planPath||!output)throw Error('Runtime plan and qualification output are required');
+const plan=JSON.parse(await readFile(planPath));
+if(plan.runtime_configurations?.length!==1)throw Error('Exactly one source-bound runtime configuration is required');
+const runtime=plan.runtime_configurations[0];
+const result=await checkSDKStartup(runtime.command);
+await atomicJSON(output,{configuration:runtime.id,...result});
+console.log('Qualified SDK startup: '+runtime.id+' '+result.description.runtime_version+' '+result.description.backend);

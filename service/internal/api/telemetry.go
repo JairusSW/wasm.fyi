@@ -8,9 +8,11 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
+
+	"github.com/JairusSW/wasm.fyi/service/internal/analytics"
 )
 
-var requestClasses = [...]string{"probe", "admin-import", "admin-upload", "admin-plan", "admin-progress", "admin-other", "summary", "evidence", "frontend", "other"}
+var requestClasses = [...]string{"probe", "admin-import", "admin-upload", "admin-plan", "admin-progress", "admin-other", "summary", "evidence", "frontend", "other", "dashboard-analytics", "dashboard-auth", "page-event"}
 var latencyBounds = [...]time.Duration{5 * time.Millisecond, 25 * time.Millisecond, 100 * time.Millisecond, 500 * time.Millisecond, 2500 * time.Millisecond, 15 * time.Second, 300 * time.Second}
 
 type requestCounters struct {
@@ -78,6 +80,16 @@ func (a *API) requestStats() RequestStats {
 	return out
 }
 func requestClass(path string) int {
+	path = strings.TrimSuffix(path, "/")
+	if strings.HasPrefix(path, "/api/admin/") {
+		return 10
+	}
+	if strings.HasPrefix(path, "/auth/") {
+		return 11
+	}
+	if path == "/api/event" {
+		return 12
+	}
 	if path == "/healthz" || path == "/readyz" {
 		return 0
 	}
@@ -174,7 +186,23 @@ func (w *observedWriter) FlushError() error {
 func (w *observedWriter) Flush()            { _ = w.FlushError() }
 func (w *observedWriter) decodedJSON(n int) { w.decoded += uint64(n) }
 
+type countedRequestBody struct {
+	io.ReadCloser
+	read int64
+}
+
+func (b *countedRequestBody) Read(p []byte) (int, error) {
+	n, e := b.ReadCloser.Read(p)
+	b.read += int64(n)
+	return n, e
+}
+
 func (a *API) serve(w http.ResponseWriter, r *http.Request) {
+	var body *countedRequestBody
+	if r.Body != nil {
+		body = &countedRequestBody{ReadCloser: r.Body}
+		r.Body = body
+	}
 	if a.requests.started.Load() == nil {
 		now := time.Now().UTC()
 		a.requests.started.CompareAndSwap(nil, &now)
@@ -225,9 +253,59 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request) {
 			c.panics.Add(1)
 		}
 		c.active.Add(-1)
+		if a.dashboard != nil && !strings.HasPrefix(r.URL.Path, "/api/admin/") && !strings.HasPrefix(r.URL.Path, "/auth/") && r.URL.Path != "/healthz" && r.URL.Path != "/readyz" && strings.TrimSuffix(r.URL.Path, "/") != "/api/event" {
+			up := int64(0)
+			if body != nil {
+				up = body.read
+			}
+			finished := time.Now()
+			event := analytics.Event{At: finished, Status: status, Method: r.Method, Path: analytics.CleanPath(r.URL.Path), Down: int64(observed.written), Up: up, MS: float64(latency) / float64(time.Millisecond)}
+			// Honor privacy opt-outs for visitor/page/client analytics; byte accounting
+			// is aggregate operational telemetry without any identity or dimensions.
+			if r.Header.Get("DNT") != "1" && r.Header.Get("Sec-GPC") != "1" {
+				event.API = strings.HasPrefix(r.URL.Path, "/api/") || strings.HasPrefix(r.URL.Path, "/data/")
+				if event.API {
+					ip, err := a.limiter.clientIdentity(r, false)
+					if err == nil {
+						event.Agent, event.Browser, _ = analytics.Family(r.UserAgent())
+						event.Origin = analytics.Classify(a.dashboard.origin, r.Header.Get("Sec-Fetch-Site"), r.Header.Get("Origin"), r.Header.Get("Referer"), r.UserAgent())
+						if event.Origin == 0 {
+							event.ID = a.dashboard.analytics.Identity(finished, ip, event.Agent)
+						}
+						event.Runtime = boundedAnalyticsSelection(r.URL.Query().Get("engine"))
+						event.Workload = boundedAnalyticsSelection(r.URL.Query().Get("workload"))
+						a.dashboard.analytics.Enqueue(analytics.Input{Event: event, IP: ip})
+					} else {
+						a.dashboard.analytics.Enqueue(analytics.Input{Event: analytics.Event{At: finished, APIBytes: strings.HasPrefix(r.URL.Path, "/api/") || strings.HasPrefix(r.URL.Path, "/data/"), Down: int64(observed.written), Up: up}})
+					}
+				} else {
+					a.dashboard.analytics.Enqueue(analytics.Input{Event: event})
+				}
+			} else {
+				a.dashboard.analytics.Enqueue(analytics.Input{Event: analytics.Event{At: finished, APIBytes: strings.HasPrefix(r.URL.Path, "/api/") || strings.HasPrefix(r.URL.Path, "/data/"), Down: int64(observed.written), Up: up}})
+			}
+		}
 		if recovered != nil {
 			panic(recovered)
 		}
 	}()
-	a.serveRequest(observed, r)
+	if a.requestHandler != nil {
+		if !a.dashboardRequest(observed, r) {
+			a.requestHandler.ServeHTTP(observed, r)
+		}
+	} else {
+		a.serveRequest(observed, r)
+	}
+}
+
+func boundedAnalyticsSelection(v string) string {
+	if len(v) > 80 {
+		return ""
+	}
+	for _, r := range v {
+		if !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || strings.ContainsRune("/-_.", r)) {
+			return ""
+		}
+	}
+	return v
 }

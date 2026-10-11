@@ -30,14 +30,19 @@ describe('format', () => {
 		expect(fmtU(0.0000001, 'ms')).toBe('0.1 ns');
 		expect(fmtU(41.2, 'ms')).toBe('41.2 ms');
 		expect(fmtU(1500, 'ms')).toBe('1.5 s');
-		expect(fmtU(2048, 'KB')).toBe('2.00 MB');
+		expect(fmtU(2048, 'KB')).toBe('2 MB');
+		expect(fmtU(512.3, 'KiB')).toBe('512 KiB');
+		expect(fmtU(123.4, 'MiB')).toBe('123 MiB');
+		expect(fmtU(0.9997, 'ms')).toBe('1 ms');
+		expect(fmtU(1.026, 'ms')).toBe('1.03 ms');
+		expect(fmtU(9.977, 'ms')).toBe('9.98 ms');
 		expect(fmtU(0.49, 'KiB')).toBe('502 B');
-		expect(fmtU(1.25, 'KiB')).toBe('1,280 B');
+		expect(fmtU(1.25, 'KiB')).toBe('1.25 KiB');
 		expect(fmtU(1.5, 'KiB')).toBe('1.5 KiB');
 	});
-	it('shares a useful time unit across adjacent values where their range allows it',()=>{
-		expect(fmtUGroup([0.0008,0.0012],'ms')).toEqual(['800 ns','1200 ns']);
-		expect(fmtUGroup([0.00001,0.5],'ms')).toEqual(['10 ns','500 µs']);
+	it('formats each value of a row in its own best unit',()=>{
+		expect(fmtUGroup([0.0008,0.0012],'ms')).toEqual(['800 ns','1.2 µs']);
+		expect(fmtUGroup([1.026,0.199,9.977,null],'ms')).toEqual(['1.03 ms','199 µs','9.98 ms','']);
 	});
 	it('formats ratios and deltas', () => {
 		expect(fx(1.234)).toBe('1.23×');

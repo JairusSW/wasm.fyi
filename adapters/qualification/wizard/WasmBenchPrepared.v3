@@ -1,0 +1,178 @@
+// Immutable oracle/input payloads are decoded once per prepare RPC.
+class WasmfyiWizardPrepared(workload: JsonValue, session: WasmfyiWizardSession) {
+    var reason: string;
+    var vectorPayloads: Array<(Array<byte>, Array<byte>)>;
+    var memoryChecks: Array<(u64, Array<byte>)>;
+    var inputBytes: Array<byte>;
+    var retainedInitialized = false;
+    var lastCompiled: Module;
+    def field(key: string) -> JsonValue { return WasmfyiWizardJson.field(workload, key); }
+    def nested(value: JsonValue, key: string) -> JsonValue { return WasmfyiWizardJson.field(value, key); }
+    def text(key: string) -> string { return WasmfyiWizardJson.text(field(key)); }
+    def vector() -> bool { return Strings.equal(WasmfyiWizardJson.text(nested(field("oracle"), "kind")), "exact_vectors"); }
+
+    def decode() -> bool {
+        reason = null;
+        var inputs = Vector<(Array<byte>, Array<byte>)>.new();
+        var checks = Vector<(u64, Array<byte>)>.new();
+        if (vector()) {
+            var vectors = field("vectors");
+            var mod = WasmfyiWizardJson.number(nested(vectors, "mod"));
+            if (mod < 0 || mod > 256) { reason = "Invalid vector input modulus"; return false; }
+            for (item in WasmfyiWizardJson.array(nested(vectors, "cases"))) {
+                var length = WasmfyiWizardJson.number(nested(item, "len"));
+                if (length < 0 || length > 0x1000_0000) { reason = "Invalid vector input length"; return false; }
+                var payload = Array<byte>.new(length);
+                for (i < length) payload[i] = byte.view(if(mod != 0, i % mod, 0));
+                var expected = WasmfyiWizardJson.hex(WasmfyiWizardJson.text(nested(item, "out")));
+                if (expected == null) { reason = "Invalid vector memory oracle"; return false; }
+                inputs.put((payload, expected));
+            }
+            if (inputs.length == 0) { reason = "Empty vector oracle"; return false; }
+        }
+        for (item in WasmfyiWizardJson.array(nested(field("oracle"), "memory"))) {
+            var offset = WasmfyiWizardJson.number(nested(item, "offset"));
+            var expected = WasmfyiWizardJson.hex(WasmfyiWizardJson.text(nested(item, "hex")));
+            if (offset < 0 || expected == null) { reason = "Invalid memory oracle"; return false; }
+            checks.put((u64.view(offset), expected));
+        }
+        vectorPayloads = inputs.extract();
+        memoryChecks = checks.extract();
+        inputBytes = WasmfyiWizardJson.hex(WasmfyiWizardJson.text(nested(field("input"), "hex")));
+        if (inputBytes == null) { reason = "Invalid input payload"; return false; }
+        return true;
+    }
+
+    def pointer(instance: Instance, record: JsonValue, exportKey: string, fallback: u64) -> (u64, bool) {
+        var name = WasmfyiWizardJson.text(nested(record, exportKey));
+        if (name.length == 0) return (fallback, true);
+        var function = session.find(instance, name);
+        if (function == null) { reason = session.reason; return (0uL, false); }
+        var result = session.call(function, Values.NONE, 1).0;
+        if (session.reason != null || !Result.Value.?(result)) { reason = "Pointer export failed"; return (0uL, false); }
+        var values = Result.Value.!(result).vals;
+        if (values.length != 1) { reason = "Pointer export result count differs"; return (0uL, false); }
+        match (values[0]) {
+            I32(value) => return (u64.view(value), true);
+            I64(value) => return (value, true);
+            _ => { reason = "Pointer export result is not an integer"; return (0uL, false); }
+        }
+    }
+
+    def initialize(instance: Instance) -> bool {
+        reason = null;
+        var name = text("initialize");
+        if (name.length > 0) {
+            var function = session.find(instance, name);
+            if (function == null) { reason = session.reason; return false; }
+            session.call(function, Values.NONE, 1);
+            if (session.reason != null) { reason = session.reason; return false; }
+        }
+        if (inputBytes.length > 0) {
+            var input = field("input");
+            var base = pointer(instance, input, "pointer_export", 0uL);
+            var offset = WasmfyiWizardJson.number(nested(input, "offset"));
+            if (!base.1 || offset < 0 || !WasmfyiWizardOracle.write(instance, base.0 + u64.view(offset), inputBytes)) {
+                reason = "Input memory is outside bounds"; return false;
+            }
+        }
+        return true;
+    }
+
+    def execute(instance: Instance, operations: int) -> (Result, u64) {
+        reason = null;
+        var result: Result = Result.Value(Values.NONE);
+        var elapsed = 0uL;
+        var function = session.find(instance, text("export"));
+        if (function == null) return failure(session.reason);
+        if (vector()) {
+            if (operations != 1) return failure("Vector sequences require one operation");
+            var vectors = field("vectors");
+            var inputOffset = WasmfyiWizardJson.number(nested(vectors, "input_offset"));
+            var outputOffset = WasmfyiWizardJson.number(nested(vectors, "output_offset"));
+            if (inputOffset < 0 || outputOffset < 0) return failure("Invalid vector memory offsets");
+            var input = pointer(instance, vectors, "input_ptr_export", u64.view(inputOffset));
+            var output = pointer(instance, vectors, "output_ptr_export", u64.view(outputOffset));
+            if (!input.1 || !output.1) return failure("Vector pointer export failed");
+            for (payload in vectorPayloads) {
+                if (!WasmfyiWizardOracle.write(instance, input.0, payload.0)) return failure("Vector input is outside memory bounds");
+                var raw = Array<JsonValue>.new(3);
+                raw[0] = JsonValue.String(Strings.format1("%d", input.0));
+                raw[1] = JsonValue.String(Strings.format1("%d", payload.0.length));
+                raw[2] = JsonValue.String(Strings.format1("%d", output.0));
+                var arguments = WasmfyiWizardOracle.arguments(function, raw);
+                if (arguments == null) return failure("Vector export signature differs");
+                var call = session.call(function, arguments, 1);
+                elapsed += call.1;
+                if (session.reason != null) return failure(session.reason);
+                if (!WasmfyiWizardOracle.memory(instance, output.0, payload.1)) return failure("Independent vector memory oracle differs");
+            }
+            return (result, elapsed);
+        }
+        var arguments = WasmfyiWizardOracle.arguments(function, WasmfyiWizardJson.array(field("args")));
+        if (arguments == null) return failure("Scalar export signature or arguments differ");
+        var oracle = field("oracle");
+        var base = pointer(instance, oracle, "output_pointer_export", 0uL);
+        if (!base.1) return failure("Output pointer export failed");
+        var iterations = if(memoryChecks.length > 0, operations, 1);
+        for (i < iterations) {
+            var call = session.call(function, arguments, if(memoryChecks.length > 0, 1, operations));
+            elapsed += call.1;
+            result = call.0;
+            if (session.reason != null) return failure(session.reason);
+            if (!WasmfyiWizardOracle.scalar(result, WasmfyiWizardJson.array(nested(oracle, "expected")))) return failure("Independent scalar oracle differs");
+            for (check in memoryChecks) if (!WasmfyiWizardOracle.memory(instance, base.0 + check.0, check.1)) return failure("Independent memory oracle differs");
+        }
+        return (result, elapsed);
+    }
+
+    def failure(message: string) -> (Result, u64) {
+        reason = if(message != null, message, "SDK operation failed");
+        return (Result.Throw(Trap.new(TrapReason.ERROR, reason, null)), 0uL);
+    }
+
+    def sample(phase: string, operations: int) -> (Result, u64) {
+        reason = null;
+        var cold = Strings.equal(phase, "compile");
+        var instantiatePhase = Strings.equal(phase, "instantiate");
+        var first = Strings.equal(phase, "first-call");
+        var steady = Strings.equal(phase, "steady");
+        if (!cold && !instantiatePhase && !first && !steady) return failure("Unsupported phase");
+        if (operations < 1 || ((!steady || vector() || !Strings.equal(text("reset"), "stateless")) && operations != 1)) return failure("Lifecycle/vector/reset phases require one operation");
+        var module: Module;
+        var elapsed = 0uL;
+        if (cold) {
+            var compilation = session.compile();
+            module = compilation.0;
+            elapsed = compilation.1;
+        } else module = session.getCompiled();
+        if (module == null || session.reason != null) return failure(session.reason);
+        var instance: Instance;
+        if (steady && Strings.equal(text("reset"), "stateless")) {
+            instance = session.getRetained();
+            if (instance == null || session.reason != null) return failure(session.reason);
+            if (!retainedInitialized) {
+                if (!initialize(instance)) return failure(reason);
+                retainedInitialized = true;
+            }
+        } else {
+            var instantiation = session.instantiate(module);
+            instance = instantiation.0;
+            if (instantiatePhase) elapsed = instantiation.1;
+            if (instance == null || session.reason != null) return failure(session.reason);
+            if (!initialize(instance)) return failure(reason);
+        }
+        // Compilation/instantiation correctness calls are outside their clocks.
+        // First/steady calls have no extra priming call or warmup invocation.
+        var execution = execute(instance, if(steady, operations, 1));
+        if (reason != null) return failure(reason);
+        if (cold) {
+            lastCompiled = module;
+            session.compiled = module;
+            session.retained = null;
+            retainedInitialized = false;
+        }
+        if (first || steady) elapsed = execution.1;
+        return (execution.0, elapsed);
+    }
+}

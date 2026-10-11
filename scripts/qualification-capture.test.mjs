@@ -12,7 +12,15 @@ test('native backends must produce positive native-code sizes',()=>{
  assert.doesNotThrow(()=>assertQualifiedCaptureRow({...row,backend:'OMG',codeStatus:'ok',codeBytes:128}));
  assert.throws(()=>assertQualifiedCaptureRow({...row,backend:'OMG',codeStatus:'ok',codeBytes:0}));
 });
-test('native-code unavailability does not waive RSS or twelve timing samples',()=>{
+test('native-code unavailability does not waive RSS or five timing samples',()=>{
  assert.throws(()=>assertQualifiedCaptureRow({...row,memoryStatus:'unsupported'}));
- assert.throws(()=>assertQualifiedCaptureRow({...row,timingSamples:11}));
+ assert.throws(()=>assertQualifiedCaptureRow({...row,timingSamples:4}));
+});
+
+test('JVM native-image n/a requires the qualified engine and backend pair',()=>{
+ for(const [engine,backend] of [['chicory-jit','jvm-bytecode-compiler'],['endive-jit','jvm-bytecode-compiler'],['graalwasm','truffle-graal']]){
+  assert.doesNotThrow(()=>assertQualifiedCaptureRow({...row,engine,backend,timingSamples:5}));
+  assert.throws(()=>assertQualifiedCaptureRow({...row,engine,backend,codeStatus:'not-measured'}));
+  assert.throws(()=>assertQualifiedCaptureRow({...row,engine:'wasmtime',backend}));
+ }
 });

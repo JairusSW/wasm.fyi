@@ -3,7 +3,7 @@ import { FEATURE_CFG, configVersion } from './data/runtimes';
 import { compatCell, featureContracts, type Scope } from './model';
 // Feature-support cell helpers shared by the Features matrix and proposal pages.
 import { SUPC } from './data/features';
-import type { FeatureRow, SupportCode } from './data/types';
+import type { CfgId, FeatureRow, SupportCode } from './data/types';
 
 export const supportCell = (code: SupportCode) => ({
 	glyph: SUPC[code][0],
@@ -69,14 +69,16 @@ export function runtimeSupportCell(rid:string,f:FeatureRow,scope:Scope) {
   return {...supportCell(code),text:code==='y'?'corpus passed':code==='f'?'corpus passed · flag':code==='p'?'partial corpus':'adapter unsupported',detail};
 }
 
-export function engineFeatureVersions(rid:string,scope:Scope,channel:'stable'|'development') {
-  const ids=FEATURE_CFG.filter(c=>c.rt===rid && viewData.configurations[c.id]!=='v8-wasmfx').map(c=>c.id);
+/** Versions with feature results for a runtime, or for one configuration (backend) of it when `cid` is given. */
+export function engineFeatureVersions(rid:string,scope:Scope,channel:'stable'|'development',cid?:CfgId) {
+  const ids=FEATURE_CFG.filter(c=>c.rt===rid && (!cid || c.id===cid) && viewData.configurations[c.id]!=='v8-wasmfx').map(c=>c.id);
   return [...new Set(viewData.featureVersions[scope.machine].filter(v=>ids.some(id=>viewData.configurations[id]===v.id) && v.channel===channel).map(v=>v.version))];
 }
-export function runtimeFeatureTrack(rid:string,f:FeatureRow,scope:Scope,channel:'stable'|'development',version?:string) {
+/** Feature support for a runtime across its backends, or for a single configuration when `cid` is given. */
+export function runtimeFeatureTrack(rid:string,f:FeatureRow,scope:Scope,channel:'stable'|'development',version?:string,cid?:CfgId) {
   if(rid==='v8' && f.id==='wasi-p1')return {...supportCell('?'),text:'Node host API · unmeasured',detail:'Node.js provides a WASI Preview 1 host for V8 modules, and the benchmark adapter now exposes wasi-command. A sealed V8/Node WASI corpus run has not been collected yet.',version:'',channel,expected:featureContracts(f.id).length,pass:0,configurations:[]};
-  const selected=version || engineFeatureVersions(rid,scope,channel)[0];
-  const ids=FEATURE_CFG.filter(c=>c.rt===rid).map(c=>viewData.configurations[c.id]);
+  const selected=version || engineFeatureVersions(rid,scope,channel,cid)[0];
+  const ids=FEATURE_CFG.filter(c=>c.rt===rid && (!cid || c.id===cid)).map(c=>viewData.configurations[c.id]);
   // One pinned identity supplies a complete family; older identities and other
   // compiler modes cannot fill its missing contracts.
   const candidates=viewData.featureVersions[scope.machine].filter(v=>ids.includes(v.id) && v.channel===channel && v.version===selected);

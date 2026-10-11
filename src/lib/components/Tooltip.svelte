@@ -121,6 +121,36 @@
 	});
 </script>
 
+{#snippet vis(kind: string)}
+	<!-- Two engines × eight workloads: filled = passed; outlined boxes = what each average uses. -->
+	{#if kind === 'cohort-each' || kind === 'cohort-shared'}
+		{@const rows = [[1, 1, 0, 1, 1, 1, 0, 1], [1, 1, 1, 1, 0, 1, 1, 1]]}
+		<svg class="tip-vis" viewBox="0 0 132 40" aria-hidden="true">
+			{#each rows as row, r (r)}
+				<text x="0" y={13 + r * 18} class="vl">{r ? 'B' : 'A'}</text>
+				{#each row as p, k (k)}
+					{@const used = p && (kind === 'cohort-each' || rows.every((x) => x[k]))}
+					<rect x={12 + k * 15} y={4 + r * 18} width="11" height="11" rx="2" class:pass={p} class:used />
+				{/each}
+			{/each}
+		</svg>
+	{:else}
+		<!-- Six workload times on a log axis and where each average lands. -->
+		{@const xs = [1, 1.5, 2, 3, 4, 40]}
+		{@const geo = Math.exp(xs.reduce((a, x) => a + Math.log(x), 0) / xs.length)}
+		{@const mean = xs.reduce((a, x) => a + x, 0) / xs.length}
+		{@const X = (v: number) => 6 + (Math.log(v) / Math.log(40)) * 120}
+		<svg class="tip-vis" viewBox="0 0 132 30" aria-hidden="true">
+			<line x1="6" x2="126" y1="18" y2="18" class="axis" />
+			{#each xs as x, k (k)}<circle cx={X(x)} cy="18" r="2.6" class="pt" />{/each}
+			{#each [['geo', geo], ['mean', mean]] as [k, v] (k)}
+				<line x1={X(v as number)} x2={X(v as number)} y1="9" y2="25" class="mk" class:on={(kind === 'avg-geo') === (k === 'geo')} />
+			{/each}
+			<text x={X(kind === 'avg-geo' ? geo : mean)} y="7" text-anchor="middle" class="vl on">{kind === 'avg-geo' ? 'typical' : 'pulled by slowest'}</text>
+		</svg>
+	{/if}
+{/snippet}
+
 {#snippet action(text: string)}
 	<div class="tip-act"><span class="kbd">click</span><span>{text}</span></div>
 {/snippet}
@@ -174,6 +204,7 @@
 		{#if card.points}
 			<ul class="tip-points">{#each card.points as p}<li>{p}</li>{/each}</ul>
 		{/if}
+		{#if card.vis}{@render vis(card.vis)}{/if}
 		{#if card.note}<div class="tip-note">{card.note}</div>{/if}
 		{#if card.action}{@render action(card.action)}{/if}
 	{/if}
@@ -271,6 +302,46 @@
 	}
 	.tip-points li + li {
 		margin-top: 2px;
+	}
+	.tip-vis {
+		display: block;
+		width: 176px;
+		height: auto;
+		margin: 2px 0;
+	}
+	.tip-vis rect {
+		fill: transparent;
+		stroke: var(--line2);
+	}
+	.tip-vis rect.pass {
+		fill: var(--fg3);
+		stroke: none;
+	}
+	.tip-vis rect.used {
+		fill: var(--st-pass);
+		stroke: none;
+	}
+	.tip-vis .vl {
+		font-size: 8px;
+		fill: var(--fg3);
+	}
+	.tip-vis .vl.on {
+		fill: var(--fg);
+	}
+	.tip-vis .axis {
+		stroke: var(--line2);
+	}
+	.tip-vis .pt {
+		fill: var(--fg3);
+	}
+	.tip-vis .mk {
+		stroke: var(--fg3);
+		stroke-dasharray: 2 2;
+	}
+	.tip-vis .mk.on {
+		stroke: var(--fg);
+		stroke-width: 1.5;
+		stroke-dasharray: none;
 	}
 	.tip-note {
 		white-space: pre-line;

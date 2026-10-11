@@ -19,6 +19,22 @@ identities. This prevents immediate allocation/access fusion from turning an
 allocation benchmark into scalar arithmetic. The measurements include maintaining
 those GC roots; they are not allocation-only instruction timings.
 
+Globals have separate MVP (`core-glb`) and exported mutable-global
+(`mutable-globals`) contracts. Each family covers reads, accumulation, i64
+splitting, f64 arithmetic, swaps, dependent read/write chains, i64 carry and
+overflow, and f32 rounding. Mutable state resets inside each invocation; the
+independent JavaScript oracle uses explicit integer wrapping and f32 rounding.
+The compatibility inventory keeps sizes 1, 64 and 4096; performance kernels
+repeat size 4096 inside Wasm 64 times without memory, SIMD or host calls.
+
+Build only these families with
+`node scripts/feature-corpus.mjs build --family=core-glb,mutable-globals`, then
+`node scripts/feature-performance-suite.mjs .wasmbench/globals-performance --family=core-glb,mutable-globals`.
+Set `WASMFYI_GLOBAL_PERFORMANCE_ROOT=.wasmbench/globals-performance` and run
+`node --test scripts/feature-globals.test.mjs` to check both artifacts against
+their oracles across fresh instances, repeated calls and changed input sizes.
+Run artifact builds and execution checks under the host's measurement lock.
+
 One-shot allocation/destructive contracts remain lifecycle probes. Function/type,
 initializer and async-component probes remain compilation/instantiation probes.
 The builder emits `lifecycle-probes.json` and `compile-probes.json` separately;

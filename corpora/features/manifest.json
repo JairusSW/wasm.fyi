@@ -2146,6 +2146,5136 @@
   },
   {
     "schema": 1,
+    "id": "features/core-glb/immutable-constant/1",
+    "family": "features",
+    "artifact": "artifacts/core-glb-immutable-constant.wasm",
+    "sha256": "6868f9efc8452266b5d9add962532551a28891222ac228faba739c58deb9032e",
+    "abi": "core",
+    "features": [
+      "core-glb"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        41
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/core-glb-immutable-constant.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "provenance": {
+      "feature": "core-glb",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/core-glb-immutable-constant.wat",
+        "sourceSha256": "72cf7ef3f08a2f7d59e7810ab38dd4a34679103c0e677f151cfef302566b71dd",
+        "artifact": "artifacts/core-glb-immutable-constant.wasm",
+        "sha256": "6868f9efc8452266b5d9add962532551a28891222ac228faba739c58deb9032e",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/core-glb-immutable-constant.wat",
+            "-o",
+            "artifacts/core-glb-immutable-constant.wasm"
+          ]
+        ],
+        "feature": "core-glb",
+        "variant": "immutable-constant",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/core-glb/immutable-constant/64",
+    "family": "features",
+    "artifact": "artifacts/core-glb-immutable-constant.wasm",
+    "sha256": "6868f9efc8452266b5d9add962532551a28891222ac228faba739c58deb9032e",
+    "abi": "core",
+    "features": [
+      "core-glb"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        2624
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/core-glb-immutable-constant.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "provenance": {
+      "feature": "core-glb",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/core-glb-immutable-constant.wat",
+        "sourceSha256": "72cf7ef3f08a2f7d59e7810ab38dd4a34679103c0e677f151cfef302566b71dd",
+        "artifact": "artifacts/core-glb-immutable-constant.wasm",
+        "sha256": "6868f9efc8452266b5d9add962532551a28891222ac228faba739c58deb9032e",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/core-glb-immutable-constant.wat",
+            "-o",
+            "artifacts/core-glb-immutable-constant.wasm"
+          ]
+        ],
+        "feature": "core-glb",
+        "variant": "immutable-constant",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/core-glb/immutable-constant/4096",
+    "family": "features",
+    "artifact": "artifacts/core-glb-immutable-constant.wasm",
+    "sha256": "6868f9efc8452266b5d9add962532551a28891222ac228faba739c58deb9032e",
+    "abi": "core",
+    "features": [
+      "core-glb"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        167936
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/core-glb-immutable-constant.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "provenance": {
+      "feature": "core-glb",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/core-glb-immutable-constant.wat",
+        "sourceSha256": "72cf7ef3f08a2f7d59e7810ab38dd4a34679103c0e677f151cfef302566b71dd",
+        "artifact": "artifacts/core-glb-immutable-constant.wasm",
+        "sha256": "6868f9efc8452266b5d9add962532551a28891222ac228faba739c58deb9032e",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/core-glb-immutable-constant.wat",
+            "-o",
+            "artifacts/core-glb-immutable-constant.wasm"
+          ]
+        ],
+        "feature": "core-glb",
+        "variant": "immutable-constant",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/core-glb/mutable-accumulate/1",
+    "family": "features",
+    "artifact": "artifacts/core-glb-mutable-accumulate.wasm",
+    "sha256": "c5c0a6f0326d25f19e661b5d481cc3699f66fa78620f0d3ded0ff7810b4fa49d",
+    "abi": "core",
+    "features": [
+      "core-glb"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        0
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/core-glb-mutable-accumulate.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "provenance": {
+      "feature": "core-glb",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/core-glb-mutable-accumulate.wat",
+        "sourceSha256": "f833f87be85b4ca0b2673082559dd7c1831598db893736424a11507c0dc1c9ce",
+        "artifact": "artifacts/core-glb-mutable-accumulate.wasm",
+        "sha256": "c5c0a6f0326d25f19e661b5d481cc3699f66fa78620f0d3ded0ff7810b4fa49d",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/core-glb-mutable-accumulate.wat",
+            "-o",
+            "artifacts/core-glb-mutable-accumulate.wasm"
+          ]
+        ],
+        "feature": "core-glb",
+        "variant": "mutable-accumulate",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/core-glb/mutable-accumulate/64",
+    "family": "features",
+    "artifact": "artifacts/core-glb-mutable-accumulate.wasm",
+    "sha256": "c5c0a6f0326d25f19e661b5d481cc3699f66fa78620f0d3ded0ff7810b4fa49d",
+    "abi": "core",
+    "features": [
+      "core-glb"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        43680
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/core-glb-mutable-accumulate.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "provenance": {
+      "feature": "core-glb",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/core-glb-mutable-accumulate.wat",
+        "sourceSha256": "f833f87be85b4ca0b2673082559dd7c1831598db893736424a11507c0dc1c9ce",
+        "artifact": "artifacts/core-glb-mutable-accumulate.wasm",
+        "sha256": "c5c0a6f0326d25f19e661b5d481cc3699f66fa78620f0d3ded0ff7810b4fa49d",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/core-glb-mutable-accumulate.wat",
+            "-o",
+            "artifacts/core-glb-mutable-accumulate.wasm"
+          ]
+        ],
+        "feature": "core-glb",
+        "variant": "mutable-accumulate",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/core-glb/mutable-accumulate/4096",
+    "family": "features",
+    "artifact": "artifacts/core-glb-mutable-accumulate.wasm",
+    "sha256": "c5c0a6f0326d25f19e661b5d481cc3699f66fa78620f0d3ded0ff7810b4fa49d",
+    "abi": "core",
+    "features": [
+      "core-glb"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        2863310848
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/core-glb-mutable-accumulate.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "provenance": {
+      "feature": "core-glb",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/core-glb-mutable-accumulate.wat",
+        "sourceSha256": "f833f87be85b4ca0b2673082559dd7c1831598db893736424a11507c0dc1c9ce",
+        "artifact": "artifacts/core-glb-mutable-accumulate.wasm",
+        "sha256": "c5c0a6f0326d25f19e661b5d481cc3699f66fa78620f0d3ded0ff7810b4fa49d",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/core-glb-mutable-accumulate.wat",
+            "-o",
+            "artifacts/core-glb-mutable-accumulate.wasm"
+          ]
+        ],
+        "feature": "core-glb",
+        "variant": "mutable-accumulate",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/core-glb/i64-global-split/1",
+    "family": "features",
+    "artifact": "artifacts/core-glb-i64-global-split.wasm",
+    "sha256": "9a81da812b00afec9c00b6c43830ef2ac311e692e57c632281188e3cf8031c3a",
+    "abi": "core",
+    "features": [
+      "core-glb"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        0
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/core-glb-i64-global-split.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "provenance": {
+      "feature": "core-glb",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/core-glb-i64-global-split.wat",
+        "sourceSha256": "25c6b0bfe2d88baef11b94098cac3a063f96dfee14bca9cbe9d68ab39ec38dc4",
+        "artifact": "artifacts/core-glb-i64-global-split.wasm",
+        "sha256": "9a81da812b00afec9c00b6c43830ef2ac311e692e57c632281188e3cf8031c3a",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/core-glb-i64-global-split.wat",
+            "-o",
+            "artifacts/core-glb-i64-global-split.wasm"
+          ]
+        ],
+        "feature": "core-glb",
+        "variant": "i64-global-split",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/core-glb/i64-global-split/64",
+    "family": "features",
+    "artifact": "artifacts/core-glb-i64-global-split.wasm",
+    "sha256": "9a81da812b00afec9c00b6c43830ef2ac311e692e57c632281188e3cf8031c3a",
+    "abi": "core",
+    "features": [
+      "core-glb"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        4032
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/core-glb-i64-global-split.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "provenance": {
+      "feature": "core-glb",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/core-glb-i64-global-split.wat",
+        "sourceSha256": "25c6b0bfe2d88baef11b94098cac3a063f96dfee14bca9cbe9d68ab39ec38dc4",
+        "artifact": "artifacts/core-glb-i64-global-split.wasm",
+        "sha256": "9a81da812b00afec9c00b6c43830ef2ac311e692e57c632281188e3cf8031c3a",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/core-glb-i64-global-split.wat",
+            "-o",
+            "artifacts/core-glb-i64-global-split.wasm"
+          ]
+        ],
+        "feature": "core-glb",
+        "variant": "i64-global-split",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/core-glb/i64-global-split/4096",
+    "family": "features",
+    "artifact": "artifacts/core-glb-i64-global-split.wasm",
+    "sha256": "9a81da812b00afec9c00b6c43830ef2ac311e692e57c632281188e3cf8031c3a",
+    "abi": "core",
+    "features": [
+      "core-glb"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        16773120
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/core-glb-i64-global-split.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "provenance": {
+      "feature": "core-glb",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/core-glb-i64-global-split.wat",
+        "sourceSha256": "25c6b0bfe2d88baef11b94098cac3a063f96dfee14bca9cbe9d68ab39ec38dc4",
+        "artifact": "artifacts/core-glb-i64-global-split.wasm",
+        "sha256": "9a81da812b00afec9c00b6c43830ef2ac311e692e57c632281188e3cf8031c3a",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/core-glb-i64-global-split.wat",
+            "-o",
+            "artifacts/core-glb-i64-global-split.wasm"
+          ]
+        ],
+        "feature": "core-glb",
+        "variant": "i64-global-split",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/core-glb/f64-global-scale/1",
+    "family": "features",
+    "artifact": "artifacts/core-glb-f64-global-scale.wasm",
+    "sha256": "e096b7cbf48e794f5143e08ad4507f4443d796b8a0c3311cef712f880bc35718",
+    "abi": "core",
+    "features": [
+      "core-glb"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        0
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/core-glb-f64-global-scale.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "provenance": {
+      "feature": "core-glb",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/core-glb-f64-global-scale.wat",
+        "sourceSha256": "72fbba352e50577ef4b15e185a230dae0de3cbaa70c6e94854dcd5a60da97649",
+        "artifact": "artifacts/core-glb-f64-global-scale.wasm",
+        "sha256": "e096b7cbf48e794f5143e08ad4507f4443d796b8a0c3311cef712f880bc35718",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/core-glb-f64-global-scale.wat",
+            "-o",
+            "artifacts/core-glb-f64-global-scale.wasm"
+          ]
+        ],
+        "feature": "core-glb",
+        "variant": "f64-global-scale",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/core-glb/f64-global-scale/64",
+    "family": "features",
+    "artifact": "artifacts/core-glb-f64-global-scale.wasm",
+    "sha256": "e096b7cbf48e794f5143e08ad4507f4443d796b8a0c3311cef712f880bc35718",
+    "abi": "core",
+    "features": [
+      "core-glb"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        4032
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/core-glb-f64-global-scale.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "provenance": {
+      "feature": "core-glb",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/core-glb-f64-global-scale.wat",
+        "sourceSha256": "72fbba352e50577ef4b15e185a230dae0de3cbaa70c6e94854dcd5a60da97649",
+        "artifact": "artifacts/core-glb-f64-global-scale.wasm",
+        "sha256": "e096b7cbf48e794f5143e08ad4507f4443d796b8a0c3311cef712f880bc35718",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/core-glb-f64-global-scale.wat",
+            "-o",
+            "artifacts/core-glb-f64-global-scale.wasm"
+          ]
+        ],
+        "feature": "core-glb",
+        "variant": "f64-global-scale",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/core-glb/f64-global-scale/4096",
+    "family": "features",
+    "artifact": "artifacts/core-glb-f64-global-scale.wasm",
+    "sha256": "e096b7cbf48e794f5143e08ad4507f4443d796b8a0c3311cef712f880bc35718",
+    "abi": "core",
+    "features": [
+      "core-glb"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        16773120
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/core-glb-f64-global-scale.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "provenance": {
+      "feature": "core-glb",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/core-glb-f64-global-scale.wat",
+        "sourceSha256": "72fbba352e50577ef4b15e185a230dae0de3cbaa70c6e94854dcd5a60da97649",
+        "artifact": "artifacts/core-glb-f64-global-scale.wasm",
+        "sha256": "e096b7cbf48e794f5143e08ad4507f4443d796b8a0c3311cef712f880bc35718",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/core-glb-f64-global-scale.wat",
+            "-o",
+            "artifacts/core-glb-f64-global-scale.wasm"
+          ]
+        ],
+        "feature": "core-glb",
+        "variant": "f64-global-scale",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/core-glb/global-swap/1",
+    "family": "features",
+    "artifact": "artifacts/core-glb-global-swap.wasm",
+    "sha256": "5134bb4eb96804349b4fa5c2ccb46422670a913b922674b0e22c82993b909e3b",
+    "abi": "core",
+    "features": [
+      "core-glb"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        3
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/core-glb-global-swap.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "provenance": {
+      "feature": "core-glb",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/core-glb-global-swap.wat",
+        "sourceSha256": "b66848e650fc8eb09eddcc7228e2f254ecc1b542353b42085623190d7fcd1a28",
+        "artifact": "artifacts/core-glb-global-swap.wasm",
+        "sha256": "5134bb4eb96804349b4fa5c2ccb46422670a913b922674b0e22c82993b909e3b",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/core-glb-global-swap.wat",
+            "-o",
+            "artifacts/core-glb-global-swap.wasm"
+          ]
+        ],
+        "feature": "core-glb",
+        "variant": "global-swap",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/core-glb/global-swap/64",
+    "family": "features",
+    "artifact": "artifacts/core-glb-global-swap.wasm",
+    "sha256": "5134bb4eb96804349b4fa5c2ccb46422670a913b922674b0e22c82993b909e3b",
+    "abi": "core",
+    "features": [
+      "core-glb"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        192
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/core-glb-global-swap.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "provenance": {
+      "feature": "core-glb",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/core-glb-global-swap.wat",
+        "sourceSha256": "b66848e650fc8eb09eddcc7228e2f254ecc1b542353b42085623190d7fcd1a28",
+        "artifact": "artifacts/core-glb-global-swap.wasm",
+        "sha256": "5134bb4eb96804349b4fa5c2ccb46422670a913b922674b0e22c82993b909e3b",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/core-glb-global-swap.wat",
+            "-o",
+            "artifacts/core-glb-global-swap.wasm"
+          ]
+        ],
+        "feature": "core-glb",
+        "variant": "global-swap",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/core-glb/global-swap/4096",
+    "family": "features",
+    "artifact": "artifacts/core-glb-global-swap.wasm",
+    "sha256": "5134bb4eb96804349b4fa5c2ccb46422670a913b922674b0e22c82993b909e3b",
+    "abi": "core",
+    "features": [
+      "core-glb"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        12288
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/core-glb-global-swap.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "provenance": {
+      "feature": "core-glb",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/core-glb-global-swap.wat",
+        "sourceSha256": "b66848e650fc8eb09eddcc7228e2f254ecc1b542353b42085623190d7fcd1a28",
+        "artifact": "artifacts/core-glb-global-swap.wasm",
+        "sha256": "5134bb4eb96804349b4fa5c2ccb46422670a913b922674b0e22c82993b909e3b",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/core-glb-global-swap.wat",
+            "-o",
+            "artifacts/core-glb-global-swap.wasm"
+          ]
+        ],
+        "feature": "core-glb",
+        "variant": "global-swap",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/core-glb/dependent-read-write/1",
+    "family": "features",
+    "artifact": "artifacts/core-glb-dependent-read-write.wasm",
+    "sha256": "b662f57430eeb0346d86aea9a5d84a49f403c7af7fb3ef6bdd5a54704c3164ea",
+    "abi": "core",
+    "features": [
+      "core-glb"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        3337565986
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/core-glb-dependent-read-write.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "provenance": {
+      "feature": "core-glb",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/core-glb-dependent-read-write.wat",
+        "sourceSha256": "37d64536158af2972041789303fd4a42d5439b6447c258f4fd9bba9e66ade0a7",
+        "artifact": "artifacts/core-glb-dependent-read-write.wasm",
+        "sha256": "b662f57430eeb0346d86aea9a5d84a49f403c7af7fb3ef6bdd5a54704c3164ea",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/core-glb-dependent-read-write.wat",
+            "-o",
+            "artifacts/core-glb-dependent-read-write.wasm"
+          ]
+        ],
+        "feature": "core-glb",
+        "variant": "dependent-read-write",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/core-glb/dependent-read-write/64",
+    "family": "features",
+    "artifact": "artifacts/core-glb-dependent-read-write.wasm",
+    "sha256": "b662f57430eeb0346d86aea9a5d84a49f403c7af7fb3ef6bdd5a54704c3164ea",
+    "abi": "core",
+    "features": [
+      "core-glb"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        111242806
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/core-glb-dependent-read-write.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "provenance": {
+      "feature": "core-glb",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/core-glb-dependent-read-write.wat",
+        "sourceSha256": "37d64536158af2972041789303fd4a42d5439b6447c258f4fd9bba9e66ade0a7",
+        "artifact": "artifacts/core-glb-dependent-read-write.wasm",
+        "sha256": "b662f57430eeb0346d86aea9a5d84a49f403c7af7fb3ef6bdd5a54704c3164ea",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/core-glb-dependent-read-write.wat",
+            "-o",
+            "artifacts/core-glb-dependent-read-write.wasm"
+          ]
+        ],
+        "feature": "core-glb",
+        "variant": "dependent-read-write",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/core-glb/dependent-read-write/4096",
+    "family": "features",
+    "artifact": "artifacts/core-glb-dependent-read-write.wasm",
+    "sha256": "b662f57430eeb0346d86aea9a5d84a49f403c7af7fb3ef6bdd5a54704c3164ea",
+    "abi": "core",
+    "features": [
+      "core-glb"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        3856199905
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/core-glb-dependent-read-write.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "provenance": {
+      "feature": "core-glb",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/core-glb-dependent-read-write.wat",
+        "sourceSha256": "37d64536158af2972041789303fd4a42d5439b6447c258f4fd9bba9e66ade0a7",
+        "artifact": "artifacts/core-glb-dependent-read-write.wasm",
+        "sha256": "b662f57430eeb0346d86aea9a5d84a49f403c7af7fb3ef6bdd5a54704c3164ea",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/core-glb-dependent-read-write.wat",
+            "-o",
+            "artifacts/core-glb-dependent-read-write.wasm"
+          ]
+        ],
+        "feature": "core-glb",
+        "variant": "dependent-read-write",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/core-glb/i64-carry-overflow/1",
+    "family": "features",
+    "artifact": "artifacts/core-glb-i64-carry-overflow.wasm",
+    "sha256": "ca1f631a301b3b0674caaee5e0d54d25e7ee5bac852c8c9e652e3af413ae49c4",
+    "abi": "core",
+    "features": [
+      "core-glb"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        0
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/core-glb-i64-carry-overflow.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "provenance": {
+      "feature": "core-glb",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/core-glb-i64-carry-overflow.wat",
+        "sourceSha256": "7822cf18fdb4c54fa84c93229d8a9dbcff6f19e18c577581abf20533b19a742d",
+        "artifact": "artifacts/core-glb-i64-carry-overflow.wasm",
+        "sha256": "ca1f631a301b3b0674caaee5e0d54d25e7ee5bac852c8c9e652e3af413ae49c4",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/core-glb-i64-carry-overflow.wat",
+            "-o",
+            "artifacts/core-glb-i64-carry-overflow.wasm"
+          ]
+        ],
+        "feature": "core-glb",
+        "variant": "i64-carry-overflow",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/core-glb/i64-carry-overflow/64",
+    "family": "features",
+    "artifact": "artifacts/core-glb-i64-carry-overflow.wasm",
+    "sha256": "ca1f631a301b3b0674caaee5e0d54d25e7ee5bac852c8c9e652e3af413ae49c4",
+    "abi": "core",
+    "features": [
+      "core-glb"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        33920
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/core-glb-i64-carry-overflow.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "provenance": {
+      "feature": "core-glb",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/core-glb-i64-carry-overflow.wat",
+        "sourceSha256": "7822cf18fdb4c54fa84c93229d8a9dbcff6f19e18c577581abf20533b19a742d",
+        "artifact": "artifacts/core-glb-i64-carry-overflow.wasm",
+        "sha256": "ca1f631a301b3b0674caaee5e0d54d25e7ee5bac852c8c9e652e3af413ae49c4",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/core-glb-i64-carry-overflow.wat",
+            "-o",
+            "artifacts/core-glb-i64-carry-overflow.wasm"
+          ]
+        ],
+        "feature": "core-glb",
+        "variant": "i64-carry-overflow",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/core-glb/i64-carry-overflow/4096",
+    "family": "features",
+    "artifact": "artifacts/core-glb-i64-carry-overflow.wasm",
+    "sha256": "ca1f631a301b3b0674caaee5e0d54d25e7ee5bac852c8c9e652e3af413ae49c4",
+    "abi": "core",
+    "features": [
+      "core-glb"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        142090240
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/core-glb-i64-carry-overflow.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "provenance": {
+      "feature": "core-glb",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/core-glb-i64-carry-overflow.wat",
+        "sourceSha256": "7822cf18fdb4c54fa84c93229d8a9dbcff6f19e18c577581abf20533b19a742d",
+        "artifact": "artifacts/core-glb-i64-carry-overflow.wasm",
+        "sha256": "ca1f631a301b3b0674caaee5e0d54d25e7ee5bac852c8c9e652e3af413ae49c4",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/core-glb-i64-carry-overflow.wat",
+            "-o",
+            "artifacts/core-glb-i64-carry-overflow.wasm"
+          ]
+        ],
+        "feature": "core-glb",
+        "variant": "i64-carry-overflow",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/core-glb/f32-rounding-state/1",
+    "family": "features",
+    "artifact": "artifacts/core-glb-f32-rounding-state.wasm",
+    "sha256": "6b7c2a8297fa072de051ad20b039d339587f3cb645c34f7eb3ae267b3950c51c",
+    "abi": "core",
+    "features": [
+      "core-glb"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        1266679808
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/core-glb-f32-rounding-state.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "provenance": {
+      "feature": "core-glb",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/core-glb-f32-rounding-state.wat",
+        "sourceSha256": "a5ebb903c274859fec7936ecfb299388fe4f672d620f999c63ff3b9709ed2060",
+        "artifact": "artifacts/core-glb-f32-rounding-state.wasm",
+        "sha256": "6b7c2a8297fa072de051ad20b039d339587f3cb645c34f7eb3ae267b3950c51c",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/core-glb-f32-rounding-state.wat",
+            "-o",
+            "artifacts/core-glb-f32-rounding-state.wasm"
+          ]
+        ],
+        "feature": "core-glb",
+        "variant": "f32-rounding-state",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/core-glb/f32-rounding-state/64",
+    "family": "features",
+    "artifact": "artifacts/core-glb-f32-rounding-state.wasm",
+    "sha256": "6b7c2a8297fa072de051ad20b039d339587f3cb645c34f7eb3ae267b3950c51c",
+    "abi": "core",
+    "features": [
+      "core-glb"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        3758098432
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/core-glb-f32-rounding-state.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "provenance": {
+      "feature": "core-glb",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/core-glb-f32-rounding-state.wat",
+        "sourceSha256": "a5ebb903c274859fec7936ecfb299388fe4f672d620f999c63ff3b9709ed2060",
+        "artifact": "artifacts/core-glb-f32-rounding-state.wasm",
+        "sha256": "6b7c2a8297fa072de051ad20b039d339587f3cb645c34f7eb3ae267b3950c51c",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/core-glb-f32-rounding-state.wat",
+            "-o",
+            "artifacts/core-glb-f32-rounding-state.wasm"
+          ]
+        ],
+        "feature": "core-glb",
+        "variant": "f32-rounding-state",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/core-glb/f32-rounding-state/4096",
+    "family": "features",
+    "artifact": "artifacts/core-glb-f32-rounding-state.wasm",
+    "sha256": "6b7c2a8297fa072de051ad20b039d339587f3cb645c34f7eb3ae267b3950c51c",
+    "abi": "core",
+    "features": [
+      "core-glb"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        8388608
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/core-glb-f32-rounding-state.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "provenance": {
+      "feature": "core-glb",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/core-glb-f32-rounding-state.wat",
+        "sourceSha256": "a5ebb903c274859fec7936ecfb299388fe4f672d620f999c63ff3b9709ed2060",
+        "artifact": "artifacts/core-glb-f32-rounding-state.wasm",
+        "sha256": "6b7c2a8297fa072de051ad20b039d339587f3cb645c34f7eb3ae267b3950c51c",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/core-glb-f32-rounding-state.wat",
+            "-o",
+            "artifacts/core-glb-f32-rounding-state.wasm"
+          ]
+        ],
+        "feature": "core-glb",
+        "variant": "f32-rounding-state",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/mutable-globals/exported-read/1",
+    "family": "features",
+    "artifact": "artifacts/mutable-globals-exported-read.wasm",
+    "sha256": "6eaf293605d8b9330cf821b86bca8d14c01835d62185955d4db843df02e3060a",
+    "abi": "core",
+    "features": [
+      "mutable-globals"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        41
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/mutable-globals-exported-read.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "provenance": {
+      "feature": "mutable-globals",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/mutable-globals-exported-read.wat",
+        "sourceSha256": "0c46511e089bde610dd4f68dabce6ed4006c6dbf5b7bf0e7bed774c014373632",
+        "artifact": "artifacts/mutable-globals-exported-read.wasm",
+        "sha256": "6eaf293605d8b9330cf821b86bca8d14c01835d62185955d4db843df02e3060a",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/mutable-globals-exported-read.wat",
+            "-o",
+            "artifacts/mutable-globals-exported-read.wasm"
+          ]
+        ],
+        "feature": "mutable-globals",
+        "variant": "exported-read",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/mutable-globals/exported-read/64",
+    "family": "features",
+    "artifact": "artifacts/mutable-globals-exported-read.wasm",
+    "sha256": "6eaf293605d8b9330cf821b86bca8d14c01835d62185955d4db843df02e3060a",
+    "abi": "core",
+    "features": [
+      "mutable-globals"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        2624
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/mutable-globals-exported-read.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "provenance": {
+      "feature": "mutable-globals",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/mutable-globals-exported-read.wat",
+        "sourceSha256": "0c46511e089bde610dd4f68dabce6ed4006c6dbf5b7bf0e7bed774c014373632",
+        "artifact": "artifacts/mutable-globals-exported-read.wasm",
+        "sha256": "6eaf293605d8b9330cf821b86bca8d14c01835d62185955d4db843df02e3060a",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/mutable-globals-exported-read.wat",
+            "-o",
+            "artifacts/mutable-globals-exported-read.wasm"
+          ]
+        ],
+        "feature": "mutable-globals",
+        "variant": "exported-read",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/mutable-globals/exported-read/4096",
+    "family": "features",
+    "artifact": "artifacts/mutable-globals-exported-read.wasm",
+    "sha256": "6eaf293605d8b9330cf821b86bca8d14c01835d62185955d4db843df02e3060a",
+    "abi": "core",
+    "features": [
+      "mutable-globals"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        167936
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/mutable-globals-exported-read.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "provenance": {
+      "feature": "mutable-globals",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/mutable-globals-exported-read.wat",
+        "sourceSha256": "0c46511e089bde610dd4f68dabce6ed4006c6dbf5b7bf0e7bed774c014373632",
+        "artifact": "artifacts/mutable-globals-exported-read.wasm",
+        "sha256": "6eaf293605d8b9330cf821b86bca8d14c01835d62185955d4db843df02e3060a",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/mutable-globals-exported-read.wat",
+            "-o",
+            "artifacts/mutable-globals-exported-read.wasm"
+          ]
+        ],
+        "feature": "mutable-globals",
+        "variant": "exported-read",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/mutable-globals/mutable-accumulate/1",
+    "family": "features",
+    "artifact": "artifacts/mutable-globals-mutable-accumulate.wasm",
+    "sha256": "db93c9b43ec97ea8153239ca4e806eb54307dc166f9928a11d050e3a2d6ab6f6",
+    "abi": "core",
+    "features": [
+      "mutable-globals"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        0
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/mutable-globals-mutable-accumulate.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "provenance": {
+      "feature": "mutable-globals",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/mutable-globals-mutable-accumulate.wat",
+        "sourceSha256": "40bbaf80c081f5892fcda547eabd0f1ccc252f2d7d07bd2ee5dfc080bc086e6a",
+        "artifact": "artifacts/mutable-globals-mutable-accumulate.wasm",
+        "sha256": "db93c9b43ec97ea8153239ca4e806eb54307dc166f9928a11d050e3a2d6ab6f6",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/mutable-globals-mutable-accumulate.wat",
+            "-o",
+            "artifacts/mutable-globals-mutable-accumulate.wasm"
+          ]
+        ],
+        "feature": "mutable-globals",
+        "variant": "mutable-accumulate",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/mutable-globals/mutable-accumulate/64",
+    "family": "features",
+    "artifact": "artifacts/mutable-globals-mutable-accumulate.wasm",
+    "sha256": "db93c9b43ec97ea8153239ca4e806eb54307dc166f9928a11d050e3a2d6ab6f6",
+    "abi": "core",
+    "features": [
+      "mutable-globals"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        43680
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/mutable-globals-mutable-accumulate.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "provenance": {
+      "feature": "mutable-globals",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/mutable-globals-mutable-accumulate.wat",
+        "sourceSha256": "40bbaf80c081f5892fcda547eabd0f1ccc252f2d7d07bd2ee5dfc080bc086e6a",
+        "artifact": "artifacts/mutable-globals-mutable-accumulate.wasm",
+        "sha256": "db93c9b43ec97ea8153239ca4e806eb54307dc166f9928a11d050e3a2d6ab6f6",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/mutable-globals-mutable-accumulate.wat",
+            "-o",
+            "artifacts/mutable-globals-mutable-accumulate.wasm"
+          ]
+        ],
+        "feature": "mutable-globals",
+        "variant": "mutable-accumulate",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/mutable-globals/mutable-accumulate/4096",
+    "family": "features",
+    "artifact": "artifacts/mutable-globals-mutable-accumulate.wasm",
+    "sha256": "db93c9b43ec97ea8153239ca4e806eb54307dc166f9928a11d050e3a2d6ab6f6",
+    "abi": "core",
+    "features": [
+      "mutable-globals"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        2863310848
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/mutable-globals-mutable-accumulate.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "provenance": {
+      "feature": "mutable-globals",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/mutable-globals-mutable-accumulate.wat",
+        "sourceSha256": "40bbaf80c081f5892fcda547eabd0f1ccc252f2d7d07bd2ee5dfc080bc086e6a",
+        "artifact": "artifacts/mutable-globals-mutable-accumulate.wasm",
+        "sha256": "db93c9b43ec97ea8153239ca4e806eb54307dc166f9928a11d050e3a2d6ab6f6",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/mutable-globals-mutable-accumulate.wat",
+            "-o",
+            "artifacts/mutable-globals-mutable-accumulate.wasm"
+          ]
+        ],
+        "feature": "mutable-globals",
+        "variant": "mutable-accumulate",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/mutable-globals/i64-global-split/1",
+    "family": "features",
+    "artifact": "artifacts/mutable-globals-i64-global-split.wasm",
+    "sha256": "5688c51ede1876683f8c89b40e03f3c900546b992fcd6190fe68a8aee49b265a",
+    "abi": "core",
+    "features": [
+      "mutable-globals"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        0
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/mutable-globals-i64-global-split.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "provenance": {
+      "feature": "mutable-globals",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/mutable-globals-i64-global-split.wat",
+        "sourceSha256": "8c58a2783902395013cc3471683702ef87ed6231e8df5860345bbd52b2df8df8",
+        "artifact": "artifacts/mutable-globals-i64-global-split.wasm",
+        "sha256": "5688c51ede1876683f8c89b40e03f3c900546b992fcd6190fe68a8aee49b265a",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/mutable-globals-i64-global-split.wat",
+            "-o",
+            "artifacts/mutable-globals-i64-global-split.wasm"
+          ]
+        ],
+        "feature": "mutable-globals",
+        "variant": "i64-global-split",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/mutable-globals/i64-global-split/64",
+    "family": "features",
+    "artifact": "artifacts/mutable-globals-i64-global-split.wasm",
+    "sha256": "5688c51ede1876683f8c89b40e03f3c900546b992fcd6190fe68a8aee49b265a",
+    "abi": "core",
+    "features": [
+      "mutable-globals"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        4032
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/mutable-globals-i64-global-split.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "provenance": {
+      "feature": "mutable-globals",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/mutable-globals-i64-global-split.wat",
+        "sourceSha256": "8c58a2783902395013cc3471683702ef87ed6231e8df5860345bbd52b2df8df8",
+        "artifact": "artifacts/mutable-globals-i64-global-split.wasm",
+        "sha256": "5688c51ede1876683f8c89b40e03f3c900546b992fcd6190fe68a8aee49b265a",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/mutable-globals-i64-global-split.wat",
+            "-o",
+            "artifacts/mutable-globals-i64-global-split.wasm"
+          ]
+        ],
+        "feature": "mutable-globals",
+        "variant": "i64-global-split",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/mutable-globals/i64-global-split/4096",
+    "family": "features",
+    "artifact": "artifacts/mutable-globals-i64-global-split.wasm",
+    "sha256": "5688c51ede1876683f8c89b40e03f3c900546b992fcd6190fe68a8aee49b265a",
+    "abi": "core",
+    "features": [
+      "mutable-globals"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        16773120
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/mutable-globals-i64-global-split.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "provenance": {
+      "feature": "mutable-globals",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/mutable-globals-i64-global-split.wat",
+        "sourceSha256": "8c58a2783902395013cc3471683702ef87ed6231e8df5860345bbd52b2df8df8",
+        "artifact": "artifacts/mutable-globals-i64-global-split.wasm",
+        "sha256": "5688c51ede1876683f8c89b40e03f3c900546b992fcd6190fe68a8aee49b265a",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/mutable-globals-i64-global-split.wat",
+            "-o",
+            "artifacts/mutable-globals-i64-global-split.wasm"
+          ]
+        ],
+        "feature": "mutable-globals",
+        "variant": "i64-global-split",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/mutable-globals/f64-global-scale/1",
+    "family": "features",
+    "artifact": "artifacts/mutable-globals-f64-global-scale.wasm",
+    "sha256": "cda22f2d774b4253952e3c8f5c92277d6950caf4602a433b6771196869373861",
+    "abi": "core",
+    "features": [
+      "mutable-globals"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        0
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/mutable-globals-f64-global-scale.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "provenance": {
+      "feature": "mutable-globals",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/mutable-globals-f64-global-scale.wat",
+        "sourceSha256": "7032fef85d9ade16f8942eef9aa26420cd7bdcdcb0e29cc412603762e519b077",
+        "artifact": "artifacts/mutable-globals-f64-global-scale.wasm",
+        "sha256": "cda22f2d774b4253952e3c8f5c92277d6950caf4602a433b6771196869373861",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/mutable-globals-f64-global-scale.wat",
+            "-o",
+            "artifacts/mutable-globals-f64-global-scale.wasm"
+          ]
+        ],
+        "feature": "mutable-globals",
+        "variant": "f64-global-scale",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/mutable-globals/f64-global-scale/64",
+    "family": "features",
+    "artifact": "artifacts/mutable-globals-f64-global-scale.wasm",
+    "sha256": "cda22f2d774b4253952e3c8f5c92277d6950caf4602a433b6771196869373861",
+    "abi": "core",
+    "features": [
+      "mutable-globals"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        4032
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/mutable-globals-f64-global-scale.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "provenance": {
+      "feature": "mutable-globals",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/mutable-globals-f64-global-scale.wat",
+        "sourceSha256": "7032fef85d9ade16f8942eef9aa26420cd7bdcdcb0e29cc412603762e519b077",
+        "artifact": "artifacts/mutable-globals-f64-global-scale.wasm",
+        "sha256": "cda22f2d774b4253952e3c8f5c92277d6950caf4602a433b6771196869373861",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/mutable-globals-f64-global-scale.wat",
+            "-o",
+            "artifacts/mutable-globals-f64-global-scale.wasm"
+          ]
+        ],
+        "feature": "mutable-globals",
+        "variant": "f64-global-scale",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/mutable-globals/f64-global-scale/4096",
+    "family": "features",
+    "artifact": "artifacts/mutable-globals-f64-global-scale.wasm",
+    "sha256": "cda22f2d774b4253952e3c8f5c92277d6950caf4602a433b6771196869373861",
+    "abi": "core",
+    "features": [
+      "mutable-globals"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        16773120
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/mutable-globals-f64-global-scale.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "provenance": {
+      "feature": "mutable-globals",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/mutable-globals-f64-global-scale.wat",
+        "sourceSha256": "7032fef85d9ade16f8942eef9aa26420cd7bdcdcb0e29cc412603762e519b077",
+        "artifact": "artifacts/mutable-globals-f64-global-scale.wasm",
+        "sha256": "cda22f2d774b4253952e3c8f5c92277d6950caf4602a433b6771196869373861",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/mutable-globals-f64-global-scale.wat",
+            "-o",
+            "artifacts/mutable-globals-f64-global-scale.wasm"
+          ]
+        ],
+        "feature": "mutable-globals",
+        "variant": "f64-global-scale",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/mutable-globals/global-swap/1",
+    "family": "features",
+    "artifact": "artifacts/mutable-globals-global-swap.wasm",
+    "sha256": "b6b0896859e2ddd84cf5b822859d4734af4b5561b12f4a63ccae580677d5ddc2",
+    "abi": "core",
+    "features": [
+      "mutable-globals"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        3
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/mutable-globals-global-swap.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "provenance": {
+      "feature": "mutable-globals",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/mutable-globals-global-swap.wat",
+        "sourceSha256": "8d3d6499bc6e6f1bc2f75923adaab1efcd3d168f649f1e8c092f9f4005ce396f",
+        "artifact": "artifacts/mutable-globals-global-swap.wasm",
+        "sha256": "b6b0896859e2ddd84cf5b822859d4734af4b5561b12f4a63ccae580677d5ddc2",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/mutable-globals-global-swap.wat",
+            "-o",
+            "artifacts/mutable-globals-global-swap.wasm"
+          ]
+        ],
+        "feature": "mutable-globals",
+        "variant": "global-swap",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/mutable-globals/global-swap/64",
+    "family": "features",
+    "artifact": "artifacts/mutable-globals-global-swap.wasm",
+    "sha256": "b6b0896859e2ddd84cf5b822859d4734af4b5561b12f4a63ccae580677d5ddc2",
+    "abi": "core",
+    "features": [
+      "mutable-globals"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        192
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/mutable-globals-global-swap.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "provenance": {
+      "feature": "mutable-globals",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/mutable-globals-global-swap.wat",
+        "sourceSha256": "8d3d6499bc6e6f1bc2f75923adaab1efcd3d168f649f1e8c092f9f4005ce396f",
+        "artifact": "artifacts/mutable-globals-global-swap.wasm",
+        "sha256": "b6b0896859e2ddd84cf5b822859d4734af4b5561b12f4a63ccae580677d5ddc2",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/mutable-globals-global-swap.wat",
+            "-o",
+            "artifacts/mutable-globals-global-swap.wasm"
+          ]
+        ],
+        "feature": "mutable-globals",
+        "variant": "global-swap",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/mutable-globals/global-swap/4096",
+    "family": "features",
+    "artifact": "artifacts/mutable-globals-global-swap.wasm",
+    "sha256": "b6b0896859e2ddd84cf5b822859d4734af4b5561b12f4a63ccae580677d5ddc2",
+    "abi": "core",
+    "features": [
+      "mutable-globals"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        12288
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/mutable-globals-global-swap.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "provenance": {
+      "feature": "mutable-globals",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/mutable-globals-global-swap.wat",
+        "sourceSha256": "8d3d6499bc6e6f1bc2f75923adaab1efcd3d168f649f1e8c092f9f4005ce396f",
+        "artifact": "artifacts/mutable-globals-global-swap.wasm",
+        "sha256": "b6b0896859e2ddd84cf5b822859d4734af4b5561b12f4a63ccae580677d5ddc2",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/mutable-globals-global-swap.wat",
+            "-o",
+            "artifacts/mutable-globals-global-swap.wasm"
+          ]
+        ],
+        "feature": "mutable-globals",
+        "variant": "global-swap",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/mutable-globals/dependent-read-write/1",
+    "family": "features",
+    "artifact": "artifacts/mutable-globals-dependent-read-write.wasm",
+    "sha256": "345f8ec9f0295ee0c639e7685e9016bbb2f9bc4bd6466342f4ebb5a83d9e2600",
+    "abi": "core",
+    "features": [
+      "mutable-globals"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        3337565986
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/mutable-globals-dependent-read-write.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "provenance": {
+      "feature": "mutable-globals",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/mutable-globals-dependent-read-write.wat",
+        "sourceSha256": "20bcc84cedffb0fea68f2733edf1311708353a702060818f7d5da1f2e6492e3a",
+        "artifact": "artifacts/mutable-globals-dependent-read-write.wasm",
+        "sha256": "345f8ec9f0295ee0c639e7685e9016bbb2f9bc4bd6466342f4ebb5a83d9e2600",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/mutable-globals-dependent-read-write.wat",
+            "-o",
+            "artifacts/mutable-globals-dependent-read-write.wasm"
+          ]
+        ],
+        "feature": "mutable-globals",
+        "variant": "dependent-read-write",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/mutable-globals/dependent-read-write/64",
+    "family": "features",
+    "artifact": "artifacts/mutable-globals-dependent-read-write.wasm",
+    "sha256": "345f8ec9f0295ee0c639e7685e9016bbb2f9bc4bd6466342f4ebb5a83d9e2600",
+    "abi": "core",
+    "features": [
+      "mutable-globals"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        111242806
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/mutable-globals-dependent-read-write.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "provenance": {
+      "feature": "mutable-globals",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/mutable-globals-dependent-read-write.wat",
+        "sourceSha256": "20bcc84cedffb0fea68f2733edf1311708353a702060818f7d5da1f2e6492e3a",
+        "artifact": "artifacts/mutable-globals-dependent-read-write.wasm",
+        "sha256": "345f8ec9f0295ee0c639e7685e9016bbb2f9bc4bd6466342f4ebb5a83d9e2600",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/mutable-globals-dependent-read-write.wat",
+            "-o",
+            "artifacts/mutable-globals-dependent-read-write.wasm"
+          ]
+        ],
+        "feature": "mutable-globals",
+        "variant": "dependent-read-write",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/mutable-globals/dependent-read-write/4096",
+    "family": "features",
+    "artifact": "artifacts/mutable-globals-dependent-read-write.wasm",
+    "sha256": "345f8ec9f0295ee0c639e7685e9016bbb2f9bc4bd6466342f4ebb5a83d9e2600",
+    "abi": "core",
+    "features": [
+      "mutable-globals"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        3856199905
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/mutable-globals-dependent-read-write.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "provenance": {
+      "feature": "mutable-globals",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/mutable-globals-dependent-read-write.wat",
+        "sourceSha256": "20bcc84cedffb0fea68f2733edf1311708353a702060818f7d5da1f2e6492e3a",
+        "artifact": "artifacts/mutable-globals-dependent-read-write.wasm",
+        "sha256": "345f8ec9f0295ee0c639e7685e9016bbb2f9bc4bd6466342f4ebb5a83d9e2600",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/mutable-globals-dependent-read-write.wat",
+            "-o",
+            "artifacts/mutable-globals-dependent-read-write.wasm"
+          ]
+        ],
+        "feature": "mutable-globals",
+        "variant": "dependent-read-write",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/mutable-globals/i64-carry-overflow/1",
+    "family": "features",
+    "artifact": "artifacts/mutable-globals-i64-carry-overflow.wasm",
+    "sha256": "be318eab568a24cb4293a95187c88c82a147842ee321a0c3f184e9b9252ceb99",
+    "abi": "core",
+    "features": [
+      "mutable-globals"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        0
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/mutable-globals-i64-carry-overflow.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "provenance": {
+      "feature": "mutable-globals",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/mutable-globals-i64-carry-overflow.wat",
+        "sourceSha256": "748fa534078b0ba2e9d4b92fac339c3f687ef8d86a1a1bee6c63ee2ededbe73d",
+        "artifact": "artifacts/mutable-globals-i64-carry-overflow.wasm",
+        "sha256": "be318eab568a24cb4293a95187c88c82a147842ee321a0c3f184e9b9252ceb99",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/mutable-globals-i64-carry-overflow.wat",
+            "-o",
+            "artifacts/mutable-globals-i64-carry-overflow.wasm"
+          ]
+        ],
+        "feature": "mutable-globals",
+        "variant": "i64-carry-overflow",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/mutable-globals/i64-carry-overflow/64",
+    "family": "features",
+    "artifact": "artifacts/mutable-globals-i64-carry-overflow.wasm",
+    "sha256": "be318eab568a24cb4293a95187c88c82a147842ee321a0c3f184e9b9252ceb99",
+    "abi": "core",
+    "features": [
+      "mutable-globals"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        33920
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/mutable-globals-i64-carry-overflow.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "provenance": {
+      "feature": "mutable-globals",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/mutable-globals-i64-carry-overflow.wat",
+        "sourceSha256": "748fa534078b0ba2e9d4b92fac339c3f687ef8d86a1a1bee6c63ee2ededbe73d",
+        "artifact": "artifacts/mutable-globals-i64-carry-overflow.wasm",
+        "sha256": "be318eab568a24cb4293a95187c88c82a147842ee321a0c3f184e9b9252ceb99",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/mutable-globals-i64-carry-overflow.wat",
+            "-o",
+            "artifacts/mutable-globals-i64-carry-overflow.wasm"
+          ]
+        ],
+        "feature": "mutable-globals",
+        "variant": "i64-carry-overflow",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/mutable-globals/i64-carry-overflow/4096",
+    "family": "features",
+    "artifact": "artifacts/mutable-globals-i64-carry-overflow.wasm",
+    "sha256": "be318eab568a24cb4293a95187c88c82a147842ee321a0c3f184e9b9252ceb99",
+    "abi": "core",
+    "features": [
+      "mutable-globals"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        142090240
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/mutable-globals-i64-carry-overflow.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "provenance": {
+      "feature": "mutable-globals",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/mutable-globals-i64-carry-overflow.wat",
+        "sourceSha256": "748fa534078b0ba2e9d4b92fac339c3f687ef8d86a1a1bee6c63ee2ededbe73d",
+        "artifact": "artifacts/mutable-globals-i64-carry-overflow.wasm",
+        "sha256": "be318eab568a24cb4293a95187c88c82a147842ee321a0c3f184e9b9252ceb99",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/mutable-globals-i64-carry-overflow.wat",
+            "-o",
+            "artifacts/mutable-globals-i64-carry-overflow.wasm"
+          ]
+        ],
+        "feature": "mutable-globals",
+        "variant": "i64-carry-overflow",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/mutable-globals/f32-rounding-state/1",
+    "family": "features",
+    "artifact": "artifacts/mutable-globals-f32-rounding-state.wasm",
+    "sha256": "7f8a823a061b795f2489ed1eeecc197cb3216d9907364b5ae180303951fe38dc",
+    "abi": "core",
+    "features": [
+      "mutable-globals"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        1266679808
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/mutable-globals-f32-rounding-state.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "provenance": {
+      "feature": "mutable-globals",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/mutable-globals-f32-rounding-state.wat",
+        "sourceSha256": "c19cd09d0a3d4fdbcef9cf9de1dd15278526f38094c654c6d420284853ebad1a",
+        "artifact": "artifacts/mutable-globals-f32-rounding-state.wasm",
+        "sha256": "7f8a823a061b795f2489ed1eeecc197cb3216d9907364b5ae180303951fe38dc",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/mutable-globals-f32-rounding-state.wat",
+            "-o",
+            "artifacts/mutable-globals-f32-rounding-state.wasm"
+          ]
+        ],
+        "feature": "mutable-globals",
+        "variant": "f32-rounding-state",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/mutable-globals/f32-rounding-state/64",
+    "family": "features",
+    "artifact": "artifacts/mutable-globals-f32-rounding-state.wasm",
+    "sha256": "7f8a823a061b795f2489ed1eeecc197cb3216d9907364b5ae180303951fe38dc",
+    "abi": "core",
+    "features": [
+      "mutable-globals"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        3758098432
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/mutable-globals-f32-rounding-state.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "provenance": {
+      "feature": "mutable-globals",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/mutable-globals-f32-rounding-state.wat",
+        "sourceSha256": "c19cd09d0a3d4fdbcef9cf9de1dd15278526f38094c654c6d420284853ebad1a",
+        "artifact": "artifacts/mutable-globals-f32-rounding-state.wasm",
+        "sha256": "7f8a823a061b795f2489ed1eeecc197cb3216d9907364b5ae180303951fe38dc",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/mutable-globals-f32-rounding-state.wat",
+            "-o",
+            "artifacts/mutable-globals-f32-rounding-state.wasm"
+          ]
+        ],
+        "feature": "mutable-globals",
+        "variant": "f32-rounding-state",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/mutable-globals/f32-rounding-state/4096",
+    "family": "features",
+    "artifact": "artifacts/mutable-globals-f32-rounding-state.wasm",
+    "sha256": "7f8a823a061b795f2489ed1eeecc197cb3216d9907364b5ae180303951fe38dc",
+    "abi": "core",
+    "features": [
+      "mutable-globals"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        8388608
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/mutable-globals-f32-rounding-state.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "provenance": {
+      "feature": "mutable-globals",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/mutable-globals-f32-rounding-state.wat",
+        "sourceSha256": "c19cd09d0a3d4fdbcef9cf9de1dd15278526f38094c654c6d420284853ebad1a",
+        "artifact": "artifacts/mutable-globals-f32-rounding-state.wasm",
+        "sha256": "7f8a823a061b795f2489ed1eeecc197cb3216d9907364b5ae180303951fe38dc",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/mutable-globals-f32-rounding-state.wat",
+            "-o",
+            "artifacts/mutable-globals-f32-rounding-state.wasm"
+          ]
+        ],
+        "feature": "mutable-globals",
+        "variant": "f32-rounding-state",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/jspi/suspend-every-call/1",
+    "family": "features",
+    "artifact": "artifacts/jspi-suspend-every-call.wasm",
+    "sha256": "9e7eff5139f11eaefd02c969a69ca0cd6acd79142a31b4ebcc173cfcebff7141",
+    "abi": "core",
+    "features": [
+      "jspi"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        1
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/jspi-suspend-every-call.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "host_profile": "jspi-v1",
+    "provenance": {
+      "feature": "jspi",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/jspi-suspend-every-call.wat",
+        "sourceSha256": "7ae79dec23821307a83aa430c1ace49fb585516fd93d1bd024c88f6b217b7147",
+        "artifact": "artifacts/jspi-suspend-every-call.wasm",
+        "sha256": "9e7eff5139f11eaefd02c969a69ca0cd6acd79142a31b4ebcc173cfcebff7141",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/jspi-suspend-every-call.wat",
+            "-o",
+            "artifacts/jspi-suspend-every-call.wasm"
+          ]
+        ],
+        "feature": "jspi",
+        "variant": "suspend-every-call",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/jspi/suspend-every-call/64",
+    "family": "features",
+    "artifact": "artifacts/jspi-suspend-every-call.wasm",
+    "sha256": "9e7eff5139f11eaefd02c969a69ca0cd6acd79142a31b4ebcc173cfcebff7141",
+    "abi": "core",
+    "features": [
+      "jspi"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        6112
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/jspi-suspend-every-call.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "host_profile": "jspi-v1",
+    "provenance": {
+      "feature": "jspi",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/jspi-suspend-every-call.wat",
+        "sourceSha256": "7ae79dec23821307a83aa430c1ace49fb585516fd93d1bd024c88f6b217b7147",
+        "artifact": "artifacts/jspi-suspend-every-call.wasm",
+        "sha256": "9e7eff5139f11eaefd02c969a69ca0cd6acd79142a31b4ebcc173cfcebff7141",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/jspi-suspend-every-call.wat",
+            "-o",
+            "artifacts/jspi-suspend-every-call.wasm"
+          ]
+        ],
+        "feature": "jspi",
+        "variant": "suspend-every-call",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/jspi/suspend-every-call/4096",
+    "family": "features",
+    "artifact": "artifacts/jspi-suspend-every-call.wasm",
+    "sha256": "9e7eff5139f11eaefd02c969a69ca0cd6acd79142a31b4ebcc173cfcebff7141",
+    "abi": "core",
+    "features": [
+      "jspi"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        25163776
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/jspi-suspend-every-call.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "host_profile": "jspi-v1",
+    "provenance": {
+      "feature": "jspi",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/jspi-suspend-every-call.wat",
+        "sourceSha256": "7ae79dec23821307a83aa430c1ace49fb585516fd93d1bd024c88f6b217b7147",
+        "artifact": "artifacts/jspi-suspend-every-call.wasm",
+        "sha256": "9e7eff5139f11eaefd02c969a69ca0cd6acd79142a31b4ebcc173cfcebff7141",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/jspi-suspend-every-call.wat",
+            "-o",
+            "artifacts/jspi-suspend-every-call.wasm"
+          ]
+        ],
+        "feature": "jspi",
+        "variant": "suspend-every-call",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/jspi/suspend-alternate/1",
+    "family": "features",
+    "artifact": "artifacts/jspi-suspend-alternate.wasm",
+    "sha256": "c000d575583bbe0a04b8b1df95fcdeda00fdecd0810ac5dbf1da9db133db34a6",
+    "abi": "core",
+    "features": [
+      "jspi"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        0
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/jspi-suspend-alternate.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "host_profile": "jspi-v1",
+    "provenance": {
+      "feature": "jspi",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/jspi-suspend-alternate.wat",
+        "sourceSha256": "acc808e7d35a37a91343d2a99423600f5fd55f06151ab240bf09484b39969e0e",
+        "artifact": "artifacts/jspi-suspend-alternate.wasm",
+        "sha256": "c000d575583bbe0a04b8b1df95fcdeda00fdecd0810ac5dbf1da9db133db34a6",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/jspi-suspend-alternate.wat",
+            "-o",
+            "artifacts/jspi-suspend-alternate.wasm"
+          ]
+        ],
+        "feature": "jspi",
+        "variant": "suspend-alternate",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/jspi/suspend-alternate/64",
+    "family": "features",
+    "artifact": "artifacts/jspi-suspend-alternate.wasm",
+    "sha256": "c000d575583bbe0a04b8b1df95fcdeda00fdecd0810ac5dbf1da9db133db34a6",
+    "abi": "core",
+    "features": [
+      "jspi"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        4096
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/jspi-suspend-alternate.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "host_profile": "jspi-v1",
+    "provenance": {
+      "feature": "jspi",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/jspi-suspend-alternate.wat",
+        "sourceSha256": "acc808e7d35a37a91343d2a99423600f5fd55f06151ab240bf09484b39969e0e",
+        "artifact": "artifacts/jspi-suspend-alternate.wasm",
+        "sha256": "c000d575583bbe0a04b8b1df95fcdeda00fdecd0810ac5dbf1da9db133db34a6",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/jspi-suspend-alternate.wat",
+            "-o",
+            "artifacts/jspi-suspend-alternate.wasm"
+          ]
+        ],
+        "feature": "jspi",
+        "variant": "suspend-alternate",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/jspi/suspend-alternate/4096",
+    "family": "features",
+    "artifact": "artifacts/jspi-suspend-alternate.wasm",
+    "sha256": "c000d575583bbe0a04b8b1df95fcdeda00fdecd0810ac5dbf1da9db133db34a6",
+    "abi": "core",
+    "features": [
+      "jspi"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        16777216
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/jspi-suspend-alternate.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "host_profile": "jspi-v1",
+    "provenance": {
+      "feature": "jspi",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/jspi-suspend-alternate.wat",
+        "sourceSha256": "acc808e7d35a37a91343d2a99423600f5fd55f06151ab240bf09484b39969e0e",
+        "artifact": "artifacts/jspi-suspend-alternate.wasm",
+        "sha256": "c000d575583bbe0a04b8b1df95fcdeda00fdecd0810ac5dbf1da9db133db34a6",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/jspi-suspend-alternate.wat",
+            "-o",
+            "artifacts/jspi-suspend-alternate.wasm"
+          ]
+        ],
+        "feature": "jspi",
+        "variant": "suspend-alternate",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/jspi/two-imports/1",
+    "family": "features",
+    "artifact": "artifacts/jspi-two-imports.wasm",
+    "sha256": "e82824a20b18df22c55f466729f0b76384e647a1090c168ecc03a23a7b8231cd",
+    "abi": "core",
+    "features": [
+      "jspi"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        1
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/jspi-two-imports.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "host_profile": "jspi-v1",
+    "provenance": {
+      "feature": "jspi",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/jspi-two-imports.wat",
+        "sourceSha256": "65fa2e388f0021d0dd9c942e904df369813f412f93ac26a809beb813b736cb59",
+        "artifact": "artifacts/jspi-two-imports.wasm",
+        "sha256": "e82824a20b18df22c55f466729f0b76384e647a1090c168ecc03a23a7b8231cd",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/jspi-two-imports.wat",
+            "-o",
+            "artifacts/jspi-two-imports.wasm"
+          ]
+        ],
+        "feature": "jspi",
+        "variant": "two-imports",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/jspi/two-imports/64",
+    "family": "features",
+    "artifact": "artifacts/jspi-two-imports.wasm",
+    "sha256": "e82824a20b18df22c55f466729f0b76384e647a1090c168ecc03a23a7b8231cd",
+    "abi": "core",
+    "features": [
+      "jspi"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        10144
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/jspi-two-imports.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "host_profile": "jspi-v1",
+    "provenance": {
+      "feature": "jspi",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/jspi-two-imports.wat",
+        "sourceSha256": "65fa2e388f0021d0dd9c942e904df369813f412f93ac26a809beb813b736cb59",
+        "artifact": "artifacts/jspi-two-imports.wasm",
+        "sha256": "e82824a20b18df22c55f466729f0b76384e647a1090c168ecc03a23a7b8231cd",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/jspi-two-imports.wat",
+            "-o",
+            "artifacts/jspi-two-imports.wasm"
+          ]
+        ],
+        "feature": "jspi",
+        "variant": "two-imports",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/jspi/two-imports/4096",
+    "family": "features",
+    "artifact": "artifacts/jspi-two-imports.wasm",
+    "sha256": "e82824a20b18df22c55f466729f0b76384e647a1090c168ecc03a23a7b8231cd",
+    "abi": "core",
+    "features": [
+      "jspi"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        41936896
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/jspi-two-imports.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "host_profile": "jspi-v1",
+    "provenance": {
+      "feature": "jspi",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/jspi-two-imports.wat",
+        "sourceSha256": "65fa2e388f0021d0dd9c942e904df369813f412f93ac26a809beb813b736cb59",
+        "artifact": "artifacts/jspi-two-imports.wasm",
+        "sha256": "e82824a20b18df22c55f466729f0b76384e647a1090c168ecc03a23a7b8231cd",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/jspi-two-imports.wat",
+            "-o",
+            "artifacts/jspi-two-imports.wasm"
+          ]
+        ],
+        "feature": "jspi",
+        "variant": "two-imports",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/jspi/state-across-suspension/1",
+    "family": "features",
+    "artifact": "artifacts/jspi-state-across-suspension.wasm",
+    "sha256": "2bc5a2f1b20c165d194e351ed397a540360b332fb6b681eee4727dabf031e940",
+    "abi": "core",
+    "features": [
+      "jspi"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        0
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/jspi-state-across-suspension.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "host_profile": "jspi-v1",
+    "provenance": {
+      "feature": "jspi",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/jspi-state-across-suspension.wat",
+        "sourceSha256": "cb0ed463372ef6d1227ac0bf3fc10e4c384811c386324225141ad41a9940d184",
+        "artifact": "artifacts/jspi-state-across-suspension.wasm",
+        "sha256": "2bc5a2f1b20c165d194e351ed397a540360b332fb6b681eee4727dabf031e940",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/jspi-state-across-suspension.wat",
+            "-o",
+            "artifacts/jspi-state-across-suspension.wasm"
+          ]
+        ],
+        "feature": "jspi",
+        "variant": "state-across-suspension",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/jspi/state-across-suspension/64",
+    "family": "features",
+    "artifact": "artifacts/jspi-state-across-suspension.wasm",
+    "sha256": "2bc5a2f1b20c165d194e351ed397a540360b332fb6b681eee4727dabf031e940",
+    "abi": "core",
+    "features": [
+      "jspi"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        6048
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/jspi-state-across-suspension.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "host_profile": "jspi-v1",
+    "provenance": {
+      "feature": "jspi",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/jspi-state-across-suspension.wat",
+        "sourceSha256": "cb0ed463372ef6d1227ac0bf3fc10e4c384811c386324225141ad41a9940d184",
+        "artifact": "artifacts/jspi-state-across-suspension.wasm",
+        "sha256": "2bc5a2f1b20c165d194e351ed397a540360b332fb6b681eee4727dabf031e940",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/jspi-state-across-suspension.wat",
+            "-o",
+            "artifacts/jspi-state-across-suspension.wasm"
+          ]
+        ],
+        "feature": "jspi",
+        "variant": "state-across-suspension",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/jspi/state-across-suspension/4096",
+    "family": "features",
+    "artifact": "artifacts/jspi-state-across-suspension.wasm",
+    "sha256": "2bc5a2f1b20c165d194e351ed397a540360b332fb6b681eee4727dabf031e940",
+    "abi": "core",
+    "features": [
+      "jspi"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        25159680
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/jspi-state-across-suspension.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "host_profile": "jspi-v1",
+    "provenance": {
+      "feature": "jspi",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/jspi-state-across-suspension.wat",
+        "sourceSha256": "cb0ed463372ef6d1227ac0bf3fc10e4c384811c386324225141ad41a9940d184",
+        "artifact": "artifacts/jspi-state-across-suspension.wasm",
+        "sha256": "2bc5a2f1b20c165d194e351ed397a540360b332fb6b681eee4727dabf031e940",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/jspi-state-across-suspension.wat",
+            "-o",
+            "artifacts/jspi-state-across-suspension.wasm"
+          ]
+        ],
+        "feature": "jspi",
+        "variant": "state-across-suspension",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/jspi/immediate-resolve/1",
+    "family": "features",
+    "artifact": "artifacts/jspi-immediate-resolve.wasm",
+    "sha256": "766598905f9c3d53e244b998c380d6377959d803cd5a1fb376ed97e52c12c62a",
+    "abi": "core",
+    "features": [
+      "jspi"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        7
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/jspi-immediate-resolve.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "host_profile": "jspi-v1",
+    "provenance": {
+      "feature": "jspi",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/jspi-immediate-resolve.wat",
+        "sourceSha256": "76701a90432c5d86a7ffe3a7cd95da0da165927fdce1c276dca5ced6e3324bb0",
+        "artifact": "artifacts/jspi-immediate-resolve.wasm",
+        "sha256": "766598905f9c3d53e244b998c380d6377959d803cd5a1fb376ed97e52c12c62a",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/jspi-immediate-resolve.wat",
+            "-o",
+            "artifacts/jspi-immediate-resolve.wasm"
+          ]
+        ],
+        "feature": "jspi",
+        "variant": "immediate-resolve",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/jspi/immediate-resolve/64",
+    "family": "features",
+    "artifact": "artifacts/jspi-immediate-resolve.wasm",
+    "sha256": "766598905f9c3d53e244b998c380d6377959d803cd5a1fb376ed97e52c12c62a",
+    "abi": "core",
+    "features": [
+      "jspi"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        2464
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/jspi-immediate-resolve.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "host_profile": "jspi-v1",
+    "provenance": {
+      "feature": "jspi",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/jspi-immediate-resolve.wat",
+        "sourceSha256": "76701a90432c5d86a7ffe3a7cd95da0da165927fdce1c276dca5ced6e3324bb0",
+        "artifact": "artifacts/jspi-immediate-resolve.wasm",
+        "sha256": "766598905f9c3d53e244b998c380d6377959d803cd5a1fb376ed97e52c12c62a",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/jspi-immediate-resolve.wat",
+            "-o",
+            "artifacts/jspi-immediate-resolve.wasm"
+          ]
+        ],
+        "feature": "jspi",
+        "variant": "immediate-resolve",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/jspi/immediate-resolve/4096",
+    "family": "features",
+    "artifact": "artifacts/jspi-immediate-resolve.wasm",
+    "sha256": "766598905f9c3d53e244b998c380d6377959d803cd5a1fb376ed97e52c12c62a",
+    "abi": "core",
+    "features": [
+      "jspi"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        8415232
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/jspi-immediate-resolve.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "host_profile": "jspi-v1",
+    "provenance": {
+      "feature": "jspi",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/jspi-immediate-resolve.wat",
+        "sourceSha256": "76701a90432c5d86a7ffe3a7cd95da0da165927fdce1c276dca5ced6e3324bb0",
+        "artifact": "artifacts/jspi-immediate-resolve.wasm",
+        "sha256": "766598905f9c3d53e244b998c380d6377959d803cd5a1fb376ed97e52c12c62a",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/jspi-immediate-resolve.wat",
+            "-o",
+            "artifacts/jspi-immediate-resolve.wasm"
+          ]
+        ],
+        "feature": "jspi",
+        "variant": "immediate-resolve",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/sign-extension/i32-extend8/1",
+    "family": "features",
+    "artifact": "artifacts/sign-extension-i32-extend8.wasm",
+    "sha256": "ccc5492fa954a8761ecf24f78d44aaeb6bdf88bd6dc310f069883029041469ad",
+    "abi": "core",
+    "features": [
+      "sign-extension"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        0
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/sign-extension-i32-extend8.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "provenance": {
+      "feature": "sign-extension",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/sign-extension-i32-extend8.wat",
+        "sourceSha256": "0a6e6d560b8c452cc80fc09bfbea8d38b1d01e1543803a487186bedf09417ebe",
+        "artifact": "artifacts/sign-extension-i32-extend8.wasm",
+        "sha256": "ccc5492fa954a8761ecf24f78d44aaeb6bdf88bd6dc310f069883029041469ad",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/sign-extension-i32-extend8.wat",
+            "-o",
+            "artifacts/sign-extension-i32-extend8.wasm"
+          ]
+        ],
+        "feature": "sign-extension",
+        "variant": "i32-extend8",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/sign-extension/i32-extend8/64",
+    "family": "features",
+    "artifact": "artifacts/sign-extension-i32-extend8.wasm",
+    "sha256": "ccc5492fa954a8761ecf24f78d44aaeb6bdf88bd6dc310f069883029041469ad",
+    "abi": "core",
+    "features": [
+      "sign-extension"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        2016
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/sign-extension-i32-extend8.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "provenance": {
+      "feature": "sign-extension",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/sign-extension-i32-extend8.wat",
+        "sourceSha256": "0a6e6d560b8c452cc80fc09bfbea8d38b1d01e1543803a487186bedf09417ebe",
+        "artifact": "artifacts/sign-extension-i32-extend8.wasm",
+        "sha256": "ccc5492fa954a8761ecf24f78d44aaeb6bdf88bd6dc310f069883029041469ad",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/sign-extension-i32-extend8.wat",
+            "-o",
+            "artifacts/sign-extension-i32-extend8.wasm"
+          ]
+        ],
+        "feature": "sign-extension",
+        "variant": "i32-extend8",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/sign-extension/i32-extend8/4096",
+    "family": "features",
+    "artifact": "artifacts/sign-extension-i32-extend8.wasm",
+    "sha256": "ccc5492fa954a8761ecf24f78d44aaeb6bdf88bd6dc310f069883029041469ad",
+    "abi": "core",
+    "features": [
+      "sign-extension"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        4294965248
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/sign-extension-i32-extend8.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "provenance": {
+      "feature": "sign-extension",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/sign-extension-i32-extend8.wat",
+        "sourceSha256": "0a6e6d560b8c452cc80fc09bfbea8d38b1d01e1543803a487186bedf09417ebe",
+        "artifact": "artifacts/sign-extension-i32-extend8.wasm",
+        "sha256": "ccc5492fa954a8761ecf24f78d44aaeb6bdf88bd6dc310f069883029041469ad",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/sign-extension-i32-extend8.wat",
+            "-o",
+            "artifacts/sign-extension-i32-extend8.wasm"
+          ]
+        ],
+        "feature": "sign-extension",
+        "variant": "i32-extend8",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/sign-extension/i32-extend16/1",
+    "family": "features",
+    "artifact": "artifacts/sign-extension-i32-extend16.wasm",
+    "sha256": "dad98346618c7d33d077d696036dd5d17b33719f9a1beb30b887fc41851ae69f",
+    "abi": "core",
+    "features": [
+      "sign-extension"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        0
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/sign-extension-i32-extend16.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "provenance": {
+      "feature": "sign-extension",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/sign-extension-i32-extend16.wat",
+        "sourceSha256": "7f27ebdee12246b6e0d2e74ddd9d192b1905d410e870019a2f0da921d52a93fb",
+        "artifact": "artifacts/sign-extension-i32-extend16.wasm",
+        "sha256": "dad98346618c7d33d077d696036dd5d17b33719f9a1beb30b887fc41851ae69f",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/sign-extension-i32-extend16.wat",
+            "-o",
+            "artifacts/sign-extension-i32-extend16.wasm"
+          ]
+        ],
+        "feature": "sign-extension",
+        "variant": "i32-extend16",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/sign-extension/i32-extend16/64",
+    "family": "features",
+    "artifact": "artifacts/sign-extension-i32-extend16.wasm",
+    "sha256": "dad98346618c7d33d077d696036dd5d17b33719f9a1beb30b887fc41851ae69f",
+    "abi": "core",
+    "features": [
+      "sign-extension"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        195552
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/sign-extension-i32-extend16.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "provenance": {
+      "feature": "sign-extension",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/sign-extension-i32-extend16.wat",
+        "sourceSha256": "7f27ebdee12246b6e0d2e74ddd9d192b1905d410e870019a2f0da921d52a93fb",
+        "artifact": "artifacts/sign-extension-i32-extend16.wasm",
+        "sha256": "dad98346618c7d33d077d696036dd5d17b33719f9a1beb30b887fc41851ae69f",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/sign-extension-i32-extend16.wat",
+            "-o",
+            "artifacts/sign-extension-i32-extend16.wasm"
+          ]
+        ],
+        "feature": "sign-extension",
+        "variant": "i32-extend16",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/sign-extension/i32-extend16/4096",
+    "family": "features",
+    "artifact": "artifacts/sign-extension-i32-extend16.wasm",
+    "sha256": "dad98346618c7d33d077d696036dd5d17b33719f9a1beb30b887fc41851ae69f",
+    "abi": "core",
+    "features": [
+      "sign-extension"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        63488
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/sign-extension-i32-extend16.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "provenance": {
+      "feature": "sign-extension",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/sign-extension-i32-extend16.wat",
+        "sourceSha256": "7f27ebdee12246b6e0d2e74ddd9d192b1905d410e870019a2f0da921d52a93fb",
+        "artifact": "artifacts/sign-extension-i32-extend16.wasm",
+        "sha256": "dad98346618c7d33d077d696036dd5d17b33719f9a1beb30b887fc41851ae69f",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/sign-extension-i32-extend16.wat",
+            "-o",
+            "artifacts/sign-extension-i32-extend16.wasm"
+          ]
+        ],
+        "feature": "sign-extension",
+        "variant": "i32-extend16",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/sign-extension/i64-extend8/1",
+    "family": "features",
+    "artifact": "artifacts/sign-extension-i64-extend8.wasm",
+    "sha256": "44b4a89bb70a19513a19c7316fd23a9f28ed1bfcc2c84544bb5f80ad8f3eb780",
+    "abi": "core",
+    "features": [
+      "sign-extension"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        0
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/sign-extension-i64-extend8.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "provenance": {
+      "feature": "sign-extension",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/sign-extension-i64-extend8.wat",
+        "sourceSha256": "63d6d8a29ff50abb631079fb17fbf35a6b6c98d0547e4288c58f5fab59bcd1d3",
+        "artifact": "artifacts/sign-extension-i64-extend8.wasm",
+        "sha256": "44b4a89bb70a19513a19c7316fd23a9f28ed1bfcc2c84544bb5f80ad8f3eb780",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/sign-extension-i64-extend8.wat",
+            "-o",
+            "artifacts/sign-extension-i64-extend8.wasm"
+          ]
+        ],
+        "feature": "sign-extension",
+        "variant": "i64-extend8",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/sign-extension/i64-extend8/64",
+    "family": "features",
+    "artifact": "artifacts/sign-extension-i64-extend8.wasm",
+    "sha256": "44b4a89bb70a19513a19c7316fd23a9f28ed1bfcc2c84544bb5f80ad8f3eb780",
+    "abi": "core",
+    "features": [
+      "sign-extension"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        96
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/sign-extension-i64-extend8.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "provenance": {
+      "feature": "sign-extension",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/sign-extension-i64-extend8.wat",
+        "sourceSha256": "63d6d8a29ff50abb631079fb17fbf35a6b6c98d0547e4288c58f5fab59bcd1d3",
+        "artifact": "artifacts/sign-extension-i64-extend8.wasm",
+        "sha256": "44b4a89bb70a19513a19c7316fd23a9f28ed1bfcc2c84544bb5f80ad8f3eb780",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/sign-extension-i64-extend8.wat",
+            "-o",
+            "artifacts/sign-extension-i64-extend8.wasm"
+          ]
+        ],
+        "feature": "sign-extension",
+        "variant": "i64-extend8",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/sign-extension/i64-extend8/4096",
+    "family": "features",
+    "artifact": "artifacts/sign-extension-i64-extend8.wasm",
+    "sha256": "44b4a89bb70a19513a19c7316fd23a9f28ed1bfcc2c84544bb5f80ad8f3eb780",
+    "abi": "core",
+    "features": [
+      "sign-extension"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        4294965248
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/sign-extension-i64-extend8.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "provenance": {
+      "feature": "sign-extension",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/sign-extension-i64-extend8.wat",
+        "sourceSha256": "63d6d8a29ff50abb631079fb17fbf35a6b6c98d0547e4288c58f5fab59bcd1d3",
+        "artifact": "artifacts/sign-extension-i64-extend8.wasm",
+        "sha256": "44b4a89bb70a19513a19c7316fd23a9f28ed1bfcc2c84544bb5f80ad8f3eb780",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/sign-extension-i64-extend8.wat",
+            "-o",
+            "artifacts/sign-extension-i64-extend8.wasm"
+          ]
+        ],
+        "feature": "sign-extension",
+        "variant": "i64-extend8",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/sign-extension/i64-extend16/1",
+    "family": "features",
+    "artifact": "artifacts/sign-extension-i64-extend16.wasm",
+    "sha256": "0e82e97eec91fb0b408966c108a2871fcf34a7a2ea15642aa414a5ab02d62fb2",
+    "abi": "core",
+    "features": [
+      "sign-extension"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        0
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/sign-extension-i64-extend16.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "provenance": {
+      "feature": "sign-extension",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/sign-extension-i64-extend16.wat",
+        "sourceSha256": "e14a4d8f2abfe9113512b7f723637b00ad81cde8ebc350932dbce737b5031d21",
+        "artifact": "artifacts/sign-extension-i64-extend16.wasm",
+        "sha256": "0e82e97eec91fb0b408966c108a2871fcf34a7a2ea15642aa414a5ab02d62fb2",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/sign-extension-i64-extend16.wat",
+            "-o",
+            "artifacts/sign-extension-i64-extend16.wasm"
+          ]
+        ],
+        "feature": "sign-extension",
+        "variant": "i64-extend16",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/sign-extension/i64-extend16/64",
+    "family": "features",
+    "artifact": "artifacts/sign-extension-i64-extend16.wasm",
+    "sha256": "0e82e97eec91fb0b408966c108a2871fcf34a7a2ea15642aa414a5ab02d62fb2",
+    "abi": "core",
+    "features": [
+      "sign-extension"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        62496
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/sign-extension-i64-extend16.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "provenance": {
+      "feature": "sign-extension",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/sign-extension-i64-extend16.wat",
+        "sourceSha256": "e14a4d8f2abfe9113512b7f723637b00ad81cde8ebc350932dbce737b5031d21",
+        "artifact": "artifacts/sign-extension-i64-extend16.wasm",
+        "sha256": "0e82e97eec91fb0b408966c108a2871fcf34a7a2ea15642aa414a5ab02d62fb2",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/sign-extension-i64-extend16.wat",
+            "-o",
+            "artifacts/sign-extension-i64-extend16.wasm"
+          ]
+        ],
+        "feature": "sign-extension",
+        "variant": "i64-extend16",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/sign-extension/i64-extend16/4096",
+    "family": "features",
+    "artifact": "artifacts/sign-extension-i64-extend16.wasm",
+    "sha256": "0e82e97eec91fb0b408966c108a2871fcf34a7a2ea15642aa414a5ab02d62fb2",
+    "abi": "core",
+    "features": [
+      "sign-extension"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        329728
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/sign-extension-i64-extend16.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "provenance": {
+      "feature": "sign-extension",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/sign-extension-i64-extend16.wat",
+        "sourceSha256": "e14a4d8f2abfe9113512b7f723637b00ad81cde8ebc350932dbce737b5031d21",
+        "artifact": "artifacts/sign-extension-i64-extend16.wasm",
+        "sha256": "0e82e97eec91fb0b408966c108a2871fcf34a7a2ea15642aa414a5ab02d62fb2",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/sign-extension-i64-extend16.wat",
+            "-o",
+            "artifacts/sign-extension-i64-extend16.wasm"
+          ]
+        ],
+        "feature": "sign-extension",
+        "variant": "i64-extend16",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/sign-extension/i64-extend32-high-word/1",
+    "family": "features",
+    "artifact": "artifacts/sign-extension-i64-extend32-high-word.wasm",
+    "sha256": "258617544c6bcb30d5fd466b1759b777ed52bd64d4f1f450aace9cda083bec80",
+    "abi": "core",
+    "features": [
+      "sign-extension"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        0
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/sign-extension-i64-extend32-high-word.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "provenance": {
+      "feature": "sign-extension",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/sign-extension-i64-extend32-high-word.wat",
+        "sourceSha256": "35e16f88395ff0f9fa580988c2febf9927112d68d2857c49750ffa8df691f989",
+        "artifact": "artifacts/sign-extension-i64-extend32-high-word.wasm",
+        "sha256": "258617544c6bcb30d5fd466b1759b777ed52bd64d4f1f450aace9cda083bec80",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/sign-extension-i64-extend32-high-word.wat",
+            "-o",
+            "artifacts/sign-extension-i64-extend32-high-word.wasm"
+          ]
+        ],
+        "feature": "sign-extension",
+        "variant": "i64-extend32-high-word",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/sign-extension/i64-extend32-high-word/64",
+    "family": "features",
+    "artifact": "artifacts/sign-extension-i64-extend32-high-word.wasm",
+    "sha256": "258617544c6bcb30d5fd466b1759b777ed52bd64d4f1f450aace9cda083bec80",
+    "abi": "core",
+    "features": [
+      "sign-extension"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        0
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/sign-extension-i64-extend32-high-word.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "provenance": {
+      "feature": "sign-extension",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/sign-extension-i64-extend32-high-word.wat",
+        "sourceSha256": "35e16f88395ff0f9fa580988c2febf9927112d68d2857c49750ffa8df691f989",
+        "artifact": "artifacts/sign-extension-i64-extend32-high-word.wasm",
+        "sha256": "258617544c6bcb30d5fd466b1759b777ed52bd64d4f1f450aace9cda083bec80",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/sign-extension-i64-extend32-high-word.wat",
+            "-o",
+            "artifacts/sign-extension-i64-extend32-high-word.wasm"
+          ]
+        ],
+        "feature": "sign-extension",
+        "variant": "i64-extend32-high-word",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/sign-extension/i64-extend32-high-word/4096",
+    "family": "features",
+    "artifact": "artifacts/sign-extension-i64-extend32-high-word.wasm",
+    "sha256": "258617544c6bcb30d5fd466b1759b777ed52bd64d4f1f450aace9cda083bec80",
+    "abi": "core",
+    "features": [
+      "sign-extension"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        4294965248
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/sign-extension-i64-extend32-high-word.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "provenance": {
+      "feature": "sign-extension",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/sign-extension-i64-extend32-high-word.wat",
+        "sourceSha256": "35e16f88395ff0f9fa580988c2febf9927112d68d2857c49750ffa8df691f989",
+        "artifact": "artifacts/sign-extension-i64-extend32-high-word.wasm",
+        "sha256": "258617544c6bcb30d5fd466b1759b777ed52bd64d4f1f450aace9cda083bec80",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/sign-extension-i64-extend32-high-word.wat",
+            "-o",
+            "artifacts/sign-extension-i64-extend32-high-word.wasm"
+          ]
+        ],
+        "feature": "sign-extension",
+        "variant": "i64-extend32-high-word",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/saturating-float-to-int/f32-in-range/1",
+    "family": "features",
+    "artifact": "artifacts/saturating-float-to-int-f32-in-range.wasm",
+    "sha256": "6d22638c2777c28b875feee4ded1d669d2ae6e3853cc826f965acec5d7727a9c",
+    "abi": "core",
+    "features": [
+      "saturating-float-to-int"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        0
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/saturating-float-to-int-f32-in-range.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "provenance": {
+      "feature": "saturating-float-to-int",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/saturating-float-to-int-f32-in-range.wat",
+        "sourceSha256": "34a597a0011521585da651a43384db77e22667829c3f06198a9d979ec355f999",
+        "artifact": "artifacts/saturating-float-to-int-f32-in-range.wasm",
+        "sha256": "6d22638c2777c28b875feee4ded1d669d2ae6e3853cc826f965acec5d7727a9c",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/saturating-float-to-int-f32-in-range.wat",
+            "-o",
+            "artifacts/saturating-float-to-int-f32-in-range.wasm"
+          ]
+        ],
+        "feature": "saturating-float-to-int",
+        "variant": "f32-in-range",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/saturating-float-to-int/f32-in-range/64",
+    "family": "features",
+    "artifact": "artifacts/saturating-float-to-int-f32-in-range.wasm",
+    "sha256": "6d22638c2777c28b875feee4ded1d669d2ae6e3853cc826f965acec5d7727a9c",
+    "abi": "core",
+    "features": [
+      "saturating-float-to-int"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        3008
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/saturating-float-to-int-f32-in-range.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "provenance": {
+      "feature": "saturating-float-to-int",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/saturating-float-to-int-f32-in-range.wat",
+        "sourceSha256": "34a597a0011521585da651a43384db77e22667829c3f06198a9d979ec355f999",
+        "artifact": "artifacts/saturating-float-to-int-f32-in-range.wasm",
+        "sha256": "6d22638c2777c28b875feee4ded1d669d2ae6e3853cc826f965acec5d7727a9c",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/saturating-float-to-int-f32-in-range.wat",
+            "-o",
+            "artifacts/saturating-float-to-int-f32-in-range.wasm"
+          ]
+        ],
+        "feature": "saturating-float-to-int",
+        "variant": "f32-in-range",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/saturating-float-to-int/f32-in-range/4096",
+    "family": "features",
+    "artifact": "artifacts/saturating-float-to-int-f32-in-range.wasm",
+    "sha256": "6d22638c2777c28b875feee4ded1d669d2ae6e3853cc826f965acec5d7727a9c",
+    "abi": "core",
+    "features": [
+      "saturating-float-to-int"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        12578816
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/saturating-float-to-int-f32-in-range.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "provenance": {
+      "feature": "saturating-float-to-int",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/saturating-float-to-int-f32-in-range.wat",
+        "sourceSha256": "34a597a0011521585da651a43384db77e22667829c3f06198a9d979ec355f999",
+        "artifact": "artifacts/saturating-float-to-int-f32-in-range.wasm",
+        "sha256": "6d22638c2777c28b875feee4ded1d669d2ae6e3853cc826f965acec5d7727a9c",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/saturating-float-to-int-f32-in-range.wat",
+            "-o",
+            "artifacts/saturating-float-to-int-f32-in-range.wasm"
+          ]
+        ],
+        "feature": "saturating-float-to-int",
+        "variant": "f32-in-range",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/saturating-float-to-int/f32-overflow-clamp/1",
+    "family": "features",
+    "artifact": "artifacts/saturating-float-to-int-f32-overflow-clamp.wasm",
+    "sha256": "80f26d5aa4b0ba65d8fcc905bb0cfa6de2e5033d29ef90efe5ea2ce9812adb4b",
+    "abi": "core",
+    "features": [
+      "saturating-float-to-int"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        2147483647
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/saturating-float-to-int-f32-overflow-clamp.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "provenance": {
+      "feature": "saturating-float-to-int",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/saturating-float-to-int-f32-overflow-clamp.wat",
+        "sourceSha256": "99e68d2533128b256d42f48c2a710e1a888768c3ef305ec8fe485cbb77d56656",
+        "artifact": "artifacts/saturating-float-to-int-f32-overflow-clamp.wasm",
+        "sha256": "80f26d5aa4b0ba65d8fcc905bb0cfa6de2e5033d29ef90efe5ea2ce9812adb4b",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/saturating-float-to-int-f32-overflow-clamp.wat",
+            "-o",
+            "artifacts/saturating-float-to-int-f32-overflow-clamp.wasm"
+          ]
+        ],
+        "feature": "saturating-float-to-int",
+        "variant": "f32-overflow-clamp",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/saturating-float-to-int/f32-overflow-clamp/64",
+    "family": "features",
+    "artifact": "artifacts/saturating-float-to-int-f32-overflow-clamp.wasm",
+    "sha256": "80f26d5aa4b0ba65d8fcc905bb0cfa6de2e5033d29ef90efe5ea2ce9812adb4b",
+    "abi": "core",
+    "features": [
+      "saturating-float-to-int"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        4294967232
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/saturating-float-to-int-f32-overflow-clamp.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "provenance": {
+      "feature": "saturating-float-to-int",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/saturating-float-to-int-f32-overflow-clamp.wat",
+        "sourceSha256": "99e68d2533128b256d42f48c2a710e1a888768c3ef305ec8fe485cbb77d56656",
+        "artifact": "artifacts/saturating-float-to-int-f32-overflow-clamp.wasm",
+        "sha256": "80f26d5aa4b0ba65d8fcc905bb0cfa6de2e5033d29ef90efe5ea2ce9812adb4b",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/saturating-float-to-int-f32-overflow-clamp.wat",
+            "-o",
+            "artifacts/saturating-float-to-int-f32-overflow-clamp.wasm"
+          ]
+        ],
+        "feature": "saturating-float-to-int",
+        "variant": "f32-overflow-clamp",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/saturating-float-to-int/f32-overflow-clamp/4096",
+    "family": "features",
+    "artifact": "artifacts/saturating-float-to-int-f32-overflow-clamp.wasm",
+    "sha256": "80f26d5aa4b0ba65d8fcc905bb0cfa6de2e5033d29ef90efe5ea2ce9812adb4b",
+    "abi": "core",
+    "features": [
+      "saturating-float-to-int"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        4294963200
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/saturating-float-to-int-f32-overflow-clamp.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "provenance": {
+      "feature": "saturating-float-to-int",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/saturating-float-to-int-f32-overflow-clamp.wat",
+        "sourceSha256": "99e68d2533128b256d42f48c2a710e1a888768c3ef305ec8fe485cbb77d56656",
+        "artifact": "artifacts/saturating-float-to-int-f32-overflow-clamp.wasm",
+        "sha256": "80f26d5aa4b0ba65d8fcc905bb0cfa6de2e5033d29ef90efe5ea2ce9812adb4b",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/saturating-float-to-int-f32-overflow-clamp.wat",
+            "-o",
+            "artifacts/saturating-float-to-int-f32-overflow-clamp.wasm"
+          ]
+        ],
+        "feature": "saturating-float-to-int",
+        "variant": "f32-overflow-clamp",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/saturating-float-to-int/f64-unsigned-negative-clamp/1",
+    "family": "features",
+    "artifact": "artifacts/saturating-float-to-int-f64-unsigned-negative-clamp.wasm",
+    "sha256": "34dce8fee0997756eff73ccaa4be2149083f3a1e9f07387d16030217d8b69f6b",
+    "abi": "core",
+    "features": [
+      "saturating-float-to-int"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        0
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/saturating-float-to-int-f64-unsigned-negative-clamp.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "provenance": {
+      "feature": "saturating-float-to-int",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/saturating-float-to-int-f64-unsigned-negative-clamp.wat",
+        "sourceSha256": "9687690cbf1a74a0a778d7b8483a3399ecb07732cce9026407540931fe8b4cc3",
+        "artifact": "artifacts/saturating-float-to-int-f64-unsigned-negative-clamp.wasm",
+        "sha256": "34dce8fee0997756eff73ccaa4be2149083f3a1e9f07387d16030217d8b69f6b",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/saturating-float-to-int-f64-unsigned-negative-clamp.wat",
+            "-o",
+            "artifacts/saturating-float-to-int-f64-unsigned-negative-clamp.wasm"
+          ]
+        ],
+        "feature": "saturating-float-to-int",
+        "variant": "f64-unsigned-negative-clamp",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/saturating-float-to-int/f64-unsigned-negative-clamp/64",
+    "family": "features",
+    "artifact": "artifacts/saturating-float-to-int-f64-unsigned-negative-clamp.wasm",
+    "sha256": "34dce8fee0997756eff73ccaa4be2149083f3a1e9f07387d16030217d8b69f6b",
+    "abi": "core",
+    "features": [
+      "saturating-float-to-int"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        2016
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/saturating-float-to-int-f64-unsigned-negative-clamp.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "provenance": {
+      "feature": "saturating-float-to-int",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/saturating-float-to-int-f64-unsigned-negative-clamp.wat",
+        "sourceSha256": "9687690cbf1a74a0a778d7b8483a3399ecb07732cce9026407540931fe8b4cc3",
+        "artifact": "artifacts/saturating-float-to-int-f64-unsigned-negative-clamp.wasm",
+        "sha256": "34dce8fee0997756eff73ccaa4be2149083f3a1e9f07387d16030217d8b69f6b",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/saturating-float-to-int-f64-unsigned-negative-clamp.wat",
+            "-o",
+            "artifacts/saturating-float-to-int-f64-unsigned-negative-clamp.wasm"
+          ]
+        ],
+        "feature": "saturating-float-to-int",
+        "variant": "f64-unsigned-negative-clamp",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/saturating-float-to-int/f64-unsigned-negative-clamp/4096",
+    "family": "features",
+    "artifact": "artifacts/saturating-float-to-int-f64-unsigned-negative-clamp.wasm",
+    "sha256": "34dce8fee0997756eff73ccaa4be2149083f3a1e9f07387d16030217d8b69f6b",
+    "abi": "core",
+    "features": [
+      "saturating-float-to-int"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        8386560
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/saturating-float-to-int-f64-unsigned-negative-clamp.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "provenance": {
+      "feature": "saturating-float-to-int",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/saturating-float-to-int-f64-unsigned-negative-clamp.wat",
+        "sourceSha256": "9687690cbf1a74a0a778d7b8483a3399ecb07732cce9026407540931fe8b4cc3",
+        "artifact": "artifacts/saturating-float-to-int-f64-unsigned-negative-clamp.wasm",
+        "sha256": "34dce8fee0997756eff73ccaa4be2149083f3a1e9f07387d16030217d8b69f6b",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/saturating-float-to-int-f64-unsigned-negative-clamp.wat",
+            "-o",
+            "artifacts/saturating-float-to-int-f64-unsigned-negative-clamp.wasm"
+          ]
+        ],
+        "feature": "saturating-float-to-int",
+        "variant": "f64-unsigned-negative-clamp",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/saturating-float-to-int/nan-and-infinity/1",
+    "family": "features",
+    "artifact": "artifacts/saturating-float-to-int-nan-and-infinity.wasm",
+    "sha256": "d3598d12c15c9fe3d0ef454618e79e7181d9e70af30e29bd64360f929ad5527e",
+    "abi": "core",
+    "features": [
+      "saturating-float-to-int"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        0
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/saturating-float-to-int-nan-and-infinity.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "provenance": {
+      "feature": "saturating-float-to-int",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/saturating-float-to-int-nan-and-infinity.wat",
+        "sourceSha256": "db99426b3bca7a8004677d6b1668ec726d62e159b4c45402581e91f4688e2d87",
+        "artifact": "artifacts/saturating-float-to-int-nan-and-infinity.wasm",
+        "sha256": "d3598d12c15c9fe3d0ef454618e79e7181d9e70af30e29bd64360f929ad5527e",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/saturating-float-to-int-nan-and-infinity.wat",
+            "-o",
+            "artifacts/saturating-float-to-int-nan-and-infinity.wasm"
+          ]
+        ],
+        "feature": "saturating-float-to-int",
+        "variant": "nan-and-infinity",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/saturating-float-to-int/nan-and-infinity/64",
+    "family": "features",
+    "artifact": "artifacts/saturating-float-to-int-nan-and-infinity.wasm",
+    "sha256": "d3598d12c15c9fe3d0ef454618e79e7181d9e70af30e29bd64360f929ad5527e",
+    "abi": "core",
+    "features": [
+      "saturating-float-to-int"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        2147483585
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/saturating-float-to-int-nan-and-infinity.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "provenance": {
+      "feature": "saturating-float-to-int",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/saturating-float-to-int-nan-and-infinity.wat",
+        "sourceSha256": "db99426b3bca7a8004677d6b1668ec726d62e159b4c45402581e91f4688e2d87",
+        "artifact": "artifacts/saturating-float-to-int-nan-and-infinity.wasm",
+        "sha256": "d3598d12c15c9fe3d0ef454618e79e7181d9e70af30e29bd64360f929ad5527e",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/saturating-float-to-int-nan-and-infinity.wat",
+            "-o",
+            "artifacts/saturating-float-to-int-nan-and-infinity.wasm"
+          ]
+        ],
+        "feature": "saturating-float-to-int",
+        "variant": "nan-and-infinity",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/saturating-float-to-int/nan-and-infinity/4096",
+    "family": "features",
+    "artifact": "artifacts/saturating-float-to-int-nan-and-infinity.wasm",
+    "sha256": "d3598d12c15c9fe3d0ef454618e79e7181d9e70af30e29bd64360f929ad5527e",
+    "abi": "core",
+    "features": [
+      "saturating-float-to-int"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        2147479553
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/saturating-float-to-int-nan-and-infinity.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "provenance": {
+      "feature": "saturating-float-to-int",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/saturating-float-to-int-nan-and-infinity.wat",
+        "sourceSha256": "db99426b3bca7a8004677d6b1668ec726d62e159b4c45402581e91f4688e2d87",
+        "artifact": "artifacts/saturating-float-to-int-nan-and-infinity.wasm",
+        "sha256": "d3598d12c15c9fe3d0ef454618e79e7181d9e70af30e29bd64360f929ad5527e",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/saturating-float-to-int-nan-and-infinity.wat",
+            "-o",
+            "artifacts/saturating-float-to-int-nan-and-infinity.wasm"
+          ]
+        ],
+        "feature": "saturating-float-to-int",
+        "variant": "nan-and-infinity",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/saturating-float-to-int/i64-in-range/1",
+    "family": "features",
+    "artifact": "artifacts/saturating-float-to-int-i64-in-range.wasm",
+    "sha256": "7336d56bf71a7f7b0a04dc36d8a0958ec3364316c8dce7b0ce6192d26c513666",
+    "abi": "core",
+    "features": [
+      "saturating-float-to-int"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        0
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/saturating-float-to-int-i64-in-range.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "provenance": {
+      "feature": "saturating-float-to-int",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/saturating-float-to-int-i64-in-range.wat",
+        "sourceSha256": "a6bc34a79bc5c18cdb0afbf91757bc746d883a9ef9bc3e205cf676983252a186",
+        "artifact": "artifacts/saturating-float-to-int-i64-in-range.wasm",
+        "sha256": "7336d56bf71a7f7b0a04dc36d8a0958ec3364316c8dce7b0ce6192d26c513666",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/saturating-float-to-int-i64-in-range.wat",
+            "-o",
+            "artifacts/saturating-float-to-int-i64-in-range.wasm"
+          ]
+        ],
+        "feature": "saturating-float-to-int",
+        "variant": "i64-in-range",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/saturating-float-to-int/i64-in-range/64",
+    "family": "features",
+    "artifact": "artifacts/saturating-float-to-int-i64-in-range.wasm",
+    "sha256": "7336d56bf71a7f7b0a04dc36d8a0958ec3364316c8dce7b0ce6192d26c513666",
+    "abi": "core",
+    "features": [
+      "saturating-float-to-int"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        6528
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/saturating-float-to-int-i64-in-range.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "provenance": {
+      "feature": "saturating-float-to-int",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/saturating-float-to-int-i64-in-range.wat",
+        "sourceSha256": "a6bc34a79bc5c18cdb0afbf91757bc746d883a9ef9bc3e205cf676983252a186",
+        "artifact": "artifacts/saturating-float-to-int-i64-in-range.wasm",
+        "sha256": "7336d56bf71a7f7b0a04dc36d8a0958ec3364316c8dce7b0ce6192d26c513666",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/saturating-float-to-int-i64-in-range.wat",
+            "-o",
+            "artifacts/saturating-float-to-int-i64-in-range.wasm"
+          ]
+        ],
+        "feature": "saturating-float-to-int",
+        "variant": "i64-in-range",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/saturating-float-to-int/i64-in-range/4096",
+    "family": "features",
+    "artifact": "artifacts/saturating-float-to-int-i64-in-range.wasm",
+    "sha256": "7336d56bf71a7f7b0a04dc36d8a0958ec3364316c8dce7b0ce6192d26c513666",
+    "abi": "core",
+    "features": [
+      "saturating-float-to-int"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        27254784
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/saturating-float-to-int-i64-in-range.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "provenance": {
+      "feature": "saturating-float-to-int",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/saturating-float-to-int-i64-in-range.wat",
+        "sourceSha256": "a6bc34a79bc5c18cdb0afbf91757bc746d883a9ef9bc3e205cf676983252a186",
+        "artifact": "artifacts/saturating-float-to-int-i64-in-range.wasm",
+        "sha256": "7336d56bf71a7f7b0a04dc36d8a0958ec3364316c8dce7b0ce6192d26c513666",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/saturating-float-to-int-i64-in-range.wat",
+            "-o",
+            "artifacts/saturating-float-to-int-i64-in-range.wasm"
+          ]
+        ],
+        "feature": "saturating-float-to-int",
+        "variant": "i64-in-range",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
     "id": "features/reference-types/table-null-check/1",
     "family": "features",
     "artifact": "artifacts/reference-types-table-null-check.wasm",

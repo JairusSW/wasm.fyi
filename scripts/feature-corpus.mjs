@@ -1,4 +1,5 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fixtures, featureIds } from '../corpora/features/generator.mjs';
 import { sourceAdapter } from './feature-adapter-source.mjs';
@@ -10,8 +11,12 @@ import { command, digest, harness, site } from './lib/wasmbench.mjs';
 const action = process.argv[2] || 'build';
 const root = join(site, 'corpora/features');
 const manifest = join(root, 'manifest.json');
-const requested=process.argv.find(a=>a.startsWith('--ids='))?.slice(6).split(',');
 const inventory=fixtures();
+// --ids=features/<family>/<name>,… selects contracts; --family=<family>,… selects whole families.
+const families=process.argv.find(a=>a.startsWith('--family='))?.slice(9).split(',').filter(Boolean);
+if(families?.some(f=>!featureIds.includes(f)))throw Error('Unknown feature family: '+families.filter(f=>!featureIds.includes(f)).join(', '));
+const requested=process.argv.find(a=>a.startsWith('--ids='))?.slice(6).split(',')
+  ?? (families && inventory.filter(f=>families.includes(f.feature)).map(f=>`features/${f.feature}/${f.name}`));
 if(requested?.some(id=>!inventory.some(f=>id===`features/${f.feature}/${f.name}`)))throw Error('Unknown feature corpus');
 // A shared artifact must never be rebuilt without refreshing all its contracts.
 const modules=new Set(inventory.filter(f=>requested?.includes(`features/${f.feature}/${f.name}`)).map(f=>f.module).filter(Boolean));
@@ -65,6 +70,11 @@ if (action === 'build') {
     }
   }
   if (failures.length) throw new Error('Invalid feature artifacts: ' + failures.join(', '));
+  // Write in generator order so a partial rebuild produces the same files as a full one.
+  const rank=new Map(inventory.map((f,k)=>[`features/${f.feature}/${f.name}`,k]));
+  const at=id=>rank.get(id.split('/').slice(0,3).join('/'))??Infinity;
+  workloads.sort((a,b)=>at(a.id)-at(b.id)||(inventory[at(a.id)]?.sizes.indexOf(a.size)??0)-(inventory[at(b.id)]?.sizes.indexOf(b.size)??0));
+  recipes.sort((a,b)=>at(`features/${a.feature}/${a.variant}`)-at(`features/${b.feature}/${b.variant}`));
   await writeFile(manifest, JSON.stringify(workloads, null, 2) + '\n');
   const covered = new Set(recipes.filter(r => !r.baseline).map(r => r.feature));
   const missing = featureIds.filter(id => !covered.has(id));
@@ -91,4 +101,42 @@ if (action === 'build') {
   }
   await mkdir(join(site, '.wasmbench'), { recursive: true });
   await writeFile(join(site, '.wasmbench/latest-feature-check.txt'), output + '\n');
-} else throw new Error('Usage: feature-corpus.mjs build|check');
+} else if (action === 'verify') {
+  // Reproducibility from source, without touching the checked-in corpus: regenerate each
+  // source from the generator, compile it into a scratch directory with the pinned compiler,
+  // and compare both against the committed files and manifest digests.
+  const compilerBinary = await featureCompiler();
+  const compiler = command(compilerBinary, ['--version']).toString().trim();
+  if (!compiler.startsWith('wasm-tools 1.260.0')) throw new Error('Verification requires wasm-tools 1.260.0');
+  const contracts = JSON.parse(await readFile(manifest));
+  const scratch = await mkdtemp(join(tmpdir(), 'wasm-fyi-features-'));
+  const results = new Map();
+  try {
+    for (const fixture of chosen) {
+      const stem = fixture.module || `${fixture.feature}-${fixture.name}`;
+      if (results.has(stem)) continue;
+      const source = `sources/${stem}.wat`, artifact = `artifacts/${stem}.wasm`;
+      const problems = [];
+      const committed = await readFile(join(root, source), 'utf8').catch(() => null);
+      if (committed === null) problems.push('source missing');
+      else if (committed !== fixture.wat.trim() + '\n') problems.push('source differs from generator');
+      const built = join(scratch, stem + '.wasm');
+      try { command(compilerBinary, ['parse', join(root, source), '-o', built]); command(compilerBinary, ['validate', '--features', 'all', built]); }
+      catch { problems.push('does not compile'); }
+      const sha = problems.includes('does not compile') ? null : digest(await readFile(built));
+      const checkedIn = await readFile(join(root, artifact)).then(digest, () => null);
+      if (sha && checkedIn !== sha) problems.push(checkedIn ? 'artifact differs from rebuild' : 'artifact missing');
+      const listed = contracts.filter(w => w.artifact === artifact);
+      if (!listed.length) problems.push('not in manifest');
+      if (sha && listed.some(w => w.sha256 !== sha)) problems.push('manifest digest differs from rebuild');
+      results.set(stem, { feature: fixture.feature, problems });
+    }
+  } finally { await rm(scratch, { recursive: true, force: true }); }
+  const byFamily = new Map();
+  for (const r of results.values()) { const f = byFamily.get(r.feature) ?? { ok: 0, bad: [] }; r.problems.length ? f.bad.push(r) : f.ok++; byFamily.set(r.feature, f); }
+  for (const [family, f] of byFamily) console.log(`${f.bad.length ? '✕' : '✓'} ${family.padEnd(26)} ${f.ok}/${f.ok + f.bad.length} artifacts reproduce from source`);
+  for (const [stem, r] of results) if (r.problems.length) console.log(`  ${stem}: ${r.problems.join('; ')}`);
+  const failed = [...results.values()].filter(r => r.problems.length).length;
+  console.log(`${results.size - failed}/${results.size} artifacts rebuilt byte-for-byte with ${compiler}.`);
+  if (failed) process.exitCode = 1;
+} else throw new Error('Usage: feature-corpus.mjs build|check|verify [--family=<family>,…] [--ids=features/<family>/<name>,…]');

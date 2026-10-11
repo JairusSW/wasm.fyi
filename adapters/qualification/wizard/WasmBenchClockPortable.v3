@@ -1,0 +1,18 @@
+// JVM System.nanoTime clocks; wrap extension preserves five-minute workload deadlines.
+component WasmfyiWizardClock {
+    def now() -> (u32, u32) {
+        return (u32.view(System.ticksNs()), u32.view(System.ticksUs()));
+    }
+    def elapsed(start: (u32, u32)) -> u64 {
+        var end = now();
+        var nanos = u64.view(end.0 - start.0);
+        var micros = u64.view(end.1 - start.1) * 1000uL;
+        // Virgil clocks expose wrapping 32-bit values. The microsecond clock
+        // identifies nanosecond wraps for the external five-minute deadline.
+        if (micros > nanos + 0x8000_0000uL) {
+            var wraps = (micros - nanos + 0x8000_0000uL) / 0x1_0000_0000uL;
+            nanos += wraps * 0x1_0000_0000uL;
+        }
+        return nanos;
+    }
+}

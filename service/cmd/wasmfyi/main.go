@@ -30,7 +30,7 @@ func run(ctx context.Context, args []string) error {
 		action = args[0]
 		args = args[1:]
 	}
-	if action == "serve" || action == "ingest" || action == "remove-engine" || action == "remove-platform" {
+	if action == "serve" || action == "ingest" || action == "remove-revision" || action == "remove-engine" || action == "remove-platform" || action == "migrate-compact" || action == "migrate-sql" {
 		return runCompact(ctx, action, args)
 	}
 	if action == "legacy-serve" {
@@ -180,6 +180,9 @@ func run(ctx context.Context, args []string) error {
 	}
 	handler, e := api.NewWithPreparedPageData(s, token, cursorKey, requestLimits, static, *pageData)
 	if e != nil {
+		return e
+	}
+	if e := handler.(*api.API).EnableDashboard(*root, *addr); e != nil {
 		return e
 	}
 	if *latencyData != "" {

@@ -3,18 +3,18 @@
 	import {CALL_PATHS} from '$lib/call-paths';
 	import HistoryWindow from '../HistoryWindow.svelte';
  import {apiHistory} from '$lib/api/history.svelte';
- import {apiView,loadHistory} from '$lib/api/controller.svelte';
+ import {apiView,historyPending,loadHistory,loadHistoryComparison} from '$lib/api/controller.svelte';
  import { tipCard, tipWho } from '$lib/tip';
 	import { siteHref } from '$lib/links';
 	import { goto } from '$lib/navigation';
 	import { CFG } from '$lib/data/runtimes';
-	import { EVENTS, OTM, OTM_KEYS, SNAPS, verAt } from '$lib/data/snapshot';
+	import { OTM, OTM_KEYS, SNAPS, verAt } from '$lib/data/snapshot';
 	import type { CfgId } from '$lib/data/types';
 	import { pc } from '$lib/format';
 	import { href } from '$lib/links';
 	import { compileExcluded, isOff, isVisible, otSeries, seriesFmt } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
-import { historySegments, historyCurve, historyReusesEvidence, historyPointInfo, historyEndpoints, historyVersionChanges, historyCoverage, historyComparison } from '$lib/history-values';
+import { historySegments, historyCurve, commitPinned, historyReusesEvidence, historyPointInfo, historyEndpoints, historyVersionChanges, historyCoverage, historyComparison } from '$lib/history-values';
 import { viewData } from '$lib/view-data';
 import { onscreen } from '$lib/onscreen';
 import { RangeSelect } from '$lib/range-select.svelte';
@@ -22,6 +22,7 @@ import TipDelta from '../TipDelta.svelte';
 import TipCoverage from '../TipCoverage.svelte';
 import TipCalls from '../TipCalls.svelte';
 import HistoryMarker from '../HistoryMarker.svelte';
+import MarkerKey from '../MarkerKey.svelte';
 	import Carousel from '../Carousel.svelte';
 	import RtLabel from '../RtLabel.svelte';
 	import Tabs from '../Tabs.svelte';
@@ -44,8 +45,16 @@ import HistoryMarker from '../HistoryMarker.svelte';
  function observeHistory(node:HTMLElement){const observer=new IntersectionObserver(entries=>{visible=entries.some(entry=>entry.isIntersecting)});observer.observe(node);return {destroy(){observer.disconnect()}}}
  $effect(()=>{
   if(!visible||!apiView.ready)return;
-  const scope={machine:ui.machine,snapshot:ui.snap,metric:ui.metric,hide:{...ui.scope.hide},baseline:ui.baseline,weighting:ui.weighting};
+  apiView.historyRevision;
+  const scope={...ui.scope,machine:ui.machine,snapshot:ui.snap,metric:ui.metric,hide:{...ui.scope.hide}};
   void loadHistory(scope,ui.otMetric).then(()=>{const max=Math.max(0,SNAPS.length-1);ui.histFrom=Math.min(ui.histFrom,max);ui.histTo=Math.min(ui.histTo,max)});
+ });
+ $effect(()=>{
+  if(!visible||!apiView.ready||!apiHistory.compact)return;
+  const scope={...ui.scope,snapshot:ui.snap,metric:ui.metric},metric=ui.otMetric;
+  const from=SNAPS[ui.histFrom]?.date,to=SNAPS[ui.histTo]?.date;
+  if(!from||!to)return;
+  const timer=setTimeout(()=>void loadHistoryComparison(scope,metric,from,to),100);return ()=>clearTimeout(timer);
  });
 	const oi = $derived(OTM_KEYS.indexOf(ui.otMetric));
 	const step = (d: number) => {
@@ -97,7 +106,7 @@ import HistoryMarker from '../HistoryMarker.svelte';
 				c,
 				na: false as const,
 				segments,
-				points: vals.flatMap((v,i)=>Number.isFinite(v)?[{i,x:WX(i),y:WY(v),version:versions.has(i)?verAt(c.id,i,s.machine):'',partial:!coverage[i].complete}]:[]),
+				points: vals.flatMap((v,i)=>Number.isFinite(v)?[{i,x:WX(i),y:WY(v),version:versions.has(i)?verAt(c.id,i,s.machine):'',commit:commitPinned(viewData.history[s.machine].versions[c.id]?.[i]),partial:!coverage[i].complete}]:[]),
 				hv,
 				hx: hv ? WX(hi_).toFixed(1) : '0',
 				dl: hv ? pc(WX(hi_), 600) : '0%',
@@ -111,29 +120,22 @@ import HistoryMarker from '../HistoryMarker.svelte';
 							ver: `${c.rt} ${verAt(c.id, hi_,ui.machine)}`,
 							release: versions.has(hi_),
 							val: fv(vals[hi_]),
-							delta: reused ? 'reused' : hd ? hd.t : 'no prior',
+							delta: reused ? '~' : hd ? hd.t : 'no prior',
 							dDir: reused || !hd || !previous ? null : Math.sign(previous.after - previous.before),
 							matched: !reused && hd && previous?.count ? previous.count : 0,
-							dColor: hd ? col(hd) : 'var(--fg3)',
-							ev: EVENTS.filter((e) => e.i === hi_).map((e) => e.label),
+							dColor: reused ? 'var(--fg3)' : hd ? col(hd) : 'var(--fg3)',
 							tf: hi_ > 9 ? 'translate(calc(-100% - 10px), -50%)' : 'translate(10px, -50%)'
 						}
 					: null,
-				now: hv ? fv(vals[hi_]) : Number.isFinite(last)?fv(last):'not measured',
-				delta: reused ? 'reused evidence' : hv ? (hd ? hd.t : '—') : d8?.t || 'not measured',
-				dColor: hv ? (hd ? col(hd) : 'var(--fg3)') : d8?col(d8):'var(--fg3)'
+				now: hv ? fv(vals[hi_]) : Number.isFinite(last)?fv(last):'n/a',
+				reused,
+				delta: reused ? '~' : hv ? (hd ? hd.t : '—') : d8?.t || 'n/a',
+				dColor: reused ? 'var(--fg3)' : hv ? (hd ? col(hd) : 'var(--fg3)') : d8?col(d8):'var(--fg3)'
 			};
 		});
 	});
 
 	const sh = $derived(hover?.i ?? null);
-	const spEvent = $derived(
-		sh == null
-			? ''
-			: EVENTS.filter((e) => e.i === sh)
-					.map((e) => e.label)
-					.join(' · ')
-	);
 	// Links carry the selected range so the history report opens on it.
 	const histHref = (id: CfgId) =>
 		href('/history', {
@@ -146,7 +148,7 @@ import HistoryMarker from '../HistoryMarker.svelte';
 
 <svelte:window onkeydown={(e) => e.key === 'Escape' && range.clear()} />
 
-<div class="stack" use:observeHistory>
+<div id="history" class="stack" use:observeHistory>
  <HistoryWindow />
 	<Tabs options={OTM_KEYS.map((k) => [k, OTM[k].l])} value={ui.otMetric} onselect={(k) => (ui.otMetric = k)} />
 	<div class="toolbar">
@@ -157,17 +159,35 @@ import HistoryMarker from '../HistoryMarker.svelte';
 			onnext={() => step(1)}
 			noun="metric"
 		/>
-		<span class="s12 fg3">◆ release · ● source snapshot · ○ partial coverage · changes use matched workloads</span>
-		<span class="s12 fg2">{spEvent}</span>
-		<span class="s12 fg3">drag a sparkline, or click then shift+click, to set the Δ range</span>
+		<MarkerKey note="changes use matched workloads" />
 		{#if !full}<button class="link-quiet s12" onclick={() => { ui.histFrom = 0; ui.histTo = SNAPS.length - 1; }}>reset range</button>{/if}
 		<a class="link-quiet push" href={siteHref(histHref(ui.histCfg))}>History</a>
 	</div>
- {#if apiHistory.loading}<p class="small fg3" role="status">Loading selected history…</p>{/if}
+ {#if apiHistory.loading&&SNAPS.length&&!historyPending(ui.machine)}<p class="small fg3" role="status">Loading selected history…</p>{/if}
  {#if apiHistory.error}<p role="alert">{apiHistory.error}</p>{/if}
- {#if !SNAPS.length}<p class="small fg3">No historical target-date bindings are published for this scope and window.</p>{:else}
+ {#if historyPending(ui.machine)}
+	<div class="tbl-wrap" aria-busy="true">
+		<table class="t sp">
+			<!-- Fixed column widths: hovering swaps header and value text, which must not resize columns. -->
+			<colgroup><col class="c-rt" /><col /><col class="c-now" /><col class="c-delta" /></colgroup>
+			<thead><tr><th>Runtime</th><th></th><th class="r">Now</th><th class="r">Δ</th></tr></thead>
+			<tbody>
+				{#each [70, 56, 82, 64, 50, 76] as w, k (w)}
+					<tr aria-hidden="true">
+						<td class="nowrap w1"><span class="skel" style:width="{w * 1.5}px"></span></td>
+						<td class="spark-td"><div class="spark"><svg viewBox="0 0 600 34" preserveAspectRatio="none" class="skel-spark"><path d={`M6 ${17 + (k % 3) * 3} C 150 ${8 + k * 2}, 300 ${26 - k}, 450 ${14 + k} S 560 ${20 - k} 594 ${16 + (k % 2) * 5}`} /></svg></div></td>
+						<td class="r v"><span class="skel" style:width="3.5em"></span></td>
+						<td class="r v"><span class="skel" style:width="3em"></span></td>
+					</tr>
+				{/each}
+			</tbody>
+		</table>
+	</div>
+ {:else if !SNAPS.length}<p class="small fg3">No historical target-date bindings are published for this scope and window.</p>{:else}
 	<div class="tbl-wrap" role="presentation" onmouseleave={() => (hover = null)}>
 		<table class="t sp">
+			<!-- Fixed column widths: hovering swaps header and value text, which must not resize columns. -->
+			<colgroup><col class="c-rt" /><col /><col class="c-now" /><col class="c-delta" /></colgroup>
 			<thead>
 				<tr>
 					<th>Runtime</th>
@@ -205,10 +225,7 @@ import HistoryMarker from '../HistoryMarker.svelte';
 											/>
 										{/each}
 									</svg>
-									{#each h.points as p (p.i)}<HistoryMarker x={pc(p.x,600)} y={pc(p.y,34)} color={h.c.col} version={p.version} partial={p.partial} />{/each}
-									{#if h.hv}
-										<span class="dot" style:left={h.dl} style:top={h.dt} style:border-color={h.c.col}></span>
-									{/if}
+									{#each h.points as p (p.i)}<HistoryMarker x={pc(p.x,600)} y={pc(p.y,34)} color={h.c.col} version={p.version} commit={p.commit} partial={p.partial} hot={h.hv && p.i === hover?.i} />{/each}
 									{#if h.tip}
 										<div class="tip float" role="tooltip" style:left={h.dl} style:transform={h.tip.tf} use:onscreen={h.tip}>
 											<span class="tip-top"><span class="mono">{h.tip.date}</span><span class:rel={h.tip.release}>{h.tip.release ? '◆ ' : ''}{h.c.rt} <VersionLink id={h.c.id} version={viewData.history[ui.machine].versions[h.c.id]?.[h.tip.index]} source={viewData.history[ui.machine].sources?.[h.c.id]?.[h.tip.index]} /></span></span>
@@ -219,9 +236,8 @@ import HistoryMarker from '../HistoryMarker.svelte';
 											{#if h.tip.matched}<span class="tip-note">vs previous · {h.tip.matched} matched workloads</span>{/if}
 											{#if !h.tip.info.coverage.complete}<TipCoverage measured={h.tip.info.coverage.measured} reference={h.tip.info.coverage.reference} />{/if}
 											{#if h.tip.info.calls}<TipCalls {...h.tip.info.calls} color={h.c.col} />{/if}
-											{#if h.tip.ev.length || h.tip.info.archived}
+											{#if h.tip.info.archived}
 												<span class="tip-chips">
-													{#each h.tip.ev as e (e)}<span class="chip">{e}</span>{/each}
 													{#if h.tip.info.archived}<span class="chip fg3">archived</span>{/if}
 												</span>
 											{/if}
@@ -231,7 +247,7 @@ import HistoryMarker from '../HistoryMarker.svelte';
 							</div>
 						</td>
 						<td class="mono r nowrap w1 v">{h.now}</td>
-						<td class="mono r nowrap w1 v" style:color={h.na ? 'var(--fg3)' : h.dColor}>{h.na ? '' : h.delta}</td>
+						<td class="mono r nowrap w1 v" style:color={h.na ? 'var(--fg3)' : h.dColor} data-tip={!h.na && h.reused ? 'No change: both ends reuse the same measurement' : undefined}>{h.na ? '' : h.delta}</td>
 					</tr>
 				{/each}
 			</tbody>
@@ -254,8 +270,12 @@ import HistoryMarker from '../HistoryMarker.svelte';
 		margin-left: auto;
 	}
 	.sp {
+		table-layout: fixed;
 		min-width: 640px;
 		font-size: 13px;
+		/* Presses between sparklines (row borders, cell padding) must not start a text selection. */
+		user-select: none;
+		-webkit-user-select: none;
 	}
 	tr {
 		cursor: pointer;
@@ -263,19 +283,36 @@ import HistoryMarker from '../HistoryMarker.svelte';
 	.w1 {
 		width: 1%;
 	}
+	.c-rt {
+		width: 240px;
+	}
+	.c-now {
+		width: 110px;
+	}
+	.c-delta {
+		width: 170px;
+	}
+	/* Clip long labels to their column; the sparkline cell keeps its overflowing tooltip. */
+	.sp td:not(.spark-td),
+	.sp th {
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
 	.rt {
 		text-decoration: none;
 		display: inline-flex;
 	}
 	.spark-td {
-		padding: 4px 12px;
+		padding: 2px 12px;
 	}
 	.v {
-		padding: 5px 12px;
+		padding: 3px 12px;
 	}
 	.spark {
 		position: relative;
-		height: 36px;
+		user-select: none;
+		-webkit-user-select: none;
+		height: 30px;
 		min-width: 300px;
 	}
 	svg {
@@ -291,6 +328,14 @@ import HistoryMarker from '../HistoryMarker.svelte';
 		stroke-linejoin: round;
 		vector-effect: non-scaling-stroke;
 	}
+	.skel-spark path {
+		stroke: var(--bg3);
+		stroke-width: 3;
+		animation: skel-pulse 1.6s ease-in-out infinite;
+	}
+	@keyframes skel-pulse {
+		50% { stroke: color-mix(in srgb, var(--fg) 12%, var(--bg3)); }
+	}
 	.cross {
 		stroke: var(--fg3);
 		vector-effect: non-scaling-stroke;
@@ -298,16 +343,6 @@ import HistoryMarker from '../HistoryMarker.svelte';
 	rect {
 		fill: transparent;
 		cursor: crosshair;
-	}
-	.dot {
-		position: absolute;
-		width: 7px;
-		height: 7px;
-		border-radius: 50%;
-		background: var(--bg2);
-		border: 2px solid;
-		transform: translate(-50%, -50%);
-		pointer-events: none;
 	}
 	.sel-range {
 		fill: var(--bg3);
@@ -332,7 +367,8 @@ import HistoryMarker from '../HistoryMarker.svelte';
 		position: absolute;
 		top: 50%;
 		z-index: 5;
-		pointer-events: auto;
+		/* Click-through, so hovering and range selection keep tracking the sparklines underneath. */
+		pointer-events: none;
 		padding: 6px 9px;
 		display: flex;
 		flex-direction: column;

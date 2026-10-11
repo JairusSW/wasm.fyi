@@ -2,10 +2,10 @@ import {apiView,aggregateKey,trackId} from './api/controller.svelte';
 import {datasetView} from './api/view.svelte';
 import {metricSelectors} from './api/presentation';
 import { viewCell, viewData, type ViewCell } from './view-data';
-import type { CfgId } from './data/types';
+import type { Bench, CfgId } from './data/types';
 import type { PerfGroup, Scope } from './model';
-import { measuredCohort, nativeCodeParticipants, cohortWeights, weightedGeometricMean } from './comparison-policy';
-export { measuredCohort, cohortWeights, weightedGeometricMean } from './comparison-policy';
+import { measuredCohort, nativeCodeParticipants, cohortWeights, weightedAverage } from './comparison-policy';
+export { measuredCohort, cohortWeights, weightedAverage, weightedGeometricMean } from './comparison-policy';
 
 export interface Aggregate {
 	v:number; r:number; ci:number; ratioInterval?:[number,number]; interval?:[number,number];
@@ -13,18 +13,31 @@ export interface Aggregate {
 }
 const metrics:Record<PerfGroup,(string|null)[]>={lat:['compile','inst','first','steady'],mem:['rssCompile','rssInst','rss','rssAverage'],code:[null,null,null,'code',null]};
 const cache=new Map<string,Aggregate|null>();
+const cohortCache=new Map<string,{participants:CfgId[];cohort:Bench[]}>();
+let cohortGeneration=-1;
+let cohortView:typeof viewData.hosts|undefined;
+
 const median=(xs:number[])=>{const s=[...xs].sort((a,b)=>a-b);return s.length%2?s[s.length>>1]:(s[(s.length>>1)-1]+s[s.length>>1])/2;};
 const quantile=(xs:number[],q:number)=>{const s=[...xs].sort((a,b)=>a-b);const p=(s.length-1)*q;return s[Math.floor(p)]+(s[Math.ceil(p)]-s[Math.floor(p)])*(p%1);};
 
 /** The exact current cohort, shared by headline and canonical release history. */
 export function aggregateCohort(s:Scope,group:PerfGroup,cid:CfgId,col:number) {
  const metric=metrics[group][col];
+ // Track the data read even on a cache hit so Svelte invalidates consumers.
+ const hosts=viewData.hosts;
+ if(cohortGeneration!==datasetView.generation||cohortView!==hosts){cohortCache.clear();cohortGeneration=datasetView.generation;cohortView=hosts;}
  const ids=viewData.applicationConfigurations;
- const selected=[...new Set([...ids.filter(id=>!s.hide[id]),s.baseline])].filter(id=>!!viewData.hosts[s.machine].configurations[id]);
+ // The shown engines (and this one); a hidden baseline never narrows the shared cohort.
+ const selected=[...new Set([...ids.filter(id=>!s.hide[id]),cid])].filter(id=>!!viewData.hosts[s.machine].configurations[id]);
+ const cacheKey=JSON.stringify([s.machine,s.snapshot||'s1',s.cohortMode,selected,cid,group,col]);
+ const cached=cohortCache.get(cacheKey);if(cached)return cached;
  const workloads=viewData.catalogue.filter(w=>!w.id.startsWith('features/'));
  const cell=(w:string,c:CfgId)=>viewCell(s.machine,s.snapshot || 's1',w,c,metric || '');
  const applicable=group==='code'?nativeCodeParticipants(workloads,selected,cell):selected;
- return measuredCohort(workloads,metric?(s.cohortMode==='per-engine'?[cid]:applicable):[],cid,cell,s.cohortMode==='shared');
+ // Shared: workloads every shown engine *with results* passed. An engine with no measurements
+ // at all drops out instead of emptying the cohort for everyone.
+ const result=measuredCohort(workloads,metric?(s.cohortMode==='per-engine'?[cid]:applicable):[],cid,cell,false);
+ if(cohortCache.size>=256)cohortCache.clear();cohortCache.set(cacheKey,result);return result;
 }
 
 /** A host-local shared workload cohort merged from sealed reports; each cell retains its evidence. */
@@ -36,6 +49,13 @@ export function compilerRSSCoverage(machine:Scope['machine'],snapshot:'s1'|'s2',
 
 export function aggregate(s:Scope,group:PerfGroup,cid:CfgId,col:number):Aggregate|null {
 	const metric=metrics[group][col];
+ if(metric){
+  const prepared=apiView.precomputed[aggregateKey(s,metric)];
+  if(prepared){const card=prepared.cards.find(card=>card.engine===trackId(cid));if(card){if(card.value==null)return null;
+   const factor=metric==='code'?1024:metric.startsWith('rss')?1024**2:1e6;
+   return {v:card.value/factor,r:card.ratio??Number.NaN,ci:Number.NaN,count:card.count,report:(card.latestCreated||'')+'|'+card.engine,reports:[]};
+  }}
+ }
  if(datasetView.revision){
   if(!metric)return null;
   const overview=apiView.aggregates[aggregateKey(s,metric)],card=overview?.cards.find(c=>c.lane===trackId(cid));
@@ -46,7 +66,7 @@ export function aggregate(s:Scope,group:PerfGroup,cid:CfgId,col:number):Aggregat
 	const ids=viewData.applicationConfigurations;
 	const visible=ids.filter(id=>!s.hide[id]);
 	const selected=[...new Set([...visible,s.baseline])].filter(id=>!!viewData.hosts[s.machine].configurations[id]);
-	const key=JSON.stringify([datasetView.generation,s.machine,s.snapshot || 's1',s.weighting,s.cohortMode||'legacy',selected,cid,group,col]);
+	const key=JSON.stringify([datasetView.generation,s.machine,s.snapshot || 's1',s.weighting,s.cohortMode||'legacy',s.average||'geo',selected,s.baseline,cid,group,col]);
 	if(cache.has(key))return cache.get(key)!;
 	const remember=(value:Aggregate|null)=>{if(cache.size>512)cache.clear();cache.set(key,value);return value;};
 	if(group==='mem' && col===3) {
@@ -76,7 +96,8 @@ export function aggregate(s:Scope,group:PerfGroup,cid:CfgId,col:number):Aggregat
 	const weights=cohortWeights(cohort,s.weighting);
 	const columns=(c:CfgId)=>cohort.map(w=>cell(w.id,c));
 	const numerator=columns(cid),denominator=s.cohortMode==='per-engine'?[]:columns(s.baseline);
-	const mean=(cells:ViewCell[],draw?:number[])=>weightedGeometricMean(cells.map(c=>draw?median(draw.map(j=>c.launchMedians![j])):c.v!),weights);
+	const average=weightedAverage(s.average);
+	const mean=(cells:ViewCell[],draw?:number[])=>average(cells.map(c=>draw?median(draw.map(j=>c.launchMedians![j])):c.v!),weights);
 	const baselineAvailable=participants.includes(s.baseline);
 	const value=mean(numerator),base=s.cohortMode==='per-engine'?(cid===s.baseline?value:aggregate(s,group,s.baseline,col)?.v??Number.NaN):baselineAvailable?mean(denominator):Number.NaN,ratio=cid===s.baseline?1:value/base;
 	const result:Aggregate={v:value,r:ratio,ci:Number.NaN,count:cohort.length,report,reports};

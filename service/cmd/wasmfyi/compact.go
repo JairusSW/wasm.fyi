@@ -15,6 +15,7 @@ import (
 
 	"github.com/JairusSW/wasm.fyi/service/internal/api"
 	"github.com/JairusSW/wasm.fyi/service/internal/benchdb"
+
 	"github.com/JairusSW/wasm.fyi/service/internal/frontend"
 	"github.com/JairusSW/wasm.fyi/service/internal/wire"
 )
@@ -22,11 +23,14 @@ import (
 func runCompact(ctx context.Context, action string, args []string) error {
 	f := flag.NewFlagSet("wasmfyi "+action, flag.ContinueOnError)
 	root := f.String("data", ".wasmfyi", "private benchmark database directory")
+	storage := f.String("storage", "auto", "database implementation: auto, sqlite, or legacy")
 	addr := f.String("listen", "127.0.0.1:8090", "HTTP listen address")
 	assets := f.String("frontend", "", "static frontend build")
+	revision := f.String("revision", "", "revision prefix to remove and block (remove-revision)")
 	engine := f.String("engine", "", "engine to remove (remove-engine)")
 	platform := f.String("platform", "", "obsolete platform to remove (remove-platform)")
 	input := f.String("input", "", "compact capture JSON file (ingest)")
+	output := f.String("output", "", "new lossless compact database destination (migrate-compact)")
 	readOnly := f.Bool("read-only", false, "disable publication")
 	proxies := f.String("trusted-proxies", "", "comma-separated trusted proxy CIDRs")
 	if e := f.Parse(args); e != nil {
@@ -35,11 +39,41 @@ func runCompact(ctx context.Context, action string, args []string) error {
 	if f.NArg() != 0 {
 		return fmt.Errorf("unexpected arguments")
 	}
+	if action == "migrate-compact" && *output == "" {
+		return fmt.Errorf("migrate-compact requires a new --output directory")
+	}
+	if action == "migrate-sql" {
+		return migrateSQL(ctx, *root, *output)
+	}
+	if *storage != "auto" && *storage != "sqlite" && *storage != "legacy" {
+		return fmt.Errorf("unknown storage implementation")
+	}
+	useSQL := *storage == "sqlite"
+	if *storage == "auto" {
+		_, err := os.Stat(*root + "/benchmarks.sqlite")
+		useSQL = err == nil
+	}
+	if action == "remove-revision" {
+		if !useSQL {
+			return fmt.Errorf("remove-revision requires SQLite storage")
+		}
+		return removeSQLRevision(ctx, *root, *engine, *revision)
+	}
+	if useSQL {
+		return runSQL(ctx, action, *root, *input, *addr, *assets, *readOnly, *proxies)
+	}
 	db, e := benchdb.Open(*root)
 	if e != nil {
 		return e
 	}
 	defer db.Close()
+	if action == "migrate-compact" {
+		migration, err := db.MigrateCopy(ctx, *output)
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(os.Stdout).Encode(migration)
+	}
 	if action == "remove-platform" {
 		if *platform == "" {
 			return fmt.Errorf("remove-platform requires --platform")
@@ -81,11 +115,15 @@ func runCompact(ctx context.Context, action string, args []string) error {
 		}
 		return json.NewEncoder(os.Stdout).Encode(map[string]string{"id": id})
 	}
+	return serveBenchmark(ctx, db, *root, *addr, *assets, *readOnly, *proxies)
+}
+
+func serveBenchmark(ctx context.Context, db api.BenchmarkStore, root, addr, assets string, readOnly bool, proxies string) error {
 	token := os.Getenv("WASMFYI_ADMIN_TOKEN")
 	if len(token) < 32 {
 		return fmt.Errorf("WASMFYI_ADMIN_TOKEN must contain at least 32 characters")
 	}
-	host, _, e := net.SplitHostPort(*addr)
+	host, _, e := net.SplitHostPort(addr)
 	if e != nil {
 		return e
 	}
@@ -94,14 +132,16 @@ func runCompact(ctx context.Context, action string, args []string) error {
 		return fmt.Errorf("serve on loopback behind a HTTPS proxy")
 	}
 	limits := api.DefaultRequestLimits()
-	if *proxies != "" {
-		if e = addCompactProxies(&limits, *proxies); e != nil {
+	if proxies != "" {
+		if e = addCompactProxies(&limits, proxies); e != nil {
 			return e
 		}
 	}
 	var static http.Handler
-	if *assets != "" {
-		h, e := frontend.Open(*assets, func(context.Context, string) (bool, error) { return false, nil })
+	if assets != "" {
+		// The benchmark store has no workload index, so any well-formed workload path is served
+		// the application shell; the page itself reports a workload it cannot find.
+		h, e := frontend.Open(assets, func(_ context.Context, workload string) (bool, error) { return workload != "", nil })
 		if e != nil {
 			return e
 		}
@@ -112,10 +152,18 @@ func runCompact(ctx context.Context, action string, args []string) error {
 	if e != nil {
 		return e
 	}
-	if *readOnly {
+	dashboardServer := handler.(interface {
+		EnableDashboard(string, string) error
+		Close() error
+	})
+	if e := dashboardServer.EnableDashboard(root, addr); e != nil {
+		return e
+	}
+	defer dashboardServer.Close()
+	if readOnly {
 		handler = api.ReadOnlyBenchmarks(handler)
 	}
-	listener, e := net.Listen("tcp", *addr)
+	listener, e := net.Listen("tcp", addr)
 	if e != nil {
 		return e
 	}
@@ -134,7 +182,7 @@ func runCompact(ctx context.Context, action string, args []string) error {
 		case <-done:
 		}
 	}()
-	log.Printf("Benchmark database: %s; listening on %s", *root, *addr)
+	log.Printf("Benchmark database: %s; listening on %s", root, addr)
 	e = server.Serve(listener)
 	if e == http.ErrServerClosed {
 		<-shutdownDone

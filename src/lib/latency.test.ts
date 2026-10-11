@@ -49,3 +49,27 @@ it('uses a qualified source snapshot ahead of an installed build with unknown so
  const latest={...row('new','a',1),version:'49',source:{repository:'example/engine',revision:'b'.repeat(40),ref:'main',kind:'snapshot' as const,asOf:'2026-10-07T00:00:00Z'}};
  expect(selectEngineVersions([installed,latest])).toEqual([latest]);
 });
+it('keeps failed rows and successful producer labels in the same pinned source snapshot',()=>{
+ for(const engine of ['wasm2c-gcc','graalwasm']){
+  const source={repository:'example/engine',revision:'b'.repeat(40),ref:'main',kind:'snapshot' as const,asOf:'2026-10-09T08:07:55.636Z'};
+  const good={...row('good',engine,1),version:engine==='wasm2c-gcc'?'wasm2c-gcc:artifact-build':source.revision,backend:engine==='wasm2c-gcc'?'c-aot':'truffle-graal',source};
+  const failed={...row('failed',engine,null),version:source.revision,backend:engine,source};
+  expect(selectEngineVersions([failed,good])).toEqual([failed,good]);
+  expect(latencyAverages([failed,good],[engine],'per-engine')[0].count).toBe(1);
+ }
+});
+
+it('prefers corrected Turboshaft cells without mixing retained legacy optimizer timings',()=>{
+ const source={repository:'nodejs/node',revision:'b'.repeat(40),ref:'main',kind:'snapshot' as const,asOf:'2026-09-27T10:00:00Z'};
+ const legacy={...row('shared','v8',100),backend:'optimizing-only',source};
+ const corrected={...legacy,backend:'turboshaft',latencyNs:4};
+ const unknown={...row('shared','v8',null),backend:'v8',source};
+ const failed={...row('failed','v8',null),backend:'v8',source};
+ const legacyOnly={...legacy,workload:'legacy-only'};
+ for(const input of [[legacy,unknown,corrected,failed,legacyOnly],[corrected,unknown,legacy,failed,legacyOnly]]){
+  expect(selectEngineVersions(input)).toEqual(input.filter(r=>r===corrected||r===failed));
+  expect(latencyAverages(input,['v8'],'per-engine')[0]).toEqual({engine:'v8',count:1,value:4});
+ }
+ const newer={...legacy,source:{...source,revision:'c'.repeat(40),asOf:'2026-10-04T10:00:00Z'}};
+ expect(selectEngineVersions([corrected,newer])).toEqual([newer]);
+});

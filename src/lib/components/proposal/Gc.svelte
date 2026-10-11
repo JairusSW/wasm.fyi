@@ -2,7 +2,7 @@
 	import { CFG } from '$lib/data/runtimes';
 	import { featureValue, familyValue } from '$lib/feature-values';
  import { featureContracts } from '$lib/model';
- import { fmtU } from '$lib/format';
+ import { fmtU, fmtAverage } from '$lib/format';
 	import { isVisible } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 	import BarRow from '../BarRow.svelte';
@@ -25,14 +25,14 @@
 		<div><div class="card-title">GC corpus execution</div><div class="note">geomean across successful complete GC corpus · lower is better</div></div>
 		{#each vis as c (c.id)}
 			{@const d = GC_D[c.id]}
-			<BarRow {c} ok={!!d.thr} w={w(d.thr ?? 0, thrMax)} text={d.thr==null?'':fmtU(d.thr,'ms')} status={d.st} statusColor={stColor(d.st)} />
+			<BarRow {c} ok={!!d.thr} w={w(d.thr ?? 0, thrMax)} text={d.thr==null?'':fmtAverage(d.thr,'ms')} status={d.st} statusColor={stColor(d.st)} />
 		{/each}
 	</div>
 	<div class="card">
 		<div><div class="card-title">Steady process peak RSS</div><div class="note">includes adapter process · lower is better</div></div>
 		{#each vis as c (c.id)}
 			{@const d = GC_D[c.id]}
-			<BarRow {c} ok={!!d.ratio} w={w(d.ratio ?? 0, ratioMax)} text={d.ratio==null?'':fmtU(d.ratio,'MiB')} status={d.st} statusColor={stColor(d.st)} />
+			<BarRow {c} ok={!!d.ratio} w={w(d.ratio ?? 0, ratioMax)} text={d.ratio==null?'':fmtAverage(d.ratio,'MiB')} status={d.st} statusColor={stColor(d.st)} />
 		{/each}
 	</div>
 </div>
@@ -51,7 +51,7 @@
 					{#each vis as c (c.id)}
 						{@const d = GC_D[c.id]}
             {@const v=featureValue(ui.scope,id,c.id)}
-            <td class="mono r pad">{v==null?'not measured':fmtU(v,'ms')}</td>
+            <td class="mono r pad">{v==null?'n/a':fmtU(v,'ms')}</td>
 					{/each}
 				</tr>
 			{/each}

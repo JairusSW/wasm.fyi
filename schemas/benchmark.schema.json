@@ -117,6 +117,9 @@
             "type": "number",
             "minimum": 0
           }
+        },
+        "sampling": {
+          "$ref": "#/$defs/Sampling"
         }
       },
       "required": [
@@ -443,6 +446,9 @@
             "type": "number",
             "minimum": 0
           }
+        },
+        "sampling": {
+          "$ref": "#/$defs/Sampling"
         }
       },
       "required": [
@@ -553,6 +559,43 @@
         "reset": {
           "type": "string",
           "maxLength": 128
+        }
+      }
+    },
+    "Sampling": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "method",
+        "groupSize",
+        "maxSamples",
+        "warmup",
+        "retainedStart",
+        "stopReason"
+      ],
+      "properties": {
+        "method": {
+          "const": "same-process-stability-v1"
+        },
+        "groupSize": {
+          "const": 5
+        },
+        "maxSamples": {
+          "enum": [10, 25, 35]
+        },
+        "warmup": {
+          "const": 0
+        },
+        "retainedStart": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 25
+        },
+        "stopReason": {
+          "enum": [
+            "stable",
+            "sample-cap"
+          ]
         }
       }
     }

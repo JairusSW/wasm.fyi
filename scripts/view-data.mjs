@@ -39,6 +39,7 @@ const settings=await config();
 for(const report of reports)for(const runtime of report.runtimes) {
   const modes={'v8-optimizing-only':'optimizing-only','v8-liftoff-only':'liftoff-only'};
   if(runtime.id==='v8' && ['optimizing-only','liftoff-only'].includes(runtime.description.backend))modes.v8=runtime.description.backend;
+  if(runtime.id==='v8'&&runtime.description.backend==='turboshaft')modes.v8='optimizing-only';
   if(modes[runtime.id])validateV8Description(runtime.description,settings.node,modes[runtime.id],{allowLegacyCache:true});
 }
 // Historical WasmFX reports remain in the sealed evidence store, but the

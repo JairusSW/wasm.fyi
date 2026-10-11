@@ -31,16 +31,12 @@
     "wagoSource": "../../Wago/wago",
     "launches": 1,
     "workers": "25%",
-    "samples": 3,
+    "samples": 5,
     "scenarioSamples": {
-      "*": 1,
-      "compile": 3,
-      "instantiate": 3,
-      "first-call": 1,
-      "steady": 3
+      "*": 5
     },
     "operations": 1,
-    "warmup": 3,
+    "warmup": 0,
     "memory": true,
     "timingPeakRSS": true,
     "code": true,
@@ -53,7 +49,15 @@
       "revision": "9f01d145d54ac7ab458b6b2f6047db90a757410a"
     },
     "includeFeatures": false,
-    "capture": "latency"
+    "capture": "latency",
+    "adaptiveSampling": {
+      "groupSize": 5,
+      "maxSamples": 35,
+      "warmup": 0,
+      "maxRelativeStdDev": 0.05,
+      "maxRelativeDrift": 0.03,
+      "settlingSigma": 2
+    }
   },
   "retention": 12,
   "hosts": {

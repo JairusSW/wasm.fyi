@@ -1,15 +1,14 @@
-import {readFile,writeFile,mkdir,stat} from 'node:fs/promises';
+import {readFile,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import {digest} from './wasmbench.mjs';
+import {prepareJavaScriptCoreMeasurementWorktree} from './jsc-measurement-worktree.mjs';
 
 // A read-only SDK measurement ABI. It runs only for code inspection, never
 // on compilation/execution paths, and returns extents rather than code bytes.
-export async function prepareJavaScriptCoreNativeSize({source,target,run}) {
+export async function prepareJavaScriptCoreNativeSize({source,target,run,sparse=false}) {
  const revision=(await run('git',['-C',source,'rev-parse','HEAD'])).output.trim();
  if((await run('git',['-C',source,'status','--porcelain','--untracked-files=no'])).output.trim())throw Error('Upstream JavaScriptCore source is dirty');
- await mkdir(target,{recursive:true});
- if(!await stat(join(target,'.git')).catch(()=>null))await run('git',['-C',source,'worktree','add','--detach',target,revision]);
- if((await run('git',['-C',target,'rev-parse','HEAD'])).output.trim()!==revision)throw Error('Measurement worktree has a different source revision');
+ await prepareJavaScriptCoreMeasurementWorktree({source,target,revision,run,sparse});
  const files=[];
  async function patch(path,transform){const original=await readFile(join(source,path),'utf8'),text=transform(original);if(await readFile(join(target,path),'utf8')!==text)await writeFile(join(target,path),text);files.push({path,upstreamSha256:digest(Buffer.from(original)),patchedSha256:digest(Buffer.from(text))});}
  function replace(text,anchor,value){if(!text.includes(anchor))throw Error('Unrecognized JSC measurement API: '+anchor);return text.replace(anchor,value);}

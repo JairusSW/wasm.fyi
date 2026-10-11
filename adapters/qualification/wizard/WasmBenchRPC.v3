@@ -1,0 +1,148 @@
+// The SDK owns the transport process and every measured guest invocation.
+component WasmfyiWizardRPC {
+    def revision = "399357ce20b8330ddc1888a93cceb0d4cf3762de";
+    def buffer = Array<byte>.new(4096);
+    var position = 0, available = 0;
+    var session: WasmfyiWizardSession;
+    var prepared: WasmfyiWizardPrepared;
+    var profile: string;
+
+    def line() -> Array<byte> {
+        var output = Vector<byte>.new();
+        while (true) {
+            if (position >= available) {
+                available = System.read(0, buffer);
+                position = 0;
+                if (available <= 0) return if(output.length > 0, output.extract());
+            }
+            var c = buffer[position]; position++;
+            if (c == '\n') return output.extract();
+            if (output.length >= 0x200_0000) return null;
+            output.put(c);
+        }
+        return null;
+    }
+    def field(value: JsonValue, key: string) -> JsonValue { return WasmfyiWizardJson.field(value, key); }
+    def text(value: JsonValue, key: string) -> string { return WasmfyiWizardJson.text(field(value, key)); }
+    def emit(value: JsonValue) { System.puts(value.render(StringBuilder.new()).toString()); System.puts("\n"); }
+    def response(id: int, status: string, reason: string) {
+        var output = JsonBuilder.new().num("version", 1).num("id", id).str("status", status);
+        if (reason != null) output.str("reason", reason);
+        emit(output.build());
+    }
+    def close() {
+        if (session != null) session.close();
+        session = null; prepared = null;
+    }
+    def describe(id: int) {
+        var mode = ExecuteOptions.wasmfyiMode();
+        if (!Strings.equal(mode, "spc") && !Strings.equal(mode, "int") && !Strings.equal(mode, "v3-int")) { response(id, "unsupported", "Selected Wizard mode is not qualified"); return; }
+        var runtime = if(Strings.equal(mode, "spc"), "wizard-spc", if(Strings.equal(mode, "int"), "wizard-fast-int", "wizard-v3-int"));
+        var configuration = JsonBuilder.new()
+            .str("compile_policy", "cached artifact bytes; fresh parse/validation and eager selected compiler per compile sample")
+            .str("call_policy", "SDK Execute.call clocks; argument conversion, input writes and independent oracle checks outside clocks")
+            .str("cache_policy", "one process and prepare; compiled module and stateless steady instance retained across sample groups")
+            .str("artifact_validation", "controller validates immutable cached artifact SHA-256; SDK loads its bytes once at prepare")
+            .str("mode", mode).build();
+        var capabilities = JsonBuilder.new().boo("can_compile_separately", true).boo("can_instantiate_separately", true)
+            .boo("can_run_vectors", true).boo("can_vector_compile_phases", true).boo("can_vector_instantiate_phases", true)
+            .boo("can_vector_first-call_phases", true).boo("can_code_profile", true).boo("can_measure_native_code_size", true).build();
+        var description = JsonBuilder.new().str("runtime", runtime).str("runtime_version", revision).str("build", "wasm-fyi Wizard SDK adapter v1")
+            .str("backend", if(Strings.equal(mode, "spc"), "singlepass-jit", "interpreter"))
+            .str("embedding", "persistent Virgil SDK embedding")
+            .add("abis", Jsons.strArray(["core"]))
+            .add("scenarios", Jsons.strArray(["compile", "instantiate", "first-call", "steady"]))
+            .add("effective_configuration", configuration).add("capabilities", capabilities).build();
+        emit(JsonBuilder.new().num("version", 1).num("id", id).str("status", "ok").add("description", description).build());
+    }
+    def prepare(engine: Engine, value: JsonValue) -> string {
+        close();
+        profile = text(value, "profile");
+        if (!Strings.equal(profile, "timing") && !Strings.equal(profile, "memory") && !Strings.equal(profile, "code")) return "unsupported: profile";
+        var workload = field(value, "workload");
+        if (!Strings.equal(text(workload, "abi"), "core")) return "unsupported: core ABI required";
+        var kind = text(field(workload, "oracle"), "kind");
+        if (!Strings.equal(kind, "exact_u64") && !Strings.equal(kind, "exact_vectors")) return "unsupported: oracle kind";
+        var path = text(value, "artifact");
+        var bytes = System.fileLoad(path);
+        if (bytes == null) return "Artifact could not be loaded";
+        session = WasmfyiWizardSession.new(engine, path, bytes);
+        prepared = WasmfyiWizardPrepared.new(workload, session);
+        if (!prepared.decode()) return prepared.reason;
+        return null;
+    }
+    def results(result: Result) -> JsonValue {
+        var strings = Vector<string>.new();
+        if (Result.Value.?(result)) for (value in Result.Value.!(result).vals) {
+            var bits = WasmfyiWizardOracle.bits(value);
+            strings.put(Strings.format1("%d", bits.0));
+        }
+        return Jsons.strArray(strings.extract());
+    }
+    def codeObservation(output: StringBuilder, module: Module) {
+        var bytes = if(module != null, Target.wasmfyiNativeCodeSize(module), 0uL);
+        output.puts("{\"metric\":\"native.code_size\",\"definition_version\":1,\"unit\":\"bytes\",\"scope\":\"compiled_module\",\"collector\":\"Wizard emitted module native image\",\"profile\":\"code\",\"quality\":\"engine_reported\",\"phase\":\"compile\",\"normalization_denominator\":\"module\",\"collector_version\":");
+        JsonValue.String(revision).render(output);
+        if (bytes > 0) output.put1(",\"status\":\"available\",\"value\":%d", bytes);
+        else output.puts(",\"status\":\"unavailable\",\"reason\":\"Selected SDK mode has no artifact-native image\"");
+        output.putc('}');
+    }
+    def inspect(id: int) {
+        if (prepared == null) { response(id, "error", "Prepare required"); return; }
+        prepared.sample("compile", 1);
+        if (prepared.reason != null) { response(id, "error", prepared.reason); return; }
+        var output = StringBuilder.new().put1("{\"version\":1,\"id\":%d,\"status\":\"ok\",\"diagnostics\":[", id);
+        codeObservation(output, prepared.lastCompiled);
+        System.puts(output.puts("]}\n").toString());
+    }
+    def run(id: int, value: JsonValue) {
+        if (prepared == null) { response(id, "error", "Prepare required"); return; }
+        var phase = text(value, "scenario");
+        var count = WasmfyiWizardJson.number(field(value, "samples"));
+        var operations = WasmfyiWizardJson.number(field(value, "operations"));
+        if (count < 1 || count > 35 || operations < 1 || operations > 1000000 || WasmfyiWizardJson.number(field(value, "warmup")) != 0) {
+            response(id, "error", "Invalid bounded zero-warmup request"); return;
+        }
+        var code = Strings.equal(profile, "code");
+        if (code && (!Strings.equal(phase, "compile") || count != 1 || operations != 1)) {
+            response(id, "unsupported", "Code inspection requires one compile pass"); return;
+        }
+        var output = StringBuilder.new().put1("{\"version\":1,\"id\":%d,\"status\":\"ok\",\"samples\":[", id);
+        for (i < count) {
+            var sample = prepared.sample(phase, operations);
+            if (prepared.reason != null) { response(id, "error", prepared.reason); return; }
+            if (i > 0) output.putc(',');
+            output.put3("{\"index\":%d,\"warmup\":false,\"verified\":true,\"operations\":%d,\"elapsed_ns\":%d,\"sample_type\":", i, operations, if(code, 0uL, sample.1));
+            JsonValue.String(if(prepared.vector(), "sequence_call_sum", if(operations == 1, "individual_operation", "batch_average"))).render(output);
+            output.puts(",\"result\":");
+            results(sample.0).render(output);
+            if (code) {
+                output.puts(",\"observations\":[");
+                codeObservation(output, prepared.lastCompiled);
+                output.putc(']');
+            }
+            output.putc('}');
+        }
+        System.puts(output.puts("]}\n").toString());
+    }
+    def loop(engine: Engine) -> int {
+        while (true) {
+            var bytes = line();
+            if (bytes == null) { close(); return 0; }
+            var parser = JsonParser.new(bytes);
+            var request = parser.parseValue();
+            var id = WasmfyiWizardJson.number(field(request, "id"));
+            if (!parser.ok) { response(id, "error", "Invalid request JSON"); continue; }
+            var method = text(request, "method");
+            if (Strings.equal(method, "describe")) describe(id);
+            else if (Strings.equal(method, "prepare")) {
+                var reason = prepare(engine, field(request, "prepare"));
+                response(id, if(reason == null, "ok", if(Strings.startsWith(reason, "unsupported:"), "unsupported", "error")), reason);
+            } else if (Strings.equal(method, "run")) run(id, field(request, "run"));
+            else if (Strings.equal(method, "inspect")) inspect(id);
+            else if (Strings.equal(method, "close")) { close(); response(id, "ok", null); return 0; }
+            else response(id, "unsupported", "Method unsupported");
+        }
+        return 0;
+    }
+}

@@ -72,9 +72,17 @@ Ctrl-C also stops the supervisors and measurement subprocesses. Each session kee
 
 The plan locks artifact hashes, input hashes, source revisions, engines and measurement settings. Each host retains its workflow scripts for the session. Resume verifies those scripts, the cached inputs and prepared tool hashes. To change the selection or recipe, start another run. An active coordinator prevents a duplicate session. Resume stops any surviving supervisor belonging to an interrupted session before restarting it. Infrastructure errors leave the session incomplete for resume; failed/unsupported workload outcomes are sealed and retained without interactive repair.
 
+Historical workers also restore unresolved failures from each reused capture's matching failure note. They preserve the capture bytes and do not execute it again. After a phase repair, only reasons for phases still marked failed enter the completion audit. Successful or unsupported captures ignore stale notes. A failed capture with a missing or mismatched note, or missing residual phase details, holds the integration audit for investigation; a documented workload timeout remains a retained outcome.
+
 Progress prints the machine, corpus and phase, followed by PASS / FAIL / UNSUPPORTED and measurements for each engine. Latencies are medians per operation. The RSS value is the mean of available whole-process RSS boundary measurements across compile, instantiate, first-call and steady; it is not a continuous time average. Missing measurements stay unavailable. Raw records preserve the measurement metric and collector.
 
-Use `--launches`, `--samples` and `--timeout` to override the configured recipe. Call probes use one million operations and five steady samples for resolution. Failed cells never receive a successful headline timing. Completed sessions with failed cells return exit code 2 after retaining their evidence; infrastructure errors return 1 and interruptions return 130.
+New latency runs collect ordered samples in one process per phase, in groups of five, with no warmup and a maximum of 35 samples. At each complete group, the latest ten samples (or the first five) must have standard deviation at most 5% of their mean, and the medians of the first and second halves of that window must differ by at most 3% of the mean. This is a repeatability stopping rule, not a statistical confidence guarantee for independent launches.
+
+Every raw sample remains in acquisition order in the database. After two retained groups settle, a contiguous slow initial prefix may be excluded from the displayed distribution if each excluded value exceeds the settled mean by both 2 standard deviations and 3%. Later outliers remain. The summary records the retained start index, stopping reason, group size and cap. Headline latency is the median of retained samples. First-call and steady execution remain distinct phases. RSS is captured from the timing process, and native-code profiling runs once when timing has not supplied it.
+
+The collector writes a compact `sampling.json` and publishes the policy with the ordered samples. The frontend does not derive independent-launch confidence intervals from these same-process observations. Old captures retain their original policy.
+
+Explicit `--launches` or `--samples` selects a fixed recipe instead of adaptive sampling; `--timeout` changes only the timeout. Call probes use one million operations and five steady samples for resolution. Failed cells never receive a successful headline timing. Completed sessions with failed cells return exit code 2 after retaining their evidence; infrastructure errors return 1 and interruptions return 130.
 
 ## Live site and deployment
 
@@ -94,3 +102,180 @@ just bench-test
 ```
 
 The results archive includes the plan, progress, per-corpus reports/logs and parent bundles; it excludes source checkouts, build caches and duplicate Wasm inputs.
+
+## Shared Apple device reservation
+
+Every Apple benchmark or profiler capture must acquire the user's shared reservation:
+
+```sh
+python3 ~/benchmark-lock.py --owner other-agent -- YOUR_COMMAND ARGUMENTS
+```
+
+`~/LOCK.md` reports status; reading `free` does not acquire ownership. Exit 75
+means occupied: poll the file, wait, and retry the wrapper. Do not do heavy CPU
+work while another agent owns the reservation. Never reclaim a reservation
+without verifying both PIDs in `~/.benchmark-lock/owner.json` have stopped.
+
+`scripts/shared-device-run.py` retries occupied reservations. With
+`--repeat-slices`, it also resumes checkpointed commands that return 76 after
+a bounded work slice. Apple historical workers and qualification runs yield
+at the next workload boundary after 30 minutes, release the reservation, and
+wait five minutes before attempting another reservation. Each workload has
+an overall five-minute execution deadline. Workers on different hosts advance
+independently. SDK builds may use multiple cores; measured execution uses one
+worker, Linux CPU affinity, and Apple's available performance scheduling controls.
+
+Before the next six-month historical campaign begins, clear the measurement
+DB and old captured samples on all machines and servers. Qualification must
+finish before that reset and campaign launch. Repeated source revisions use
+linked captures from the same backend, machine, corpus contract and sampling
+policy rather than collecting duplicate measurements.
+
+Generate the frozen source inventory with:
+
+```sh
+node scripts/plan-six-month-history.mjs CAMPAIGN_DIRECTORY [ANCHOR_ISO_TIMESTAMP]
+```
+
+The planner covers all registered engine families and all three hosts. Weeks
+end Sunday at 06:00 in `America/New_York`, including daylight-saving changes;
+the current partial week ends at the frozen anchor. It selects the latest
+eligible release published within each interval, or the default-branch commit
+closest to its end when there was no eligible release. Wago uses beta releases.
+Resolved full commit hashes determine reuse entries. Missing sources and
+unresolved release provenance remain explicit gaps, rather than silently
+substituting another source. The inventory is planning data, not proof that a
+runtime was built or that its measurements completed.
+
+The history window bounds snapshot dates. A dormant project's source commit
+can predate that window; its age is limited to one year relative to the weekly
+snapshot. Require an eligible prior commit to establish that the project
+existed at that time, then compare earlier and later default-branch commits
+within the frozen anchor. Identical selected hashes share measurements. This
+keeps quiet projects in the inventory without inventing snapshots before a
+project existed.
+
+Historical sweeps include only non-feature corpora. Feature compatibility and
+feature performance are collected only for the latest version of each runtime
+and backend; they do not run for historical weekly pins.
+
+## Wizard SDK JSON transport
+
+The adapter uses `scripts/lib/wizard-json.mjs` to patch the pinned Virgil JSON
+reader and renderer. The upstream reader accepts only signed 32-bit integers,
+does not decode string escapes into their values, and does not handle all JSON
+Unicode escapes. Its source-literal renderer also uses escaping that is invalid
+in JSON. Go's default encoder exposes this on unchanged workload metadata such
+as `Calls & memory`, which it sends as `Calls \u0026 memory`.
+
+Keep the default Go transport and the original corpus metadata. The adapter
+decodes JSON strings, combines Unicode surrogate pairs, rejects malformed
+escapes, and renders JSON strings correctly. It preserves wide and fractional
+provenance number tokens exactly as strings; integer control fields retain their
+numeric types. Source-layout guards fail closed if the pinned parser changes.
+
+The October 10 qualification passed 14 actual SDK parser/renderer cases and
+one verified sample of compilation, instantiation, first call, and steady
+execution through the unchanged Go client. A separate production SDK build
+passed the same four phases without the private test hook. Hub also reproduced
+the original default-encoder failure and qualified all three Wizard modes after
+rebuilding their SDKs. These proofs do not substitute for the full corpus sweep.
+
+Archive old SDK artifacts and their build receipts before promoting the fix.
+Rebuild each platform's SDK and refresh its artifact hashes consistently; do not
+reuse an old build receipt with a new binary. Confirm the helper used by the
+actual build, not only a staged copy, and record the generated parser and final
+SDK artifact hashes. Qualification must replay the production full-contract
+prepare request on a fresh process, including Go's default Unicode escapes. Repair failed phases while retaining
+successful phase values, samples, and resource measurements. All qualification
+execution follows the same device reservation and host exclusion rules as the
+benchmark workers.
+
+### GraalWasm ordered vector capability (2026-10-10)
+
+The Java embedding already implements `exact_vectors` using ordered cases,
+input writes and exact output checks outside the summed call timers. Its
+`describe` response previously omitted `can_run_vectors`, causing the harness
+to reject BLAKE3 before executing it. The adapter now advertises that existing
+capability and separate compilation/instantiation. It does not advertise vector
+phase-barrier callbacks, which the embedding does not implement.
+
+Cached SDK recovery should recompile only the Java helper after the current
+family finishes, then retry the rejected workloads. Keep completed measurements;
+do not relabel zero-sample integration rejections as engine incompatibility.
+Descriptor change is implemented; runtime recovery remains pending validation.
+
+### V8 optimizing tier and compiler identity (2026-10-10)
+
+An optimizing-only tier lock does not prove the Turboshaft compiler pipeline.
+The pinned Node.js 22 source defines `turboshaft_wasm` as false and selects
+TurboFan unless that flag is enabled. `%IsTurboFanFunction` checks the
+optimizing tier, not which compiler pipeline produced it. Older captures made
+without the flag must retain their original measurements and must not be
+displayed as proven Turboshaft captures.
+
+Use the explicit `--turboshaft-wasm` flag when the pinned runtime exposes it.
+Newer pinned sources can remove that flag and invoke Turboshaft unconditionally;
+require evidence from that exact source before accepting its default. Do not
+pass a removed flag or infer the compiler from a version threshold. Record
+the compiler policy in the effective configuration and distinguish corrected
+Turboshaft configurations from legacy `optimizing-only` descriptions.
+
+Reuse the installed SDK. Previously captured workloads need another measurement
+only when the original compiler was wrong. Confirmed Turboshaft captures can
+receive corrected metadata while preserving every sample and resource value.
+The corrected configuration must be selected by the latest/history projections
+even when its original capture timestamp is unchanged. Source-bound policy/parser tests and SQL latest/history tie-selection tests passed.
+Cached harness/controller correction is queued behind the current host lease;
+the durable correction ledger separates wrong-backend remeasurement from
+metadata-only promotion, preserves original captures, and retries pending
+original jobs after their normal completion. The pinned Node22 implementation
+can still fall back from Turboshaft to TurboFan if Turboshaft compilation fails;
+the backend records the explicitly requested pipeline, not per-function
+compiler attribution.
+
+### Apple source-fetch recovery and zwasm staging (2026-10-10)
+
+Historical `git exited 128` startup failures often came from GitHub DNS
+resolution failures. These are acquisition failures, not runtime compatibility
+results. Retry the exact planned source after connectivity recovers; completed
+pin receipts remain the skip criterion, rather than prior attempted slots.
+
+The zwasm private harness can contain generated `zwasm-link-objects` with an
+unreadable archive symbol table. Exclude that generated directory from harness
+Git staging. Keep source files, source identity, and installed artifacts intact;
+the exclusion does not require repeating completed measurements.
+
+Capacity checks distinguish the free-space reserve from estimated cold SDK
+growth. A cache exemption requires the exact source and configuration plus
+matching hashes of the installed controller and runtime files. Perform those
+file checks under the shared device/build reservation, before measurement.
+Capacity-blocked source/configuration pairs remain pending; an attempted slot
+or a family runner's zero exit status alone does not prove capture completion.
+
+### Latest feature sweep repairs (2026-10-10)
+
+Use the source revision already fetched for the latest weekly snapshot. Run
+one-sample feature compatibility before adaptive feature performance for each
+configuration. Historical main-corpus work stays parked until missing bindings
+and feature adapter defects are resolved. A processed-configuration counter is
+not a coverage proof: check the source-bound case ledger and retained failures.
+
+Cached V8 source trees may have unneeded working-tree files removed. Compiler
+policy qualification can read the exact pinned Git blob while preserving the
+installed Node hash and source revision. Controller-only rebuilds need the
+prepared toolchain environment, including Go's PATH, and may use multiple cores
+under the exclusive host lease. Measurements remain single-core. A binding
+upgrade failure holds that configuration while other runtimes continue.
+
+Wazero's redundant oracle call on its retained instance can consume destructive
+fixtures between sample groups. Remove that extra call while retaining each
+sample's fresh-instance validation. The regression tests cover repeated groups
+of destructive instantiate, first-call and steady samples and incorrect results.
+Repair only failed phases with their actual new capture timestamp; preserve
+successful phase bindings and original failed records.
+
+An adapter's missing host-profile declaration does not prove the runtime lacks
+the feature. In particular, latest V8's JSPI adapter support must be repaired.
+Explicit backend compiler rejections, such as Wasmer Cranelift's tail-call
+operators, need source-bound classification and retained original diagnostics.

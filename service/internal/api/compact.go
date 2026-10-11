@@ -13,19 +13,30 @@ import (
 	"time"
 )
 
+// BenchmarkStore is the storage boundary shared by migration and SQL serving.
+type BenchmarkStore interface {
+	Put(context.Context, benchdb.Capture) (string, error)
+	Platforms(context.Context) (benchdb.Catalog, error)
+	Page(context.Context, benchdb.Query) (benchdb.Page, error)
+	Summary(context.Context) (benchdb.Summary, error)
+}
+
 type benchmarkAPI struct {
-	db             *benchdb.Store
+	observer       *API
+	db             BenchmarkStore
 	token          string
 	frontend       http.Handler
 	limiter        *requestLimiter
 	active, assets chan struct{}
 }
 
-func NewBenchmarks(db *benchdb.Store, token string, limits RequestLimits, frontend http.Handler) (http.Handler, error) {
+func NewBenchmarks(db BenchmarkStore, token string, limits RequestLimits, frontend http.Handler) (http.Handler, error) {
 	if db == nil || len(token) < 32 || !limits.valid() {
 		return nil, wire.Invalid("invalid benchmark server configuration")
 	}
-	return &benchmarkAPI{db, token, frontend, newRequestLimiter(limits), make(chan struct{}, 16), make(chan struct{}, 64)}, nil
+	a := &benchmarkAPI{db: db, token: token, frontend: frontend, limiter: newRequestLimiter(limits), active: make(chan struct{}, 16), assets: make(chan struct{}, 64)}
+	a.observer = &API{limiter: a.limiter, frontend: frontend, requestHandler: http.HandlerFunc(a.serveRequest)}
+	return a, nil
 }
 func benchmarkError(w http.ResponseWriter, r *http.Request, status int, code, message string) {
 	respond(w, r, status, map[string]any{"error": map[string]string{"code": code, "message": message}}, false)
@@ -66,7 +77,20 @@ func queryFields(w http.ResponseWriter, r *http.Request, allowed string) bool {
 	}
 	return true
 }
-func (a *benchmarkAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (a *benchmarkAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) { a.observer.serve(w, r) }
+func (a *benchmarkAPI) EnableDashboard(directory, listenAddress string) error {
+	if err := a.observer.EnableDashboard(directory, listenAddress); err != nil {
+		return err
+	}
+	if lookup, ok := a.db.(interface {
+		AnalyticsSelectionKnown(context.Context, string, string) (bool, error)
+	}); ok {
+		a.observer.dashboard.analytics.SetSelectionLookup(lookup.AnalyticsSelectionKnown)
+	}
+	return nil
+}
+func (a *benchmarkAPI) Close() error { return a.observer.Close() }
+func (a *benchmarkAPI) serveRequest(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	if a.frontend != nil && !strings.HasPrefix(r.URL.Path, "/api") && !strings.HasPrefix(r.URL.Path, "/admin") && r.URL.Path != "/healthz" && r.URL.Path != "/readyz" {
 		select {
@@ -100,7 +124,20 @@ func (a *benchmarkAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
 	r = r.WithContext(ctx)
+	if a.serveSQL(w, r) {
+		return
+	}
 	switch r.URL.Path {
+	case "/api/summary":
+		if !method(w, r, "GET") || !queryFields(w, r, "") {
+			return
+		}
+		summary, e := a.db.Summary(ctx)
+		if e != nil {
+			benchmarkProblem(w, r, e)
+			return
+		}
+		respond(w, r, 200, summary, false)
 	case "/healthz":
 		if !method(w, r, "GET") || !queryFields(w, r, "") {
 			return
