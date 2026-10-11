@@ -97,26 +97,27 @@ import { viewCell, viewData } from '$lib/view-data';
 
 	// End-to-end on the Latency tab: compile + instantiate + first call + one steady call,
 	// the sum of the four phase aggregates shown in the row. Missing or excluded phases give no total.
-	const e2eOf = (s: typeof ui.scope, c: (typeof CFG)[number]) => {
-		const parts = g.metrics.map((m, i) => (compileExcluded(s, c, m) ? null : (absOf(s, 'lat', c.id, i)?.v ?? null)));
+	const phaseSum = (s: typeof ui.scope, c: (typeof CFG)[number], indices:number[]) => {
+		const parts = indices.map(i => (compileExcluded(s, c, g.metrics[i]) ? null : (absOf(s, 'lat', c.id, i)?.v ?? null)));
 		return parts.every((v) => v != null) ? { total: (parts as number[]).reduce((a, b) => a + b, 0), parts: parts as number[] } : null;
 	};
-	const e2e = $derived.by(() => {
+	const combinedColumn = (indices:number[]) => {
 		if (ui.group !== 'lat') return null;
 		const s = ui.scope;
 		const cfgs = CFG.filter((c) => isVisible(s, c));
-		const totals = cfgs.map((c) => e2eOf(s, c));
+		const totals = cfgs.map((c) => phaseSum(s, c, indices));
 		const names = cfgs.map((c) => `${c.rt} ${c.be}`);
 		const values = totals.map((t) => t?.total ?? null);
 		const formatted = fmtUGroup(values, 'ms');
 		return new Map(cfgs.map((c, k) => {
 			const t = totals[k];
 			return [c.id, t
-				? { text: '~' + formatted[k], bg: heatField(values, k), color: 'var(--fg)', stats: [...rankStats(values, k, names, (v) => fmtU(v, 'ms')), ...g.cols.map((label, i): [string, string] => [label.toLowerCase(), fmtU(t.parts[i], 'ms')])] }
+				? { text: '~' + formatted[k], bg: heatField(values, k), color: 'var(--fg)', stats: [...rankStats(values, k, names, (v) => fmtU(v, 'ms')), ...indices.map((phase,i): [string, string] => [g.cols[phase].toLowerCase(), fmtU(t.parts[i], 'ms')])] }
 				: { text: '—', bg: 'transparent', color: 'var(--fg3)', stats: [] as [string, string][] }];
 		}));
-	});
-
+	};
+ const startup=$derived(combinedColumn([0,1]));
+ const e2e=$derived(combinedColumn([0,1,2,3]));
 	// Latency, memory and code cells open the aggregate side panel; others keep switching the table.
 	const openCell = (cid: (typeof CFG)[number]['id'], i: number) => {
 		if (ui.group === 'lat' || ui.group === 'mem' || ui.group === 'code') ui.drawer = { type: 'aggregate', c: cid, group: ui.group, col: ui.group === 'code' ? i + 3 : i };
@@ -194,6 +195,7 @@ import { viewCell, viewData } from '$lib/view-data';
 						<th class="colh">
 							<button onclick={() => onmetric(g.metrics[i])} data-tip-card={tipCard(ui.group === 'mem' && i === 3 ? { title: label, points: peakMemoryPoints, action: `open the per-benchmark ${label} matrix` } : ui.group === 'calls' ? { title: label, note: (CALL_PATHS[i]?.note || 'Sum of both measured call directions.'), action: `open the per-benchmark ${label} matrix` } : { title: label, action: `open the per-benchmark ${label} matrix` })}>{label}</button>
 						</th>
+      {#if startup && i===1}<th class="colh"><span data-tip-card={tipCard({title:'Startup latency',note:'Compilation + instantiation: the sum of this row’s two phase averages. Shown only when both phases are measured.'})}>Startup latency</span></th>{/if}
 					{/each}
 					{#if e2e}
 						<th class="colh"><span data-tip-card={tipCard({ title: 'End-to-end', note: 'Compilation + instantiation + first call + one steady call: the sum of this row’s phase averages. Shown only when every phase is measured.' })}>End-to-end</span></th>
@@ -206,7 +208,7 @@ import { viewCell, viewData } from '$lib/view-data';
 					{#each [62, 48, 70, 55, 66, 44, 58, 50] as w (w)}
 						<tr aria-hidden="true">
 							<td class="stick rtcell"><span class="skel" style:width="0.6em"></span> <span class="skel" style:width="{w * 1.6}px"></span></td>
-							{#each { length: g.cols.length + (e2e ? 2 : 1) } as _, i (i)}
+							{#each { length: g.cols.length + (e2e ? 2 : 1) + (startup ? 1 : 0) } as _, i (i)}
 								<td class="r val-skel"><span class="skel" style:width="{36 + ((w + i * 17) % 30)}px"></span></td>
 							{/each}
 						</tr>
@@ -224,6 +226,12 @@ import { viewCell, viewData } from '$lib/view-data';
 									data-tip-card={x.text === 'loading…' ? undefined : tipCard({ kicker: `${g.label} · ${g.cols[i]}`, who: tipWho(r.c), value: x.text, valueColor: x.color === 'var(--fg)' ? '' : x.color, heat: x.bg === 'transparent' ? '' : x.bg, stats: [...(ranks?.[i]?.get(r.c.id) ?? []), ...('rate' in x && x.rate ? [['throughput', x.rate.replace(' · reciprocal of latency', '')] as [string, string]] : [])], points: ui.group === 'mem' && i === 3 ? peakMemoryPoints : [], note: 'note' in x ? x.note : ui.group === 'calls' ? (CALL_PATHS[i]?.note || 'Sum of both measured call directions.') : '', action: ui.group === 'calls' || ui.group === 'cov' ? 'see per-workload results' : 'rank, spread & workloads' })}>{#if x.text === 'loading…'}<span class="skel" aria-label="loading"></span>{:else}{x.text}{/if}</button
 								>
 							</td>
+       {#if startup && i===1}
+        {@const start=startup.get(r.c.id)??{text:'—',bg:'transparent',color:'var(--fg3)',stats:[]}}
+        <td class="p0" style:background={start.bg}>
+         <button class="cellbtn mono val" style:color={start.color} aria-label={`Startup latency for ${r.c.rt} ${r.c.be}`} onclick={()=>ui.drawer={type:'aggregate',c:r.c.id,group:'lat',col:-2}} data-tip-card={tipCard({kicker:'Latency · Startup latency',who:tipWho(r.c),value:start.text,heat:start.bg==='transparent'?'':start.bg,stats:start.stats,note:`Sum of the compilation and instantiation phase averages (${ui.average==='mean'?'means':'geometric means'}).`,action:'rank, spread & workloads'})}>{start.text}</button>
+        </td>
+       {/if}
 						{/each}
 						{#if e2e}
 							{@const x = e2e.get(r.c.id) ?? { text: '—', bg: 'transparent', color: 'var(--fg3)', stats: [] }}

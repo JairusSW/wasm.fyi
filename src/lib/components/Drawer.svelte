@@ -541,13 +541,16 @@
 		if (!c) return null;
 		const { group, col } = d;
 		const e2e = group === 'lat' && col === -1;
+ const startup=group==='lat'&&col===-2;
+ const combined=e2e||startup;
+ const phaseIndices=startup?[0,1]:[0,1,2,3];
 		const unit = AGG_UNIT[group];
-		const label = e2e ? 'End-to-end' : OV[group].cols[group === 'code' ? col - 3 : col] ?? '';
-		const metric = e2e ? null : AGG_METRICS[group][col];
+		const label = startup?'Startup latency':e2e ? 'End-to-end' : OV[group].cols[group === 'code' ? col - 3 : col] ?? '';
+		const metric = combined ? null : AGG_METRICS[group][col];
 		const phase = (cid: CfgId, i: number) => (compileExcluded(s, CB[cid], AGG_METRICS.lat[i]!) ? null : (absOf(s, 'lat', cid, i) ?? null));
 		const summary = (cid: CfgId) => {
-			if (!e2e) { const a = metric && compileExcluded(s, CB[cid], metric) ? null : absOf(s, group, cid, col); return a ? { v: a.v, interval: a.interval, count: a.count } : null; }
-			const parts = [0, 1, 2, 3].map((i) => phase(cid, i));
+			if (!combined) { const a = metric && compileExcluded(s, CB[cid], metric) ? null : absOf(s, group, cid, col); return a ? { v: a.v, interval: a.interval, count: a.count } : null; }
+			const parts = phaseIndices.map((i) => phase(cid, i));
 			return parts.every(Boolean) ? { v: parts.reduce((a, p) => a + p!.v, 0), interval: undefined, count: Math.min(...parts.map((p) => p!.count)) } : null;
 		};
 		const self = summary(c.id);
@@ -560,11 +563,11 @@
 		const cellOf = (w: string, cid: CfgId, m: string) => viewCell(s.machine, s.snapshot || 's1', w, cid, m);
 		const perWorkload = (w: string, cid: CfgId): number | null => {
 			const ok = (m: string) => { const x = cellOf(w, cid, m); return x.st === 'ok' && x.v != null && x.v > 0 ? x.v : null; };
-			if (e2e) { const v = ['compile', 'inst', 'first', 'steady'].map(ok); return v.every((x) => x != null) ? (v as number[]).reduce((a, b) => a + b, 0) : null; }
+			if (combined) { const v = phaseIndices.map(i=>ok(AGG_METRICS.lat[i]!)); return v.every((x) => x != null) ? (v as number[]).reduce((a, b) => a + b, 0) : null; }
 			if (metric === 'rssAverage') { const v = ['rssCompile', 'rssInst', 'rss'].map(ok).filter((x): x is number => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; }
 			return metric ? ok(metric) : null;
 		};
-		const cohort = e2e ? aggregateCohort(s, 'lat', c.id, 3).cohort : aggregateCohort(s, group, c.id, col).cohort;
+		const cohort = combined ? aggregateCohort(s, 'lat', c.id, startup?0:3).cohort : aggregateCohort(s, group, c.id, col).cohort;
 		const rows = cohort
 			.map((w) => {
 				const v = perWorkload(w.id, c.id);
@@ -576,7 +579,7 @@
 			.sort((a, b) => b.v - a.v);
 		const values = rows.map((r) => r.v);
 		const dist = sampleDistribution(values);
-		const cellMetric: MetricKey = e2e ? 'steady' : metric === 'rssAverage' ? 'rss' : (metric ?? 'steady');
+		const cellMetric: MetricKey = startup?'compile':e2e ? 'steady' : metric === 'rssAverage' ? 'rss' : (metric ?? 'steady');
 		const config = viewData.hosts[s.machine].configurations[c.id];
 		return {
 			kicker: `${OV[group].label} · ${label}`,
@@ -587,7 +590,7 @@
 			ci: self?.interval ? `95% CI ${fmtU(self.interval[0], unit)} – ${fmtU(self.interval[1], unit)}` : '',
 			count: rows.length,
 			strip,
-			note: e2e ? 'Sum of the compile, instantiate, first-call and steady averages.' : `${s.average === 'mean' ? 'Mean' : 'Geometric mean'} over the workloads in the cohort, each weighted equally; ${s.cohortMode === 'shared' ? 'only workloads every shown runtime passed' : 'workloads this runtime passed'}.`,
+			note: startup?'Sum of the compilation and instantiation phase averages.':e2e ? 'Sum of the compile, instantiate, first-call and steady averages.' : `${s.average === 'mean' ? 'Mean' : 'Geometric mean'} over the workloads in the cohort, each weighted equally; ${s.cohortMode === 'shared' ? 'only workloads every shown runtime passed' : 'workloads this runtime passed'}.`,
 			chart: values.length >= 3 && dist ? distSpec(values.map(Math.log), Math.log(dist.median), (x) => fmtU(Math.exp(x), unit), (x) => `${Math.exp(x) < 10 ? Math.exp(x).toFixed(1) : Math.round(Math.exp(x))}×`, { signs: ['÷', '×'], log: true }) : null,
 			stats: dist ? [
 				{ k: 'Min', v: fmtU(dist.min, unit) },
@@ -597,7 +600,7 @@
 			] : [],
 			rows: rows.map((r) => ({ ...r, value: fmtU(r.v, unit), rank: `${ordinal(r.place)}/${r.of}`, open: () => (ui.drawer = { type: 'cell', b: r.w.id, c: c.id, m: cellMetric, cf: 1, back: { drawer: d, label: `${c.rt} ${c.be} · ${label}` } }) })),
 			cellMetric,
-			breakdown: e2e ? [0, 1, 2, 3].map((i) => ({ k: OV.lat.cols[i], v: phase(c.id, i) ? fmtU(phase(c.id, i)!.v, 'ms') : '—' })) : [],
+			breakdown: combined ? phaseIndices.map((i) => ({ k: OV.lat.cols[i], v: phase(c.id, i) ? fmtU(phase(c.id, i)!.v, 'ms') : '—' })) : [],
 			record: [
 				{ title: 'Configuration', rows: [
 					{ k: 'Runtime', v: config ? `${config.runtime} ${shortVersion(config.version)}` : c.rt, href: configIdentity(s.machine, c.id).url, ext: true },
