@@ -58,7 +58,7 @@ const nullable = (param: string): Codec<string | null> => ({
 });
 
 const configIds = () => CFG.map((c) => c.id);
-const isCfg = (s: string): s is CfgId => (configIds() as string[]).includes(s);
+const isCfg = (s: string): s is CfgId => (configIds() as string[]).includes(s) || /^engine:wago-(?:main-snapshot|arm64-branch)$/.test(s);
 
 /** Hidden runtimes, serialized as the list of *shown* config ids so the default is empty. */
 const hideCodec: Codec<Partial<Record<CfgId, boolean>>> = {
@@ -67,7 +67,7 @@ const hideCodec: Codec<Partial<Record<CfgId, boolean>>> = {
 	parse: (s) => {
 		const on = s.split(',').filter(isCfg);
 		if (!on.length) return undefined;
-		return Object.fromEntries(configIds().map((id) => [id, !on.includes(id)]));
+		return Object.fromEntries([...new Set([...configIds(), ...on])].map((id) => [id, !on.includes(id)]));
 	},
 	ser: (v) => configIds().filter((id) => !v[id]).join(',')
 };

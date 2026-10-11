@@ -28,11 +28,13 @@ let abort:AbortController|undefined;
 let machines:MachineId[]=[];
 const slots=new Map<string,CfgId>();
 const plannedBackends:Record<string,string>={'wasmtime-winch':'winch','wasmer-llvm':'llvm-jit','wasmer-singlepass':'singlepass-jit','wasmer-cranelift':'cranelift-jit','chicory-jit':'jvm-bytecode-compiler','endive-interpreter':'jvm-interpreter','endive-jit':'jvm-bytecode-compiler','endive-redline':'cranelift-aot','wazy':'native-jit','chasm':'jvm-interpreter','wizard-v3-int':'v3-interpreter','wizard-fast-int':'fast-interpreter','wizard-spc':'spc','graalwasm':'truffle-graal','zwasm-interpreter':'interpreter','zwasm-jit':'jit','wazero-interpreter':'interpreter','wamr':'interpreter','wamr-fast-jit':'fast-jit','wamr-llvm-jit':'llvm-jit','wasmedge':'interpreter','wasmedge-jit':'jit','wasmi':'interpreter','wasm3':'interpreter','chicory':'interpreter','wasm2c-gcc':'GCC','w2c2-gcc':'GCC','wasm2go':'native-go-aot','jsc':'OMG (forced tier-up)','libwasm':'interpreter','spidermonkey':'ion-only'};
+const localComparisons=new Set(['wago-main-snapshot','wago-arm64-branch']);
 const status=(s:string):ViewCell['st']=>s==='not-measured'?'nm':s as ViewCell['st'];
 function engineColor(engine:string){let hash=0;for(const c of engine)hash=(Math.imul(hash,31)+c.charCodeAt(0))>>>0;return `hsl(${hash%360} 65% 60%)`;}
 function slot(engine:string):CfgId{
  const previous=slots.get(engine);if(previous)return previous;
  let id=Object.entries(legacySlots).find(([_,v])=>v===engine)?.[0] as CfgId|undefined;
+ if(localComparisons.has(engine))id=`engine:${engine}`;
  if(engine==='wago-main')id='G';
  if(engine==='wago-beta.12')id='B';
  if(engine==='wago-beta.11')id='C';
@@ -178,7 +180,7 @@ export async function connectSite(_origin='',_revision?:string){
    view.hosts[machine]=host;host.capturedAt=(platform as Summary['platforms'][number]).capturedAt;host.importedAt=(platform as Summary['platforms'][number]).importedAt;host.latestRows=(platform as Summary['platforms'][number]).latestRows;host.label=machineLabel(platform.cpu);host.os=`${platform.os}/${platform.arch} · ${platform.kernel}`;host.policy={cores:String(platform.cores),memory:platform.memoryBytes?`${(platform.memoryBytes/1024**3).toFixed(1)} GiB`:'not collected'};
    if(machine!==ui.machine)continue;
    view.featureVersions[machine]=[];
-   const normalize=(row:ScalarResult):ScalarResult=>row.engine.startsWith('wago-')?{...row,engine:'wago'}:row;
+   const normalize=(row:ScalarResult):ScalarResult=>row.engine.startsWith('wago-')&&!localComparisons.has(row.engine)?{...row,engine:'wago'}:row;
    const current=await Promise.all(group.flatMap(platform=>['compile','instantiate','first-call','steady'].map(phase=>rows(platform.id,phase,signal))));
    const raw=current.flat().map(normalize);
    const all=[...selectEngineVersions(raw.filter(row=>!row.workload.startsWith('features/'))),...selectEngineVersions(raw.filter(row=>row.workload.startsWith('features/')))] as ScalarResult[];
@@ -188,7 +190,7 @@ export async function connectSite(_origin='',_revision?:string){
    for(const row of all){
     const pause=checkpoint();if(pause)await pause;
     if(row.latencyStatus==='ok'){if(row.samplesNs?.length||row.timingSamples)timingSamples+=row.samplesNs?.length||row.timingSamples||0;else timingSamplesComplete=false;}
-    const cid=slot(row.engine);const cfg=CFG.find(c=>c.id===cid)!;CB[cid]=cfg;if(!row.workload.startsWith('features/')||!host.configurations[cid])host.configurations[cid]={runtime:cfg.rt,version:row.engine.startsWith('wago-')?row.engine.slice(5)+' · '+row.version:row.version,backend:row.backend,source:row.source};view.configurations[cid]=row.engine;
+    const cid=slot(row.engine);const cfg=CFG.find(c=>c.id===cid)!;CB[cid]=cfg;if(!row.workload.startsWith('features/')||!host.configurations[cid])host.configurations[cid]={runtime:cfg.rt,version:row.engine.startsWith('wago-')&&!localComparisons.has(row.engine)?row.engine.slice(5)+' · '+row.version:row.version,backend:row.backend,source:row.source};view.configurations[cid]=row.engine;
     const report=row.capturedAt+'|'+row.engine;view.reports[report]={runId:report,created:row.capturedAt,evidence:'',sha256:'',options:{},codeRecords:[],configurations:[row.engine],host:machine};
     // Host-call mechanism workloads feed the call-latency view only; they are not listed as workloads.
     if(!row.workload.startsWith('mechanisms/')&&!catalogue.has(row.workload))catalogue.set(row.workload,{id:row.workload,artifactSha256:row.artifactSha256,tags:row.display?.tags||[],kb:row.display?.bytes?row.display.bytes/1024:null,ms:null,group:row.display?.group||(row.workload.startsWith('mechanisms/')?'Host calls':row.workload.split('/')[1]||'Other workloads'),purpose:row.display?.purpose||row.wasm,abi:row.display?.abi||'',src:row.display?.source,reset:row.display?.reset,evidenceScope:phases.get(JSON.stringify([row.engine,row.workload]))?.has('steady')?'execution':phases.get(JSON.stringify([row.engine,row.workload]))?.has('instantiate')?'compile-and-instantiate':'compile-only'});
