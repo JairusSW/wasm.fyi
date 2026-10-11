@@ -392,3 +392,7 @@ comparison calculations use that precomputed retained-sample mean. Cell details
 label this recovery explicitly. The original summary and ordered sample vector
 remain unchanged in `/api/observation`. All-zero retained samples are included as
 zero for arithmetic averages; they cannot supply a positive geometric mean.
+
+The host-capture publisher accepts `WASMFYI_SNAPSHOT_BEFORE=YYYY-MM-DD` to exclude
+snapshot dates on or after that UTC date. This filters weekly aliases by date,
+so an older retained week can still reference the same commit.

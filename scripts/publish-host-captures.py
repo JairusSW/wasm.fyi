@@ -1,5 +1,6 @@
 """Publish completed captures independently of the laptop; never launch benchmarks."""
 import argparse
+import datetime
 import hashlib
 import json
 import os
@@ -10,6 +11,11 @@ import subprocess
 import time
 import urllib.error
 import urllib.request
+
+
+def snapshot_allowed(source, before):
+    """Keep weekly aliases by their snapshot date, regardless of source revision reuse."""
+    return not before or source.get("asOf", "")[:10] < before
 
 
 def run_sync(command, timeout=30, capture_output=True):
@@ -217,6 +223,9 @@ def main():
     seen = publication_ledger(ledger)
     unchanged = {}
     token = os.environ["WASMFYI_ADMIN_TOKEN"]
+    snapshot_before = os.environ.get("WASMFYI_SNAPSHOT_BEFORE", "")
+    if snapshot_before:
+        datetime.date.fromisoformat(snapshot_before)
     if pathlib.Path(args.campaign).name != args.campaign or args.campaign in (".", ".."):
         parser.error("campaign must be a directory name")
     campaign = args.root / args.campaign
@@ -275,6 +284,9 @@ def main():
                     unchanged[str(path)] = signature
                     continue
                 rows, source = capture.get("results", []), capture.get("source", {})
+                if not snapshot_allowed(source, snapshot_before):
+                    unchanged[str(path)] = signature
+                    continue
                 ref = source.get("ref") if source.get("kind") == "release" else source.get("revision")
                 if not rows or (rows[0]["engine"], ref, source.get("asOf")) not in allowed:
                     continue
@@ -289,7 +301,7 @@ def main():
                     raise ValueError("missing retained timing samples")
                 request = urllib.request.Request(
                     args.api_url.rstrip("/") + "/api/captures", data=body, method="POST",
-                    headers={"Authorization": "Bearer " + token, "Content-Type": "application/json"},
+                    headers={"Authorization": "Bearer " + token, "Content-Type": "application/json", "X-Real-IP": "127.0.0.1"},
                 )
                 with urllib.request.urlopen(request, timeout=15) as response:
                     receipt = json.load(response)
