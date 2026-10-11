@@ -142,7 +142,7 @@
 	const advItems = $derived([
 		{ k: 'OS', v: MACH[ui.machine].os },
 		{ k: 'Runtimes', v: Object.values(viewData.hosts[ui.machine].configurations).map(c=>c!.runtime+' '+shortVersion(c!.version)).join(' · ') },
-		{ k: 'Aggregation', v: (ui.average==='mean'?'mean':'geomean')+', every workload weighted equally · '+(ui.cohortMode==='shared'?'passed on all shown engines':'passed per engine') },
+		{ k: 'Aggregation', v: (ui.average==='mean'?'mean':'geomean')+', every workload weighted equally · '+(ui.cohortMode==='shared'?'least-covered engine reference':'passed per engine') },
 		{ k: 'Cache state', v: 'cold — no on-disk artifact cache' },
 		{ k: 'Compilation workers', v: 'Per-runtime configuration; CPU affinity uncontrolled' },
 		{ k: 'Warmup & sampling', v: 'Per-cell sealed report records launches, samples and warmups' },
@@ -196,7 +196,7 @@
 		</div>
 		<div class="side">
             <div class="delta-format">
-                <Seg options={[['per-engine', 'Passed per engine'], ['shared', 'Passed on all engines']]} value={ui.cohortMode} onselect={v=>ui.cohortMode=v as 'shared' | 'per-engine'} label="Average corpus selection" tips={[tipCard({ title: 'Each engine’s own passes', vis: 'cohort-each', note: 'green = averaged' }), tipCard({ title: 'Only shared passes', vis: 'cohort-shared', note: 'green = averaged' })]} />
+                <Seg options={[['per-engine', 'Passed per engine'], ['shared', 'Passed on all engines']]} value={ui.cohortMode} onselect={v=>ui.cohortMode=v as 'shared' | 'per-engine'} label="Average corpus selection" tips={[tipCard({ title: 'Each engine’s own passes', vis: 'cohort-each', note: 'green = averaged' }), tipCard({ title: 'Least-covered engine’s passing workloads', note: 'Use the smallest passing corpus set among shown engines. An average requires every workload in that reference set.' })]} />
             </div>
 			<div class="delta-format">
 				<Seg options={[['geo', 'Geomean'], ['mean', 'Mean']]} value={ui.average} onselect={(v) => (ui.average = v as 'geo' | 'mean')} label="Average" tips={[tipCard({ title: 'Geometric mean', vis: 'avg-geo' }), tipCard({ title: 'Plain mean', vis: 'avg-mean' })]} />

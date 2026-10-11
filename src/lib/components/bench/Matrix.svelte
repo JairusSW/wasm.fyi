@@ -8,8 +8,8 @@ import { ST } from '$lib/data/status';
 	import { OV, UNIT } from '$lib/data/snapshot';
 	import type { MetricKey, OvKey } from '$lib/data/types';
 	import { fmtU, fmtUGroup, n0 } from '$lib/format';
-	import { heatCount, heatField } from '$lib/heat';
-	import { totalWorkloads, sharedCount, cov, absOf, disp, isOff, isVisible, compileExcluded } from '$lib/model';
+	import { heatCount, heatField, heatCorrectness } from '$lib/heat';
+	import { totalWorkloads, correctnessWorkloads, sharedCount, cov, absOf, disp, isOff, isVisible, compileExcluded } from '$lib/model';
 import { ui } from '$lib/state.svelte';
 import { viewCell, viewData } from '$lib/view-data';
 	import Carousel from '../Carousel.svelte';
@@ -31,9 +31,11 @@ import { viewCell, viewData } from '$lib/view-data';
 		cov: `All ${totalWorkloads()} measured contracts.`
 	};
 
+	const correctnessTotal=$derived(correctnessWorkloads(ui.scope).length);
+	const coverageCounts=$derived(new Map(CFG.filter(c=>isVisible(ui.scope,c)).map(c=>[c.id,cov(c.id,ui.scope)])));
 	/** Badness of a count within its column across runtimes available on this machine, 0…1. */
 	const countBadness = (col: number, v: number) => {
-		const vals = CFG.filter((k) => !isOff(ui.scope, k.id)).map((k) => cov(k.id,ui.scope)[col]);
+		const vals = [...coverageCounts.values()].map(counts=>counts[col]);
 		const lo = Math.min(...vals);
 		const hi = Math.max(...vals);
 		const t = hi > lo ? (v - lo) / (hi - lo) : 0;
@@ -124,7 +126,7 @@ import { viewCell, viewData } from '$lib/view-data';
 		const s = ui.scope;
 		return CFG.filter((c) => isVisible(s, c)).map((c) => {
 			const off = isOff(s, c.id);
-			const cv = cov(c.id,ui.scope);
+			const cv = coverageCounts.get(c.id)||[0,0,0,0,0];
 			const commonTimes=ui.group==='lat'?fmtUGroup(g.metrics.map((_,i)=>absOf(s,'lat',c.id,i)?.v ?? null),'ms'):null;
 			const cells = g.cols.map((_, i) => {
 				if (ui.group === 'calls') return callCells.get(c.id)?.[i] || {text:'—',bg:'transparent',color:'var(--fg3)'};
@@ -133,7 +135,7 @@ import { viewCell, viewData } from '$lib/view-data';
 					if (off) return { text: '—', bg: 'transparent', color: 'var(--fg3)' };
 					return {
 						text: n0(v),
-						bg: i !== 0 && v === 0 ? 'transparent' : heatCount(countBadness(i, v)),
+						bg: i===0?heatCorrectness(v,correctnessTotal):v===0?'transparent':heatCount(countBadness(i,v)),
 						color: v || i === 0 ? 'var(--fg)' : 'var(--fg3)'
 					};
 				}
@@ -147,15 +149,15 @@ import { viewCell, viewData } from '$lib/view-data';
 					const metric=grp==='mem'&&i===3?'rssAverage':g.metrics[i];
 					const key=aggregateKey(s,metric);
 					const status=apiView.aggregateErrors[key]?'unavailable':!apiView.aggregates[key]&&datasetView.revision?'loading…':'n/a';
-					return { text: interpreter?'n/a':disp(s,grp,c.id,sourceIndex)?.t || (off?'unavailable':ui.cohortMode==='shared'&&grp==='lat'?'No shared corpus':status), bg:'transparent',color:'var(--fg3)' };
+					return { text: interpreter?'n/a':disp(s,grp,c.id,sourceIndex)?.t || (off?'unavailable':ui.cohortMode==='shared'&&grp==='lat'?'Incomplete reference measurements':status), bg:'transparent',color:'var(--fg3)' };
 				}
 				return { text: commonTimes?.[i] ? '~'+commonTimes[i] : disp(s, grp, c.id, sourceIndex)!.t, bg: heatOf(i, c.id), color: 'var(--fg)' };
 			});
 			return {
 				c,
 				cells,
-				covShort: off ? '—' : n0(cv[0]) + ' / ' + totalWorkloads(),
-				covBg: off ? 'transparent' : heatCount(countBadness(0, cv[0]))
+				covShort: off ? '—' : n0(cv[0]) + ' / ' + correctnessTotal,
+				covBg: off ? 'transparent' : heatCorrectness(cv[0],correctnessTotal)
 			};
 		});
 	});

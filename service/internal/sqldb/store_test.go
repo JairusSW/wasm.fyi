@@ -472,3 +472,41 @@ func TestReopenedDatabaseOwnsRawMeasurementsWithoutTransportFiles(t *testing.T) 
 		t.Fatal(err)
 	}
 }
+
+func TestMatrixCorpusScopeIncludesCallsAndIsolatesFeatures(t *testing.T) {
+	ctx := context.Background()
+	s, err := Open(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	for i, name := range []string{"applications/test", "mechanisms/host-to-wasm-call", "features/simd/test"} {
+		c := fixture()
+		c.Results[0].Workload = name
+		c.Results[0].Contract = fmt.Sprintf("%064x", i+100)
+		if _, err = s.Put(ctx, c); err != nil {
+			t.Fatal(err)
+		}
+	}
+	q := MatrixQuery{Platform: hash(fixture().Platform), Phase: "steady", Limit: 1, Corpus: "main"}
+	page, err := s.Matrix(ctx, q)
+	if err != nil || page.Total != 2 || page.NextOffset == nil {
+		t.Fatal(page, err)
+	}
+	q.Offset = *page.NextOffset
+	q.Revision = page.Revision
+	q.Corpus = "features"
+	if _, err = s.Matrix(ctx, q); err == nil {
+		t.Fatal("cross-corpus cursor accepted")
+	}
+	q.Offset = 0
+	q.Revision = ""
+	page, err = s.Matrix(ctx, q)
+	if err != nil || page.Total != 1 || page.Items[0].Workload != "features/simd/test" {
+		t.Fatal(page, err)
+	}
+	q.Corpus = "invalid"
+	if _, err = s.Matrix(ctx, q); err == nil {
+		t.Fatal("invalid corpus accepted")
+	}
+}

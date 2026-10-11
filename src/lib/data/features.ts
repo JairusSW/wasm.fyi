@@ -87,7 +87,7 @@ export const COMPAT:CompatSection[]=liveArray(()=>{
   sections[id.startsWith('core-')?0:1].fams.push({id,name:metadata?.name||id,total:workloads.length,page:metadata?.page,kids:workloads.map(w=>[w.id,1]),r:[]});
  }
  return sections;
-});
+},()=>viewData.catalogue);
 // Browser release histories and uncollected engine defaults are not inferred
 // from a Node embedding or a configuration-specific corpus run.
 for(const f of [...FEATS, ...CORPUS_FEATS, ...FEATURE_ROWS]){f.b=['?','?','?'];f.r='?????????';}

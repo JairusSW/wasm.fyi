@@ -78,11 +78,11 @@ func TestAggregateWeightedSharedPerEngineAndCodeNA(t *testing.T) {
 	q.Weighting = "corpus"
 	q.Cohort = "shared"
 	r = computeAggregate(data, q)
-	if card(r, "a").Count != 1 {
+	if card(r, "a").Count != 2 || card(r, "b").Value != nil {
 		t.Fatal(r)
 	}
 }
-func TestRSSAverageArithmeticPerPhaseSharedIntersection(t *testing.T) {
+func TestRSSAverageArithmeticPerPhaseLeastCoveredReference(t *testing.T) {
 	a := &aggregateConfiguration{engine: "a"}
 	b := &aggregateConfiguration{engine: "b"}
 	data := &aggregateSnapshot{engines: map[string]*aggregateConfiguration{"a": a, "b": b}}
@@ -252,5 +252,42 @@ func TestHistoryOnlyImportsKeepLatestMatrixAndAggregateRevision(t *testing.T) {
 	current, e := s.Matrix(ctx, MatrixQuery{Platform: q.Platform, Limit: 10})
 	if e != nil || current.Revision != matrix.Revision {
 		t.Fatal(current, e)
+	}
+}
+
+func TestSharedUsesLeastCoveredReferenceWithoutShrinkingForOtherFailures(t *testing.T) {
+	data := aggregateFixture()
+	// a passes workloads 0,1; b passes 0,2. Add a third b workload so a is the minimum.
+	data.rows[4].latOK = false
+	data.rows[3].latOK = false
+	extra := data.rows[5]
+	extra.workload = "workload/3"
+	extra.contract = "3"
+	data.rows = append(data.rows, extra)
+	q := AggregateQuery{Metric: "steady", Engines: []string{"a", "b"}, Cohort: "shared", Average: "mean", Weighting: "workload"}
+	r := computeAggregate(data, q)
+	if card(r, "a").Count != 2 || card(r, "a").Value == nil || *card(r, "a").Value != 10 {
+		t.Fatal(r)
+	}
+	if card(r, "b").Count != 1 || card(r, "b").Value != nil {
+		t.Fatal("incomplete engine was averaged over a different set", r)
+	}
+}
+
+func TestSharedReferenceCountsCorrectZeroResolutionTimings(t *testing.T) {
+	data := aggregateFixture()
+	for i := range data.rows {
+		data.rows[i].passed = true
+	}
+	// Engine a still passes all three workloads even when one timer rounds to zero.
+	data.rows[0].latency = 0
+	data.rows[0].latOK = false
+	// Engine b only supports two: its support set must supply the reference.
+	data.rows[5].passed = false
+	data.rows[5].latOK = false
+	q := AggregateQuery{Metric: "steady", Engines: []string{"a", "b"}, Cohort: "shared", Weighting: "workload", Average: "mean"}
+	r := computeAggregate(data, q)
+	if card(r, "b").Count != 2 || card(r, "b").Value == nil || card(r, "a").Value != nil {
+		t.Fatal(r)
 	}
 }

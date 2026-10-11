@@ -43,7 +43,7 @@ type aggregateScalar struct {
 	cfg                                          *aggregateConfiguration
 	workload, contract, group, phase, capturedAt string
 	latency, memory, code                        float64
-	latOK, memOK, codeOK                         bool
+	latOK, memOK, codeOK, passed                 bool
 }
 type aggregateSnapshot struct {
 	rows    []aggregateScalar
@@ -171,7 +171,7 @@ func loadAggregateSnapshot(ctx context.Context, q queryer, pid int64) (*aggregat
 				group = "Other workloads"
 			}
 		}
-		v := aggregateScalar{cfg: cfg, workload: r.Workload, contract: r.Contract, group: group, phase: r.Phase, capturedAt: r.CapturedAt}
+		v := aggregateScalar{cfg: cfg, workload: r.Workload, contract: r.Contract, group: group, phase: r.Phase, capturedAt: r.CapturedAt, passed: r.Status == "ok"}
 		v.latency, v.latOK = positive(r.Value, r.Status)
 		v.memory, v.memOK = positive(r.PeakRSS, r.MemoryStatus)
 		v.code, v.codeOK = positive(r.CodeBytes, r.CodeStatus)
@@ -380,10 +380,47 @@ func computeAggregate(data *aggregateSnapshot, q AggregateQuery) AggregateResult
 		}
 	}
 	out.Participants = append(out.Participants, participants...)
-	rssSelected := append([]string(nil), selected...)
-	if q.Baseline != "" && !contains(rssSelected, q.Baseline) && data.engines[q.Baseline] != nil {
-		rssSelected = append(rssSelected, q.Baseline)
+	availability := map[string]map[string]bool{}
+	for key, rows := range cells {
+		availability[key] = map[string]bool{}
+		for engine, row := range rows {
+			_, ok := available(row)
+			availability[key][engine] = ok
+		}
 	}
+	passing := map[string]map[string]bool{}
+	for _, row := range data.rows {
+		if row.phase != "steady" {
+			continue
+		}
+		key := row.workload + "|" + row.contract
+		if passing[key] == nil {
+			passing[key] = map[string]bool{}
+		}
+		passing[key][row.cfg.engine] = row.passed || row.latOK
+	}
+	anchor := leastCoveredEngine(participants, passing)
+	reference := map[string]bool{}
+	if q.Cohort == "shared" {
+		if anchor == "" {
+			anchor = leastCoveredEngine(participants, availability)
+			for key, rows := range availability {
+				if rows[anchor] {
+					reference[key] = true
+				}
+			}
+		} else {
+			for key, rows := range cells {
+				for _, row := range rows {
+					if passing[row.workload+"|"+row.contract][anchor] && (phase != "*" || availability[key][anchor]) {
+						reference[key] = true
+					}
+					break
+				}
+			}
+		}
+	}
+
 	calculate := func(engine string) AggregateCard {
 		card := AggregateCard{Engine: engine}
 		if cfg := data.engines[engine]; cfg != nil {
@@ -405,22 +442,10 @@ func computeAggregate(data *aggregateSnapshot, q AggregateQuery) AggregateResult
 			if !ok {
 				continue
 			}
-			if q.Cohort == "shared" {
-				cohort := participants
-				if phase == "*" {
-					cohort = rssSelected
-				}
-				shared := true
-				for _, other := range cohort {
-					if _, ok = available(rows[other]); !ok {
-						shared = false
-						break
-					}
-				}
-				if !shared {
-					continue
-				}
+			if q.Cohort == "shared" && !reference[key] {
+				continue
 			}
+
 			values = append(values, v)
 			groups = append(groups, row.group)
 			if card.LatestCreated == "" || later(row.capturedAt, card.LatestCreated) {
@@ -428,6 +453,9 @@ func computeAggregate(data *aggregateSnapshot, q AggregateQuery) AggregateResult
 			}
 		}
 		card.Count = len(values)
+		if q.Cohort == "shared" && len(values) != len(reference) {
+			return card
+		}
 		if card.Count > 0 {
 			value := 0.0
 			if phase == "*" {
@@ -516,4 +544,23 @@ func preferConfiguration(cfg, old *aggregateConfiguration) bool {
 		return cfg.backend == "turboshaft"
 	}
 	return cfg.key < old.key
+}
+
+// A stable minimum-pass engine defines the reference instead of intersecting all engines.
+func leastCoveredEngine(engines []string, cells map[string]map[string]bool) string {
+	anchor := ""
+	best := 0
+	for _, engine := range engines {
+		count := 0
+		for _, rows := range cells {
+			if rows[engine] {
+				count++
+			}
+		}
+		if count > 0 && (anchor == "" || count < best || count == best && engine < anchor) {
+			anchor = engine
+			best = count
+		}
+	}
+	return anchor
 }

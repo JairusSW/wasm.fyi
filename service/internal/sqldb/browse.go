@@ -17,10 +17,10 @@ type Cell struct {
 	benchdb.Result
 }
 type MatrixQuery struct {
-	Platform, Phase, Workload, Engine string
-	Revision                          string
-	Offset                            int
-	Limit                             int
+	Platform, Phase, Workload, Engine, Corpus string
+	Revision                                  string
+	Offset                                    int
+	Limit                                     int
 }
 type Matrix struct {
 	Revision   string `json:"revision"`
@@ -57,6 +57,9 @@ func (s *Store) browse(ctx context.Context, q MatrixQuery, history bool, from, t
 		q.Phase = "steady"
 		out.Phase = q.Phase
 	}
+	if q.Corpus != "" && q.Corpus != "main" && q.Corpus != "features" {
+		return out, wire.Invalid("corpus must be main or features")
+	}
 	if !benchdb.ValidPhase(q.Phase) || q.Limit < 1 || q.Limit > 4096 || q.Offset < 0 || q.Offset > 5000000 || q.Offset > 0 && q.Revision == "" {
 		return out, wire.Invalid("valid phase/bounded limit required")
 	}
@@ -77,7 +80,7 @@ func (s *Store) browse(ctx context.Context, q MatrixQuery, history bool, from, t
 	if e != nil {
 		return out, e
 	}
-	scope := []any{out.Revision, q.Platform, q.Phase, q.Workload, q.Engine, history, from, to}
+	scope := []any{out.Revision, q.Platform, q.Phase, q.Workload, q.Engine, q.Corpus, history, from, to}
 	if history {
 		scope = append(scope, "inclusive-utc-day-bounds-v2")
 	}
@@ -90,6 +93,12 @@ func (s *Store) browse(ctx context.Context, q MatrixQuery, history bool, from, t
 	args := []any{pid, phaseID(q.Phase)}
 	if history {
 		table = "history"
+	}
+	if q.Corpus == "main" {
+		where += " AND substr(w.name,1,9)<>'features/'"
+	}
+	if q.Corpus == "features" {
+		where += " AND substr(w.name,1,9)='features/'"
 	}
 	if q.Workload != "" {
 		where += " AND w.name=?"

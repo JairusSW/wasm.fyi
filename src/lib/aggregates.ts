@@ -4,7 +4,7 @@ import {metricSelectors} from './api/presentation';
 import { viewCell, viewData, type ViewCell } from './view-data';
 import type { Bench, CfgId } from './data/types';
 import type { PerfGroup, Scope } from './model';
-import { measuredCohort, nativeCodeParticipants, cohortWeights, weightedAverage } from './comparison-policy';
+import { measuredCohort, nativeCodeParticipants, cohortWeights, weightedAverage, leastCoveredReference } from './comparison-policy';
 export { measuredCohort, cohortWeights, weightedAverage, weightedGeometricMean } from './comparison-policy';
 
 export interface Aggregate {
@@ -28,15 +28,19 @@ export function aggregateCohort(s:Scope,group:PerfGroup,cid:CfgId,col:number) {
  if(cohortGeneration!==datasetView.generation||cohortView!==hosts){cohortCache.clear();cohortGeneration=datasetView.generation;cohortView=hosts;}
  const ids=viewData.applicationConfigurations;
  // The shown engines (and this one); a hidden baseline never narrows the shared cohort.
- const selected=[...new Set([...ids.filter(id=>!s.hide[id]),cid])].filter(id=>!!viewData.hosts[s.machine].configurations[id]);
+ const selected=[...new Set([...ids.filter(id=>!s.hide[id]),cid])].filter(id=>!!viewData.hosts[s.machine].configurations[id]).sort((a,b)=>(viewData.configurations[a]||a).localeCompare(viewData.configurations[b]||b));
  const cacheKey=JSON.stringify([s.machine,s.snapshot||'s1',s.cohortMode,selected,cid,group,col]);
  const cached=cohortCache.get(cacheKey);if(cached)return cached;
  const workloads=viewData.catalogue.filter(w=>!w.id.startsWith('features/'));
  const cell=(w:string,c:CfgId)=>viewCell(s.machine,s.snapshot || 's1',w,c,metric || '');
  const applicable=group==='code'?nativeCodeParticipants(workloads,selected,cell):selected;
- // Shared: workloads every shown engine *with results* passed. An engine with no measurements
- // at all drops out instead of emptying the cohort for everyone.
- const result=measuredCohort(workloads,metric?(s.cohortMode==='per-engine'?[cid]:applicable):[],cid,cell,false);
+ // Shared: the least-covered measured engine supplies the reference. Engines without
+ // any measurements cannot supply a reference.
+ const result=measuredCohort(workloads,metric?(s.cohortMode==='per-engine'?[cid]:applicable):[],cid,cell,false,c=>viewData.configurations[c]||c);
+ if(s.cohortMode==='shared'&&selected.includes(cid)){
+  const passed=leastCoveredReference(workloads,result.participants,(w,c)=>viewCell(s.machine,s.snapshot||'s1',w.id,c,'steady').st==='ok',c=>viewData.configurations[c]||c);
+  if(passed.length)result.cohort=passed;
+ }
  if(cohortCache.size>=256)cohortCache.clear();cohortCache.set(cacheKey,result);return result;
 }
 
@@ -70,12 +74,20 @@ export function aggregate(s:Scope,group:PerfGroup,cid:CfgId,col:number):Aggregat
 	if(cache.has(key))return cache.get(key)!;
 	const remember=(value:Aggregate|null)=>{if(cache.size>512)cache.clear();cache.set(key,value);return value;};
 	if(group==='mem' && col===3) {
-		const average=(configuration:CfgId)=>{
-			const cells=viewData.catalogue.filter(w=>!w.id.startsWith('features/')).flatMap(w=>['rssCompile','rssInst','rssFirst','rss'].filter(m=>s.cohortMode!=='shared'||selected.every(c=>{const cell=viewCell(s.machine,s.snapshot || 's1',w.id,c,m);return cell.st==='ok'&&!!cell.report&&cell.v!=null&&Number.isFinite(cell.v)&&cell.v>0})).map(m=>viewCell(s.machine,s.snapshot || 's1',w.id,configuration,m)))
-				.filter(c=>c.st==='ok' && !!c.report && c.v!=null && Number.isFinite(c.v) && c.v>0);
-			return {v:cells.length?cells.reduce((sum,c)=>sum+c.v!,0)/cells.length:Number.NaN,
-				count:cells.length,reports:[...new Set(cells.map(c=>c.report))]};
-		};
+  const entries=viewData.catalogue.filter(w=>!w.id.startsWith('features/')).flatMap(w=>['rssCompile','rssInst','rssFirst','rss'].map(metric=>({id:w.id,metric})));
+  const valid=(entry:typeof entries[number],c:CfgId)=>{const cell=viewCell(s.machine,s.snapshot||'s1',entry.id,c,entry.metric);return cell.st==='ok'&&!!cell.report&&cell.v!=null&&Number.isFinite(cell.v)&&cell.v>0};
+  const metricEngines=selected.filter(c=>entries.some(entry=>valid(entry,c)));
+  const workloads=viewData.catalogue.filter(w=>!w.id.startsWith('features/'));
+  const passed=leastCoveredReference(workloads,metricEngines,(w,c)=>viewCell(s.machine,s.snapshot||'s1',w.id,c,'steady').st==='ok',c=>viewData.configurations[c]||c);
+  const fallback=leastCoveredReference(entries,metricEngines,valid,c=>viewData.configurations[c]||c);
+  const supportAnchor=metricEngines.slice().sort((a,b)=>(viewData.configurations[a]||a).localeCompare(viewData.configurations[b]||b)).find(c=>passed.length>0&&workloads.filter(w=>viewCell(s.machine,s.snapshot||'s1',w.id,c,'steady').st==='ok').length===passed.length);
+  const passedIds=new Set(passed.map(w=>w.id));
+  const reference=s.cohortMode==='shared'?(supportAnchor?entries.filter(entry=>passedIds.has(entry.id)&&valid(entry,supportAnchor)):fallback):entries;
+  const average=(configuration:CfgId)=>{
+   const cells=reference.filter(entry=>valid(entry,configuration)).map(entry=>viewCell(s.machine,s.snapshot||'s1',entry.id,configuration,entry.metric));
+   const complete=s.cohortMode!=='shared'||cells.length===reference.length;
+   return {v:complete&&cells.length?cells.reduce((sum,c)=>sum+c.v!,0)/cells.length:Number.NaN,count:complete?cells.length:0,reports:[...new Set(cells.map(c=>c.report))]};
+  };
 		const measured=average(cid),baseline=cid===s.baseline?measured:average(s.baseline);
 		if(!measured.count)return remember(null);
 		const reports=[...new Set([...measured.reports,...baseline.reports])];
@@ -89,7 +101,7 @@ export function aggregate(s:Scope,group:PerfGroup,cid:CfgId,col:number):Aggregat
 	if(group==='lat' && (!ids.includes(cid)||!ids.includes(s.baseline)))return remember(null);
 	const cell=(w:string,c:CfgId)=>viewCell(s.machine,snapshot,w,c,metric);
 	const {cohort,participants}=aggregateCohort(s,group,cid,col);
-	if(!cohort.length)return remember(null);
+	if(!cohort.length||cohort.some(w=>{const c=cell(w.id,cid);return c.st!=='ok'||c.v==null||!Number.isFinite(c.v)||c.v<=0}))return remember(null);
 	const reports=[...new Set(cohort.flatMap(w=>participants.map(c=>cell(w.id,c).report)))];
 	if(!reports.length)return remember(null);
 	const report=[...reports].sort((a,b)=>viewData.reports[b].created.localeCompare(viewData.reports[a].created))[0];
@@ -98,7 +110,7 @@ export function aggregate(s:Scope,group:PerfGroup,cid:CfgId,col:number):Aggregat
 	const numerator=columns(cid),denominator=s.cohortMode==='per-engine'?[]:columns(s.baseline);
 	const average=weightedAverage(s.average);
 	const mean=(cells:ViewCell[],draw?:number[])=>average(cells.map(c=>draw?median(draw.map(j=>c.launchMedians![j])):c.v!),weights);
-	const baselineAvailable=participants.includes(s.baseline);
+	const baselineAvailable=participants.includes(s.baseline)&&denominator.every(c=>c.st==='ok'&&c.v!=null&&Number.isFinite(c.v)&&c.v>0);
 	const value=mean(numerator),base=s.cohortMode==='per-engine'?(cid===s.baseline?value:aggregate(s,group,s.baseline,col)?.v??Number.NaN):baselineAvailable?mean(denominator):Number.NaN,ratio=cid===s.baseline?1:value/base;
 	const result:Aggregate={v:value,r:ratio,ci:Number.NaN,count:cohort.length,report,reports};
 	const n=Math.min(...numerator.map(c=>c.launchMedians?.length || 0));

@@ -26,10 +26,10 @@ export const OTM: Record<OtMetricKey, OtMetric> = {
   cov: { key: 'cov', l: 'Correctness', g: 'cov', c: 0, u: 'n', k: 0 },
 };
 export const OTM_KEYS: OtMetricKey[] = Object.keys(OTM).filter(key=>!['hostWasm','wasmHostLoop'].includes(key)) as OtMetricKey[];
-export const SNAPS: Snap[] = liveArray(()=>viewData.history[datasetView.machine].points.map((p,i)=>({i,date:p.date,short:p.date.slice(5)})));
+export const SNAPS: Snap[] = liveArray(()=>viewData.history[datasetView.machine].points.map((p,i)=>({i,date:p.date,short:p.date.slice(5)})),()=>viewData.history[datasetView.machine].points);
 export const HARNESS_BREAK=0;
 export const historyPin=(machine:MachineId)=>Math.max(0,viewData.history[machine].points.findIndex(p=>p.status==='measured'));
-export const EVENTS:SnapEvent[]=liveArray(()=>viewData.history[datasetView.machine].points.map((p,i)=>({i,kind:'revision' as const,label:`Retrospective source snapshot ${p.date}`})));
+export const EVENTS:SnapEvent[]=liveArray(()=>viewData.history[datasetView.machine].points.map((p,i)=>({i,kind:'revision' as const,label:`Retrospective source snapshot ${p.date}`})),()=>viewData.history[datasetView.machine].points);
 export const verAt=(cid:CfgId,i:number,machine:'m1'|'m2'|'m3'='m1')=>{
   const v=viewData.history[machine].versions[cid]?.[i];
   const h=viewData.history[machine];
@@ -37,10 +37,17 @@ export const verAt=(cid:CfgId,i:number,machine:'m1'|'m2'|'m3'='m1')=>{
   const historical=h.workloads.some(w=>h.cells[`${w}|${cid}|steady`]?.[i]?.role==='retrospective-revision');
   return historical?(v && /^[a-f0-9]{40}$/.test(v)?shortVersion(v):v?shortVersion(v):'not collected'):v && v!=='not collected'?`fixed ${shortVersion(v)}`:'not collected';
 };
-export const BENCH: BenchGroup[] = liveArray(()=>[...new Set(viewData.catalogue.filter(b=>!b.id.startsWith('features/')).map(b=>b.group))].map(g=>({
-  g, items:viewData.catalogue.filter(b=>b.group===g&&!b.id.startsWith('features/')), total:viewData.catalogue.filter(b=>b.group===g&&!b.id.startsWith('features/')).length
-})));
-export const ALLB: Bench[] = liveArray(()=>BENCH.flatMap(g => g.items.map(b => ({ ...b, group: g.g }))));
+export const BENCH: BenchGroup[] = liveArray(()=>{
+ const groups=new Map<string,BenchGroup>();
+ for(const b of viewData.catalogue){
+  if(b.id.startsWith('features/'))continue;
+  let group=groups.get(b.group);
+  if(!group){group={g:b.group,items:[],total:0};groups.set(b.group,group)}
+  group.items.push(b);group.total++;
+ }
+ return [...groups.values()];
+},()=>viewData.catalogue);
+export const ALLB: Bench[] = liveArray(()=>BENCH.flatMap(g => g.items.map(b => ({ ...b, group: g.g }))),()=>viewData.catalogue);
 export const ST_OVR: Record<string, Status> = {};
 export { MET, PHASE_NOTE } from './metrics';
 export const PH_NAMES:string[]=['startup','compile','instantiate','first call','steady','teardown'];

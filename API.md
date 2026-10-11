@@ -33,6 +33,10 @@ and evidence/report endpoints have no compatibility aliases and return HTTP 404.
 counts, alias-deduplicated timing counts, original capture time and actual import
 time. It does not read sample vectors. All GET responses support ETag/304.
 
+The matrix and timeline accept `corpus=main` (application workloads and call mechanisms)
+or `corpus=features`; omit it for all workloads. Pagination revisions include this filter.
+The benchmarks and features pages request only their own corpus.
+
 `GET /api/matrix?platform=ID&phase=steady&limit=1000` returns schema 2 with
 `contracts`, `configurations`, `sources`, `sampling`, `capturedAt`, and `rows`
 dictionaries. Each scalar row has these 15 positions:
@@ -374,3 +378,9 @@ average visit duration and bounce rate. Page duration is also shown as
 unavailable: no persistent visitor/session tracking or invented time estimates
 are used. The frontend fetches the selected ranges on demand, refreshes once a
 minute and maintains one SSE connection, without loading request dumps.
+
+Shared cohort selection uses the passing set of the least-covered measured, selected
+engine (ties resolve by engine identity). Engines missing measurements from that
+reference set have no displayed current average. Native-code comparisons exclude
+engines with no native code. Historical comparisons retain matched recorded pairs
+within the current reference.

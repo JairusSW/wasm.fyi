@@ -1,4 +1,7 @@
 <script lang="ts">
+	import {leastCoveredReference} from '$lib/comparison-policy';
+	import {viewData} from '$lib/view-data';
+	import {TableWindow} from '$lib/table-window.svelte';
 	import {apiView,loadPage,trackId} from '$lib/api/controller.svelte';
  import {datasetView} from '$lib/api/view.svelte';
  import {metricSelectors} from '$lib/api/presentation';
@@ -62,7 +65,7 @@
 	};
 
 	type Row =
-		| { kind: 'group'; name: string; count: string; open: boolean; cells: {text:string;count:number}[] }
+		| { kind: 'group'; name: string; count: string; open: boolean; cells: () => {text:string;count:number}[] }
 		| {
 				kind: 'item';
 				b: Bench;
@@ -71,7 +74,7 @@
 				cases: number;
 				expanded: boolean;
 				tags: string[];
-				cells: ReturnType<typeof cellFor>[];
+				cells: () => ReturnType<typeof cellFor>[];
 		  };
 
 	const view = $derived.by(() => {
@@ -85,14 +88,15 @@
                     previousGroup=row.group;const summary=apiView.page?.groups?.find(g=>g.name===row.group);
                     const values=cols.map(c=>summary?.cells.find(x=>x.track===trackId(c.id)));
                     const formatted=fmtUGroup(values.map(x=>x?.value==null?null:x.value/metricSelectors[m].factor),MET[m].u);
-                    rows.push({kind:'group',name:row.group,count:`${summary?.total||0} matching workloads`,open:!ui.collapsed[row.group],cells:values.map((x,i)=>({text:formatted[i]||'—',count:x?.count||0}))});
+                    rows.push({kind:'group',name:row.group,count:`${summary?.total||0} matching workloads`,open:!ui.collapsed[row.group],cells:()=>values.map((x,i)=>({text:formatted[i]||'—',count:x?.count||0}))});
                 }
                 if(ui.collapsed[row.group])continue;
-                rows.push({kind:'item',b,name:workloadName(b.id),indent:'12px',cases:0,expanded:false,tags:b.tags,cells:cellsFor(b)});
+                rows.push({kind:'item',b,name:workloadName(b.id),indent:'12px',cases:0,expanded:false,tags:b.tags,cells:()=>cellsFor(b)});
             }
             return {rows,shown:apiView.page?.total||0};
         }
-		const q = ui.q.trim().toLowerCase();
+		const reference=ui.cohortMode==='shared'?new Set(leastCoveredReference(BENCH.flatMap(g=>g.items.map(b=>({...b,group:g.g}))),viewData.applicationConfigurations.filter(id=>cols.some(c=>c.id===id)).sort((a,b)=>(viewData.configurations[a]||a).localeCompare(viewData.configurations[b]||b)),(b,id)=>benchVal(s,b,id,'steady').st==='ok',id=>viewData.configurations[id]||id).map(b=>b.id)):null;
+  const q = ui.q.trim().toLowerCase();
 		const match = (b: Bench) =>
 			(!q || b.id.toLowerCase().includes(q) || b.tags.some((t) => t.includes(q))) && (!ui.tag || b.tags.includes(ui.tag));
 		const rows: Row[] = [];
@@ -102,14 +106,16 @@
 			if (!items.length) continue;
 			shown += items.length;
 			const collapsed = !!ui.collapsed[g.g];
-			const averages = cols.map((c) => {
-				const eligible=ui.cohortMode==='shared'?items.filter(b=>cols.every(engine=>benchVal(s,b,engine.id,m).st==='ok')):items;
-				const values=eligible.map(b=>benchVal(s,b,c.id,m)).flatMap(r=>r.st==='ok'?[r.v]:[]);
-				return {value:values.length?values.reduce((a,b)=>a+b,0)/values.length:null,count:values.length};
-			});
-			const formatted=fmtUGroup(averages.map(a=>a.value),MET[m].u);
-			const gcells=averages.map((a,i)=>({text:formatted[i]||'—',count:a.count}));
-			rows.push({ kind: 'group', name: g.g, count: `${items.length} shown · ${n0(g.total)} in corpus`, open: !collapsed, cells: gcells });
+   const groupCells=()=>{
+    const eligible=ui.cohortMode==='shared'?items.filter(b=>reference?.has(b.id)):items;
+    const averages=cols.map(c=>{
+     const values=eligible.map(b=>benchVal(s,b,c.id,m)).flatMap(r=>r.st==='ok'?[r.v]:[]);
+     return {value:values.length&&(ui.cohortMode!=='shared'||values.length===eligible.length)?values.reduce((a,b)=>a+b,0)/values.length:null,count:values.length};
+    });
+    const formatted=fmtUGroup(averages.map(a=>a.value),MET[m].u);
+    return averages.map((a,i)=>({text:formatted[i]||'—',count:a.count}));
+   };
+   rows.push({kind:'group',name:g.g,count:`${items.length} shown · ${n0(g.total)} in corpus`,open:!collapsed,cells:groupCells});
 			if (collapsed) continue;
 			let list = items;
 			if (ui.sortBy) {
@@ -130,7 +136,7 @@
 					cases: b.cases?.length ?? 0,
 					expanded,
 					tags: b.tags,
-					cells: cellsFor(b,1)
+					cells: () => cellsFor(b,1)
 				});
 				if (expanded && b.cases)
 					for (const [lab, f] of b.cases)
@@ -142,7 +148,7 @@
 							cases: 0,
 							expanded: false,
 							tags: [],
-							cells: cellsFor(b,f,lab)
+							cells: () => cellsFor(b,f,lab)
 						});
 			}
 		}
@@ -158,6 +164,10 @@
 		else ui.tag = ui.tag === t ? null : t;
 	};
 	const legend = Object.values(ST);
+ const windowed=new TableWindow();
+ const rowKey=(row:Row)=>row.kind==='group'?`group:${row.name}`:`item:${row.b.id}:${row.name}`;
+ $effect(()=>windowed.setRows(view.rows.map(rowKey)));
+ const visibleRows=$derived(view.rows.slice(windowed.range.start,windowed.range.end));
 	// Before the dataset (or the first workload page) arrives, show placeholder rows.
 	const skeleton = $derived(!apiView.ready || (!view.rows.length && apiView.pageLoading));
 </script>
@@ -182,8 +192,8 @@
 	{/if}
 </div>
 <div class="phase-note">{PHASE_NOTE[ui.metric]}</div>
-<div class="tbl-wrap scroll">
-	<table class="mx wl-table">
+<div class="tbl-wrap scroll" use:windowed.observe>
+	<table class="mx wl-table" aria-rowcount={view.rows.length+1}>
 		<thead>
 			<tr>
 				<th class="stick th-label wl">Workload</th>
@@ -210,9 +220,11 @@
 					</tr>
 				{/each}
 			{/if}
-			{#each view.rows as r, ri (ri)}
+			{#if windowed.range.top>0}<tr class="spacer" aria-hidden="true"><td colspan={cols.length+1} style:height="{windowed.range.top}px"></td></tr>{/if}
+   {#each visibleRows as r, ri (rowKey(r))}
 				{#if r.kind === 'group'}
-					<tr class="sec">
+     {@const cells=r.cells()}
+					<tr class="sec" use:windowed.measure={rowKey(r)} aria-rowindex={windowed.range.start+ri+2}>
 						<td class="stick grp">
 							<button
 								class="grp-btn"
@@ -222,12 +234,13 @@
 								<span class="mono caret">{r.open ? '▾' : '▸'}</span><span class="w6">{r.name}</span><span class="small fg3">{r.count}</span>
 							</button>
 						</td>
-						{#each r.cells as cell, k (k)}
+						{#each cells as cell, k (k)}
 							<td class="mono small fg2 r gcell" data-tip-card={tipCard({ kicker: `${MET[ui.metric].l} · group mean`, title: r.name, who: tipWho(cols[k]), value: cell.text, stats: [['workloads', String(cell.count)], ['weighting', 'equal']], note: 'Arithmetic mean of successful measurements.' })}>{cell.text}</td>
 						{/each}
 					</tr>
 				{:else}
-					<tr>
+     {@const cells=r.cells()}
+					<tr use:windowed.measure={rowKey(r)} aria-rowindex={windowed.range.start+ri+2}>
 						<td class="stick item" style:padding-left={r.indent}>
 							<div class="item-line">
 								{#if r.cases}
@@ -243,7 +256,7 @@
 								{/each}
 							</div>
 						</td>
-						{#each r.cells as x, k (k)}
+						{#each cells as x, k (k)}
 							<td class="p0" style:background={x.bg}>
 								<button
 									class="cellbtn wcell"
@@ -259,6 +272,7 @@
 					</tr>
 				{/if}
 			{/each}
+   {#if windowed.range.bottom>0}<tr class="spacer" aria-hidden="true"><td colspan={cols.length+1} style:height="{windowed.range.bottom}px"></td></tr>{/if}
 		</tbody>
 	</table>
 </div>
@@ -273,6 +287,7 @@
 </div>
 
 <style>
+ .spacer td{padding:0;border:0;}
 	.head {
 		display: flex;
 		flex-wrap: wrap;

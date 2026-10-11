@@ -1,3 +1,4 @@
+import {leastCoveredReference} from './comparison-policy';
 import { featureContracts, type Scope } from './model';
 import { viewCell } from './view-data';
 import type { CfgId, Bench, Status } from './data/types';
@@ -20,9 +21,9 @@ export function familyValue(s:Scope,family:string,c:CfgId,metric='steady') {
 export function contractCohort(s:Scope,contracts:Bench[],cids:CfgId[],metric='steady') {
   const ok=(id:string,c:CfgId)=>{const v=featureValue(s,id,c,metric);return v!=null&&Number.isFinite(v)&&v>0;};
   const passed=cids.map(c=>contracts.filter(w=>ok(w.id,c)).length);
-  const cohort=s.cohortMode==='per-engine'?contracts:contracts.filter(w=>cids.length>0&&cids.every(c=>ok(w.id,c)));
+  const cohort=s.cohortMode==='per-engine'?contracts:leastCoveredReference(contracts,cids,(w,c)=>ok(w.id,c));
   const cohorts=cids.map(c=>cohort.filter(w=>ok(w.id,c)));
-  const values=cohorts.map((rows,k)=>featureAverage(rows.map(w=>featureValue(s,w.id,cids[k],metric)),s.average));
+  const values=cohorts.map((rows,k)=>s.cohortMode!=='per-engine'&&rows.length!==cohort.length?null:featureAverage(rows.map(w=>featureValue(s,w.id,cids[k],metric)),s.average));
   const statuses=cids.map((c,k):Status=>{
     if(values[k]!=null)return 'ok';
     if(passed[k]>0)return 'unavail';

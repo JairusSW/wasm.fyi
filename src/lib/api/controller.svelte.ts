@@ -53,11 +53,11 @@ function slot(engine:string):CfgId{
 for(const engine of ['wago','wasmtime','wasmtime-winch','wasmer-singlepass','wasmer-llvm','wazero','wazero-interpreter','v8','wavm','spidermonkey','jsc','wasmi','wamr','wamr-fast-jit','wamr-llvm-jit','wasm3','wasmedge','wasmedge-jit','chicory','wasm2go','wasm2c-gcc','w2c2-gcc','libwasm','wasmer-cranelift','chicory-jit','endive-interpreter','endive-jit','endive-redline','wazy','chasm','wizard-v3-int','wizard-fast-int','wizard-spc','graalwasm','zwasm-interpreter','zwasm-jit'])slot(engine);
 let compactClient=new CompactClient();
 async function get<T>(path:string,signal:AbortSignal,revalidate=false):Promise<T>{return compactClient.load<T>(path,signal,revalidate)}
-async function rows(platform:string,phase:string,signal:AbortSignal,history=false){
+async function rows(platform:string,phase:string,signal:AbortSignal,history=false,corpus=''){
  for(let attempt=0;;attempt++){
   const all:ScalarResult[]=[];let offset=0;let revision='';
   try{do{
-   const query=new URLSearchParams({platform,phase,limit:'1000',...(offset?{offset:String(offset),revision}:{})});
+   const query=new URLSearchParams({platform,phase,limit:'1000',...(corpus?{corpus}:{}),...(offset?{offset:String(offset),revision}:{})});
    const page=await get<CompactMatrix>((history?'/api/timeline?':'/api/matrix?')+query,signal);
    all.push(...unpackMatrix(page));revision=page.revision;offset=page.nextOffset??0;
    if(all.length>1000000)throw Error('Measurement scope exceeds display limit');
@@ -155,6 +155,9 @@ export async function connectSite(_origin='',_revision?:string){
   if(!machines.includes(ui.machine)&&machines.length)ui.machine=machines[0];
   const light=typeof location!=='undefined'&&['/','/health','/health/','/history','/history/'].includes(location.pathname)&&!ui.drawer;
   const selectedRevision=machineRevision(ui.machine,fresh);
+  const pathname=typeof location==='undefined'?'':location.pathname.replace(/\/$/,'');
+  const corpus=pathname==='/benchmarks'?'main':pathname==='/features'?'features':'';
+  const captureRevision=selectedRevision+'|'+corpus;
   datasetView.current.statistics.timingSamples=fresh.platforms.reduce((n,p)=>n+(p.latestTimingSamples||0),0);
   datasetView.current.statistics.allTimingSamples=fresh.platforms.reduce((n,p)=>n+(p.allTimingSamples||0),0);
   for(const target of platformTargets){const p=fresh.platforms.find(p=>p.id===target.platforms[0]);if(p){const host=datasetView.current.hosts[target.machine];host.capturedAt=p.capturedAt;host.importedAt=p.importedAt;host.latestRows=p.latestRows}}
@@ -172,7 +175,7 @@ export async function connectSite(_origin='',_revision?:string){
    signal.throwIfAborted();datasetView.current=view;datasetView.generation++;metadataMachines.set(ui.machine,selectedRevision);apiView.ready=true;
    if(typeof location==='undefined'||!location.pathname.startsWith('/history'))await loadOverview({...ui.scope,machine:ui.machine,snapshot:ui.snap,metric:ui.metric},'steady','',signal);return;
   }
-  if(loadedMachines.get(ui.machine)===selectedRevision){apiView.ready=true;return}
+  if(loadedMachines.get(ui.machine)===captureRevision){apiView.ready=true;return}
   const view={...datasetView.current,hosts:{...datasetView.current.hosts},reports:{...datasetView.current.reports},featureVersions:{...datasetView.current.featureVersions}};const catalogue=new Map<string,Bench>();const historyTargets:{platforms:string[];machine:MachineId}[]=[];let timingSamples=0;let timingSamplesComplete=true;
   for(const {machine,platforms:group} of platformGroups(platforms.items)){
    const platform=group[0];
@@ -181,7 +184,7 @@ export async function connectSite(_origin='',_revision?:string){
    if(machine!==ui.machine)continue;
    view.featureVersions[machine]=[];
    const normalize=(row:ScalarResult):ScalarResult=>row.engine.startsWith('wago-')&&!localComparisons.has(row.engine)?{...row,engine:'wago'}:row;
-   const current=await Promise.all(group.flatMap(platform=>['compile','instantiate','first-call','steady'].map(phase=>rows(platform.id,phase,signal))));
+   const current=await Promise.all(group.flatMap(platform=>['compile','instantiate','first-call','steady'].map(phase=>rows(platform.id,phase,signal,false,corpus))));
    const raw=current.flat().map(normalize);
    const all=[...selectEngineVersions(raw.filter(row=>!row.workload.startsWith('features/'))),...selectEngineVersions(raw.filter(row=>row.workload.startsWith('features/')))] as ScalarResult[];
    historyTargets.push({platforms:group.map(p=>p.id),machine});
@@ -213,7 +216,7 @@ export async function connectSite(_origin='',_revision?:string){
   if(signal.aborted)return;
   view.catalogue=[...new Map([...view.catalogue,...catalogue.values()].map(b=>[b.id,b])).values()];view.applicationConfigurations=[...new Set([...slots.values()])];view.statistics={machines:platformTargets.length,timingSamples:fresh.platforms.reduce((n,p)=>n+(p.latestTimingSamples||0),0),allTimingSamples:fresh.platforms.reduce((n,p)=>n+(p.allTimingSamples||0),0)};
   if(!apiView.ready&&typeof location!=='undefined'){const shown=new URL(location.href).searchParams.get('rt');if(shown){const ids=shown.split(',');ui.hide=Object.fromEntries(CFG.map(c=>[c.id,!ids.includes(c.id)]));}}
-  datasetView.current=view;sortCFG();datasetView.revision='';datasetView.generation++;apiView.ready=true;loadedMachines.set(ui.machine,selectedRevision);
+  datasetView.current=view;sortCFG();datasetView.revision='';datasetView.generation++;apiView.ready=true;loadedMachines.set(ui.machine,captureRevision);
   if(!machines.includes(ui.machine)&&machines.length)ui.machine=machines[0];datasetView.machine=ui.machine;
  }catch(error){if(!signal.aborted)apiView.error=String(error)}finally{if(!signal.aborted)apiView.loading=false}
 }

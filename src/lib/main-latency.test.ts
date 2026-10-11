@@ -15,6 +15,7 @@ it('defaults to showing measured phases when another engine cannot measure them'
   for(const metric of ['inst','steady'])view.hosts.m1.snapshots.s1[`other|D|${metric}`]={st:'ok',v:0.004,report:'r'};
   const scope={machine:'m1' as const,baseline:'A' as const,hide:{},weighting:'workload' as const,cohortMode:ui.cohortMode};
   expect(aggregate(scope,'lat','A',1)?.v).toBeCloseTo(0.002);expect(aggregate(scope,'lat','A',3)?.v).toBeCloseTo(0.002);
-  expect(aggregate({...scope,cohortMode:'shared'},'lat','A',1)).toBeNull();
+  expect(aggregate({...scope,cohortMode:'shared'},'lat','A',1)?.v).toBeCloseTo(0.002);
+  expect(aggregate({...scope,cohortMode:'shared'},'lat','D',1)).toBeNull();
  }finally{datasetView.current=old;datasetView.generation++;}
 });

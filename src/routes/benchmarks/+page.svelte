@@ -11,8 +11,8 @@
 	import { apiView } from '$lib/api/controller.svelte';
 
 	// Passed per engine: every engine averages its own passed workloads out of the whole corpus.
-	// Passed on all engines: only the workloads every shown engine passed.
-	const nShared = $derived(ui.cohortMode === 'shared' ? `${sharedCount(ui.scope)} application workloads passed on all shown engines` : `${totalWorkloads()} application workloads, each engine's passed ones`);
+	// Passed on all engines: use the least-covered measured engine’s passing workloads.
+	const nShared = $derived(ui.cohortMode === 'shared' ? `${sharedCount(ui.scope)} reference workloads from the least-covered shown engine` : `${totalWorkloads()} application workloads, each engine's passed ones`);
 
 	async function showOverview(group: OvKey) {
 		ui.group = group;

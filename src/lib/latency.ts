@@ -1,3 +1,4 @@
+import {leastCoveredReference} from './comparison-policy';
 import type {Result,PlatformChoice,BenchmarkPage} from './api/benchmark-types';
 export type LatencyPhase=Result['phase'];
 export type LatencyRow=Result;
@@ -42,8 +43,10 @@ export function latencyAverages(rows:LatencyRow[],engines:string[],mode:'shared'
   if(!cells.has(key))cells.set(key,new Map());
   cells.get(key)!.set(row.engine,row);
  }
+ const reference=mode==='shared'?leastCoveredReference([...cells.values()],engines,(row,engine)=>row.has(engine)):[...cells.values()];
  return engines.map(engine=>{
-  const values=[...cells.values()].filter(c=>mode==='per-engine'||engines.every(e=>c.has(e))).flatMap(c=>c.has(engine)?[c.get(engine)!.latencyNs!]:[]);
+  const values=reference.flatMap(c=>c.has(engine)?[c.get(engine)!.latencyNs!]:[]);
+  if(mode==='shared'&&values.length!==reference.length)return {engine,count:values.length,value:null};
   return {engine,count:values.length,value:values.length?Math.exp(values.reduce((sum,v)=>sum+Math.log(v),0)/values.length):null};
  });
 }

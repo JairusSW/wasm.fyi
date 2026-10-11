@@ -7,9 +7,9 @@ describe('latency-only corpus averages',()=>{
   const independent=latencyAverages(rows,['a','b'],'per-engine')[0];expect(independent.count).toBe(2);expect(independent.value).toBeCloseTo(3);
   const shared=latencyAverages(rows,['a','b'],'shared');expect(shared.map(a=>a.count)).toEqual([1,1]);expect(shared[0].value).toBe(1);expect(shared[1].value).toBeCloseTo(9);
  });
- it('does not compare changed inputs or ignore a requested engine with no passes',()=>{
-  expect(latencyAverages([row('shared','a',1,'old'),row('shared','b',9,'new')],['a','b'],'shared').every(a=>a.value==null)).toBe(true);
-  expect(latencyAverages([row('shared','a',1)],['a','b'],'shared').every(a=>a.count===0)).toBe(true);
+ it('leaves engines with changed inputs or no reference passes unavailable',()=>{
+  expect(latencyAverages([row('shared','a',1,'old'),row('shared','b',9,'new')],['a','b'],'shared').map(a=>a.value)).toEqual([1,null]);
+  expect(latencyAverages([row('shared','a',1)],['a','b'],'shared').map(a=>a.value)).toEqual([1,null]);
  });
 });
 

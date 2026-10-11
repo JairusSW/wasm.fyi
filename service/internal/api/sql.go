@@ -48,9 +48,9 @@ func (a *benchmarkAPI) serveSQL(w http.ResponseWriter, r *http.Request) bool {
 	case "/api/aggregates":
 		fields += "|metric|metrics|engines|baseline|weighting|cohort|average"
 	case "/api/matrix":
-		fields += "|phase|workload|engine|limit|offset|revision"
+		fields += "|phase|workload|engine|corpus|limit|offset|revision"
 	case "/api/timeline":
-		fields += "|phase|workload|engine|limit|offset|revision|from|to"
+		fields += "|phase|workload|engine|corpus|limit|offset|revision|from|to"
 	case "/api/observation":
 		fields += "|id|asOf"
 	}
@@ -148,7 +148,7 @@ func (a *benchmarkAPI) serveSQL(w http.ResponseWriter, r *http.Request) bool {
 				return true
 			}
 		}
-		query := sqldb.MatrixQuery{Offset: offset, Revision: q.Get("revision"), Platform: q.Get("platform"), Phase: q.Get("phase"), Workload: q.Get("workload"), Engine: q.Get("engine"), Limit: limit}
+		query := sqldb.MatrixQuery{Offset: offset, Revision: q.Get("revision"), Platform: q.Get("platform"), Phase: q.Get("phase"), Workload: q.Get("workload"), Engine: q.Get("engine"), Corpus: q.Get("corpus"), Limit: limit}
 		if r.URL.Path == "/api/timeline" {
 			value, err = db.History(r.Context(), query, q.Get("from"), q.Get("to"))
 		} else {

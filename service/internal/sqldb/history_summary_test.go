@@ -215,10 +215,15 @@ func TestHistoricalComparisonPerEngineSnapsMeasuredDatesAndCoverage(t *testing.T
 	}{{"a", "2026-10-01", 1, []float64{1, 2}}, {"a", "2026-10-03", 2, []float64{2, -1}}, {"b", "2026-10-02", 1, []float64{1, 2}}, {"b", "2026-10-04", 2, []float64{3, 4}}} {
 		putHistory(t, s, historyFixture(x.engine, x.date, x.rev, x.values))
 	}
-	q := HistoricalQuery{Platform: hash(fixture().Platform), Metric: "cov"}
+	q := HistoricalQuery{Platform: hash(fixture().Platform), Metric: "cov", Cohort: "per-engine"}
 	r, e := s.HistoricalComparison(ctx, q, "2026-10-01", "2026-10-04")
 	if e != nil || len(r.Items) != 2 || r.Items[0].FromDate != "2026-10-01" || r.Items[0].ToDate != "2026-10-03" || *r.Items[0].Ratio != .5 || r.Items[1].FromDate != "2026-10-02" || r.Items[1].ToDate != "2026-10-04" {
 		t.Fatal(r, e)
+	}
+	q.Cohort = "shared"
+	shared, err := s.HistoricalComparison(ctx, q, "2026-10-01", "2026-10-04")
+	if err != nil || len(shared.Items) != 2 || shared.Items[0].Reference != 1 || *shared.Items[0].Ratio != 1 {
+		t.Fatal(shared, err)
 	}
 }
 

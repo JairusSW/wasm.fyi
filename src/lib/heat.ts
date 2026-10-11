@@ -52,3 +52,12 @@ export const heatField = (values: readonly (number | null | undefined)[], i: num
 	const lo = Math.min(...xs), hi = Math.max(...xs), d = f(v) - mid;
 	return heatDiverge(d < 0 ? (mid > lo ? d / (mid - lo) : 0) : hi > mid ? d / (hi - mid) : 0);
 };
+
+/** Correctness has an absolute scale: only a complete pass is green. */
+export function heatCorrectness(passed:number,total:number):string {
+ if(total<=0||!Number.isFinite(passed)||!Number.isFinite(total))return 'transparent';
+ const missing=Math.max(0,Math.min(total,total-passed));
+ if(!missing)return heatColor('good',0.30);
+ const severity=Math.min(1,Math.sqrt((missing/total)/0.10));
+ return `oklch(0.74 0.14 ${(120-90*severity).toFixed(1)} / 0.300)`;
+}

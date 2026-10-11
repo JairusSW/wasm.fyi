@@ -12,7 +12,7 @@
 	import { COMPAT, FEATURE_ROWS, PROPS } from '$lib/data/features';
 	import { FEATURE_CFG } from '$lib/data/runtimes';
 		import { fmtU, fmtAverage } from '$lib/format';
-	import { heatCount, heatField } from '$lib/heat';
+	import { heatCount, heatField, heatCorrectness } from '$lib/heat';
 	import { PROPOSAL_IDS } from '$lib/links';
 	import {ST} from '$lib/data/status';
  import { featureContracts } from '$lib/model';
@@ -64,7 +64,7 @@
 			return {
 				text: plugin.official ? `${plugin.passed}/${plugin.total}` : '—',
 				sub: 'plugin',
-				bg: plugin.official && plugin.total ? heatCount(1 - frac) : 'transparent',
+				bg: plugin.official && plugin.total ? heatCorrectness(plugin.passed,plugin.total) : 'transparent',
 				color: plugin.official ? 'var(--fg)' : 'var(--fg3)',
 				full: plugin.official && plugin.total > 0 && plugin.passed === plugin.total,
 				href: plugin.official ? plugin.evidence : '/api/v1/conformance',
@@ -88,7 +88,7 @@
 		// Failed means the engine accepted the module but got it wrong: it claims the feature without
 		// passing. Rejected or adapter-unsupported tests are not failures and stay a plain dash.
 		const claimed = nonePassed && (best?.failed ?? 0) > 0;
-		const bg = nonePassed ? 'transparent' : heatCount(1 - frac);
+		const bg = nonePassed ? 'transparent' : heatCorrectness(track.pass,track.expected);
 		const reasons = track.detail.split('\n').filter((l) => l && !/ passed, /.test(l)).slice(0, 3);
 		return {
 			text: claimed ? ST.failed[0] : nonePassed ? ((best?.skipped||0)===track.expected?ST.unsupported[0]:ST.nm[0]) : text,
