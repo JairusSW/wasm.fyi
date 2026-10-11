@@ -264,7 +264,7 @@
 			outliers,
 			strip: ok ? rankSpec(peers.map((p) => ({ c: p.c, score: p.v, label: fmtU(p.v, u), self: p.c.id === c.id, tie: ties.includes(p) })), true, best) : null,
 			chart: ok && dots.length ? distSpec(dots, v, (x) => fmtU(x, u), (x) => fmtU(x, u)) : null,
-			heroLabel: d.m === 'code' ? 'Measured size' : 'Median',
+			heroLabel: d.m === 'code' ? 'Measured size' : measured.latencySummary==='retained-mean'?'Retained sample mean (zero-resolution median)':'Median',
 			count: distribution?.count ?? null,
 			spread: distribution?.stdDev != null && distribution.mean > 0 ? fmtSpread(distribution.stdDev / distribution.mean) : '',
 			stats: ok && distribution ? [

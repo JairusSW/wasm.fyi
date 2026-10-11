@@ -2,7 +2,7 @@ import type { Bench, CfgId, MachineId, Status } from '../data/types';
 export interface ViewCell {
 	observationId?:number;platformId?:string;asOf?:string;st: Status; v?: number; interval?: [number,number]; reason?: number;reasonText?:string;
 	result?:string;created?:string;contract?:string;configuration?:string;artifact?:string;profile?:string;exactValue?:number|string;approximate?:boolean;
-	sampleStats?:import('./compact-matrix').SampleStats;sampling?:import('./benchmark-types').Sampling; report: string; launchMedians?: number[]; samples?:number[];
+	latencySummary?:'retained-mean';sampleStats?:import('./compact-matrix').SampleStats;sampling?:import('./benchmark-types').Sampling; report: string; launchMedians?: number[]; samples?:number[];
 }
 export interface Host {
 	capturedAt?:string;importedAt?:string;latestRows?:number;label: string; os: string; policy: Record<string,string>;

@@ -291,3 +291,23 @@ func TestSharedReferenceCountsCorrectZeroResolutionTimings(t *testing.T) {
 		t.Fatal(r)
 	}
 }
+
+func TestAllZeroRetainedSamplesAreValidForArithmeticOnly(t *testing.T) {
+	data := aggregateFixture()
+	for i := range data.rows {
+		data.rows[i].passed = true
+		data.rows[i].latOK = false
+		data.rows[i].latency = 0
+		data.rows[i].zeroRecorded = true
+	}
+	q := AggregateQuery{Metric: "steady", Cohort: "shared", Average: "mean", Weighting: "workload", Engines: []string{"a", "b"}}
+	r := computeAggregate(data, q)
+	if card(r, "a").Value == nil || *card(r, "a").Value != 0 || card(r, "a").Count != 3 {
+		t.Fatal(r)
+	}
+	q.Average = "geo"
+	r = computeAggregate(data, q)
+	if card(r, "a").Value != nil {
+		t.Fatal(r)
+	}
+}

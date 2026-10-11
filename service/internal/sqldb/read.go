@@ -275,12 +275,12 @@ func (s *Store) Detail(ctx context.Context, platform string, observationID int64
 	}
 	query := "SELECT " + projection + " FROM latest b" + joins + "WHERE b.platform_id=? AND o.id=?"
 	args := []any{pid, observationID}
-	if len(asOf) > 0 {
+	if len(asOf) > 0 && asOf[0] != "" {
 		query = "SELECT " + projection + " FROM history b" + joins + "WHERE b.platform_id=? AND o.id=? AND b.as_of=?"
 		args = append(args, asOf[0])
 	}
 	id, r, e := scanResult(tx.QueryRowContext(ctx, query, args...))
-	if errors.Is(e, sql.ErrNoRows) && len(asOf) == 0 {
+	if errors.Is(e, sql.ErrNoRows) && (len(asOf) == 0 || asOf[0] == "") {
 		id, r, e = scanResult(tx.QueryRowContext(ctx, "SELECT "+projection+" FROM history b"+joins+"WHERE b.platform_id=? AND o.id=? ORDER BY b.as_of DESC LIMIT 1", pid, observationID))
 	}
 	if errors.Is(e, sql.ErrNoRows) {

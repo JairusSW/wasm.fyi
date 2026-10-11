@@ -384,3 +384,11 @@ engine (ties resolve by engine identity). Engines missing measurements from that
 reference set have no displayed current average. Native-code comparisons exclude
 engines with no native code. Historical comparisons retain matched recorded pairs
 within the current reference.
+
+Correctness always counts the complete main workload catalogue; choosing a shared
+averaging cohort never narrows the correctness denominator. If a successful
+latency summary is zero or absent but the retained samples have a positive mean,
+comparison calculations use that precomputed retained-sample mean. Cell details
+label this recovery explicitly. The original summary and ordered sample vector
+remain unchanged in `/api/observation`. All-zero retained samples are included as
+zero for arithmetic averages; they cannot supply a positive geometric mean.

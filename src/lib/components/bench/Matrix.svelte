@@ -1,5 +1,5 @@
 <script lang="ts">
-import {apiView,aggregateKey} from '$lib/api/controller.svelte';
+import {apiView,aggregateKey,trackId} from '$lib/api/controller.svelte';
 import {datasetView} from '$lib/api/view.svelte';
  import { rankStats, tipCard, tipWho } from '$lib/tip';
 import { CALL_PATHS } from '$lib/call-paths';
@@ -148,8 +148,9 @@ import { viewCell, viewData } from '$lib/view-data';
                     const interpreter=grp==='code'&&(/interpreter/.test(viewData.hosts[s.machine].configurations[c.id]?.backend||'')||(codeCells.length>0&&codeCells.every(([,cell])=>cell.st==='unsupported')));
 					const metric=grp==='mem'&&i===3?'rssAverage':g.metrics[i];
 					const key=aggregateKey(s,metric);
+					const timingReason=apiView.precomputed[key]?.cards.find(card=>card.engine===trackId(c.id))?.unavailableReason;
 					const status=apiView.aggregateErrors[key]?'unavailable':!apiView.aggregates[key]&&datasetView.revision?'loading…':'n/a';
-					return { text: interpreter?'n/a':disp(s,grp,c.id,sourceIndex)?.t || (off?'unavailable':ui.cohortMode==='shared'&&grp==='lat'?'Incomplete reference measurements':status), bg:'transparent',color:'var(--fg3)' };
+					return { text: interpreter?'n/a':disp(s,grp,c.id,sourceIndex)?.t || (off?'unavailable':ui.cohortMode==='shared'&&grp==='lat'?(timingReason==='timer-resolution'?'Below timer resolution':'Incomplete reference measurements'):status), bg:'transparent',color:'var(--fg3)' };
 				}
 				return { text: commonTimes?.[i] ? '~'+commonTimes[i] : disp(s, grp, c.id, sourceIndex)!.t, bg: heatOf(i, c.id), color: 'var(--fg)' };
 			});

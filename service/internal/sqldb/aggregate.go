@@ -17,14 +17,15 @@ type AggregateQuery struct {
 	Engines                                                []string
 }
 type AggregateCard struct {
-	Engine        string          `json:"engine"`
-	Version       string          `json:"version"`
-	Backend       string          `json:"backend"`
-	Source        *benchdb.Source `json:"source,omitempty"`
-	Value         *float64        `json:"value"`
-	Ratio         *float64        `json:"ratio"`
-	Count         int             `json:"count"`
-	LatestCreated string          `json:"latestCreated,omitempty"`
+	Engine            string          `json:"engine"`
+	Version           string          `json:"version"`
+	Backend           string          `json:"backend"`
+	Source            *benchdb.Source `json:"source,omitempty"`
+	Value             *float64        `json:"value"`
+	Ratio             *float64        `json:"ratio"`
+	Count             int             `json:"count"`
+	LatestCreated     string          `json:"latestCreated,omitempty"`
+	UnavailableReason string          `json:"unavailableReason,omitempty"`
 }
 type AggregateResult struct {
 	Revision     string          `json:"revision"`
@@ -44,6 +45,7 @@ type aggregateScalar struct {
 	workload, contract, group, phase, capturedAt string
 	latency, memory, code                        float64
 	latOK, memOK, codeOK, passed                 bool
+	zeroRecorded                                 bool
 }
 type aggregateSnapshot struct {
 	rows    []aggregateScalar
@@ -130,8 +132,10 @@ func loadAggregateSnapshot(ctx context.Context, q queryer, pid int64) (*aggregat
 		return nil, e
 	}
 	defer rows.Close()
+	var recoverCells []Cell
+	var recoverIndices []int
 	for rows.Next() {
-		_, r, e := scanResult(rows)
+		id, r, e := scanResult(rows)
 		if e != nil {
 			return nil, e
 		}
@@ -175,11 +179,28 @@ func loadAggregateSnapshot(ctx context.Context, q queryer, pid int64) (*aggregat
 		v.latency, v.latOK = positive(r.Value, r.Status)
 		v.memory, v.memOK = positive(r.PeakRSS, r.MemoryStatus)
 		v.code, v.codeOK = positive(r.CodeBytes, r.CodeStatus)
+		if r.Status == "ok" && !v.latOK && (r.Value == nil || *r.Value == 0) {
+			recoverCells = append(recoverCells, Cell{ObservationID: id, Result: r})
+			recoverIndices = append(recoverIndices, len(out.rows))
+		}
 		out.rows = append(out.rows, v)
 		out.bytes += 192 + len(v.workload) + len(v.contract) + len(v.group) + len(v.capturedAt)
 	}
 	if e = rows.Err(); e != nil {
 		return nil, e
+	}
+	rows.Close()
+	// Recover a zero-resolution median from the precomputed retained-sample mean.
+	// Original observations and sample vectors remain unchanged.
+	if e = loadCellStats(ctx, q, recoverCells); e != nil {
+		return nil, e
+	}
+	for i, cell := range recoverCells {
+		if cell.SampleStats != nil {
+			row := &out.rows[recoverIndices[i]]
+			row.latency, row.latOK = positive(&cell.SampleStats.Mean, cell.Status)
+			row.zeroRecorded = cell.SampleStats.Count > 0 && cell.SampleStats.Mean == 0
+		}
 	}
 	for _, cfg := range configs {
 		old := out.engines[cfg.engine]
@@ -362,7 +383,7 @@ func computeAggregate(data *aggregateSnapshot, q AggregateQuery) AggregateResult
 		case "code":
 			return row.code, row.codeOK
 		default:
-			return row.latency, row.latOK
+			return row.latency, row.latOK || q.Average == "mean" && row.zeroRecorded
 		}
 	}
 	has := func(engine string) bool {
@@ -430,6 +451,7 @@ func computeAggregate(data *aggregateSnapshot, q AggregateQuery) AggregateResult
 		}
 		values := []float64{}
 		groups := []string{}
+		zeroMissing, otherMissing := false, false
 		keys := make([]string, 0, len(cells))
 		for key := range cells {
 			keys = append(keys, key)
@@ -440,6 +462,13 @@ func computeAggregate(data *aggregateSnapshot, q AggregateQuery) AggregateResult
 			row := rows[engine]
 			v, ok := available(row)
 			if !ok {
+				if reference[key] {
+					if row.zeroRecorded {
+						zeroMissing = true
+					} else {
+						otherMissing = true
+					}
+				}
 				continue
 			}
 			if q.Cohort == "shared" && !reference[key] {
@@ -454,6 +483,10 @@ func computeAggregate(data *aggregateSnapshot, q AggregateQuery) AggregateResult
 		}
 		card.Count = len(values)
 		if q.Cohort == "shared" && len(values) != len(reference) {
+			card.UnavailableReason = "incomplete-reference"
+			if zeroMissing && !otherMissing {
+				card.UnavailableReason = "timer-resolution"
+			}
 			return card
 		}
 		if card.Count > 0 {

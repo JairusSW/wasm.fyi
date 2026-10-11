@@ -58,7 +58,7 @@ export const visibleCfgs = (s: Scope) => CFG.filter((c) => isVisible(s, c));
 let correctnessGeneration=-1;
 let correctnessView:typeof datasetView.current|undefined;
 const correctnessCache=new Map<string,Bench[]>();
-export function correctnessWorkloads(scope?:Scope):Bench[]{
+function averagingWorkloads(scope?:Scope):Bench[]{
  const view=datasetView.current;
  if(correctnessView!==view||correctnessGeneration!==datasetView.generation){correctnessCache.clear();correctnessView=view;correctnessGeneration=datasetView.generation}
  const selected=viewData.applicationConfigurations.filter(id=>!scope?.hide[id]&&!!viewData.hosts[scope?.machine||'m1'].configurations[id]).sort((a,b)=>(viewData.configurations[a]||a).localeCompare(viewData.configurations[b]||b));
@@ -68,6 +68,7 @@ export function correctnessWorkloads(scope?:Scope):Bench[]{
  const result=scope?.cohortMode==='shared'?leastCoveredReference(all,selected,(w,c)=>viewCell(scope.machine,scope.snapshot||'s1',w.id,c,'steady').st==='ok',c=>viewData.configurations[c]||c):all;
  if(correctnessCache.size>=64)correctnessCache.clear();correctnessCache.set(key,result);return result;
 }
+export function correctnessWorkloads(_scope?:Scope):Bench[]{return averagingWorkloads()}
 export const cov = (cid: CfgId, scope?:Scope) => {
   if(datasetView.revision)return apiView.coverage[cid]||[0,0,0,0,0];
   const counts=[0,0,0,0,0];
@@ -89,7 +90,7 @@ export function absOf(s:Scope,group:PerfGroup,cid:CfgId,col:number) {
   return a?{v:a.v,ci:a.interval?Math.max(Math.abs(a.v-a.interval[0]),Math.abs(a.interval[1]-a.v)):Number.NaN,interval:a.interval,count:a.count,report:a.report}:null;
 }
 export function sharedCount(s:Scope,group:PerfGroup='lat',col=3) {
- if(s.cohortMode==='shared'&&group==='lat'&&col===3)return correctnessWorkloads(s).length;
+ if(s.cohortMode==='shared'&&group==='lat'&&col===3)return averagingWorkloads(s).length;
   // Shown engines only: a hidden engine's cohort says nothing about the comparison on screen.
   const application=CFG.filter(c=>viewData.applicationConfigurations.includes(c.id)&&!s.hide[c.id]);
   return application.map(c=>aggregate(s,group,c.id,col)).find(a=>a)?.count || 0;

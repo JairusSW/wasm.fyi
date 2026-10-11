@@ -199,7 +199,7 @@ func historyReferences(latest *aggregateSnapshot, q HistoricalQuery, kind, phase
 			cells[key] = map[string]bool{}
 		}
 		_, ok := historyPositive(r, kind)
-		if kind == "coverage" && q.Cohort != "shared" {
+		if kind == "coverage" {
 			ok = true
 		}
 		cells[key][r.cfg.engine] = ok
@@ -233,7 +233,7 @@ func historyReferences(latest *aggregateSnapshot, q HistoricalQuery, kind, phase
 		refs[engine] = map[string]bool{}
 		for key, cell := range cells {
 			ok := cell[engine]
-			if q.Cohort == "shared" {
+			if q.Cohort == "shared" && kind != "coverage" {
 				ok = passing[key][anchor]
 			}
 
@@ -436,7 +436,7 @@ func historyRows(d *historicalDataset, q HistoricalQuery, date, engine string) m
 		if !row.ok {
 			continue
 		}
-		if kind != "calls" && q.Workload == "" && (q.Cohort == "shared" || kind != "coverage" && len(ref) > 0) && !ref[key] {
+		if kind != "calls" && kind != "coverage" && q.Workload == "" && (q.Cohort == "shared" || kind != "coverage" && len(ref) > 0) && !ref[key] {
 			continue
 		}
 		out[key] = row

@@ -94,3 +94,34 @@ func TestSampleStatsBackfillOnceAndAbsentSamplesStayAbsent(t *testing.T) {
 		t.Fatal(m, e)
 	}
 }
+
+func TestAggregateRecoversZeroMedianFromRetainedSamples(t *testing.T) {
+	ctx := context.Background()
+	s, err := Open(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	c := fixture()
+	zero := 0.0
+	c.Results[0].Value = &zero
+	c.Results[0].SamplesNs = []float64{20000, 20000, 20000, 20000, 20000, 0, 0, 20000, 0, 0, 0, 0, 0, 0, 0}
+	c.Results[0].Sampling.RetainedStart = 5
+	c.Results[0].TimingSamples = 15
+	if _, err = s.Put(ctx, c); err != nil {
+		t.Fatal(err)
+	}
+	q := AggregateQuery{Platform: hash(c.Platform), Metric: "steady", Cohort: "shared", Average: "mean"}
+	a, err := s.Aggregate(ctx, q)
+	if err != nil || len(a.Cards) != 1 || a.Cards[0].Value == nil || !closeFloat(*a.Cards[0].Value, 2000) {
+		t.Fatal(a, err)
+	}
+	m, err := s.Matrix(ctx, MatrixQuery{Platform: q.Platform, Limit: 10})
+	if err != nil {
+		t.Fatal(err)
+	}
+	d, err := s.Detail(ctx, q.Platform, m.Items[0].ObservationID, "")
+	if err != nil || d.Value == nil || *d.Value != 0 || len(d.SamplesNs) != 15 {
+		t.Fatal(d, err)
+	}
+}

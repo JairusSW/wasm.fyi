@@ -222,7 +222,7 @@ func TestHistoricalComparisonPerEngineSnapsMeasuredDatesAndCoverage(t *testing.T
 	}
 	q.Cohort = "shared"
 	shared, err := s.HistoricalComparison(ctx, q, "2026-10-01", "2026-10-04")
-	if err != nil || len(shared.Items) != 2 || shared.Items[0].Reference != 1 || *shared.Items[0].Ratio != 1 {
+	if err != nil || len(shared.Items) != 2 || shared.Items[0].Reference != 2 || *shared.Items[0].Ratio != .5 {
 		t.Fatal(shared, err)
 	}
 }
