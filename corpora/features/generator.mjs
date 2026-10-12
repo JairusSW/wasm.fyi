@@ -200,6 +200,10 @@ export function fixtures() {
   loop('js-string-builtins', 'concat-character', `(call $char (call $concat (global.get $s) (global.get $s)) (i32.rem_u ${i} (i32.const 52)))`, x => 97 + x % 26,
     strings + ' (import "wasm:js-string" "concat" (func $concat (param externref externref) (result (ref extern)))) (import "wasm:js-string" "charCodeAt" (func $char (param externref i32) (result i32)))', '', '', { hostProfile: 'js-string-builtins-v1' });
   const shared = '(memory 2 2 shared)';
+  loop('threads', 'unshared-atomic-load-store', `(block (result i32) (i32.atomic.store ${address} ${i}) (i32.atomic.load ${address}))`, x => x,
+    '(memory 2 2)', '', '', { hostProfile: 'threads-defined-v1' });
+  loop('threads', 'unshared-atomic-rmw-add', `(block (result i32) (i32.atomic.store (i32.const 0) ${i}) (i32.atomic.rmw.add (i32.const 0) (i32.const 1)))`, x => x,
+    '(memory 2 2)', '', '', { hostProfile: 'threads-defined-v1' });
   const shared64 = '(memory i64 2 2 shared)', address64 = `(i64.extend_i32_u ${address})`;
   loop('threads', 'memory64-atomic-load-store', `(block (result i32) (i32.atomic.store ${address64} ${i}) (i32.atomic.load ${address64}))`, x => x,
     shared64, '', '', { hostProfile: 'threads-defined-v1', features: ['threads', 'memory64'] });
