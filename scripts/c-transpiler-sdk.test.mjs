@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,writeFile,readFile,rm} from 'node:fs/promises';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
-import {packageWasm2cSIMDe} from './lib/c-transpiler-sdk.mjs';
+import {packageWasm2cSIMDe,packageW2c2Runtime} from './lib/c-transpiler-sdk.mjs';
 import {digest} from './lib/wasmbench.mjs';
 
 test('wasm2c installs complete pinned SIMDe include tree and records provenance',async()=>{
@@ -30,4 +30,34 @@ test('wasm2c installs complete pinned SIMDe include tree and records provenance'
 test('older wasm2c without a declared SIMDe dependency does not invent one',async()=>{
  const source=await mkdtemp(join(tmpdir(),'wasm2c-old-'));
  try{assert.equal(await packageWasm2cSIMDe({source,sdk:join(source,'sdk'),run:()=>{throw Error('unexpected Git probe')}}),null);}finally{await rm(source,{recursive:true,force:true});}
+});
+
+
+test('w2c2 SDK keeps SIMD transitive headers and linkable futex runtime inputs',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'w2c2-runtime-'));
+ try{
+  const source=join(root,'source'),sdk=join(root,'sdk');
+  await mkdir(join(source,'w2c2/simde/wasm'),{recursive:true});await mkdir(join(source,'futex'),{recursive:true});
+  await writeFile(join(source,'w2c2/w2c2_base.h'),'base header');
+  await writeFile(join(source,'w2c2/w2c2_simd.h'),'#include "simde/wasm/simd128.h"');
+  await writeFile(join(source,'w2c2/simde/wasm/simd128.h'),'#include "../common.h"');
+  await writeFile(join(source,'w2c2/simde/common.h'),'SIMD dependency');
+  for(const name of ['futex','list','map'])for(const extension of ['h','c'])await writeFile(join(source,'futex',name+'.'+extension),name+'.'+extension);
+  const receipt=await packageW2c2Runtime({source,sdk});
+  assert.equal(await readFile(join(sdk,'simde/common.h'),'utf8'),'SIMD dependency');
+  assert.equal(await readFile(join(sdk,'w2c2/w2c2_base.h'),'utf8'),await readFile(join(sdk,'w2c2_base.h'),'utf8'));
+  assert.deepEqual(receipt.nativeSources,['futex','list','map'].map(name=>join(sdk,'futex',name+'.c')));
+  for(const file of receipt.files)assert.equal(digest(await readFile(join(sdk,file.installed))),file.sha256);
+  await rm(join(source,'futex/map.c'));
+  await assert.rejects(packageW2c2Runtime({source,sdk}),/ENOENT/);
+ }finally{await rm(root,{recursive:true,force:true});}
+});
+
+test('older w2c2 SDK does not invent absent SIMD or futex support',async()=>{
+ const source=await mkdtemp(join(tmpdir(),'w2c2-old-'));
+ try{
+  await mkdir(join(source,'w2c2'));await writeFile(join(source,'w2c2/w2c2_base.h'),'legacy');
+  const receipt=await packageW2c2Runtime({source,sdk:join(source,'sdk')});
+  assert.deepEqual(receipt.nativeSources,[]);assert.equal(receipt.files.length,1);
+ }finally{await rm(source,{recursive:true,force:true});}
 });

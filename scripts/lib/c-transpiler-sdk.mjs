@@ -16,10 +16,50 @@ export async function packageWasm2cSIMDe({source,sdk,run}) {
  await cp(join(directory,'simde'),join(sdk,'include/simde'),{recursive:true});
  return {path:'third_party/simde',revision:pin.revision,headerSha256:digest(header),installed:'include/simde',submodules};
 }
+// The SIMD fork's generated C needs transitive headers. Wait/notify also needs
+// the three futex translation units compiled with the same flags as the guest.
+export async function packageW2c2Runtime({source,sdk}) {
+ const files=[];
+ async function copyFile(relative,installed=relative.replace(/^w2c2\//,'')) {
+  const bytes=await readFile(join(source,relative));
+  await mkdir(join(sdk,installed,'..'),{recursive:true});
+  await writeFile(join(sdk,installed),bytes);
+  files.push({source:relative,installed,sha256:digest(bytes)});
+ }
+ async function optional(relative) {
+  try {await readFile(join(source,relative));return true;}
+  catch(error){if(error.code==='ENOENT')return false;throw error;}
+ }
+ await copyFile('w2c2/w2c2_base.h');
+ if(await optional('w2c2/w2c2_simd.h')) {
+  await copyFile('w2c2/w2c2_simd.h');
+  async function copyTree(relative) {
+   for(const entry of (await readdir(join(source,relative),{withFileTypes:true})).sort((a,b)=>a.name.localeCompare(b.name))) {
+    const child=relative+'/'+entry.name;
+    if(entry.isDirectory())await copyTree(child);
+    else if(entry.isFile())await copyFile(child);
+    else throw Error('Unsupported w2c2 SIMD dependency entry: '+child);
+   }
+  }
+  await copyTree('w2c2/simde');
+ }
+ const nativeSources=[];
+ if(await optional('futex/futex.c')) {
+  // futex.h retains its upstream ../w2c2/w2c2_base.h include path.
+  await copyFile('w2c2/w2c2_base.h','w2c2/w2c2_base.h');
+  for(const name of ['futex','list','map']) {
+   await copyFile('futex/'+name+'.h','futex/'+name+'.h');
+   await copyFile('futex/'+name+'.c','futex/'+name+'.c');
+   nativeSources.push(join(sdk,'futex',name+'.c'));
+  }
+ }
+ return {files,nativeSources,nativeCompilePolicy:'compile runtime sources with the same bounds, SIMD and thread flags as generated guest C'};
+}
+
 export async function buildCTranspilerSDK({source,sdk,target,engine,env,run}) {
  if(!['wasm2c','w2c2'].includes(engine))throw Error('Unknown C transpiler');
  await mkdir(join(sdk,'bin'),{recursive:true});
- let binary,flags,simde=null;
+ let binary,flags,simde=null,runtimeSupport=null;
  if(engine==='wasm2c'){
   await run('git',['submodule','update','--init','--recursive','--depth','1'],{cwd:source});
   flags=['-DCMAKE_BUILD_TYPE=Release','-DBUILD_TESTS=OFF','-DBUILD_LIBWASM=OFF'];
@@ -42,8 +82,8 @@ export async function buildCTranspilerSDK({source,sdk,target,engine,env,run}) {
   }
   await run('cmake',['-S',join(source,'w2c2'),'-B',target,...flags]);await run('cmake',['--build',target,'--target','w2c2','-j','2']);
   binary=join(target,'w2c2');await cp(binary,join(sdk,'bin/w2c2'));
-  await cp(join(source,'w2c2/w2c2_base.h'),join(sdk,'w2c2_base.h'));
+  runtimeSupport=await packageW2c2Runtime({source,sdk});
  }
  env['WASMBENCH_'+engine.toUpperCase()]=join(sdk,'bin',engine);env['WASMBENCH_'+engine.toUpperCase()+'_SDK']=sdk;
- return {source,sdk,engine,flags,...(simde?{simde}:{}),translator:env['WASMBENCH_'+engine.toUpperCase()],translatorSha256:digest(await readFile(binary))};
+ return {source,sdk,engine,flags,...(simde?{simde}:{}),...(runtimeSupport?{runtimeSupport}:{}),translator:env['WASMBENCH_'+engine.toUpperCase()],translatorSha256:digest(await readFile(binary))};
 }
