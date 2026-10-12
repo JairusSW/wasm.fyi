@@ -202,6 +202,8 @@ export function fixtures() {
   const shared = '(memory 2 2 shared)';
   loop('threads', 'ordinary-load-store', `(block (result i32) (i32.store align=1 (i32.add ${address} (i32.const 1)) ${i}) (i32.load align=1 (i32.add ${address} (i32.const 1))))`, x => x, shared, '', '', { hostProfile: 'threads-defined-v1' });
   loop('threads', 'simd-load-store', `(block (result i32) (v128.store align=1 (i32.add ${address} (i32.const 1)) (i32x4.splat ${i})) (i32x4.extract_lane 3 (v128.load align=1 (i32.add ${address} (i32.const 1)))))`, x => x, shared, '', '', { hostProfile: 'threads-defined-v1' });
+  loop('threads', 'bulk-fill', `(block (result i32) (memory.fill (i32.add ${address} (i32.const 1)) ${i} (i32.const 33)) (i32.load8_u (i32.add ${address} (i32.const 33))))`, x => x & 255, shared, '', '', { hostProfile: 'threads-defined-v1' });
+  loop('threads', 'bulk-copy-overlap', `(block (result i32) (i32.store align=1 ${address} ${i}) (memory.copy (i32.add ${address} (i32.const 1)) ${address} (i32.const 33)) (i32.load align=1 (i32.add ${address} (i32.const 1))))`, x => x, shared, '', '', { hostProfile: 'threads-defined-v1' });
   loop('threads', 'atomic-load-store', `(block (result i32) (i32.atomic.store ${address} ${i}) (i32.atomic.load ${address}))`, x => x, shared, '', '', { hostProfile: 'threads-defined-v1' });
   loop('threads', 'atomic-rmw-add', `(block (result i32) (i32.atomic.store (i32.const 0) ${i}) (i32.atomic.rmw.add (i32.const 0) (i32.const 1)))`, x => x, shared, '', '', { hostProfile: 'threads-defined-v1' });
   loop('threads', 'atomic-compare-exchange', `(block (result i32) (i32.atomic.store (i32.const 0) ${i}) (i32.atomic.rmw.cmpxchg (i32.const 0) ${i} (i32.add ${i} (i32.const 1))))`, x => x, shared, '', '', { hostProfile: 'threads-defined-v1' });

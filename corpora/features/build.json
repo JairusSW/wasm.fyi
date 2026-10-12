@@ -76,7 +76,7 @@
     "cm-async"
   ],
   "missingFeatures": [],
-  "workloadContracts": 292,
+  "workloadContracts": 298,
   "recipes": [
     {
       "source": "sources/core-num-integer-multiply-add.wat",
@@ -1915,6 +1915,46 @@
       ],
       "feature": "threads",
       "variant": "simd-load-store",
+      "baseline": false,
+      "scope": "execution"
+    },
+    {
+      "source": "sources/threads-bulk-fill.wat",
+      "sourceSha256": "2e2eeb24b462fbea06f0eca5330389d88d62a9b821ae2fcb3f7f69ffdf1de536",
+      "artifact": "artifacts/threads-bulk-fill.wasm",
+      "sha256": "686be30cd382460f697741b1e495731176cefbc959dbeb36e6cd69ad5aec2464",
+      "compiler": "wasm-tools 1.260.0",
+      "argv": [
+        [
+          "wasm-tools",
+          "parse",
+          "sources/threads-bulk-fill.wat",
+          "-o",
+          "artifacts/threads-bulk-fill.wasm"
+        ]
+      ],
+      "feature": "threads",
+      "variant": "bulk-fill",
+      "baseline": false,
+      "scope": "execution"
+    },
+    {
+      "source": "sources/threads-bulk-copy-overlap.wat",
+      "sourceSha256": "3fc953646938c7baea781851be8840b326ca427d5c97a54aa57fc51c1183f82b",
+      "artifact": "artifacts/threads-bulk-copy-overlap.wasm",
+      "sha256": "9e64bc11525d67ad98a34a40489d295a77553bf2cd4110febec48afe6319ee3a",
+      "compiler": "wasm-tools 1.260.0",
+      "argv": [
+        [
+          "wasm-tools",
+          "parse",
+          "sources/threads-bulk-copy-overlap.wat",
+          "-o",
+          "artifacts/threads-bulk-copy-overlap.wasm"
+        ]
+      ],
+      "feature": "threads",
+      "variant": "bulk-copy-overlap",
       "baseline": false,
       "scope": "execution"
     },

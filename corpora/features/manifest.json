@@ -14441,6 +14441,342 @@
   },
   {
     "schema": 1,
+    "id": "features/threads/bulk-fill/1",
+    "family": "features",
+    "artifact": "artifacts/threads-bulk-fill.wasm",
+    "sha256": "686be30cd382460f697741b1e495731176cefbc959dbeb36e6cd69ad5aec2464",
+    "abi": "core",
+    "features": [
+      "threads"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        0
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-bulk-fill.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-bulk-fill.wat",
+        "sourceSha256": "2e2eeb24b462fbea06f0eca5330389d88d62a9b821ae2fcb3f7f69ffdf1de536",
+        "artifact": "artifacts/threads-bulk-fill.wasm",
+        "sha256": "686be30cd382460f697741b1e495731176cefbc959dbeb36e6cd69ad5aec2464",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-bulk-fill.wat",
+            "-o",
+            "artifacts/threads-bulk-fill.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "bulk-fill",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/bulk-fill/64",
+    "family": "features",
+    "artifact": "artifacts/threads-bulk-fill.wasm",
+    "sha256": "686be30cd382460f697741b1e495731176cefbc959dbeb36e6cd69ad5aec2464",
+    "abi": "core",
+    "features": [
+      "threads"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        2016
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-bulk-fill.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-bulk-fill.wat",
+        "sourceSha256": "2e2eeb24b462fbea06f0eca5330389d88d62a9b821ae2fcb3f7f69ffdf1de536",
+        "artifact": "artifacts/threads-bulk-fill.wasm",
+        "sha256": "686be30cd382460f697741b1e495731176cefbc959dbeb36e6cd69ad5aec2464",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-bulk-fill.wat",
+            "-o",
+            "artifacts/threads-bulk-fill.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "bulk-fill",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/bulk-fill/4096",
+    "family": "features",
+    "artifact": "artifacts/threads-bulk-fill.wasm",
+    "sha256": "686be30cd382460f697741b1e495731176cefbc959dbeb36e6cd69ad5aec2464",
+    "abi": "core",
+    "features": [
+      "threads"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        522240
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-bulk-fill.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-bulk-fill.wat",
+        "sourceSha256": "2e2eeb24b462fbea06f0eca5330389d88d62a9b821ae2fcb3f7f69ffdf1de536",
+        "artifact": "artifacts/threads-bulk-fill.wasm",
+        "sha256": "686be30cd382460f697741b1e495731176cefbc959dbeb36e6cd69ad5aec2464",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-bulk-fill.wat",
+            "-o",
+            "artifacts/threads-bulk-fill.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "bulk-fill",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/bulk-copy-overlap/1",
+    "family": "features",
+    "artifact": "artifacts/threads-bulk-copy-overlap.wasm",
+    "sha256": "9e64bc11525d67ad98a34a40489d295a77553bf2cd4110febec48afe6319ee3a",
+    "abi": "core",
+    "features": [
+      "threads"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        0
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-bulk-copy-overlap.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-bulk-copy-overlap.wat",
+        "sourceSha256": "3fc953646938c7baea781851be8840b326ca427d5c97a54aa57fc51c1183f82b",
+        "artifact": "artifacts/threads-bulk-copy-overlap.wasm",
+        "sha256": "9e64bc11525d67ad98a34a40489d295a77553bf2cd4110febec48afe6319ee3a",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-bulk-copy-overlap.wat",
+            "-o",
+            "artifacts/threads-bulk-copy-overlap.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "bulk-copy-overlap",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/bulk-copy-overlap/64",
+    "family": "features",
+    "artifact": "artifacts/threads-bulk-copy-overlap.wasm",
+    "sha256": "9e64bc11525d67ad98a34a40489d295a77553bf2cd4110febec48afe6319ee3a",
+    "abi": "core",
+    "features": [
+      "threads"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        2016
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-bulk-copy-overlap.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-bulk-copy-overlap.wat",
+        "sourceSha256": "3fc953646938c7baea781851be8840b326ca427d5c97a54aa57fc51c1183f82b",
+        "artifact": "artifacts/threads-bulk-copy-overlap.wasm",
+        "sha256": "9e64bc11525d67ad98a34a40489d295a77553bf2cd4110febec48afe6319ee3a",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-bulk-copy-overlap.wat",
+            "-o",
+            "artifacts/threads-bulk-copy-overlap.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "bulk-copy-overlap",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/bulk-copy-overlap/4096",
+    "family": "features",
+    "artifact": "artifacts/threads-bulk-copy-overlap.wasm",
+    "sha256": "9e64bc11525d67ad98a34a40489d295a77553bf2cd4110febec48afe6319ee3a",
+    "abi": "core",
+    "features": [
+      "threads"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        8386560
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-bulk-copy-overlap.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-bulk-copy-overlap.wat",
+        "sourceSha256": "3fc953646938c7baea781851be8840b326ca427d5c97a54aa57fc51c1183f82b",
+        "artifact": "artifacts/threads-bulk-copy-overlap.wasm",
+        "sha256": "9e64bc11525d67ad98a34a40489d295a77553bf2cd4110febec48afe6319ee3a",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-bulk-copy-overlap.wat",
+            "-o",
+            "artifacts/threads-bulk-copy-overlap.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "bulk-copy-overlap",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
     "id": "features/threads/atomic-load-store/1",
     "family": "features",
     "artifact": "artifacts/threads-atomic-load-store.wasm",
