@@ -76,7 +76,7 @@
     "cm-async"
   ],
   "missingFeatures": [],
-  "workloadContracts": 304,
+  "workloadContracts": 307,
   "recipes": [
     {
       "source": "sources/core-num-integer-multiply-add.wat",
@@ -1955,6 +1955,26 @@
       ],
       "feature": "threads",
       "variant": "bulk-copy-overlap",
+      "baseline": false,
+      "scope": "execution"
+    },
+    {
+      "source": "sources/threads-passive-data-init.wat",
+      "sourceSha256": "68568bcf1c5a16046f3818a405e98cbd70f2484c24518c13e1c028f121dd1cbd",
+      "artifact": "artifacts/threads-passive-data-init.wasm",
+      "sha256": "3429ecda0b278929ffe9cbbcef2c06e62ca65fdfc2cc055e9b50e87708944b8a",
+      "compiler": "wasm-tools 1.260.0",
+      "argv": [
+        [
+          "wasm-tools",
+          "parse",
+          "sources/threads-passive-data-init.wat",
+          "-o",
+          "artifacts/threads-passive-data-init.wasm"
+        ]
+      ],
+      "feature": "threads",
+      "variant": "passive-data-init",
       "baseline": false,
       "scope": "execution"
     },
