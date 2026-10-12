@@ -205,6 +205,10 @@ export function fixtures() {
     (i32.store $private ${address} (i32.add ${i} (i32.const 3)))
     (i32.sub (i32.load $private ${address}) (i32.atomic.load (i32.const 0))))`, () => 3,
     privateSecondary, '', '', { hostProfile: 'threads-defined-v1', features: ['threads', 'multi-memory'] });
+  loop('threads', 'private-secondary-atomic-load-store', `(block (result i32) (i32.atomic.store $private ${address} ${i}) (i32.atomic.load $private ${address}))`, x => x,
+    privateSecondary, '', '', { hostProfile: 'threads-defined-v1', features: ['threads', 'multi-memory'] });
+  loop('threads', 'private-secondary-atomic-rmw-add', `(block (result i32) (i32.atomic.store $private (i32.const 0) ${i}) (i32.atomic.rmw.add $private (i32.const 0) (i32.const 1)))`, x => x,
+    privateSecondary, '', '', { hostProfile: 'threads-defined-v1', features: ['threads', 'multi-memory'] });
   loop('threads', 'private-secondary-copy', `(block (result i32) (i32.atomic.store (i32.const 0) ${i})
     (memory.copy $private $shared ${address} (i32.const 0) (i32.const 4)) (i32.load $private ${address}))`, x => x,
     privateSecondary, '', '', { hostProfile: 'threads-defined-v1', features: ['threads', 'multi-memory'] });

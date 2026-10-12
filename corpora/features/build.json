@@ -76,7 +76,7 @@
     "cm-async"
   ],
   "missingFeatures": [],
-  "workloadContracts": 337,
+  "workloadContracts": 343,
   "recipes": [
     {
       "source": "sources/core-num-integer-multiply-add.wat",
@@ -1895,6 +1895,46 @@
       ],
       "feature": "threads",
       "variant": "private-secondary-load-store",
+      "baseline": false,
+      "scope": "execution"
+    },
+    {
+      "source": "sources/threads-private-secondary-atomic-load-store.wat",
+      "sourceSha256": "5b0c237f534e509dd4f5d8a6fc41816a7f09b122734f70e7df4301de96fe5eb2",
+      "artifact": "artifacts/threads-private-secondary-atomic-load-store.wasm",
+      "sha256": "14cc9da2f1fe40b5502943e687f7671b50ef5b3f39cc1aae93e193c6a7a0a710",
+      "compiler": "wasm-tools 1.260.0",
+      "argv": [
+        [
+          "wasm-tools",
+          "parse",
+          "sources/threads-private-secondary-atomic-load-store.wat",
+          "-o",
+          "artifacts/threads-private-secondary-atomic-load-store.wasm"
+        ]
+      ],
+      "feature": "threads",
+      "variant": "private-secondary-atomic-load-store",
+      "baseline": false,
+      "scope": "execution"
+    },
+    {
+      "source": "sources/threads-private-secondary-atomic-rmw-add.wat",
+      "sourceSha256": "52f44e2dc28d6f2247f2dfda956a38460a59106e0096aac3a7dbaf2ab9727f08",
+      "artifact": "artifacts/threads-private-secondary-atomic-rmw-add.wasm",
+      "sha256": "8dd88ef2d6ca1a3d60b57349fbd5d41576e4304f81f616e9b08173abe4a60748",
+      "compiler": "wasm-tools 1.260.0",
+      "argv": [
+        [
+          "wasm-tools",
+          "parse",
+          "sources/threads-private-secondary-atomic-rmw-add.wat",
+          "-o",
+          "artifacts/threads-private-secondary-atomic-rmw-add.wasm"
+        ]
+      ],
+      "feature": "threads",
+      "variant": "private-secondary-atomic-rmw-add",
       "baseline": false,
       "scope": "execution"
     },
