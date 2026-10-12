@@ -76,7 +76,7 @@
     "cm-async"
   ],
   "missingFeatures": [],
-  "workloadContracts": 331,
+  "workloadContracts": 337,
   "recipes": [
     {
       "source": "sources/core-num-integer-multiply-add.wat",
@@ -1875,6 +1875,46 @@
       ],
       "feature": "js-string-builtins",
       "variant": "concat-character",
+      "baseline": false,
+      "scope": "execution"
+    },
+    {
+      "source": "sources/threads-private-secondary-load-store.wat",
+      "sourceSha256": "92b7ed650e078a0fb608c28c3d76c55451376531944379fcfbcd200513bd5eb4",
+      "artifact": "artifacts/threads-private-secondary-load-store.wasm",
+      "sha256": "3a04408dde60f31ebc71e614ccd578dbbece809df9e2a866394e2b5b9d1955a5",
+      "compiler": "wasm-tools 1.260.0",
+      "argv": [
+        [
+          "wasm-tools",
+          "parse",
+          "sources/threads-private-secondary-load-store.wat",
+          "-o",
+          "artifacts/threads-private-secondary-load-store.wasm"
+        ]
+      ],
+      "feature": "threads",
+      "variant": "private-secondary-load-store",
+      "baseline": false,
+      "scope": "execution"
+    },
+    {
+      "source": "sources/threads-private-secondary-copy.wat",
+      "sourceSha256": "14cf6aec6bd468877b31dee367e8621ea75f76fda024a2fbe516342126e382a3",
+      "artifact": "artifacts/threads-private-secondary-copy.wasm",
+      "sha256": "1a6604dc07317df3f91c66de672fcfe05a9313943d2a302cea15a165a9fe9103",
+      "compiler": "wasm-tools 1.260.0",
+      "argv": [
+        [
+          "wasm-tools",
+          "parse",
+          "sources/threads-private-secondary-copy.wat",
+          "-o",
+          "artifacts/threads-private-secondary-copy.wasm"
+        ]
+      ],
+      "feature": "threads",
+      "variant": "private-secondary-copy",
       "baseline": false,
       "scope": "execution"
     },
