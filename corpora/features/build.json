@@ -76,7 +76,7 @@
     "cm-async"
   ],
   "missingFeatures": [],
-  "workloadContracts": 316,
+  "workloadContracts": 322,
   "recipes": [
     {
       "source": "sources/core-num-integer-multiply-add.wat",
@@ -1875,6 +1875,46 @@
       ],
       "feature": "js-string-builtins",
       "variant": "concat-character",
+      "baseline": false,
+      "scope": "execution"
+    },
+    {
+      "source": "sources/threads-memory64-atomic-load-store.wat",
+      "sourceSha256": "5458df00e3aad354a1fa47682bfd4bf1ea1608be1f8b2077b0c9c157724531f2",
+      "artifact": "artifacts/threads-memory64-atomic-load-store.wasm",
+      "sha256": "6a87e4a6a965c023479bc1d49bcf3180aadcaa21768e03ebf9e9cf6212a18a61",
+      "compiler": "wasm-tools 1.260.0",
+      "argv": [
+        [
+          "wasm-tools",
+          "parse",
+          "sources/threads-memory64-atomic-load-store.wat",
+          "-o",
+          "artifacts/threads-memory64-atomic-load-store.wasm"
+        ]
+      ],
+      "feature": "threads",
+      "variant": "memory64-atomic-load-store",
+      "baseline": false,
+      "scope": "execution"
+    },
+    {
+      "source": "sources/threads-memory64-wait-mismatch-notify.wat",
+      "sourceSha256": "349934a5c77d742590d45152bf1755aacd2a2f28b1602d6d35637abbdadfb60b",
+      "artifact": "artifacts/threads-memory64-wait-mismatch-notify.wasm",
+      "sha256": "49eebd5eb48838faa636cfe6b70a44242824807530ce416da5ae6892af99ba30",
+      "compiler": "wasm-tools 1.260.0",
+      "argv": [
+        [
+          "wasm-tools",
+          "parse",
+          "sources/threads-memory64-wait-mismatch-notify.wat",
+          "-o",
+          "artifacts/threads-memory64-wait-mismatch-notify.wasm"
+        ]
+      ],
+      "feature": "threads",
+      "variant": "memory64-wait-mismatch-notify",
       "baseline": false,
       "scope": "execution"
     },

@@ -56,7 +56,7 @@ if (action === 'build') {
     recipes.push(recipe);
     for (const size of fixture.sizes) {
       workloads.push({ schema: 1, id: `features/${fixture.feature}/${fixture.name}/${size}`, family: 'features',
-        artifact, sha256, abi: fixture.abi || 'core', features: [fixture.feature], export: fixture.export ?? 'benchmark',
+        artifact, sha256, abi: fixture.abi || 'core', features: fixture.features || [fixture.feature], export: fixture.export ?? 'benchmark',
         args: fixture.args ? fixture.args(size) : [fixture.abi === 'component' ? String(size) : size],
         work_unit: fixture.workUnit || 'feature_operation', units_per_invocation: fixture.units || size,
         reset: fixture.reset, oracle: fixture.oracle ? fixture.oracle(size) : { kind: 'exact_u64', expected: [fixture.abi === 'component' ? String(fixture.expected(size)) : fixture.expected(size)] },

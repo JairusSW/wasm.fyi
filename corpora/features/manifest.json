@@ -14105,6 +14105,348 @@
   },
   {
     "schema": 1,
+    "id": "features/threads/memory64-atomic-load-store/1",
+    "family": "features",
+    "artifact": "artifacts/threads-memory64-atomic-load-store.wasm",
+    "sha256": "6a87e4a6a965c023479bc1d49bcf3180aadcaa21768e03ebf9e9cf6212a18a61",
+    "abi": "core",
+    "features": [
+      "threads",
+      "memory64"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        0
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-memory64-atomic-load-store.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-memory64-atomic-load-store.wat",
+        "sourceSha256": "5458df00e3aad354a1fa47682bfd4bf1ea1608be1f8b2077b0c9c157724531f2",
+        "artifact": "artifacts/threads-memory64-atomic-load-store.wasm",
+        "sha256": "6a87e4a6a965c023479bc1d49bcf3180aadcaa21768e03ebf9e9cf6212a18a61",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-memory64-atomic-load-store.wat",
+            "-o",
+            "artifacts/threads-memory64-atomic-load-store.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "memory64-atomic-load-store",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/memory64-atomic-load-store/64",
+    "family": "features",
+    "artifact": "artifacts/threads-memory64-atomic-load-store.wasm",
+    "sha256": "6a87e4a6a965c023479bc1d49bcf3180aadcaa21768e03ebf9e9cf6212a18a61",
+    "abi": "core",
+    "features": [
+      "threads",
+      "memory64"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        2016
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-memory64-atomic-load-store.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-memory64-atomic-load-store.wat",
+        "sourceSha256": "5458df00e3aad354a1fa47682bfd4bf1ea1608be1f8b2077b0c9c157724531f2",
+        "artifact": "artifacts/threads-memory64-atomic-load-store.wasm",
+        "sha256": "6a87e4a6a965c023479bc1d49bcf3180aadcaa21768e03ebf9e9cf6212a18a61",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-memory64-atomic-load-store.wat",
+            "-o",
+            "artifacts/threads-memory64-atomic-load-store.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "memory64-atomic-load-store",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/memory64-atomic-load-store/4096",
+    "family": "features",
+    "artifact": "artifacts/threads-memory64-atomic-load-store.wasm",
+    "sha256": "6a87e4a6a965c023479bc1d49bcf3180aadcaa21768e03ebf9e9cf6212a18a61",
+    "abi": "core",
+    "features": [
+      "threads",
+      "memory64"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        8386560
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-memory64-atomic-load-store.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-memory64-atomic-load-store.wat",
+        "sourceSha256": "5458df00e3aad354a1fa47682bfd4bf1ea1608be1f8b2077b0c9c157724531f2",
+        "artifact": "artifacts/threads-memory64-atomic-load-store.wasm",
+        "sha256": "6a87e4a6a965c023479bc1d49bcf3180aadcaa21768e03ebf9e9cf6212a18a61",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-memory64-atomic-load-store.wat",
+            "-o",
+            "artifacts/threads-memory64-atomic-load-store.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "memory64-atomic-load-store",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/memory64-wait-mismatch-notify/1",
+    "family": "features",
+    "artifact": "artifacts/threads-memory64-wait-mismatch-notify.wasm",
+    "sha256": "49eebd5eb48838faa636cfe6b70a44242824807530ce416da5ae6892af99ba30",
+    "abi": "core",
+    "features": [
+      "threads",
+      "memory64"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        1
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-memory64-wait-mismatch-notify.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-memory64-wait-mismatch-notify.wat",
+        "sourceSha256": "349934a5c77d742590d45152bf1755aacd2a2f28b1602d6d35637abbdadfb60b",
+        "artifact": "artifacts/threads-memory64-wait-mismatch-notify.wasm",
+        "sha256": "49eebd5eb48838faa636cfe6b70a44242824807530ce416da5ae6892af99ba30",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-memory64-wait-mismatch-notify.wat",
+            "-o",
+            "artifacts/threads-memory64-wait-mismatch-notify.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "memory64-wait-mismatch-notify",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/memory64-wait-mismatch-notify/64",
+    "family": "features",
+    "artifact": "artifacts/threads-memory64-wait-mismatch-notify.wasm",
+    "sha256": "49eebd5eb48838faa636cfe6b70a44242824807530ce416da5ae6892af99ba30",
+    "abi": "core",
+    "features": [
+      "threads",
+      "memory64"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        64
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-memory64-wait-mismatch-notify.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-memory64-wait-mismatch-notify.wat",
+        "sourceSha256": "349934a5c77d742590d45152bf1755aacd2a2f28b1602d6d35637abbdadfb60b",
+        "artifact": "artifacts/threads-memory64-wait-mismatch-notify.wasm",
+        "sha256": "49eebd5eb48838faa636cfe6b70a44242824807530ce416da5ae6892af99ba30",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-memory64-wait-mismatch-notify.wat",
+            "-o",
+            "artifacts/threads-memory64-wait-mismatch-notify.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "memory64-wait-mismatch-notify",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/memory64-wait-mismatch-notify/4096",
+    "family": "features",
+    "artifact": "artifacts/threads-memory64-wait-mismatch-notify.wasm",
+    "sha256": "49eebd5eb48838faa636cfe6b70a44242824807530ce416da5ae6892af99ba30",
+    "abi": "core",
+    "features": [
+      "threads",
+      "memory64"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        4096
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-memory64-wait-mismatch-notify.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-memory64-wait-mismatch-notify.wat",
+        "sourceSha256": "349934a5c77d742590d45152bf1755aacd2a2f28b1602d6d35637abbdadfb60b",
+        "artifact": "artifacts/threads-memory64-wait-mismatch-notify.wasm",
+        "sha256": "49eebd5eb48838faa636cfe6b70a44242824807530ce416da5ae6892af99ba30",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-memory64-wait-mismatch-notify.wat",
+            "-o",
+            "artifacts/threads-memory64-wait-mismatch-notify.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "memory64-wait-mismatch-notify",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
     "id": "features/threads/table-indirect-call/1",
     "family": "features",
     "artifact": "artifacts/threads-table-indirect-call.wasm",
