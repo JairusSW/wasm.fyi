@@ -76,7 +76,7 @@
     "cm-async"
   ],
   "missingFeatures": [],
-  "workloadContracts": 343,
+  "workloadContracts": 352,
   "recipes": [
     {
       "source": "sources/core-num-integer-multiply-add.wat",
@@ -1935,6 +1935,66 @@
       ],
       "feature": "threads",
       "variant": "private-secondary-atomic-rmw-add",
+      "baseline": false,
+      "scope": "execution"
+    },
+    {
+      "source": "sources/threads-shared-secondary-atomic-load-store.wat",
+      "sourceSha256": "7089a5e2f381b2fb725b7e682fc5ad4ee5b622890f5283ae3208d232ac5861c8",
+      "artifact": "artifacts/threads-shared-secondary-atomic-load-store.wasm",
+      "sha256": "6d4f2b0543d07ef01c3803f2c95bfbef99676d65478f419272acc17a880827f2",
+      "compiler": "wasm-tools 1.260.0",
+      "argv": [
+        [
+          "wasm-tools",
+          "parse",
+          "sources/threads-shared-secondary-atomic-load-store.wat",
+          "-o",
+          "artifacts/threads-shared-secondary-atomic-load-store.wasm"
+        ]
+      ],
+      "feature": "threads",
+      "variant": "shared-secondary-atomic-load-store",
+      "baseline": false,
+      "scope": "execution"
+    },
+    {
+      "source": "sources/threads-shared-secondary-wait-size.wat",
+      "sourceSha256": "e806d282d2bc3aae8f01a324e0ad3f8a5d141bc567db93a09b6a3a82c0e33eec",
+      "artifact": "artifacts/threads-shared-secondary-wait-size.wasm",
+      "sha256": "af5ab72a674648918075bdddcf0e0768993518354025d2bdf593d8f78ca8a429",
+      "compiler": "wasm-tools 1.260.0",
+      "argv": [
+        [
+          "wasm-tools",
+          "parse",
+          "sources/threads-shared-secondary-wait-size.wat",
+          "-o",
+          "artifacts/threads-shared-secondary-wait-size.wasm"
+        ]
+      ],
+      "feature": "threads",
+      "variant": "shared-secondary-wait-size",
+      "baseline": false,
+      "scope": "execution"
+    },
+    {
+      "source": "sources/threads-shared-secondary-copy.wat",
+      "sourceSha256": "db126fe1f1a662ba019cc5f2a225d6e11ec5bac78f56a491296f9e571e3acd7f",
+      "artifact": "artifacts/threads-shared-secondary-copy.wasm",
+      "sha256": "3070f9828bcebee0c26462cac59024c830fab851f4a0a55295d2b8acc926cc00",
+      "compiler": "wasm-tools 1.260.0",
+      "argv": [
+        [
+          "wasm-tools",
+          "parse",
+          "sources/threads-shared-secondary-copy.wat",
+          "-o",
+          "artifacts/threads-shared-secondary-copy.wasm"
+        ]
+      ],
+      "feature": "threads",
+      "variant": "shared-secondary-copy",
       "baseline": false,
       "scope": "execution"
     },

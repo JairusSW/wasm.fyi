@@ -14618,6 +14618,519 @@
   },
   {
     "schema": 1,
+    "id": "features/threads/shared-secondary-atomic-load-store/1",
+    "family": "features",
+    "artifact": "artifacts/threads-shared-secondary-atomic-load-store.wasm",
+    "sha256": "6d4f2b0543d07ef01c3803f2c95bfbef99676d65478f419272acc17a880827f2",
+    "abi": "core",
+    "features": [
+      "threads",
+      "multi-memory"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        0
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-shared-secondary-atomic-load-store.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-shared-secondary-atomic-load-store.wat",
+        "sourceSha256": "7089a5e2f381b2fb725b7e682fc5ad4ee5b622890f5283ae3208d232ac5861c8",
+        "artifact": "artifacts/threads-shared-secondary-atomic-load-store.wasm",
+        "sha256": "6d4f2b0543d07ef01c3803f2c95bfbef99676d65478f419272acc17a880827f2",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-shared-secondary-atomic-load-store.wat",
+            "-o",
+            "artifacts/threads-shared-secondary-atomic-load-store.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "shared-secondary-atomic-load-store",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/shared-secondary-atomic-load-store/64",
+    "family": "features",
+    "artifact": "artifacts/threads-shared-secondary-atomic-load-store.wasm",
+    "sha256": "6d4f2b0543d07ef01c3803f2c95bfbef99676d65478f419272acc17a880827f2",
+    "abi": "core",
+    "features": [
+      "threads",
+      "multi-memory"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        2016
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-shared-secondary-atomic-load-store.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-shared-secondary-atomic-load-store.wat",
+        "sourceSha256": "7089a5e2f381b2fb725b7e682fc5ad4ee5b622890f5283ae3208d232ac5861c8",
+        "artifact": "artifacts/threads-shared-secondary-atomic-load-store.wasm",
+        "sha256": "6d4f2b0543d07ef01c3803f2c95bfbef99676d65478f419272acc17a880827f2",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-shared-secondary-atomic-load-store.wat",
+            "-o",
+            "artifacts/threads-shared-secondary-atomic-load-store.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "shared-secondary-atomic-load-store",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/shared-secondary-atomic-load-store/4096",
+    "family": "features",
+    "artifact": "artifacts/threads-shared-secondary-atomic-load-store.wasm",
+    "sha256": "6d4f2b0543d07ef01c3803f2c95bfbef99676d65478f419272acc17a880827f2",
+    "abi": "core",
+    "features": [
+      "threads",
+      "multi-memory"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        8386560
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-shared-secondary-atomic-load-store.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-shared-secondary-atomic-load-store.wat",
+        "sourceSha256": "7089a5e2f381b2fb725b7e682fc5ad4ee5b622890f5283ae3208d232ac5861c8",
+        "artifact": "artifacts/threads-shared-secondary-atomic-load-store.wasm",
+        "sha256": "6d4f2b0543d07ef01c3803f2c95bfbef99676d65478f419272acc17a880827f2",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-shared-secondary-atomic-load-store.wat",
+            "-o",
+            "artifacts/threads-shared-secondary-atomic-load-store.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "shared-secondary-atomic-load-store",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/shared-secondary-wait-size/1",
+    "family": "features",
+    "artifact": "artifacts/threads-shared-secondary-wait-size.wasm",
+    "sha256": "af5ab72a674648918075bdddcf0e0768993518354025d2bdf593d8f78ca8a429",
+    "abi": "core",
+    "features": [
+      "threads",
+      "multi-memory"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        3
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-shared-secondary-wait-size.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-shared-secondary-wait-size.wat",
+        "sourceSha256": "e806d282d2bc3aae8f01a324e0ad3f8a5d141bc567db93a09b6a3a82c0e33eec",
+        "artifact": "artifacts/threads-shared-secondary-wait-size.wasm",
+        "sha256": "af5ab72a674648918075bdddcf0e0768993518354025d2bdf593d8f78ca8a429",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-shared-secondary-wait-size.wat",
+            "-o",
+            "artifacts/threads-shared-secondary-wait-size.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "shared-secondary-wait-size",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/shared-secondary-wait-size/64",
+    "family": "features",
+    "artifact": "artifacts/threads-shared-secondary-wait-size.wasm",
+    "sha256": "af5ab72a674648918075bdddcf0e0768993518354025d2bdf593d8f78ca8a429",
+    "abi": "core",
+    "features": [
+      "threads",
+      "multi-memory"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        192
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-shared-secondary-wait-size.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-shared-secondary-wait-size.wat",
+        "sourceSha256": "e806d282d2bc3aae8f01a324e0ad3f8a5d141bc567db93a09b6a3a82c0e33eec",
+        "artifact": "artifacts/threads-shared-secondary-wait-size.wasm",
+        "sha256": "af5ab72a674648918075bdddcf0e0768993518354025d2bdf593d8f78ca8a429",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-shared-secondary-wait-size.wat",
+            "-o",
+            "artifacts/threads-shared-secondary-wait-size.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "shared-secondary-wait-size",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/shared-secondary-wait-size/4096",
+    "family": "features",
+    "artifact": "artifacts/threads-shared-secondary-wait-size.wasm",
+    "sha256": "af5ab72a674648918075bdddcf0e0768993518354025d2bdf593d8f78ca8a429",
+    "abi": "core",
+    "features": [
+      "threads",
+      "multi-memory"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        12288
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-shared-secondary-wait-size.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-shared-secondary-wait-size.wat",
+        "sourceSha256": "e806d282d2bc3aae8f01a324e0ad3f8a5d141bc567db93a09b6a3a82c0e33eec",
+        "artifact": "artifacts/threads-shared-secondary-wait-size.wasm",
+        "sha256": "af5ab72a674648918075bdddcf0e0768993518354025d2bdf593d8f78ca8a429",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-shared-secondary-wait-size.wat",
+            "-o",
+            "artifacts/threads-shared-secondary-wait-size.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "shared-secondary-wait-size",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/shared-secondary-copy/1",
+    "family": "features",
+    "artifact": "artifacts/threads-shared-secondary-copy.wasm",
+    "sha256": "3070f9828bcebee0c26462cac59024c830fab851f4a0a55295d2b8acc926cc00",
+    "abi": "core",
+    "features": [
+      "threads",
+      "multi-memory"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        0
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-shared-secondary-copy.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-shared-secondary-copy.wat",
+        "sourceSha256": "db126fe1f1a662ba019cc5f2a225d6e11ec5bac78f56a491296f9e571e3acd7f",
+        "artifact": "artifacts/threads-shared-secondary-copy.wasm",
+        "sha256": "3070f9828bcebee0c26462cac59024c830fab851f4a0a55295d2b8acc926cc00",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-shared-secondary-copy.wat",
+            "-o",
+            "artifacts/threads-shared-secondary-copy.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "shared-secondary-copy",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/shared-secondary-copy/64",
+    "family": "features",
+    "artifact": "artifacts/threads-shared-secondary-copy.wasm",
+    "sha256": "3070f9828bcebee0c26462cac59024c830fab851f4a0a55295d2b8acc926cc00",
+    "abi": "core",
+    "features": [
+      "threads",
+      "multi-memory"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        2016
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-shared-secondary-copy.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-shared-secondary-copy.wat",
+        "sourceSha256": "db126fe1f1a662ba019cc5f2a225d6e11ec5bac78f56a491296f9e571e3acd7f",
+        "artifact": "artifacts/threads-shared-secondary-copy.wasm",
+        "sha256": "3070f9828bcebee0c26462cac59024c830fab851f4a0a55295d2b8acc926cc00",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-shared-secondary-copy.wat",
+            "-o",
+            "artifacts/threads-shared-secondary-copy.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "shared-secondary-copy",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/shared-secondary-copy/4096",
+    "family": "features",
+    "artifact": "artifacts/threads-shared-secondary-copy.wasm",
+    "sha256": "3070f9828bcebee0c26462cac59024c830fab851f4a0a55295d2b8acc926cc00",
+    "abi": "core",
+    "features": [
+      "threads",
+      "multi-memory"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        8386560
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-shared-secondary-copy.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-shared-secondary-copy.wat",
+        "sourceSha256": "db126fe1f1a662ba019cc5f2a225d6e11ec5bac78f56a491296f9e571e3acd7f",
+        "artifact": "artifacts/threads-shared-secondary-copy.wasm",
+        "sha256": "3070f9828bcebee0c26462cac59024c830fab851f4a0a55295d2b8acc926cc00",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-shared-secondary-copy.wat",
+            "-o",
+            "artifacts/threads-shared-secondary-copy.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "shared-secondary-copy",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
     "id": "features/threads/private-secondary-copy/1",
     "family": "features",
     "artifact": "artifacts/threads-private-secondary-copy.wasm",
