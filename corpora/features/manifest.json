@@ -15791,6 +15791,177 @@
   },
   {
     "schema": 1,
+    "id": "features/threads/memory64-passive-data-init/1",
+    "family": "features",
+    "artifact": "artifacts/threads-memory64-passive-data-init.wasm",
+    "sha256": "e688212a2037e15d24e84912ab626370071c339e01e6e922f6be1c22dc74b7fe",
+    "abi": "core",
+    "features": [
+      "threads",
+      "memory64"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        177
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-memory64-passive-data-init.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-memory64-passive-data-init.wat",
+        "sourceSha256": "d9dec6adbeb3a17f253313db9db56e16b218d2f78fec148dcb09d7225c8278c3",
+        "artifact": "artifacts/threads-memory64-passive-data-init.wasm",
+        "sha256": "e688212a2037e15d24e84912ab626370071c339e01e6e922f6be1c22dc74b7fe",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-memory64-passive-data-init.wat",
+            "-o",
+            "artifacts/threads-memory64-passive-data-init.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "memory64-passive-data-init",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/memory64-passive-data-init/64",
+    "family": "features",
+    "artifact": "artifacts/threads-memory64-passive-data-init.wasm",
+    "sha256": "e688212a2037e15d24e84912ab626370071c339e01e6e922f6be1c22dc74b7fe",
+    "abi": "core",
+    "features": [
+      "threads",
+      "memory64"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        9632
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-memory64-passive-data-init.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-memory64-passive-data-init.wat",
+        "sourceSha256": "d9dec6adbeb3a17f253313db9db56e16b218d2f78fec148dcb09d7225c8278c3",
+        "artifact": "artifacts/threads-memory64-passive-data-init.wasm",
+        "sha256": "e688212a2037e15d24e84912ab626370071c339e01e6e922f6be1c22dc74b7fe",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-memory64-passive-data-init.wat",
+            "-o",
+            "artifacts/threads-memory64-passive-data-init.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "memory64-passive-data-init",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/memory64-passive-data-init/4096",
+    "family": "features",
+    "artifact": "artifacts/threads-memory64-passive-data-init.wasm",
+    "sha256": "e688212a2037e15d24e84912ab626370071c339e01e6e922f6be1c22dc74b7fe",
+    "abi": "core",
+    "features": [
+      "threads",
+      "memory64"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        616448
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-memory64-passive-data-init.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-memory64-passive-data-init.wat",
+        "sourceSha256": "d9dec6adbeb3a17f253313db9db56e16b218d2f78fec148dcb09d7225c8278c3",
+        "artifact": "artifacts/threads-memory64-passive-data-init.wasm",
+        "sha256": "e688212a2037e15d24e84912ab626370071c339e01e6e922f6be1c22dc74b7fe",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-memory64-passive-data-init.wat",
+            "-o",
+            "artifacts/threads-memory64-passive-data-init.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "memory64-passive-data-init",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
     "id": "features/threads/memory-size-zero-growth/1",
     "family": "features",
     "artifact": "artifacts/threads-memory-size-zero-growth.wasm",

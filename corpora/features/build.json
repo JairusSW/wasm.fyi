@@ -76,7 +76,7 @@
     "cm-async"
   ],
   "missingFeatures": [],
-  "workloadContracts": 322,
+  "workloadContracts": 325,
   "recipes": [
     {
       "source": "sources/core-num-integer-multiply-add.wat",
@@ -2075,6 +2075,26 @@
       ],
       "feature": "threads",
       "variant": "passive-data-init",
+      "baseline": false,
+      "scope": "execution"
+    },
+    {
+      "source": "sources/threads-memory64-passive-data-init.wat",
+      "sourceSha256": "d9dec6adbeb3a17f253313db9db56e16b218d2f78fec148dcb09d7225c8278c3",
+      "artifact": "artifacts/threads-memory64-passive-data-init.wasm",
+      "sha256": "e688212a2037e15d24e84912ab626370071c339e01e6e922f6be1c22dc74b7fe",
+      "compiler": "wasm-tools 1.260.0",
+      "argv": [
+        [
+          "wasm-tools",
+          "parse",
+          "sources/threads-memory64-passive-data-init.wat",
+          "-o",
+          "artifacts/threads-memory64-passive-data-init.wasm"
+        ]
+      ],
+      "feature": "threads",
+      "variant": "memory64-passive-data-init",
       "baseline": false,
       "scope": "execution"
     },
