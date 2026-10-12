@@ -11,8 +11,17 @@ test('checked-in feature artifacts and provenance cover every declared family',a
   const manifest=JSON.parse(await readFile(join(site,'corpora/features/manifest.json'),'utf8'));
   const build=JSON.parse(await readFile(join(site,'corpora/features/build.json'),'utf8'));
   const ui=await readFile(join(site,'src/lib/data/features.ts'),'utf8');
-  const displayed=[...new Set([...ui.matchAll(/\bid: '([^']+)'/g)].map(match=>match[1]))];
-  assert.deepEqual([...featureIds].sort(),displayed.sort(),'Feature corpus no longer matches displayed families');
+  // Proposal rows are generated from the snapshot, while system-interface
+  // rows can exist without a source-built fixture in this particular corpus.
+  const snapshot=JSON.parse(await readFile(join(site,'src/lib/data/proposals.json'),'utf8'));
+  const staticRows=ui.slice(0,ui.indexOf('const KNOWN'));
+  const knownRows=ui.slice(ui.indexOf('const KNOWN'),ui.indexOf('/** Group order'));
+  const known=new Map([...knownRows.matchAll(/\b(\w+): \{ id: '([^']+)'/g)].map(m=>[m[1],m[2]]));
+  const displayed=new Set([
+    ...[...staticRows.matchAll(/\bid: '([^']+)'/g)].map(m=>m[1]),
+    ...snapshot.proposals.map(p=>known.get(p.key)??p.key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase())),
+  ]);
+  for(const feature of featureIds)assert(displayed.has(feature),`Generated family missing from displayed rows: ${feature}`);
   assert.deepEqual(build.missingFeatures,[]);assert.equal(build.recipes.length,fixtures().length);
   assert.equal(manifest.length,fixtures().reduce((n,f)=>n+f.sizes.length,0));
   for(const feature of featureIds)assert(manifest.some(w=>w.features.includes(feature)&&!w.provenance.baseline),`Missing actual ${feature} workload`);

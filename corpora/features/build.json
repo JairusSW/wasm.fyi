@@ -76,7 +76,7 @@
     "cm-async"
   ],
   "missingFeatures": [],
-  "workloadContracts": 286,
+  "workloadContracts": 292,
   "recipes": [
     {
       "source": "sources/core-num-integer-multiply-add.wat",
@@ -1875,6 +1875,46 @@
       ],
       "feature": "js-string-builtins",
       "variant": "concat-character",
+      "baseline": false,
+      "scope": "execution"
+    },
+    {
+      "source": "sources/threads-ordinary-load-store.wat",
+      "sourceSha256": "5ea6c8d24ac69243e4420a95042c8a354241443ce815130d215fdfddd4f30a7d",
+      "artifact": "artifacts/threads-ordinary-load-store.wasm",
+      "sha256": "85f70bebfedf7a5b6ee03a1d928b73d95cc78f5c25c3d6c940cb68da3b9f2ba3",
+      "compiler": "wasm-tools 1.260.0",
+      "argv": [
+        [
+          "wasm-tools",
+          "parse",
+          "sources/threads-ordinary-load-store.wat",
+          "-o",
+          "artifacts/threads-ordinary-load-store.wasm"
+        ]
+      ],
+      "feature": "threads",
+      "variant": "ordinary-load-store",
+      "baseline": false,
+      "scope": "execution"
+    },
+    {
+      "source": "sources/threads-simd-load-store.wat",
+      "sourceSha256": "db3ed8bb8c222a1fe2dbaf8a936375424335d14f3da5ed8a8d4b121da13bb2ae",
+      "artifact": "artifacts/threads-simd-load-store.wasm",
+      "sha256": "f42fee7b4072747b2c4632c2d7b001b5fe81def13133529a97c6ef701a1c2c4a",
+      "compiler": "wasm-tools 1.260.0",
+      "argv": [
+        [
+          "wasm-tools",
+          "parse",
+          "sources/threads-simd-load-store.wat",
+          "-o",
+          "artifacts/threads-simd-load-store.wasm"
+        ]
+      ],
+      "feature": "threads",
+      "variant": "simd-load-store",
       "baseline": false,
       "scope": "execution"
     },

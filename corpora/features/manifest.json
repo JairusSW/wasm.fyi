@@ -14105,6 +14105,342 @@
   },
   {
     "schema": 1,
+    "id": "features/threads/ordinary-load-store/1",
+    "family": "features",
+    "artifact": "artifacts/threads-ordinary-load-store.wasm",
+    "sha256": "85f70bebfedf7a5b6ee03a1d928b73d95cc78f5c25c3d6c940cb68da3b9f2ba3",
+    "abi": "core",
+    "features": [
+      "threads"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        0
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-ordinary-load-store.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-ordinary-load-store.wat",
+        "sourceSha256": "5ea6c8d24ac69243e4420a95042c8a354241443ce815130d215fdfddd4f30a7d",
+        "artifact": "artifacts/threads-ordinary-load-store.wasm",
+        "sha256": "85f70bebfedf7a5b6ee03a1d928b73d95cc78f5c25c3d6c940cb68da3b9f2ba3",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-ordinary-load-store.wat",
+            "-o",
+            "artifacts/threads-ordinary-load-store.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "ordinary-load-store",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/ordinary-load-store/64",
+    "family": "features",
+    "artifact": "artifacts/threads-ordinary-load-store.wasm",
+    "sha256": "85f70bebfedf7a5b6ee03a1d928b73d95cc78f5c25c3d6c940cb68da3b9f2ba3",
+    "abi": "core",
+    "features": [
+      "threads"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        2016
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-ordinary-load-store.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-ordinary-load-store.wat",
+        "sourceSha256": "5ea6c8d24ac69243e4420a95042c8a354241443ce815130d215fdfddd4f30a7d",
+        "artifact": "artifacts/threads-ordinary-load-store.wasm",
+        "sha256": "85f70bebfedf7a5b6ee03a1d928b73d95cc78f5c25c3d6c940cb68da3b9f2ba3",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-ordinary-load-store.wat",
+            "-o",
+            "artifacts/threads-ordinary-load-store.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "ordinary-load-store",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/ordinary-load-store/4096",
+    "family": "features",
+    "artifact": "artifacts/threads-ordinary-load-store.wasm",
+    "sha256": "85f70bebfedf7a5b6ee03a1d928b73d95cc78f5c25c3d6c940cb68da3b9f2ba3",
+    "abi": "core",
+    "features": [
+      "threads"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        8386560
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-ordinary-load-store.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-ordinary-load-store.wat",
+        "sourceSha256": "5ea6c8d24ac69243e4420a95042c8a354241443ce815130d215fdfddd4f30a7d",
+        "artifact": "artifacts/threads-ordinary-load-store.wasm",
+        "sha256": "85f70bebfedf7a5b6ee03a1d928b73d95cc78f5c25c3d6c940cb68da3b9f2ba3",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-ordinary-load-store.wat",
+            "-o",
+            "artifacts/threads-ordinary-load-store.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "ordinary-load-store",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/simd-load-store/1",
+    "family": "features",
+    "artifact": "artifacts/threads-simd-load-store.wasm",
+    "sha256": "f42fee7b4072747b2c4632c2d7b001b5fe81def13133529a97c6ef701a1c2c4a",
+    "abi": "core",
+    "features": [
+      "threads"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        0
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-simd-load-store.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-simd-load-store.wat",
+        "sourceSha256": "db3ed8bb8c222a1fe2dbaf8a936375424335d14f3da5ed8a8d4b121da13bb2ae",
+        "artifact": "artifacts/threads-simd-load-store.wasm",
+        "sha256": "f42fee7b4072747b2c4632c2d7b001b5fe81def13133529a97c6ef701a1c2c4a",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-simd-load-store.wat",
+            "-o",
+            "artifacts/threads-simd-load-store.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "simd-load-store",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/simd-load-store/64",
+    "family": "features",
+    "artifact": "artifacts/threads-simd-load-store.wasm",
+    "sha256": "f42fee7b4072747b2c4632c2d7b001b5fe81def13133529a97c6ef701a1c2c4a",
+    "abi": "core",
+    "features": [
+      "threads"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        2016
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-simd-load-store.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-simd-load-store.wat",
+        "sourceSha256": "db3ed8bb8c222a1fe2dbaf8a936375424335d14f3da5ed8a8d4b121da13bb2ae",
+        "artifact": "artifacts/threads-simd-load-store.wasm",
+        "sha256": "f42fee7b4072747b2c4632c2d7b001b5fe81def13133529a97c6ef701a1c2c4a",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-simd-load-store.wat",
+            "-o",
+            "artifacts/threads-simd-load-store.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "simd-load-store",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/simd-load-store/4096",
+    "family": "features",
+    "artifact": "artifacts/threads-simd-load-store.wasm",
+    "sha256": "f42fee7b4072747b2c4632c2d7b001b5fe81def13133529a97c6ef701a1c2c4a",
+    "abi": "core",
+    "features": [
+      "threads"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        8386560
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-simd-load-store.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-simd-load-store.wat",
+        "sourceSha256": "db3ed8bb8c222a1fe2dbaf8a936375424335d14f3da5ed8a8d4b121da13bb2ae",
+        "artifact": "artifacts/threads-simd-load-store.wasm",
+        "sha256": "f42fee7b4072747b2c4632c2d7b001b5fe81def13133529a97c6ef701a1c2c4a",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-simd-load-store.wat",
+            "-o",
+            "artifacts/threads-simd-load-store.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "simd-load-store",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
     "id": "features/threads/atomic-load-store/1",
     "family": "features",
     "artifact": "artifacts/threads-atomic-load-store.wasm",
