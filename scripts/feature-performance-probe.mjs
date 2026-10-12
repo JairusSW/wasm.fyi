@@ -3,6 +3,7 @@ import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {spawn} from 'node:child_process';
 import {createInterface} from 'node:readline';
+import {featureProtocolWorkload} from './lib/feature-protocol.mjs';
 import {acquireMeasurementLock} from './lib/measurement-lock.mjs';
 const plan=JSON.parse(await readFile(process.argv[2])),rows=[];
 const median=a=>{a=[...a].sort((x,y)=>x-y);return a.length%2?a[a.length>>1]:(a[a.length/2-1]+a[a.length/2])/2;};
@@ -20,7 +21,7 @@ async function probe(config,w){
  }
  try{
   const description=(await rpc('describe')).description;
-  await rpc('prepare',{prepare:{artifact:w.artifact,artifact_sha256:w.sha256,workload:w,profile:'timing'}});
+  await rpc('prepare',{prepare:{artifact:w.artifact,artifact_sha256:w.sha256,workload:featureProtocolWorkload(w),profile:'timing'}});
   const run=async(operations,samples,warmup)=>{
    const result=await rpc('run',{run:{scenario:'steady',samples,operations,warmup,phase_barriers:false}});
    if(result.status!=='ok')throw Error(result.reason||result.status);
