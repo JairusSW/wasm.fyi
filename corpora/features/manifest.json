@@ -14105,6 +14105,174 @@
   },
   {
     "schema": 1,
+    "id": "features/threads/table-indirect-call/1",
+    "family": "features",
+    "artifact": "artifacts/threads-table-indirect-call.wasm",
+    "sha256": "434f8cefe78ff052ac230d4de9893287ec44d87aaef9a572457f3e8239dfb2cf",
+    "abi": "core",
+    "features": [
+      "threads"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        3
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-table-indirect-call.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-table-indirect-call.wat",
+        "sourceSha256": "2b676c8f0a6c1165171b8837935d1c8a4e9633386f5527d47945526e3c7d5593",
+        "artifact": "artifacts/threads-table-indirect-call.wasm",
+        "sha256": "434f8cefe78ff052ac230d4de9893287ec44d87aaef9a572457f3e8239dfb2cf",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-table-indirect-call.wat",
+            "-o",
+            "artifacts/threads-table-indirect-call.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "table-indirect-call",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/table-indirect-call/64",
+    "family": "features",
+    "artifact": "artifacts/threads-table-indirect-call.wasm",
+    "sha256": "434f8cefe78ff052ac230d4de9893287ec44d87aaef9a572457f3e8239dfb2cf",
+    "abi": "core",
+    "features": [
+      "threads"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        2272
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-table-indirect-call.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-table-indirect-call.wat",
+        "sourceSha256": "2b676c8f0a6c1165171b8837935d1c8a4e9633386f5527d47945526e3c7d5593",
+        "artifact": "artifacts/threads-table-indirect-call.wasm",
+        "sha256": "434f8cefe78ff052ac230d4de9893287ec44d87aaef9a572457f3e8239dfb2cf",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-table-indirect-call.wat",
+            "-o",
+            "artifacts/threads-table-indirect-call.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "table-indirect-call",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/table-indirect-call/4096",
+    "family": "features",
+    "artifact": "artifacts/threads-table-indirect-call.wasm",
+    "sha256": "434f8cefe78ff052ac230d4de9893287ec44d87aaef9a572457f3e8239dfb2cf",
+    "abi": "core",
+    "features": [
+      "threads"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        8402944
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-table-indirect-call.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-table-indirect-call.wat",
+        "sourceSha256": "2b676c8f0a6c1165171b8837935d1c8a4e9633386f5527d47945526e3c7d5593",
+        "artifact": "artifacts/threads-table-indirect-call.wasm",
+        "sha256": "434f8cefe78ff052ac230d4de9893287ec44d87aaef9a572457f3e8239dfb2cf",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-table-indirect-call.wat",
+            "-o",
+            "artifacts/threads-table-indirect-call.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "table-indirect-call",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
     "id": "features/threads/host-identity/1",
     "family": "features",
     "artifact": "artifacts/threads-host-identity.wasm",

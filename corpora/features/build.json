@@ -76,7 +76,7 @@
     "cm-async"
   ],
   "missingFeatures": [],
-  "workloadContracts": 310,
+  "workloadContracts": 313,
   "recipes": [
     {
       "source": "sources/core-num-integer-multiply-add.wat",
@@ -1875,6 +1875,26 @@
       ],
       "feature": "js-string-builtins",
       "variant": "concat-character",
+      "baseline": false,
+      "scope": "execution"
+    },
+    {
+      "source": "sources/threads-table-indirect-call.wat",
+      "sourceSha256": "2b676c8f0a6c1165171b8837935d1c8a4e9633386f5527d47945526e3c7d5593",
+      "artifact": "artifacts/threads-table-indirect-call.wasm",
+      "sha256": "434f8cefe78ff052ac230d4de9893287ec44d87aaef9a572457f3e8239dfb2cf",
+      "compiler": "wasm-tools 1.260.0",
+      "argv": [
+        [
+          "wasm-tools",
+          "parse",
+          "sources/threads-table-indirect-call.wat",
+          "-o",
+          "artifacts/threads-table-indirect-call.wasm"
+        ]
+      ],
+      "feature": "threads",
+      "variant": "table-indirect-call",
       "baseline": false,
       "scope": "execution"
     },
