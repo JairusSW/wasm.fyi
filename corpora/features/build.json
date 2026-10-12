@@ -76,7 +76,7 @@
     "cm-async"
   ],
   "missingFeatures": [],
-  "workloadContracts": 313,
+  "workloadContracts": 316,
   "recipes": [
     {
       "source": "sources/core-num-integer-multiply-add.wat",
@@ -1915,6 +1915,26 @@
       ],
       "feature": "threads",
       "variant": "host-identity",
+      "baseline": false,
+      "scope": "execution"
+    },
+    {
+      "source": "sources/threads-host-opaque-identity.wat",
+      "sourceSha256": "da47c2158d98c0ee63f75101d0e9fceef3e8758524f00b0c1d8da53664b67dea",
+      "artifact": "artifacts/threads-host-opaque-identity.wasm",
+      "sha256": "ec0b45689006b39756a12182be5082f59591c4f9dffd24b06156879df8f49ee1",
+      "compiler": "wasm-tools 1.260.0",
+      "argv": [
+        [
+          "wasm-tools",
+          "parse",
+          "sources/threads-host-opaque-identity.wat",
+          "-o",
+          "artifacts/threads-host-opaque-identity.wasm"
+        ]
+      ],
+      "feature": "threads",
+      "variant": "host-opaque-identity",
       "baseline": false,
       "scope": "execution"
     },

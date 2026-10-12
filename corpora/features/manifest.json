@@ -14441,6 +14441,174 @@
   },
   {
     "schema": 1,
+    "id": "features/threads/host-opaque-identity/1",
+    "family": "features",
+    "artifact": "artifacts/threads-host-opaque-identity.wasm",
+    "sha256": "ec0b45689006b39756a12182be5082f59591c4f9dffd24b06156879df8f49ee1",
+    "abi": "core",
+    "features": [
+      "threads"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        0
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-host-opaque-identity.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "host_profile": "threads-opaque-identity-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-host-opaque-identity.wat",
+        "sourceSha256": "da47c2158d98c0ee63f75101d0e9fceef3e8758524f00b0c1d8da53664b67dea",
+        "artifact": "artifacts/threads-host-opaque-identity.wasm",
+        "sha256": "ec0b45689006b39756a12182be5082f59591c4f9dffd24b06156879df8f49ee1",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-host-opaque-identity.wat",
+            "-o",
+            "artifacts/threads-host-opaque-identity.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "host-opaque-identity",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/host-opaque-identity/64",
+    "family": "features",
+    "artifact": "artifacts/threads-host-opaque-identity.wasm",
+    "sha256": "ec0b45689006b39756a12182be5082f59591c4f9dffd24b06156879df8f49ee1",
+    "abi": "core",
+    "features": [
+      "threads"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        2016
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-host-opaque-identity.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "host_profile": "threads-opaque-identity-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-host-opaque-identity.wat",
+        "sourceSha256": "da47c2158d98c0ee63f75101d0e9fceef3e8758524f00b0c1d8da53664b67dea",
+        "artifact": "artifacts/threads-host-opaque-identity.wasm",
+        "sha256": "ec0b45689006b39756a12182be5082f59591c4f9dffd24b06156879df8f49ee1",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-host-opaque-identity.wat",
+            "-o",
+            "artifacts/threads-host-opaque-identity.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "host-opaque-identity",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/host-opaque-identity/4096",
+    "family": "features",
+    "artifact": "artifacts/threads-host-opaque-identity.wasm",
+    "sha256": "ec0b45689006b39756a12182be5082f59591c4f9dffd24b06156879df8f49ee1",
+    "abi": "core",
+    "features": [
+      "threads"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        8386560
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-host-opaque-identity.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "host_profile": "threads-opaque-identity-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-host-opaque-identity.wat",
+        "sourceSha256": "da47c2158d98c0ee63f75101d0e9fceef3e8758524f00b0c1d8da53664b67dea",
+        "artifact": "artifacts/threads-host-opaque-identity.wasm",
+        "sha256": "ec0b45689006b39756a12182be5082f59591c4f9dffd24b06156879df8f49ee1",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-host-opaque-identity.wat",
+            "-o",
+            "artifacts/threads-host-opaque-identity.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "host-opaque-identity",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
     "id": "features/threads/ordinary-load-store/1",
     "family": "features",
     "artifact": "artifacts/threads-ordinary-load-store.wasm",

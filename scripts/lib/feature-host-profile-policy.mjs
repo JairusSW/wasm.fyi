@@ -5,10 +5,15 @@ import {atomicJSON} from './benchmark-plan.mjs';
 import {runCommand} from './benchmark-process.mjs';
 const hash=data=>createHash('sha256').update(data).digest('hex');
 export function withFeatureHostProfileAdmission(source){
- if(source.includes('"adapter does not advertise host profile: "+w.HostProfile'))return source.includes('w.HostProfile == "threads-identity-v1"')?source:source.replace('w.HostProfile == "threads-defined-v1" {','w.HostProfile == "threads-defined-v1" || w.HostProfile == "threads-identity-v1" {');
+ if(source.includes('"adapter does not advertise host profile: "+w.HostProfile')){
+  for(const profile of ['threads-identity-v1','threads-opaque-identity-v1']){
+   if(!source.includes(`w.HostProfile == "${profile}"`))source=source.replace('w.HostProfile == "threads-defined-v1"',`w.HostProfile == "threads-defined-v1" || w.HostProfile == "${profile}"`);
+  }
+  return source;
+ }
  const anchor='\tif !slices.Contains(r.Description.ABIs, w.ABI) {';
  if(!source.includes(anchor))throw Error('Feature host-profile admission anchor absent');
- return source.replace(anchor,'\tif w.HostProfile == "js-string-builtins-v1" || w.HostProfile == "jspi-v1" || w.HostProfile == "threads-defined-v1" || w.HostProfile == "threads-identity-v1" {\n\t\tif !r.Description.Capabilities["can_host_profile_"+w.HostProfile] {\n\t\t\tt.Status, t.Reason = "unsupported", "adapter does not advertise host profile: "+w.HostProfile\n\t\t\treturn\n\t\t}\n\t}\n'+anchor);
+ return source.replace(anchor,'\tif w.HostProfile == "js-string-builtins-v1" || w.HostProfile == "jspi-v1" || w.HostProfile == "threads-defined-v1" || w.HostProfile == "threads-identity-v1" || w.HostProfile == "threads-opaque-identity-v1" {\n\t\tif !r.Description.Capabilities["can_host_profile_"+w.HostProfile] {\n\t\t\tt.Status, t.Reason = "unsupported", "adapter does not advertise host profile: "+w.HostProfile\n\t\t\treturn\n\t\t}\n\t}\n'+anchor);
 }
 // Caller owns both the host/project reservation; only the cached Go controller changes.
 export async function upgradeFeatureHostProfileController({root,controller,env}){
