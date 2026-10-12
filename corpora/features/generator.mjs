@@ -200,6 +200,8 @@ export function fixtures() {
   loop('js-string-builtins', 'concat-character', `(call $char (call $concat (global.get $s) (global.get $s)) (i32.rem_u ${i} (i32.const 52)))`, x => 97 + x % 26,
     strings + ' (import "wasm:js-string" "concat" (func $concat (param externref externref) (result (ref extern)))) (import "wasm:js-string" "charCodeAt" (func $char (param externref i32) (result i32)))', '', '', { hostProfile: 'js-string-builtins-v1' });
   const shared = '(memory 2 2 shared)';
+  loop('threads', 'host-identity', `(block (result i32) (i32.store ${address} ${i}) (call $identity (i32.load ${address})))`, x => x,
+    '(import "wasmbench" "identity" (func $identity (param i32) (result i32))) ' + shared, '', '', { hostProfile: 'threads-identity-v1' });
   loop('threads', 'ordinary-load-store', `(block (result i32) (i32.store align=1 (i32.add ${address} (i32.const 1)) ${i}) (i32.load align=1 (i32.add ${address} (i32.const 1))))`, x => x, shared, '', '', { hostProfile: 'threads-defined-v1' });
   loop('threads', 'simd-load-store', `(block (result i32) (v128.store align=1 (i32.add ${address} (i32.const 1)) (i32x4.splat ${i})) (i32x4.extract_lane 3 (v128.load align=1 (i32.add ${address} (i32.const 1)))))`, x => x, shared, '', '', { hostProfile: 'threads-defined-v1' });
   loop('threads', 'bulk-fill', `(block (result i32) (memory.fill (i32.add ${address} (i32.const 1)) ${i} (i32.const 33)) (i32.load8_u (i32.add ${address} (i32.const 33))))`, x => x & 255, shared, '', '', { hostProfile: 'threads-defined-v1' });
