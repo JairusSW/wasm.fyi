@@ -14777,6 +14777,342 @@
   },
   {
     "schema": 1,
+    "id": "features/threads/memory-size-zero-growth/1",
+    "family": "features",
+    "artifact": "artifacts/threads-memory-size-zero-growth.wasm",
+    "sha256": "a3dff44498bac2e6c395344cf58e1a75cff4aa03de23d0b0a1842de5ee3f9b5d",
+    "abi": "core",
+    "features": [
+      "threads"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        0
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-memory-size-zero-growth.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-memory-size-zero-growth.wat",
+        "sourceSha256": "432a9935446dc66e34a3770af3fe9190c35dcd6926cad5a0c41e74b0b717b71f",
+        "artifact": "artifacts/threads-memory-size-zero-growth.wasm",
+        "sha256": "a3dff44498bac2e6c395344cf58e1a75cff4aa03de23d0b0a1842de5ee3f9b5d",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-memory-size-zero-growth.wat",
+            "-o",
+            "artifacts/threads-memory-size-zero-growth.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "memory-size-zero-growth",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/memory-size-zero-growth/64",
+    "family": "features",
+    "artifact": "artifacts/threads-memory-size-zero-growth.wasm",
+    "sha256": "a3dff44498bac2e6c395344cf58e1a75cff4aa03de23d0b0a1842de5ee3f9b5d",
+    "abi": "core",
+    "features": [
+      "threads"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        0
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-memory-size-zero-growth.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-memory-size-zero-growth.wat",
+        "sourceSha256": "432a9935446dc66e34a3770af3fe9190c35dcd6926cad5a0c41e74b0b717b71f",
+        "artifact": "artifacts/threads-memory-size-zero-growth.wasm",
+        "sha256": "a3dff44498bac2e6c395344cf58e1a75cff4aa03de23d0b0a1842de5ee3f9b5d",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-memory-size-zero-growth.wat",
+            "-o",
+            "artifacts/threads-memory-size-zero-growth.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "memory-size-zero-growth",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/memory-size-zero-growth/4096",
+    "family": "features",
+    "artifact": "artifacts/threads-memory-size-zero-growth.wasm",
+    "sha256": "a3dff44498bac2e6c395344cf58e1a75cff4aa03de23d0b0a1842de5ee3f9b5d",
+    "abi": "core",
+    "features": [
+      "threads"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        0
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-memory-size-zero-growth.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/threads-memory-size-zero-growth.wat",
+        "sourceSha256": "432a9935446dc66e34a3770af3fe9190c35dcd6926cad5a0c41e74b0b717b71f",
+        "artifact": "artifacts/threads-memory-size-zero-growth.wasm",
+        "sha256": "a3dff44498bac2e6c395344cf58e1a75cff4aa03de23d0b0a1842de5ee3f9b5d",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-memory-size-zero-growth.wat",
+            "-o",
+            "artifacts/threads-memory-size-zero-growth.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "memory-size-zero-growth",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/memory-grow/1",
+    "family": "features",
+    "artifact": "artifacts/threads-memory-grow.wasm",
+    "sha256": "75dd5e5c88d0dd9bac244bbd751227021dc856ec1e325705ca8c648ccf2f97b3",
+    "abi": "core",
+    "features": [
+      "threads"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "memory_page",
+    "units_per_invocation": 1,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        2
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-memory-grow.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "allocation",
+      "recipe": {
+        "source": "sources/threads-memory-grow.wat",
+        "sourceSha256": "b98bf2876fff67389d3dc75c828f9cd48a7379350201efc7b82bfec27b652d90",
+        "artifact": "artifacts/threads-memory-grow.wasm",
+        "sha256": "75dd5e5c88d0dd9bac244bbd751227021dc856ec1e325705ca8c648ccf2f97b3",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-memory-grow.wat",
+            "-o",
+            "artifacts/threads-memory-grow.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "memory-grow",
+        "baseline": false,
+        "scope": "allocation"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/memory-grow/4",
+    "family": "features",
+    "artifact": "artifacts/threads-memory-grow.wasm",
+    "sha256": "75dd5e5c88d0dd9bac244bbd751227021dc856ec1e325705ca8c648ccf2f97b3",
+    "abi": "core",
+    "features": [
+      "threads"
+    ],
+    "export": "benchmark",
+    "args": [
+      4
+    ],
+    "work_unit": "memory_page",
+    "units_per_invocation": 4,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        5
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-memory-grow.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "allocation",
+      "recipe": {
+        "source": "sources/threads-memory-grow.wat",
+        "sourceSha256": "b98bf2876fff67389d3dc75c828f9cd48a7379350201efc7b82bfec27b652d90",
+        "artifact": "artifacts/threads-memory-grow.wasm",
+        "sha256": "75dd5e5c88d0dd9bac244bbd751227021dc856ec1e325705ca8c648ccf2f97b3",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-memory-grow.wat",
+            "-o",
+            "artifacts/threads-memory-grow.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "memory-grow",
+        "baseline": false,
+        "scope": "allocation"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/threads/memory-grow/16",
+    "family": "features",
+    "artifact": "artifacts/threads-memory-grow.wasm",
+    "sha256": "75dd5e5c88d0dd9bac244bbd751227021dc856ec1e325705ca8c648ccf2f97b3",
+    "abi": "core",
+    "features": [
+      "threads"
+    ],
+    "export": "benchmark",
+    "args": [
+      16
+    ],
+    "work_unit": "memory_page",
+    "units_per_invocation": 16,
+    "reset": "fresh_instance_per_sample",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        17
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/threads-memory-grow.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 16,
+    "host_profile": "threads-defined-v1",
+    "provenance": {
+      "feature": "threads",
+      "baseline": false,
+      "scope": "allocation",
+      "recipe": {
+        "source": "sources/threads-memory-grow.wat",
+        "sourceSha256": "b98bf2876fff67389d3dc75c828f9cd48a7379350201efc7b82bfec27b652d90",
+        "artifact": "artifacts/threads-memory-grow.wasm",
+        "sha256": "75dd5e5c88d0dd9bac244bbd751227021dc856ec1e325705ca8c648ccf2f97b3",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/threads-memory-grow.wat",
+            "-o",
+            "artifacts/threads-memory-grow.wasm"
+          ]
+        ],
+        "feature": "threads",
+        "variant": "memory-grow",
+        "baseline": false,
+        "scope": "allocation"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
     "id": "features/threads/atomic-load-store/1",
     "family": "features",
     "artifact": "artifacts/threads-atomic-load-store.wasm",

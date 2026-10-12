@@ -76,7 +76,7 @@
     "cm-async"
   ],
   "missingFeatures": [],
-  "workloadContracts": 298,
+  "workloadContracts": 304,
   "recipes": [
     {
       "source": "sources/core-num-integer-multiply-add.wat",
@@ -1957,6 +1957,46 @@
       "variant": "bulk-copy-overlap",
       "baseline": false,
       "scope": "execution"
+    },
+    {
+      "source": "sources/threads-memory-size-zero-growth.wat",
+      "sourceSha256": "432a9935446dc66e34a3770af3fe9190c35dcd6926cad5a0c41e74b0b717b71f",
+      "artifact": "artifacts/threads-memory-size-zero-growth.wasm",
+      "sha256": "a3dff44498bac2e6c395344cf58e1a75cff4aa03de23d0b0a1842de5ee3f9b5d",
+      "compiler": "wasm-tools 1.260.0",
+      "argv": [
+        [
+          "wasm-tools",
+          "parse",
+          "sources/threads-memory-size-zero-growth.wat",
+          "-o",
+          "artifacts/threads-memory-size-zero-growth.wasm"
+        ]
+      ],
+      "feature": "threads",
+      "variant": "memory-size-zero-growth",
+      "baseline": false,
+      "scope": "execution"
+    },
+    {
+      "source": "sources/threads-memory-grow.wat",
+      "sourceSha256": "b98bf2876fff67389d3dc75c828f9cd48a7379350201efc7b82bfec27b652d90",
+      "artifact": "artifacts/threads-memory-grow.wasm",
+      "sha256": "75dd5e5c88d0dd9bac244bbd751227021dc856ec1e325705ca8c648ccf2f97b3",
+      "compiler": "wasm-tools 1.260.0",
+      "argv": [
+        [
+          "wasm-tools",
+          "parse",
+          "sources/threads-memory-grow.wat",
+          "-o",
+          "artifacts/threads-memory-grow.wasm"
+        ]
+      ],
+      "feature": "threads",
+      "variant": "memory-grow",
+      "baseline": false,
+      "scope": "allocation"
     },
     {
       "source": "sources/threads-atomic-load-store.wat",
