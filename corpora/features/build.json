@@ -28,6 +28,7 @@
     "saturating-float-to-int",
     "mutable-globals",
     "wide-arithmetic",
+    "compact-imports",
     "bulk-memory",
     "reference-types",
     "multi-value",
@@ -75,10 +76,11 @@
     "cm-abi",
     "cm-res",
     "cm-async",
-    "wide-arithmetic"
+    "wide-arithmetic",
+    "compact-imports"
   ],
   "missingFeatures": [],
-  "workloadContracts": 364,
+  "workloadContracts": 373,
   "recipes": [
     {
       "source": "sources/core-num-integer-multiply-add.wat",
@@ -2638,6 +2640,66 @@
       "feature": "wide-arithmetic",
       "variant": "mul-wide-u",
       "baseline": false,
+      "scope": "execution"
+    },
+    {
+      "source": "sources/compact-imports-module-group.wat",
+      "sourceSha256": "4292e11eaf4c6fa87056b8f846b094a22ab9a1a2aeda3390fc2dc66d5caed60b",
+      "artifact": "artifacts/compact-imports-module-group.wasm",
+      "sha256": "2af11b8956043a523c18ddd5d27ed30ca89583732fadce160933b14acff5f511",
+      "compiler": "wasm-tools 1.260.0",
+      "argv": [
+        [
+          "wasm-tools",
+          "parse",
+          "sources/compact-imports-module-group.wat",
+          "-o",
+          "artifacts/compact-imports-module-group.wasm"
+        ]
+      ],
+      "feature": "compact-imports",
+      "variant": "module-group",
+      "baseline": false,
+      "scope": "execution"
+    },
+    {
+      "source": "sources/compact-imports-type-group.wat",
+      "sourceSha256": "280c0382026243df9b2b8a887b33a1a926ba2956d4e45cd36c5e2143422cf7c2",
+      "artifact": "artifacts/compact-imports-type-group.wasm",
+      "sha256": "06c073b0146d1d23db724ee9b049282fcaec689bfbe161f513d6dc564bb3c684",
+      "compiler": "wasm-tools 1.260.0",
+      "argv": [
+        [
+          "wasm-tools",
+          "parse",
+          "sources/compact-imports-type-group.wat",
+          "-o",
+          "artifacts/compact-imports-type-group.wasm"
+        ]
+      ],
+      "feature": "compact-imports",
+      "variant": "type-group",
+      "baseline": false,
+      "scope": "execution"
+    },
+    {
+      "source": "sources/compact-imports-ordinary-baseline.wat",
+      "sourceSha256": "a002f8400feac3492ca62239cabd2daa4d6c0fa0932da1e0507eac08957abd5c",
+      "artifact": "artifacts/compact-imports-ordinary-baseline.wasm",
+      "sha256": "6dcc9f7aac6302d2b46b88460903a93f31247d2b102a4d8e1e21e95aa9023da2",
+      "compiler": "wasm-tools 1.260.0",
+      "argv": [
+        [
+          "wasm-tools",
+          "parse",
+          "sources/compact-imports-ordinary-baseline.wat",
+          "-o",
+          "artifacts/compact-imports-ordinary-baseline.wasm"
+        ]
+      ],
+      "feature": "compact-imports",
+      "variant": "ordinary-baseline",
+      "baseline": true,
       "scope": "execution"
     }
   ]

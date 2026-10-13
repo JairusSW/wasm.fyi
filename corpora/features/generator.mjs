@@ -1,3 +1,4 @@
+import {compactImportFixtures} from './compact-imports.mjs';
 import {wideArithmeticFixtures} from './wide-arithmetic.mjs';
 // Original, deterministic feature workloads. Each operation has an independent
 // arithmetic oracle; runtime output is never used to invent an expected value.
@@ -22,7 +23,7 @@ const address = `(i32.shl (i32.and ${i} (i32.const 8191)) (i32.const 2))`;
 const index = `(i32.and ${i} (i32.const 15))`;
 const triangular = n => (n * (n - 1) / 2) >>> 0;
 export const featureIds = ['core-num', 'core-mem', 'core-ctl', 'core-tab', 'core-val', 'core-glb',
-  'sign-extension', 'saturating-float-to-int', 'mutable-globals', 'wide-arithmetic',
+  'sign-extension', 'saturating-float-to-int', 'mutable-globals', 'wide-arithmetic', 'compact-imports',
   'bulk-memory', 'reference-types', 'multi-value', 'simd', 'gc', 'memory64',
   'exceptions', 'tail-call', 'relaxed-simd', 'multi-memory', 'extended-const',
   'js-string-builtins', 'jspi', 'threads',
@@ -301,6 +302,7 @@ export function fixtures() {
   }
 
   for (const f of wideArithmeticFixtures()) add('wide-arithmetic', f.name, f.wat, f.expected);
+  for (const f of compactImportFixtures()) add('compact-imports', f.name, f.wat, f.expected, {hostProfile:f.hostProfile,baseline:f.baseline});
 
   return out;
 }

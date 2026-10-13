@@ -20150,5 +20150,509 @@
       },
       "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
     }
+  },
+  {
+    "schema": 1,
+    "id": "features/compact-imports/module-group/1",
+    "family": "features",
+    "artifact": "artifacts/compact-imports-module-group.wasm",
+    "sha256": "2af11b8956043a523c18ddd5d27ed30ca89583732fadce160933b14acff5f511",
+    "abi": "core",
+    "features": [
+      "compact-imports"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        3
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/compact-imports-module-group.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "host_profile": "identity-v1",
+    "provenance": {
+      "feature": "compact-imports",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/compact-imports-module-group.wat",
+        "sourceSha256": "4292e11eaf4c6fa87056b8f846b094a22ab9a1a2aeda3390fc2dc66d5caed60b",
+        "artifact": "artifacts/compact-imports-module-group.wasm",
+        "sha256": "2af11b8956043a523c18ddd5d27ed30ca89583732fadce160933b14acff5f511",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/compact-imports-module-group.wat",
+            "-o",
+            "artifacts/compact-imports-module-group.wasm"
+          ]
+        ],
+        "feature": "compact-imports",
+        "variant": "module-group",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/compact-imports/module-group/64",
+    "family": "features",
+    "artifact": "artifacts/compact-imports-module-group.wasm",
+    "sha256": "2af11b8956043a523c18ddd5d27ed30ca89583732fadce160933b14acff5f511",
+    "abi": "core",
+    "features": [
+      "compact-imports"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        4224
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/compact-imports-module-group.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "host_profile": "identity-v1",
+    "provenance": {
+      "feature": "compact-imports",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/compact-imports-module-group.wat",
+        "sourceSha256": "4292e11eaf4c6fa87056b8f846b094a22ab9a1a2aeda3390fc2dc66d5caed60b",
+        "artifact": "artifacts/compact-imports-module-group.wasm",
+        "sha256": "2af11b8956043a523c18ddd5d27ed30ca89583732fadce160933b14acff5f511",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/compact-imports-module-group.wat",
+            "-o",
+            "artifacts/compact-imports-module-group.wasm"
+          ]
+        ],
+        "feature": "compact-imports",
+        "variant": "module-group",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/compact-imports/module-group/4096",
+    "family": "features",
+    "artifact": "artifacts/compact-imports-module-group.wasm",
+    "sha256": "2af11b8956043a523c18ddd5d27ed30ca89583732fadce160933b14acff5f511",
+    "abi": "core",
+    "features": [
+      "compact-imports"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        16785408
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/compact-imports-module-group.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "host_profile": "identity-v1",
+    "provenance": {
+      "feature": "compact-imports",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/compact-imports-module-group.wat",
+        "sourceSha256": "4292e11eaf4c6fa87056b8f846b094a22ab9a1a2aeda3390fc2dc66d5caed60b",
+        "artifact": "artifacts/compact-imports-module-group.wasm",
+        "sha256": "2af11b8956043a523c18ddd5d27ed30ca89583732fadce160933b14acff5f511",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/compact-imports-module-group.wat",
+            "-o",
+            "artifacts/compact-imports-module-group.wasm"
+          ]
+        ],
+        "feature": "compact-imports",
+        "variant": "module-group",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/compact-imports/type-group/1",
+    "family": "features",
+    "artifact": "artifacts/compact-imports-type-group.wasm",
+    "sha256": "06c073b0146d1d23db724ee9b049282fcaec689bfbe161f513d6dc564bb3c684",
+    "abi": "core",
+    "features": [
+      "compact-imports"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        3
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/compact-imports-type-group.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "host_profile": "identity-v1",
+    "provenance": {
+      "feature": "compact-imports",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/compact-imports-type-group.wat",
+        "sourceSha256": "280c0382026243df9b2b8a887b33a1a926ba2956d4e45cd36c5e2143422cf7c2",
+        "artifact": "artifacts/compact-imports-type-group.wasm",
+        "sha256": "06c073b0146d1d23db724ee9b049282fcaec689bfbe161f513d6dc564bb3c684",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/compact-imports-type-group.wat",
+            "-o",
+            "artifacts/compact-imports-type-group.wasm"
+          ]
+        ],
+        "feature": "compact-imports",
+        "variant": "type-group",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/compact-imports/type-group/64",
+    "family": "features",
+    "artifact": "artifacts/compact-imports-type-group.wasm",
+    "sha256": "06c073b0146d1d23db724ee9b049282fcaec689bfbe161f513d6dc564bb3c684",
+    "abi": "core",
+    "features": [
+      "compact-imports"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        4224
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/compact-imports-type-group.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "host_profile": "identity-v1",
+    "provenance": {
+      "feature": "compact-imports",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/compact-imports-type-group.wat",
+        "sourceSha256": "280c0382026243df9b2b8a887b33a1a926ba2956d4e45cd36c5e2143422cf7c2",
+        "artifact": "artifacts/compact-imports-type-group.wasm",
+        "sha256": "06c073b0146d1d23db724ee9b049282fcaec689bfbe161f513d6dc564bb3c684",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/compact-imports-type-group.wat",
+            "-o",
+            "artifacts/compact-imports-type-group.wasm"
+          ]
+        ],
+        "feature": "compact-imports",
+        "variant": "type-group",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/compact-imports/type-group/4096",
+    "family": "features",
+    "artifact": "artifacts/compact-imports-type-group.wasm",
+    "sha256": "06c073b0146d1d23db724ee9b049282fcaec689bfbe161f513d6dc564bb3c684",
+    "abi": "core",
+    "features": [
+      "compact-imports"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        16785408
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/compact-imports-type-group.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "host_profile": "identity-v1",
+    "provenance": {
+      "feature": "compact-imports",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/compact-imports-type-group.wat",
+        "sourceSha256": "280c0382026243df9b2b8a887b33a1a926ba2956d4e45cd36c5e2143422cf7c2",
+        "artifact": "artifacts/compact-imports-type-group.wasm",
+        "sha256": "06c073b0146d1d23db724ee9b049282fcaec689bfbe161f513d6dc564bb3c684",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/compact-imports-type-group.wat",
+            "-o",
+            "artifacts/compact-imports-type-group.wasm"
+          ]
+        ],
+        "feature": "compact-imports",
+        "variant": "type-group",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/compact-imports/ordinary-baseline/1",
+    "family": "features",
+    "artifact": "artifacts/compact-imports-ordinary-baseline.wasm",
+    "sha256": "6dcc9f7aac6302d2b46b88460903a93f31247d2b102a4d8e1e21e95aa9023da2",
+    "abi": "core",
+    "features": [
+      "compact-imports"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        3
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/compact-imports-ordinary-baseline.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "host_profile": "identity-v1",
+    "provenance": {
+      "feature": "compact-imports",
+      "baseline": true,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/compact-imports-ordinary-baseline.wat",
+        "sourceSha256": "a002f8400feac3492ca62239cabd2daa4d6c0fa0932da1e0507eac08957abd5c",
+        "artifact": "artifacts/compact-imports-ordinary-baseline.wasm",
+        "sha256": "6dcc9f7aac6302d2b46b88460903a93f31247d2b102a4d8e1e21e95aa9023da2",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/compact-imports-ordinary-baseline.wat",
+            "-o",
+            "artifacts/compact-imports-ordinary-baseline.wasm"
+          ]
+        ],
+        "feature": "compact-imports",
+        "variant": "ordinary-baseline",
+        "baseline": true,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/compact-imports/ordinary-baseline/64",
+    "family": "features",
+    "artifact": "artifacts/compact-imports-ordinary-baseline.wasm",
+    "sha256": "6dcc9f7aac6302d2b46b88460903a93f31247d2b102a4d8e1e21e95aa9023da2",
+    "abi": "core",
+    "features": [
+      "compact-imports"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        4224
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/compact-imports-ordinary-baseline.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "host_profile": "identity-v1",
+    "provenance": {
+      "feature": "compact-imports",
+      "baseline": true,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/compact-imports-ordinary-baseline.wat",
+        "sourceSha256": "a002f8400feac3492ca62239cabd2daa4d6c0fa0932da1e0507eac08957abd5c",
+        "artifact": "artifacts/compact-imports-ordinary-baseline.wasm",
+        "sha256": "6dcc9f7aac6302d2b46b88460903a93f31247d2b102a4d8e1e21e95aa9023da2",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/compact-imports-ordinary-baseline.wat",
+            "-o",
+            "artifacts/compact-imports-ordinary-baseline.wasm"
+          ]
+        ],
+        "feature": "compact-imports",
+        "variant": "ordinary-baseline",
+        "baseline": true,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/compact-imports/ordinary-baseline/4096",
+    "family": "features",
+    "artifact": "artifacts/compact-imports-ordinary-baseline.wasm",
+    "sha256": "6dcc9f7aac6302d2b46b88460903a93f31247d2b102a4d8e1e21e95aa9023da2",
+    "abi": "core",
+    "features": [
+      "compact-imports"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        16785408
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/compact-imports-ordinary-baseline.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "host_profile": "identity-v1",
+    "provenance": {
+      "feature": "compact-imports",
+      "baseline": true,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/compact-imports-ordinary-baseline.wat",
+        "sourceSha256": "a002f8400feac3492ca62239cabd2daa4d6c0fa0932da1e0507eac08957abd5c",
+        "artifact": "artifacts/compact-imports-ordinary-baseline.wasm",
+        "sha256": "6dcc9f7aac6302d2b46b88460903a93f31247d2b102a4d8e1e21e95aa9023da2",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/compact-imports-ordinary-baseline.wat",
+            "-o",
+            "artifacts/compact-imports-ordinary-baseline.wasm"
+          ]
+        ],
+        "feature": "compact-imports",
+        "variant": "ordinary-baseline",
+        "baseline": true,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
   }
 ]
