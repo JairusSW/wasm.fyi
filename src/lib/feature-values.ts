@@ -17,6 +17,13 @@ export function familyValue(s:Scope,family:string,c:CfgId,metric='steady') {
   return familyCohort(s,family,[c],metric).values[0];
 }
 
+/** Use the same perf probes in family summaries and expanded corpus rows. */
+export function featurePerformanceContracts(contracts:Bench[],metric='steady') {
+  const eligible=contracts.filter(w=>metric==='compile'||!['compile-only','compile-and-instantiate'].includes(w.evidenceScope||''));
+  const performanceCorpora=new Set(eligible.filter(w=>w.id.split('/')[3]?.startsWith('performance-')).map(w=>w.id.split('/')[2]));
+  return eligible.filter(w=>!performanceCorpora.has(w.id.split('/')[2])||w.id.split('/')[3]?.startsWith('performance-'));
+}
+
 /** Same passing-workload selection as the benchmark table, before averaging. */
 export function contractCohort(s:Scope,contracts:Bench[],cids:CfgId[],metric='steady') {
   const ok=(id:string,c:CfgId)=>{const v=featureValue(s,id,c,metric);return v!=null&&Number.isFinite(v)&&v>0;};
@@ -33,6 +40,6 @@ export function contractCohort(s:Scope,contracts:Bench[],cids:CfgId[],metric='st
   return {contracts,cohort,cohorts,values,passed,statuses,valid:values.map(v=>v!=null)};
 }
 export function familyCohort(s:Scope,family:string,cids:CfgId[],metric='steady') {
-  const contracts=featureContracts(family).filter(w=>metric==='compile'||!['compile-only','compile-and-instantiate'].includes(w.evidenceScope || ''));
+  const contracts=featurePerformanceContracts(featureContracts(family),metric);
   return contractCohort(s,contracts,cids,metric);
 }

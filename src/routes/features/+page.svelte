@@ -154,10 +154,8 @@
     const rest=fams.filter(fam=>!named.some(x=>x.fam.id===fam.id)).map(fam=>({g:'System interfaces',fam}));
     const all=[...named,...rest];
     return [...new Set(all.map(x=>x.g))].map(g=>({sec:g,rows:all.filter(x=>x.g===g).map(({fam:f})=>{
-      const contracts=featureContracts(f.id).filter(w=>metric==='compile'||!['compile-only','compile-and-instantiate'].includes(w.evidenceScope || ''));
-
       // Select passed contracts using the same cohort control as Benchmarks.
-      const {values,passed,statuses,cohort}=familyCohort(ui.scope,f.id,cols.map(c=>c.id),metric);
+      const {contracts,values,passed,statuses,cohort}=familyCohort(ui.scope,f.id,cols.map(c=>c.id),metric);
       const min=Math.min(...values.filter((v):v is number=>v!=null));
       const n=contracts.length;
       const names=cols.map(c=>`${c.rt} ${c.be}`);

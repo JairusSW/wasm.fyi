@@ -1,7 +1,7 @@
 <script lang="ts">
  import type {CfgId} from '$lib/data/types';
  import {featureContracts} from '$lib/model';
- import {contractCohort} from '$lib/feature-values';
+ import {contractCohort,featurePerformanceContracts} from '$lib/feature-values';
  import {viewData} from '$lib/view-data';
  import {ui} from '$lib/state.svelte';
  import {fmtU,fmtAverage} from '$lib/format';
@@ -12,9 +12,7 @@
   const contracts=featureContracts(family);
   return [...new Set(contracts.map(w=>w.id.split('/')[2]))].map(name=>{
    const all=contracts.filter(w=>w.id.split('/')[2]===name);
-   const eligible=all.filter(w=>metric==='compile'||!['compile-only','compile-and-instantiate'].includes(w.evidenceScope||''));
-   const performance=eligible.filter(w=>w.id.split('/')[3]?.startsWith('performance-'));
-   const measured=performance.length?performance:eligible;
+   const measured=featurePerformanceContracts(all,metric);
    const comparison=contractCohort(ui.scope,measured,ids,metric);
    const cells=ids.map((id,k)=>{
     if(mode==='support'){
