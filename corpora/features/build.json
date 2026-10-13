@@ -27,6 +27,7 @@
     "sign-extension",
     "saturating-float-to-int",
     "mutable-globals",
+    "wide-arithmetic",
     "bulk-memory",
     "reference-types",
     "multi-value",
@@ -73,10 +74,11 @@
     "component-model",
     "cm-abi",
     "cm-res",
-    "cm-async"
+    "cm-async",
+    "wide-arithmetic"
   ],
   "missingFeatures": [],
-  "workloadContracts": 352,
+  "workloadContracts": 364,
   "recipes": [
     {
       "source": "sources/core-num-integer-multiply-add.wat",
@@ -2557,6 +2559,86 @@
       "variant": "future-stream-scaling-256",
       "baseline": false,
       "scope": "compile-only"
+    },
+    {
+      "source": "sources/wide-arithmetic-add128.wat",
+      "sourceSha256": "088e0c03cfe40f4d9c1fe6f75297dcf7a42f0a167644ea73f89a566dee3843d0",
+      "artifact": "artifacts/wide-arithmetic-add128.wasm",
+      "sha256": "7779ec01060084e0762e7335b71837f8a7b92438af0db0c6a5c43d0ea8990ed7",
+      "compiler": "wasm-tools 1.260.0",
+      "argv": [
+        [
+          "wasm-tools",
+          "parse",
+          "sources/wide-arithmetic-add128.wat",
+          "-o",
+          "artifacts/wide-arithmetic-add128.wasm"
+        ]
+      ],
+      "feature": "wide-arithmetic",
+      "variant": "add128",
+      "baseline": false,
+      "scope": "execution"
+    },
+    {
+      "source": "sources/wide-arithmetic-sub128.wat",
+      "sourceSha256": "e2a89f92e29199ac1015f996592ad69869f550b0c02b39682040b196e415f37c",
+      "artifact": "artifacts/wide-arithmetic-sub128.wasm",
+      "sha256": "9d1a3a63875509bd6bd02bb19398dfbf0671a3add034919669939debf7780527",
+      "compiler": "wasm-tools 1.260.0",
+      "argv": [
+        [
+          "wasm-tools",
+          "parse",
+          "sources/wide-arithmetic-sub128.wat",
+          "-o",
+          "artifacts/wide-arithmetic-sub128.wasm"
+        ]
+      ],
+      "feature": "wide-arithmetic",
+      "variant": "sub128",
+      "baseline": false,
+      "scope": "execution"
+    },
+    {
+      "source": "sources/wide-arithmetic-mul-wide-s.wat",
+      "sourceSha256": "be46361a8821af7cada3a8dfdffab71553692ad050e4c67957eff75fa5006043",
+      "artifact": "artifacts/wide-arithmetic-mul-wide-s.wasm",
+      "sha256": "5b67308e2838be730641e41ac371f4dc72166d899b63b7cd8e0185b64be9d18b",
+      "compiler": "wasm-tools 1.260.0",
+      "argv": [
+        [
+          "wasm-tools",
+          "parse",
+          "sources/wide-arithmetic-mul-wide-s.wat",
+          "-o",
+          "artifacts/wide-arithmetic-mul-wide-s.wasm"
+        ]
+      ],
+      "feature": "wide-arithmetic",
+      "variant": "mul-wide-s",
+      "baseline": false,
+      "scope": "execution"
+    },
+    {
+      "source": "sources/wide-arithmetic-mul-wide-u.wat",
+      "sourceSha256": "2139eeb3ad2922de381a006bb5e6a52f0699ee641ad3aba371b6e5955ade3d5d",
+      "artifact": "artifacts/wide-arithmetic-mul-wide-u.wasm",
+      "sha256": "dc64d5bbda18aa2a9c59ba5698f4e19c74a7c8190f1077784765f4e20d30fe34",
+      "compiler": "wasm-tools 1.260.0",
+      "argv": [
+        [
+          "wasm-tools",
+          "parse",
+          "sources/wide-arithmetic-mul-wide-u.wat",
+          "-o",
+          "artifacts/wide-arithmetic-mul-wide-u.wasm"
+        ]
+      ],
+      "feature": "wide-arithmetic",
+      "variant": "mul-wide-u",
+      "baseline": false,
+      "scope": "execution"
     }
   ]
 }

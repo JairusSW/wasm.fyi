@@ -1,3 +1,4 @@
+import {wideArithmeticFixtures} from './wide-arithmetic.mjs';
 // Original, deterministic feature workloads. Each operation has an independent
 // arithmetic oracle; runtime output is never used to invent an expected value.
 const sum = (n, value) => {
@@ -21,7 +22,7 @@ const address = `(i32.shl (i32.and ${i} (i32.const 8191)) (i32.const 2))`;
 const index = `(i32.and ${i} (i32.const 15))`;
 const triangular = n => (n * (n - 1) / 2) >>> 0;
 export const featureIds = ['core-num', 'core-mem', 'core-ctl', 'core-tab', 'core-val', 'core-glb',
-  'sign-extension', 'saturating-float-to-int', 'mutable-globals',
+  'sign-extension', 'saturating-float-to-int', 'mutable-globals', 'wide-arithmetic',
   'bulk-memory', 'reference-types', 'multi-value', 'simd', 'gc', 'memory64',
   'exceptions', 'tail-call', 'relaxed-simd', 'multi-memory', 'extended-const',
   'js-string-builtins', 'jspi', 'threads',
@@ -298,6 +299,8 @@ export function fixtures() {
     add('cm-async', `future-stream-scaling-${count}`, `(component (type $f (future u32)) (type $s (stream u32)) ${builtins})`, ()=>0,
       { sizes:[1], units:1, size:count*2, dimension:'canonical_async_builtin_count', abi:'component', export:'', args:()=>[], scope:'compile-only', workUnit:'component', oracle:()=>({kind:'component_compile_only',expected:[]}) });
   }
+
+  for (const f of wideArithmeticFixtures()) add('wide-arithmetic', f.name, f.wat, f.expected);
 
   return out;
 }

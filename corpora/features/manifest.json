@@ -19490,5 +19490,665 @@
       },
       "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
     }
+  },
+  {
+    "schema": 1,
+    "id": "features/wide-arithmetic/add128/1",
+    "family": "features",
+    "artifact": "artifacts/wide-arithmetic-add128.wasm",
+    "sha256": "7779ec01060084e0762e7335b71837f8a7b92438af0db0c6a5c43d0ea8990ed7",
+    "abi": "core",
+    "features": [
+      "wide-arithmetic"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        1901818914
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/wide-arithmetic-add128.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "provenance": {
+      "feature": "wide-arithmetic",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/wide-arithmetic-add128.wat",
+        "sourceSha256": "088e0c03cfe40f4d9c1fe6f75297dcf7a42f0a167644ea73f89a566dee3843d0",
+        "artifact": "artifacts/wide-arithmetic-add128.wasm",
+        "sha256": "7779ec01060084e0762e7335b71837f8a7b92438af0db0c6a5c43d0ea8990ed7",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/wide-arithmetic-add128.wat",
+            "-o",
+            "artifacts/wide-arithmetic-add128.wasm"
+          ]
+        ],
+        "feature": "wide-arithmetic",
+        "variant": "add128",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/wide-arithmetic/add128/64",
+    "family": "features",
+    "artifact": "artifacts/wide-arithmetic-add128.wasm",
+    "sha256": "7779ec01060084e0762e7335b71837f8a7b92438af0db0c6a5c43d0ea8990ed7",
+    "abi": "core",
+    "features": [
+      "wide-arithmetic"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        552909575
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/wide-arithmetic-add128.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "provenance": {
+      "feature": "wide-arithmetic",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/wide-arithmetic-add128.wat",
+        "sourceSha256": "088e0c03cfe40f4d9c1fe6f75297dcf7a42f0a167644ea73f89a566dee3843d0",
+        "artifact": "artifacts/wide-arithmetic-add128.wasm",
+        "sha256": "7779ec01060084e0762e7335b71837f8a7b92438af0db0c6a5c43d0ea8990ed7",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/wide-arithmetic-add128.wat",
+            "-o",
+            "artifacts/wide-arithmetic-add128.wasm"
+          ]
+        ],
+        "feature": "wide-arithmetic",
+        "variant": "add128",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/wide-arithmetic/add128/4096",
+    "family": "features",
+    "artifact": "artifacts/wide-arithmetic-add128.wasm",
+    "sha256": "7779ec01060084e0762e7335b71837f8a7b92438af0db0c6a5c43d0ea8990ed7",
+    "abi": "core",
+    "features": [
+      "wide-arithmetic"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        2039759259
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/wide-arithmetic-add128.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "provenance": {
+      "feature": "wide-arithmetic",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/wide-arithmetic-add128.wat",
+        "sourceSha256": "088e0c03cfe40f4d9c1fe6f75297dcf7a42f0a167644ea73f89a566dee3843d0",
+        "artifact": "artifacts/wide-arithmetic-add128.wasm",
+        "sha256": "7779ec01060084e0762e7335b71837f8a7b92438af0db0c6a5c43d0ea8990ed7",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/wide-arithmetic-add128.wat",
+            "-o",
+            "artifacts/wide-arithmetic-add128.wasm"
+          ]
+        ],
+        "feature": "wide-arithmetic",
+        "variant": "add128",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/wide-arithmetic/sub128/1",
+    "family": "features",
+    "artifact": "artifacts/wide-arithmetic-sub128.wasm",
+    "sha256": "9d1a3a63875509bd6bd02bb19398dfbf0671a3add034919669939debf7780527",
+    "abi": "core",
+    "features": [
+      "wide-arithmetic"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        1901818936
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/wide-arithmetic-sub128.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "provenance": {
+      "feature": "wide-arithmetic",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/wide-arithmetic-sub128.wat",
+        "sourceSha256": "e2a89f92e29199ac1015f996592ad69869f550b0c02b39682040b196e415f37c",
+        "artifact": "artifacts/wide-arithmetic-sub128.wasm",
+        "sha256": "9d1a3a63875509bd6bd02bb19398dfbf0671a3add034919669939debf7780527",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/wide-arithmetic-sub128.wat",
+            "-o",
+            "artifacts/wide-arithmetic-sub128.wasm"
+          ]
+        ],
+        "feature": "wide-arithmetic",
+        "variant": "sub128",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/wide-arithmetic/sub128/64",
+    "family": "features",
+    "artifact": "artifacts/wide-arithmetic-sub128.wasm",
+    "sha256": "9d1a3a63875509bd6bd02bb19398dfbf0671a3add034919669939debf7780527",
+    "abi": "core",
+    "features": [
+      "wide-arithmetic"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        1069896500
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/wide-arithmetic-sub128.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "provenance": {
+      "feature": "wide-arithmetic",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/wide-arithmetic-sub128.wat",
+        "sourceSha256": "e2a89f92e29199ac1015f996592ad69869f550b0c02b39682040b196e415f37c",
+        "artifact": "artifacts/wide-arithmetic-sub128.wasm",
+        "sha256": "9d1a3a63875509bd6bd02bb19398dfbf0671a3add034919669939debf7780527",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/wide-arithmetic-sub128.wat",
+            "-o",
+            "artifacts/wide-arithmetic-sub128.wasm"
+          ]
+        ],
+        "feature": "wide-arithmetic",
+        "variant": "sub128",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/wide-arithmetic/sub128/4096",
+    "family": "features",
+    "artifact": "artifacts/wide-arithmetic-sub128.wasm",
+    "sha256": "9d1a3a63875509bd6bd02bb19398dfbf0671a3add034919669939debf7780527",
+    "abi": "core",
+    "features": [
+      "wide-arithmetic"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        310161206
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/wide-arithmetic-sub128.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "provenance": {
+      "feature": "wide-arithmetic",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/wide-arithmetic-sub128.wat",
+        "sourceSha256": "e2a89f92e29199ac1015f996592ad69869f550b0c02b39682040b196e415f37c",
+        "artifact": "artifacts/wide-arithmetic-sub128.wasm",
+        "sha256": "9d1a3a63875509bd6bd02bb19398dfbf0671a3add034919669939debf7780527",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/wide-arithmetic-sub128.wat",
+            "-o",
+            "artifacts/wide-arithmetic-sub128.wasm"
+          ]
+        ],
+        "feature": "wide-arithmetic",
+        "variant": "sub128",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/wide-arithmetic/mul-wide-s/1",
+    "family": "features",
+    "artifact": "artifacts/wide-arithmetic-mul-wide-s.wasm",
+    "sha256": "5b67308e2838be730641e41ac371f4dc72166d899b63b7cd8e0185b64be9d18b",
+    "abi": "core",
+    "features": [
+      "wide-arithmetic"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        2288889789
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/wide-arithmetic-mul-wide-s.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "provenance": {
+      "feature": "wide-arithmetic",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/wide-arithmetic-mul-wide-s.wat",
+        "sourceSha256": "be46361a8821af7cada3a8dfdffab71553692ad050e4c67957eff75fa5006043",
+        "artifact": "artifacts/wide-arithmetic-mul-wide-s.wasm",
+        "sha256": "5b67308e2838be730641e41ac371f4dc72166d899b63b7cd8e0185b64be9d18b",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/wide-arithmetic-mul-wide-s.wat",
+            "-o",
+            "artifacts/wide-arithmetic-mul-wide-s.wasm"
+          ]
+        ],
+        "feature": "wide-arithmetic",
+        "variant": "mul-wide-s",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/wide-arithmetic/mul-wide-s/64",
+    "family": "features",
+    "artifact": "artifacts/wide-arithmetic-mul-wide-s.wasm",
+    "sha256": "5b67308e2838be730641e41ac371f4dc72166d899b63b7cd8e0185b64be9d18b",
+    "abi": "core",
+    "features": [
+      "wide-arithmetic"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        863742690
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/wide-arithmetic-mul-wide-s.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "provenance": {
+      "feature": "wide-arithmetic",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/wide-arithmetic-mul-wide-s.wat",
+        "sourceSha256": "be46361a8821af7cada3a8dfdffab71553692ad050e4c67957eff75fa5006043",
+        "artifact": "artifacts/wide-arithmetic-mul-wide-s.wasm",
+        "sha256": "5b67308e2838be730641e41ac371f4dc72166d899b63b7cd8e0185b64be9d18b",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/wide-arithmetic-mul-wide-s.wat",
+            "-o",
+            "artifacts/wide-arithmetic-mul-wide-s.wasm"
+          ]
+        ],
+        "feature": "wide-arithmetic",
+        "variant": "mul-wide-s",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/wide-arithmetic/mul-wide-s/4096",
+    "family": "features",
+    "artifact": "artifacts/wide-arithmetic-mul-wide-s.wasm",
+    "sha256": "5b67308e2838be730641e41ac371f4dc72166d899b63b7cd8e0185b64be9d18b",
+    "abi": "core",
+    "features": [
+      "wide-arithmetic"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        2327261004
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/wide-arithmetic-mul-wide-s.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "provenance": {
+      "feature": "wide-arithmetic",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/wide-arithmetic-mul-wide-s.wat",
+        "sourceSha256": "be46361a8821af7cada3a8dfdffab71553692ad050e4c67957eff75fa5006043",
+        "artifact": "artifacts/wide-arithmetic-mul-wide-s.wasm",
+        "sha256": "5b67308e2838be730641e41ac371f4dc72166d899b63b7cd8e0185b64be9d18b",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/wide-arithmetic-mul-wide-s.wat",
+            "-o",
+            "artifacts/wide-arithmetic-mul-wide-s.wasm"
+          ]
+        ],
+        "feature": "wide-arithmetic",
+        "variant": "mul-wide-s",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/wide-arithmetic/mul-wide-u/1",
+    "family": "features",
+    "artifact": "artifacts/wide-arithmetic-mul-wide-u.wasm",
+    "sha256": "dc64d5bbda18aa2a9c59ba5698f4e19c74a7c8190f1077784765f4e20d30fe34",
+    "abi": "core",
+    "features": [
+      "wide-arithmetic"
+    ],
+    "export": "benchmark",
+    "args": [
+      1
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 1,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        141406140
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/wide-arithmetic-mul-wide-u.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 1,
+    "provenance": {
+      "feature": "wide-arithmetic",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/wide-arithmetic-mul-wide-u.wat",
+        "sourceSha256": "2139eeb3ad2922de381a006bb5e6a52f0699ee641ad3aba371b6e5955ade3d5d",
+        "artifact": "artifacts/wide-arithmetic-mul-wide-u.wasm",
+        "sha256": "dc64d5bbda18aa2a9c59ba5698f4e19c74a7c8190f1077784765f4e20d30fe34",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/wide-arithmetic-mul-wide-u.wat",
+            "-o",
+            "artifacts/wide-arithmetic-mul-wide-u.wasm"
+          ]
+        ],
+        "feature": "wide-arithmetic",
+        "variant": "mul-wide-u",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/wide-arithmetic/mul-wide-u/64",
+    "family": "features",
+    "artifact": "artifacts/wide-arithmetic-mul-wide-u.wasm",
+    "sha256": "dc64d5bbda18aa2a9c59ba5698f4e19c74a7c8190f1077784765f4e20d30fe34",
+    "abi": "core",
+    "features": [
+      "wide-arithmetic"
+    ],
+    "export": "benchmark",
+    "args": [
+      64
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 64,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        2187807819
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/wide-arithmetic-mul-wide-u.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 64,
+    "provenance": {
+      "feature": "wide-arithmetic",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/wide-arithmetic-mul-wide-u.wat",
+        "sourceSha256": "2139eeb3ad2922de381a006bb5e6a52f0699ee641ad3aba371b6e5955ade3d5d",
+        "artifact": "artifacts/wide-arithmetic-mul-wide-u.wasm",
+        "sha256": "dc64d5bbda18aa2a9c59ba5698f4e19c74a7c8190f1077784765f4e20d30fe34",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/wide-arithmetic-mul-wide-u.wat",
+            "-o",
+            "artifacts/wide-arithmetic-mul-wide-u.wasm"
+          ]
+        ],
+        "feature": "wide-arithmetic",
+        "variant": "mul-wide-u",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
+  },
+  {
+    "schema": 1,
+    "id": "features/wide-arithmetic/mul-wide-u/4096",
+    "family": "features",
+    "artifact": "artifacts/wide-arithmetic-mul-wide-u.wasm",
+    "sha256": "dc64d5bbda18aa2a9c59ba5698f4e19c74a7c8190f1077784765f4e20d30fe34",
+    "abi": "core",
+    "features": [
+      "wide-arithmetic"
+    ],
+    "export": "benchmark",
+    "args": [
+      4096
+    ],
+    "work_unit": "feature_operation",
+    "units_per_invocation": 4096,
+    "reset": "stateless",
+    "oracle": {
+      "kind": "exact_u64",
+      "expected": [
+        2340151613
+      ]
+    },
+    "license": "MIT",
+    "source": "sources/wide-arithmetic-mul-wide-u.wat",
+    "generator": "wasm-fyi-feature-corpus-v1",
+    "dimension": "operations",
+    "size": 4096,
+    "provenance": {
+      "feature": "wide-arithmetic",
+      "baseline": false,
+      "scope": "execution",
+      "recipe": {
+        "source": "sources/wide-arithmetic-mul-wide-u.wat",
+        "sourceSha256": "2139eeb3ad2922de381a006bb5e6a52f0699ee641ad3aba371b6e5955ade3d5d",
+        "artifact": "artifacts/wide-arithmetic-mul-wide-u.wasm",
+        "sha256": "dc64d5bbda18aa2a9c59ba5698f4e19c74a7c8190f1077784765f4e20d30fe34",
+        "compiler": "wasm-tools 1.260.0",
+        "argv": [
+          [
+            "wasm-tools",
+            "parse",
+            "sources/wide-arithmetic-mul-wide-u.wat",
+            "-o",
+            "artifacts/wide-arithmetic-mul-wide-u.wasm"
+          ]
+        ],
+        "feature": "wide-arithmetic",
+        "variant": "mul-wide-u",
+        "baseline": false,
+        "scope": "execution"
+      },
+      "oraclePolicy": "independent deterministic arithmetic or exact stream digest; never inferred from measured runtime output"
+    }
   }
 ]
