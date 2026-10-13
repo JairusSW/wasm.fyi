@@ -3,6 +3,6 @@
 </svg>
 
 <style>
- .cohort-strike{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.4;}
- line{stroke:var(--fg3);stroke-width:1;vector-effect:non-scaling-stroke;}
+ .cohort-strike{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+ line{stroke:var(--line);stroke-width:1;vector-effect:non-scaling-stroke;}
 </style>
