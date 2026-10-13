@@ -1,4 +1,3 @@
-import {isLocalComparison} from './local-comparison';
 import {datasetView} from './api/view.svelte';
 // Global UI state. Filters are URL-backed: scope keys (machine, snapshot,
 // runtimes) persist across pages; page keys reset to their defaults when a
@@ -59,7 +58,7 @@ const nullable = (param: string): Codec<string | null> => ({
 });
 
 const configIds = () => CFG.map((c) => c.id);
-const isCfg = (s: string): s is CfgId => (configIds() as string[]).includes(s) || s.startsWith('engine:') && isLocalComparison(s.slice(7));
+const isCfg = (s: string): s is CfgId => (configIds() as string[]).includes(s) || /^engine:[a-z0-9][a-z0-9._-]{0,127}$/.test(s);
 
 /** Hidden runtimes, serialized as the list of *shown* config ids so the default is empty. */
 const hideCodec: Codec<Partial<Record<CfgId, boolean>>> = {
@@ -70,7 +69,7 @@ const hideCodec: Codec<Partial<Record<CfgId, boolean>>> = {
 		if (!on.length) return undefined;
 		return Object.fromEntries([...new Set([...configIds(), ...on])].map((id) => [id, !on.includes(id)]));
 	},
-	ser: (v) => configIds().filter((id) => !v[id]).join(',')
+	ser: (v) => [...new Set([...configIds(),...Object.keys(v).filter(isCfg)])].filter((id) => !v[id]).join(',')
 };
 const sortCodec: Codec<{ id: CfgId; dir: 1 | -1 } | null> = {
 	param: 'sort',

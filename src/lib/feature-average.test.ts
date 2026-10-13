@@ -11,7 +11,7 @@ const {numeric}=vi.hoisted(()=>({numeric:Object.fromEntries([
  ].flatMap(([name,values])=>(values as number[]).map((v,k)=>[`features/core-num/${name}/${['1','64','4096','performance-4096x64'][k]}`,v/1e6])))}));
 vi.mock('./state.svelte',()=>({ui}));
 vi.mock('./model',()=>({featureContracts:(family:string)=>family==='core-num'?Object.keys(numeric).map(id=>({id})):[{id:'features/numeric/a/1'},{id:'features/numeric/a/9'}]}));
-vi.mock('./view-data',()=>({viewData:{},viewCell:(_machine:string,_snapshot:string,id:string,c:string)=>({st:'ok',v:numeric[id]??(c==='missing'||c==='partial'&&!id.endsWith('/1')?null:id.endsWith('/1')?1:9)})}));
+vi.mock('./view-data',()=>({viewData:{},viewCell:(_machine:string,_snapshot:string,id:string,c:string)=>({st:'ok',v:numeric[id]??(c==='missing'||c==='partial'&&!id.endsWith('/1')||c==='opposite'&&id.endsWith('/1')?null:id.endsWith('/1')?1:9)})}));
 vi.mock('./api/view.svelte',()=>({datasetView:{revision:''}}));
 vi.mock('./api/controller.svelte',()=>({apiView:{aggregates:{}},aggregateKey:()=>'',trackId:(id:string)=>id}));
 import FeatureCorpora from './components/FeatureCorpora.svelte';
@@ -20,6 +20,20 @@ import type {Bench} from './data/types';
 import type {Scope} from './model';
 const scope:Scope={machine:'m1',baseline:'G',hide:{},weighting:'workload'};
 describe('feature averaging selection',()=>{
+ it('includes only contracts passed by every selected engine, including non-overlapping failures',()=>{
+  const result=familyCohort({...scope,average:'mean',cohortMode:'shared'},'numeric',['G','partial','opposite'] as never[]);
+  expect(result.cohort).toHaveLength(0);
+  expect(result.values).toEqual([null,null,null]);
+ });
+ it('excludes a corpus when a selected engine has no passing measurement',()=>{
+  expect(familyCohort({...scope,average:'mean',cohortMode:'shared'},'numeric',['G','missing'] as never[]).values).toEqual([null,null]);
+ });
+ it('marks excluded expanded cells while keeping their own measured values inspectable',()=>{
+  ui.average='mean';ui.scope.average='mean';ui.cohortMode='shared';ui.scope.cohortMode='shared';
+  const html=render(FeatureCorpora,{props:{family:'numeric',ids:['G','missing' as never],mode:'perf'}}).body;
+  expect(html).toContain('cohort-excluded');expect(html).toContain('Excluded');expect(html).toContain('~5 ms');
+  expect(html).toContain('x1="100" y1="0" x2="0" y2="100"');
+ });
  it('averages the same six numeric performance contracts shown in expanded rows',()=>{
   // Production Apple M4 Max / wasmtime: tiny compatibility probes must not dilute perf.
   const result=familyCohort({...scope,average:'mean',cohortMode:'per-engine'},'core-num',['G']);

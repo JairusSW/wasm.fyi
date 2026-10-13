@@ -1,4 +1,5 @@
 <script lang="ts">
+ import CohortStrike from '$lib/components/CohortStrike.svelte';
  import StatusLegend from '$lib/components/StatusLegend.svelte';
 	import {apiView} from '$lib/api/controller.svelte';
  import { rankStats, tipCard, tipWho } from '$lib/tip';
@@ -156,13 +157,15 @@
     return [...new Set(all.map(x=>x.g))].map(g=>({sec:g,rows:all.filter(x=>x.g===g).map(({fam:f})=>{
       // Select passed contracts using the same cohort control as Benchmarks.
       const {contracts,values,passed,statuses,cohort}=familyCohort(ui.scope,f.id,cols.map(c=>c.id),metric);
+      const excluded=ui.scope.cohortMode==='shared'&&contracts.length>0&&!cohort.length;
+      const display=excluded?familyCohort({...ui.scope,cohortMode:'per-engine'},f.id,cols.map(c=>c.id),metric).values:values;
       const min=Math.min(...values.filter((v):v is number=>v!=null));
       const n=contracts.length;
       const names=cols.map(c=>`${c.rt} ${c.be}`);
       const stats=(k:number)=>rankStats(values,k,names,v=>fmtU(v,unit),metric==='rss'?'smallest':'fastest');
-      return {f,corpus:n?`${ui.cohortMode==='shared'?cohort.length:n} contracts · ${ui.cohortMode==='shared'?'shared passes':'passed per engine'}`:'no eligible contracts',cells:values.map((v,k)=>v!=null
-        ?{text:fmtAverage(v,unit),sub:v===min?'lowest':'',bg:heatField(values,k),color:'var(--fg)',fw:v===min?600:400,stats:stats(k)}
-        :{text:ST[statuses[k]][0],sub:passed[k]>0?`${passed[k]}/${n} passed`:'',note:ST[statuses[k]][1],bg:'transparent',color:ST[statuses[k]][2],fw:400,stats:stats(k)})};
+      return {f,excluded,corpus:n?`${ui.cohortMode==='shared'?cohort.length:n} contracts · ${ui.cohortMode==='shared'?'shared passes':'passed per engine'}`:'no eligible contracts',cells:display.map((v,k)=>v!=null
+        ?{text:fmtAverage(v,unit),sub:excluded?'excluded':v===min?'lowest':'',note:excluded?'Excluded from comparison: no contracts passed and measured by every selected engine.':'',bg:excluded?'transparent':heatField(values,k),color:'var(--fg)',fw:!excluded&&v===min?600:400,stats:excluded?[]:stats(k)}
+        :{text:ST[statuses[k]][0],sub:passed[k]>0?`${passed[k]}/${n} passed`:'',note:excluded?'Excluded from comparison: no contracts passed and measured by every selected engine.':ST[statuses[k]][1],bg:'transparent',color:ST[statuses[k]][2],fw:400,stats:excluded?[]:stats(k)})};
     })}));
   });
 
@@ -320,7 +323,8 @@
 								</div>
 							</td>
 							{#each r.cells as x, k (k)}
-								<td class="p0" style:background={x.bg}>
+								<td class="p0" class:cohort-excluded={r.excluded} style:background={x.bg}>
+         {#if r.excluded}<CohortStrike />{/if}
 									<button
 										class="cellbtn wcell"
 										style:color={x.color}
@@ -342,12 +346,14 @@
 	</div>
  <StatusLegend note="~ = average · bold = lowest in row" />
 	<div class="note">
-		Bold = lowest in row · heat = distance from the row's lowest measured value. Averages use {ui.average==='mean'?'arithmetic mean':'geometric mean'} over {ui.cohortMode==='shared'?'contracts passed on all shown engines':'contracts passed per engine'}.
+		Bold = lowest in row · heat = distance from the row's lowest measured value. Averages use {ui.average==='mean'?'arithmetic mean':'geometric mean'} over {ui.cohortMode==='shared'?'contracts passed on all shown engines':'contracts passed per engine'}. {#if ui.cohortMode==='shared'}Dimmed, crossed-out cells are excluded from comparison.{/if}
 	</div>
 {/if}
 
 
 <style>
+ .cohort-excluded .cellbtn{opacity:.4;}
+ .cohort-excluded{position:relative;}
 	.head {
 		display: flex;
 		flex-wrap: wrap;
