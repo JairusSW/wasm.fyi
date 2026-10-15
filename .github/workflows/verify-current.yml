@@ -52,6 +52,7 @@ jobs:
             !/*/
             /service/
             /scripts/
+            /adapters/qualification/zwasm/
           sparse-checkout-cone-mode: false
       - uses: actions/setup-go@v5
         with:
@@ -72,3 +73,7 @@ jobs:
         run: |
           python3 scripts/activate-remote.test.py
           node --test scripts/history-scope.test.mjs scripts/audit-history-corpus-captures.test.mjs
+      - name: Test capture failure handling and SDK policy
+        run: |
+          node --test scripts/engine-fatal-reason.test.mjs scripts/latency-capture.test.mjs scripts/test-wavm-configure-policy.mjs scripts/history-sdk-api-failures.test.mjs
+          python3 scripts/zwasm-memory-policy.test.py

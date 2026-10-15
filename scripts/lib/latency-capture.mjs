@@ -1,7 +1,8 @@
 import {workloadContract} from './workload-contract.mjs';
 import {samplePolicy,sampleStability} from './sample-stability.mjs';
 import {collectFeatureBatches} from './feature-timing.mjs';
-import {readFile,readdir,mkdir,rm,writeFile} from 'node:fs/promises';
+import {identifyEngineFatals} from './engine-fatal-reason.mjs';
+import {readFile,readdir,mkdir,rm,writeFile,open} from 'node:fs/promises';
 import {join,basename} from 'node:path';
 import {digest} from './wasmbench.mjs';
 import {parseCorpusJSON} from './corpus.mjs';
@@ -99,7 +100,11 @@ export async function collectLatencies({directory,workloads,engines,collection,r
   const bundle=JSON.parse(await readFile(join(out,'manifest.json'),'utf8'));
   const order=new Map((bundle.trial_order||[]).map((id,index)=>[id,index]));
   const trials=await Promise.all((await readdir(join(out,'trials'))).filter(name=>name.endsWith('.json')).map(async name=>parseCorpusJSON(await readFile(join(out,'trials',name),'utf8'))));
-  return trials.sort((left,right)=>(order.get(left.id)??Infinity)-(order.get(right.id)??Infinity));
+  const identified=await identifyEngineFatals(trials,async path=>{
+   const file=await open(join(out,path),'r');
+   try{const size=(await file.stat()).size;if(size>65536)return '';return await file.readFile('utf8');}finally{await file.close();}
+  });
+  return identified.sort((left,right)=>(order.get(left.id)??Infinity)-(order.get(right.id)??Infinity));
  };
  try {
   const calls=workloads.every(w=>w.id.startsWith('mechanisms/'))&&scenarios.includes('steady');

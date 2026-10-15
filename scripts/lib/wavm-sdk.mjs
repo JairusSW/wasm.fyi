@@ -20,7 +20,7 @@ export async function buildWavmSDK({source,sdk,target,env,run}) {
  const prefixes=[env.WASMBENCH_WAVM_LLVM_PREFIX,'/opt/homebrew/opt/llvm@20',join(homedir(),'.cache/wasm-fyi/toolchains/llvm-20.1.8'),'/usr/lib/llvm-20'].filter(Boolean);
  let llvmDirectory;
  for(const prefix of prefixes)if(await stat(join(prefix,'lib/cmake/llvm/LLVMConfig.cmake')).catch(()=>null)){llvmDirectory=join(prefix,'lib/cmake/llvm');break;}
- if(!llvmDirectory)throw Error('WAVM source build requires a qualified LLVM 20 SDK');
+ if(!llvmDirectory)throw Error('WAVM source build requires a qualified LLVM 20 or newer SDK');
  const dependencyPrefix=join(homedir(),'.cache/wasm-fyi/toolchains/lld-18/usr');
  const dependencyFlags=await stat(dependencyPrefix).catch(()=>null)?['-DCMAKE_PREFIX_PATH='+dependencyPrefix]:[];
  const zstdPrefix=join(homedir(),'.cache/wasm-fyi/toolchains/zstd-1.5.5-pic');
@@ -28,7 +28,12 @@ export async function buildWavmSDK({source,sdk,target,env,run}) {
  const flags=[...zstdFlags,...dependencyFlags,'-DCMAKE_BUILD_TYPE=Release','-DCMAKE_INSTALL_PREFIX='+sdk,'-DLLVM_DIR='+llvmDirectory,'-DWAVM_ENABLE_STATIC_LINKING=OFF','-DWAVM_ENABLE_FUZZ_TARGETS=OFF','-DWAVM_ENABLE_LTO=OFF'];
  // The official Linux LLVM SDK ships bitcode archives; use its matching
  // compiler and linker rather than GNU ld, which cannot consume those archives.
- if(process.platform==='linux'){const prefix=resolve(llvmDirectory,'../../..'),cxxPrefix=env.WASMFYI_WAVM_CXX_SDK?resolve(env.WASMFYI_WAVM_CXX_SDK):prefix,cxxLib=join(cxxPrefix,'lib/x86_64-unknown-linux-gnu');env.WASMBENCH_WAVM_CXX_SDK=cxxPrefix;flags.push('-DCMAKE_C_COMPILER='+join(cxxPrefix,'bin/clang'),'-DCMAKE_CXX_COMPILER='+join(cxxPrefix,'bin/clang++'),'-DCMAKE_CXX_FLAGS=-stdlib=libc++'+(cxxPrefix!==prefix?' -Wno-error=unused-command-line-argument -nostdinc++ -I'+join(cxxPrefix,'include/c++/v1'):''),'-DCMAKE_EXE_LINKER_FLAGS=-L'+cxxLib+' -Wl,-rpath,'+cxxLib,'-DCMAKE_SHARED_LINKER_FLAGS=-L'+cxxLib+' -fuse-ld='+join(prefix,'bin/ld.lld')+' -Wl,-rpath,'+cxxLib+' -Wl,--no-undefined '+privateGlibcLinkFlags(env).join(' '));}
+ if(process.platform==='linux'){
+  const prefix=resolve(llvmDirectory,'../../..'),cxxPrefix=env.WASMFYI_WAVM_CXX_SDK?resolve(env.WASMFYI_WAVM_CXX_SDK):prefix,cxxLib=join(cxxPrefix,'lib/x86_64-unknown-linux-gnu');
+  env.WASMBENCH_WAVM_CXX_SDK=cxxPrefix;
+  const stdlib=wavmCxxFlags(env,cxxPrefix,prefix);
+  flags.push('-DCMAKE_C_COMPILER='+join(cxxPrefix,'bin/clang'),'-DCMAKE_CXX_COMPILER='+join(cxxPrefix,'bin/clang++'),'-DCMAKE_CXX_FLAGS='+stdlib,'-DCMAKE_EXE_LINKER_FLAGS=-L'+cxxLib+' -Wl,-rpath,'+cxxLib,'-DCMAKE_SHARED_LINKER_FLAGS=-L'+cxxLib+' -fuse-ld='+join(prefix,'bin/ld.lld')+' -Wl,-rpath,'+cxxLib+' -Wl,--no-undefined '+privateGlibcLinkFlags(env).join(' '));
+ }
  await configureWavmSource(source,target,flags,run);
  await run('cmake',['--build',target,'--target','libWAVM','-j',String(env.WASMFYI_BUILD_JOBS||availableParallelism())]);
  await mkdir(join(sdk,'include'),{recursive:true});await mkdir(join(sdk,'lib'),{recursive:true});
@@ -41,4 +46,11 @@ export async function buildWavmSDK({source,sdk,target,env,run}) {
  for(const name of libraries)await cp(join(libraryDirectory,name),join(sdk,'lib',name),{dereference:true});
  env.WASMBENCH_WAVM_SDK=sdk;
  return {source,sdk,flags,llvmDirectory,libraries:await Promise.all(libraries.map(async name=>({name,sha256:digest(await readFile(join(sdk,'lib',name)))})))};
+}
+// Match the C++ ABI used to build LLVM itself. Official LLVM downloads use
+// libc++; WAVM's own LLVM build can use the host libstdc++ instead.
+export function wavmCxxFlags(env,cxxPrefix,prefix){
+ const stdlib=env.WASMFYI_WAVM_CXX_STDLIB||'libc++';
+ if(!['libc++','libstdc++'].includes(stdlib))throw Error('Invalid WAVM C++ standard library');
+ return '-stdlib='+stdlib+(stdlib==='libc++'&&cxxPrefix!==prefix?' -Wno-error=unused-command-line-argument -nostdinc++ -I'+join(cxxPrefix,'include/c++/v1'):'');
 }

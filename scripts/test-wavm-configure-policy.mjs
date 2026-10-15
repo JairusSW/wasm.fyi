@@ -3,7 +3,14 @@ import assert from 'node:assert/strict';
 import {mkdtemp,writeFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {configureWavmSource} from './lib/wavm-sdk.mjs';
+import {configureWavmSource,wavmCxxFlags} from './lib/wavm-sdk.mjs';
+
+test('LLVM ABI selection keeps host libstdc++ headers separate from libc++ SDK headers',()=>{
+ assert.equal(wavmCxxFlags({},'/llvm','/llvm'),'-stdlib=libc++');
+ assert.match(wavmCxxFlags({},'/cxx','/llvm'),/-nostdinc\+\+ -I\/cxx\/include\/c\+\+\/v1$/);
+ assert.equal(wavmCxxFlags({WASMFYI_WAVM_CXX_STDLIB:'libstdc++'},'/cxx','/llvm'),'-stdlib=libstdc++');
+ assert.throws(()=>wavmCxxFlags({WASMFYI_WAVM_CXX_STDLIB:'unknown'},'/cxx','/llvm'),/Invalid WAVM/);
+});
 
 test('compiler-change cache regeneration cannot silently change the SDK C++ ABI',async()=>{
  const target=await mkdtemp(join(tmpdir(),'wavm-cmake-policy-'));

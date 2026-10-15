@@ -6,6 +6,24 @@ import os
 import sys
 import time
 
+
+def apply_data_limit():
+    """Keep a leaking guest heap from taking down the benchmark host."""
+    requested = int(os.environ.get('WASMBENCH_ZWASM_DATA_LIMIT_BYTES', str(8 << 30) if sys.platform.startswith('linux') else '0'))
+    if requested < 0:
+        raise ValueError('Zwasm data limit must be nonnegative')
+    if not requested:
+        return 0
+    if not sys.platform.startswith('linux'):
+        raise ValueError('Zwasm data limit requires Linux RLIMIT_DATA')
+    import resource
+    soft, hard = resource.getrlimit(resource.RLIMIT_DATA)
+    limit = min([requested] + [n for n in (soft, hard) if n != resource.RLIM_INFINITY])
+    resource.setrlimit(resource.RLIMIT_DATA, (limit, hard))
+    return resource.getrlimit(resource.RLIMIT_DATA)[0]
+
+
+data_limit = apply_data_limit()
 if '--interpreter' in sys.argv[2:]:
     os.environ['ZWASM_INTERPRETER'] = '1'
 elif '--jit' in sys.argv[2:]:
@@ -187,7 +205,7 @@ for line in sys.stdin:
         method = request['method']
         if method == 'describe':
             interpreter = bool(os.environ.get('ZWASM_INTERPRETER'))
-            response['description'] = {'runtime': 'zwasm-interpreter' if interpreter else 'zwasm-jit', 'runtime_version': lib.wb_version().decode(), 'backend': 'interpreter' if interpreter else 'jit', 'build': 'Zwasm C API source ' + lib.wb_version().decode() + '; native embedding', 'embedding': 'Zwasm C API', 'abis': ['core'], 'scenarios': ['compile', 'instantiate', 'first-call', 'steady'], 'effective_configuration': {'purpose': 'phase-separated decode/native compile, fresh instance, native call timers; cached module and stateless steady instance', 'wasi': 'p3', 'backend': 'forced and checked with zwasm_instance_engine; no fallback'}}
+            response['description'] = {'runtime': 'zwasm-interpreter' if interpreter else 'zwasm-jit', 'runtime_version': lib.wb_version().decode(), 'backend': 'interpreter' if interpreter else 'jit', 'build': 'Zwasm C API source ' + lib.wb_version().decode() + '; native embedding', 'embedding': 'Zwasm C API', 'abis': ['core'], 'scenarios': ['compile', 'instantiate', 'first-call', 'steady'], 'effective_configuration': {'purpose': 'phase-separated decode/native compile, fresh instance, native call timers; cached module and stateless steady instance', 'wasi': 'p3', 'backend': 'forced and checked with zwasm_instance_engine; no fallback', 'linux_data_limit_bytes': data_limit}}
         elif method == 'prepare':
             if session: session.close()
             session = None
