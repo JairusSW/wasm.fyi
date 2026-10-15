@@ -24,6 +24,22 @@ def apply_data_limit():
 
 
 data_limit = apply_data_limit()
+rss_budget = int(os.environ.get('WASMBENCH_ZWASM_RSS_BUDGET_BYTES', str(8 << 30) if sys.platform == 'darwin' else '0'))
+if rss_budget < 0:
+    raise ValueError('Zwasm RSS budget must be nonnegative')
+
+
+def check_rss_budget(limit):
+    if not limit:
+        return
+    import resource
+    peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    if sys.platform != 'darwin':
+        peak *= 1024
+    if peak > limit:
+        raise RuntimeError(f'resource budget exceeded: sampling process peak RSS {peak} bytes exceeds sample-boundary budget {limit} bytes')
+
+
 if '--interpreter' in sys.argv[2:]:
     os.environ['ZWASM_INTERPRETER'] = '1'
 elif '--jit' in sys.argv[2:]:
@@ -162,6 +178,7 @@ class Session:
         return result, elapsed
 
     def sample(self, phase, operations):
+        check_rss_budget(rss_budget)
         w = self.preparation['workload']; cold = phase == 'compile'
         engine = module = instance = None
         try:
@@ -205,7 +222,7 @@ for line in sys.stdin:
         method = request['method']
         if method == 'describe':
             interpreter = bool(os.environ.get('ZWASM_INTERPRETER'))
-            response['description'] = {'runtime': 'zwasm-interpreter' if interpreter else 'zwasm-jit', 'runtime_version': lib.wb_version().decode(), 'backend': 'interpreter' if interpreter else 'jit', 'build': 'Zwasm C API source ' + lib.wb_version().decode() + '; native embedding', 'embedding': 'Zwasm C API', 'abis': ['core'], 'scenarios': ['compile', 'instantiate', 'first-call', 'steady'], 'effective_configuration': {'purpose': 'phase-separated decode/native compile, fresh instance, native call timers; cached module and stateless steady instance', 'wasi': 'p3', 'backend': 'forced and checked with zwasm_instance_engine; no fallback', 'linux_data_limit_bytes': str(data_limit)}}
+            response['description'] = {'runtime': 'zwasm-interpreter' if interpreter else 'zwasm-jit', 'runtime_version': lib.wb_version().decode(), 'backend': 'interpreter' if interpreter else 'jit', 'build': 'Zwasm C API source ' + lib.wb_version().decode() + '; native embedding', 'embedding': 'Zwasm C API', 'abis': ['core'], 'scenarios': ['compile', 'instantiate', 'first-call', 'steady'], 'effective_configuration': {'purpose': 'phase-separated decode/native compile, fresh instance, native call timers; cached module and stateless steady instance', 'wasi': 'p3', 'backend': 'forced and checked with zwasm_instance_engine; no fallback', 'linux_data_limit_bytes': str(data_limit), 'sample_boundary_rss_budget_bytes': str(rss_budget)}}
         elif method == 'prepare':
             if session: session.close()
             session = None

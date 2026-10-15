@@ -10,3 +10,10 @@ Set `WASMBENCH_ZWASM_DATA_LIMIT_BYTES` to another byte count, or `0` to disable
 this guard. An existing lower process limit is preserved. This limit affects
 only the sampling adapter, not SDK compilation. Other platforms default to zero
 and do not claim that the Linux allocation limit is enforced.
+
+On macOS, an 8 GiB peak-RSS budget is checked before each sample instead. Set
+`WASMBENCH_ZWASM_RSS_BUDGET_BYTES` to change it, or `0` to disable it (the default
+on Linux). It is recorded as `sample_boundary_rss_budget_bytes`. This is a soft
+budget: one sample can exceed it before the next boundary check. The adapter then
+reports a resource-budget failure without emitting samples for that failed group.
+The check happens outside phase timers and never polls inside a timed batch.

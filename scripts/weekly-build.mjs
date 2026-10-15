@@ -214,7 +214,7 @@ if(engine==='wago') {
  provenance.adapterWorkloadCoverage=await applyWasmEdgeWorkloadCoverage(root);
  await build();
  } else if(engine==='wavm') {
- provenance.sdk=await buildWavmSDK({source,sdk:join(directory,'wavm-sdk'),target:join(directory,'wavm-build'),env,run});
+ provenance.sdk=await buildWavmSDK({source,sdk:join(directory,'wavm-sdk'),target:join(directory,'wavm-build'),harness:root,env,run});
  env.WASMBENCH_WAVM_VERSION=pin.revision;
  await build();
 } else if(['wasm2c','w2c2'].includes(engine)) {

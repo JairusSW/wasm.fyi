@@ -4,6 +4,7 @@ import {availableParallelism} from 'node:os';
 import {digest} from './wasmbench.mjs';
 import {instrumentWamrNativeSize} from './wamr-native-size.mjs';
 import {configureCMakeSource} from './cmake-source.mjs';
+import {privateGlibcLinkFlags} from './private-glibc-link.mjs';
 export async function wamrArchitectureUnavailable(source,configuration,arch=process.arch) {
  if(configuration!=='wamr-fast-jit'||arch==='x64')return null;
  const path=join(source,'core/iwasm/fast-jit/iwasm_fast_jit.cmake'),text=await readFile(path,'utf8');
@@ -20,11 +21,11 @@ export function wamrBuildFlags(configuration,llvmDirectory,featureProposals=fals
  if(featureProposals)flags.push('-DWAMR_BUILD_TAIL_CALL=1','-DWAMR_BUILD_EXTENDED_CONST_EXPR=1');
  return flags;
 }
-export function wamrLLVMCompilerFlags(prefix) {
+export function wamrLLVMCompilerFlags(prefix,env={},platform=process.platform) {
  const quote=value=>"'"+value.replaceAll("'","'\\''")+"'";
  const library=join(prefix,'lib/x86_64-unknown-linux-gnu');
  const singleThread='-DWASM_ORC_JIT_BACKEND_THREAD_NUM=1 -DWASM_ORC_JIT_COMPILE_THREAD_NUM=1';
- const link='-fuse-ld='+quote(join(prefix,'bin/ld.lld'))+' -L'+quote(library)+' '+quote('-Wl,-rpath,'+library);
+ const link=['-fuse-ld='+quote(join(prefix,'bin/ld.lld')),'-L'+quote(library),quote('-Wl,-rpath,'+library),...privateGlibcLinkFlags(env,platform)].join(' ');
  return ['-DCMAKE_C_COMPILER='+join(prefix,'bin/clang'),'-DCMAKE_CXX_COMPILER='+join(prefix,'bin/clang++'),
   '-DCMAKE_CXX_FLAGS='+singleThread+' -stdlib=libc++ -nostdinc++ -isystem '+quote(join(prefix,'include/c++/v1')),
   '-DCMAKE_EXE_LINKER_FLAGS='+link,'-DCMAKE_SHARED_LINKER_FLAGS='+link];
@@ -54,7 +55,7 @@ export async function buildWamrSDK({source,sdk,target,configuration,version,env,
  const compilerPrefix=configuration==='wamr-llvm-jit'&&process.platform==='linux'?(env.WASMFYI_WAMR_CXX_SDK||env.WASMFYI_WAVM_CXX_SDK):null;
  if(compilerPrefix){
   for(const file of ['bin/clang','bin/clang++','bin/ld.lld','include/c++/v1/vector'])if(!await stat(join(compilerPrefix,file)).catch(()=>null))throw Error('WAMR LLVM compiler SDK lacks '+file);
-  flags.push(...wamrLLVMCompilerFlags(resolve(compilerPrefix)));
+  flags.push(...wamrLLVMCompilerFlags(resolve(compilerPrefix),env));
  }
  const measurementPatch=await instrumentWamrNativeSize(source,configuration);
  const llvmLinkPatch=await configureWamrLLVMSharedLink(source,configuration);

@@ -1,6 +1,14 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,writeFile,rm} from 'node:fs/promises';import {join} from 'node:path';import {tmpdir} from 'node:os';
-import {wamrBuildFlags,wamrArchitectureUnavailable} from './lib/wamr-sdk.mjs';
+import {wamrBuildFlags,wamrArchitectureUnavailable,wamrLLVMCompilerFlags} from './lib/wamr-sdk.mjs';
+test('LLVM runtime uses one private glibc for its transitive library dependencies',()=>{
+ const flags=wamrLLVMCompilerFlags('/compiler',{WASMFYI_PRIVATE_GLIBC_LIBRARY_DIR:'/runtime/lib'},'linux');
+ for(const name of ['CMAKE_EXE_LINKER_FLAGS','CMAKE_SHARED_LINKER_FLAGS']){
+  const value=flags.find(flag=>flag.startsWith('-D'+name+'='));
+  assert(value.includes('-Wl,--disable-new-dtags'));assert(value.includes('-Wl,-rpath,/runtime/lib'));assert(value.includes('/runtime/lib/libc.so.6'));
+ }
+ assert(!wamrLLVMCompilerFlags('/compiler').some(flag=>flag.includes('/runtime/lib')));
+});
 test('builds distinct eager backends with compatible feature combinations',()=>{
  const interp=wamrBuildFlags('wamr'),fast=wamrBuildFlags('wamr-fast-jit'),llvm=wamrBuildFlags('wamr-llvm-jit','/llvm/lib/cmake/llvm');
  assert.ok(interp.includes('-DWAMR_BUILD_FAST_INTERP=1'));assert.ok(interp.includes('-DWAMR_BUILD_JIT=0'));
