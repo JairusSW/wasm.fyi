@@ -290,6 +290,12 @@ layer digest before using the local artifact, and record both in the SDK receipt
 Moved `SNAPSHOT` tags cannot replace that dependency. Verified local bridge files
 are reused without downloading the Wasm layer again; the source lock is unchanged.
 
+For ESR115 builds rejected by modern Clang, the opt-in
+`WASMFYI_SPIDERMONKEY_ESR115_MEMBER_FIX=1` corrects the move constructor's
+`rhs.lock` reference to its `rhs.lock_` data member. It applies only to the
+Linux source cohort requiring Rust 1.66.0. SDK receipts retain the original
+and compiled header hashes; unrelated source edits are rejected.
+
 Native-code collectors use Wago's compiled code extent, Wazevo's isolated executable cache segment, Wasmtime's native text, WAVM's relocatable executable sections, Wasmer's optional SDK function-extent getter, V8's complete optimizing-function size diagnostics, SpiderMonkey's `wasmExtractCode`, and transpiler-linked executable sections. They never substitute serialized Wasm, bytecode, JavaScript source, full binary file size, or the engine's entire code heap for native code. Interpreters and embeddings without an attributable native-code getter report `unsupported` with null bytes (`n/a` in the UI).
 
 Pages may contain fewer rows than `limit` to keep responses below the 1 MiB byte ceiling. Follow `nextCursor` until it is null. The call-latency table and history total add the two recorded per-call direction latencies; either missing direction leaves the total unmeasured.

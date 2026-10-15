@@ -5,6 +5,7 @@ import {digest} from './wasmbench.mjs';
 import {availableParallelism} from 'node:os';
 import {nodeBuildPython,nodeBuildEnvironment} from './node-build-python.mjs';
 import {spiderMonkeyRustEnvironment} from './spidermonkey-rust.mjs';
+import {repairSpiderMonkeyESR115} from './spidermonkey-esr115.mjs';
 export function spiderMonkeyBuildEnvironment(env,platform=process.platform) {
  const explicitCompiler=platform==='linux'&&env.WASMFYI_SPIDERMONKEY_CXX;
  let selected=env;
@@ -81,6 +82,7 @@ export async function buildSpiderMonkeySDK({source,target,env,run}) {
  const rustPolicy=await readFile(join(source,'python/mozboot/mozboot/util.py'),'utf8');
  const minimumRust=rustPolicy.match(/^MINIMUM_RUST_VERSION\s*=\s*["']([^"']+)["']/m)?.[1];
  if(env.WASMFYI_SPIDERMONKEY_LEGACY_RUST&&!minimumRust)throw Error('Pinned SpiderMonkey Rust minimum unavailable');
+ const sourceCompatibility=await repairSpiderMonkeyESR115(source,minimumRust,env);
  const bindgenPolicy=await readFile(join(source,'build/moz.configure/bindgen.configure'),'utf8').catch(()=>'');
  const minimumCbindgen=bindgenPolicy.match(/cbindgen_min_version\s*=\s*Version\("([^"]+)"\)/)?.[1];
  const buildEnv=spiderMonkeyCbindgenEnvironment(spiderMonkeyZlibEnvironment(spiderMonkeyLegacyLinkerEnvironment({...spiderMonkeyRustEnvironment(spiderMonkeyBuildEnvironment(env),minimumRust),MOZCONFIG:mozconfig},minimumRust),minimumRust),minimumRust,minimumCbindgen);
@@ -91,5 +93,5 @@ export async function buildSpiderMonkeySDK({source,target,env,run}) {
  const binary=join(object,'dist/bin/js');if(!await stat(binary).catch(()=>null))throw Error('SpiderMonkey source build did not produce its shell');
  await run(binary,['--wasm-compiler=ion','-e','if(!wasmIsSupported())throw Error("WebAssembly disabled")']);
  env.WASMBENCH_SPIDERMONKEY=binary;env.NODE_OPTIONS='';
- return {source,target,binary,binarySha256:digest(await readFile(binary)),flags,python,rustToolchain:buildEnv.RUSTUP_TOOLCHAIN||null,minimumRust,mozconfigSha256:digest(await readFile(mozconfig)),wasmCompiler:'Ion only'};
+ return {source,target,binary,binarySha256:digest(await readFile(binary)),flags,python,rustToolchain:buildEnv.RUSTUP_TOOLCHAIN||null,minimumRust,sourceCompatibility,mozconfigSha256:digest(await readFile(mozconfig)),wasmCompiler:'Ion only'};
 }
