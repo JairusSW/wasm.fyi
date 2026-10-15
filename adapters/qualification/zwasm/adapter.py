@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import sys
+import threading
 import time
 
 
@@ -29,15 +30,64 @@ if rss_budget < 0:
     raise ValueError('Zwasm RSS budget must be nonnegative')
 
 
-def check_rss_budget(limit):
-    if not limit:
-        return
+def peak_rss_bytes():
     import resource
     peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     if sys.platform != 'darwin':
         peak *= 1024
+    return peak
+
+
+def check_rss_budget(limit):
+    if not limit:
+        return
+    peak = peak_rss_bytes()
     if peak > limit:
         raise RuntimeError(f'resource budget exceeded: sampling process peak RSS {peak} bytes exceeds sample-boundary budget {limit} bytes')
+
+
+class RSSBudgetGuard:
+    """Bound a native call that cannot return to the sample-boundary check.
+
+    Sleep while idle; the timer and the runtime do not call the guard. ctypes
+    releases the GIL during native calls. On exhaustion emit one valid error
+    response for the active request, then terminate this sampling process.
+    This is an operator resource limit, not an unsupported-feature verdict.
+    """
+    def __init__(self, limit):
+        if limit <= 0:
+            raise ValueError('active RSS guard requires a positive budget')
+        self.limit = limit
+        self.condition = threading.Condition()
+        self.active = None
+        threading.Thread(target=self.watch, daemon=True, name='zwasm-rss-budget').start()
+
+    def begin(self, request):
+        with self.condition:
+            self.active = (request['id'],)
+            self.condition.notify()
+
+    def reply(self, response):
+        with self.condition:
+            self.active = None
+            print(json.dumps(response), flush=True)
+            self.condition.notify()
+
+    def watch(self):
+        while True:
+            with self.condition:
+                self.condition.wait_for(lambda: self.active is not None)
+                peak = peak_rss_bytes()
+                if peak > self.limit:
+                    reason = f'resource budget exceeded: sampling process peak RSS {peak} bytes exceeds process RSS budget {self.limit} bytes; operator safety limit'
+                    print(json.dumps({'version': 1, 'id': self.active[0], 'status': 'error', 'reason': reason}), flush=True)
+                    # The main thread may still be inside the native allocator.
+                    # Normal teardown cannot safely unwind that in-flight call.
+                    os._exit(70)
+                self.condition.wait(timeout=0.01)
+
+
+rss_guard = RSSBudgetGuard(rss_budget) if rss_budget else None
 
 
 if '--interpreter' in sys.argv[2:]:
@@ -218,11 +268,13 @@ prepared = data = session = None
 for line in sys.stdin:
     request = json.loads(line)
     response = {'version': 1, 'id': request['id']}
+    if rss_guard:
+        rss_guard.begin(request)
     try:
         method = request['method']
         if method == 'describe':
             interpreter = bool(os.environ.get('ZWASM_INTERPRETER'))
-            response['description'] = {'runtime': 'zwasm-interpreter' if interpreter else 'zwasm-jit', 'runtime_version': lib.wb_version().decode(), 'backend': 'interpreter' if interpreter else 'jit', 'build': 'Zwasm C API source ' + lib.wb_version().decode() + '; native embedding', 'embedding': 'Zwasm C API', 'abis': ['core'], 'scenarios': ['compile', 'instantiate', 'first-call', 'steady'], 'effective_configuration': {'purpose': 'phase-separated decode/native compile, fresh instance, native call timers; cached module and stateless steady instance', 'wasi': 'p3', 'backend': 'forced and checked with zwasm_instance_engine; no fallback', 'linux_data_limit_bytes': str(data_limit), 'sample_boundary_rss_budget_bytes': str(rss_budget)}}
+            response['description'] = {'runtime': 'zwasm-interpreter' if interpreter else 'zwasm-jit', 'runtime_version': lib.wb_version().decode(), 'backend': 'interpreter' if interpreter else 'jit', 'build': 'Zwasm C API source ' + lib.wb_version().decode() + '; native embedding', 'embedding': 'Zwasm C API', 'abis': ['core'], 'scenarios': ['compile', 'instantiate', 'first-call', 'steady'], 'effective_configuration': {'purpose': 'phase-separated decode/native compile, fresh instance, native call timers; cached module and stateless steady instance', 'wasi': 'p3', 'backend': 'forced and checked with zwasm_instance_engine; no fallback', 'linux_data_limit_bytes': str(data_limit), 'sample_boundary_rss_budget_bytes': str(rss_budget), 'process_rss_budget_policy': '10ms checks during active requests; protocol error on operator budget exhaustion; no guard thread when disabled'}}
         elif method == 'prepare':
             if session: session.close()
             session = None
@@ -262,4 +314,7 @@ for line in sys.stdin:
         response['status'] = 'ok'
     except Exception as error:
         response.update(status='unsupported' if str(error).startswith('unsupported:') else 'error', reason=str(error))
-    print(json.dumps(response), flush=True)
+    if rss_guard:
+        rss_guard.reply(response)
+    else:
+        print(json.dumps(response), flush=True)

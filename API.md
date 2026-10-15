@@ -296,6 +296,13 @@ Pages may contain fewer rows than `limit` to keep responses below the 1 MiB byte
 
 The UI’s average peak RSS is the arithmetic mean of available compile, instantiate, first-call, and steady peak RSS measurements, with equal weight per measured workload-phase. Missing measurements are omitted. This is not time-averaged process RSS.
 
+Zwasm sampling defaults to an 8 GiB Linux data-allocation limit and an 8 GiB
+macOS process RSS budget. The RSS guard checks active requests every 10 ms,
+including native calls; it sleeps between requests and is absent when disabled.
+Exhaustion returns an explicit operator-resource-limit error before stopping that
+sampling process. This records a failed capture, not unsupported engine support
+or a fabricated latency. The limits are included in the runtime configuration.
+
 Imported measurements are self-contained in SQLite: ordered samples are binary
 BLOBs, metadata is stored in shared database tables, and browsing statistics are
 materialized in the database. JSON captures are ingestion transport only. The

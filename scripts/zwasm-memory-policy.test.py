@@ -1,6 +1,7 @@
 """Run the adapter's actual resource policy in disposable Linux subprocesses."""
 import ast
 import os
+import json
 from pathlib import Path
 import subprocess
 import sys
@@ -30,8 +31,8 @@ class ProtocolDescription(unittest.TestCase):
 
 class SampleBoundaryBudget(unittest.TestCase):
     def test_darwin_bytes_and_linux_kib_are_checked_outside_sampling(self):
-        function = next(node for node in ast.parse(source.read_text()).body if isinstance(node, ast.FunctionDef) and node.name == 'check_rss_budget')
-        snippet = ast.get_source_segment(source.read_text(), function)
+        functions = [node for node in ast.parse(source.read_text()).body if isinstance(node, ast.FunctionDef) and node.name in ['check_rss_budget', 'peak_rss_bytes']]
+        snippet = '\n'.join(ast.get_source_segment(source.read_text(), node) for node in functions)
         for platform, peak in [('darwin', 9 << 30), ('linux', 9 << 20)]:
             namespace = {'sys': SimpleNamespace(platform=platform)}
             exec(snippet, namespace)
@@ -41,6 +42,48 @@ class SampleBoundaryBudget(unittest.TestCase):
                 namespace['check_rss_budget'](10 << 30)
             with patch('resource.getrusage', side_effect=AssertionError('disabled budget must avoid polling')):
                 namespace['check_rss_budget'](0)
+
+
+class ActiveRequestBudget(unittest.TestCase):
+    def run_guard(self, body):
+        nodes = [node for node in ast.parse(source.read_text()).body
+                 if isinstance(node, ast.ClassDef) and node.name == 'RSSBudgetGuard']
+        code = 'import os,json,threading,time\n' + ast.get_source_segment(source.read_text(), nodes[0])
+        return subprocess.run([sys.executable, '-c', code + '\n' + body], capture_output=True, text=True, timeout=5)
+
+    def test_foreign_call_budget_emits_valid_active_request_error_and_exits(self):
+        result = self.run_guard("peak_rss_bytes=lambda: 2048\ng=RSSBudgetGuard(1024)\ng.begin({'id':'native-call-7'})\ntime.sleep(3)")
+        self.assertEqual(result.returncode, 70)
+        response = json.loads(result.stdout)
+        self.assertEqual((response['version'], response['id'], response['status']), (1, 'native-call-7', 'error'))
+        self.assertIn('2048 bytes exceeds process RSS budget 1024 bytes', response['reason'])
+        self.assertIn('operator safety limit', response['reason'])
+        self.assertNotIn('unsupported', response['reason'])
+        self.assertEqual(result.stderr, '')
+
+    def test_completed_response_is_not_followed_by_an_idle_budget_error(self):
+        result = self.run_guard("peak_rss_bytes=lambda: 0\ng=RSSBudgetGuard(1024)\ng.begin({'id':'one'})\ng.reply({'version':1,'id':'one','status':'ok'})\npeak_rss_bytes=lambda: 2048\ntime.sleep(.04)")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout), {'version': 1, 'id': 'one', 'status': 'ok'})
+
+    def test_idle_guard_does_not_poll_process_memory(self):
+        result = self.run_guard("def peak_rss_bytes():\n raise AssertionError('idle guard must sleep')\ng=RSSBudgetGuard(1024)\ntime.sleep(.04)")
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, '')
+        self.assertEqual(result.stderr, '')
+
+    def test_next_request_keeps_its_own_protocol_id(self):
+        result = self.run_guard("peak_rss_bytes=lambda: 0\ng=RSSBudgetGuard(1024)\ng.begin({'id':'old'})\ng.reply({'version':1,'id':'old','status':'ok'})\npeak_rss_bytes=lambda: 2048\ng.begin({'id':'new'})\ntime.sleep(3)")
+        self.assertEqual(result.returncode, 70)
+        responses = [json.loads(line) for line in result.stdout.splitlines()]
+        self.assertEqual([(r['id'], r['status']) for r in responses], [('old', 'ok'), ('new', 'error')])
+
+    def test_zero_budget_does_not_create_a_watchdog(self):
+        assignment = next(node for node in ast.parse(source.read_text()).body if isinstance(node, ast.Assign)
+                          and any(isinstance(t, ast.Name) and t.id == 'rss_guard' for t in node.targets))
+        expression = ast.Expression(assignment.value)
+        namespace = {'rss_budget': 0, 'RSSBudgetGuard': lambda _: self.fail('disabled budget created a guard')}
+        self.assertIsNone(eval(compile(expression, str(source), 'eval'), namespace))
 
 @unittest.skipUnless(sys.platform.startswith('linux'), 'Linux allocation limits')
 class MemoryPolicy(unittest.TestCase):
