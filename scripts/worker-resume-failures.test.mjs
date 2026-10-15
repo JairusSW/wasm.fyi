@@ -8,7 +8,7 @@ import {digest} from './lib/wasmbench.mjs';
 import {workloadContract} from './lib/workload-contract.mjs';
 import {historyIntegrationFailure} from './lib/history-completion-audit.mjs';
 
-async function resume(statuses,note){
+async function resume(statuses,note,retainRecordedSamples=false){
  const root=await mkdtemp(join(tmpdir(),'worker-resume-'));
  try{
   const directory=join(root,'job'),output=join(root,'captures'),cache=join(root,'.wasmbench/corpus-cache');
@@ -21,9 +21,11 @@ async function resume(statuses,note){
   await writeFile(controller,'#!/bin/sh\ntouch '+marker+'\nexit 99\n',{mode:0o755});
   const job={id:'fixture',engine:'fixture',controller,harness:root,source};
   const plan={corpusRoot:root,captureDirectory:output,machine:'fixture',platformSpecs:{cores:1,memoryBytes:1},workloads:[{id:workload.id,sha256:sha}],collection:{samples:1,adaptiveSampling:false},jobs:[job]};
+  if(retainRecordedSamples){job.historical=true;plan.anchor='2026-10-15T00:00:00Z';plan.cutoff='2026-10-01T00:00:00Z';Object.assign(plan.collection,{samples:5,adaptiveSampling:{groupSize:5},retainRecordedSamples:true});}
   await writeFile(join(directory,'plan.json'),JSON.stringify(plan));
   const phases=['compile','instantiate','first-call','steady'];
   const capture={capturedAt:'2026-10-09T01:00:00Z',source,results:phases.map((phase,i)=>({workload:workload.id,phase,engine:'fixture',version:source.revision,artifactSha256:sha,contractSha256:workloadContract(workload),latencyStatus:statuses[i],timingSamples:statuses[i]==='ok'?1:0,latencyNs:statuses[i]==='ok'?1:null}))};
+  if(retainRecordedSamples)for(const row of capture.results)if(row.latencyStatus==='ok')Object.assign(row,{timingSamples:3,samplesNs:[1,2,3]});
   const key=job.id+'-'+digest(Buffer.from(workload.id)).slice(0,16),file=join(output,key+'.json'),original=JSON.stringify(capture);
   await writeFile(file,original);
   if(note){await mkdir(join(directory,'failure-notes'));await writeFile(join(directory,'failure-notes',key+'.json'),JSON.stringify({capturedAt:capture.capturedAt,source,engine:'fixture',workload:workload.id,kind:'failed-trials',...note}));}
@@ -36,6 +38,10 @@ async function resume(statuses,note){
   return JSON.parse(await readFile(join(directory,'status.json')));
  }finally{await rm(root,{recursive:true,force:true});}
 }
+test('historical worker keeps imported legacy vectors byte-for-byte without launching a controller',{timeout:10000},async()=>{
+ const status=await resume(['ok','ok','ok','ok'],null,true);
+ assert.equal(status.status,'completed');assert.equal(status.completed,1);assert.deepEqual(status.errors,[]);
+});
 test('resumed worker keeps an earlier integration failure visible without running its capture again',{timeout:10000},async()=>{
  const status=await resume(['failed','failed','failed','failed'],{reason:'Invalid request JSON',failures:[{phase:'compile',reason:'Invalid request JSON'}]});
  assert.equal(status.status,'completed-with-errors');assert.equal(status.completed,1);assert.equal(status.errors.length,1);assert(historyIntegrationFailure(status.errors[0]));

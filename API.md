@@ -202,8 +202,15 @@ Feature compatibility probes use `sampling.method: "feature-compatibility-v1"`:
 exactly one retained sample, group size and cap of one, zero warmups, no trimmed
 prefix, and `stopReason: "fixed-sample"`. This policy is accepted only for
 `features/` workloads; feature performance uses the adaptive policy above.
-Older captures retain their original sampling policy. The callback loop is
-normalized per boundary call. RSS uses the phase's kernel high-water mark when
+Older captures retain their original sampling policy. A historical campaign can
+set `collection.retainRecordedSamples: true` to reuse imported measurements for
+an identical pinned source and workload contract, including older sample counts.
+The worker and publisher retain the original vectors and sampling metadata;
+this option does not change the sampling policy of new captures. Missing or
+invalid vectors and feature correctness probes cannot substitute for performance
+measurements. Declared adaptive policies still require their original valid counts.
+
+The callback loop is normalized per boundary call. RSS uses the phase's kernel high-water mark when
 available, with one RSS-only process pass per phase as the portable fallback;
 those fallback timings are discarded. Transpiler compilation uses the maximum kernel-accounted translator/compiler child peak, including waited-for descendants, rather than the adapter peak or a sum. The maximum across measured trials is retained. Older transpiler captures may contain adapter-process RSS and need recollection for this definition; saved historical values are not rewritten. Compilation latency includes translation and native compilation/linking. Code size reuses the compiled transpiler artifact outside latency timers when available; otherwise it uses one cold compile pass; full images include embedded data. `codeKind` distinguishes `native-image` from `engine-reported`; unavailable code
 has a null kind and displays `n/a`. Linked transpiler code sizes include executable bridge/runtime sections; they are not guest-only instruction counts. JavaScript native code is `n/a` when the embedding cannot expose attributable code. Old records without a definition return `unknown`, never an

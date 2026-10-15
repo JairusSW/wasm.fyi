@@ -69,7 +69,7 @@ for(const job of plan.jobs){
   const existing=await readFile(file,'utf8').then(JSON.parse,()=>null);
   const repairPhases=selectRepairPhases(existing,workload,job);
   if(repairPhases&&job.unavailableReason)throw Error('Cannot repair phases without a runnable adapter');
-  if(repairPhases?.length===0||!repairPhases&&!job.forceCapture&&reusableCapture(existing,workload,job.source,plan.collection.samples,plan.collection.adaptiveSampling)){
+  if(repairPhases?.length===0||!repairPhases&&!job.forceCapture&&reusableCapture(existing,workload,job.source,plan.collection.samples,plan.collection.adaptiveSampling,job.historical&&plan.collection.retainRecordedSamples===true)){
    if(existing?.results.some(row=>row.latencyStatus==='failed')){
     let note=null;
     for(const notes of [join(directory,'failure-notes'),join(output,'..','failure-notes')]){

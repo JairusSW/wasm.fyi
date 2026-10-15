@@ -35,5 +35,26 @@ class PublicationPinTests(unittest.TestCase):
         ]}
         self.assertEqual(publisher.source_pin_allowlist(plan), {('legacy', 'b' * 40, 'week')})
 
+
+class RecordedSamplesTests(unittest.TestCase):
+    def test_legacy_count_needs_explicit_opt_in_and_retains_policy(self):
+        row = {'workload': 'applications/audio', 'timingSamples': 3, 'samplesNs': [1, 2, 3]}
+        self.assertFalse(publisher.valid_sample_count(row, 5, True))
+        self.assertTrue(publisher.valid_sample_count(row, 5, True, True))
+        self.assertNotIn('sampling', row)
+
+    def test_reuse_rejects_missing_invalid_or_fabricated_vectors(self):
+        for values in [[], [1, 2], [1, 2, float('nan')], [1, 2, -1], [1, 2, True]]:
+            row = {'workload': 'applications/audio', 'timingSamples': 3, 'samplesNs': values}
+            self.assertFalse(publisher.valid_sample_count(row, 5, True, True))
+        row = {'workload': 'features/tiny', 'timingSamples': 3, 'samplesNs': [1, 2, 3]}
+        self.assertFalse(publisher.valid_sample_count(row, 5, True, True))
+
+    def test_declared_adaptive_policy_is_never_relaxed(self):
+        row = {'workload': 'applications/audio', 'phase': 'steady', 'timingSamples': 3,
+               'samplesNs': [1, 2, 3], 'sampling': {'method': 'same-process-stability-v1',
+                   'groupSize': 5, 'maxSamples': 25, 'warmup': 0}}
+        self.assertFalse(publisher.valid_sample_count(row, 5, True, True))
+
 if __name__ == '__main__':
     unittest.main()

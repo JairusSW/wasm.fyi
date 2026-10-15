@@ -75,3 +75,23 @@ test('resume reuses new phase caps and legacy captures without remeasurement',()
   assert.equal(reusableCapture(capture,workload,source,5,true),false);
  }
 });
+
+test('explicit historical reuse preserves old sample counts and policy without relabeling them',()=>{
+ const source={asOf:'2026-10-04T10:00:00Z',repository:'x/y',kind:'snapshot',revision:'a'.repeat(40),ref:'main@aaaaaaaa'};
+ const workload={id:'application',sha256:'b'.repeat(64)};
+ const capture={source,results:['compile','instantiate','first-call','steady'].map(phase=>({phase,version:source.revision,artifactSha256:workload.sha256,contractSha256:workloadContract(workload),latencyStatus:'ok',timingSamples:3,samplesNs:[10,20,30]}))};
+ const before=structuredClone(capture);
+ assert.equal(reusableCapture(capture,workload,source,5,{groupSize:5}),false);
+ assert.equal(reusableCapture(capture,workload,source,5,{groupSize:5},true),true);
+ assert.deepEqual(capture,before);
+ for(const values of [[],[10,20],[10,20,NaN],[10,20,-1]]){
+  const broken=structuredClone(capture);broken.results[0].samplesNs=values;
+  assert.equal(reusableCapture(broken,workload,source,5,true,true),false);
+ }
+ const compatibility=structuredClone(capture);compatibility.results[0].sampling={method:'feature-compatibility-v1'};
+ assert.equal(reusableCapture(compatibility,workload,source,5,true,true),false);
+ const invalidAdaptive=structuredClone(capture);invalidAdaptive.results[0].sampling={method:'same-process-stability-v1',groupSize:5,maxSamples:25,warmup:0};
+ assert.equal(reusableCapture(invalidAdaptive,workload,source,5,true,true),false);
+ assert.equal(reusableCapture(capture,{...workload,sha256:'c'.repeat(64)},source,5,true,true),false);
+ assert.equal(reusableCapture(capture,workload,{...source,revision:'c'.repeat(40)},5,true,true),false);
+});

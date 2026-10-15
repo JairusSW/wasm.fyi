@@ -26,9 +26,18 @@ export function nearestCommit(commits,target,{cutoff,anchor,sourceCutoff=cutoff}
  return eligible.sort((a,b)=>{const at=Date.parse(a.commit?.committer?.date||a.commit?.author?.date),bt=Date.parse(b.commit?.committer?.date||b.commit?.author?.date);return Math.abs(at-time)-Math.abs(bt-time)||at-bt})[0];
 }
 export function everyVersion(releases,cutoff,anchor){return releases.filter(r=>!r.draft&&r.tag_name&&Date.parse(r.published_at)>=Date.parse(cutoff)&&Date.parse(r.published_at)<=Date.parse(anchor)).sort((a,b)=>Date.parse(b.published_at)-Date.parse(a.published_at));}
-function matchesSampling(row,policy){
- if(!policy||row.latencyStatus!=='ok')return true;
+function matchesSampling(row,policy,retainRecordedSamples){
+ if(row.latencyStatus!=='ok')return true;
+ if(retainRecordedSamples){
+  if(typeof row.version!=='string'||!row.version.length||!Number.isSafeInteger(row.timingSamples)||row.timingSamples<1||row.timingSamples>4096||!Array.isArray(row.samplesNs)||row.samplesNs.length!==row.timingSamples||row.samplesNs.some(n=>!Number.isFinite(n)||n<0))return false;
+  if(!row.sampling)return !row.workload?.startsWith('features/');
+  // A declared adaptive policy must satisfy its original rules even on reuse.
+  policy=true;
+ }
+ if(!policy)return true;
  const metadata=row.sampling;
  return metadata?.method==='same-process-stability-v1'&&metadata.groupSize===5&&(metadata.maxSamples===35||metadata.maxSamples===(['compile','instantiate'].includes(row.phase)?10:25))&&metadata.warmup===0&&row.timingSamples>=5&&row.timingSamples<=metadata.maxSamples&&row.timingSamples%5===0&&Array.isArray(row.samplesNs)&&row.samplesNs.length===row.timingSamples;
 }
-export function reusableCapture(capture,workload,source,samples,policy){return !!capture&&capture.source?.asOf===source.asOf&&capture.source?.repository===source.repository&&capture.source?.kind===source.kind&&capture.source?.ref===source.ref&&capture.source?.dateBasis===source.dateBasis&&(source.kind==='current'||capture.source?.revision===source.revision)&&capture.results?.length===4&&['compile','instantiate','first-call','steady'].every(phase=>capture.results.some(r=>r.phase===phase&&r.version!=='unknown'&&r.artifactSha256===workload.sha256&&r.contractSha256===workloadContract(workload)&&matchesSampling(r,policy)&&(r.latencyStatus!=='ok'||r.timingSamples>=samples)));}
+// Historical imports can retain an older sampling policy verbatim. This is an
+// explicit reuse option, not a claim that old captures satisfy today's policy.
+export function reusableCapture(capture,workload,source,samples,policy,retainRecordedSamples=false){return !!capture&&(!retainRecordedSamples||/^[a-f0-9]{40}$/.test(source.revision||''))&&capture.source?.asOf===source.asOf&&capture.source?.repository===source.repository&&capture.source?.kind===source.kind&&capture.source?.ref===source.ref&&capture.source?.dateBasis===source.dateBasis&&(source.kind==='current'||capture.source?.revision===source.revision)&&capture.results?.length===4&&['compile','instantiate','first-call','steady'].every(phase=>capture.results.some(r=>r.phase===phase&&r.version!=='unknown'&&r.artifactSha256===workload.sha256&&r.contractSha256===workloadContract(workload)&&matchesSampling(r,policy,retainRecordedSamples)&&(r.latencyStatus!=='ok'||r.timingSamples>=(retainRecordedSamples?1:samples))));}

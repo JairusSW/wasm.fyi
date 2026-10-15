@@ -3,6 +3,7 @@ import argparse
 import datetime
 import hashlib
 import json
+import math
 import os
 import pathlib
 import re
@@ -128,9 +129,12 @@ def ensure_ssh_master(host, control_path, state):
     return pid
 
 
-def valid_sample_count(row, expected, adaptive=None):
+def valid_sample_count(row, expected, adaptive=None, retain_recorded=False):
     n = row.get("timingSamples")
-    if not isinstance(n, int) or isinstance(n, bool) or len(row.get("samplesNs", [])) != n:
+    samples = row.get("samplesNs", [])
+    if (not isinstance(n, int) or isinstance(n, bool) or not isinstance(samples, list)
+            or len(samples) != n or any(not isinstance(v, (int, float)) or isinstance(v, bool)
+                                      or not math.isfinite(v) or v < 0 for v in samples)):
         return False
     if row.get("sampling", {}).get("method") == "feature-compatibility-v1":
         policy = row["sampling"]
@@ -147,6 +151,11 @@ def valid_sample_count(row, expected, adaptive=None):
                 and cap in (phase_cap, 35) and row.get("phase") in ("compile", "instantiate", "first-call", "steady")
                 and 5 <= n <= cap and n % 5 == 0
                 and policy.get("groupSize") == 5 and policy.get("warmup") == 0)
+    if retain_recorded:
+        # Older DB captures keep their original vector count and absent policy;
+        # never manufacture current adaptive metadata or admit correctness probes.
+        return (not row.get("sampling") and 0 < n <= 4096
+                and not str(row.get("workload", "")).startswith("features/"))
     if adaptive is True or isinstance(adaptive, dict) and adaptive.get("maxSamples") in (10, 25, 35):
         return False
     if adaptive:
@@ -244,7 +253,9 @@ def main():
     campaign = args.root / args.campaign
     plan = json.loads((campaign / "source-plan.json").read_text())
     template_path = campaign / "collection-template.json"
-    adaptive = json.loads(template_path.read_text()).get("collection", {}).get("adaptiveSampling") if template_path.exists() else None
+    collection = json.loads(template_path.read_text()).get("collection", {}) if template_path.exists() else {}
+    adaptive = collection.get("adaptiveSampling")
+    retain_recorded = collection.get("retainRecordedSamples") is True
     allowed = source_pin_allowlist(plan, *(json.loads(path.read_text()) for path in args.extra_source_plan))
     hub = args.state / "hub"
     while True:
@@ -307,8 +318,10 @@ def main():
                 # Frozen fixed-sample plans retain their recipe. New adaptive
                 # main runs retain ordered same-process groups under their declared phase cap.
                 expected = 15 if (args.root / "features-seven-20261008" in path.parents or args.state / "hub-features" in path.parents) else 5
+                recorded = (retain_recorded and source.get("kind") in ("release", "snapshot")
+                            and bool(re.fullmatch(r"[a-f0-9]{40}", source.get("revision", ""))))
                 if any(row.get("latencyStatus") == "ok" and
-                       not valid_sample_count(row, expected, adaptive if expected == 5 else None)
+                       not valid_sample_count(row, expected, adaptive if expected == 5 else None, recorded)
                        for row in rows):
                     raise ValueError("missing retained timing samples")
                 request = urllib.request.Request(
