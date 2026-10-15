@@ -2,13 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {withEndiveTimingCodeSize} from './lib/endive-timing-code.mjs';
+import {withEndiveLegacyNativeAPI} from './lib/endive-legacy-api.mjs';
 import {endiveAdapterSource} from './lib/endive-sdk.mjs';
 
 test('SDK builder pins the version and enables timing code capture only for Redline',()=>{
  const source=readFileSync(new URL('../adapters/qualification/EndiveAdapter.java',import.meta.url),'utf8');
  const version='qualified-source-revision';
  const pinned=source.replaceAll('3c6d9cbdc9e96671f2526604d95ecd4ecfaf374c',version);
- assert.equal(endiveAdapterSource(source,version,'endive-redline'),withEndiveTimingCodeSize(pinned));
+ assert.equal(endiveAdapterSource(source,version,'endive-redline'),withEndiveLegacyNativeAPI(withEndiveTimingCodeSize(pinned)));
  for(const configuration of ['endive-interpreter','endive-jit'])assert.equal(endiveAdapterSource(source,version,configuration),pinned);
 });
 

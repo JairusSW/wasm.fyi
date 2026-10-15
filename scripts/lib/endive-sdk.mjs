@@ -4,6 +4,7 @@ import {availableParallelism} from 'node:os';
 import {digest,site} from './wasmbench.mjs';
 import {withEndiveTimingCodeSize} from './endive-timing-code.mjs';
 import {withEndiveLegacyNativeAPI} from './endive-legacy-api.mjs';
+import {ensureEndiveBridge} from './endive-bridge.mjs';
 export function endiveAdapterSource(source,version,configuration){
  const pinned=source.replaceAll('3c6d9cbdc9e96671f2526604d95ecd4ecfaf374c',version);
  return configuration==='endive-redline'?withEndiveLegacyNativeAPI(withEndiveTimingCodeSize(pinned)):pinned;
@@ -35,7 +36,10 @@ export async function buildEndiveSDK({source,root,version,configuration,env,run}
  const modules=['wasm','runtime','compiler'];
  if(configuration==='endive-redline')modules.push('redline/compiler','redline/runner-jffi');
  for(const module of modules)if(!await stat(join(source,module,'pom.xml')).catch(()=>null))throw Error('Pinned Endive source lacks required SDK module: '+module);
- await run('bash',[join(source,'mvnw'),'-B','-T',String(env.WASMFYI_BUILD_JOBS||availableParallelism()),'-pl',modules.join(','),'-am','-Dmaven.test.skip=true','-Dcheckstyle.skip=true','-Dspotless.skip=true','-Dmdep.analyze.skip=true','install'],{cwd:source});
+ // Resolve the source's immutable lock, since historical SNAPSHOT tags move.
+ // Skip Inlay's tag lookup only after verifying both the manifest and Wasm.
+ const bridge=configuration==='endive-redline'?await ensureEndiveBridge({source,env}):null;
+ await run('bash',[join(source,'mvnw'),'-B','-T',String(env.WASMFYI_BUILD_JOBS||availableParallelism()),'-pl',modules.join(','),'-am','-Dmaven.test.skip=true','-Dcheckstyle.skip=true','-Dspotless.skip=true','-Dmdep.analyze.skip=true',...(bridge?['-Dinlay.skip=true']:[]),'install'],{cwd:source});
  const sdk=join(root,'endive-sdk'),classes=join(root,'endive-classes');await mkdir(sdk,{recursive:true});await mkdir(classes,{recursive:true});
  const jars=[];
  const collect=async(directory)=>{
@@ -57,5 +61,5 @@ export async function buildEndiveSDK({source,root,version,configuration,env,run}
  const adapter=endiveAdapterSource(await readFile(join(site,'adapters/qualification/EndiveAdapter.java'),'utf8'),version,configuration);
  const path=join(root,'EndiveAdapter.java');await writeFile(path,adapter);
  await compileEndiveAdapter({java,sdk,classes,path,run});
- return {source,version,java,configuration,jffi,adapterSha256:digest(Buffer.from(adapter)),libraries:await Promise.all((await readdir(sdk)).filter(name=>name.endsWith('.jar')).map(async name=>({name,sha256:digest(await readFile(join(sdk,name)))}))),nativeCodePolicy:configuration==='endive-redline'?'NativeCode.image executable image':'JVM does not expose artifact-attributed native machine code; n/a'};
+ return {source,version,java,configuration,jffi,bridge,adapterSha256:digest(Buffer.from(adapter)),libraries:await Promise.all((await readdir(sdk)).filter(name=>name.endsWith('.jar')).map(async name=>({name,sha256:digest(await readFile(join(sdk,name)))}))),nativeCodePolicy:configuration==='endive-redline'?'NativeCode.image executable image':'JVM does not expose artifact-attributed native machine code; n/a'};
 }
