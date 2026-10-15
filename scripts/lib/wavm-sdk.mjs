@@ -1,4 +1,4 @@
-import {readFile,mkdir,cp,readdir,stat} from 'node:fs/promises';
+import {readFile,writeFile,mkdir,cp,readdir,stat} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {homedir,availableParallelism} from 'node:os';
 import {digest} from './wasmbench.mjs';
@@ -16,7 +16,7 @@ export async function configureWavmSource(source,target,flags,run) {
  if(!await matches())await configure();
  if(!await matches())throw Error('WAVM CMake cache discarded required compiler/link policy');
 }
-export async function buildWavmSDK({source,sdk,target,env,run}) {
+export async function buildWavmSDK({source,sdk,target,harness,env,run}) {
  const prefixes=[env.WASMBENCH_WAVM_LLVM_PREFIX,'/opt/homebrew/opt/llvm@20',join(homedir(),'.cache/wasm-fyi/toolchains/llvm-20.1.8'),'/usr/lib/llvm-20'].filter(Boolean);
  let llvmDirectory;
  for(const prefix of prefixes)if(await stat(join(prefix,'lib/cmake/llvm/LLVMConfig.cmake')).catch(()=>null)){llvmDirectory=join(prefix,'lib/cmake/llvm');break;}
@@ -31,6 +31,7 @@ export async function buildWavmSDK({source,sdk,target,env,run}) {
  if(process.platform==='linux'){
   const prefix=resolve(llvmDirectory,'../../..'),cxxPrefix=env.WASMFYI_WAVM_CXX_SDK?resolve(env.WASMFYI_WAVM_CXX_SDK):prefix,cxxLib=join(cxxPrefix,'lib/x86_64-unknown-linux-gnu');
   env.WASMBENCH_WAVM_CXX_SDK=cxxPrefix;
+  env.WASMBENCH_WAVM_CXX_STDLIB=env.WASMFYI_WAVM_CXX_STDLIB||'libc++';
   const stdlib=wavmCxxFlags(env,cxxPrefix,prefix);
   flags.push('-DCMAKE_C_COMPILER='+join(cxxPrefix,'bin/clang'),'-DCMAKE_CXX_COMPILER='+join(cxxPrefix,'bin/clang++'),'-DCMAKE_CXX_FLAGS='+stdlib,'-DCMAKE_EXE_LINKER_FLAGS=-L'+cxxLib+' -Wl,-rpath,'+cxxLib,'-DCMAKE_SHARED_LINKER_FLAGS=-L'+cxxLib+' -fuse-ld='+join(prefix,'bin/ld.lld')+' -Wl,-rpath,'+cxxLib+' -Wl,--no-undefined '+privateGlibcLinkFlags(env).join(' '));
  }
@@ -44,8 +45,22 @@ export async function buildWavmSDK({source,sdk,target,env,run}) {
  if(!libraries.length){libraryDirectory=join(target,'lib');libraries=(await readdir(libraryDirectory)).filter(name=>/^libWAVM.*\.(?:so|dylib)(?:\.[\d.]+)?$/.test(name));}
  if(!libraries.length)throw Error('WAVM source build did not produce its shared library');
  for(const name of libraries)await cp(join(libraryDirectory,name),join(sdk,'lib',name),{dereference:true});
+ let adapterBuildScriptSha256;
+ if(process.platform==='linux'&&harness){
+  const path=join(harness,'adapters/native/build.rs'),before=await readFile(path,'utf8'),after=wavmAdapterABI(before,env.WASMBENCH_WAVM_CXX_STDLIB);
+  if(after!==before)await writeFile(path,after);
+  adapterBuildScriptSha256=digest(Buffer.from(after));
+ }
  env.WASMBENCH_WAVM_SDK=sdk;
- return {source,sdk,flags,llvmDirectory,libraries:await Promise.all(libraries.map(async name=>({name,sha256:digest(await readFile(join(sdk,'lib',name)))})))};
+ return {source,sdk,flags,llvmDirectory,adapterCxxStdlib:env.WASMBENCH_WAVM_CXX_STDLIB,adapterBuildScriptSha256,libraries:await Promise.all(libraries.map(async name=>({name,sha256:digest(await readFile(join(sdk,'lib',name)))})))};
+}
+export function wavmAdapterABI(source,stdlib){
+ if(!['libc++','libstdc++'].includes(stdlib))throw Error('Invalid WAVM C++ standard library');
+ const statement=selected=>'build.compiler(sdk.join("bin/clang++")).flag("-stdlib='+selected+'").cpp_link_stdlib("'+(selected==='libc++'?'c++':'stdc++')+'");';
+ if(source.includes(statement(stdlib)))return source;
+ const before=statement(stdlib==='libc++'?'libstdc++':'libc++');
+ if(!source.includes(before))throw Error('WAVM adapter C++ ABI seam changed');
+ return source.replace(before,statement(stdlib));
 }
 // Match the C++ ABI used to build LLVM itself. Official LLVM downloads use
 // libc++; WAVM's own LLVM build can use the host libstdc++ instead.
