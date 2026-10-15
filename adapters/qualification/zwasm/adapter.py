@@ -205,7 +205,7 @@ for line in sys.stdin:
         method = request['method']
         if method == 'describe':
             interpreter = bool(os.environ.get('ZWASM_INTERPRETER'))
-            response['description'] = {'runtime': 'zwasm-interpreter' if interpreter else 'zwasm-jit', 'runtime_version': lib.wb_version().decode(), 'backend': 'interpreter' if interpreter else 'jit', 'build': 'Zwasm C API source ' + lib.wb_version().decode() + '; native embedding', 'embedding': 'Zwasm C API', 'abis': ['core'], 'scenarios': ['compile', 'instantiate', 'first-call', 'steady'], 'effective_configuration': {'purpose': 'phase-separated decode/native compile, fresh instance, native call timers; cached module and stateless steady instance', 'wasi': 'p3', 'backend': 'forced and checked with zwasm_instance_engine; no fallback', 'linux_data_limit_bytes': data_limit}}
+            response['description'] = {'runtime': 'zwasm-interpreter' if interpreter else 'zwasm-jit', 'runtime_version': lib.wb_version().decode(), 'backend': 'interpreter' if interpreter else 'jit', 'build': 'Zwasm C API source ' + lib.wb_version().decode() + '; native embedding', 'embedding': 'Zwasm C API', 'abis': ['core'], 'scenarios': ['compile', 'instantiate', 'first-call', 'steady'], 'effective_configuration': {'purpose': 'phase-separated decode/native compile, fresh instance, native call timers; cached module and stateless steady instance', 'wasi': 'p3', 'backend': 'forced and checked with zwasm_instance_engine; no fallback', 'linux_data_limit_bytes': str(data_limit)}}
         elif method == 'prepare':
             if session: session.close()
             session = None
