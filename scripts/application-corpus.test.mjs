@@ -58,8 +58,8 @@ test('explicit upstream subsets do not accidentally start the full application s
 });
 test('all prepared contracts have categories; probes sort last and counts never imply support',async()=>{
   const catalog=JSON.parse(await readFile(join(site,'corpora/catalog.json')));
-  assert.equal(catalog.workloads.length,166);assert.equal(catalog.categories.length,27);
-  assert.equal(catalog.readyContracts,166);
+  assert.equal(catalog.workloads.length,145);assert.equal(catalog.categories.length,27);
+  assert.equal(catalog.readyContracts,145);
   assert(catalog.workloads.filter(w=>w.status==='adapter-needed').every(w=>w.reason&&w.oracle.kind==='unsupported'));
   assert(catalog.workloads.every(w=>!w.id.startsWith('wago/')));
   const ws=await applicationWorkloads('corpora/applications/manifest.json');
@@ -67,7 +67,14 @@ test('all prepared contracts have categories; probes sort last and counts never 
   const sorted=[{id:'features/core-num/test',group:'Features'},{id:ws[0].id,group:workloadCategory(ws[0])}].sort(compareWorkloads);
   assert(sorted.at(-1).id.startsWith('features/'));
   assert.equal(new Set(catalog.workloads.map(w=>w.algorithm)).size,catalog.workloads.length);
-  assert(catalog.categories.every(c=>c.contracts>=6&&c.contracts<=9));
+  assert.equal(catalog.categories.reduce((n,c)=>n+c.contracts,0),145);
+  const settings=JSON.parse(await readFile(join(site,'wasmbench.config.json')));
+  const active=new Set(settings.corpus.ids);
+  assert(catalog.workloads.filter(w=>w.contractId.startsWith('wago/')).every(w=>active.has(w.contractId.split('/')[1])));
+  const selection=JSON.parse(await readFile(join(site,settings.corpus.selection)));
+  const expected=[...selection.workloads.filter(w=>active.has(w.id.split('/')[1])),...ws.map(w=>w.provenance)];
+  const represented=catalog.workloads.map(w=>({id:w.contractId,provenance:{algorithm:w.algorithm,category:w.category}}));
+  assert.equal([...algorithmCoverage(represented,{expected}).values()].reduce((n,group)=>n+group.length,0),145);
   assert(ws.every(w=>!/^applications\/.+\/\d+$/.test(w.id)));
 });
 
@@ -94,4 +101,13 @@ test('curated upstream imports retain one selected export per algorithm',async()
     if(saved===undefined)delete process.env.WASMBENCH_CORPUS_IDS;else process.env.WASMBENCH_CORPUS_IDS=saved;
     await rm(root,{recursive:true,force:true});
   }
+});
+
+test('explicit active coverage rejects missing, padded or reclassified algorithms after retirements',()=>{
+ const workloads=Array.from({length:3},(_,i)=>({id:`applications/a${i}`,provenance:{algorithm:`a${i}`,category:'Language runtimes'}}));
+ const expected=workloads.map(w=>w.provenance);
+ assert.equal(algorithmCoverage(workloads,{expected}).get('Language runtimes').length,3);
+ assert.throws(()=>algorithmCoverage(workloads.slice(1),{expected}),/Configured algorithm inventory differs/);
+ assert.throws(()=>algorithmCoverage([...workloads,{id:'applications/extra',provenance:{algorithm:'extra',category:'Language runtimes'}}],{expected}),/Configured algorithm inventory differs/);
+ assert.throws(()=>algorithmCoverage([{...workloads[0],provenance:{...workloads[0].provenance,category:'Other'}},...workloads.slice(1)],{expected}),/Configured algorithm\/category mismatch/);
 });

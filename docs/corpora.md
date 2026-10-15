@@ -1,6 +1,6 @@
 # Application corpus
 
-The configured corpus contains **70 curated upstream workloads and 96 original CPU kernels: 166 distinct algorithms across 27 categories**, with 6–7 in each category. Every algorithm has one representative input. Larger input sizes, scalar/SIMD variants and repeated exports do not count as additional workloads. All selected contracts are importable; that does not mean every engine has passed them. Feature probes and official conformance suites remain separate from application execution averages.
+The configured corpus contains **43 curated upstream workloads and 102 original CPU kernels: 145 distinct algorithms across 27 categories**. Every algorithm has one representative input. Larger input sizes, scalar/SIMD variants and repeated exports do not count as additional workloads. All selected contracts are importable; that does not mean every engine has passed them. Feature probes and official conformance suites remain separate from application execution averages.
 
 The website lists prepared workloads without invented timings. Overnight collection supplies real measurements under matching artifact IDs and digests. The active selection filters application views and their aggregate cohorts; archived evidence remains intact.
 ## Coverage
@@ -11,35 +11,35 @@ The website lists prepared workloads without invented timings. Overnight collect
 | Audio | 6 | 6 |
 | Bioinformatics | 6 | 6 |
 | Calls & memory | 7 | 7 |
-| Compilers & development tools | 6 | 6 |
-| Compression | 7 | 7 |
+| Compilers & development tools | 3 | 3 |
+| Compression | 5 | 5 |
 | Computer vision | 6 | 6 |
-| Databases & analytics | 6 | 6 |
+| Databases & analytics | 5 | 5 |
 | Documents & layout | 6 | 6 |
-| Files & directories | 6 | 6 |
+| Files & directories | 5 | 5 |
 | Games & physics | 6 | 6 |
 | Geospatial | 6 | 6 |
 | Graphics & images | 6 | 6 |
-| Hardware design | 6 | 6 |
-| Hashing & cryptography | 7 | 7 |
+| Hardware design | 2 | 2 |
+| Hashing & cryptography | 6 | 6 |
 | Image editing | 6 | 6 |
-| Integer & graph algorithms | 6 | 6 |
-| JSON & serialization | 6 | 6 |
-| Language runtimes | 6 | 6 |
+| Integer & graph algorithms | 5 | 5 |
+| JSON & serialization | 4 | 4 |
+| Language runtimes | 3 | 3 |
 | Linear algebra | 6 | 6 |
 | Machine learning | 6 | 6 |
 | Numerical arithmetic | 6 | 6 |
-| Search & indexing | 6 | 6 |
+| Search & indexing | 5 | 5 |
 | Statistics | 6 | 6 |
 | Stencils | 6 | 6 |
-| Text & parsing | 7 | 7 |
+| Text & parsing | 5 | 5 |
 | Video processing | 6 | 6 |
 
 Raw integer/floating-point computation, matrix algebra, stencils and scientific workloads come from the retained synthetic and PolyBench sets. Library workloads include JSON/Unicode/regex parsing, hashing, encryption, compression, SVG, image codecs, FFT and WAV decoding. Full application contracts include SQLite, jq, ripgrep, Clang, esbuild, Swift formatting, language interpreters, bioinformatics tools, coreutils, and FPGA tooling. Categories describe the measured work, independently of its source repository.
 
 Original kernels fill the application gaps with distinct methods: image convolution, resizing, compositing, median filtering, dithering and color transforms; motion estimation, DCT, deblocking, denoising and optical flow; frustum culling, ray intersections, mesh skinning, Bezier tessellation and software rasterization. Other additions cover search algorithms, compiler passes, interpreters, compression, cryptography, graph traversal, databases, geospatial operations, DSP, machine learning, statistics, document layout and filesystem structures.
 
-The explicit upstream selection lives in `corpora/selection.json`; original algorithms and independent references live in `scripts/lib/application-kernels.mjs` with C implementations in `corpora/applications/sources/kernels.c`. `corpus-audit` rejects duplicate algorithm identities and categories outside the 6–9 range. Original kernels target scalar Wasm MVP with automatic SIMD disabled. Rebuilds require `wasm-tools` and validate every artifact with all proposals disabled; LLVM’s implicit post-link `wasm-opt` pass is disabled to preserve that target. Descriptions identify the precise operation or substage rather than claiming whole-product coverage.
+The explicit upstream selection lives in `corpora/selection.json`; original algorithms and independent references live in `scripts/lib/application-kernels.mjs` with C implementations in `corpora/applications/sources/kernels.c`. `corpus-audit` requires the exact configured active algorithm identities and categories, rejecting missing, duplicate, extra or reclassified algorithms. Retired WASI source recipes remain archived and are excluded from the active counts. Original kernels target scalar Wasm MVP with automatic SIMD disabled. Rebuilds require `wasm-tools` and validate every artifact with all proposals disabled; LLVM’s implicit post-link `wasm-opt` pass is disabled to preserve that target. Descriptions identify the precise operation or substage rather than claiming whole-product coverage.
 
 ## Reproduction and collection
 

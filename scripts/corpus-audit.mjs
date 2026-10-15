@@ -12,7 +12,11 @@ const manifest=await prepareCorpus(settings,run,undefined,{includeCalls:false});
 // Boundary-call fixtures have their own measurement category. They are not
 // additional application algorithms and do not change the 6–9 per-group rule.
 const ws=JSON.parse(await readFile(manifest)).filter(w=>!w.id.startsWith('mechanisms/'));
-const groups=algorithmCoverage(ws);
+const selection=JSON.parse(await readFile(join(site,settings.corpus.selection)));
+const active=new Set(settings.corpus.ids);
+const applications=JSON.parse(await readFile(join(site,settings.corpus.applications)));
+const expected=[...selection.workloads.filter(w=>active.has(w.id.split('/')[1])),...applications.map(w=>w.provenance)];
+const groups=algorithmCoverage(ws,{expected});
 const upstreamLock=JSON.parse(await readFile(join(site,'corpora/upstream/sources.json')));
 function workloadSource(w) {
   const build=w.provenance?.rebuild;
@@ -20,7 +24,7 @@ function workloadSource(w) {
   const inputs=build.sources.map(input=>({...input,...(input.repository?{repository:input.repository.replace(/;$/, '')}:{})}));
   return {...inputs[0],repository:inputs[0].repository || inputs[0].url,buildRecipe:build.recipe,inputs};
 }
-const catalog={schema:1,policy:'Prepared corpus inventory, not measured performance. Unsupported contracts remain visible. One representative input per algorithm; every use-case category has 6–9 distinct algorithms. Feature probes are separate and excluded from application averages.',
+const catalog={schema:1,policy:'Prepared corpus inventory, not measured performance. Unsupported contracts remain visible. One representative input per configured active algorithm; retired workloads are excluded. Feature probes are separate and excluded from application averages.',
   upstreamCatalogSha256:upstreamLock.upstreamCatalogSha256,upstreamBenchmarks:settings.corpus.ids.length,
   applicationContracts:ws.length,readyContracts:ws.filter(w=>!w.unsupported_reason).length,
   categories:[...groups].sort(([a],[b])=>a.localeCompare(b)).map(([category,items])=>({category,contracts:items.length,ready:items.filter(w=>!w.unsupported_reason).length})),

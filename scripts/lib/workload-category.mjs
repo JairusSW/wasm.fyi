@@ -42,7 +42,7 @@ export function compareWorkloads(a, b) {
 }
 
 // Count identities, not input sizes or exports, when checking use-case coverage.
-export function algorithmCoverage(workloads) {
+export function algorithmCoverage(workloads,{expected}={}) {
   const groups=new Map(),algorithms=new Set();
   for(const w of workloads) {
     const algorithm=w.provenance?.algorithm;
@@ -51,6 +51,16 @@ export function algorithmCoverage(workloads) {
     const category=workloadCategory(w);
     const items=groups.get(category)||[];items.push(w);groups.set(category,items);
   }
-  for(const [category,items] of groups)if(items.length<6||items.length>9)throw Error(`${category}: expected 6–9 distinct algorithms, got ${items.length}`);
+  if(expected){
+    const configured=new Map();
+    for(const item of expected){
+      if(!item.algorithm||!item.category||configured.has(item.algorithm))throw Error('Duplicate or missing configured algorithm: '+item.algorithm);
+      configured.set(item.algorithm,item.category);
+    }
+    if(configured.size!==algorithms.size)throw Error(`Configured algorithm inventory differs: expected ${configured.size}, got ${algorithms.size}`);
+    for(const [category,items] of groups)for(const w of items)if(configured.get(w.provenance.algorithm)!==category)throw Error('Configured algorithm/category mismatch: '+w.id);
+  }else{
+    for(const [category,items] of groups)if(items.length<6||items.length>9)throw Error(`${category}: expected 6–9 distinct algorithms, got ${items.length}`);
+  }
   return groups;
 }
