@@ -8,6 +8,8 @@ const output=resolve('.wasmfyi/frontend-assets');await mkdir(output,{recursive:t
 for(const name of ['favicon.svg'])await copyFile(resolve('static',name),resolve(output,name));
 // Logo files (SVG + PNG), served at /brand/….
 await cp(resolve('static/brand'),resolve(output,'brand'),{recursive:true});
+// Keep the notices alongside the self-hosted IBM Plex font files.
+await cp(resolve('static/fonts'),resolve(output,'fonts'),{recursive:true});
 await writeFile(resolve(output,'robots.txt'),'User-agent: *\nAllow: /\nSitemap: '+publicRoot+'sitemap.xml\n');
 await writeFile(resolve(output,'llms.txt'),`# wasm.fyi\n\nGET /api/platforms discovers platform IDs. GET /api/benchmarks?platform=ID&phase=steady returns latest latency, peak RSS and code size with cursor pagination. POST /api/captures atomically publishes authenticated capture JSON. No reports, binaries or evidence are retained.\n`);
 await copyFile(resolve(output,'llms.txt'),resolve(output,'llms-full.txt'));

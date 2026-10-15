@@ -1,4 +1,10 @@
 <script lang="ts">
+	import '@fontsource/ibm-plex-sans/400.css';
+	import '@fontsource/ibm-plex-sans/500.css';
+	import '@fontsource/ibm-plex-sans/600.css';
+	import '@fontsource/ibm-plex-mono/400.css';
+	import '@fontsource/ibm-plex-mono/500.css';
+	import '@fontsource/ibm-plex-mono/600.css';
 	import '../app.css';
 	import { base } from '$app/paths';
 	import { SITE_ORIGIN, SITE_DESCRIPTION } from '$lib/site';
@@ -7,7 +13,7 @@
 	import { afterNavigate, beforeNavigate } from '$app/navigation';
 	import { goto, replaceState } from '$lib/navigation';
 	import { page } from '$app/state';
-	import Drawer from '$lib/components/Drawer.svelte';
+	import LazyDrawer from '$lib/components/LazyDrawer.svelte';
 	import Footer from '$lib/components/Footer.svelte';
 	import Header from '$lib/components/Header.svelte';
 	import ScopeBar from '$lib/components/ScopeBar.svelte';
@@ -18,7 +24,7 @@
 	import { onMount } from 'svelte';
 	import { preferredMachine } from '$lib/preferred-machine';
 	import { animateFavicon } from '$lib/favicon';
-	import {connectSite,closeSite,apiView,loadHistory,loadOverview,loadOverviews} from '$lib/api/controller.svelte';
+	import {connectSite,closeSite,apiView,aggregateKey,loadHistory,loadOverview,loadOverviews} from '$lib/api/controller.svelte';
 
 	let { children } = $props();
 
@@ -43,7 +49,7 @@
   }
 		// `to.route` is empty on the initial hydration, so use the settled page route.
 		const routeId = to?.route.id ?? page.route.id;
-		if (to?.url && routeId) ui.loadFromUrl(to.url, routeId);
+		if (routeId) ui.loadFromUrl(to?.url ?? page.url, routeId);
 		ui.drawer = null;
 		synced = true;
 	});
@@ -54,10 +60,10 @@
 	});
 
  $effect(()=>{
-  if(!browser||!apiView.ready||page.route.id==='/dashboard')return;
-  const machine=ui.machine;const route=page.route.id;const drawer=ui.drawer;
+  if(!browser||!synced||!architectureReady||page.route.id==='/dashboard')return;
+  const machine=ui.machine;const route=page.route.id;const drawer=ui.drawer;ui.metric;
   void connectSite();
-  apiView.historyRevision;
+  if(apiView.ready)apiView.historyRevision;
   if(route==='/history')void loadHistory({...ui.scope,machine,snapshot:ui.snap,metric:ui.metric},ui.otMetric);
  });
 
@@ -65,11 +71,11 @@
   if(!browser||!apiView.ready||page.route.id==='/dashboard')return;
   const route=page.route.id,scope={...ui.scope,machine:ui.machine,snapshot:ui.snap,metric:ui.metric};
   const metrics=route==='/'?['steady']:route==='/benchmarks'?['compile','inst','first','steady','rssCompile','rssInst','rss','rssAverage','code']:[];
-  const abort=new AbortController();const timer=setTimeout(()=>{void loadOverviews(scope,metrics as (import('$lib/data/types').MetricKey|'rssAverage')[],abort.signal).catch(error=>{if(!abort.signal.aborted)apiView.aggregateErrors.overview=String(error)})},80);
+  const abort=new AbortController();const timer=setTimeout(()=>{void loadOverviews(scope,metrics as (import('$lib/data/types').MetricKey|'rssAverage')[],abort.signal).catch(error=>{if(!abort.signal.aborted)for(const metric of metrics)apiView.aggregateErrors[aggregateKey(scope,metric)]=String(error)})},80);
   return ()=>{clearTimeout(timer);abort.abort()};
  });
 
- $effect(()=>{if(browser&&architectureReady&&page.route.id!=='/dashboard'&&!apiView.ready)void connectSite()});
+
 	onMount(() => {
 		ui.theme = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
 		const deviceTheme = window.matchMedia('(prefers-color-scheme: dark)');
@@ -104,7 +110,7 @@
 			}
 			if(mounted)architectureReady=true;
 		})();
-		const refresh=setInterval(()=>{if(page.route.id!=='/dashboard')void connectSite()},30000);
+		const refresh=setInterval(()=>{if(page.route.id!=='/dashboard'&&document.visibilityState==='visible')void connectSite()},30000);
 		// Prototype links used hash routes (#/benchmarks, #/bench/<id>, …).
 		const h = location.hash;
 		if (h.startsWith('#/')) {
@@ -180,7 +186,7 @@
 	</main>
 	<Footer />
 </div>
-<Drawer />
+<LazyDrawer />
 <Tooltip />
 
 <style>

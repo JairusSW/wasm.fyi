@@ -27,7 +27,7 @@
 	const cards = $derived(leaders.map((l): LeaderCard => {
 		const key = aggregateKey(ui.scope, l.overview === 'mem' ? 'rssAverage' : l.metric);
 		const error = apiView.aggregateErrors[key];
-		const loading = !!datasetView.revision && !apiView.aggregates[key] && !error;
+		const loading = !error && (apiView.serverAggregates ? !apiView.precomputed[key] : !!datasetView.revision && !apiView.aggregates[key]);
 		return {
 			label: l.label,
 			points: l.points,

@@ -9,7 +9,17 @@ export class CompactClient {
  private active=0;
  private waiting:(()=>void)[]=[];
  private lifetime=new AbortController();
- constructor(private request:typeof fetch=fetch){}
+ private bootstrap:unknown;
+ constructor(private request:typeof fetch=fetch){
+  if(typeof document==='undefined')return;
+  const node=document.getElementById('wasmfyi-bootstrap');if(!node)return;
+  try{
+   const text=node.textContent||'';
+   if(text.length>65536)return;
+   const value=JSON.parse(text);
+   if(typeof value?.revision==='string'&&Array.isArray(value.platforms))this.bootstrap=value;
+  }catch{}finally{node.remove()}
+ }
  invalidate(predicate?:(path:string)=>boolean){if(!predicate){this.cache.clear();this.bytes=0;return}for(const [path,entry] of this.cache)if(predicate(path)){this.bytes-=entry.bytes;this.cache.delete(path)}}
  close(){this.lifetime.abort();this.invalidate()}
  private async reserve(signal:AbortSignal){
@@ -24,8 +34,14 @@ export class CompactClient {
  }
  private release(){const next=this.waiting.shift();if(next)next();else this.active--}
  async load<T>(path:string,signal:AbortSignal,revalidate=false):Promise<T>{
-  if(!/^\/api\/(?:history\/(?:summary|comparison|report)|summary|matrix|timeline|overview|aggregates|observation|platforms|benchmarks|history)(?:\?|$)/.test(path))throw Error('Unsupported measurement endpoint');
+  if(!/^\/api\/(?:history\/(?:summary|comparison|report)|summary|table|matrix|timeline|overview|aggregates|observation|platforms|benchmarks|history)(?:\?|$)/.test(path))throw Error('Unsupported measurement endpoint');
   signal.throwIfAborted();
+  if(path==='/api/summary'&&this.bootstrap){
+   const value=this.bootstrap;this.bootstrap=undefined;
+   const bytes=new TextEncoder().encode(JSON.stringify(value)).length;
+   this.cache.set(path,{value,bytes,etag:''});this.bytes+=bytes;
+   return value as T;
+  }
   const cached=this.cache.get(path);
   if(cached&&!revalidate){this.cache.delete(path);this.cache.set(path,cached);return cached.value as T}
   return this.pool.load(path,async shared=>{

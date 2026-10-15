@@ -29,3 +29,17 @@ describe('compact request coordination',()=>{
   expect(headers[1].get('If-None-Match')).toBe('"one"');
  });
 });
+it('uses public shell metadata once and then revalidates normally',async()=>{
+ const {vi}=await import('vitest');const node={textContent:JSON.stringify({revision:'inline',platforms:[]}),remove:vi.fn()};
+ vi.stubGlobal('document',{getElementById:()=>node});
+ try{
+  const fetch=vi.fn(async()=>Response.json({revision:'fresh',platforms:[]}));
+  const client=new CompactClient(fetch);const signal=new AbortController().signal;
+  expect(await client.load('/api/summary',signal,true)).toEqual({revision:'inline',platforms:[]});expect(fetch).not.toHaveBeenCalled();
+  expect(await client.load('/api/summary',signal,true)).toEqual({revision:'fresh',platforms:[]});expect(fetch).toHaveBeenCalledOnce();expect(node.remove).toHaveBeenCalledOnce();
+ }finally{vi.unstubAllGlobals()}
+});
+it('falls back to the API if shell metadata is invalid',async()=>{
+ const {vi}=await import('vitest');vi.stubGlobal('document',{getElementById:()=>({textContent:'not json',remove:vi.fn()})});
+ try{const fetch=vi.fn(async()=>Response.json({revision:'fresh'}));const client=new CompactClient(fetch);expect(await client.load('/api/summary',new AbortController().signal)).toEqual({revision:'fresh'});expect(fetch).toHaveBeenCalledOnce()}finally{vi.unstubAllGlobals()}
+});

@@ -60,6 +60,7 @@ export function aggregate(s:Scope,group:PerfGroup,cid:CfgId,col:number):Aggregat
    return {v:card.value/factor,r:card.ratio??Number.NaN,ci:Number.NaN,count:card.count,report:(card.latestCreated||'')+'|'+card.engine,reports:[]};
   }}
  }
+ if(apiView.serverAggregates)return null;
  if(datasetView.revision){
   if(!metric)return null;
   const overview=apiView.aggregates[aggregateKey(s,metric)],card=overview?.cards.find(c=>c.lane===trackId(cid));

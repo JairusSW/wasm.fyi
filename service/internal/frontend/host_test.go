@@ -171,3 +171,36 @@ func TestHostingBoundedFilesAndSelectedRanges(t *testing.T) {
 		t.Fatal("empty shell admitted")
 	}
 }
+
+func TestBootstrapEscapingFreshnessAndPrivateRouteExclusion(t *testing.T) {
+	dir := fixture(t)
+	if err := os.WriteFile(filepath.Join(dir, "404.html"), []byte("<html><head></head><body>application shell</body></html>"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	host, err := Open(dir, func(context.Context, string) (bool, error) { return false, nil })
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer host.Close()
+	data := []byte(`{"revision":"one","platforms":[],"label":"</script><script>alert(1)</script>"}`)
+	host.SetBootstrap(func(context.Context) ([]byte, error) { return data, nil })
+	first := request(host, "GET", "/benchmarks/")
+	if first.Code != 200 || !strings.Contains(first.Body.String(), `id="wasmfyi-bootstrap"`) || strings.Contains(first.Body.String(), "<script>alert(1)") {
+		t.Fatal(first.Code, first.Body.String())
+	}
+	old := first.Header().Get("ETag")
+	data = []byte(`{"revision":"two","platforms":[]}`)
+	r := httptest.NewRequest("GET", "/benchmarks/", nil)
+	r.Header.Set("If-None-Match", old)
+	second := httptest.NewRecorder()
+	host.ServeHTTP(second, r)
+	if second.Code != 200 || second.Header().Get("ETag") == old || !strings.Contains(second.Body.String(), `"two"`) {
+		t.Fatal("bootstrap metadata was served stale")
+	}
+	for _, path := range []string{"/dashboard", "/dashboard/", "/_app/immutable/app.js"} {
+		response := request(host, "GET", path)
+		if strings.Contains(response.Body.String(), "wasmfyi-bootstrap") {
+			t.Fatal("bootstrap injected into", path)
+		}
+	}
+}

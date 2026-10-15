@@ -4,6 +4,15 @@ import type {Result} from './benchmark-types';
 
 const row=(workload:string,phase:Result['phase'],latencyStatus:Result['latencyStatus'])=>({workload,phase,latencyStatus,engine:'wago',capturedAt:'2026-10-08T00:00:00Z'} as Result);
 describe('feature capture projection',()=>{
+ it('excludes ordinary baseline controls from feature support',()=>{
+  const control={...row('features/compact-imports/ordinary-baseline/1','first-call','ok'),display:{tags:['compact-imports','baseline']}} as Result;
+  const [family]=featureResults([control,row('features/compact-imports/module-group/1','first-call','unsupported')]);
+  expect([family.total,family.pass,family.unsupported]).toEqual([1,0,1]);
+ });
+ it('does not let a passing steady phase erase a failed first-call check',()=>{
+  const [family]=featureResults([row('features/simd/add/1','first-call','failed'),row('features/simd/add/1','steady','ok')]);
+  expect([family.pass,family.failed]).toEqual([0,1]);
+ });
  it('counts first-call-only compatibility as verified execution alongside existing captures',()=>{
   const [family]=featureResults([
    row('features/simd/add/1','first-call','ok'),

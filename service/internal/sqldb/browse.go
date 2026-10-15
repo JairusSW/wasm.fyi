@@ -19,19 +19,31 @@ type Cell struct {
 type MatrixQuery struct {
 	Platform, Phase, Workload, Engine, Corpus string
 	Revision                                  string
+	Phases                                    string
+	Delta                                     bool
 	Offset                                    int
 	Limit                                     int
 }
 type Matrix struct {
-	Revision   string `json:"revision"`
-	Platform   string `json:"platform"`
-	Phase      string `json:"phase"`
-	Items      []Cell `json:"items"`
-	Total      int    `json:"total"`
-	NextOffset *int   `json:"nextOffset"`
+	Revision     string `json:"revision"`
+	DataRevision string `json:"dataRevision,omitempty"`
+	Platform     string `json:"platform"`
+	Phase        string `json:"phase"`
+	Items        []Cell `json:"items"`
+	Total        int    `json:"total"`
+	NextOffset   *int   `json:"nextOffset"`
 }
 
 func (s *Store) Matrix(ctx context.Context, q MatrixQuery) (Matrix, error) {
+	if q.Phase == "*" {
+		return Matrix{}, wire.Invalid("valid phase required")
+	}
+	return s.browse(ctx, q, false, "", "")
+}
+
+// Table reads all phases in one consistent snapshot with a bounded page.
+func (s *Store) Table(ctx context.Context, q MatrixQuery) (Matrix, error) {
+	q.Phase = "*"
 	return s.browse(ctx, q, false, "", "")
 }
 func (s *Store) History(ctx context.Context, q MatrixQuery, from, to string) (Matrix, error) {
@@ -52,6 +64,18 @@ func (s *Store) browse(ctx context.Context, q MatrixQuery, history bool, from, t
 			return Matrix{}, wire.Invalid("invalid history range")
 		}
 	}
+	wanted := map[string]bool{}
+	if q.Phases != "" {
+		if q.Phase != "*" || len(q.Phases) > 64 {
+			return Matrix{}, wire.Invalid("phases require the table endpoint")
+		}
+		for _, phase := range strings.Split(q.Phases, ",") {
+			if !benchdb.ValidPhase(phase) || wanted[phase] {
+				return Matrix{}, wire.Invalid("invalid phase selection")
+			}
+			wanted[phase] = true
+		}
+	}
 	out := Matrix{Items: []Cell{}, Platform: q.Platform, Phase: q.Phase}
 	if q.Phase == "" {
 		q.Phase = "steady"
@@ -60,7 +84,11 @@ func (s *Store) browse(ctx context.Context, q MatrixQuery, history bool, from, t
 	if q.Corpus != "" && q.Corpus != "main" && q.Corpus != "features" {
 		return out, wire.Invalid("corpus must be main or features")
 	}
-	if !benchdb.ValidPhase(q.Phase) || q.Limit < 1 || q.Limit > 4096 || q.Offset < 0 || q.Offset > 5000000 || q.Offset > 0 && q.Revision == "" {
+	maxLimit := 4096
+	if q.Phase == "*" && !history {
+		maxLimit = 16384
+	}
+	if !(benchdb.ValidPhase(q.Phase) || q.Phase == "*" && !history) || q.Limit < 1 || q.Limit > maxLimit || q.Offset < 0 || q.Offset > 5000000 || q.Offset > 0 && q.Revision == "" {
 		return out, wire.Invalid("valid phase/bounded limit required")
 	}
 	tx, e := s.reader.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
@@ -80,7 +108,11 @@ func (s *Store) browse(ctx context.Context, q MatrixQuery, history bool, from, t
 	if e != nil {
 		return out, e
 	}
+	out.DataRevision = out.Revision
 	scope := []any{out.Revision, q.Platform, q.Phase, q.Workload, q.Engine, q.Corpus, history, from, to}
+	if q.Phase == "*" {
+		scope = append(scope, "active-table-v2", q.Phases, q.Delta)
+	}
 	if history {
 		scope = append(scope, "inclusive-utc-day-bounds-v2")
 	}
@@ -91,6 +123,10 @@ func (s *Store) browse(ctx context.Context, q MatrixQuery, history bool, from, t
 	table := "latest"
 	where := "b.platform_id=? AND b.phase=?"
 	args := []any{pid, phaseID(q.Phase)}
+	if q.Phase == "*" {
+		where = "b.platform_id=?"
+		args = []any{pid}
+	}
 	if history {
 		table = "history"
 	}
@@ -100,7 +136,7 @@ func (s *Store) browse(ctx context.Context, q MatrixQuery, history bool, from, t
 	if q.Corpus == "features" {
 		where += " AND substr(w.name,1,9)='features/'"
 	}
-	if q.Workload != "" {
+	if q.Workload != "" && q.Phase != "*" {
 		where += " AND w.name=?"
 		args = append(args, q.Workload)
 	}
@@ -121,12 +157,26 @@ func (s *Store) browse(ctx context.Context, q MatrixQuery, history bool, from, t
 	if e = tx.QueryRowContext(ctx, "SELECT count(*) FROM "+table+" b"+joins+"WHERE "+where, args...).Scan(&out.Total); e != nil {
 		return out, e
 	}
-	args = append(args, q.Limit, q.Offset)
-	order := "w.name,e.name"
+	limit, offset := q.Limit, q.Offset
+	if q.Phase == "*" {
+		if out.Total > 100000 {
+			return out, wire.Invalid("table scope exceeds row limit")
+		}
+		limit = out.Total
+		offset = 0
+	}
+	args = append(args, limit, offset)
+	order := "w.name,e.name,cfg.id"
+	selectFields, selectJoins := projection, joins
+	if q.Phase == "*" {
+		order = "b.phase,w.name,e.name,cfg.id"
+		selectFields = strings.Replace(projection, "sp.data", "NULL", 1)
+		selectJoins = strings.Replace(joins, " LEFT JOIN sampling_policies sp ON sp.id=o.sampling_id", "", 1)
+	}
 	if history {
 		order = "b.as_of DESC,w.name,e.name,cfg.id"
 	}
-	rows, e := tx.QueryContext(ctx, "SELECT "+projection+" FROM "+table+" b"+joins+"WHERE "+where+" ORDER BY "+order+" LIMIT ? OFFSET ?", args...)
+	rows, e := tx.QueryContext(ctx, "SELECT "+selectFields+" FROM "+table+" b"+selectJoins+"WHERE "+where+" ORDER BY "+order+" LIMIT ? OFFSET ?", args...)
 	if e != nil {
 		return out, e
 	}
@@ -142,8 +192,54 @@ func (s *Store) browse(ctx context.Context, q MatrixQuery, history bool, from, t
 		return out, e
 	}
 	rows.Close()
-	if e = loadCellStats(ctx, tx, out.Items); e != nil {
+	if q.Phase == "*" {
+		selected := activeTableCells(out.Items)
+		if q.Workload != "" {
+			filtered := make([]Cell, 0, len(selected))
+			for _, row := range selected {
+				if row.Workload == q.Workload {
+					filtered = append(filtered, row)
+				}
+			}
+			selected = filtered
+		}
+		if len(wanted) > 0 {
+			last := map[string]int{}
+			if !q.Delta {
+				for i, row := range selected {
+					last[tableEngine(row.Engine)+"|"+row.Workload] = i
+				}
+			}
+			filtered := make([]Cell, 0, len(selected))
+			for i, row := range selected {
+				key := tableEngine(row.Engine) + "|" + row.Workload
+				if wanted[row.Phase] || !q.Delta && last[key] == i {
+					filtered = append(filtered, row)
+				}
+			}
+			selected = filtered
+		}
+		out.Total = len(selected)
+		start := min(q.Offset, out.Total)
+		end := min(start+q.Limit, out.Total)
+		out.Items = selected[start:end]
+	}
+	statsRows := out.Items
+	var indices []int
+	if q.Phase == "*" {
+		statsRows = nil
+		for i, r := range out.Items {
+			if r.Status == "ok" && (r.Value == nil || *r.Value == 0) {
+				indices = append(indices, i)
+				statsRows = append(statsRows, r)
+			}
+		}
+	}
+	if e = loadCellStats(ctx, tx, statsRows); e != nil {
 		return out, e
+	}
+	for i, index := range indices {
+		out.Items[index].SampleStats = statsRows[i].SampleStats
 	}
 	if q.Offset+len(out.Items) < out.Total {
 		next := q.Offset + len(out.Items)
@@ -242,4 +338,9 @@ func (s *Store) Summary(ctx context.Context) (benchdb.Summary, error) {
 		out.Platforms = append(out.Platforms, v)
 	}
 	return out, rows.Err()
+}
+
+// PublicRevision is a cheap cache-invalidation token for every public read.
+func (s *Store) PublicRevision(ctx context.Context) (string, error) {
+	return revision(ctx, s.reader, "revision")
 }

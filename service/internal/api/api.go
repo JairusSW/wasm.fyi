@@ -147,7 +147,11 @@ func acceptsGzip(header string) bool {
 }
 func respond(w http.ResponseWriter, r *http.Request, status int, v any, immutable bool) {
 	b, e := wire.Encode(v)
-	if e != nil || len(b) > wire.ResponseBytes {
+	limit := wire.ResponseBytes
+	if r.URL.Path == "/api/table" {
+		limit = 4 * wire.ResponseBytes
+	}
+	if e != nil || len(b) > limit {
 		http.Error(w, "response exceeds byte limit; narrow the scope", 422)
 		return
 	}

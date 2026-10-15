@@ -8,8 +8,8 @@ function mockScope(count:number) {
  vi.stubGlobal('location',{pathname:'/features/',href:'http://localhost/features/'});
  vi.stubGlobal('fetch',vi.fn(async(path:string)=>{
   if(path==='/api/summary')return Response.json({revision:'r',platforms:[{id:'p',cpu:'AMD',os:'linux',arch:'amd64',cores:8,kernel:'test'}]});
-  const phase=new URL(path,'http://localhost').searchParams.get('phase');
-  return Response.json({schema:1,revision:'r',platform:'p',phase,total:phase==='steady'?count:0,nextOffset:null,contracts,configurations:[{engine:'wago',version:'1',backend:'jit'}],sources:[null],sampling:[null],capturedAt:['2026-01-01T00:00:00Z'],rows:phase==='steady'?contracts.map((_,i)=>[i+1,i,0,0,0,1000,null,null,'ok','not-measured','not-measured',null,5,0]):[]});
+  const phase='steady';
+  return Response.json({schema:3,revision:'r',platform:'p',phase,total:phase==='steady'?count:0,nextOffset:null,contracts,configurations:[{engine:'wago',version:'1',backend:'jit'}],sources:[null],sampling:[null],capturedAt:['2026-01-01T00:00:00Z'],rows:phase==='steady'?contracts.map((_,i)=>[i+1,i,0,0,0,1000,null,null,'ok','not-measured','not-measured',null,5,0,null,'steady']):[]});
  }));
  closeSite();
 }

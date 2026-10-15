@@ -52,12 +52,14 @@ const ordinal = (n: number) => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th
  * Tooltip rows placing one cell within its row: "place · 3rd of 12" and the row's best value with
  * its engine. Lower is better. `values[i]` null means the cell itself has no comparable value.
  */
-export function rankStats(values: (number | null)[], i: number, names: string[], fmt: (v: number) => string, best = 'fastest'): [string, string][] {
-	const ok = values.flatMap((x, k) => (x == null ? [] : [{ x, k }]));
-	if (!ok.length) return [];
-	const top = ok.reduce((a, b) => (b.x < a.x ? b : a));
-	const lead: [string, string] = [best, `${names[top.k]} · ${fmt(top.x)}`];
-	const v = values[i];
-	if (v == null) return [lead];
-	return [['place', `${ordinal(1 + ok.filter((e) => e.x < v).length)} of ${ok.length}`], lead];
+/** Calculate every rank once for a table row, including tied values. */
+export function rankRows(values:(number|null)[],names:string[],fmt:(v:number)=>string,best='fastest'):[string,string][][] {
+ const ok=values.flatMap((x,k)=>x==null?[]:[{x,k}]).sort((a,b)=>a.x-b.x);
+ if(!ok.length)return values.map(()=>[]);
+ const lead:[string,string]=[best,`${names[ok[0].k]} · ${fmt(ok[0].x)}`];
+ const ranks=new Map<number,number>();for(const [i,v] of ok.entries())if(!ranks.has(v.x))ranks.set(v.x,i+1);
+ return values.map((v):[string,string][]=>v==null?[lead]:[['place',`${ordinal(ranks.get(v)!)} of ${ok.length}`],lead]);
+}
+export function rankStats(values:(number|null)[],i:number,names:string[],fmt:(v:number)=>string,best='fastest'):[string,string][] {
+ return rankRows(values,names,fmt,best)[i];
 }

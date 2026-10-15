@@ -20,3 +20,13 @@ it('keeps correctness against the whole corpus in both average modes',()=>{
  expect(correctnessWorkloads(s)).toHaveLength(3);expect(cov('G',s)).toEqual([2,1,0,0,0]);
  expect(cov('G',{...s,cohortMode:'per-engine'})).toEqual(cov('G',s));
 });
+it('decodes all-phase tables with detail policies omitted',()=>{
+ const page:CompactMatrix={schema:3,revision:'r',platform:'p',phase:'steady',total:2,nextOffset:null,contracts:[{workload:'app/test',wasm:'test.wasm',artifactSha256:'a',contractSha256:'c'}],configurations:[{engine:'wago',version:'1',backend:'railshot'}],sources:[null],sampling:[null],capturedAt:['date'],rows:[[1,0,0,0,0,125,null,null,'ok','not-measured','not-measured',null,10,0,null,'compile'],[2,0,0,0,0,0,null,null,'ok','not-measured','not-measured',null,25,0,[25,125,null,0,500],'steady']]};
+ expect(unpackMatrix(page)).toMatchObject([{phase:'compile',latencyNs:125,observationId:1},{phase:'steady',latencyNs:125,latencySummary:'retained-mean',observationId:2}]);
+ expect(unpackMatrix(page)[0].sampling).toBeUndefined();
+});
+it('decodes compact status/phase codes without losing fractional timings or native code',()=>{
+ const page:CompactMatrix={schema:4,revision:'r',platform:'p',phase:'*',total:2,nextOffset:null,contracts:[{workload:'app/test',wasm:'test.wasm',artifactSha256:'a',contractSha256:'c'}],configurations:[{engine:'wago',version:'1',backend:'railshot'}],sources:[null],sampling:[null],codeKinds:['native-image',null],capturedAt:['date'],rows:[[1,0,0,0,0,0,0.125,4096,64,73,0,10,null],[2,0,0,0,0,3,0,null,null,25,1,25,0.0625]]};
+ expect(unpackMatrix(page)).toMatchObject([{phase:'compile',latencyNs:0.125,peakRssBytes:4096,codeBytes:64,codeKind:'native-image',latencyStatus:'ok',memoryStatus:'ok',codeStatus:'ok'},{phase:'steady',latencyNs:0.0625,latencySummary:'retained-mean',memoryStatus:'unsupported',codeStatus:'not-measured',codeKind:null}]);
+ page.rows[0][9]=511;expect(()=>unpackMatrix(page)).toThrow('Invalid table status');
+});

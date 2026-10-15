@@ -175,8 +175,16 @@ export interface CompatCell {
 	name?: string;
 }
 
+let featureCatalogue:Bench[]|undefined;
+let featureGeneration=-1;
+const featureIndex=new Map<string,Bench[]>();
 export function featureContracts(family:string) {
-  return viewData.catalogue.filter(w=>w.id.startsWith('features/'+family+'/') && !w.baseline);
+ const catalogue=viewData.catalogue;
+ if(featureCatalogue!==catalogue||featureGeneration!==datasetView.generation){
+  featureCatalogue=catalogue;featureGeneration=datasetView.generation;featureIndex.clear();
+  for(const w of catalogue){if(!w.id.startsWith('features/')||w.baseline)continue;const family=w.id.split('/')[1];let list=featureIndex.get(family);if(!list){list=[];featureIndex.set(family,list)}list.push(w)}
+ }
+ return featureIndex.get(family)||[];
 }
 export function featureOutcome(s:Scope,w:Bench,cid:CfgId) {
   return viewCell(s.machine,s.snapshot || 's1',w.id,cid,w.evidenceScope==='compile-only'?'compile':w.evidenceScope==='compile-and-instantiate'?'inst':'steady');

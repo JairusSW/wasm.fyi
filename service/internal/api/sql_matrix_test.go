@@ -36,3 +36,30 @@ func TestCompactMatrixDeduplicatesMetadata(t *testing.T) {
 		}
 	}
 }
+
+func TestCompactTablePreservesPhasesAndLazyDetail(t *testing.T) {
+	zero, positive := 0.0, 12.0
+	rows := []sqldb.Cell{}
+	for i, phase := range []string{"compile", "instantiate", "first-call", "steady"} {
+		value := &positive
+		if i == 3 {
+			value = &zero
+		}
+		rows = append(rows, sqldb.Cell{ObservationID: int64(i + 1), SampleStats: &sqldb.SampleStats{Count: 5, Mean: 0.25}, Result: benchdb.Result{Row: benchdb.Row{Phase: phase, Status: "ok", Value: value, Sampling: &benchdb.Sampling{}}, CapturedAt: "date"}})
+	}
+	result := packTable(sqldb.Matrix{Items: rows, Total: 4})
+	if result.Schema != 4 || len(result.Sampling) != 1 || result.Sampling[0] != nil {
+		t.Fatal("sampling included")
+	}
+	for i, row := range result.Rows {
+		if row[5] != i || row[0] != int64(i+1) {
+			t.Fatal("phase/detail key lost")
+		}
+		if i < 3 && row[12] != nil {
+			t.Fatal("eager sample stats")
+		}
+	}
+	if result.Rows[3][12] == nil {
+		t.Fatal("sub-resolution recovery lost")
+	}
+}

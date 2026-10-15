@@ -2,7 +2,7 @@ import {isLocalComparison} from '../local-comparison';
 import {CompactClient} from './compact-client';
 import {apiHistory,historyKey,type Timeline} from './history.svelte';
 import {historyFactor,scaledChange,type HistoricalSummary,type HistoricalComparison,type HistoricalReport} from './compact-history';
-import {unpackMatrix,type CompactMatrix,type ScalarResult,type CompactAggregate} from './compact-matrix';
+import {unpackMatrixAsync,type CompactMatrix,type ScalarResult,type CompactAggregate} from './compact-matrix';
 import {computationCheckpoint} from '../computation';
 import {datasetView,emptyView,viewData} from './view.svelte';
 import {ui} from '../state.svelte';
@@ -21,7 +21,7 @@ import {platformGroups} from './platform-groups';
 import {machineLabel} from './machine-label';
 import {featureResults} from './feature-results';
 export type PageScope={machine:MachineId;snapshot:'s1'|'s2';metric:MetricKey;hide:Partial<Record<CfgId,boolean>>;baseline:CfgId;weighting:'corpus'|'workload';cohortMode?:'shared'|'per-engine';average?:'geo'|'mean';search?:string;tag?:string|null;sortBy?:{id:CfgId;dir:1|-1}|null;workload?:string};
-export const apiView=$state({ready:false,loading:false,error:'',pageLoading:false,pageError:'',page:null as MatrixPage|null,cursors:[''],pageIndex:0,aggregates:{} as Record<string,Overview>,aggregateErrors:{} as Record<string,string>,coverage:{} as Partial<Record<CfgId,[number,number,number,number,number]>>,precomputed:{} as Record<string,CompactAggregate>,historyRevision:'',historyLoading:false,historyLoaded:{} as Partial<Record<MachineId,boolean>>});
+export const apiView=$state({phaseLoading:false,serverAggregates:false,ready:false,loading:false,error:'',pageLoading:false,pageError:'',page:null as MatrixPage|null,cursors:[''],pageIndex:0,aggregates:{} as Record<string,Overview>,aggregateErrors:{} as Record<string,string>,coverage:{} as Partial<Record<CfgId,[number,number,number,number,number]>>,precomputed:{} as Record<string,CompactAggregate>,historyRevision:'',historyLoading:false,historyLoaded:{} as Partial<Record<MachineId,boolean>>});
 /** History arrives after the main dataset; true while the selected machine's history is still on its way. */
 export const historyPending=(machine:MachineId)=>!apiView.ready||(apiView.historyLoading&&!apiView.historyLoaded[machine]);
 export const aggregateKey=(scope:Scope,metric:string)=>JSON.stringify([scope.machine,scope.snapshot||'s1',scope.baseline,scope.weighting,scope.cohortMode||'shared',scope.average||'geo',Object.keys(scope.hide).filter(k=>scope.hide[k as CfgId]).sort(),metric]);
@@ -29,7 +29,7 @@ let abort:AbortController|undefined;
 let machines:MachineId[]=[];
 const slots=new Map<string,CfgId>();
 const plannedBackends:Record<string,string>={'wasmtime-winch':'winch','wasmer-llvm':'llvm-jit','wasmer-singlepass':'singlepass-jit','wasmer-cranelift':'cranelift-jit','chicory-jit':'jvm-bytecode-compiler','endive-interpreter':'jvm-interpreter','endive-jit':'jvm-bytecode-compiler','endive-redline':'cranelift-aot','wazy':'native-jit','chasm':'jvm-interpreter','wizard-v3-int':'v3-interpreter','wizard-fast-int':'fast-interpreter','wizard-spc':'spc','graalwasm':'truffle-graal','zwasm-interpreter':'interpreter','zwasm-jit':'jit','wazero-interpreter':'interpreter','wamr':'interpreter','wamr-fast-jit':'fast-jit','wamr-llvm-jit':'llvm-jit','wasmedge':'interpreter','wasmedge-jit':'jit','wasmi':'interpreter','wasm3':'interpreter','chicory':'interpreter','wasm2c-gcc':'GCC','w2c2-gcc':'GCC','wasm2go':'native-go-aot','jsc':'OMG (forced tier-up)','libwasm':'interpreter','spidermonkey':'ion-only'};
-const status=(s:string):ViewCell['st']=>s==='not-measured'?'nm':s as ViewCell['st'];
+const status=(s:string):ViewCell['st']=>s==='not-measured'?'nm':s==='unavailable'?'unavail':s as ViewCell['st'];
 function engineColor(engine:string){let hash=0;for(const c of engine)hash=(Math.imul(hash,31)+c.charCodeAt(0))>>>0;return `hsl(${hash%360} 65% 60%)`;}
 function slot(engine:string):CfgId{
  const previous=slots.get(engine);if(previous)return previous;
@@ -53,23 +53,40 @@ function slot(engine:string):CfgId{
 for(const engine of ['wago','wasmtime','wasmtime-winch','wasmer-singlepass','wasmer-llvm','wazero','wazero-interpreter','v8','wavm','spidermonkey','jsc','wasmi','wamr','wamr-fast-jit','wamr-llvm-jit','wasm3','wasmedge','wasmedge-jit','chicory','wasm2go','wasm2c-gcc','w2c2-gcc','libwasm','wasmer-cranelift','chicory-jit','endive-interpreter','endive-jit','endive-redline','wazy','chasm','wizard-v3-int','wizard-fast-int','wizard-spc','graalwasm','zwasm-interpreter','zwasm-jit'])slot(engine);
 let compactClient=new CompactClient();
 async function get<T>(path:string,signal:AbortSignal,revalidate=false):Promise<T>{return compactClient.load<T>(path,signal,revalidate)}
-async function rows(platform:string,phase:string,signal:AbortSignal,history=false,corpus=''){
+async function rows(platform:string,phase:string,signal:AbortSignal,history=false,corpus='',phases:string[]=[],delta=false){
+ let limit=phase==='*'?16384:4096;
  for(let attempt=0;;attempt++){
-  const all:ScalarResult[]=[];let offset=0;let revision='';
+  const all:ScalarResult[]=[];let offset=0;let revision='';let dataRevision:string|undefined;let activeVersions=true;
   try{do{
-   const query=new URLSearchParams({platform,phase,limit:'1000',...(corpus?{corpus}:{}),...(offset?{offset:String(offset),revision}:{})});
-   const page=await get<CompactMatrix>((history?'/api/timeline?':'/api/matrix?')+query,signal);
-   all.push(...unpackMatrix(page));revision=page.revision;offset=page.nextOffset??0;
+   const query=new URLSearchParams({platform,...(phase==='*'?{}:{phase}),limit:String(limit),...(corpus?{corpus}:{}),...(phases.length?{phases:phases.join(',')}:{}),...(delta?{delta:'1'}:{}),...(offset?{offset:String(offset),revision}:{})});
+   const page=await get<CompactMatrix>((history?'/api/timeline?':phase==='*'?'/api/table?':'/api/matrix?')+query,signal);
+   if(dataRevision&&page.dataRevision&&dataRevision!==page.dataRevision)throw Object.assign(Error('Data changed during loading'),{status:409});dataRevision=page.dataRevision;activeVersions=activeVersions&&page.schema===4;
+   all.push(...await unpackMatrixAsync(page,signal));revision=page.revision;offset=page.nextOffset??0;
    if(all.length>1000000)throw Error('Measurement scope exceeds display limit');
-  }while(offset);return all.filter(row=>!['wasm2js','deno','wasm2rs'].includes(row.engine));
-  }catch(error){if((error as {status?:number}).status!==409||attempt>=3)throw error;compactClient.invalidate();signal.throwIfAborted();}
+  }while(offset);return Object.assign(all.filter(row=>!['wasm2js','deno','wasm2rs'].includes(row.engine)),{dataRevision,activeVersions});
+  }catch(error){if((error as {status?:number}).status===422&&phase==='*'&&limit>256){limit=Math.floor(limit/2);signal.throwIfAborted();continue;}if((error as {status?:number}).status!==409||attempt>=3)throw error;compactClient.invalidate();signal.throwIfAborted();}
  }
 }
 type Summary={revision:string;platforms:(PlatformChoice&{capturedAt?:string;importedAt?:string;revision?:string;latestRevision?:string;historyRevision?:string;latestRows?:number;latestTimingSamples?:number;allTimingSamples?:number})[]};
 let summary:Summary|undefined;
+let summaryCheckedAt=0;
 const metadataMachines=new Map<MachineId,string>();
 const machineRevision=(machine:MachineId,value=summary)=>JSON.stringify(platformTargets.find(target=>target.machine===machine)?.platforms.map(id=>{const p=value?.platforms.find(p=>p.id===id);return p?.latestRevision||p?.revision||value?.revision}));
 const loadedMachines=new Map<MachineId,string>();
+const loadedPhases=new Map<MachineId,Set<string>>();
+const phaseNames=['compile','instantiate','first-call','steady'];
+function wantedMainPhases(){
+ const phases=new Set(['compile','steady']);
+ const ofMetric=(metric:string)=>(({compile:'compile',rssCompile:'compile',inst:'instantiate',rssInst:'instantiate',first:'first-call'} as Record<string,string>)[metric]||'steady');
+ phases.add(ofMetric(ui.metric));
+ const drawer=ui.drawer;
+ if(drawer?.type==='cell')phases.add(ofMetric(drawer.m));
+ if(drawer?.type==='aggregate'){
+  if(drawer.group==='lat')phases.add(phaseNames[drawer.col]||'steady');
+  if(drawer.group==='mem')for(const p of drawer.col===3?phaseNames:[['compile','instantiate','steady'][drawer.col]||'steady'])phases.add(p);
+ }
+ return phaseNames.filter(p=>phases.has(p));
+}
 let platformTargets:{platforms:string[];machine:MachineId}[]=[];
 let historyAbort:AbortController|undefined;
 let historyScope='';
@@ -135,11 +152,13 @@ export async function loadHistoryComparison(scope:PageScope,metric:OtMetricKey,f
  try{const result=await get<HistoricalComparison>('/api/history/comparison?'+query,signal);signal.throwIfAborted();if(result.revision!==revision){historyScope='';await refreshHistory(scope,metric,workload);return}for(const change of result.items)rememberHistoryChange(key,change,metric);comparisonScope=requestScope}
  catch(error){if(!signal.aborted)apiHistory.error=String(error)}
 }
-export async function connectSite(_origin='',_revision?:string){
+export async function connectSite(_origin='',_revision?:string,retry=0){
  abort?.abort();abort=new AbortController();const signal=abort.signal;apiView.loading=true;apiView.error='';
  try{
   const checkpoint=computationCheckpoint(signal);
-  const fresh=await get<Summary>('/api/summary',signal,true);
+  const refresh=!summary||Date.now()-summaryCheckedAt>15000;
+  const fresh=await get<Summary>('/api/summary',signal,refresh);
+  if(refresh)summaryCheckedAt=Date.now();
   if(summary&&summary.revision!==fresh.revision){
    for(const p of fresh.platforms){const previous=summary.platforms.find(old=>old.id===p.id);
     const latestChanged=(previous?.latestRevision||previous?.revision||summary.revision)!==(p.latestRevision||p.revision||fresh.revision);
@@ -175,34 +194,45 @@ export async function connectSite(_origin='',_revision?:string){
    signal.throwIfAborted();datasetView.current=view;datasetView.generation++;metadataMachines.set(ui.machine,selectedRevision);apiView.ready=true;
    if(typeof location==='undefined'||!location.pathname.startsWith('/history'))await loadOverview({...ui.scope,machine:ui.machine,snapshot:ui.snap,metric:ui.metric},'steady','',signal);return;
   }
-  if(loadedMachines.get(ui.machine)===captureRevision){apiView.ready=true;return}
+  const reuse=loadedMachines.get(ui.machine)===captureRevision;
+  const wanted=corpus==='main'?wantedMainPhases():phaseNames;
+  const previousPhases=reuse?loadedPhases.get(ui.machine):undefined;
+  if(reuse&&wanted.every(p=>previousPhases?.has(p))){apiView.serverAggregates=pathname==='/benchmarks';apiView.ready=true;return}
+  const missing=corpus==='main'?wanted.filter(p=>!previousPhases?.has(p)):[];
+  apiView.phaseLoading=apiView.ready;
   const view={...datasetView.current,hosts:{...datasetView.current.hosts},reports:{...datasetView.current.reports},featureVersions:{...datasetView.current.featureVersions}};const catalogue=new Map<string,Bench>();const historyTargets:{platforms:string[];machine:MachineId}[]=[];let timingSamples=0;let timingSamplesComplete=true;
   for(const {machine,platforms:group} of platformGroups(platforms.items)){
    const platform=group[0];
-   const host=(machine===ui.machine?{...view.hosts[machine],configurations:{},snapshots:{s1:{},s2:{}}}:{...view.hosts[machine]}) as typeof view.hosts[MachineId];
+   const host=(machine===ui.machine?{...view.hosts[machine],configurations:reuse?{...view.hosts[machine].configurations}:{},snapshots:reuse?{s1:{...view.hosts[machine].snapshots.s1},s2:{...view.hosts[machine].snapshots.s2}}:{s1:{},s2:{}}}:{...view.hosts[machine]}) as typeof view.hosts[MachineId];
    view.hosts[machine]=host;host.capturedAt=(platform as Summary['platforms'][number]).capturedAt;host.importedAt=(platform as Summary['platforms'][number]).importedAt;host.latestRows=(platform as Summary['platforms'][number]).latestRows;host.label=machineLabel(platform.cpu);host.os=`${platform.os}/${platform.arch} · ${platform.kernel}`;host.policy={cores:String(platform.cores),memory:platform.memoryBytes?`${(platform.memoryBytes/1024**3).toFixed(1)} GiB`:'not collected'};
    if(machine!==ui.machine)continue;
    view.featureVersions[machine]=[];
    const normalize=(row:ScalarResult):ScalarResult=>row.engine.startsWith('wago-')&&!isLocalComparison(row.engine)?{...row,engine:'wago'}:row;
-   const current=await Promise.all(group.flatMap(platform=>['compile','instantiate','first-call','steady'].map(phase=>rows(platform.id,phase,signal,false,corpus))));
+   const current=await Promise.all(group.map(platform=>rows(platform.id,'*',signal,false,corpus,missing,reuse&&corpus==='main')));
+   if(current.some((rows,i)=>rows.dataRevision&&rows.dataRevision!==(group[i] as Summary['platforms'][number]).latestRevision))throw Object.assign(Error('Dataset changed while loading'),{changed:true});
    const raw=current.flat().map(normalize);
-   const all=[...selectEngineVersions(raw.filter(row=>!row.workload.startsWith('features/'))),...selectEngineVersions(raw.filter(row=>row.workload.startsWith('features/')))] as ScalarResult[];
+   // Schema 4 already selected each engine's current snapshot. Multiple physical
+   // platform records still need a merged selection, as do older API servers.
+   const all=current.length===1&&current[0].activeVersions?raw:[...selectEngineVersions(raw.filter(row=>!row.workload.startsWith('features/'))),...selectEngineVersions(raw.filter(row=>row.workload.startsWith('features/')))] as ScalarResult[];
    historyTargets.push({platforms:group.map(p=>p.id),machine});
+   if(reuse)for(const b of view.catalogue)catalogue.set(b.id,b);
    const phases=new Map<string,Set<string>>();
    for(const row of all){const key=JSON.stringify([row.engine,row.workload]);const set=phases.get(key)||new Set<string>();set.add(row.phase);phases.set(key,set);const pause=checkpoint();if(pause)await pause;}
    for(const row of all){
     const pause=checkpoint();if(pause)await pause;
     if(row.latencyStatus==='ok'){if(row.samplesNs?.length||row.timingSamples)timingSamples+=row.samplesNs?.length||row.timingSamples||0;else timingSamplesComplete=false;}
-    const cid=slot(row.engine);const cfg=CFG.find(c=>c.id===cid)!;CB[cid]=cfg;if(!row.workload.startsWith('features/')||!host.configurations[cid])host.configurations[cid]={runtime:cfg.rt,version:row.engine.startsWith('wago-')&&!isLocalComparison(row.engine)?row.engine.slice(5)+' · '+row.version:row.version,backend:row.backend,source:row.source};view.configurations[cid]=row.engine;
+    const cid=slot(row.engine);const cfg=CFG.find(c=>c.id===cid)!;CB[cid]=cfg;if(!host.configurations[cid]||!reuse&&!row.workload.startsWith('features/'))host.configurations[cid]={runtime:cfg.rt,version:row.engine.startsWith('wago-')&&!isLocalComparison(row.engine)?row.engine.slice(5)+' · '+row.version:row.version,backend:row.backend,source:row.source};view.configurations[cid]=row.engine;
     const report=row.capturedAt+'|'+row.engine;view.reports[report]={runId:report,created:row.capturedAt,evidence:'',sha256:'',options:{},codeRecords:[],configurations:[row.engine],host:machine};
     // Host-call mechanism workloads feed the call-latency view only; they are not listed as workloads.
-    if(!row.workload.startsWith('mechanisms/')&&!catalogue.has(row.workload))catalogue.set(row.workload,{id:row.workload,artifactSha256:row.artifactSha256,tags:row.display?.tags||[],kb:row.display?.bytes?row.display.bytes/1024:null,ms:null,group:row.display?.group||(row.workload.startsWith('mechanisms/')?'Host calls':row.workload.split('/')[1]||'Other workloads'),purpose:row.display?.purpose||row.wasm,abi:row.display?.abi||'',src:row.display?.source,reset:row.display?.reset,evidenceScope:phases.get(JSON.stringify([row.engine,row.workload]))?.has('steady')?'execution':phases.get(JSON.stringify([row.engine,row.workload]))?.has('instantiate')?'compile-and-instantiate':'compile-only'});
+    if(!row.workload.startsWith('mechanisms/')&&!catalogue.has(row.workload))catalogue.set(row.workload,{id:row.workload,artifactSha256:row.artifactSha256,baseline:row.display?.tags?.includes('baseline'),tags:row.display?.tags||[],kb:row.display?.bytes?row.display.bytes/1024:null,ms:null,group:row.display?.group||(row.workload.startsWith('mechanisms/')?'Host calls':row.workload.split('/')[1]||'Other workloads'),purpose:row.display?.purpose||row.wasm,abi:row.display?.abi||'',src:row.display?.source,reset:row.display?.reset,evidenceScope:phases.get(JSON.stringify([row.engine,row.workload]))?.has('steady')?'execution':phases.get(JSON.stringify([row.engine,row.workload]))?.has('instantiate')?'compile-and-instantiate':'compile-only'});
     const base={report,created:row.capturedAt,contract:row.contractSha256,configuration:row.engine,observationId:row.observationId,platformId:row.platformId,asOf:row.source?.asOf};
     const phase=({compile:'compile',instantiate:'inst','first-call':'first',steady:'steady'} as const)[row.phase];
     host.snapshots.s1[`${row.workload}|${cid}|${phase}`]={...base,latencySummary:row.latencySummary,...(row.sampleStats?{sampleStats:{count:row.sampleStats.count,mean:row.sampleStats.mean/1e6,stdDev:row.sampleStats.stdDev==null?null:row.sampleStats.stdDev/1e6,min:row.sampleStats.min/1e6,max:row.sampleStats.max/1e6}}:{}),sampling:row.sampling,samples:row.samplesNs?.map(value=>value/1e6),st:status(row.latencyStatus),...(row.latencyNs!=null?{v:row.latencyNs/1e6}:{})};
     const memory=({compile:'rssCompile',instantiate:'rssInst','first-call':'rssFirst',steady:'rss'} as const)[row.phase];
     host.snapshots.s1[`${row.workload}|${cid}|${memory}`]={...base,st:status(row.memoryStatus),...(row.peakRssBytes!=null?{v:row.peakRssBytes/1024**2}:{})};
-    host.snapshots.s1[`${row.workload}|${cid}|code`]={...base,st:status(row.codeStatus),...(row.codeBytes!=null?{v:row.codeBytes/1024}:{})};
+    const codeKey=`${row.workload}|${cid}|code`,oldCode=host.snapshots.s1[codeKey];
+    const oldPhase=['compile','inst','first','steady'].findIndex(p=>oldCode?.observationId!=null&&host.snapshots.s1[`${row.workload}|${cid}|${p}`]?.observationId===oldCode.observationId);
+    if(phaseNames.indexOf(row.phase)>=oldPhase)host.snapshots.s1[codeKey]={...base,st:status(row.codeStatus),...(row.codeBytes!=null?{v:row.codeBytes/1024}:{})};
    }
    for(const engine of new Set(all.filter(r=>r.workload.startsWith('features/')).map(r=>r.engine))){
     const measurements=all.filter(r=>r.engine===engine&&r.workload.startsWith('features/'));
@@ -216,9 +246,14 @@ export async function connectSite(_origin='',_revision?:string){
   if(signal.aborted)return;
   view.catalogue=[...new Map([...view.catalogue,...catalogue.values()].map(b=>[b.id,b])).values()];view.applicationConfigurations=[...new Set([...slots.values()])];view.statistics={machines:platformTargets.length,timingSamples:fresh.platforms.reduce((n,p)=>n+(p.latestTimingSamples||0),0),allTimingSamples:fresh.platforms.reduce((n,p)=>n+(p.allTimingSamples||0),0)};
   if(!apiView.ready&&typeof location!=='undefined'){const shown=new URL(location.href).searchParams.get('rt');if(shown){const ids=shown.split(',');ui.hide=Object.fromEntries(CFG.map(c=>[c.id,!ids.includes(c.id)]));}}
-  datasetView.current=view;sortCFG();datasetView.revision='';datasetView.generation++;apiView.ready=true;loadedMachines.set(ui.machine,captureRevision);
+  if(pathname==='/benchmarks'){
+   try{await loadOverviews({...ui.scope,machine:ui.machine,snapshot:ui.snap,metric:ui.metric},['compile','inst','first','steady','rssCompile','rssInst','rss','rssAverage','code'],signal,view,(fresh.platforms.find(p=>p.id===platformTargets.find(t=>t.machine===ui.machine)?.platforms[0]))?.latestRevision)}
+   catch(error){signal.throwIfAborted();if((error as {changed?:boolean}).changed)throw error;for(const metric of ['compile','inst','first','steady','rssCompile','rssInst','rss','rssAverage','code'])apiView.aggregateErrors[aggregateKey(ui.scope,metric)]=String(error)}
+  }
+  signal.throwIfAborted();apiView.serverAggregates=pathname==='/benchmarks';
+  datasetView.current=view;sortCFG();datasetView.revision='';datasetView.generation++;apiView.ready=true;loadedMachines.set(ui.machine,captureRevision);loadedPhases.set(ui.machine,new Set([...(previousPhases||[]),...wanted]));
   if(!machines.includes(ui.machine)&&machines.length)ui.machine=machines[0];datasetView.machine=ui.machine;
- }catch(error){if(!signal.aborted)apiView.error=String(error)}finally{if(!signal.aborted)apiView.loading=false}
+ }catch(error){if(!signal.aborted&&(error as {changed?:boolean}).changed&&retry<2){summaryCheckedAt=0;loadedMachines.delete(ui.machine);compactClient.invalidate();return connectSite(_origin,_revision,retry+1)}if(!signal.aborted)apiView.error=String(error)}finally{if(!signal.aborted){apiView.loading=false;apiView.phaseLoading=false}}
 }
 export async function loadCellSamples(machine:MachineId,snapshot:'s1'|'s2',workload:string,cid:CfgId,metric:MetricKey,signal:AbortSignal){
  const cell=datasetView.current.hosts[machine].snapshots[snapshot][`${workload}|${cid}|${metric}`];
@@ -256,18 +291,23 @@ export async function loadHistoryReport(scope:PageScope,metric:OtMetricKey,cid:C
 export async function loadOverview(scope:PageScope,metric:MetricKey|'rssAverage',feature='',signal?:AbortSignal){
  if(feature)return;await loadOverviews(scope,[metric],signal);
 }
-export async function loadOverviews(scope:PageScope,metrics:(MetricKey|'rssAverage')[],signal?:AbortSignal){
+export async function loadOverviews(scope:PageScope,metrics:(MetricKey|'rssAverage')[],signal?:AbortSignal,preparedView?:typeof datasetView.current,expectedRevision?:string){
+ scope={...scope,hide:{...scope.hide}};
  const target=platformTargets.find(target=>target.machine===scope.machine);if(!target||!metrics.length)return;
- const engines=[...slots].filter(([,id])=>!scope.hide[id]&&!!viewData.hosts[scope.machine].configurations[id]).map(([engine])=>engine);
- const query=new URLSearchParams({platform:target.platforms[0],...(metrics.length===1?{metric:metrics[0]}:{metrics:metrics.join(',')}),weighting:scope.weighting,cohort:scope.cohortMode||'shared',average:scope.average||'geo',engines:engines.join(','),baseline:trackId(scope.baseline)||''});
+ const source=preparedView||viewData;const variants=metrics.length>1?['geo','mean'] as const:[scope.average||'geo'];
+ if(metrics.every(metric=>variants.every(average=>!!apiView.precomputed[aggregateKey({...scope,average:average as 'geo'|'mean'},metric)]&&(!expectedRevision||apiView.precomputed[aggregateKey({...scope,average:average as 'geo'|'mean'},metric)].revision===expectedRevision))))return;
+ const engines=[...slots].filter(([,id])=>!scope.hide[id]&&!!source.hosts[scope.machine].configurations[id]).map(([engine])=>engine);
+ const query=new URLSearchParams({platform:target.platforms[0],...(metrics.length===1?{metric:metrics[0]}:{metrics:metrics.join(',')}),weighting:scope.weighting,cohort:scope.cohortMode||'shared',average:metrics.length>1?'both':scope.average||'geo',engines:engines.join(','),baseline:source.configurations[scope.baseline]||trackId(scope.baseline)||''});
  let results:CompactAggregate[]=[];
  for(let attempt=0;;attempt++){
   try{if(metrics.length===1)results=[await get<CompactAggregate>('/api/aggregates?'+query,signal||new AbortController().signal)];else results=(await get<{items:CompactAggregate[]}>('/api/aggregates?'+query,signal||new AbortController().signal)).items;break}
   catch(error){if((error as {status?:number}).status!==409||attempt>=2)throw error;signal?.throwIfAborted()}
  }
  if(signal?.aborted)return;
- for(const result of results){const key=aggregateKey(scope,result.metric);apiView.precomputed[key]=result;
-  for(const card of result.cards){const report=(card.latestCreated||'')+'|'+card.engine;if(card.latestCreated&&!datasetView.current.reports[report])datasetView.current.reports[report]={runId:report,created:card.latestCreated,evidence:'',sha256:'',options:{},codeRecords:[],configurations:[card.engine],host:scope.machine}}
+ if(expectedRevision&&results.some(r=>r.revision!==expectedRevision))throw Object.assign(Error('Dataset changed while preparing averages'),{changed:true});
+ const reportView=preparedView||datasetView.current;
+ for(const result of results){const key=aggregateKey({...scope,average:result.average||scope.average},result.metric);apiView.precomputed[key]=result;delete apiView.aggregateErrors[key];
+  for(const card of result.cards){const report=(card.latestCreated||'')+'|'+card.engine;if(card.latestCreated&&!reportView.reports[report])reportView.reports[report]={runId:report,created:card.latestCreated,evidence:'',sha256:'',options:{},codeRecords:[],configurations:[card.engine],host:scope.machine}}
  }
  const keys=Object.keys(apiView.precomputed);while(keys.length>64)delete apiView.precomputed[keys.shift()!];
 }
@@ -275,4 +315,4 @@ export async function loadOverviews(scope:PageScope,metrics:(MetricKey|'rssAvera
 export function trackId(id:CfgId){return datasetView.current.configurations[id]}
 export function resetPages(){apiView.cursors=[''];apiView.pageIndex=0}
 export function currentClient():SiteDataset|null{return null}
-export function closeSite(){abort?.abort();historyAbort?.abort();comparisonAbort?.abort();reportAbort?.abort();compactClient.close();compactClient=new CompactClient();apiView.ready=false}
+export function closeSite(){abort?.abort();historyAbort?.abort();comparisonAbort?.abort();reportAbort?.abort();compactClient.close();compactClient=new CompactClient();apiView.serverAggregates=false;apiView.ready=false}

@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -26,7 +27,12 @@ type Host struct {
 	etag          string
 	workload      WorkloadLookup
 	preparedPages bool
+	bootstrap     func(context.Context) ([]byte, error)
 }
+
+// SetBootstrap installs public metadata before the application scripts execute.
+// It is configured once before serving; private dashboard pages never receive it.
+func (h *Host) SetBootstrap(read func(context.Context) ([]byte, error)) { h.bootstrap = read }
 
 // Prepared pages embed their own immutable revision and require explicit
 // generation at publication/startup. Ordinary shell hosting keeps its behavior.
@@ -205,8 +211,23 @@ func (h *Host) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Header().Set("ETag", h.etag)
-		http.ServeContent(w, r, "index.html", time.Time{}, bytes.NewReader(h.shell))
+		shell, etag := h.shell, h.etag
+		if h.bootstrap != nil && p != "/dashboard" && p != "/dashboard/" && bytes.Contains(shell, []byte("</head>")) {
+			if data, err := h.bootstrap(r.Context()); err == nil && len(data) <= 64<<10 && len(data) > 0 {
+				// Re-marshal RawMessage to escape script delimiters at the HTML boundary,
+				// even if a future bootstrap provider does not use json.Marshal itself.
+				safe, encodeErr := json.Marshal(json.RawMessage(data))
+				if encodeErr != nil {
+					safe = []byte("null")
+				}
+				script := append([]byte(`<script type="application/json" id="wasmfyi-bootstrap">`), safe...)
+				script = append(script, []byte(`</script></head>`)...)
+				shell = bytes.Replace(shell, []byte("</head>"), script, 1)
+				etag = fmt.Sprintf("\"%x\"", sha256.Sum256(shell))
+			}
+		}
+		w.Header().Set("ETag", etag)
+		http.ServeContent(w, r, "index.html", time.Time{}, bytes.NewReader(shell))
 		return
 	}
 	name := strings.TrimPrefix(p, "/")

@@ -1,0 +1,20 @@
+import {afterEach,expect,it,vi} from 'vitest';
+import {observeSticky} from './sticky';
+afterEach(()=>vi.unstubAllGlobals());
+it('tracks the desktop boundary and viewport changes without synchronous layout reads',()=>{
+ let notify!:(entries:IntersectionObserverEntry[])=>void,change!:()=>void;
+ const disconnect=vi.fn(),removeEventListener=vi.fn();
+ const media={matches:true,addEventListener:vi.fn((_name,fn)=>{change=fn}),removeEventListener};
+ vi.stubGlobal('matchMedia',()=>media);
+ vi.stubGlobal('IntersectionObserver',class{constructor(callback:typeof notify){notify=callback}observe=vi.fn();disconnect=disconnect});
+ const node={getBoundingClientRect:vi.fn(()=>{throw Error('forced layout')})} as unknown as HTMLElement;
+ const state=vi.fn(),stop=observeSticky(node,state);
+ const at=(top:number)=>notify([{target:node,boundingClientRect:{top}} as unknown as IntersectionObserverEntry]);
+ at(1000);expect(state).toHaveBeenLastCalledWith(false);
+ at(0);expect(state).toHaveBeenLastCalledWith(false);
+ at(-1);expect(state).toHaveBeenLastCalledWith(true);
+ media.matches=false;change();expect(state).toHaveBeenLastCalledWith(false);
+ media.matches=true;change();expect(state).toHaveBeenLastCalledWith(true);
+ expect(node.getBoundingClientRect).not.toHaveBeenCalled();
+ stop();expect(disconnect).toHaveBeenCalledOnce();expect(removeEventListener).toHaveBeenCalledWith('change',change);
+});

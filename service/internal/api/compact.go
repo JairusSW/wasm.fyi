@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"crypto/hmac"
+	"encoding/json"
 	"errors"
 	"github.com/JairusSW/wasm.fyi/service/internal/benchdb"
 	"github.com/JairusSW/wasm.fyi/service/internal/wire"
@@ -10,6 +11,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -22,6 +24,7 @@ type BenchmarkStore interface {
 }
 
 type benchmarkAPI struct {
+	responses      *publicResponseCache
 	observer       *API
 	db             BenchmarkStore
 	token          string
@@ -34,7 +37,46 @@ func NewBenchmarks(db BenchmarkStore, token string, limits RequestLimits, fronte
 	if db == nil || len(token) < 32 || !limits.valid() {
 		return nil, wire.Invalid("invalid benchmark server configuration")
 	}
-	a := &benchmarkAPI{db: db, token: token, frontend: frontend, limiter: newRequestLimiter(limits), active: make(chan struct{}, 16), assets: make(chan struct{}, 64)}
+	a := &benchmarkAPI{responses: newPublicResponseCache(), db: db, token: token, frontend: frontend, limiter: newRequestLimiter(limits), active: make(chan struct{}, 16), assets: make(chan struct{}, 64)}
+	if host, ok := frontend.(interface {
+		SetBootstrap(func(context.Context) ([]byte, error))
+	}); ok {
+		if revisions, ok := db.(interface {
+			PublicRevision(context.Context) (string, error)
+		}); ok {
+			var mu sync.Mutex
+			var revision string
+			var data []byte
+			var cachedAt time.Time
+			host.SetBootstrap(func(ctx context.Context) ([]byte, error) {
+				current, err := revisions.PublicRevision(ctx)
+				if err != nil {
+					return nil, err
+				}
+				mu.Lock()
+				defer mu.Unlock()
+				if data != nil && revision == current && time.Since(cachedAt) < 30*time.Second {
+					return data, nil
+				}
+				summary, err := db.Summary(ctx)
+				if err != nil {
+					return nil, err
+				}
+				// encoding/json escapes HTML/script delimiters even in machine labels.
+				encoded, err := json.Marshal(summary)
+				if err != nil {
+					return nil, err
+				}
+				if len(encoded) > 64<<10 {
+					return nil, wire.Invalid("bootstrap exceeds byte limit")
+				}
+				data = encoded
+				revision = summary.Revision
+				cachedAt = time.Now()
+				return data, nil
+			})
+		}
+	}
 	a.observer = &API{limiter: a.limiter, frontend: frontend, requestHandler: http.HandlerFunc(a.serveRequest)}
 	return a, nil
 }
@@ -124,6 +166,12 @@ func (a *benchmarkAPI) serveRequest(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
 	r = r.WithContext(ctx)
+	a.cachedRead(w, r, a.serveData)
+}
+func (a *benchmarkAPI) serveData(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	var e error
+	publisher := r.URL.Path == "/api/captures" && r.Method == "POST" && hmac.Equal([]byte(r.Header.Get("Authorization")), []byte("Bearer "+a.token))
 	if a.serveSQL(w, r) {
 		return
 	}

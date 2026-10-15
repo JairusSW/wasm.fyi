@@ -7,7 +7,7 @@
  import {datasetView} from '$lib/api/view.svelte';
  import {metricSelectors} from '$lib/api/presentation';
  import {workloadBench} from '$lib/api/catalog';
- import { rankStats, tipCard, tipWho } from '$lib/tip';
+ import { rankRows, tipCard, tipWho } from '$lib/tip';
 	import { siteHref } from '$lib/links';
 	import { goto } from '$lib/navigation';
 	import { CFG } from '$lib/data/runtimes';
@@ -15,7 +15,7 @@
 	import { ST } from '$lib/data/status';
 	import type { Bench, Cfg, MetricKey } from '$lib/data/types';
 	import { fmtU, fmtUGroup, n0, workloadName } from '$lib/format';
-	import { heatField } from '$lib/heat';
+	import { heatFields } from '$lib/heat';
 	import { benchHref } from '$lib/links';
 	import { benchVal, compileExcluded, isVisible } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
@@ -62,7 +62,8 @@
 		// Place within the row and the row's best, for the tooltip.
 		const names=cols.map(c=>`${c.rt} ${c.be}`);
 		const best=['rss','rssCompile','rssInst','code'].includes(m)?'smallest':'fastest';
-		return cols.map((c,i)=>cellFor(b,c,cf,caseLabel,formatted[i],heatField(values,i),rankStats(values,i,names,v=>fmtU(v,u),best)));
+		const colors=heatFields(values),ranks=rankRows(values,names,v=>fmtU(v,u),best);
+		return cols.map((c,i)=>cellFor(b,c,cf,caseLabel,formatted[i],colors[i],ranks[i]));
 	};
 
 	type Row =
@@ -193,7 +194,8 @@
 	{/if}
 </div>
 <div class="phase-note">{PHASE_NOTE[ui.metric]}</div>
-<div class="tbl-wrap scroll" use:windowed.observe>
+{#if apiView.phaseLoading}<p class="small fg3" role="status">Loading selected measurements…</p>{/if}
+<div class="tbl-wrap scroll" use:windowed.observe aria-busy={apiView.phaseLoading}>
 	<table class="mx wl-table" aria-rowcount={view.rows.length+1}>
 		<thead>
 			<tr>

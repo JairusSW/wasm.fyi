@@ -41,6 +41,7 @@ const KNOWN: Record<string, { id: string; page?: ProposalId }> = {
   mutableGlobals: { id: 'mutable-globals' },
   signExtensions: { id: 'sign-extension' },
   saturatedFloatToInt: { id: 'saturating-float-to-int' },
+  compactImportSection: { id: 'compact-imports' },
 };
 /** Group order follows webassembly.org/features: phase 5 → 1, then inactive. */
 export const PHASE_GROUPS = [

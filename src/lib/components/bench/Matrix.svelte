@@ -3,13 +3,13 @@ import {apiView,aggregateKey,trackId} from '$lib/api/controller.svelte';
 import StatusLegend from '../StatusLegend.svelte';
 import {ST,ST_DESC} from '$lib/data/status';
 import {datasetView} from '$lib/api/view.svelte';
- import { rankStats, tipCard, tipWho } from '$lib/tip';
+ import { rankRows, tipCard, tipWho } from '$lib/tip';
 import { CALL_PATHS } from '$lib/call-paths';
 import { CFG } from '$lib/data/runtimes';
 	import { OV, UNIT } from '$lib/data/snapshot';
 	import type { MetricKey, OvKey } from '$lib/data/types';
 	import { fmtU, fmtUGroup, n0 } from '$lib/format';
-	import { heatCount, heatField, heatCorrectness } from '$lib/heat';
+	import { heatCount, heatField, heatFields, heatCorrectness } from '$lib/heat';
 	import { totalWorkloads, correctnessWorkloads, sharedCount, cov, absOf, disp, isOff, isVisible, compileExcluded } from '$lib/model';
 import { ui } from '$lib/state.svelte';
 import { viewCell, viewData } from '$lib/view-data';
@@ -87,13 +87,12 @@ import { viewCell, viewData } from '$lib/view-data';
 		const grp = ui.group as 'lat' | 'mem' | 'code';
 		return columns.map(({ cfgs, vals }) => {
 			const names = cfgs.map((c) => `${c.rt} ${c.be}`);
-			return new Map(cfgs.map((c, k) => [c.id, rankStats(vals, k, names, (v) => fmtU(v, UNIT[grp]), grp === 'lat' ? 'fastest' : 'smallest')]));
+			const ranks=rankRows(vals,names,v=>fmtU(v,UNIT[grp]),grp==='lat'?'fastest':'smallest');
+ return new Map(cfgs.map((c,k)=>[c.id,ranks[k]]));
 		});
 	});
-	const heatOf = (i: number, cid: (typeof CFG)[number]['id']) => {
-		const col = columns?.[i];
-		return col ? heatField(col.vals, col.cfgs.findIndex((c) => c.id === cid)) : 'transparent';
-	};
+	const heatColumns=$derived(columns?.map(col=>{const colors=heatFields(col.vals);return new Map(col.cfgs.map((c,k)=>[c.id,colors[k]]))}));
+ const heatOf=(i:number,cid:(typeof CFG)[number]['id'])=>heatColumns?.[i]?.get(cid)||'transparent';
 
 	// End-to-end on the Latency tab: compile + instantiate + first call + one steady call,
 	// the sum of the four phase aggregates shown in the row. Missing or excluded phases give no total.
@@ -109,10 +108,11 @@ import { viewCell, viewData } from '$lib/view-data';
 		const names = cfgs.map((c) => `${c.rt} ${c.be}`);
 		const values = totals.map((t) => t?.total ?? null);
 		const formatted = fmtUGroup(values, 'ms');
+ const colors=heatFields(values),ranks=rankRows(values,names,v=>fmtU(v,'ms'));
 		return new Map(cfgs.map((c, k) => {
 			const t = totals[k];
 			return [c.id, t
-				? { text: '~' + formatted[k], bg: heatField(values, k), color: 'var(--fg)', stats: [...rankStats(values, k, names, (v) => fmtU(v, 'ms')), ...indices.map((phase,i): [string, string] => [g.cols[phase].toLowerCase(), fmtU(t.parts[i], 'ms')])] }
+				? { text: '~' + formatted[k], bg: colors[k], color: 'var(--fg)', stats: [...ranks[k], ...indices.map((phase,i): [string, string] => [g.cols[phase].toLowerCase(), fmtU(t.parts[i], 'ms')])] }
 				: { text: '—', bg: 'transparent', color: 'var(--fg3)', stats: [] as [string, string][] }];
 		}));
 	};
@@ -150,7 +150,7 @@ import { viewCell, viewData } from '$lib/view-data';
 					const metric=grp==='mem'&&i===3?'rssAverage':g.metrics[i];
 					const key=aggregateKey(s,metric);
 					const timingReason=apiView.precomputed[key]?.cards.find(card=>card.engine===trackId(c.id))?.unavailableReason;
-					const loading=!apiView.aggregateErrors[key]&&!apiView.aggregates[key]&&!!datasetView.revision;
+					const loading=!apiView.aggregateErrors[key]&&(apiView.serverAggregates?!apiView.precomputed[key]:!apiView.aggregates[key]&&!!datasetView.revision);
      const note=interpreter?ST_DESC.na:timingReason==='timer-resolution'?'Unavailable: retained samples are all zero at the recorded timer resolution; a positive geometric mean cannot be calculated.':timingReason==='incomplete-reference'?'Unavailable: this configuration has no usable measurement for every workload in the selected reference set.':apiView.aggregateErrors[key]||ST_DESC.unavail;
      return {text:interpreter?ST.na[0]:loading?'loading…':ST.unavail[0],note,bg:'transparent',color:'var(--fg3)'};
 				}

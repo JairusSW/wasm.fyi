@@ -5,15 +5,9 @@
 	const file = $derived(mark ? 'logo-mark' : 'logo');
 </script>
 
-<span class="logo" style:width="{mark ? height : width}px" style:height="{height}px" role="img" aria-label="wasm.fyi">
-	<img class="black" src="/brand/{file}-black.png" alt="" width={mark ? 512 : 1200} height={mark ? 512 : 212} />
-	<img class="white" src="/brand/{file}-white.png" alt="" width={mark ? 512 : 1200} height={mark ? 512 : 212} />
-</span>
+<span class="logo" style:width="{mark ? height : width}px" style:height="{height}px" style:--brand-light="url('/brand/{file}-black.png')" style:--brand-dark="url('/brand/{file}-white.png')" role="img" aria-label="wasm.fyi"></span>
 
 <style>
-	.logo { display: inline-block; position: relative; flex: none; vertical-align: middle; max-width: 100%; }
-	img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
-	.black { display: none; }
-	:global(html[data-theme='light']) .black { display: block; }
-	:global(html[data-theme='light']) .white { display: none; }
+ .logo { display:inline-block;position:relative;flex:none;vertical-align:middle;max-width:100%;background:var(--brand-dark) center / contain no-repeat; }
+ :global(html[data-theme='light']) .logo { background-image:var(--brand-light); }
 </style>

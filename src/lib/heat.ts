@@ -42,16 +42,19 @@ export const heatDiverge = (t: number): string => {
  * are compared on a log scale when all are positive, so the mean is the geometric mean and one
  * outlier doesn't wash out the rest. The best value is the darkest green, the worst the darkest red.
  */
-export const heatField = (values: readonly (number | null | undefined)[], i: number): string => {
-	const v = values[i];
-	const measured = values.filter((x): x is number => x != null && Number.isFinite(x));
-	if (v == null || !Number.isFinite(v) || measured.length < 2) return 'transparent';
-	const f = measured.every((x) => x > 0) ? Math.log : (x: number) => x;
-	const xs = measured.map(f);
-	const mid = xs.reduce((a, b) => a + b, 0) / xs.length;
-	const lo = Math.min(...xs), hi = Math.max(...xs), d = f(v) - mid;
-	return heatDiverge(d < 0 ? (mid > lo ? d / (mid - lo) : 0) : hi > mid ? d / (hi - mid) : 0);
-};
+export function heatFields(values: readonly (number|null|undefined)[]):string[] {
+ const measured=values.filter((x):x is number=>x!=null&&Number.isFinite(x));
+ if(measured.length<2)return values.map(()=>'transparent');
+ const f=measured.every(x=>x>0)?Math.log:(x:number)=>x;
+ const xs=measured.map(f),mid=xs.reduce((a,b)=>a+b,0)/xs.length;
+ const lo=Math.min(...xs),hi=Math.max(...xs);
+ return values.map(v=>{
+  if(v==null||!Number.isFinite(v))return 'transparent';
+  const d=f(v)-mid;
+  return heatDiverge(d<0?(mid>lo?d/(mid-lo):0):hi>mid?d/(hi-mid):0);
+ });
+}
+export const heatField=(values:readonly (number|null|undefined)[],i:number):string=>heatFields(values)[i];
 
 /** Correctness has an absolute scale: only a complete pass is green. */
 export function heatCorrectness(passed:number,total:number):string {

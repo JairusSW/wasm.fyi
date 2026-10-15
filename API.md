@@ -11,6 +11,7 @@ contracts are documented below, with client shapes in
 |---|---|---|
 | GET | `/api/summary` | Small materialized counts, machine specs and freshness |
 | GET | `/api/platforms` | Discover measured platforms |
+| GET | `/api/table` | All-phase scalar table; shared dictionaries and lazy sample detail |
 | GET | `/api/matrix` | Compact scalar table with shared metadata dictionaries |
 | GET | `/api/timeline` | Paginated historical scalar rows for explicit queries |
 | GET | `/api/history/summary` | Weekly graph points without measurement rows |
@@ -36,6 +37,56 @@ time. It does not read sample vectors. All GET responses support ETag/304.
 The matrix and timeline accept `corpus=main` (application workloads and call mechanisms)
 or `corpus=features`; omit it for all workloads. Pagination revisions include this filter.
 The benchmarks and features pages request only their own corpus.
+
+`GET /api/table?platform=ID&corpus=features&limit=16384` returns schema 4:
+current selected engine snapshots, selected separately for application and feature
+corpora, from one database snapshot. Full history remains on the history endpoints.
+Shared dictionaries cover contracts, configurations, sources, capture times and
+nullable `codeKinds`. Each row has 13 positions:
+
+```
+[observationId, contractIndex, configurationIndex, sourceIndex, capturedAtIndex,
+ phaseIndex, latencyNs, peakRssBytes, codeBytes, statusBits, codeKindIndex,
+ timingSamples, recoveredMeanNs]
+```
+
+`phaseIndex` is 0=compile, 1=instantiate, 2=first-call, 3=steady.
+`statusBits` packs latency, memory and code into consecutive 3-bit fields, starting
+with latency in the lowest bits. Each field is 0=not-measured, 1=ok, 2=failed,
+3=unsupported, 4=disabled, 5=unavailable. Numeric values retain their precision.
+`recoveredMeanNs` is the positive retained-sample mean only when needed to recover
+a zero-resolution latency scalar; otherwise null. Policies, complete statistics
+and ordered samples load through `/api/observation` when a cell opens.
+
+Optional `phases=compile,steady` limits phase detail while including the last
+available phase per engine/workload for correctness and native-code provenance.
+`delta=1` returns strictly the requested phases for merging into an existing
+same-revision client view. The main page starts with compile and steady, then
+fetches additional phases once as needed. Features load all four phases.
+
+Table pages are bounded to 16,384 rows and 4 MiB of decoded JSON. The envelope's
+phase is `*`; `revision` binds pagination and filters, while `dataRevision` identifies
+the underlying platform snapshot across different phase queries. Clients reject
+mixed data revisions and restart loading. Pagination uses the matrix offset rules;
+phase order is compile → instantiate → first-call → steady.
+
+Public app HTML embeds the small `/api/summary` payload as escaped inert JSON,
+avoiding a separate startup request. It is bounded to 64 KiB, cached for up to
+30 seconds with immediate data-revision invalidation, and included in the HTML
+ETag. Dashboard HTML is excluded. The client falls back to the summary endpoint
+when the bootstrap is unavailable and revalidates metadata normally afterward.
+
+`/api/aggregates?metrics=compile,inst,first,steady&average=both` batches both
+arithmetic and geometric means in one response. Each item includes `average`.
+The benchmarks page loads these before publishing the table and reuses them
+when toggling averages; it does not recompute all rankings on the UI thread.
+
+Public table, aggregate, history-summary and metadata responses use a bounded
+512 MiB / 2,048-entry server cache. Identical concurrent requests share one build;
+identity and gzip representations are separate. Database revision changes
+invalidate cached responses immediately; entries expire 30 seconds after creation.
+ETag hits avoid SQL table scans, JSON encoding and compression. Authentication,
+admin responses, errors and observation detail are not cached here.
 
 `GET /api/matrix?platform=ID&phase=steady&limit=1000` returns schema 2 with
 `contracts`, `configurations`, `sources`, `sampling`, `capturedAt`, and `rows`

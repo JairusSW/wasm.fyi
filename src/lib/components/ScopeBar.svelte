@@ -1,4 +1,6 @@
 <script lang="ts">
+ import {observeSticky} from '$lib/sticky';
+ import {page} from '$app/state';
 	import {shortVersion} from '$lib/version-identity';
 	import { tipCard, tipWho } from '$lib/tip';
 	import { CFG, MACH, execOf, langOf, type Exec } from '$lib/data/runtimes';
@@ -18,6 +20,7 @@
 	$effect(() => {datasetView.machine=ui.machine;untrack(()=>{const count=viewData.history[ui.machine].points.length;ui.histTo=Math.max(0,count-1);ui.histFrom=Math.min(ui.histFrom,Math.max(0,count-1));});});
 	$effect(() => { if (ui.snap !== 's1') ui.snap = 's1'; });
 	const shown = $derived(CFG.filter((c) => !ui.scope.hide[c.id]));
+ const featureComparison=$derived(page.route.id==='/features');
 	// Phones collapse the scope controls behind a one-line summary.
 	let open = $state(false);
 
@@ -35,21 +38,7 @@
 	let fullH = $state(0);
 	$effect(() => {
 		if (!sentinel) return;
-		const wide = matchMedia('(min-width: 721px)');
-		const check = () => {
-			const next = wide.matches && sentinel!.getBoundingClientRect().top < 0;
-			if (next && !stuck && sectionEl) fullH = sectionEl.getBoundingClientRect().height;
-			stuck = next;
-		};
-		check();
-		addEventListener('scroll', check, { passive: true });
-		addEventListener('resize', check);
-		wide.addEventListener('change', check);
-		return () => {
-			removeEventListener('scroll', check);
-			removeEventListener('resize', check);
-			wide.removeEventListener('change', check);
-		};
+		return observeSticky(sentinel,value=>{stuck=value});
 	});
 	const compact = $derived(stuck && !hovering && !focused && !ui.adv);
 	// Hover intent: unfold after a short rest, fold a moment after leaving, so brushing past
@@ -67,9 +56,12 @@
 	// animate (GPU-composited). The chips' height says how far the backdrop slides up.
 	$effect(() => {
 		if (!chipsEl || !sectionEl) return;
-		const ro = new ResizeObserver(() => {
-			chipsH = chipsEl!.offsetHeight;
-			if (stuck) fullH = sectionEl!.offsetHeight;
+		const ro = new ResizeObserver(entries => {
+ for(const entry of entries){
+  const height=entry.borderBoxSize?.[0]?.blockSize??entry.contentRect.height;
+  if(entry.target===chipsEl)chipsH=height;
+  if(entry.target===sectionEl)fullH=height;
+ }
 		});
 		ro.observe(chipsEl);
 		ro.observe(sectionEl);
@@ -142,7 +134,7 @@
 	const advItems = $derived([
 		{ k: 'OS', v: MACH[ui.machine].os },
 		{ k: 'Runtimes', v: Object.values(viewData.hosts[ui.machine].configurations).map(c=>c!.runtime+' '+shortVersion(c!.version)).join(' · ') },
-		{ k: 'Aggregation', v: (ui.average==='mean'?'mean':'geomean')+', every workload weighted equally · '+(ui.cohortMode==='shared'?'least-covered engine reference':'passed per engine') },
+		{ k: 'Aggregation', v: (ui.average==='mean'?'mean':'geomean')+', every workload weighted equally · '+(ui.cohortMode==='shared'?(featureComparison?'passed by every selected engine':'least-covered engine reference'):'passed per engine') },
 		{ k: 'Cache state', v: 'cold — no on-disk artifact cache' },
 		{ k: 'Compilation workers', v: 'Per-runtime configuration; CPU affinity uncontrolled' },
 		{ k: 'Warmup & sampling', v: 'Per-cell sealed report records launches, samples and warmups' },
@@ -196,7 +188,7 @@
 		</div>
 		<div class="side">
             <div class="delta-format">
-                <Seg options={[['per-engine', 'Passed per engine'], ['shared', 'Passed on all engines']]} value={ui.cohortMode} onselect={v=>ui.cohortMode=v as 'shared' | 'per-engine'} label="Average corpus selection" tips={[tipCard({ title: 'Each engine’s own passes', vis: 'cohort-each', note: 'green = averaged' }), tipCard({ title: 'Least-covered engine’s passing workloads', note: 'Use the smallest passing corpus set among shown engines. An average requires every workload in that reference set.' })]} />
+                <Seg options={[['per-engine', 'Passed per engine'], ['shared', 'Passed on all engines']]} value={ui.cohortMode} onselect={v=>ui.cohortMode=v as 'shared' | 'per-engine'} label="Average corpus selection" tips={[tipCard({ title: 'Each engine’s own passes', vis: 'cohort-each', note: 'green = averaged' }), tipCard({ title: featureComparison?'Passed by every selected engine':'Least-covered engine’s passing workloads', note: featureComparison?'Only contracts passed and measured by every selected engine enter feature comparisons. Dimmed, crossed-out cells are excluded.':'Use the smallest passing corpus set among shown engines. An average requires every workload in that reference set.' })]} />
             </div>
 			<div class="delta-format">
 				<Seg options={[['geo', 'Geomean'], ['mean', 'Mean']]} value={ui.average} onselect={(v) => (ui.average = v as 'geo' | 'mean')} label="Average" tips={[tipCard({ title: 'Geometric mean', vis: 'avg-geo' }), tipCard({ title: 'Plain mean', vis: 'avg-mean' })]} />

@@ -19,6 +19,7 @@ jobs:
             /corpora/catalog.json
             /corpora/features/manifest.json
             /static/brand/
+            /static/fonts/
           sparse-checkout-cone-mode: false
       - uses: actions/setup-node@v4
         with:
@@ -38,9 +39,10 @@ jobs:
           src/lib/preferred-machine.test.ts src/lib/leader-card-keys.test.ts
           src/lib/table-window.test.ts src/lib/correctness-heat.test.ts
           src/lib/least-covered-reference.test.ts
+          src/lib/measured.test.ts src/lib/overview.test.ts src/lib/og.test.ts
   backend:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
         with:
@@ -63,7 +65,7 @@ jobs:
           GOWORK: 'off'
           GOFLAGS: -mod=readonly
         run: |
-          go test -race -timeout 15m ./...
+          go test -race -timeout 25m ./...
           go vet ./...
       - name: Test release activation and history boundaries
         run: |

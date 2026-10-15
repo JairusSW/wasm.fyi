@@ -111,6 +111,14 @@ batches; code uses a separate compile pass. Phase barriers default off because
 not every selected scalar adapter/scenario supports them. Turn them on only for
 a supported configuration/scenario; no timing headline can come from that pass.
 
+Host-call fixtures use an identity callback that returns its input. Wago snapshots
+register it directly with `Imports.HostFunc`, matching the typed registration used
+by Wasmtime (`Func::wrap`) and wazero (`WithFunc`) and the ordinary JavaScript
+import used by V8. Runtime-owned `HostFuncRef` callbacks exercise a different
+embedding and must not replace the direct callback in this comparison. The
+`direct-identity-v1` SDK and capture namespace keeps previous owned-callback
+builds and measurements out of new direct-callback runs.
+
 For a bounded local validation or a different host configuration:
 
 ```sh
@@ -389,3 +397,26 @@ Primary interfaces and build recipes:
 [Chicory embedding](https://chicory.dev/docs/),
 [WasmEdge release assets](https://github.com/WasmEdge/WasmEdge/releases/tag/0.17.1),
 [Mozilla release shells](https://archive.mozilla.org/pub/firefox/releases/143.0/jsshell/).
+
+### Discard finished historical SDKs
+
+`cleanup-finished-history.py` removes an SDK only after every planned backend/week
+using it has completed and every workload's capture is in the publisher's durable
+receipt ledger. Shared Wasmtime, Wasmer, and Wizard SDKs stay until their consumers
+finish. Incomplete builds remain available for retries. Captures, aliases,
+completion/error ledgers, installed shared toolchains, and production databases
+are retained. Closed logs are discarded; open logs and the current engine are
+protected. Cleanup uses the same atomic measurement lock as builders and collectors,
+so disk deletion cannot overlap timings.
+
+Install `deploy/systemd/wasmfyi-history-cleanup.service` and configure
+`/etc/wasmfyi/history-cleanup.env` with `WASMFYI_CAMPAIGN_ROOT` (the permanent campaign
+path) and `WASMFYI_PUBLICATION_LEDGER` (publisher `published.json`). Enable it with
+`systemctl enable --now wasmfyi-history-cleanup`. It waits for the host lease,
+checks every 30 seconds after a sweep, and retains only a small current
+`sdk-cleanup-status.json` receipt. For a one-shot preview, omit `--apply`:
+
+```sh
+python3 scripts/cleanup-finished-history.py /path/to/campaign \
+  --ledger /var/lib/wasmfyi-publisher/campaign/published.json
+```

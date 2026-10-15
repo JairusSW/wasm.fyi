@@ -139,6 +139,9 @@ func loadAggregateSnapshot(ctx context.Context, q queryer, pid int64) (*aggregat
 		if e != nil {
 			return nil, e
 		}
+		if strings.HasPrefix(r.Workload, "features/") {
+			continue
+		}
 		key := configKey(r)
 		cfg := configs[key]
 		clock := r.CapturedAt

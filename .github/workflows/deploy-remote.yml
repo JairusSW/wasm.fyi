@@ -30,6 +30,7 @@ jobs:
             /corpora/features/manifest.json
             /static/favicon.svg
             /static/brand/
+            /static/fonts/
       - uses: actions/setup-node@v4
         with:
           node-version: '26.4.0'

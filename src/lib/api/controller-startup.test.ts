@@ -26,7 +26,7 @@ it('keeps PR snapshots separate from main and ARM64 branch and accepts their ini
  vi.stubGlobal('fetch',async(path:string)=>{
   const url=new URL(path,'http://localhost');
   if(url.pathname==='/api/summary')return Response.json({revision:'r',platforms:[platform]});
-  if(url.pathname==='/api/matrix')return Response.json({schema:2,revision:'r',platform:'apple',phase:url.searchParams.get('phase'),total:3,nextOffset:null,contracts:[{workload:'applications/test',wasm:'test.wasm',artifactSha256:'a',contractSha256:'c'}],configurations:engines.map((engine,i)=>({engine,version:versions[i],backend:'railshot'})),sources:versions.map((revision,i)=>({repository:'wago-org/wago',revision,ref:engines[i],kind:'snapshot',asOf:'2026-10-11'})),sampling:[null],capturedAt:['2026-10-11'],rows:engines.map((_,i)=>[i+1,0,i,i,0,1000,null,null,'ok','not-measured','not-measured',null,5,0,null])});
+  if(url.pathname==='/api/table')return Response.json({schema:3,revision:'r',platform:'apple',phase:'*',total:3,nextOffset:null,contracts:[{workload:'applications/test',wasm:'test.wasm',artifactSha256:'a',contractSha256:'c'}],configurations:engines.map((engine,i)=>({engine,version:versions[i],backend:'railshot'})),sources:versions.map((revision,i)=>({repository:'wago-org/wago',revision,ref:engines[i],kind:'snapshot',asOf:'2026-10-11'})),sampling:[null],capturedAt:['2026-10-11'],rows:engines.map((_,i)=>[i+1,0,i,i,0,1000,null,null,'ok','not-measured','not-measured',null,5,0,null,'steady'])});
   return Response.json({revision:'r',platform:'apple',metric:'steady',workloads:[],participants:engines,cards:[],items:[],lanes:[],weeks:[]});
  });
  const {ui}=await import('../state.svelte');
@@ -40,5 +40,63 @@ it('keeps PR snapshots separate from main and ARM64 branch and accepts their ini
  expect(datasetView.current.configurations['engine:wago-pr906']).toBe('wago-pr906');
  expect(ui.hide['engine:wago-pr906']).toBe(false);
  expect(ui.hide['engine:wago-arm64-branch']).toBe(true);
+ closeSite();
+});
+it('loads all phases through one request and reuses metadata on immediate reconnect',async()=>{
+ const request=vi.fn(async(path:string)=>path==='/api/summary'?Response.json({revision:'r',platforms:[{id:'apple',cpu:'Apple M4 Max',os:'darwin',arch:'arm64',cores:16,kernel:'test',latestRevision:'r'}]}):Response.json({schema:3,revision:'r',platform:'apple',phase:'*',total:4,nextOffset:null,contracts:[{workload:'applications/test',wasm:'test.wasm',artifactSha256:'a',contractSha256:'c'}],configurations:[{engine:'wago',version:'1',backend:'railshot'}],sources:[null],sampling:[null],capturedAt:['date'],rows:['compile','instantiate','first-call','steady'].map((phase,i)=>[i+1,0,0,0,0,1000,null,null,'ok','not-measured','not-measured',null,5,0,null,phase])}));
+ vi.stubGlobal('fetch',request);vi.stubGlobal('location',{pathname:'/benchmarks/',href:'http://localhost/benchmarks/?m=m2'});
+ const {ui}=await import('../state.svelte');ui.machine='m2';
+ const {connectSite,closeSite,apiView}=await import('./controller.svelte');const {datasetView}=await import('./view.svelte');
+ await connectSite();await connectSite();
+ expect(apiView.error).toBe('');
+ const paths=request.mock.calls.map(([path])=>path);
+ expect(paths.filter(p=>p==='/api/summary')).toHaveLength(1);
+ expect(paths.filter(p=>p.startsWith('/api/table?'))).toHaveLength(1);
+ expect(paths.some(p=>p.startsWith('/api/matrix?'))).toBe(false);
+ for(const phase of ['compile','inst','first','steady'])expect(datasetView.current.hosts.m2.snapshots.s1[`applications/test|G|${phase}`]).toMatchObject({st:'ok',v:0.001});
+ closeSite();
+});
+it('loads additional phases once and preserves existing timings and native-code provenance',async()=>{
+ const request=vi.fn(async(path:string)=>{
+  if(path==='/api/summary')return Response.json({revision:'phase-cache',platforms:[{id:'apple',cpu:'Apple M4 Max',os:'darwin',arch:'arm64',cores:16,kernel:'test',latestRevision:'phase-cache'}]});
+  const url=new URL(path,'http://localhost');
+  if(url.pathname==='/api/aggregates')return Response.json({items:[]});
+  const selected=(url.searchParams.get('phases')||'compile,instantiate,first-call,steady').split(',');
+  return Response.json({schema:4,revision:'phase-cache',dataRevision:'phase-cache',platform:'apple',phase:'*',total:selected.length,nextOffset:null,contracts:[{workload:'applications/test',wasm:'test.wasm',artifactSha256:'a',contractSha256:'c'}],configurations:[{engine:'wago',version:'1',backend:'railshot'}],sources:[null],sampling:[null],codeKinds:['native-image'],capturedAt:['date'],rows:selected.map((phase,i)=>[phase==='steady'?100:i+1,0,0,0,0,['compile','instantiate','first-call','steady'].indexOf(phase),phase==='steady'?2000:1000,null,phase==='steady'?128:64,65,0,5,null])});
+ });
+ vi.stubGlobal('fetch',request);vi.stubGlobal('location',{pathname:'/benchmarks/',href:'http://localhost/benchmarks/?m=m2'});
+ const {ui}=await import('../state.svelte');ui.machine='m2';ui.metric='steady';
+ const {connectSite,closeSite,apiView}=await import('./controller.svelte');const {datasetView}=await import('./view.svelte');
+ await connectSite();expect(apiView.error).toBe('');
+ expect(datasetView.current.hosts.m2.snapshots.s1['applications/test|G|inst']).toBeUndefined();
+ ui.metric='inst';await connectSite();expect(apiView.error).toBe('');
+ expect(datasetView.current.hosts.m2.snapshots.s1['applications/test|G|inst']).toMatchObject({st:'ok',v:0.001});
+ expect(datasetView.current.hosts.m2.snapshots.s1['applications/test|G|steady']).toMatchObject({st:'ok',v:0.002});
+ expect(datasetView.current.hosts.m2.snapshots.s1['applications/test|G|code']).toMatchObject({v:0.125,observationId:100});
+ const calls=request.mock.calls.filter(([path])=>path.startsWith('/api/table?'));
+ expect(calls).toHaveLength(2);expect(new URL(calls[1][0],'http://localhost').searchParams.get('phases')).toBe('instantiate');expect(calls[1][0]).toContain('delta=1');
+ ui.metric='steady';await connectSite();ui.metric='inst';await connectSite();
+ expect(request.mock.calls.filter(([path])=>path.startsWith('/api/table?'))).toHaveLength(2);
+ closeSite();
+});
+it('restarts phase loading atomically when the dataset changes between requests',async()=>{
+ let revision='r1';
+ const request=vi.fn(async(path:string)=>{
+  if(path==='/api/summary')return Response.json({revision,platforms:[{id:'apple',cpu:'Apple M4 Max',os:'darwin',arch:'arm64',cores:16,kernel:'test',latestRevision:revision}]});
+  const url=new URL(path,'http://localhost');
+  if(url.pathname==='/api/aggregates')return Response.json({items:[]});
+  if(url.searchParams.has('delta'))revision='r2';
+  const phases=(url.searchParams.get('phases')||'steady').split(',');
+  return Response.json({schema:3,revision,dataRevision:revision,platform:'apple',phase:'*',total:phases.length,nextOffset:null,contracts:[{workload:'applications/test',wasm:'test.wasm',artifactSha256:'a',contractSha256:'c'}],configurations:[{engine:'wago',version:revision,backend:'railshot'}],sources:[null],sampling:[null],capturedAt:['date'],rows:phases.map((phase,i)=>[i+1,0,0,0,0,revision==='r1'?1000:2000,null,null,'ok','not-measured','not-measured',null,5,0,null,phase])});
+ });
+ vi.stubGlobal('fetch',request);vi.stubGlobal('location',{pathname:'/benchmarks/',href:'http://localhost/benchmarks/?m=m2'});
+ const {ui}=await import('../state.svelte');ui.machine='m2';ui.metric='steady';
+ const {connectSite,closeSite,apiView}=await import('./controller.svelte');const {datasetView}=await import('./view.svelte');
+ await connectSite();expect(apiView.error).toBe('');
+ expect(datasetView.current.hosts.m2.snapshots.s1['applications/test|G|steady']).toMatchObject({v:0.001});
+ ui.metric='inst';await connectSite();expect(apiView.error).toBe('');
+ for(const metric of ['compile','inst','steady'])expect(datasetView.current.hosts.m2.snapshots.s1[`applications/test|G|${metric}`]).toMatchObject({v:0.002});
+ expect(datasetView.current.hosts.m2.configurations.G?.version).toBe('r2');
+ expect(request.mock.calls.filter(([path])=>path==='/api/summary')).toHaveLength(2);
  closeSite();
 });
