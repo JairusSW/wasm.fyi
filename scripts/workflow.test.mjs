@@ -370,24 +370,40 @@ test('changed feature probes cannot inherit archived successes',async()=>{
   assert(!matchesCurrentFeature({id:'features/wasi-p1/retired-probe/64',sha256},current));
 });
 
-test('staged historical evidence includes the verified external trial and throughput dependencies',async()=>{
+test('staged historical evidence includes verified external trial and throughput dependencies',async()=>{
  const directory=await mkdtemp(join(tmpdir(),'wasm-fyi-history-stage-'));
+ const dataRoot=join(directory,'inputs'),destination=join(directory,'output');
  try {
-  await stageAuxiliary(directory);
   for(const name of ['history','history-hub']){
-   const staged=JSON.parse(await readFile(join(directory,name,'index.json')));
-   if(staged.type!=='immutable-history-archive'){await validateData(join(directory,name));continue;}
-   const canonical=await validateData(join(site,'data',name));
-   assert.equal(staged.sourceIndex.sha256,digest(await readFile(join(site,'data',name,'index.json'))));
-   assert.match(staged.sourceIndex.url,new RegExp('/[a-f0-9]{40}/data/'+name+'/index\\.json$'));
-   const linked=new Map(staged.reports.map(r=>[r.id,r]));
-   for(const report of canonical.reports){
-    const ref=linked.get(report.id);assert(ref,'Missing archived report reference');
-    assert.equal(ref.evidence.sha256,report.evidenceSha256);
-    assert.equal(ref.projection.sha256,digest(await readFile(join(site,'data',name,report.id+'.summary.json'))));
-    if(report.trialsEvidence){assert.equal(ref.trials.sha256,report.trialsEvidenceSha256);assert(ref.trials.url.endsWith('/'+report.trialsEvidence));}
-    if(report.throughputEvidence){assert.equal(ref.throughput.sha256,report.throughputEvidenceSha256);assert(ref.throughput.url.endsWith('/'+report.throughputEvidence));}
-   }
+   const source=join(dataRoot,name);await mkdir(source,{recursive:true});
+   const trials=JSON.stringify({schema:'interned-columns-v1',strings:[],trials:[]});
+   const throughput=JSON.stringify([]),revision='3'.repeat(40),runtimeVersion=revision+'/railshot';
+   const value={...report(),runtimes:[{id:'wago',description:{runtime_version:runtimeVersion,backend:'railshot'}}],
+    summaries:report().summaries.map(row=>({...row,runtime:'wago'})),sourceReportSha256:'4'.repeat(64),
+    trialsEvidence:'5'.repeat(64)+'.trials.json',trialsSha256:digest(trials),
+    throughputEvidence:'6'.repeat(64)+'.throughput.json',throughputSha256:digest(throughput)};
+   value.evidence=value.id+'.json';const bytes=JSON.stringify(value),evidenceSha256=digest(bytes);
+   await writeFile(join(source,value.evidence),bytes);await writeFile(join(source,value.trialsEvidence),trials);await writeFile(join(source,value.throughputEvidence),throughput);
+   await writeIndex(source,[{...compact(value),evidenceSha256}]);
+   await writeFile(join(source,'weekly.json'),JSON.stringify({weeks:['2026-10-04'],baseline:{report:value.id,evidenceSha256},results:[{status:'measured',engines:{wago:{status:'measured',revision,runtimeVersion,backend:'railshot',reports:[{runId:value.runId,collectedAt:value.created,reportSha256:value.sourceReportSha256}]}}}]}));
   }
+  await stageAuxiliary(destination,{dataRoot});
+  for(const name of ['history','history-hub']){
+   const source=join(dataRoot,name),target=join(destination,name),index=await validateData(source);
+   await validateData(target);
+   for(const file of [...datasetFiles(index),'weekly.json'])assert.deepEqual(await readFile(join(target,file)),await readFile(join(source,file)),file);
+  }
+  await writeFile(join(dataRoot,'history','5'.repeat(64)+'.trials.json'),'tampered');
+  await assert.rejects(stageAuxiliary(join(directory,'rejected'),{dataRoot}),/Trial evidence digest mismatch/);
+ } finally {await rm(directory,{recursive:true,force:true});}
+});
+
+test('an empty checkout stages no invented history',async()=>{
+ const directory=await mkdtemp(join(tmpdir(),'wasm-fyi-empty-history-'));
+ try {
+  const dataRoot=join(directory,'inputs'),destination=join(directory,'output');await mkdir(dataRoot);
+  await stageAuxiliary(destination,{dataRoot});
+  assert.deepEqual(await readdir(destination),['conformance']);
+  assert.deepEqual(JSON.parse(await readFile(join(destination,'conformance/index.json'))),{schema:1,reports:[]});
  } finally {await rm(directory,{recursive:true,force:true});}
 });

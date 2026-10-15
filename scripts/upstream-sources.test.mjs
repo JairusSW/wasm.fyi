@@ -5,7 +5,11 @@ import { join } from 'node:path';
 import { config, site, digest } from './lib/wasmbench.mjs';
 test('retained upstream sources and recipes match the selected inventory and digests',async()=>{
   const lock=JSON.parse(await readFile(join(site,'corpora/upstream/sources.json'))),settings=await config();
-  assert.deepEqual(lock.benchmarks.map(b=>b.id).sort(),[...settings.corpus.ids].sort());
+  const retained=new Set(lock.benchmarks.map(b=>b.id));
+  assert.equal(retained.size,lock.benchmarks.length,'Duplicate retained benchmark');
+  for(const id of settings.corpus.ids)assert(retained.has(id),'Selected workload lacks retained sources: '+id);
+  // Retention also includes retired WASI workloads; they are not in today's
+  // main runtime corpus, but their source provenance remains available.
   assert.match(lock.revision,/^[a-f0-9]{40}$/);
   assert.equal(new Set(lock.files.map(f=>f.path)).size,lock.files.length);
   for(const f of lock.files) {

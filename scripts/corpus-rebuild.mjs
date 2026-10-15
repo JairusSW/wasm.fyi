@@ -11,7 +11,9 @@ const settings=await config();
 if(process.version!==`v${settings.node.version}`||process.versions.v8!==settings.node.v8)throw Error('Source verification requires the pinned Node/V8 from wasmbench.config.json');
 const lock=JSON.parse(await readFile(join(site,'corpora/upstream/sources.json')));
 const contracts=parseCorpusJSON(await readFile(join(site,'corpora/upstream/contracts.json'),'utf8'));
-const requested=process.argv.find(arg=>arg.startsWith('--ids='))?.slice(6).split(',') || lock.benchmarks.map(b=>b.id);
+// Keep archived sources available through --ids without rebuilding retired
+// workloads during the default active-corpus verification.
+const requested=process.argv.find(arg=>arg.startsWith('--ids='))?.slice(6).split(',') || settings.corpus.ids;
 if(new Set(requested).size!==requested.length || requested.some(id=>!lock.benchmarks.some(b=>b.id===id)))throw Error('Select unique retained benchmark IDs');
 const directory=join(site,'.wasmbench/source-builds',`all-${new Date().toISOString().replace(/[:.]/g,'-')}-${randomUUID().slice(0,8)}`);
 const tree=join(directory,'tree');

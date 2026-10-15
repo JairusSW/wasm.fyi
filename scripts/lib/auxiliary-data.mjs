@@ -27,8 +27,8 @@ export function validateThreadEvidence(data) {
   }
 }
 
-export async function stageAuxiliary(destination) {
-  const releasePlan=join(site,'data/release-history/plan.json');
+export async function stageAuxiliary(destination,{dataRoot=join(site,'data')}={}) {
+  const releasePlan=join(dataRoot,'release-history/plan.json');
   if(await exists(releasePlan)){
     const plan=JSON.parse(await readFile(releasePlan));assert.equal(plan.schema,4);
     assert(plan.weeks.every(w=>new Date(w).getUTCDay()===6),'Release snapshots must be Saturdays');
@@ -38,7 +38,7 @@ export async function stageAuxiliary(destination) {
     assert(Array.isArray(plan.releasePins),'Missing individual release pins');
     await mkdir(join(destination,'release-history'),{recursive:true});await cp(releasePlan,join(destination,'release-history/plan.json'));
   }
-  const conformance=join(site,'data/conformance');
+  const conformance=join(dataRoot,'conformance');
   if(await exists(join(conformance,'index.json'))){
     const index=JSON.parse(await readFile(join(conformance,'index.json')));
     assert.equal(index.schema,1);
@@ -54,7 +54,7 @@ export async function stageAuxiliary(destination) {
     await mkdir(target,{recursive:true});
     await writeFile(join(target,'index.json'),JSON.stringify({schema:1,reports:[]})+'\n');
   }
-  const preflightSource=join(site,'data/wasmer-preflight');
+  const preflightSource=join(dataRoot,'wasmer-preflight');
   if(await exists(preflightSource)) {
     const target=join(destination,'preflight/wasmer');await mkdir(target,{recursive:true});
     for(const name of await readdir(preflightSource)) {
@@ -75,7 +75,7 @@ export async function stageAuxiliary(destination) {
     }
   }
   for (const [sourceName,targetName] of [['history','history'],['history-hub','history-hub']]) {
-    const source=join(site,'data',sourceName);
+    const source=join(dataRoot,sourceName);
     if (!await exists(join(source,'index.json'))) continue;
     const index=await validateData(source);
     const weekly=JSON.parse(await readFile(join(source,'weekly.json'),'utf8'));
@@ -117,7 +117,7 @@ export async function stageAuxiliary(destination) {
     const target=join(destination,targetName);await mkdir(target,{recursive:true});
     if(!await stageHistoryArchive(source,target,index))await cloneFiles(source,target,[...datasetFiles(index),'weekly.json']);
   }
-  const source=join(site,'data/threads');
+  const source=join(dataRoot,'threads');
   if(await exists(source)) {
     const target=join(destination,'threads');await mkdir(target,{recursive:true});
     for(const name of await readdir(source)) {

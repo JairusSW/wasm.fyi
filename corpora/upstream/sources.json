@@ -1336,7 +1336,7 @@
     },
     {
       "path": "corpus/workloads/semantic/nanosvg/build.sh",
-      "sha256": "20a861c4dddc92e926b0bb0f2b215545d5ed82f8d561a75b5925624197d263ec"
+      "sha256": "5486a402c47778f26f401b89af7a1d37989d657ac2670e2a40f3251909dc4890"
     },
     {
       "path": "corpus/workloads/semantic/nanosvg/LICENSE",
@@ -1404,7 +1404,7 @@
     },
     {
       "path": "corpus/workloads/semantic/yyjson/build.sh",
-      "sha256": "4ce8923c217fafcadb86aceb2029f684e5b84e07fab2a155de86b6870f368029"
+      "sha256": "295e494a2dad27084953eb8ee62c78d120249f0a0014c232caeeeb1b9f3f75d6"
     },
     {
       "path": "corpus/workloads/semantic/yyjson/LICENSE",
