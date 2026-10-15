@@ -5,7 +5,7 @@ import {workloadContract} from './workload-contract.mjs';
 const hash=b=>createHash('sha256').update(b).digest('hex');
 const canonical=v=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])])):v;
 const equal=(a,b)=>JSON.stringify(canonical(a))===JSON.stringify(canonical(b));
-const termination=/^(?:sacrificial check [a-zA-Z0-9_-]+: )?adapter terminated before response \(see trial log\)$/;
+const termination=/^(?:(?:sacrificial check [a-zA-Z0-9_-]+|adaptive phase (?:compile|instantiate|first-call|steady)): )?adapter terminated before response \(see trial log\)$/;
 export function qualifiedEngineFatal(error,done,proof,readBytes=readFileSync){
  try{
   const i=proof.identity;
