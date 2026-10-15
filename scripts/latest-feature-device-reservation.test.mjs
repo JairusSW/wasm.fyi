@@ -10,29 +10,26 @@ import {createHash} from 'node:crypto';
 import {acquireMeasurementLock} from './lib/measurement-lock.mjs';
 
 const execute=promisify(execFile);
-test('Darwin feature worker reserves the device before acquiring any project lock',async()=>{
+test('Darwin feature worker launches exactly one device wrapper without holding a project lock',async()=>{
  const root=await mkdtemp(join(tmpdir(),'feature-device-order-'));
  try{
-  const entry=new URL('./latest-feature-campaign.mjs',import.meta.url),events=join(root,'events.jsonl');
-  const record=`import{appendFileSync}from'node:fs';const record=value=>appendFileSync(${JSON.stringify(events)},JSON.stringify(value)+'\\n');`;
-  const lock=join(root,'lock.mjs'),runner=join(root,'runner.mjs');
-  await writeFile(lock,record+`export async function acquireMeasurementLock(){record({step:'project'});return async()=>record({step:'release-project'})}`);
-  await writeFile(runner,record+`export async function runCommand(program,args,options){record({step:'device',program,args,reserved:options?.env?.WASMBENCH_SHARED_DEVICE_RESERVED});throw Object.assign(Error('outer reservation intercepted'),{code:'INTERCEPTED'})}export function runBenchmarkProcess(){throw Error('A test must never launch a benchmark')}`);
-  const staged=join(root,'worker.mjs');
-  const source=(await readFile(entry,'utf8')).replace(/from\s*(['"])(\.[^'"]+)\1/g,(_match,_quote,path)=>{
-   const target=path==='./lib/measurement-lock.mjs'?pathToFileURL(lock):path==='./lib/benchmark-process.mjs'?pathToFileURL(runner):new URL(path,entry);
-   return 'from '+JSON.stringify(target.href);
-  });
+  const entry=new URL('./latest-feature-campaign.mjs',import.meta.url),staged=join(root,'worker.mjs'),argumentsPath=join(root,'arguments.txt');
+  const source=(await readFile(entry,'utf8')).replace(/from\s*(['"])(\.[^'"]+)\1/g,(_match,_quote,path)=>'from '+JSON.stringify(new URL(path,entry).href));
   await writeFile(staged,source);
-  const launch=`Object.defineProperty(process,'platform',{value:'darwin'});delete process.env.WASMBENCH_SHARED_DEVICE_RESERVED;process.argv=${JSON.stringify([process.execPath,staged,join(root,'campaign'),join(root,'features'),join(root,'inputs')])};try{await import(${JSON.stringify(pathToFileURL(staged).href)})}catch(error){if(error.code!=='INTERCEPTED')throw error}`;
-  await execute(process.execPath,['--input-type=module','-e',launch]);
-  const calls=(await readFile(events,'utf8')).trim().split('\n').map(JSON.parse);
-  assert.deepEqual(calls.map(call=>call.step),['device'],'Holding a project lock while waiting for the shared device starves other workers');
-  assert.equal(calls[0].program,'python3');
-  assert.ok(calls[0].args[0].endsWith('/shared-device-run.py'));
-  assert.ok(calls[0].args.includes('WASMBENCH_SHARED_DEVICE_RESERVED=1'));
-  assert.ok(!calls[0].args.includes('WASMBENCH_PROJECT_RESERVED=1'),'The inner worker must acquire the project lock after the device reservation');
-  assert.notEqual(calls[0].reserved,'1','The wrapper process must not claim a reservation before acquiring one');
+  // Intercept only Python execution. Keep the real command helper, which can
+  // add its own reservation; mocking that helper hid a nested-wrapper bug.
+  const python=join(root,'python3');await writeFile(python,'#!/bin/sh\nprintf "%s\\n" "$@" > "$WASMFYI_TEST_ARGUMENTS"\nif [ -d "$WASMFYI_TEST_CAMPAIGN/measurement-lock" ]; then printf "PROJECT_LOCK_HELD_BEFORE_DEVICE\\n" >> "$WASMFYI_TEST_ARGUMENTS"; fi\n',{mode:0o755});
+  const campaign=join(root,'campaign');await mkdir(campaign);
+  const launch=`Object.defineProperty(process,'platform',{value:'darwin'});delete process.env.WASMBENCH_SHARED_DEVICE_RESERVED;process.argv=${JSON.stringify([process.execPath,staged,campaign,join(root,'features'),join(root,'inputs')])};await import(${JSON.stringify(pathToFileURL(staged).href)})`;
+  await execute(process.execPath,['--input-type=module','-e',launch],{env:{...process.env,PATH:root+':'+process.env.PATH,WASMFYI_TEST_ARGUMENTS:argumentsPath,WASMFYI_TEST_CAMPAIGN:campaign}});
+  const args=(await readFile(argumentsPath,'utf8')).trim().split('\n');
+  assert.equal(args.filter(arg=>arg.endsWith('/shared-device-run.py')).length,1,'A reservation coordinator must never be wrapped in another reservation');
+  assert.equal(args.includes('python3'),false,'The wrapped command is the Node worker, not another reservation coordinator');
+  assert.ok(!args.includes('PROJECT_LOCK_HELD_BEFORE_DEVICE'));
+  assert.ok(args.includes('--repeat-slices'));
+  assert.ok(args.includes('WASMBENCH_SHARED_DEVICE_RESERVED=1'));
+  assert.ok(!args.includes('WASMBENCH_PROJECT_RESERVED=1'));
+  assert.deepEqual(await readdir(campaign),[],'Waiting for the device must not leave a project reservation held');
  }finally{await rm(root,{recursive:true,force:true})}
 });
 

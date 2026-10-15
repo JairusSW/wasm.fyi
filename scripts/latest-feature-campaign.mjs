@@ -5,6 +5,7 @@ import {featureRepairPhases} from './lib/feature-repair-phases.mjs';
 import {readFile,writeFile,mkdir,readdir,stat,cp} from 'node:fs/promises';
 import {join,resolve,basename,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {spawn} from 'node:child_process';
 import {featureCampaignPlatform,featureInputIdentity,featureLedgerKey} from './lib/feature-campaign-identity.mjs';
 import {atomicJSON} from './lib/benchmark-plan.mjs';
 import {digest} from './lib/wasmbench.mjs';
@@ -22,8 +23,15 @@ const campaign=resolve(campaignArg),root=resolve(rootArg),inputs=resolve(inputsA
 if(process.platform==='darwin'&&process.env.WASMBENCH_SHARED_DEVICE_RESERVED!=='1'){
  // Match the history worker's lock order. The reserved inner worker acquires
  // project locks per case, so a device handoff never leaves this lock held.
- await runCommand('python3',[fileURLToPath(new URL('./shared-device-run.py',import.meta.url)),'--repeat-slices','--','env','WASMBENCH_SHARED_DEVICE_RESERVED=1',process.execPath,fileURLToPath(import.meta.url),...process.argv.slice(2)],{cwd:campaign,env:process.env});
- process.exit(0);
+ // runCommand also reserves Darwin commands: using it here would nest two
+ // reservations and leave the inner coordinator waiting on its own parent.
+ const child=spawn('python3',[fileURLToPath(new URL('./shared-device-run.py',import.meta.url)),'--repeat-slices','--','env','WASMBENCH_SHARED_DEVICE_RESERVED=1',process.execPath,fileURLToPath(import.meta.url),...process.argv.slice(2)],{cwd:campaign,stdio:'inherit'});
+ const handlers=new Map(['SIGTERM','SIGINT'].map(signal=>[signal,()=>child.kill(signal)]));
+ for(const [signal,handler]of handlers)process.on(signal,handler);
+ let code;
+ try{code=await new Promise((resolve,reject)=>{child.on('error',reject);child.on('exit',resolve)})}
+ finally{for(const [signal,handler]of handlers)process.removeListener(signal,handler)}
+ process.exit(code??1);
 }
 await mkdir(root,{recursive:true});
 // Serialize ledger writers before reading any cached state. Measurement leases remain per case.
