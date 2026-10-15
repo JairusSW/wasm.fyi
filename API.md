@@ -291,8 +291,8 @@ Moved `SNAPSHOT` tags cannot replace that dependency. Verified local bridge file
 are reused without downloading the Wasm layer again; the source lock is unchanged.
 
 For ESR115 builds rejected by modern Clang, the opt-in
-`WASMFYI_SPIDERMONKEY_ESR115_MEMBER_FIX=1` corrects the move constructor's
-`rhs.lock` reference to its `rhs.lock_` data member. It applies only to the
+`WASMFYI_SPIDERMONKEY_ESR115_MOVE_FIX=1` deletes the unused move constructor and
+assignment operator, whose mutex member cannot be moved. It applies only to the
 Linux source cohort requiring Rust 1.66.0. SDK receipts retain the original
 and compiled header hashes; unrelated source edits are rejected.
 
