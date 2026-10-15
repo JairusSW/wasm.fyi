@@ -53,6 +53,7 @@ jobs:
             /service/
             /scripts/
             /adapters/qualification/zwasm/
+            /adapters/qualification/EndiveAdapter.java
           sparse-checkout-cone-mode: false
       - uses: actions/setup-go@v5
         with:
