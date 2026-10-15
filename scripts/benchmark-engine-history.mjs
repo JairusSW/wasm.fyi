@@ -26,12 +26,13 @@ import {completedHistoryJob} from './lib/history-job-result.mjs';
 import {needsHistoricalSourceBuild} from './lib/history-source-build.mjs';
 const [rootArg,baseArg,engine]=process.argv.slice(2),root=resolve(rootArg),base=resolve(baseArg);
 if(!engine)throw Error('Engine family required');
-const selectedRefs=new Set(process.argv.slice(5));
+const prepareOnly=process.argv.includes('--prepare-only');
+const selectedRefs=new Set(process.argv.slice(5).filter(ref=>ref!=='--prepare-only'));
 const plan=JSON.parse(await readFile(join(root,'source-plan.json'))),template=JSON.parse(await readFile(join(root,'collection-template.json')));
 for(const ref of selectedRefs)if(!plan.pins.some(p=>p.engine===engine&&p.status==='planned'&&(p.tag||p.revision)===ref))throw Error('Unknown supplemental source target '+ref);
 if(template.collection.samples<1)throw Error('Performance history requires at least one sample');
 const env={...process.env,...template.env,GOWORK:'off',GOFLAGS:'-buildvcs=false',...(template.env?.WASMFYI_BUILD_JOBS?{CARGO_BUILD_JOBS:template.env.WASMFYI_BUILD_JOBS,GOMAXPROCS:template.env.WASMFYI_BUILD_JOBS}:{})};
-const statusPath=join(root,engine+(selectedRefs.size?'-supplement':'')+'-history-status.json');
+const statusPath=join(root,engine+(prepareOnly?'-prepare':selectedRefs.size?'-supplement':'')+'-history-status.json');
 const status=await readFile(statusPath,'utf8').then(JSON.parse,()=>({started:new Date().toISOString(),completed:[],errors:[]}));
 const inventory=new Map(template.workloads.map(w=>[w.id,w.sha256]));
 const suite=(await readCache(template.corpusRoot)).filter(w=>inventory.has(w.id));
@@ -52,7 +53,8 @@ for(const pin of plan.pins.filter(p=>historyPinAllowed(p,template)&&historyWeekM
  if(Date.parse(pin.targetWeek)<Date.parse(plan.cutoff)||Date.parse(pin.targetWeek)>Date.parse(plan.anchor))throw Error('Pin outside year');
  for(const configuration of pin.configurations) {
   const pinKey=[configuration,pin.targetType,pin.tag||pin.revision,pin.targetWeek].join('|');
-  if(status.completed.some(x=>x.pinKey===pinKey))continue;
+  if(prepareOnly)status.completed=status.completed.filter(x=>x.pinKey!==pinKey);
+  else if(status.completed.some(x=>x.pinKey===pinKey))continue;
   const label=[configuration,pin.tag||pin.revision,pin.targetType,pin.targetWeek].join('-').replace(/[^a-zA-Z0-9.-]/g,'_');
   const directory=join(root,'engine-builds',label);await mkdir(directory,{recursive:true});
   // Cranelift and Winch use the same SDK executable, selected by --winch.
@@ -104,9 +106,14 @@ for(const pin of plan.pins.filter(p=>historyPinAllowed(p,template)&&historyWeekM
    const job={id:'history-'+template.collection.samples+'-'+label,engine:configuration,harness,controller:jobController,env:Object.fromEntries(Object.entries(buildEnv).filter(([k])=>k.startsWith('WASMBENCH_'))),historical:true,source:{repository:pin.repository,revision,ref:pin.tag||'main@'+revision.slice(0,8),asOf:pin.targetWeek,kind:pin.targetType==='main'?'snapshot':'release',...(pin.dateBasis?{dateBasis:pin.dateBasis}:{})}};
    if(engine==='v8'&&buildEnv.WASMBENCH_V8_TURBOSHAFT_POLICY)job.backend='turboshaft';
    if(unavailable){job.unavailableReason=unavailable.reason;job.backend=configuration==='wamr-fast-jit'?'fast-jit':configuration;}
-   if(!unavailable&&env.WASMFYI_HISTORY_FAST!=='1')await qualifyHistoryStartup({directory,configuration,suite,harness,controller:jobController,source:job.source,env:buildEnv,run});
+   if(!prepareOnly&&!unavailable&&env.WASMFYI_HISTORY_FAST!=='1')await qualifyHistoryStartup({directory,configuration,suite,harness,controller:jobController,source:job.source,env:buildEnv,run});
    const collection=engine==='zwasm'?{...template.collection,callBatchOperations:10000}:template.collection;
    await atomicJSON(join(directory,'plan.json'),{...template,collection,anchor:plan.anchor,cutoff:plan.cutoff,captureDirectory:join(root,'captures'),jobs:[job]});
+   if(prepareOnly){
+    status.completed.push({pinKey,engine,configuration,asOf:pin.targetWeek,ref:job.source.ref,prepared:true,captures:0});
+    status.errors=status.errors.filter(error=>error.pinKey!==pinKey);
+    await atomicJSON(statusPath,status);continue;
+   }
    await run(process.execPath,['scripts/benchmark-history-worker.mjs',directory]);
    const result=JSON.parse(await readFile(join(directory,'status.json')));
    if(!completedHistoryJob(result,suite.length))throw Error('Incomplete collection '+result.status+'; '+result.errors.length+' errors');

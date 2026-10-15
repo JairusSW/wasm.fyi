@@ -12,7 +12,7 @@ export function describedV8Binding(planned, metadata, policy) {
 }
 // Upgrade only measurement harness/controller; retain the installed Node SDK.
 export async function ensureV8BindingPolicy(campaign,directory,receipt,{reserved=false,env:qualifiedEnv={},featureJspi=false}={}){
- if(receipt.runtime?.description?.backend==='turboshaft'&&receipt.env?.WASMBENCH_V8_TURBOSHAFT_POLICY&&(!featureJspi||(receipt.provenance?.featureJspiAdapter&&receipt.provenance?.featureFreshSampling)))return receipt;
+ if(receipt.runtime?.description?.backend==='turboshaft'&&receipt.env?.WASMBENCH_V8_TURBOSHAFT_POLICY&&(!featureJspi||(receipt.provenance?.featureJspiAdapter&&receipt.provenance?.featureFreshSampling&&receipt.provenance?.featureCoverageAdapter)))return receipt;
  const migrate=async()=>{
   const root=receipt.root,node=receipt.env.WASMBENCH_NODE,source=join(directory,'sources/v8');
   const env={...process.env,...qualifiedEnv,...receipt.env,GOWORK:'off',GOFLAGS:'-buildvcs=false',NODE_OPTIONS:''};
@@ -38,7 +38,7 @@ export async function ensureV8BindingPolicy(campaign,directory,receipt,{reserved
   const argv=[receipt.controller,'plan','--suite',join(directory,'suite.json'),'--runtimes','v8','--profile','timing','--out',plan];if(process.platform==='linux')await run('taskset',['-c',env.WASMFYI_STARTUP_CPU||'2',...argv],{env});else await run(argv[0],argv.slice(1),{env});
   const planned=JSON.parse(await readFile(plan)).runtime_configurations[0],metadata=await checkSDKStartup(planned.command,{cwd:root,env,cpu:process.platform==='linux'?'2':undefined});const runtime=describedV8Binding(planned,metadata,policy);
   if(hash(await readFile(node))!==before)throw Error('Installed Node changed during harness-only migration');
-  const next={...receipt,controllerSha256:hash(await readFile(receipt.controller)),runtime,env:{...receipt.env,WASMBENCH_V8_TURBOSHAFT_POLICY:policy},provenance:{...receipt.provenance,wasmCompilerPolicy:policy,...(featureJspi?{featureJspiAdapter:true,featureFreshSampling:true}:{}),turboshaftCompilerSource:{path:compilerPath,sha256:hash(Buffer.from(compilerSource)),revision},turboshaftMetadata:metadata},measurementBindingUpdatedAt:new Date().toISOString()};await atomicJSON(join(directory,'v8-build.json'),next);return next;
+  const next={...receipt,controllerSha256:hash(await readFile(receipt.controller)),runtime,env:{...receipt.env,WASMBENCH_V8_TURBOSHAFT_POLICY:policy},provenance:{...receipt.provenance,wasmCompilerPolicy:policy,...(featureJspi?{featureJspiAdapter:true,featureFreshSampling:true,featureCoverageAdapter:true}:{}),turboshaftCompilerSource:{path:compilerPath,sha256:hash(Buffer.from(compilerSource)),revision},turboshaftMetadata:metadata},measurementBindingUpdatedAt:new Date().toISOString()};await atomicJSON(join(directory,'v8-build.json'),next);return next;
  };
  return reserved?migrate():withBuildLock(campaign,migrate);
 }

@@ -33,3 +33,23 @@ test('one timing process per phase retains acquisition order, trimming metadata 
   assert.equal(JSON.parse(await readFile(join(directory,'sampling.json'))).method,'same-process-stability-v1');
  }finally{await rm(directory,{recursive:true,force:true})}
 });
+
+test('feature batches override steady work without multiplying compilation or first-call work',async()=>{
+ const directory=await mkdtemp(join(tmpdir(),'feature-batches-'));
+ const workload={id:'features/numeric/add/performance-4096x64',artifact:'/test.wasm',sha256:'a'.repeat(64),provenance:{performance:true}};
+ try{
+  await writeFile(join(directory,'wago-suite.json'),JSON.stringify([workload]));
+  const capture=await collectLatencies({directory,workloads:[workload],engines:['v8'],collection:latencyCollection({timeout:'5m',operations:1,steadyOperations:8,memory:false,code:false}),run:async(command,...args)=>{
+   const get=flag=>args[args.indexOf(flag)+1],out=get('--out');
+   assert.equal(get('--operations'),'1');assert.equal(get('--steady-operations'),'8');
+   assert.equal(get('--launches'),'1');assert.equal(get('--warmup'),'0');
+   await mkdir(join(out,'trials'),{recursive:true});
+   await writeFile(join(out,'manifest.json'),JSON.stringify({host:{os:'darwin',arch:'arm64',cpu_description:'Fixture',logical_cpus:1},lock:{runtime_configurations:[{id:'v8',description:{runtime_version:'1',backend:'turboshaft',capabilities:{can_code_profile:false}}}]}}));
+   for(const phase of get('--scenarios').split(',')){
+    const operations=phase==='steady'?8:1;
+    await writeFile(join(out,'trials',phase+'.json'),JSON.stringify({runtime_configuration:'v8',workload:workload.id,scenario:phase,profile:'timing',block:0,status:'ok',samples:Array.from({length:5},(_,index)=>({index,elapsed_ns:1000*operations,operations,verified:true,warmup:false})),observations:[{metric:'process.peak_rss',status:'available',value:1000}]}));
+   }
+  }});
+  assert(capture.results.every(r=>r.latencyNs===1000&&r.samplesNs.length===5));
+ }finally{await rm(directory,{recursive:true,force:true})}
+});

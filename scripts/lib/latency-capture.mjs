@@ -33,7 +33,7 @@ export function summarizeLatencies({manifest,trials,workloads,engines,scenarios=
   const cfg=configurations.find(c=>c.id===engine);
   if(!cfg)throw Error(`Missing recorded engine identity: ${engine}`);
   const divisor=workload.id===CALL_LOOP_WORKLOAD&&phase==='steady'?CALL_LOOP_ITERATIONS:1;
-  const display={group:workload.provenance?.category||workload.family||workload.id.split('/')[1]||'Other workloads',purpose:workload.original_contract?.desc||workload.provenance?.description||'',tags:[...new Set([...(workload.features||[]),...(workload.original_contract?.tags||[])])],abi:workload.abi||'',bytes:workload.bytes||0,source:workload.source||'',reset:workload.reset||''};
+  const display={group:workload.provenance?.category||workload.family||workload.id.split('/')[1]||'Other workloads',purpose:workload.original_contract?.desc||workload.provenance?.description||'',tags:[...new Set([...(workload.features||[]),...(workload.original_contract?.tags||[]),...(workload.provenance?.baseline?['baseline']:[])])],abi:workload.abi||'',bytes:workload.bytes||0,source:workload.source||'',reset:workload.reset||''};
   const timingSamples=status==='ok'?samplesNs.length:0;
   const adaptive=status==='ok'&&measured.some(t=>t.sampling?.method==='same-process-stability-v1')?sampleStability(samplesNs,measured.find(t=>t.sampling?.maxSamples)?.sampling.maxSamples||35):null;
   results.push({display,timingSamples,...(status==='ok'?{samplesNs:samplesNs.map(value=>value/divisor),...(adaptive?{sampling:{method:'same-process-stability-v1',groupSize:5,maxSamples:measured.find(t=>t.sampling?.maxSamples)?.sampling.maxSamples||35,warmup:0,retainedStart:adaptive.retainedStart,stopReason:adaptive.reason}}:{})}:{}),workload:workload.id,wasm:workload.artifactName||basename(workload.artifact),artifactSha256:workload.sha256,contractSha256:workloadContract(workload),engine,version:cfg.description?.runtime_version||cfg.version||'unknown',backend:cfg.description?.backend||cfg.backend||engine,phase,latencyStatus:status,latencyNs:status==='ok'?(adaptive?adaptive.medianNs:median(launches))/divisor:null,...summarizeResources(matching,phase)});
@@ -135,7 +135,7 @@ export async function collectLatencies({directory,workloads,engines,collection,r
     await collect(ordinary,collection.operations,timing);
     await collect(['steady'],callBatchOperations(workloads[0],collection),join(scratch,'calls'));
    }else{
-    await collect(scenarios,collection.operations,timing,calls?callBatchOperations(workloads[0],collection):undefined);
+    await collect(scenarios,collection.operations,timing,calls?callBatchOperations(workloads[0],collection):featurePerformance?collection.steadyOperations:undefined);
    }
    for(const trial of trials.filter(t=>t.profile==='timing'&&t.block>=0&&t.status==='ok')){
     const values=(trial.samples||[]).filter(s=>!s.warmup&&s.verified).map(s=>s.elapsed_ns/s.operations);

@@ -21,10 +21,17 @@ export async function ensureEndiveJFFI({source,sdk,run}){
 export async function compileEndiveAdapter({java,sdk,classes,path,run}){
  await run(join(dirname(java),'javac'),['-proc:none','-cp',sdk+'/*','-d',classes,path]);
 }
-export async function buildEndiveSDK({source,root,version,configuration,env,run}){
- const selected=env.WASMBENCH_JAVA||'java';
- const java=await realpath(isAbsolute(selected)?selected:(await run('which',[selected])).output.trim());
+export async function endiveJavaEnvironment(env,run){
+ const selected=env.WASMFYI_ENDIVE_JAVA||env.WASMBENCH_JAVA||env.WASMFYI_CHASM_JAVA||'java';
+ const java=await realpath(isAbsolute(selected)?selected:(await run('which',[selected],{signal:AbortSignal.timeout(10000)})).output.trim());
  env.WASMBENCH_JAVA=java;env.JAVA_HOME=dirname(dirname(java));
+ // macOS's /usr/bin/java can wait forever for a missing-JDK GUI prompt.
+ // Qualify the selected executable before Maven starts its build.
+ await run(java,['-version'],{env,signal:AbortSignal.timeout(10000)});
+ return java;
+}
+export async function buildEndiveSDK({source,root,version,configuration,env,run}){
+ const java=await endiveJavaEnvironment(env,run);
  const modules=['wasm','runtime','compiler'];
  if(configuration==='endive-redline')modules.push('redline/compiler','redline/runner-jffi');
  for(const module of modules)if(!await stat(join(source,module,'pom.xml')).catch(()=>null))throw Error('Pinned Endive source lacks required SDK module: '+module);

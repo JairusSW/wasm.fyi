@@ -42,13 +42,15 @@ for(const pin of plan.pins.filter(p=>historyPinAllowed(p,template)&&historyWeekM
  const releaseBuild=await acquireMeasurementLock(join(root,'measurement-lock'));
  try{
   await requireBuildCapacity(dir,'libwasm',env);
-  if(!await hasPinnedCommit(source,pin.revision))command('git',['-C',source,'fetch','--depth','1','origin',pin.revision],{env,stdio:'inherit'});
-  if(!await stat(checkout).catch(()=>null))command('git',['-C',source,'worktree','add','--detach',checkout,pin.revision],{env,stdio:'inherit'});
+  command(env.WASMFYI_BUILD_PYTHON||'python3',[join(process.cwd(),'scripts/prepare-libwasm.py'),tools],{env,stdio:'inherit',timeout:45*60*1000});
+  if(!await hasPinnedCommit(source,pin.revision))command('git',['-C',source,'fetch','--filter=blob:none','--depth','1','origin',pin.revision],{env,stdio:'inherit'});
+  if(!await stat(checkout).catch(()=>null)){command('git',['-C',source,'worktree','prune','--expire','now'],{env,stdio:'inherit'});command('git',['-C',source,'worktree','add','--no-checkout','--detach',checkout,pin.revision],{env,stdio:'inherit'});}
   const actualRevision=command('git',['-C',checkout,'rev-parse','HEAD'],{env}).toString().trim();
   if(actualRevision!==pin.revision)throw Error('Libwasm checkout differs from source pin');
   await preparePinnedSparseWorktree(checkout,pin.revision,command,env);
   command('git',['-C',checkout,'sparse-checkout','set','AK','Libraries/LibWasm','Libraries/LibMain','Libraries/LibCore','Libraries/LibGC','Libraries/LibThreading','Libraries/LibFileSystem','Libraries/LibUnicode','Libraries/LibTextCodec','Meta','Docs'],{env,stdio:'inherit'});
-  command('cmake',['-S',project,'-B',build,'-DSRC='+checkout,'-DCMAKE_PREFIX_PATH='+deps,'-DCMAKE_CXX_FLAGS=-Wno-invalid-constexpr','-DCMAKE_C_COMPILER='+env.CC,'-DCMAKE_CXX_COMPILER='+env.CXX],{env,stdio:'inherit'});
+  command('git',['-C',checkout,'reset','--hard',pin.revision],{env,stdio:'inherit'});
+  command('cmake',['-S',project,'-B',build,'-DSRC='+checkout,'-DFASTFLOAT='+join(tools,'libwasm-fastfloat'),'-DMIMALLOC='+join(tools,'libwasm-mimalloc'),'-DCMAKE_PREFIX_PATH='+deps,'-DCMAKE_CXX_FLAGS=-Wno-invalid-constexpr','-DCMAKE_C_COMPILER='+env.CC,'-DCMAKE_CXX_COMPILER='+env.CXX],{env,stdio:'inherit'});
   command('cmake',['--build',build,'--parallel',String(template.env?.WASMFYI_BUILD_JOBS||availableParallelism())],{env,stdio:'inherit',timeout:90*60*1000});
   command('cargo',['build','--manifest-path',join(nativeBase,'adapters/native/Cargo.toml'),'--release','--no-default-features','--features','libwasm','--target-dir',join(dir,'native')],{env:{...env,WASMBENCH_LIBWASM_SOURCE:checkout,WASMBENCH_LIBWASM_BUILD:build,WASMBENCH_LIBWASM_VERSION:pin.revision},stdio:'inherit',timeout:90*60*1000});
   await mkdir(join(harness,'bin'),{recursive:true});await cp(join(dir,'native/release/adapter-native'),join(harness,'bin/adapter-libwasm'));

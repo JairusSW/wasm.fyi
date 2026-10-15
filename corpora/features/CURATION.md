@@ -127,3 +127,19 @@ vectors; 15 curation/adapter unit tests; checked-in feature manifest integrity.
 The entire application corpus and website build are separate checks; these
 focused results are not a claim that all application toolchains or UI builds
 were run. Existing historical-data tests require the large retained data tree.
+
+## Compact import sections
+
+`compact-imports` probes both compact wire encodings (`0x7f` module groups and
+`0x7e` module/type groups), plus a module mixing both with ordinary imports.
+The mixed case calls the imports at every group boundary. Separate 1,024-import
+modules exercise multi-byte group counts and amplify decoding work. Ordinary
+8- and 1,024-import controls perform identical host calls and checksum arithmetic.
+All modules use the existing `identity-v1` host profile and MVP operations.
+
+Support is established by decoding, binding and executing actual compact binaries,
+not an engine declaration. Binary-level tests check that the source compiler
+retains the intended encoding. Compilation and instantiation are the meaningful
+performance comparisons; steady execution is a control because the encoding does
+not change execution semantics. Build only this family with
+`just features-build compact-imports`.

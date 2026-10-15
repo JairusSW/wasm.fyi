@@ -1,0 +1,12 @@
+(module (import "wasmbench" "identity" (func (param i32) (result i32)))
+(import "wasmbench" (item "identity" (func (param i32) (result i32))) (item "identity" (func (param i32) (result i32))) (item "identity" (func (param i32) (result i32))) (item "identity" (func (param i32) (result i32))) (item "identity" (func (param i32) (result i32))) (item "identity" (func (param i32) (result i32))) (item "identity" (func (param i32) (result i32))) (item "identity" (func (param i32) (result i32))))
+(import "wasmbench" (item "identity") (item "identity") (item "identity") (item "identity") (item "identity") (item "identity") (item "identity") (item "identity") (func (param i32) (result i32)))
+(import "wasmbench" "identity" (func (param i32) (result i32)))
+   (func (export "benchmark") (param $n i32) (result i32)
+    (local $i i32) (local $sum i32)
+    (loop $loop
+     (local.set $sum (i32.add (local.get $sum)
+      (i32.add (i32.add (i32.add (i32.add (i32.add (call 0 (local.get $i)) (call 1 (i32.add (local.get $i) (i32.const 1)))) (call 8 (i32.add (local.get $i) (i32.const 2)))) (call 9 (i32.add (local.get $i) (i32.const 3)))) (call 16 (i32.add (local.get $i) (i32.const 4)))) (call 17 (i32.add (local.get $i) (i32.const 5))))))
+     (local.set $i (i32.add (local.get $i) (i32.const 1)))
+     (br_if $loop (i32.lt_u (local.get $i) (local.get $n))))
+    (local.get $sum)))

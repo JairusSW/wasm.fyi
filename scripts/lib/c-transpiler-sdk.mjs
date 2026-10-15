@@ -1,5 +1,6 @@
 import {mkdir,readFile,readdir,cp,writeFile,chmod} from 'node:fs/promises';
 import {join} from 'node:path';
+import {availableParallelism} from 'node:os';
 import {digest} from './wasmbench.mjs';
 import {verifySDKSubmodules} from './sdk-submodules.mjs';
 
@@ -65,7 +66,7 @@ export async function buildCTranspilerSDK({source,sdk,target,engine,env,run}) {
   flags=['-DCMAKE_BUILD_TYPE=Release','-DBUILD_TESTS=OFF','-DBUILD_LIBWASM=OFF'];
   if(env.WASMFYI_WASM2C_BUILD_CC)flags.push('-DCMAKE_C_COMPILER='+env.WASMFYI_WASM2C_BUILD_CC);
   if(env.WASMFYI_WASM2C_BUILD_CXX)flags.push('-DCMAKE_CXX_COMPILER='+env.WASMFYI_WASM2C_BUILD_CXX);
-  await run('cmake',['-S',source,'-B',target,...flags]);await run('cmake',['--build',target,'--target','wasm2c','-j','2']);
+  await run('cmake',['-S',source,'-B',target,...flags]);await run('cmake',['--build',target,'--target','wasm2c','--parallel',String(env.WASMFYI_BUILD_JOBS||availableParallelism())]);
   binary=join(target,'wasm2c');await cp(binary,join(sdk,'bin/wasm2c'));
   await mkdir(join(sdk,'include'),{recursive:true});await mkdir(join(sdk,'share/wabt/wasm2c'),{recursive:true});
   for(const name of await readdir(join(source,'wasm2c')))if(name.startsWith('wasm-rt')&&/\.(?:h|c|inc)$/.test(name)){
@@ -80,7 +81,7 @@ export async function buildCTranspilerSDK({source,sdk,target,engine,env,run}) {
    await writeFile(launcher,'#!/bin/sh\nexec "$@" -Wno-error=sign-conversion\n');await chmod(launcher,0o755);
    flags.push('-UCMAKE_PROJECT_INCLUDE','-DCMAKE_C_COMPILER_LAUNCHER='+launcher);
   }
-  await run('cmake',['-S',join(source,'w2c2'),'-B',target,...flags]);await run('cmake',['--build',target,'--target','w2c2','-j','2']);
+  await run('cmake',['-S',join(source,'w2c2'),'-B',target,...flags]);await run('cmake',['--build',target,'--target','w2c2','--parallel',String(env.WASMFYI_BUILD_JOBS||availableParallelism())]);
   binary=join(target,'w2c2');await cp(binary,join(sdk,'bin/w2c2'));
   runtimeSupport=await packageW2c2Runtime({source,sdk});
  }

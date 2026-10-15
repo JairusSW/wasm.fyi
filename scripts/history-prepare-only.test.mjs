@@ -1,0 +1,40 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtemp,mkdir,writeFile,readFile,rm,readdir} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
+const execute=promisify(execFile);
+test('preparing a retained SDK emits feature bindings without repeating completed corpus captures',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'history-prepare-'));
+ try{
+  const week='2026-10-15T07:33:48.082Z',revision='a'.repeat(40),engine='wasm3';
+  const pin={engine,targetType:'release',tag:'vfixture',revision,targetWeek:week,status:'planned',repository:'wasm3/wasm3',configurations:[engine]};
+  const pinKey=[engine,'release','vfixture',week].join('|');
+  const cache=join(root,'.wasmbench/corpus-cache');await mkdir(cache,{recursive:true});
+  const workload={id:'applications/probe',artifact:'artifacts/probe.wasm',sha256:'0'.repeat(64)};
+  const sdk=join(root,'sdk-builds/wasm3-release-vfixture');await mkdir(join(sdk,'harness'),{recursive:true});
+  await writeFile(join(sdk,'binding.json'),JSON.stringify({source:{revision},environment:{}}));
+  await writeFile(join(root,'controller-year'),'Must never execute this controller during preparation');
+  await writeFile(join(cache,'manifest.json'),JSON.stringify({schema:1,workloads:[workload]}));
+  await writeFile(join(root,'source-plan.json'),JSON.stringify({anchor:week,cutoff:week,pins:[pin]}));
+  await writeFile(join(root,'collection-template.json'),JSON.stringify({corpusRoot:root,collection:{samples:5},workloads:[workload],env:{}}));
+  const completed=JSON.stringify({completed:[{pinKey,captures:1}],errors:[]});
+  await writeFile(join(root,'wasm3-history-status.json'),completed);
+  await execute(process.execPath,[new URL('./benchmark-engine-history.mjs',import.meta.url).pathname,root,root,engine,'--prepare-only']);
+  assert.equal(await readFile(join(root,'wasm3-history-status.json'),'utf8'),completed);
+  const prepared=JSON.parse(await readFile(join(root,'wasm3-prepare-history-status.json'),'utf8'));
+  assert.equal(prepared.completed[0].prepared,true);assert.equal(prepared.completed[0].captures,0);
+  const dirs=await readdir(join(root,'engine-builds'));
+  const binding=JSON.parse(await readFile(join(root,'engine-builds',dirs[0],'plan.json'),'utf8'));
+  assert.equal(binding.jobs[0].source.revision,revision);
+  assert.equal(binding.jobs[0].source.asOf,week);
+  assert.equal(binding.jobs[0].harness,join(sdk,'harness'));
+  assert.equal((await readdir(root)).includes('captures'),false);
+  await execute(process.execPath,[new URL('./benchmark-engine-history.mjs',import.meta.url).pathname,root,root,engine,'--prepare-only']);
+  const repeated=JSON.parse(await readFile(join(root,'wasm3-prepare-history-status.json'),'utf8'));
+  assert.equal(repeated.completed.length,1);
+  assert.equal(await readFile(join(root,'wasm3-history-status.json'),'utf8'),completed);
+ }finally{await rm(root,{recursive:true,force:true})}
+});

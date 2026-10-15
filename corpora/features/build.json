@@ -80,7 +80,7 @@
     "compact-imports"
   ],
   "missingFeatures": [],
-  "workloadContracts": 373,
+  "workloadContracts": 385,
   "recipes": [
     {
       "source": "sources/core-num-integer-multiply-add.wat",
@@ -2699,6 +2699,86 @@
       ],
       "feature": "compact-imports",
       "variant": "ordinary-baseline",
+      "baseline": true,
+      "scope": "execution"
+    },
+    {
+      "source": "sources/compact-imports-mixed-groups.wat",
+      "sourceSha256": "2795ffdc6714d8a61ae1da37d33c3aaa3dbb91526e23ecbae86e292a5cf05070",
+      "artifact": "artifacts/compact-imports-mixed-groups.wasm",
+      "sha256": "eaef304d6f28aaed5b1c447e21d2d9254bd8495c05a42b2d8ad9c23e6ceef8ae",
+      "compiler": "wasm-tools 1.260.0",
+      "argv": [
+        [
+          "wasm-tools",
+          "parse",
+          "sources/compact-imports-mixed-groups.wat",
+          "-o",
+          "artifacts/compact-imports-mixed-groups.wasm"
+        ]
+      ],
+      "feature": "compact-imports",
+      "variant": "mixed-groups",
+      "baseline": false,
+      "scope": "execution"
+    },
+    {
+      "source": "sources/compact-imports-module-group-1024.wat",
+      "sourceSha256": "88eb25b9eb6aca72fdc85e0a5c8f7a08a1e247513a9b65b2044908778c904554",
+      "artifact": "artifacts/compact-imports-module-group-1024.wasm",
+      "sha256": "7cad38faec3bb035fef54cf4d2b19657f5381fbb3e37f7d6ea2426a8b5e2e738",
+      "compiler": "wasm-tools 1.260.0",
+      "argv": [
+        [
+          "wasm-tools",
+          "parse",
+          "sources/compact-imports-module-group-1024.wat",
+          "-o",
+          "artifacts/compact-imports-module-group-1024.wasm"
+        ]
+      ],
+      "feature": "compact-imports",
+      "variant": "module-group-1024",
+      "baseline": false,
+      "scope": "execution"
+    },
+    {
+      "source": "sources/compact-imports-type-group-1024.wat",
+      "sourceSha256": "9cc4b96fb23765dad1ade9866e52d18e16b6e2c314311e5bdf056dab7586bb25",
+      "artifact": "artifacts/compact-imports-type-group-1024.wasm",
+      "sha256": "da4d85cdb30736b387b1c23213b69bc46cb222fbfe0c5f1637849f8bf02b2f64",
+      "compiler": "wasm-tools 1.260.0",
+      "argv": [
+        [
+          "wasm-tools",
+          "parse",
+          "sources/compact-imports-type-group-1024.wat",
+          "-o",
+          "artifacts/compact-imports-type-group-1024.wasm"
+        ]
+      ],
+      "feature": "compact-imports",
+      "variant": "type-group-1024",
+      "baseline": false,
+      "scope": "execution"
+    },
+    {
+      "source": "sources/compact-imports-ordinary-baseline-1024.wat",
+      "sourceSha256": "7386856bb2f0c7af86fabd8d5356e7ac193c710dd1dbd7ea01f5a84599727ec9",
+      "artifact": "artifacts/compact-imports-ordinary-baseline-1024.wasm",
+      "sha256": "12f20ad3f9c1123d84ba9a11f53f1b2c6c378ad186a02e135413b99898e80188",
+      "compiler": "wasm-tools 1.260.0",
+      "argv": [
+        [
+          "wasm-tools",
+          "parse",
+          "sources/compact-imports-ordinary-baseline-1024.wat",
+          "-o",
+          "artifacts/compact-imports-ordinary-baseline-1024.wasm"
+        ]
+      ],
+      "feature": "compact-imports",
+      "variant": "ordinary-baseline-1024",
       "baseline": true,
       "scope": "execution"
     }

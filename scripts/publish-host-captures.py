@@ -207,6 +207,16 @@ def compact_publication_ledger(path, seen):
         os.fsync(stream.fileno())
 
 
+def source_pin_allowlist(*plans):
+    """Combine explicit publication pins without changing a running collection plan."""
+    return {
+        (engine, pin["tag"] if pin.get("tag") else pin["revision"], pin["targetWeek"])
+        for plan in plans for pin in plan["pins"]
+        if pin.get("revision") and pin.get("status") in ("planned", "reused", None)
+        for engine in pin["configurations"]
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=pathlib.Path, required=True)
@@ -217,6 +227,9 @@ def main():
     parser.add_argument("--campaign", default="release-five-20261008")
     parser.add_argument("--capture-directory", action="append", type=pathlib.Path, default=[],
                         help="additional synced capture directory; may be repeated")
+    parser.add_argument("--capture-glob", default="*.json", help="capture filename filter before reading bodies")
+    parser.add_argument("--extra-source-plan", action="append", type=pathlib.Path, default=[],
+                        help="additional explicit publication pins; collection plan stays frozen")
     args = parser.parse_args()
     args.state.mkdir(parents=True, exist_ok=True)
     ledger = args.state / "published.json"
@@ -232,11 +245,7 @@ def main():
     plan = json.loads((campaign / "source-plan.json").read_text())
     template_path = campaign / "collection-template.json"
     adaptive = json.loads(template_path.read_text()).get("collection", {}).get("adaptiveSampling") if template_path.exists() else None
-    allowed = {
-        (engine, pin["tag"] if pin.get("tag") else pin["revision"], pin["targetWeek"])
-        for pin in plan["pins"] if pin.get("revision") and pin.get("status") in ("planned", "reused", None)
-        for engine in pin["configurations"]
-    }
+    allowed = source_pin_allowlist(plan, *(json.loads(path.read_text()) for path in args.extra_source_plan))
     hub = args.state / "hub"
     while True:
         if args.hub:
@@ -253,10 +262,10 @@ def main():
                     print("Hub sync will retry:", result.stderr.decode()[-500:], flush=True)
             except (OSError, RuntimeError, subprocess.TimeoutExpired) as error:
                 print("Hub sync will retry:", str(error), flush=True)
-        paths = list((campaign / "captures").glob("*.json"))
-        paths += list((hub / "captures").glob("*.json"))
+        paths = list((campaign / "captures").glob(args.capture_glob))
+        paths += list((hub / "captures").glob(args.capture_glob))
         for directory in args.capture_directory:
-            paths += list(directory.glob("*.json"))
+            paths += list(directory.glob(args.capture_glob))
         for pattern in (() if args.campaign != "release-five-20261008" else ("*/performance-*.json", "*/compile-*.json", "*/lifecycle-*.json")):
             paths += list((args.root / "features-seven-20261008").glob(pattern))
         for pattern in (() if args.campaign != "release-five-20261008" else ("*/performance-*.json", "*/compile-*.json", "*/lifecycle-*.json")):
@@ -289,6 +298,9 @@ def main():
                     continue
                 ref = source.get("ref") if source.get("kind") == "release" else source.get("revision")
                 if not rows or (rows[0]["engine"], ref, source.get("asOf")) not in allowed:
+                    # Plans stay fixed for this process. An excluded immutable
+                    # capture needs no more JSON reads until its file changes.
+                    unchanged[str(path)] = signature
                     continue
                 if any(row["engine"] in ("deno", "wasm2js", "wasm2rs") for row in rows):
                     continue
