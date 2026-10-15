@@ -23,3 +23,11 @@ test('compiler-change cache regeneration cannot silently change the SDK C++ ABI'
   await assert.rejects(configureWavmSource('/source',target,flags,async()=>writeFile(join(target,'CMakeCache.txt'),'CMAKE_CXX_FLAGS:STRING=\n')),/discarded required compiler/);
  } finally {await rm(target,{recursive:true,force:true});}
 });
+
+test('CMake trimming trailing whitespace preserves the requested linker policy',async()=>{
+ const target=await mkdtemp(join(tmpdir(),'wavm-cmake-whitespace-'));
+ const flags=['-DCMAKE_CXX_FLAGS=-stdlib=libstdc++','-DCMAKE_SHARED_LINKER_FLAGS=-Wl,--no-undefined '];
+ try{
+  await configureWavmSource('/source',target,flags,async()=>writeFile(join(target,'CMakeCache.txt'),flags.map(flag=>flag.slice(2).trimEnd().replace('=',':STRING=')).join('\n')));
+ }finally{await rm(target,{recursive:true,force:true});}
+});

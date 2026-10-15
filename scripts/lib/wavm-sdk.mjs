@@ -8,7 +8,7 @@ export async function configureWavmSource(source,target,flags,run) {
  const expected=flags.filter(flag=>/^-DCMAKE_(?:CXX_FLAGS|EXE_LINKER_FLAGS|SHARED_LINKER_FLAGS)=/.test(flag)).map(flag=>flag.slice(2));
  const matches=async()=>{
   const cache=await readFile(join(target,'CMakeCache.txt'),'utf8');
-  return expected.every(entry=>{const split=entry.indexOf('='),key=entry.slice(0,split),value=entry.slice(split+1);return cache.split('\n').some(line=>line===key+':STRING='+value);});
+  return expected.every(entry=>{const split=entry.indexOf('='),key=entry.slice(0,split),value=entry.slice(split+1).trimEnd();return cache.split('\n').some(line=>line===key+':STRING='+value);});
  };
  await configure();
  // Changing compilers makes CMake regenerate the cache and discard flags from
