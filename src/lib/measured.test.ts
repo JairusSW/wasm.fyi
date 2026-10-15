@@ -1,14 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { loadMeasuredSnapshot, measuredCodeImage, measuredHistory, measuredMemory, measuredTiming, type MeasuredSnapshot, type MeasuredWeeklyHistory, type SnapshotEntry } from './measured';
 
-const root = new URL('../../data/', import.meta.url);
-async function store(name: string) {
-	const index = JSON.parse(await readFile(new URL(name + '/index.json', root), 'utf8')) as { reports: SnapshotEntry[] };
-	const snapshots = await Promise.all(index.reports.map(async entry => JSON.parse(await readFile(new URL(name + '/' + entry.projection, root), 'utf8')) as MeasuredSnapshot));
-	return { index, snapshots };
-}
-const { index, snapshots } = await store('wasmbench');
 // Controlled fixtures exercise collector rules independently of the deployed engines.
 const item={id:'features/core-num/integer-multiply-add/1',sha256:'a'.repeat(64),work_unit:'call',units_per_invocation:1};
 const ids=['wasmtime','wazero','v8-optimizing-only','wago'];
@@ -119,52 +112,35 @@ describe('measured view boundary', () => {
 		expect(measuredCodeImage(latest,'wasmtime',item.id,item.sha256).status).toBe('not-collected');
 	});
 
-	it('checks deployed projection bytes, metadata and hosted base paths', async () => {
-		const entry = index.reports[0];
-		const bytes = await readFile(new URL('wasmbench/' + entry.projection, root), 'utf8');
+	it('checks projection bytes, metadata and hosted base paths', async () => {
+		const bytes = JSON.stringify(feature);
+		const digest = createHash('sha256').update(bytes).digest('hex');
+		const entry:SnapshotEntry={id:feature.id,runId:feature.runId,created:feature.created,host:feature.host,projection:digest+'.summary.json',projectionSha256:digest,evidence:feature.evidence,evidenceSha256:feature.evidenceSha256};
 		const fetcher = (async (path: string) => { expect(path).toBe('/wasm.fyi/wasmbench/' + entry.projection); return new Response(bytes); }) as typeof fetch;
 		expect((await loadMeasuredSnapshot('/wasm.fyi/wasmbench/', entry, fetcher)).id).toBe(entry.id);
 		await expect(loadMeasuredSnapshot('/wasm.fyi/wasmbench', entry, (async () => new Response(bytes + ' ')) as typeof fetch)).rejects.toThrow('checksum');
 		await expect(loadMeasuredSnapshot('/wasm.fyi/wasmbench', { ...entry, host: { ...entry.host, hostname: 'wrong-host' } }, fetcher)).rejects.toThrow('metadata');
 	});
 
-	it('reads each pinned historical point on both hosts and retains shard provenance and gaps', async () => {
-		for (const name of ['history', 'history-hub']) {
-			const { snapshots } = await store(name);
-			const history = JSON.parse(await readFile(new URL(name + '/weekly.json', root), 'utf8')) as MeasuredWeeklyHistory;
-			const first=history.results.findIndex(point=>point.engines?.wago?.reports?.length || (!point.engines && (point.reports?.length || point.runId)));
-			expect(first).toBeGreaterThanOrEqual(0);
-			const source=history.results[first];
-			const receipts=source.engines?.wago?.reports||source.reports||[source];
-			const historical=snapshots.find(snapshot=>receipts.some(pin=>pin.runId===snapshot.runId)&&snapshot.workloads.some(w=>w.id==='applications/image-blur'))!;
-			const workload=historical.workloads.find(w=>w.id==='applications/image-blur')!;
-			const cells = measuredHistory(history, snapshots, historical.host, 'wago', workload.id, workload.sha256, 'steady');
-			expect(cells).toHaveLength(history.results.length);
-			for(const [i,point] of cells.entries()){
-                expect(point.role).toBe('retrospective-revision');
-                const week=history.results[i];
-                const pin=week.engines ? week.engines.wago : week;
-                const refs=pin?.reports || (pin ? [pin] : []);
-                const report=snapshots.filter(snapshot=>refs.some(ref=>ref.runId===snapshot.runId)
-                    && snapshot.workloads.some(w=>w.id===workload.id && w.sha256===workload.sha256)
-                    && snapshot.summaries.some(summary=>summary.runtime==='wago' && summary.workload===workload.id && summary.scenario==='steady'))
-                    .sort((a,b)=>b.created.localeCompare(a.created))[0];
-                if(week.status==='measured' && pin?.status==='measured' && report){
-                    expect(point.cell).toEqual(measuredTiming(report,'wago',workload.id,workload.sha256,'steady'));
-                }else{
-                    expect(point.cell.status,`${name} ${week.targetWeek}: absent workload stays uncollected`).toBe('not-collected');
-                }
-            }
-			const baseline = measuredHistory(history, snapshots, historical.host, 'wasmtime', workload.id, workload.sha256, 'steady');
-			for(const [i,point] of baseline.entries()){
-                expect(point.role).toBe(history.results[i].engines?'retrospective-revision':'fixed-comparison-baseline');
-                expect(point.revision).toBe(history.results[i].engines?.wasmtime?.revision);
-            }
-			const gaps = measuredHistory(history, snapshots.filter(snapshot => snapshot.runId !== historical.runId), historical.host, 'wago', workload.id, workload.sha256, 'steady');
-			expect(gaps[first].cell.status).toBe('not-collected');
-			expect(gaps).toHaveLength(history.results.length);
-		}
-	}, 30_000);
+	it('keeps historical host identity, fixed baselines and explicit gaps', () => {
+        for (const arch of ['amd64','arm64']) {
+            const report=structuredClone(feature);report.host={hostname:'fixture-'+arch,os:'linux',arch};
+            const history:MeasuredWeeklyHistory={baseline:{report:report.id},results:[
+                {targetWeek:'2026-10-03',revision:'d'.repeat(40),status:'measured',reports:[{runId:report.runId,collectedAt:report.created,reportSha256:report.sourceReportSha256}]},
+                {targetWeek:'2026-09-26',revision:'e'.repeat(40),status:'not-collected'}
+            ]};
+            const cells=measuredHistory(history,[report],report.host,'wago',item.id,item.sha256,'steady');
+            expect(cells).toHaveLength(2);
+            expect(cells[0]).toMatchObject({role:'retrospective-revision',cell:{status:'ok',evidence:{report:report.id}}});
+            expect(cells[1].cell.status).toBe('not-collected');
+            const baseline=measuredHistory(history,[report],report.host,'wasmtime',item.id,item.sha256,'steady');
+            expect(baseline[0]).toMatchObject({role:'fixed-comparison-baseline',cell:{status:'ok'}});
+            expect(baseline[1].cell.status).toBe('not-collected');
+            expect(measuredHistory(history,[],report.host,'wago',item.id,item.sha256,'steady')[0].cell.status).toBe('not-collected');
+            expect(measuredHistory(history,[report],{...report.host,hostname:'other-host'},'wago',item.id,item.sha256,'steady')[0].cell.status).toBe('not-collected');
+            expect(measuredHistory(history,[report],report.host,'wago',item.id,'0'.repeat(64),'steady')[0].cell.status).toBe('not-collected');
+        }
+    });
 });
 
 it('resolves historical corpus shards independently and rejects a changed receipt',()=>{

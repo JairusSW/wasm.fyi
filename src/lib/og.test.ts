@@ -1,4 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+// Share-image routing depends on workload identity, not a production capture.
+vi.unmock('./view-data');
+vi.mock('./data/snapshot',()=>({ALLB:[
+	{id:'applications/image-blur',group:'Images',tags:[],kb:null,ms:null},
+	{id:'applications/a+b',group:'Synthetic',tags:[],kb:null,ms:null},
+	{id:'applications/a-b',group:'Synthetic',tags:[],kb:null,ms:null},
+	{id:'features/simd/probe/1',group:'SIMD',tags:[],kb:null,ms:null}
+]}));
 import { ALLB } from './data/snapshot';
 import { hasOwnImage, ogFor, ogSlugs, workloadSlug } from './og';
 
@@ -15,8 +23,8 @@ describe('share images', () => {
 		expect(ogFor('/nowhere', {}, {}).slug).toBe('home');
 		const app = ALLB.find(hasOwnImage)!;
 		expect(ogFor('/bench/[...id]', { id: app.id }, { bench: app }).slug).toBe(workloadSlug(app.id));
-		const probe = ALLB.find((b) => !hasOwnImage(b));
-		if (probe) expect(ogFor('/bench/[...id]', { id: probe.id }, { bench: probe }).slug).toBe('features');
+		const probe = ALLB.find((b) => !hasOwnImage(b))!;
+		expect(ogFor('/bench/[...id]', { id: probe.id }, { bench: probe }).slug).toBe('features');
 	});
 	it('every slug a page can point at is rendered', () => {
 		const slugs = new Set(ogSlugs());
