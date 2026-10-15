@@ -210,6 +210,16 @@ this option does not change the sampling policy of new captures. Missing or
 invalid vectors and feature correctness probes cannot substitute for performance
 measurements. Declared adaptive policies still require their original valid counts.
 
+`scripts/reuse-history-captures.py` stages historical records from read-only
+SQLite for the exact host CPU, OS, architecture, source commit and workload
+contract. It preserves the original capture date, platform specifications,
+metrics and ordered samples. Its receipt identifies the original observation
+rows and hashes each staged capture. It never changes a running worker's
+completion ledger; install the staged records at a verified worker boundary.
+Failed outcomes retain their status, with an explicit note when the database
+does not contain the original diagnostic text. Temporary capture files can be
+removed after publication; the database remains the durable record.
+
 The callback loop is normalized per boundary call. RSS uses the phase's kernel high-water mark when
 available, with one RSS-only process pass per phase as the portable fallback;
 those fallback timings are discarded. Transpiler compilation uses the maximum kernel-accounted translator/compiler child peak, including waited-for descendants, rather than the adapter peak or a sum. The maximum across measured trials is retained. Older transpiler captures may contain adapter-process RSS and need recollection for this definition; saved historical values are not rewritten. Compilation latency includes translation and native compilation/linking. Code size reuses the compiled transpiler artifact outside latency timers when available; otherwise it uses one cold compile pass; full images include embedded data. `codeKind` distinguishes `native-image` from `engine-reported`; unavailable code

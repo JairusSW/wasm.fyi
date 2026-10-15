@@ -78,3 +78,4 @@ jobs:
           node --test scripts/engine-fatal-reason.test.mjs scripts/latency-capture.test.mjs scripts/test-wavm-configure-policy.mjs scripts/history-sdk-api-failures.test.mjs scripts/worker-resume-failures.test.mjs scripts/test-history-workload-failure.mjs
           python3 scripts/zwasm-memory-policy.test.py
           python3 scripts/publish-host-captures.test.py
+          python3 scripts/reuse-history-captures.test.py
