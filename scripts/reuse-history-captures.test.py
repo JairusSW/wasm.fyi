@@ -77,6 +77,7 @@ class HistoryReuseTest(fixture.FeatureReuseTest):
         self.assertIn('original diagnostic text is unavailable',note['reason'])
         self.assertEqual(note['failures'][0]['phase'],'steady')
         self.assertEqual(note['source'],capture['source'])
+        self.assertEqual(note['capturedAt'],capture['capturedAt'])
 
     def test_scope_and_blocklist(self):
         self.plan['pins'][0]['targetWeek']='2026-06-21T10:00:00.000Z'

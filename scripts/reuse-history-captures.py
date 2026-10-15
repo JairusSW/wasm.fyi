@@ -168,7 +168,7 @@ def export_history(database, plan, contracts, hosts, output, boundary='2026-06-2
                         failed=[r for r in values if r['latencyStatus']=='failed']
                         if failed:
                             reason='Recorded runtime failure retained from the database; original diagnostic text is unavailable'
-                            features.write(output/host/'failure-notes'/name,dict(engine=engine,workload=workload,source=source,kind='recorded-database-failure',reason=reason,
+                            features.write(output/host/'failure-notes'/name,dict(capturedAt=key[3],engine=engine,workload=workload,source=source,kind='recorded-database-failure',reason=reason,
                                 failures=[dict(engine=engine,workload=workload,phase=r['phase'],status='error',reason=reason) for r in failed]))
                         result['files'].append(dict(name=name,sha256=hashlib.sha256(body).hexdigest(),workload=workload,capturedAt=key[3],platformId=key[4],configurationId=key[5],sourceId=key[6],observationIds=[rows[p]['id'] for p in range(4)],failedPhases=[r['phase'] for r in failed]))
                         break
