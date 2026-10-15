@@ -38,6 +38,8 @@ export async function checkV8(w, { repeat=3, mutateImports, afterInstantiate, ro
   if(w.abi==='emscripten')return {status:'unavailable',reason:'Emscripten host glue required; excluded from portable corpus'};
   if(!['core','wasi-command'].includes(w.abi))throw Error('Unknown ABI: '+w.abi);
   if(!['stateless','fresh_instance_per_sample'].includes(w.reset))throw Error('Unknown reset policy: '+w.reset);
+  const jspi=w.host_profile==='jspi-v1';
+  if(jspi&&(typeof WebAssembly.Suspending!=='function'||typeof WebAssembly.promising!=='function'))return {status:'unavailable',reason:'V8 JS Promise Integration host API is unavailable'};
   const options=w.host_profile==='js-string-builtins-v1'?{builtins:['js-string'],importedStringConstants:'strings'}:{};
   let module;
   try { module=await WebAssembly.compile(bytes,options); }
@@ -79,8 +81,16 @@ export async function checkV8(w, { repeat=3, mutateImports, afterInstantiate, ro
     } else {
       const imports=Object.create(null);
       if(w.host_profile==='assemblyscript-abort-v1')imports.env={abort:()=>{throw Error('AssemblyScript abort');}};
-      if(w.host_profile==='identity-v1')imports.wasmbench={identity:v=>v};
+      if(['identity-v1','threads-identity-v1','threads-opaque-identity-v1'].includes(w.host_profile))imports.wasmbench={identity:v=>v};
+      if(jspi){
+        const later=async value=>{await null;return value|0;};
+        imports.jspi={step:new WebAssembly.Suspending(i=>later(Math.imul(i,3)+1)),
+          double:new WebAssembly.Suspending(i=>later(i*2)),
+          immediate:new WebAssembly.Suspending(i=>(i+7)|0)};
+      }
+      mutateImports?.(imports);
       const instance=await WebAssembly.instantiate(module,imports);
+      afterInstantiate?.(instance);
       const params=parameterTypes(bytes,w.export);
       if(params&&!w.vectors&&params.length!==w.args.length)throw Error('Incorrect argument count: '+w.id);
       const args=w.args.map((value,i)=>params?.[i]===0x7e?BigInt(value):Number(value));
@@ -101,8 +111,9 @@ export async function checkV8(w, { repeat=3, mutateImports, afterInstantiate, ro
         continue;
       }
       // A stateless contract must also survive calls on the same instance.
+      const invoke=jspi?WebAssembly.promising(instance.exports[w.export]):instance.exports[w.export];
       for(let call=0;call<(w.reset==='stateless'?3:1);call++) {
-        const value=instance.exports[w.export](...args);
+        const value=await invoke(...args);
         const result=(Array.isArray(value)?value:value===undefined?[]:[value]).map(x=>typeof x==='bigint'?BigInt.asUintN(64,x).toString():String(x>>>0));
         if(w.oracle.kind!=='exact_u64'||JSON.stringify(result)!==JSON.stringify(w.oracle.expected.map(String)))throw Error(`Incorrect result ${w.id}: ${result}`);
         const base=w.oracle.output_pointer_export?Number(instance.exports[w.oracle.output_pointer_export]())>>>0:0;
