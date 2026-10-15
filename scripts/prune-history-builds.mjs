@@ -1,4 +1,4 @@
-import {readFile,readdir,stat} from 'node:fs/promises';
+import {readFile,readdir,stat,realpath} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {pruneRustIntermediates} from './lib/prune-build-cache.mjs';
@@ -11,8 +11,13 @@ for(const group of ['engine-builds','sdk-builds'])for(const name of await readdi
  const receipt=JSON.parse(await readFile(join(directory,receiptName),'utf8'));
  // Binding roots identify the upstream SDK source, sometimes shared by two
  // backends. Adapter intermediates belong to this build's own harness.
- const harness=receiptName==='binding.json'?join(directory,'harness'):receipt.root||join(directory,'harness');
- if((!harness.startsWith(join(root,'engine-builds')+'/')&&!harness.startsWith(join(root,'sdk-builds')+'/'))||!await stat(harness).catch(()=>null))throw Error('Unexpected build receipt path: '+directory+' -> '+harness);
+ // Each receipt lives beside its own adapter harness. receipt.root may instead
+ // name the upstream SDK shared with another configuration; never prune it.
+ const ownHarness=join(directory,'harness');
+ const recorded=typeof receipt.root==='string'?resolve(receipt.root):'';
+ const harness=receiptName!=='binding.json'&&(recorded===ownHarness||recorded.startsWith(ownHarness+'/'))?recorded:ownHarness;
+ const canonical=await realpath(harness).catch(()=>null),canonicalRoot=await realpath(root);
+ if(!canonical||!['engine-builds','sdk-builds'].some(group=>canonical.startsWith(join(canonicalRoot,group)+'/'))||!(await stat(harness)).isDirectory())throw Error('Unexpected build receipt path: '+directory+' -> '+harness);
  if(processes.includes(harness)||processes.includes(directory)){live++;continue;}
  await pruneRustIntermediates(harness);pruned++;
 }
