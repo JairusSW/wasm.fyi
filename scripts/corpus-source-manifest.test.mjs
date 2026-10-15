@@ -63,3 +63,16 @@ test('retained artifacts and command inputs rebase across Mac and Linux checkout
   assert.equal(workload.artifact,'/home/hub/site/.wasmbench/upstream/build/artifacts/tiny.wasm');
   assert.equal(workload.command.files['input.c'].path,'/home/hub/site/corpora/upstream/wago/corpus/workloads/clang/input.c');
 });
+
+test('algorithm audit uses source-built kernels without invoking the external call-fixture harness',async()=>{
+  await fixture(async({directory,settings})=>{
+    const artifact=join(directory,'tiny.wasm'),bytes=Buffer.from('0061736d01000000','hex');
+    await writeFile(artifact,bytes);
+    await writeFile(settings.corpus.buildManifest,JSON.stringify([{id:'wago/tiny/source',artifact,sha256:digest(bytes)}]));
+    const output=await prepareCorpus(settings,()=>{throw Error('External harness must not run for the algorithm audit');},join(directory,'audit'),{includeCalls:false});
+    const workloads=JSON.parse(await readFile(output));
+    assert.equal(workloads.length,103);
+    assert(workloads.every(w=>!w.id.startsWith('mechanisms/')));
+    assert.equal(workloads[0].sha256,digest(bytes));
+  });
+});

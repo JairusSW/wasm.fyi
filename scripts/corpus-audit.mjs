@@ -6,7 +6,9 @@ import { workloadCategory, algorithmCoverage } from './lib/workload-category.mjs
 
 if(process.env.WASMBENCH_CORPUS_IDS || process.env.WASMBENCH_APPLICATION_IDS || process.env.WASMBENCH_SUITE)throw Error('Corpus audit requires the complete configured inventory');
 const {settings,run}=await harness();
-const manifest=await prepareCorpus(settings,run);
+// The algorithm catalogue excludes boundary calls and can audit the source-built
+// kernels without a sibling wasm-bench checkout to regenerate those fixtures.
+const manifest=await prepareCorpus(settings,run,undefined,{includeCalls:false});
 // Boundary-call fixtures have their own measurement category. They are not
 // additional application algorithms and do not change the 6–9 per-group rule.
 const ws=JSON.parse(await readFile(manifest)).filter(w=>!w.id.startsWith('mechanisms/'));

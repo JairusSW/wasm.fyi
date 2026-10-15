@@ -39,7 +39,7 @@ export function rebaseRetainedWorkload(workload, siteRoot = site) {
   return visit(workload);
 }
 
-export async function prepareCorpus(settings, run, directory) {
+export async function prepareCorpus(settings, run, directory, {includeCalls=true}={}) {
   const selected = process.env.WASMBENCH_SUITE || settings.collection.suite;
   if (selected !== 'wago' && selected !== 'all') return selected.endsWith('.json') ? resolve(site, selected) : selected;
   const corpus = settings.corpus;
@@ -76,7 +76,7 @@ export async function prepareCorpus(settings, run, directory) {
   const applicationIds = process.env.WASMBENCH_APPLICATION_IDS?.split(',').filter(Boolean);
   const applications = process.env.WASMBENCH_CORPUS_IDS && applicationIds === undefined ? [] : await applicationWorkloads(corpus.applications, applicationIds);
   workloads.push(...applications);
-  if(corpus.buildManifest||selected==='all') {
+  if(includeCalls&&(corpus.buildManifest||selected==='all')) {
     const callsManifest=join(output,'host-calls.json');
     process.stdout.write(run('corpus','--suite','calls','--out',callsManifest));
     workloads.push(...parseCorpusJSON(await readFile(callsManifest,'utf8')));
