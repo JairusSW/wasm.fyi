@@ -24,7 +24,7 @@ fn main(){
   const instance=legacy?'wbInstance':'m2_wbInstance';
   const prefix=legacy?'wb':'m2_wb';
   const declarations=exports?(legacy?
-   'U32 wb_add(wbInstance*,U32,U32);\nU32 wb_X58___value(wbInstance*);\nU32 wb_new(wbInstance*);\nU32 wb_call(wbInstance*);\nwasmMemory* wb_memory(wbInstance*);\nU32 wasmbench__identity(wasmModuleInstance*,U32);\nvoid env__abort(wasmModuleInstance*,U32,U32,U32,U32);\n':
+   'U32 wb_add(wbInstance*,U32,U32);\nU32 wb_X58___value(wbInstance*);\nU32 wb_new(wbInstance*);\nU32 wb_call(wbInstance*);\nwasmMemory* wb_memory(wbInstance*);\nU32 wasmbench__identity(void*,U32);\nvoid env__abort(void*,U32,U32,U32,U32);\n':
    'U32 m2_wbExport3_add(m2_wbInstance*,U32,U32);\nU32 m2_wbExport8_X58X5FX5Fvalue(m2_wbInstance*);\nU32 m2_wbExport3_new(m2_wbInstance*);\nU32 m2_wbExport4_call(m2_wbInstance*);\nwasmMemory* m2_wbExport6_memory(m2_wbInstance*);\nU32 i9_wasmbench8_identity(wasmModuleInstance*,U32);\nvoid i3_env5_abort(wasmModuleInstance*,U32,U32,U32,U32);\n'):'';
   await writeFile(join(directory,'wb.h'),`#include <stdint.h>
 typedef uint32_t U32;typedef uint64_t U64;
