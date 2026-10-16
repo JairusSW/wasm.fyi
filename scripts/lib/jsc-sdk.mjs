@@ -7,11 +7,17 @@ import {configureCMakeSource} from './cmake-source.mjs';
 import {javaScriptCoreBuildPython,javaScriptCorePythonFlags} from './jsc-build-python.mjs';
 import {privateGlibcLinkFlags} from './private-glibc-link.mjs';
 
-export function javaScriptCorePort(common,mac) {
+export function javaScriptCorePort(common,mac,requested) {
+ if(requested!==undefined&&requested!=='JSCOnly')throw Error('Unsupported explicit JavaScriptCore port '+requested);
  const ports=common.match(/set\(ALL_PORTS\s+([^)]*)\)/)?.[1].trim().split(/\s+/);
- const port=mac?(ports?.includes('Cocoa')?'Cocoa':'Mac'):'JSCOnly';
+ const port=requested??(mac?(ports?.includes('Cocoa')?'Cocoa':'Mac'):'JSCOnly');
  if(!ports?.includes(port))throw Error('Pinned WebKit source does not support '+port);
  return port;
+}
+export function javaScriptCoreBuildLayout(target,mac,port) {
+ if(!mac)return {binary:join(target,'bin/jsc')};
+ const standalone=port==='JSCOnly';
+ return {binary:join(target,standalone?'bin/jsc':'jsc'),frameworkRoot:join(target,standalone?'lib':''),rpath:standalone?'@loader_path/../lib':'@loader_path'};
 }
 export function javaScriptCoreCompilerFlags(prefix) {
  const quote=value=>"'"+value.replaceAll("'","'\\''")+"'";
@@ -59,12 +65,13 @@ export async function buildJavaScriptCoreSDK({source,target,revision,env,run}) {
  if(!['darwin-arm64','linux-x64'].includes(process.platform+'-'+process.arch))throw Error('Unqualified JavaScriptCore source-build platform');
  await mkdir(target,{recursive:true});
  const measurement=await prepareJavaScriptCoreNativeSize({source,target:join(target,'native-source'),run,sparse:env.WASMFYI_JSC_SPARSE_MEASUREMENT==='1'});
- source=measurement.source;target=join(target,'native-build');
- await mkdir(target,{recursive:true});
+ source=measurement.source;
  const mac=process.platform==='darwin';
  // New WebKit revisions renamed the Mac CMake port to Cocoa. Use its actual
  // name so incremental configure preserves the upstream build identity.
- const port=javaScriptCorePort(await readFile(join(source,'Source/cmake/WebKitCommon.cmake'),'utf8'),mac);
+ const port=javaScriptCorePort(await readFile(join(source,'Source/cmake/WebKitCommon.cmake'),'utf8'),mac,mac?env.WASMFYI_JSC_MAC_PORT:undefined);
+ target=join(target,mac&&port==='JSCOnly'?'native-build-jsc-only':'native-build');
+ await mkdir(target,{recursive:true});
  let flags=['-S',source,'-B',target,'-G','Ninja','-DPORT='+port,'-DCMAKE_BUILD_TYPE=Release','-DENABLE_API_TESTS=OFF'];
  const localNinja=join(homedir(),'.cache/wasm-fyi/toolchains/ninja-local/usr/bin/ninja');
  if(!mac&&await stat(localNinja).catch(()=>null))flags.push('-DCMAKE_MAKE_PROGRAM='+localNinja);
@@ -101,17 +108,17 @@ export async function buildJavaScriptCoreSDK({source,target,revision,env,run}) {
  await configureCMakeSource({source,target,flags:flags.slice(4),run,options:{cwd:source,env:buildEnv}});
  if(!mac&&env.WASMFYI_JSC_ICU_SDK)verifyJavaScriptCoreICUBindings(await readFile(join(target,'CMakeCache.txt'),'utf8'),env.WASMFYI_JSC_ICU_SDK);
  await run('cmake',['--build',target,'--target','jsc','-j',String(env.WASMFYI_BUILD_JOBS||availableParallelism())],{cwd:source,env:buildEnv});
- const binary=join(target,mac?'jsc':'bin/jsc');
+ const layout=javaScriptCoreBuildLayout(target,mac,port),binary=layout.binary;
  if(!await stat(binary).catch(()=>null))throw Error('JavaScriptCore source build did not produce its shell');
  if(mac){
-  const relative='JavaScriptCore.framework/Versions/A/JavaScriptCore',library=join(target,relative),installName='@rpath/'+relative;
+  const relative='JavaScriptCore.framework/Versions/A/JavaScriptCore',library=join(layout.frameworkRoot,relative),installName='@rpath/'+relative;
   const linked=(await run('otool',['-L',binary])).output;
   const old=linked.split('\n').map(line=>line.trim().split(' (')[0]).find(path=>path.endsWith('/'+relative));
   if(!old)throw Error('Source shell has no JavaScriptCore framework dependency');
   await run('install_name_tool',['-id',installName,library]);
   if(old!==installName)await run('install_name_tool',['-change',old,installName,binary]);
   const commands=(await run('otool',['-l',binary])).output;
-  if(!/path @loader_path \(offset/.test(commands))await run('install_name_tool',['-add_rpath','@loader_path',binary]);
+  if(!commands.split('\n').some(line=>line.trim().startsWith('path '+layout.rpath+' (offset')))await run('install_name_tool',['-add_rpath',layout.rpath,binary]);
   await run('codesign',['--force','--sign','-',library]);
   await run('codesign',['--force','--sign','-',binary]);
   // Protected macOS launchers strip DYLD overrides. Bind the source framework
@@ -127,5 +134,5 @@ export async function buildJavaScriptCoreSDK({source,target,revision,env,run}) {
  const tierFlags=['--validateOptions=true','--thresholdForBBQOptimizeAfterWarmUp=1','--thresholdForBBQOptimizeSoon=1','--thresholdForOMGOptimizeAfterWarmUp=1','--thresholdForOMGOptimizeSoon=1','--useConcurrentJIT=false','--numberOfWasmCompilerThreads=0','--useConcurrentGC=false','--numberOfGCMarkers=1','--useParallelMarkingConstraintSolver=false','--dumpOMGDisassembly=true'];
  const tier=(await run(binary,[...tierFlags,'-e',calibration])).output;
  if(!tier.includes('Generated OMG'))throw Error('Pinned JSC SDK did not prove OMG compilation');
- return {source,target,binary,binarySha256:digest(await readFile(binary)),flags,revision,python,measurement,tierProbe:{backend:'OMG',outputSha256:digest(Buffer.from(tier)),flags:tierFlags,scope:'Separate build qualification; disassembly disabled during benchmark measurements'}};
+ return {source,target,binary,binarySha256:digest(await readFile(binary)),flags,revision,port,python,measurement,tierProbe:{backend:'OMG',outputSha256:digest(Buffer.from(tier)),flags:tierFlags,scope:'Separate build qualification; disassembly disabled during benchmark measurements'}};
 }

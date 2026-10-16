@@ -39,6 +39,15 @@ the SDK build receipt. It does not install a toolchain or change Rust's default.
 Rust 1.70 or older, together with its separately configured legacy build tools.
 With neither setting, the existing compiler selection is preserved.
 
+## Historical JavaScriptCore Mac builds
+
+`WASMFYI_JSC_MAC_PORT=JSCOnly` explicitly selects the upstream JSC-only port
+for a targeted macOS SDK build when a release tag lacks files required by its
+Mac port. It uses a separate build directory, retains the existing source pin
+and native-code measurement ABI, and records the port in the SDK receipt.
+The source shell and its local framework use a relative runtime search path.
+Unset the variable for the normal Mac/Cocoa port. Linux builds are unchanged.
+
 ## Local website workflow
 
 ```sh

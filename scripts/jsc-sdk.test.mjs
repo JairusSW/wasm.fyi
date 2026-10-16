@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {javaScriptCorePort,javaScriptCoreICUFlags,javaScriptCoreRuntimeLinkFlags,verifyJavaScriptCoreICUBindings} from './lib/jsc-sdk.mjs';
+import {javaScriptCoreBuildLayout,javaScriptCorePort,javaScriptCoreICUFlags,javaScriptCoreRuntimeLinkFlags,verifyJavaScriptCoreICUBindings} from './lib/jsc-sdk.mjs';
 
 test('ICU qualification rejects stale system libraries and ignored lowercase overrides',()=>{
  const cache=['ICU_INCLUDE_DIR:PATH=/private/icu/usr/include','ICU_UC_LIBRARY_RELEASE:FILEPATH=/private/icu/usr/lib/x86_64-linux-gnu/libicuuc.so','ICU_I18N_LIBRARY_RELEASE:FILEPATH=/private/icu/usr/lib/x86_64-linux-gnu/libicui18n.so','ICU_DATA_LIBRARY_RELEASE:FILEPATH=/private/icu/usr/lib/x86_64-linux-gnu/libicudata.so'].join('\n');
@@ -76,4 +76,23 @@ test('qualified dl archive search is scoped ahead of existing JSC library paths'
  assert.equal(javaScriptCoreRuntimeLinkFlags(original,env,'darwin'),original);
  assert.equal(javaScriptCoreRuntimeLinkFlags(original,{WASMFYI_JSC_DL_LINK_DIR:'/qualified/dl-only'},'linux'),original);
  assert.throws(()=>javaScriptCoreRuntimeLinkFlags(original,{...env,WASMFYI_JSC_DL_LINK_DIR:'/unsafe dir'},'linux'),/Unsafe/);
+});
+
+test('explicit JSC-only Mac source build avoids the unsupported historical Mac port',()=>{
+ const common='set(ALL_PORTS GTK JSCOnly Mac WPE)';
+ assert.equal(javaScriptCorePort(common,true,'JSCOnly'),'JSCOnly');
+ assert.equal(javaScriptCorePort(common,true),'Mac');
+ assert.throws(()=>javaScriptCorePort(common,true,'arbitrary'),/port/i);
+ assert.throws(()=>javaScriptCorePort('set(ALL_PORTS Mac)',true,'JSCOnly'),/JSCOnly/);
+});
+
+
+test('Mac shell rpath resolves to the selected SDK framework for both source ports',async()=>{
+ const {dirname,resolve}=await import('node:path');
+ for(const port of ['Mac','Cocoa','JSCOnly']){
+  const layout=javaScriptCoreBuildLayout('/private/sdk',true,port);
+  assert.equal(resolve(dirname(layout.binary),layout.rpath.replace('@loader_path','.' )),layout.frameworkRoot);
+  assert.equal(layout.binary,port==='JSCOnly'?'/private/sdk/bin/jsc':'/private/sdk/jsc');
+ }
+ assert.deepEqual(javaScriptCoreBuildLayout('/private/sdk',false,'JSCOnly'),{binary:'/private/sdk/bin/jsc'});
 });
