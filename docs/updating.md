@@ -48,6 +48,10 @@ and native-code measurement ABI, and records the port in the SDK receipt.
 The source shell and its local framework use a relative runtime search path.
 Unset the variable for the normal Mac/Cocoa port. Linux builds are unchanged.
 
+SDK qualification checks OMG compilation, positive native-code bytes and rejection
+of non-module inputs. The inspector uses JSC ClassInfo casting for compatibility
+with historical release headers. These checks run once while building the SDK.
+
 ## Local website workflow
 
 ```sh

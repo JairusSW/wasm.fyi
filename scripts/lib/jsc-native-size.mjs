@@ -78,6 +78,7 @@ uint64_t Module::wasmFyiNativeCodeSize()
 }
 } } // namespace JSC::Wasm`);
  });
+ // JS objects use JSC ClassInfo casts; historical releases lack WTF traits.
  await patch(base+'jsc.cpp',text=>{
   text=replace(text,'#include "JSWebAssemblyMemory.h"','#include "JSWebAssemblyMemory.h"\n#include "JSWebAssemblyModule.h"\n#include "WasmModule.h"');
   const declaration='static JSC_DECLARE_HOST_FUNCTION(functionWebAssemblyMemoryMode);';
