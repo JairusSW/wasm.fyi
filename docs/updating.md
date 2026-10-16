@@ -39,15 +39,6 @@ the SDK build receipt. It does not install a toolchain or change Rust's default.
 Rust 1.70 or older, together with its separately configured legacy build tools.
 With neither setting, the existing compiler selection is preserved.
 
-## Historical JavaScriptCore Mac builds
-
-`WASMFYI_JSC_LEGACY_MAC_COMPONENTS=1` disables browser components forced on by
-older `OptionsMac.cmake` recipes. It applies only to the Mac port and modifies
-only the isolated measurement worktree's build configuration. The SDK receipt
-records upstream and patched hashes; engine code, compiler settings and framework
-layout are preserved. Cocoa and Linux builds are unchanged. Unknown partial
-recipes and unrelated worktree edits fail closed.
-
 ## Local website workflow
 
 ```sh

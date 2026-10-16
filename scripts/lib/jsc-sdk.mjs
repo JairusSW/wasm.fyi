@@ -1,4 +1,3 @@
-import {prepareJavaScriptCoreMacComponents} from './jsc-mac-components.mjs';
 import {mkdir,readFile,stat} from 'node:fs/promises';
 import {join,dirname} from 'node:path';
 import {homedir,availableParallelism} from 'node:os';
@@ -59,7 +58,6 @@ export function javaScriptCoreRuntimeLinkFlags(flags,env,platform=process.platfo
 export async function buildJavaScriptCoreSDK({source,target,revision,env,run}) {
  if(!['darwin-arm64','linux-x64'].includes(process.platform+'-'+process.arch))throw Error('Unqualified JavaScriptCore source-build platform');
  await mkdir(target,{recursive:true});
- const upstreamSource=source;
  const measurement=await prepareJavaScriptCoreNativeSize({source,target:join(target,'native-source'),run,sparse:env.WASMFYI_JSC_SPARSE_MEASUREMENT==='1'});
  source=measurement.source;target=join(target,'native-build');
  await mkdir(target,{recursive:true});
@@ -67,9 +65,7 @@ export async function buildJavaScriptCoreSDK({source,target,revision,env,run}) {
  // New WebKit revisions renamed the Mac CMake port to Cocoa. Use its actual
  // name so incremental configure preserves the upstream build identity.
  const port=javaScriptCorePort(await readFile(join(source,'Source/cmake/WebKitCommon.cmake'),'utf8'),mac);
- const macComponents=await prepareJavaScriptCoreMacComponents({source:upstreamSource,target:source,enabled:mac&&port==='Mac'&&env.WASMFYI_JSC_LEGACY_MAC_COMPONENTS==='1'});
  let flags=['-S',source,'-B',target,'-G','Ninja','-DPORT='+port,'-DCMAKE_BUILD_TYPE=Release','-DENABLE_API_TESTS=OFF'];
- if(macComponents)flags.push(...['WEBCORE','WEBINSPECTORUI','WEBGL','WEBGPU'].map(name=>'-DENABLE_'+name+'=OFF'));
  const localNinja=join(homedir(),'.cache/wasm-fyi/toolchains/ninja-local/usr/bin/ninja');
  if(!mac&&await stat(localNinja).catch(()=>null))flags.push('-DCMAKE_MAKE_PROGRAM='+localNinja);
  if(mac){
@@ -131,5 +127,5 @@ export async function buildJavaScriptCoreSDK({source,target,revision,env,run}) {
  const tierFlags=['--validateOptions=true','--thresholdForBBQOptimizeAfterWarmUp=1','--thresholdForBBQOptimizeSoon=1','--thresholdForOMGOptimizeAfterWarmUp=1','--thresholdForOMGOptimizeSoon=1','--useConcurrentJIT=false','--numberOfWasmCompilerThreads=0','--useConcurrentGC=false','--numberOfGCMarkers=1','--useParallelMarkingConstraintSolver=false','--dumpOMGDisassembly=true'];
  const tier=(await run(binary,[...tierFlags,'-e',calibration])).output;
  if(!tier.includes('Generated OMG'))throw Error('Pinned JSC SDK did not prove OMG compilation');
- return {source,target,binary,binarySha256:digest(await readFile(binary)),flags,revision,python,measurement,...(macComponents?{macComponents}:{}),tierProbe:{backend:'OMG',outputSha256:digest(Buffer.from(tier)),flags:tierFlags,scope:'Separate build qualification; disassembly disabled during benchmark measurements'}};
+ return {source,target,binary,binarySha256:digest(await readFile(binary)),flags,revision,python,measurement,tierProbe:{backend:'OMG',outputSha256:digest(Buffer.from(tier)),flags:tierFlags,scope:'Separate build qualification; disassembly disabled during benchmark measurements'}};
 }
