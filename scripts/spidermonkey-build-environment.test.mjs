@@ -1,13 +1,23 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {spiderMonkeyBuildEnvironment,spiderMonkeyLegacyLinkerEnvironment,resetSpiderMonkeyCompilerCache} from './lib/spidermonkey-sdk.mjs';
-test('Linux SpiderMonkey selects the provisioned C++ runtime and its matching loader',()=>{
- const env={WASMFYI_SPIDERMONKEY_CC:'/compiler/clang',WASMFYI_SPIDERMONKEY_CXX:'/compiler/clang++',WASMFYI_PRIVATE_GLIBC_LIBRARY_DIR:'/qualified/runtime'};
+import test from 'node:test';import assert from 'node:assert/strict';import {spiderMonkeyBuildEnvironment,spiderMonkeyLegacyLinkerEnvironment,resetSpiderMonkeyCompilerCache,stageSpiderMonkeyCxxRuntime} from './lib/spidermonkey-sdk.mjs';
+test('Linux SpiderMonkey selects only its bundled C++ library without mixing glibc families',()=>{
+ const env={WASMFYI_SPIDERMONKEY_CC:'/compiler/clang',WASMFYI_SPIDERMONKEY_CXX:'/compiler/clang++',WASMFYI_SPIDERMONKEY_CXX_RUNTIME:'/qualified/runtime',WASMFYI_PRIVATE_GLIBC_LIBRARY_DIR:'/other/glibc'};
  const result=spiderMonkeyBuildEnvironment(env,'linux');
- assert.match(result.LDFLAGS,/-Wl,--dynamic-linker,\/qualified\/runtime\/ld-linux-x86-64.so.2/);
+ assert.equal(result.LDFLAGS,'-Wl,-rpath,/qualified/runtime');
  assert.match(result.CXX,/-Xlinker -rpath -Xlinker \/qualified\/runtime/);
- assert.match(result.CXX,/-Xlinker --dynamic-linker -Xlinker \/qualified\/runtime\/ld-linux-x86-64.so.2/);
+ assert.doesNotMatch(result.CXX,/dynamic-linker|\/other\/glibc/);
  assert.deepEqual(spiderMonkeyBuildEnvironment(env,'darwin'),env);
  assert.equal(env.LDFLAGS,undefined);
- assert.throws(()=>spiderMonkeyBuildEnvironment({...env,WASMFYI_PRIVATE_GLIBC_LIBRARY_DIR:'relative'},'linux'),/Unsafe/);
+ assert.throws(()=>spiderMonkeyBuildEnvironment({...env,WASMFYI_SPIDERMONKEY_CXX_RUNTIME:'relative'},'linux'),/Unsafe/);
+});
+test('SDK retains a hashed copy of only the selected libstdc++',async()=>{
+ const {mkdtemp,mkdir,writeFile,readFile,readdir,rm}=await import('node:fs/promises');const {join}=await import('node:path');const {tmpdir}=await import('node:os');const {createHash}=await import('node:crypto');
+ const root=await mkdtemp(join(tmpdir(),'mozilla-cxx-'));
+ try{
+  const prefix=join(root,'sysroot'),target=join(root,'sdk');await mkdir(prefix);await writeFile(join(prefix,'libstdc++.so.6'),'qualified C++ library');await writeFile(join(prefix,'libc.so.6'),'must not copy');
+  const env={WASMFYI_SPIDERMONKEY_CXX_RUNTIME:prefix};const result=await stageSpiderMonkeyCxxRuntime(target,env,'linux');
+  assert.deepEqual(await readdir(result.directory),['libstdc++.so.6']);assert.equal(await readFile(result.path,'utf8'),'qualified C++ library');assert.equal(result.sha256,createHash('sha256').update('qualified C++ library').digest('hex'));assert.equal(env.WASMFYI_SPIDERMONKEY_CXX_RUNTIME,prefix);
+  assert.equal(await stageSpiderMonkeyCxxRuntime(target,env,'darwin'),null);assert.equal(await stageSpiderMonkeyCxxRuntime(target,{},'linux'),null);
+ }finally{await rm(root,{recursive:true,force:true})}
 });
 test('Darwin SpiderMonkey build keeps native tools without Linux ABI flags',()=>{
  const env={WASMFYI_WAVM_CXX_SDK:'/opt/homebrew/opt/llvm@20',CC:'/native/clang',CXX:'/native/clang++'};

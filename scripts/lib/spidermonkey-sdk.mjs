@@ -1,12 +1,11 @@
 import {spiderMonkeyCbindgenEnvironment} from './spidermonkey-cbindgen.mjs';
-import {mkdir,writeFile,readFile,stat,rm} from 'node:fs/promises';
+import {mkdir,writeFile,readFile,stat,rm,copyFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import {digest} from './wasmbench.mjs';
 import {availableParallelism} from 'node:os';
 import {nodeBuildPython,nodeBuildEnvironment} from './node-build-python.mjs';
 import {spiderMonkeyRustEnvironment} from './spidermonkey-rust.mjs';
 import {repairSpiderMonkeyESR115} from './spidermonkey-esr115.mjs';
-import {privateGlibcLinkFlags} from './private-glibc-link.mjs';
 export function spiderMonkeyBuildEnvironment(env,platform=process.platform) {
  const explicitCompiler=platform==='linux'&&env.WASMFYI_SPIDERMONKEY_CXX;
  let selected=env;
@@ -17,11 +16,12 @@ export function spiderMonkeyBuildEnvironment(env,platform=process.platform) {
   selected={...env,CC:env.WASMFYI_SPIDERMONKEY_CC,CXX:explicitCompiler,CXXFLAGS:env.WASMFYI_SPIDERMONKEY_CXXFLAGS??env.CXXFLAGS,WASMFYI_NODE_CXX_SDK:undefined,WASMFYI_WAVM_CXX_SDK:undefined};
  }
  const result=nodeBuildEnvironment(selected,platform);
- if(platform==='linux'&&env.WASMFYI_PRIVATE_GLIBC_LIBRARY_DIR){
-  // Modern Mozilla support objects require newer libstdc++ symbols. Bind the
-  // provisioned runtime and its loader together, as the other native SDKs do.
-  const loader=join(env.WASMFYI_PRIVATE_GLIBC_LIBRARY_DIR,'ld-linux-x86-64.so.2');
-  result.LDFLAGS=[result.LDFLAGS,...privateGlibcLinkFlags(env,platform),'-Wl,--no-as-needed',loader,'-Wl,--as-needed','-Wl,--dynamic-linker,'+loader].filter(Boolean).join(' ');
+ if(platform==='linux'&&env.WASMFYI_SPIDERMONKEY_CXX_RUNTIME){
+  // Mozilla's sysroot C++ library may be newer than the host's. Bundle only
+  // that library; mixing another libc with Mozilla's sysroot breaks probes.
+  const prefix=env.WASMFYI_SPIDERMONKEY_CXX_RUNTIME;
+  if(!prefix.startsWith('/')||/[\s"'`$]/.test(prefix))throw Error('Unsafe SpiderMonkey C++ runtime directory');
+  result.LDFLAGS=[result.LDFLAGS,'-Wl,-rpath,'+prefix].filter(Boolean).join(' ');
  }
  // Mozilla splits all environment option values on commas, including Rust
  // flags. Forward each linker argument separately without losing ABI flags.
@@ -92,7 +92,9 @@ export async function buildSpiderMonkeySDK({source,target,env,run}) {
  const sourceCompatibility=await repairSpiderMonkeyESR115(source,minimumRust,env);
  const bindgenPolicy=await readFile(join(source,'build/moz.configure/bindgen.configure'),'utf8').catch(()=>'');
  const minimumCbindgen=bindgenPolicy.match(/cbindgen_min_version\s*=\s*Version\("([^"]+)"\)/)?.[1];
- const buildEnv=spiderMonkeyCbindgenEnvironment(spiderMonkeyZlibEnvironment(spiderMonkeyLegacyLinkerEnvironment({...spiderMonkeyRustEnvironment(spiderMonkeyBuildEnvironment(env),minimumRust),MOZCONFIG:mozconfig},minimumRust),minimumRust),minimumRust,minimumCbindgen);
+ const cxxRuntime=await stageSpiderMonkeyCxxRuntime(target,env);
+ const selectedEnv=cxxRuntime?{...env,WASMFYI_SPIDERMONKEY_CXX_RUNTIME:cxxRuntime.directory}:env;
+ const buildEnv=spiderMonkeyCbindgenEnvironment(spiderMonkeyZlibEnvironment(spiderMonkeyLegacyLinkerEnvironment({...spiderMonkeyRustEnvironment(spiderMonkeyBuildEnvironment(selectedEnv),minimumRust),MOZCONFIG:mozconfig},minimumRust),minimumRust),minimumRust,minimumCbindgen);
  if(buildEnv.CC?.includes('-fuse-ld=/Library/Developer/CommandLineTools/usr/bin/ld-classic')&&!await stat('/Library/Developer/CommandLineTools/usr/bin/ld-classic').catch(()=>null))throw Error('Legacy SpiderMonkey requires installed Apple ld-classic');
  const python=await nodeBuildPython(buildEnv,run,'SpiderMonkey');
  await resetSpiderMonkeyCompilerCache(object,buildEnv);
@@ -100,5 +102,13 @@ export async function buildSpiderMonkeySDK({source,target,env,run}) {
  const binary=join(object,'dist/bin/js');if(!await stat(binary).catch(()=>null))throw Error('SpiderMonkey source build did not produce its shell');
  await run(binary,['--wasm-compiler=ion','-e','if(!wasmIsSupported())throw Error("WebAssembly disabled")']);
  env.WASMBENCH_SPIDERMONKEY=binary;env.NODE_OPTIONS='';
- return {source,target,binary,binarySha256:digest(await readFile(binary)),flags,python,rustToolchain:buildEnv.RUSTUP_TOOLCHAIN||null,minimumRust,sourceCompatibility,mozconfigSha256:digest(await readFile(mozconfig)),wasmCompiler:'Ion only'};
+ return {source,target,binary,binarySha256:digest(await readFile(binary)),flags,python,rustToolchain:buildEnv.RUSTUP_TOOLCHAIN||null,minimumRust,sourceCompatibility,...(cxxRuntime?{cxxRuntime}:{}),mozconfigSha256:digest(await readFile(mozconfig)),wasmCompiler:'Ion only'};
+}
+export async function stageSpiderMonkeyCxxRuntime(target,env,platform=process.platform){
+ if(platform!=='linux'||!env.WASMFYI_SPIDERMONKEY_CXX_RUNTIME)return null;
+ const prefix=env.WASMFYI_SPIDERMONKEY_CXX_RUNTIME;
+ if(!prefix.startsWith('/')||/[\s"'`$]/.test(prefix))throw Error('Unsafe SpiderMonkey C++ runtime directory');
+ const source=join(prefix,'libstdc++.so.6'),directory=join(target,'runtime'),path=join(directory,'libstdc++.so.6');
+ await mkdir(directory,{recursive:true});await copyFile(source,path);
+ return {source,directory,path,sha256:digest(await readFile(path))};
 }
