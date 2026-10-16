@@ -93,7 +93,7 @@ const METRICS = ['compile', 'rssCompile', 'inst', 'rssInst', 'first', 'steady', 
 
 /** Each URL-backed field: its codec and the routes it belongs to (`*` = scope, every route). */
 const FIELDS = {
-	cohortMode: { codec: str('cohort', 'per-engine', ['shared', 'per-engine'] as const), routes: '*' },
+	cohortMode: { codec: str('cohort', 'shared', ['shared', 'per-engine'] as const), routes: '*' },
 	average: { codec: str('avg', 'geo', ['geo', 'mean'] as const), routes: '*' },
 	deltaFormat: { codec: str('delta', 'percent', ['factor', 'percent'] as const), routes: '*' },
 	machine: { codec: str<MachineId>('m', 'm1', ['m1', 'm2', 'm3']), routes: '*' },
@@ -146,7 +146,7 @@ class UiState {
 	baseline = $derived(comparisonBaseline(defaultConfig, CFG.filter(c => viewData.hosts[this.machine].configurations[c.id]).map(c => c.id)));
 	// Every workload counts equally in averages; no per-corpus weighting.
 	weighting = $state<'corpus' | 'workload'>('workload');
-	cohortMode = $state<'shared' | 'per-engine'>('per-engine');
+	cohortMode = $state<'shared' | 'per-engine'>('shared');
 	/** How workload results combine into one number: geometric mean (default) or plain mean. */
 	average = $state<'geo' | 'mean'>('geo');
 	adv = $state(false);
