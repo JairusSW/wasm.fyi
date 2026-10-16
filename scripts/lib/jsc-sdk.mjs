@@ -1,5 +1,5 @@
-import {mkdir,readFile,stat} from 'node:fs/promises';
-import {join,dirname} from 'node:path';
+import {mkdir,readFile,stat,realpath} from 'node:fs/promises';
+import {join,dirname,relative} from 'node:path';
 import {homedir,availableParallelism} from 'node:os';
 import {digest} from './wasmbench.mjs';
 import {prepareJavaScriptCoreNativeSize} from './jsc-native-size.mjs';
@@ -18,6 +18,13 @@ export function javaScriptCoreBuildLayout(target,mac,port) {
  if(!mac)return {binary:join(target,'bin/jsc')};
  const standalone=port==='JSCOnly';
  return {binary:join(target,standalone?'bin/jsc':'jsc'),frameworkRoot:join(target,standalone?'lib':''),rpath:standalone?'@loader_path/../lib':'@loader_path'};
+}
+export async function javaScriptCoreFrameworkRelativePath(directory) {
+ const root=await realpath(directory),bundle=join(root,'JavaScriptCore.framework');
+ if(await realpath(bundle)!==bundle)throw Error('JavaScriptCore framework resolves outside its SDK');
+ const library=await realpath(join(bundle,'JavaScriptCore')),path=relative(root,library);
+ if(!/^JavaScriptCore\.framework\/Versions\/[^/]+\/JavaScriptCore$/.test(path))throw Error('Unexpected JavaScriptCore framework binary path: '+path);
+ return path;
 }
 export function javaScriptCoreCompilerFlags(prefix) {
  const quote=value=>"'"+value.replaceAll("'","'\\''")+"'";
@@ -111,7 +118,7 @@ export async function buildJavaScriptCoreSDK({source,target,revision,env,run}) {
  const layout=javaScriptCoreBuildLayout(target,mac,port),binary=layout.binary;
  if(!await stat(binary).catch(()=>null))throw Error('JavaScriptCore source build did not produce its shell');
  if(mac){
-  const relative='JavaScriptCore.framework/Versions/A/JavaScriptCore',library=join(layout.frameworkRoot,relative),installName='@rpath/'+relative;
+  const relative=await javaScriptCoreFrameworkRelativePath(layout.frameworkRoot),library=join(layout.frameworkRoot,relative),installName='@rpath/'+relative;
   const linked=(await run('otool',['-L',binary])).output;
   const old=linked.split('\n').map(line=>line.trim().split(' (')[0]).find(path=>path.endsWith('/'+relative));
   if(!old)throw Error('Source shell has no JavaScriptCore framework dependency');

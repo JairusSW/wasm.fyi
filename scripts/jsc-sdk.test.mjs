@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {javaScriptCoreBuildLayout,javaScriptCorePort,javaScriptCoreICUFlags,javaScriptCoreRuntimeLinkFlags,verifyJavaScriptCoreICUBindings} from './lib/jsc-sdk.mjs';
+import {javaScriptCoreFrameworkRelativePath,javaScriptCoreBuildLayout,javaScriptCorePort,javaScriptCoreICUFlags,javaScriptCoreRuntimeLinkFlags,verifyJavaScriptCoreICUBindings} from './lib/jsc-sdk.mjs';
 
 test('ICU qualification rejects stale system libraries and ignored lowercase overrides',()=>{
  const cache=['ICU_INCLUDE_DIR:PATH=/private/icu/usr/include','ICU_UC_LIBRARY_RELEASE:FILEPATH=/private/icu/usr/lib/x86_64-linux-gnu/libicuuc.so','ICU_I18N_LIBRARY_RELEASE:FILEPATH=/private/icu/usr/lib/x86_64-linux-gnu/libicui18n.so','ICU_DATA_LIBRARY_RELEASE:FILEPATH=/private/icu/usr/lib/x86_64-linux-gnu/libicudata.so'].join('\n');
@@ -95,4 +95,17 @@ test('Mac shell rpath resolves to the selected SDK framework for both source por
   assert.equal(layout.binary,port==='JSCOnly'?'/private/sdk/bin/jsc':'/private/sdk/jsc');
  }
  assert.deepEqual(javaScriptCoreBuildLayout('/private/sdk',false,'JSCOnly'),{binary:'/private/sdk/bin/jsc'});
+});
+
+
+test('framework binding follows the built SDK version and rejects an external framework',async()=>{
+ const {mkdtemp,mkdir,writeFile,symlink,rm}=await import('node:fs/promises');const {tmpdir}=await import('node:os');const {join}=await import('node:path');
+ const root=await mkdtemp(join(tmpdir(),'jsc-framework-'));
+ try{
+  for(const version of ['A','1.0.0']){
+   const sdk=join(root,version),bundle=join(sdk,'JavaScriptCore.framework');await mkdir(join(bundle,'Versions',version),{recursive:true});await writeFile(join(bundle,'Versions',version,'JavaScriptCore'),'fixture');await symlink(version,join(bundle,'Versions/Current'));await symlink('Versions/Current/JavaScriptCore',join(bundle,'JavaScriptCore'));
+   assert.equal(await javaScriptCoreFrameworkRelativePath(sdk),'JavaScriptCore.framework/Versions/'+version+'/JavaScriptCore');
+  }
+  const other=join(root,'other');await mkdir(other);await symlink(join(root,'A/JavaScriptCore.framework'),join(other,'JavaScriptCore.framework'));await assert.rejects(javaScriptCoreFrameworkRelativePath(other),/outside its SDK/);
+ }finally{await rm(root,{recursive:true,force:true});}
 });
