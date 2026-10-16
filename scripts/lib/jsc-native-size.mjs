@@ -88,10 +88,8 @@ uint64_t Module::wasmFyiNativeCodeSize()
   return replace(text,definition,`JSC_DEFINE_HOST_FUNCTION(functionWasmFyiNativeCodeSize, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     auto scope = DECLARE_THROW_SCOPE(globalObject->vm());
-    if (JSObject* object = callFrame->argument(0).getObject()) {
-        if (auto* module = dynamicDowncast<JSWebAssemblyModule>(object))
-            return JSValue::encode(jsNumber(static_cast<double>(module->module().wasmFyiNativeCodeSize())));
-    }
+    if (auto* module = jsDynamicCast<JSWebAssemblyModule*>(callFrame->argument(0)))
+        return JSValue::encode(jsNumber(static_cast<double>(module->module().wasmFyiNativeCodeSize())));
     return throwVMTypeError(globalObject, scope, "wasmFyiNativeCodeSize requires a WebAssembly.Module"_s);
 }
 
