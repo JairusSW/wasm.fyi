@@ -9,6 +9,17 @@ test('LLVM runtime uses one private glibc for its transitive library dependencie
  }
  assert(!wamrLLVMCompilerFlags('/compiler').some(flag=>flag.includes('/runtime/lib')));
 });
+test('private-glibc compiler executables link and start with the matching loader only on Linux',()=>{
+ const env={WASMFYI_PRIVATE_GLIBC_LIBRARY_DIR:'/runtime/lib'};
+ const flags=wamrLLVMCompilerFlags('/compiler',env,'linux');
+ const executable=flags.find(flag=>flag.startsWith('-DCMAKE_EXE_LINKER_FLAGS='));
+ const shared=flags.find(flag=>flag.startsWith('-DCMAKE_SHARED_LINKER_FLAGS='));
+ assert(executable.includes("-Wl,--no-as-needed '/runtime/lib/ld-linux-x86-64.so.2' -Wl,--as-needed"));
+ assert(executable.includes('-Wl,--dynamic-linker,/runtime/lib/ld-linux-x86-64.so.2'));
+ assert(!shared.includes('ld-linux'));
+ for(const selected of [wamrLLVMCompilerFlags('/compiler',{},'linux'),wamrLLVMCompilerFlags('/compiler',env,'darwin')])assert(!selected.some(flag=>flag.includes('ld-linux')||flag.includes('--dynamic-linker')));
+ assert.throws(()=>wamrLLVMCompilerFlags('/compiler',{WASMFYI_PRIVATE_GLIBC_LIBRARY_DIR:'/unsafe path'},'linux'),/Unsafe/);
+});
 test('builds distinct eager backends with compatible feature combinations',()=>{
  const interp=wamrBuildFlags('wamr'),fast=wamrBuildFlags('wamr-fast-jit'),llvm=wamrBuildFlags('wamr-llvm-jit','/llvm/lib/cmake/llvm');
  assert.ok(interp.includes('-DWAMR_BUILD_FAST_INTERP=1'));assert.ok(interp.includes('-DWAMR_BUILD_JIT=0'));

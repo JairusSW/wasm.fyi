@@ -26,9 +26,17 @@ export function wamrLLVMCompilerFlags(prefix,env={},platform=process.platform) {
  const library=join(prefix,'lib/x86_64-unknown-linux-gnu');
  const singleThread='-DWASM_ORC_JIT_BACKEND_THREAD_NUM=1 -DWASM_ORC_JIT_COMPILE_THREAD_NUM=1';
  const link=['-fuse-ld='+quote(join(prefix,'bin/ld.lld')),'-L'+quote(library),quote('-Wl,-rpath,'+library),...privateGlibcLinkFlags(env,platform)].join(' ');
+ // Compiler checks are executables: private libc's GLIBC_PRIVATE imports must
+ // resolve against its matching loader, which must also start the executable.
+ // Shared runtime libraries retain their existing startup policy.
+ let executable=link;
+ if(platform==='linux'&&env.WASMFYI_PRIVATE_GLIBC_LIBRARY_DIR){
+  const loader=join(env.WASMFYI_PRIVATE_GLIBC_LIBRARY_DIR,'ld-linux-x86-64.so.2');
+  executable+=' -Wl,--no-as-needed '+quote(loader)+' -Wl,--as-needed '+quote('-Wl,--dynamic-linker,'+loader);
+ }
  return ['-DCMAKE_C_COMPILER='+join(prefix,'bin/clang'),'-DCMAKE_CXX_COMPILER='+join(prefix,'bin/clang++'),
   '-DCMAKE_CXX_FLAGS='+singleThread+' -stdlib=libc++ -nostdinc++ -isystem '+quote(join(prefix,'include/c++/v1')),
-  '-DCMAKE_EXE_LINKER_FLAGS='+link,'-DCMAKE_SHARED_LINKER_FLAGS='+link];
+  '-DCMAKE_EXE_LINKER_FLAGS='+executable,'-DCMAKE_SHARED_LINKER_FLAGS='+link];
 }
 /** Honor distro LLVM's shared-link mode instead of linking optional tool/GPU libraries. */
 export async function configureWamrLLVMSharedLink(source,configuration) {
