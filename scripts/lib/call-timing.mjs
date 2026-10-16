@@ -11,11 +11,14 @@ export function callTimingCandidates(candidates, workload, metric) {
   return batches.length ? batches : candidates;
 }
 
-export function callBatchOperations(workload,collection={}) {
+export function callBatchOperations(workload,collection={},engines=[]) {
  if(workload.id===CALL_LOOP_WORKLOAD)return 1;
  const operations=collection.callBatchOperations??1000000;
  if(!Number.isInteger(operations)||operations<1||operations>1000000)throw Error('Invalid explicit call batch operation count');
- return operations;
+ // Redline starts a native watchdog thread per public invocation. A million
+ // calls can exhaust threads before the batch completes; 100 calls still
+ // amortize its invocation cost without changing runtime code or sample caps.
+ return engines.includes('endive-redline')?Math.min(operations,100):operations;
 }
 export function minimumCallBatch(trials) {
  const samples=trials.filter(t=>t.block>=0 && t.status==='ok' && t.profile==='timing' && t.scenario==='steady').flatMap(t=>t.samples || []).filter(s=>s.verified && s.operations>0);

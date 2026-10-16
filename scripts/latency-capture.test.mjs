@@ -7,23 +7,23 @@ import {collectLatencies,summarizeLatencies,latencyIdentity} from './lib/latency
 const workload={id:'applications/test',artifact:'/cache/artifacts/test.wasm',artifactName:'test.wasm',sha256:'a'.repeat(64),abi:'core',export:'benchmark',args:['7']};
 const manifest={host:{os:'linux',arch:'amd64',cpu_description:'Fixture CPU',logical_cpus:4,kernel:'fixture'},lock:{runtime_configurations:[{id:'engine',description:{runtime_version:'1.0',backend:'compiler'}}]}};
 const trial=(block,values,status='ok')=>({id:'trial-'+block,block,profile:'timing',runtime_configuration:'engine',workload:workload.id,scenario:'steady',status,samples:values.map(n=>({elapsed_ns:n,operations:2,verified:true,warmup:false}))});
-for(const batchOperations of [1000000,10000])test('adaptive call capture submits four phases once with explicit steady batch '+batchOperations,async()=>{
+for(const [engine,requestedBatch,batchOperations] of [['engine',1000000,1000000],['engine',10000,10000],['endive-redline',undefined,100]])test('adaptive call capture submits four phases once with steady batch '+engine+' '+batchOperations,async()=>{
  const directory=await mkdtemp(join(tmpdir(),'adaptive-call-capture-'));const commands=[];
  const callWorkload={...workload,id:'mechanisms/host-to-wasm-call'};
  try{
   await writeFile(join(directory,'wago-suite.json'),JSON.stringify([callWorkload]));
-  const capture=await collectLatencies({directory,workloads:[callWorkload],engines:['engine'],collection:{adaptiveSampling:{groupSize:5,maxSamples:35,warmup:0},supportsSteadyOperations:true,callBatchOperations:batchOperations,timeout:'1s',operations:1},run:async(command,...args)=>{
+  const capture=await collectLatencies({directory,workloads:[callWorkload],engines:[engine],collection:{adaptiveSampling:{groupSize:5,maxSamples:35,warmup:0},supportsSteadyOperations:true,callBatchOperations:requestedBatch,timeout:'1s',operations:1},run:async(command,...args)=>{
    commands.push([command,...args]);assert.equal(command,'run');
    assert.equal(args[args.indexOf('--operations')+1],'1');
    assert.equal(args[args.indexOf('--steady-operations')+1],String(batchOperations));
    assert.equal(args[args.indexOf('--scenarios')+1],'compile,instantiate,first-call,steady');
    assert.equal(args[args.indexOf('--launches')+1],'1');
    assert.equal(args[args.indexOf('--warmup')+1],'0');
-   const out=args[args.indexOf('--out')+1];await mkdir(join(out,'trials'),{recursive:true});await writeFile(join(out,'manifest.json'),JSON.stringify(manifest));
+   const out=args[args.indexOf('--out')+1];await mkdir(join(out,'trials'),{recursive:true});const selected=structuredClone(manifest);selected.lock.runtime_configurations[0].id=engine;await writeFile(join(out,'manifest.json'),JSON.stringify(selected));
    for(const scenario of ['compile','instantiate','first-call','steady']){
     const operations=scenario==='steady'?batchOperations:1;
     const sample={elapsed_ns:100*operations,operations,verified:true,warmup:false};
-    await writeFile(join(out,'trials',scenario+'.json'),JSON.stringify({...trial(0,[]),workload:callWorkload.id,scenario,samples:Array.from({length:5},()=>sample)}));
+    await writeFile(join(out,'trials',scenario+'.json'),JSON.stringify({...trial(0,[]),runtime_configuration:engine,workload:callWorkload.id,scenario,samples:Array.from({length:5},()=>sample)}));
    }
   }});
   assert.equal(commands.length,1);

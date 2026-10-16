@@ -11,6 +11,14 @@ test('explicit collection batch operations remain visible and never change guest
  for(const value of [0,1000001,1.5,'10000'])assert.throws(()=>callBatchOperations(boundary,{callBatchOperations:value}),/Invalid explicit/);
 });
 
+test('Redline bounds public-call batches without changing guest-loop work or other engines',()=>{
+ const boundary={id:'mechanisms/host-to-wasm-call'};
+ assert.equal(callBatchOperations(boundary,{},['endive-redline']),100);
+ assert.equal(callBatchOperations(boundary,{callBatchOperations:17},['endive-redline']),17);
+ for(const engine of ['endive-interpreter','endive-jit','v8'])assert.equal(callBatchOperations(boundary,{},[engine]),1000000);
+ assert.equal(callBatchOperations({id:CALL_LOOP_WORKLOAD},{},['endive-redline']),1);
+});
+
 test('whole-corpus single calls do not replace dedicated boundary-call batches', () => {
   const single = {options:{operations:1}};
   const failedBatch = {options:{operations:1000000},status:'failed'};

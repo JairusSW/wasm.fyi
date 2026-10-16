@@ -119,7 +119,7 @@ export async function collectLatencies({directory,workloads,engines,collection,r
    manifest=featureManifest;trials.push(...await load(out));
   }
   if(!policy&&calls){
-   const out=await collectCallBatches({directory:scratch,prefix:'calls',operations:callBatchOperations(workloads[0],collection),samples:collection.samples,run:(out,operations,samples)=>execute(out,['steady'],operations,samples),verify:async()=>{},load});
+   const out=await collectCallBatches({directory:scratch,prefix:'calls',operations:callBatchOperations(workloads[0],collection,engines),samples:collection.samples,run:(out,operations,samples)=>execute(out,['steady'],operations,samples),verify:async()=>{},load});
    const callManifest=JSON.parse(await readFile(join(out,'manifest.json')));
    if(manifest&&JSON.stringify(manifest.lock.runtime_configurations)!==JSON.stringify(callManifest.lock.runtime_configurations))throw Error('Engine identity changed during latency capture');
    manifest=callManifest;trials.push(...await load(out));
@@ -138,9 +138,9 @@ export async function collectLatencies({directory,workloads,engines,collection,r
     // Migration gate for already running campaigns with old cached controllers.
     // New campaigns enable the flag after installing the controller extension.
     await collect(ordinary,collection.operations,timing);
-    await collect(['steady'],callBatchOperations(workloads[0],collection),join(scratch,'calls'));
+    await collect(['steady'],callBatchOperations(workloads[0],collection,engines),join(scratch,'calls'));
    }else{
-    await collect(scenarios,collection.operations,timing,calls?callBatchOperations(workloads[0],collection):featurePerformance?collection.steadyOperations:undefined);
+    await collect(scenarios,collection.operations,timing,calls?callBatchOperations(workloads[0],collection,engines):featurePerformance?collection.steadyOperations:undefined);
    }
    for(const trial of trials.filter(t=>t.profile==='timing'&&t.block>=0&&t.status==='ok')){
     const values=(trial.samples||[]).filter(s=>!s.warmup&&s.verified).map(s=>s.elapsed_ns/s.operations);
