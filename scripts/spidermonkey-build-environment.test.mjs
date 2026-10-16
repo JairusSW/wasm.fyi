@@ -1,4 +1,14 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {spiderMonkeyBuildEnvironment,spiderMonkeyLegacyLinkerEnvironment,resetSpiderMonkeyCompilerCache} from './lib/spidermonkey-sdk.mjs';
+test('Linux SpiderMonkey selects the provisioned C++ runtime and its matching loader',()=>{
+ const env={WASMFYI_SPIDERMONKEY_CC:'/compiler/clang',WASMFYI_SPIDERMONKEY_CXX:'/compiler/clang++',WASMFYI_PRIVATE_GLIBC_LIBRARY_DIR:'/qualified/runtime'};
+ const result=spiderMonkeyBuildEnvironment(env,'linux');
+ assert.match(result.LDFLAGS,/-Wl,--dynamic-linker,\/qualified\/runtime\/ld-linux-x86-64.so.2/);
+ assert.match(result.CXX,/-Xlinker -rpath -Xlinker \/qualified\/runtime/);
+ assert.match(result.CXX,/-Xlinker --dynamic-linker -Xlinker \/qualified\/runtime\/ld-linux-x86-64.so.2/);
+ assert.deepEqual(spiderMonkeyBuildEnvironment(env,'darwin'),env);
+ assert.equal(env.LDFLAGS,undefined);
+ assert.throws(()=>spiderMonkeyBuildEnvironment({...env,WASMFYI_PRIVATE_GLIBC_LIBRARY_DIR:'relative'},'linux'),/Unsafe/);
+});
 test('Darwin SpiderMonkey build keeps native tools without Linux ABI flags',()=>{
  const env={WASMFYI_WAVM_CXX_SDK:'/opt/homebrew/opt/llvm@20',CC:'/native/clang',CXX:'/native/clang++'};
  assert.deepEqual(spiderMonkeyBuildEnvironment(env,'darwin'),env);

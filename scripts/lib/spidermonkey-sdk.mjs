@@ -6,6 +6,7 @@ import {availableParallelism} from 'node:os';
 import {nodeBuildPython,nodeBuildEnvironment} from './node-build-python.mjs';
 import {spiderMonkeyRustEnvironment} from './spidermonkey-rust.mjs';
 import {repairSpiderMonkeyESR115} from './spidermonkey-esr115.mjs';
+import {privateGlibcLinkFlags} from './private-glibc-link.mjs';
 export function spiderMonkeyBuildEnvironment(env,platform=process.platform) {
  const explicitCompiler=platform==='linux'&&env.WASMFYI_SPIDERMONKEY_CXX;
  let selected=env;
@@ -16,6 +17,12 @@ export function spiderMonkeyBuildEnvironment(env,platform=process.platform) {
   selected={...env,CC:env.WASMFYI_SPIDERMONKEY_CC,CXX:explicitCompiler,CXXFLAGS:env.WASMFYI_SPIDERMONKEY_CXXFLAGS??env.CXXFLAGS,WASMFYI_NODE_CXX_SDK:undefined,WASMFYI_WAVM_CXX_SDK:undefined};
  }
  const result=nodeBuildEnvironment(selected,platform);
+ if(platform==='linux'&&env.WASMFYI_PRIVATE_GLIBC_LIBRARY_DIR){
+  // Modern Mozilla support objects require newer libstdc++ symbols. Bind the
+  // provisioned runtime and its loader together, as the other native SDKs do.
+  const loader=join(env.WASMFYI_PRIVATE_GLIBC_LIBRARY_DIR,'ld-linux-x86-64.so.2');
+  result.LDFLAGS=[result.LDFLAGS,...privateGlibcLinkFlags(env,platform),'-Wl,--no-as-needed',loader,'-Wl,--as-needed','-Wl,--dynamic-linker,'+loader].filter(Boolean).join(' ');
+ }
  // Mozilla splits all environment option values on commas, including Rust
  // flags. Forward each linker argument separately without losing ABI flags.
  if(result.RUSTFLAGS)result.RUSTFLAGS=result.RUSTFLAGS.replace(/(-C(?:\s+)?link-arg=)-Wl,([^\s]+)/g,(_,prefix,args)=>args.split(',').map(arg=>prefix+'-Xlinker '+prefix+arg).join(' '));
