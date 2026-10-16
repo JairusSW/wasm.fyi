@@ -14,7 +14,10 @@ export async function configureNodeCompilerCache(env,{source,directory,run}){
  const compilers={},extraFiles=[];const build={...env};
  for(const [key,fallback] of [['CC','gcc'],['CXX','g++']]){
   const requested=env[key]||fallback;if(/[\s"'`$]/.test(requested))throw Error('Compiler cache refuses prewrapped compiler');
-  const path=isAbsolute(requested)?requested:(await run('which',[requested],{env})).output.trim();const actual=await realpath(path);build[key]=actual;compilers[key]={path:actual,sha256:hash(await readFile(actual))};extraFiles.push(actual);
+  const path=isAbsolute(requested)?requested:(await run('which',[requested],{env})).output.trim();const actual=await realpath(path);
+  // clang++ commonly resolves to clang. Keep the selected driver name, which
+  // controls C++ linking, while fingerprinting its real executable contents.
+  build[key]=path;compilers[key]={path:actual,driverPath:path,sha256:hash(await readFile(actual))};extraFiles.push(actual);
   if(/(?:gcc|g\+\+)/.test(actual))for(const name of ['cc1','cc1plus','as']){let delegate=(await run(actual,['-print-prog-name='+name],{env})).output.trim();if(!isAbsolute(delegate))delegate=(await run('which',[delegate],{env})).output.trim();const resolved=await realpath(delegate);if(!extraFiles.includes(resolved))extraFiles.push(resolved);}
  }
  const delegateHashes=Object.fromEntries(await Promise.all(extraFiles.map(async f=>[f,hash(await readFile(f))]))),statsLog=join(directory,'node-ccache-statistics.log');
