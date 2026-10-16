@@ -61,7 +61,7 @@
 
  $effect(()=>{
   if(!browser||!synced||!architectureReady||page.route.id==='/dashboard')return;
-  const machine=ui.machine;const route=page.route.id;const drawer=ui.drawer;ui.metric;
+  const machine=ui.machine;const route=page.route.id;const drawer=ui.drawer;ui.metric;ui.runtimeFilters.rules;
   void connectSite();
   if(apiView.ready)apiView.historyRevision;
   if(route==='/history')void loadHistory({...ui.scope,machine,snapshot:ui.snap,metric:ui.metric},ui.otMetric);

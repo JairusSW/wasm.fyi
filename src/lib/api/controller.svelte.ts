@@ -79,6 +79,7 @@ function wantedMainPhases(){
  const phases=new Set(['compile','steady']);
  const ofMetric=(metric:string)=>(({compile:'compile',rssCompile:'compile',inst:'instantiate',rssInst:'instantiate',first:'first-call'} as Record<string,string>)[metric]||'steady');
  phases.add(ofMetric(ui.metric));
+ for(const rule of ui.runtimeFilters.rules)phases.add(ofMetric(rule.metric));
  const drawer=ui.drawer;
  if(drawer?.type==='cell')phases.add(ofMetric(drawer.m));
  if(drawer?.type==='aggregate'){

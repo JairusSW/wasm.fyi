@@ -1,3 +1,5 @@
+import {emptyRuntimeFilters, filterRuntimes, parseRuntimeFilters, type RuntimeFilters} from './runtime-filters';
+import {runtimeFilterRows} from './runtime-filter-data';
 import {datasetView} from './api/view.svelte';
 // Global UI state. Filters are URL-backed: scope keys (machine, snapshot,
 // runtimes) persist across pages; page keys reset to their defaults when a
@@ -93,6 +95,7 @@ const METRICS = ['compile', 'rssCompile', 'inst', 'rssInst', 'first', 'steady', 
 
 /** Each URL-backed field: its codec and the routes it belongs to (`*` = scope, every route). */
 const FIELDS = {
+	runtimeFilters: { codec: {param:'filter',def:emptyRuntimeFilters(),parse:parseRuntimeFilters,ser:JSON.stringify} as Codec<RuntimeFilters>, routes:'*' },
 	cohortMode: { codec: str('cohort', 'shared', ['shared', 'per-engine'] as const), routes: '*' },
 	average: { codec: str('avg', 'geo', ['geo', 'mean'] as const), routes: '*' },
 	deltaFormat: { codec: str('delta', 'percent', ['factor', 'percent'] as const), routes: '*' },
@@ -139,16 +142,22 @@ class UiState {
 	exec = $state<Exec>('compiler');
 	/** Implementation-language filter ('all' or a langOf group); combined like `exec`. */
 	lang = $state('all');
-	shownHide = $derived({
+	/** How workload results combine into one number. */
+	average = $state<'geo' | 'mean'>('geo');
+	runtimeFilters = $state<RuntimeFilters>(emptyRuntimeFilters());
+	filterFeatures = $state(false);
+	filterOpen = $state(false);
+	filterRows = $derived(runtimeFilterRows(datasetView.current,this.machine,CFG,this.filterFeatures,this.average));
+	baseHide: Partial<Record<CfgId,boolean>> = $derived({
 		...this.hide,
 		...Object.fromEntries(CFG.filter((c) => (this.exec !== 'all' && execOf(c) !== this.exec) || (this.lang !== 'all' && langOf(c) !== this.lang)).map((c) => [c.id, true]))
 	});
+	filterMatches = $derived(filterRuntimes(this.filterRows.filter(c=>!this.baseHide[c.id as CfgId]&&!!viewData.hosts[this.machine].configurations[c.id as CfgId]),this.runtimeFilters));
+	shownHide: Partial<Record<CfgId,boolean>> = $derived(!this.runtimeFilters.name&&!this.runtimeFilters.rules.length?this.baseHide:{...this.baseHide,...Object.fromEntries(CFG.filter(c=>!this.filterMatches.has(c.id)).map(c=>[c.id,true]))});
 	baseline = $derived(comparisonBaseline(defaultConfig, CFG.filter(c => viewData.hosts[this.machine].configurations[c.id]).map(c => c.id)));
 	// Every workload counts equally in averages; no per-corpus weighting.
 	weighting = $state<'corpus' | 'workload'>('workload');
 	cohortMode = $state<'shared' | 'per-engine'>('shared');
-	/** How workload results combine into one number: geometric mean (default) or plain mean. */
-	average = $state<'geo' | 'mean'>('geo');
 	adv = $state(false);
 	theme = $state<'dark' | 'light'>('dark');
 	drawer = $state<Drawer | null>(null);

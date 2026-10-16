@@ -1,4 +1,6 @@
 <script lang="ts">
+ import RuntimeFilters from './RuntimeFilters.svelte';
+ import {emptyRuntimeFilters} from '$lib/runtime-filters';
  import {observeSticky} from '$lib/sticky';
  import {page} from '$app/state';
 	import {shortVersion} from '$lib/version-identity';
@@ -21,6 +23,7 @@
 	$effect(() => { if (ui.snap !== 's1') ui.snap = 's1'; });
 	const shown = $derived(CFG.filter((c) => !ui.scope.hide[c.id]));
  const featureComparison=$derived(page.route.id==='/features');
+ $effect(()=>{ui.filterFeatures=featureComparison});
 	// Phones collapse the scope controls behind a one-line summary.
 	let open = $state(false);
 
@@ -40,7 +43,7 @@
 		if (!sentinel) return;
 		return observeSticky(sentinel,value=>{stuck=value});
 	});
-	const compact = $derived(stuck && !hovering && !focused && !ui.adv);
+	const compact = $derived(stuck && !hovering && !focused && !ui.adv && !ui.filterOpen);
 	// Hover intent: unfold after a short rest, fold a moment after leaving, so brushing past
 	// the bar on the way to the page doesn't make it flicker.
 	let hoverTimer: ReturnType<typeof setTimeout> | undefined;
@@ -73,7 +76,8 @@
 	function toggle(id: (typeof CFG)[number]['id']) {
 		const c = CFG.find((x) => x.id === id)!;
 		// A chip outside the filters widens them to All and adds just that runtime.
-		if (filteredOut(c)) {
+		if (filteredOut(c) || ((ui.runtimeFilters.name || ui.runtimeFilters.rules.length) && !ui.filterMatches.has(id))) {
+   ui.runtimeFilters=emptyRuntimeFilters();
 			ui.hide = { ...ui.scope.hide, [id]: false };
 			ui.exec = 'all';
 			ui.lang = 'all';
@@ -82,6 +86,7 @@
 		ui.hide = { ...ui.hide, [id]: !ui.hide[id] };
 	}
 	function solo(e: MouseEvent, id: string) {
+  ui.runtimeFilters=emptyRuntimeFilters();
 		e.preventDefault();
 		const c = CFG.find((x) => x.id === id)!;
 		if (filteredOut(c)) {
@@ -126,6 +131,7 @@
 		ui.hide = Object.fromEntries(CFG.map((x) => [x.id, true]));
 	}
 	function showAll() {
+  ui.runtimeFilters=emptyRuntimeFilters();
 		ui.exec = 'all';
 		ui.lang = 'all';
 		ui.hide = {};
@@ -202,8 +208,8 @@
 			</button>
 		</div>
 	</div>
-		<div class="chips-fold" aria-hidden={compact}>
-		<div class="chips" id="scope-chips" role="group" aria-label="Runtimes shown" bind:this={chipsEl} inert={compact}>
+		<div class="chips-fold" aria-hidden={compact} bind:this={chipsEl}>
+		<div class="chips" id="scope-chips" role="group" aria-label="Runtimes shown" inert={compact}>
 			{#each CFG as c (c.id)}
 				{@const on = !ui.scope.hide[c.id]}
 				<button
@@ -221,6 +227,7 @@
 			<button class="all" onclick={showAll} disabled={!someHidden}>Show all</button>
 			<button class="all" onclick={hideAll} disabled={!someShown}>Hide all</button>
 		</div>
+	<div class="runtime-filters" inert={compact}><RuntimeFilters /></div>
 		</div>
 	{#if ui.adv}
 		<div class="adv-grid">
@@ -233,6 +240,8 @@
 </div>
 
 <style>
+	.runtime-filters{margin-top:8px}
+	@media(max-width:720px){section:not(.open) .runtime-filters{display:none}}
 	section {
 		background: var(--bg2);
 		border-bottom: 1px solid var(--line);

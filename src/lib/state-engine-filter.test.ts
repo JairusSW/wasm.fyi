@@ -25,4 +25,14 @@ describe('engine filters before data loads',()=>{
   expect(query.get('rt')).toBe('G,engine:w2c2-gcc');
   expect(ui.cohortMode).toBe('shared');expect(query.has('cohort')).toBe(false);expect(query.get('avg')).toBe('mean');
  });
+ it('round-trips runtime filter rules and rejects invalid URL values',()=>{
+  const filter={name:'wago, llvm',rules:[{metric:'steady',top:10,limit:0.5},{metric:'pass',top:100,limit:95}]};
+  const url=new URL('http://localhost/benchmarks/');url.searchParams.set('filter',JSON.stringify(filter));
+  ui.loadFromUrl(url,'/benchmarks');
+  expect(ui.runtimeFilters).toEqual(filter);
+  expect(JSON.parse(new URLSearchParams(ui.toSearch('/features')).get('filter')!)).toEqual(filter);
+  url.searchParams.set('filter','{"name":"","rules":[{"metric":"bad","top":10,"limit":null}]}');
+  ui.loadFromUrl(url,'/benchmarks');expect(ui.runtimeFilters).toEqual({name:'',rules:[]});
+ });
+
 });
