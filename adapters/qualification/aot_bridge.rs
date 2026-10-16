@@ -20,6 +20,11 @@ fn w2c2_export_symbol(header: &str, name: &str) -> String {
     }
     format!("wb_{escaped}")
 }
+// Import parameter types evolved separately from export-name mangling.
+fn w2c2_import_instance(header: &str, name: &str, legacy: bool) -> &'static str {
+    let compact: String = header.chars().filter(|c| !c.is_whitespace()).collect();
+    if legacy || compact.contains(&format!("{name}(void*")) { "void" } else { "wasmModuleInstance" }
+}
 fn ctype(t: ValType, wasm2c: bool) -> &'static str {
     match (t, wasm2c) {
         (ValType::I32, true) => "u32",
@@ -51,20 +56,20 @@ fn bridge(
         // The callback is an opaque host boundary, including under GCC LTO.
         // Keep the call and its side effect; otherwise an identity loop vanishes.
         c.push_str("#if defined(__clang__)\n#define WB_CALLBACK __attribute__((noinline))\n#else\n#define WB_CALLBACK __attribute__((noinline,noipa))\n#endif\n");
-        c.push_str(if wasm2c {
-            "WB_CALLBACK u32 w2c_wasmbench_identity(struct w2c_wasmbench*p,u32 x){(void)p;__asm__ __volatile__(\"\" ::: \"memory\");return x;}\n"
-        } else if legacy {
-            "WB_CALLBACK U32 wasmbench__identity(void*p,U32 x){(void)p;__asm__ __volatile__(\"\" ::: \"memory\");return x;}\n"
+        if wasm2c {
+            c.push_str("WB_CALLBACK u32 w2c_wasmbench_identity(struct w2c_wasmbench*p,u32 x){(void)p;__asm__ __volatile__(\"\" ::: \"memory\");return x;}\n");
         } else {
-            "WB_CALLBACK U32 i9_wasmbench8_identity(wasmModuleInstance*p,U32 x){(void)p;__asm__ __volatile__(\"\" ::: \"memory\");return x;}\n"
-        });
+            let name = if legacy { "wasmbench__identity" } else { "i9_wasmbench8_identity" };
+            let instance = w2c2_import_instance(header, name, legacy);
+            c.push_str(&format!("WB_CALLBACK U32 {name}({instance}*p,U32 x){{(void)p;__asm__ __volatile__(\"\" ::: \"memory\");return x;}}\n"));
+        }
     }
     if abort {
         let name = if legacy { "env__abort" } else { "i3_env5_abort" };
         if wasm2c {
             c.push_str("void w2c_env_abort(struct w2c_env*p,u32 a,u32 b,u32 c,u32 d){(void)p;snprintf(error,sizeof(error),\"AssemblyScript abort message_ptr=%u file_ptr=%u line=%u column=%u\",a,b,c,d);longjmp(boundary,1);}\n");
         } else {
-            let instance = if legacy { "void" } else { "wasmModuleInstance" };
+            let instance = w2c2_import_instance(header, name, legacy);
             c.push_str(&format!("void {name}({instance}*p,U32 a,U32 b,U32 c,U32 d){{(void)p;snprintf(error,sizeof(error),\"AssemblyScript abort message_ptr=%u file_ptr=%u line=%u column=%u\",a,b,c,d);longjmp(boundary,1);}}\n"));
         }
     }

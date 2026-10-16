@@ -5,7 +5,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {spawnSync} from 'node:child_process';
 
-async function checkBridge({legacy,exports=false}) {
+async function checkBridge({legacy,exports=false,opaque=false}) {
  const directory=await mkdtemp(join(tmpdir(),'wasmfyi-aot-bridge-'));
  try {
   const bridge=await readFile(new URL('../adapters/qualification/aot_bridge.rs',import.meta.url),'utf8');
@@ -35,7 +35,7 @@ typedef int Trap;
 const char* trapDescription(Trap);
 void ${prefix}Instantiate(${instance}*,void*);
 void ${prefix}FreeInstance(${instance}*);
-${declarations}`);
+${opaque?declarations.replaceAll('wasmModuleInstance*','void*'):declarations}`);
   const rust=spawnSync(process.env.RUSTC||'rustc',['--edition=2024',join(directory,'probe.rs'),'-o',join(directory,'probe')],{encoding:'utf8',timeout:60000});
   assert.equal(rust.status,0,rust.error?.message||rust.stderr);
   const generated=spawnSync(join(directory,'probe'),[join(directory,'wb.h')],{encoding:'utf8',timeout:5000});
@@ -49,3 +49,5 @@ ${declarations}`);
 test('actual AOT bridge compiles against legacy w2c2 generated instance declarations',()=>checkBridge({legacy:true}));
 test('modern w2c2 exports, escape sequences, memory and host imports compile',()=>checkBridge({legacy:false,exports:true}));
 test('legacy w2c2 exports, escape sequences, memory and host imports compile',()=>checkBridge({legacy:true,exports:true}));
+
+test('modern export names with opaque historical imports compile',()=>checkBridge({legacy:false,exports:true,opaque:true}));
