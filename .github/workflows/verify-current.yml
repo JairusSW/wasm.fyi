@@ -56,6 +56,8 @@ jobs:
             /scripts/
             /adapters/qualification/zwasm/
             /adapters/qualification/EndiveAdapter.java
+            /adapters/qualification/GraalWasmAdapter.java
+            /adapters/qualification/GraalWasmOptions.java
             /adapters/qualification/aot_bridge.rs
           sparse-checkout-cone-mode: false
       - uses: actions/setup-go@v5
