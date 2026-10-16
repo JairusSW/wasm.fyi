@@ -132,6 +132,14 @@ matched first/previous comparisons. It sends no observation rows or samples.
 Metrics: `exec`, `compile`, `inst`, `mem`, `code`, `cov`, `callTotal`, `hostWasm`,
 `wasmHostLoop`. Optional scope: `engines`, `baseline`, `weighting`, `cohort`,
 `average`, `workload`, `from`, `to`. Date windows use inclusive UTC source dates.
+Use `platforms=ID,ID,...` (up to 16 environments, including `platform`) to merge
+history across kernel or RAM-reporting changes on the same OS, architecture,
+CPU and core count. Source selection and the current reference cohort span all
+listed environments. Overlapping captures count once; the newer capture wins.
+Revisions include every listed environment, so imports into an older environment
+invalidate the merged cache. Original observations and platform metadata remain
+unchanged. This scope also applies to comparisons and reports.
+
 The current workload cohort is held fixed across the historical graph.
 `callTotal` sums both directions and includes their individual values.
 

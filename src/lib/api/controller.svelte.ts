@@ -93,7 +93,7 @@ let historyScope='';
 function historicalQuery(scope:PageScope,metric:OtMetricKey,workload=''){
  const target=platformTargets.find(target=>target.machine===scope.machine);if(!target)return null;
  const engines=[...slots].filter(([,id])=>!scope.hide[id]&&!!viewData.hosts[scope.machine].configurations[id]).map(([engine])=>engine);
- return new URLSearchParams({platform:target.platforms[0],metric,engines:engines.join(','),baseline:trackId(scope.baseline)||'',weighting:scope.weighting,cohort:scope.cohortMode||'shared',average:scope.average||'geo',from:apiHistory.from,to:apiHistory.until,...(workload?{workload}:{})});
+ return new URLSearchParams({platform:target.platforms[0],platforms:target.platforms.join(','),metric,engines:engines.join(','),baseline:trackId(scope.baseline)||'',weighting:scope.weighting,cohort:scope.cohortMode||'shared',average:scope.average||'geo',from:apiHistory.from,to:apiHistory.until,...(workload?{workload}:{})});
 }
 function rememberHistoryChange(key:string,change:import('./compact-history').HistoricalChange,metric:OtMetricKey){
  const value=scaledChange(change,metric);if(!value||!change.fromDate||!change.toDate)return;
@@ -124,8 +124,8 @@ function registerHistoricalSummary(scope:PageScope,result:HistoricalSummary,work
 }
 async function refreshHistory(scope:PageScope,metric:OtMetricKey,workload=''){
  const query=historicalQuery(scope,metric,workload);if(!query)return;
- const platform=query.get('platform')!,metadata=summary?.platforms.find(p=>p.id===platform),key=historyKey(scope,metric,workload);
- const requestScope=JSON.stringify([key,metadata?.latestRevision,metadata?.historyRevision]);if(historyScope===requestScope)return;
+ const key=historyKey(scope,metric,workload);
+ const requestScope=JSON.stringify([key,query.get('platforms'),query.get('platforms')!.split(',').map(id=>{const p=summary?.platforms.find(p=>p.id===id);return [p?.latestRevision,p?.historyRevision]})]);if(historyScope===requestScope)return;
  historyAbort?.abort();apiView.historyLoading=true;apiHistory.loading=true;apiHistory.error='';historyAbort=new AbortController();const signal=historyAbort.signal;
  apiView.historyLoaded[scope.machine]=false;
  try{
@@ -163,7 +163,7 @@ export async function connectSite(_origin='',_revision?:string,retry=0){
    for(const p of fresh.platforms){const previous=summary.platforms.find(old=>old.id===p.id);
     const latestChanged=(previous?.latestRevision||previous?.revision||summary.revision)!==(p.latestRevision||p.revision||fresh.revision);
     const historyChanged=(previous?.historyRevision||previous?.revision||summary.revision)!==(p.historyRevision||p.revision||fresh.revision);
-    compactClient.invalidate(path=>{const url=new URL(path,'http://localhost');return url.searchParams.get('platform')===p.id&&(url.pathname==='/api/timeline'?historyChanged:url.pathname.startsWith('/api/history/')?(historyChanged||latestChanged):latestChanged&&url.pathname!=='/api/observation')});
+    compactClient.invalidate(path=>{const url=new URL(path,'http://localhost');return (url.searchParams.get('platform')===p.id||url.searchParams.get('platforms')?.split(',').includes(p.id))&&(url.pathname==='/api/timeline'?historyChanged:url.pathname.startsWith('/api/history/')?(historyChanged||latestChanged):latestChanged&&url.pathname!=='/api/observation')});
     if(latestChanged)for(const [key,result] of Object.entries(apiView.precomputed))if(result.platform===p.id)delete apiView.precomputed[key];
    }
   }

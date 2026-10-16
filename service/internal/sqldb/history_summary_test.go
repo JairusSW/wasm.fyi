@@ -242,3 +242,62 @@ func TestHistoricalDateWindowUsesNumericUTCSourceTime(t *testing.T) {
 		t.Fatal(out, e)
 	}
 }
+
+func TestHistoryMergesHostEnvironmentsWithoutAveragingDuplicates(t *testing.T) {
+	ctx := context.Background()
+	s, err := Open(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	old := historyFixture("a", "2026-09-01", 1, []float64{1, 4})
+	old.Platform.Kernel = "old kernel"
+	old.Platform.MemoryBytes = 32710246400
+	putHistory(t, s, old)
+	current := historyFixture("a", "2026-10-15", 3, []float64{4, 16})
+	current.Platform.Kernel = "current kernel"
+	current.Platform.MemoryBytes = 32710213632
+	putHistory(t, s, current)
+	duplicate := old
+	duplicate.Platform = current.Platform
+	duplicate.CapturedAt = "2026-10-16T00:00:00Z"
+	for i := range duplicate.Results {
+		value := *duplicate.Results[i].Value * 2
+		duplicate.Results[i].Value = &value
+	}
+	putHistory(t, s, duplicate)
+	q := HistoricalQuery{Platform: hash(current.Platform), Platforms: []string{hash(old.Platform), hash(current.Platform), hash(old.Platform)}, Metric: "exec", Engines: []string{"a"}, Average: "mean", Cohort: "per-engine", Weighting: "workload"}
+	r, err := s.HistoricalSummary(ctx, q)
+	if err != nil {
+		t.Fatal(err)
+	}
+	before := historyLaneAt(t, r, "2026-09-01", "a")
+	after := historyLaneAt(t, r, "2026-10-15", "a")
+	if len(r.Items) != 2 || before.Count != 2 || before.Value == nil || *before.Value != 5 || after.Value == nil || *after.Value != 10 {
+		t.Fatal(r)
+	}
+	report, err := s.HistoricalReport(ctx, q, "a", "2026-09-01", "2026-10-15")
+	if err != nil || report.Revision != r.Revision || len(report.Items) != 2 || report.Items[0].Before != 2 || report.Items[0].After != 4 {
+		t.Fatal(report, err)
+	}
+	// An import into the older environment must invalidate the merged result.
+	next := historyFixture("a", "2026-09-08", 2, []float64{3, 12})
+	next.Platform = old.Platform
+	putHistory(t, s, next)
+	changed, err := s.HistoricalSummary(ctx, q)
+	if err != nil || len(changed.Items) != 3 || changed.Revision == r.Revision {
+		t.Fatal(changed, err)
+	}
+	// A single-environment request remains exact and has no old-only week.
+	single, err := s.HistoricalSummary(ctx, HistoricalQuery{Platform: hash(current.Platform), Metric: "exec", Engines: []string{"a"}})
+	if err != nil || len(single.Items) != 2 {
+		t.Fatal(single, err)
+	}
+	other := current
+	other.Platform.CPU = "Different CPU"
+	putHistory(t, s, other)
+	q.Platforms = []string{hash(other.Platform)}
+	if _, err = s.HistoricalSummary(ctx, q); err == nil {
+		t.Fatal("mixed machines accepted")
+	}
+}

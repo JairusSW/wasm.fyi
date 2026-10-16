@@ -18,6 +18,7 @@ import (
 type HistoricalQuery struct {
 	Platform, Metric, Baseline, Weighting, Cohort, Average, Workload, From, To string
 	Engines                                                                    []string
+	Platforms                                                                  []string
 }
 type HistoricalPair struct {
 	FromDate  string   `json:"fromDate"`
@@ -141,6 +142,29 @@ func historyDay(s string) (string, error) {
 	return t.UTC().Format("2006-01-02"), nil
 }
 func normalizeHistory(q HistoricalQuery) (HistoricalQuery, error) {
+	if len(q.Platforms) > 16 {
+		return q, wire.Invalid("too many history environments")
+	}
+	if len(q.Platforms) > 0 {
+		seen := map[string]bool{q.Platform: true}
+		for _, platform := range q.Platforms {
+			if len(platform) != 64 {
+				return q, wire.Invalid("invalid history environment")
+			}
+			if _, err := hex.DecodeString(platform); err != nil {
+				return q, wire.Invalid("invalid history environment")
+			}
+			seen[platform] = true
+		}
+		if len(seen) > 16 {
+			return q, wire.Invalid("too many history environments")
+		}
+		q.Platforms = nil
+		for platform := range seen {
+			q.Platforms = append(q.Platforms, platform)
+		}
+		sort.Strings(q.Platforms)
+	}
 	if q.Metric == "" {
 		q.Metric = "exec"
 	}
@@ -249,11 +273,17 @@ func historyReferences(latest *aggregateSnapshot, q HistoricalQuery, kind, phase
 	sort.Strings(ids)
 	return refs, ids
 }
-func loadHistoricalDataset(ctx context.Context, tx *sql.Tx, pid int64, q HistoricalQuery, latest *aggregateSnapshot) (*historicalDataset, error) {
+func loadHistoricalDataset(ctx context.Context, tx *sql.Tx, pids []int64, q HistoricalQuery, latest *aggregateSnapshot) (*historicalDataset, error) {
 	phase, kind := historyMetric(q.Metric)
 	d := &historicalDataset{lanes: map[string]map[string]*historyLane{}}
-	where := "b.platform_id=? AND b.phase=? AND w.name NOT LIKE 'features/%'"
-	args := []any{pid, phaseID(phase)}
+	marks := make([]string, len(pids))
+	args := make([]any, 0, len(pids)+1)
+	for i, pid := range pids {
+		marks[i] = "?"
+		args = append(args, pid)
+	}
+	where := "b.platform_id IN(" + strings.Join(marks, ",") + ") AND b.phase=? AND w.name NOT LIKE 'features/%'"
+	args = append(args, phaseID(phase))
 	if kind == "calls" {
 		ids := historyCallIDs(q)
 		marks := []string{}
@@ -611,35 +641,62 @@ func (s *Store) historical(ctx context.Context, q HistoricalQuery) (HistoricalSu
 		return HistoricalSummaryResult{}, nil, e
 	}
 	defer tx.Rollback()
-	pid, e := platformLookup(ctx, tx, q.Platform)
-	if e != nil {
-		return HistoricalSummaryResult{}, nil, e
+	platforms := q.Platforms
+	if len(platforms) == 0 {
+		platforms = []string{q.Platform}
 	}
-	hr, e := revision(ctx, tx, fmt.Sprint("history-revision/", pid))
-	if e != nil {
-		return HistoricalSummaryResult{}, nil, e
+	pids := make([]int64, 0, len(platforms))
+	revisions := make([][]string, 0, len(platforms))
+	snapshots := make([]*aggregateSnapshot, 0, len(platforms))
+	type hostIdentity struct {
+		OS, Arch, CPU string
+		Cores         int
 	}
-	lr, e := revision(ctx, tx, fmt.Sprint("latest-revision/", pid))
-	if e != nil {
-		return HistoricalSummaryResult{}, nil, e
+	var host hostIdentity
+	for i, platform := range platforms {
+		pid, err := platformLookup(ctx, tx, platform)
+		if err != nil {
+			return HistoricalSummaryResult{}, nil, err
+		}
+		var current hostIdentity
+		if err = tx.QueryRowContext(ctx, "SELECT os,arch,cpu,cores FROM platforms WHERE id=?", pid).Scan(&current.OS, &current.Arch, &current.CPU, &current.Cores); err != nil {
+			return HistoricalSummaryResult{}, nil, err
+		}
+		if i == 0 {
+			host = current
+		} else if current != host {
+			return HistoricalSummaryResult{}, nil, wire.Invalid("history environments must belong to the same host")
+		}
+		pids = append(pids, pid)
+		hr, err := revision(ctx, tx, fmt.Sprint("history-revision/", pid))
+		if err != nil {
+			return HistoricalSummaryResult{}, nil, err
+		}
+		lr, err := revision(ctx, tx, fmt.Sprint("latest-revision/", pid))
+		if err != nil {
+			return HistoricalSummaryResult{}, nil, err
+		}
+		revisions = append(revisions, []string{platform, hr, lr})
+		snapKey := "snapshot/" + platform + "/" + lr
+		var snapshot *aggregateSnapshot
+		if cached, ok := s.aggregateHit(snapKey); ok {
+			snapshot = cached.snapshot
+		} else {
+			snapshot, err = loadAggregateSnapshot(ctx, tx, pid)
+			if err != nil {
+				return HistoricalSummaryResult{}, nil, err
+			}
+			s.aggregateRemember(snapKey, aggregateCacheEntry{snapshot: snapshot, bytes: snapshot.bytes})
+		}
+		snapshots = append(snapshots, snapshot)
 	}
-	rev := hash([]any{hr, lr, q})
+	rev := hash([]any{revisions, q})
 	key := "history-summary/" + rev
 	if cached, ok := s.aggregateHit(key); ok {
 		return cloneHistory(*cached.historySummary), cached.historical, nil
 	}
-	snapKey := "snapshot/" + q.Platform + "/" + lr
-	var latest *aggregateSnapshot
-	if cached, ok := s.aggregateHit(snapKey); ok {
-		latest = cached.snapshot
-	} else {
-		latest, e = loadAggregateSnapshot(ctx, tx, pid)
-		if e != nil {
-			return HistoricalSummaryResult{}, nil, e
-		}
-		s.aggregateRemember(snapKey, aggregateCacheEntry{snapshot: latest, bytes: latest.bytes})
-	}
-	d, e := loadHistoricalDataset(ctx, tx, pid, q, latest)
+	latest := mergeHistorySnapshots(snapshots)
+	d, e := loadHistoricalDataset(ctx, tx, pids, q, latest)
 	if e != nil {
 		return HistoricalSummaryResult{}, nil, e
 	}

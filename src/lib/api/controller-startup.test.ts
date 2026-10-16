@@ -100,3 +100,24 @@ it('restarts phase loading atomically when the dataset changes between requests'
  expect(request.mock.calls.filter(([path])=>path==='/api/summary')).toHaveLength(2);
  closeSite();
 });
+it('requests one merged history for both Hub kernel environments',async()=>{
+ const current={id:'current',cpu:'AMD Ryzen 7 7800X3D',os:'linux',arch:'amd64',cores:8,kernel:'new',capturedAt:'2026-10-15T20:00:00Z',latestRevision:'new',historyRevision:'new-history',memoryBytes:32710213632};
+ const old={...current,id:'old',kernel:'old',capturedAt:'2026-10-12T20:00:00Z',memoryBytes:32710246400,latestRevision:'old',historyRevision:'old-history'};
+ const request=vi.fn(async(path:string)=>{
+  const url=new URL(path,'http://localhost');
+  if(url.pathname==='/api/summary')return Response.json({revision:'r',platforms:[old,current]});
+  if(url.pathname==='/api/history/summary')return Response.json({revision:'merged',platform:'current',metric:'exec',workloads:[],items:[]});
+  return Response.json({revision:'r',platform:'current',metric:'steady',workloads:[],participants:['wago'],cards:[{engine:'wago',version:'beta.13',backend:'railshot',value:1,count:1}]});
+ });
+ vi.stubGlobal('fetch',request);vi.stubGlobal('location',{pathname:'/history/'});
+ const {ui}=await import('../state.svelte');ui.machine='m1';
+ const {connectSite,loadHistory,closeSite,apiView}=await import('./controller.svelte');
+ await connectSite();await loadHistory({...ui.scope,machine:'m1'},'exec');
+ expect(apiView.error).toBe('');
+ const history=request.mock.calls.filter(([path])=>path.startsWith('/api/history/summary?'));
+ expect(history).toHaveLength(1);
+ const query=new URL(history[0][0],'http://localhost').searchParams;
+ expect(query.get('platform')).toBe('current');expect(query.get('platforms')).toBe('current,old');
+ expect(request.mock.calls.some(([path])=>path.startsWith('/api/table?'))).toBe(false);
+ closeSite();
+});

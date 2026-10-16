@@ -20,6 +20,7 @@ func TestCompactHistoryAPIKeepsRowsAndSamplesOutOfGraphs(t *testing.T) {
 	defer db.Close()
 	platform := benchdb.Platform{OS: "linux", Arch: "amd64", CPU: "History API fixture", Cores: 8, Kernel: "fixture"}
 	for week := 0; week < 2; week++ {
+		platform.Kernel = fmt.Sprintf("kernel-%d", week)
 		capture := benchdb.Capture{Platform: platform, CapturedAt: fmt.Sprintf("2026-10-%02dT00:00:00Z", week+8), Source: &benchdb.Source{Repository: "https://example.com/runtime", Revision: strings.Repeat(fmt.Sprint(week+1), 40), Ref: "main", Kind: "snapshot", AsOf: fmt.Sprintf("2026-09-%02dT10:00:00Z", 6+week*7)}}
 		for i := 0; i < 40; i++ {
 			value := float64((week+1)*10 + i)
@@ -37,7 +38,10 @@ func TestCompactHistoryAPIKeepsRowsAndSamplesOutOfGraphs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	query := "?platform=" + catalog.Items[0].ID + "&metric=exec&engines=wasmtime"
+	if len(catalog.Items) != 2 {
+		t.Fatal("expected both kernel environments", catalog)
+	}
+	query := "?platform=" + catalog.Items[0].ID + "&platforms=" + catalog.Items[0].ID + "," + catalog.Items[1].ID + "&metric=exec&engines=wasmtime"
 	request := func(path, etag string) *httptest.ResponseRecorder {
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("GET", path, nil)

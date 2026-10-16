@@ -38,7 +38,7 @@ func (a *benchmarkAPI) serveSQL(w http.ResponseWriter, r *http.Request) bool {
 	fields := "platform"
 	switch r.URL.Path {
 	case "/api/history/summary", "/api/history/comparison", "/api/history/report":
-		fields += "|metric|engines|baseline|weighting|cohort|average|workload|from|to"
+		fields += "|platforms|metric|engines|baseline|weighting|cohort|average|workload|from|to"
 		if r.URL.Path != "/api/history/summary" {
 			fields += "|fromDate|toDate"
 		}
@@ -69,6 +69,9 @@ func (a *benchmarkAPI) serveSQL(w http.ResponseWriter, r *http.Request) bool {
 			engines = strings.Split(q.Get("engines"), ",")
 		}
 		query := sqldb.HistoricalQuery{Platform: q.Get("platform"), Metric: q.Get("metric"), Engines: engines, Baseline: q.Get("baseline"), Weighting: q.Get("weighting"), Cohort: q.Get("cohort"), Average: q.Get("average"), Workload: q.Get("workload"), From: q.Get("from"), To: q.Get("to")}
+		if q.Get("platforms") != "" {
+			query.Platforms = strings.Split(q.Get("platforms"), ",")
+		}
 		if r.URL.Path == "/api/history/summary" {
 			value, err = db.HistoricalSummary(r.Context(), query)
 		} else if r.URL.Path == "/api/history/report" {
