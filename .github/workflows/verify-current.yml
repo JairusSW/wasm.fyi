@@ -54,6 +54,7 @@ jobs:
             /scripts/
             /adapters/qualification/zwasm/
             /adapters/qualification/EndiveAdapter.java
+            /adapters/qualification/aot_bridge.rs
           sparse-checkout-cone-mode: false
       - uses: actions/setup-go@v5
         with:
@@ -62,6 +63,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '26.4.0'
+      - name: Test native AOT bridge compatibility
+        run: node --test scripts/aot-bridge-native.test.mjs
       - name: Test and vet backend
         working-directory: service
         env:
