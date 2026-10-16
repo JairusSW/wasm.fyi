@@ -1,6 +1,5 @@
 import {applyWazeroSampling} from './lib/wazero-sampling.mjs';
 import {applyW2c2Bridge} from './lib/w2c2-bridge.mjs';
-import {sdkBuildOverrides} from './lib/sdk-build-overrides.mjs';
 import {configureNodeCompilerCache,summarizeCompilerCacheStats} from './lib/node-compiler-cache.mjs';
 import {selectV8TurboshaftPolicy} from './lib/v8-turboshaft.mjs';
 import {selectV8CacheDisableFlag} from './lib/v8-cache-flag.mjs';
@@ -47,8 +46,7 @@ const directory=resolve(directoryArg), base=resolve(baseArg), root=join(director
 const pin=JSON.parse(await readFile(join(directory,'pins.json'))).pins.find(p=>p.engine===engine);
 if(!pin || pin.status!=='planned')throw Error('Missing exact source pin');
 const source=join(directory,'sources',engine), receiptPath=join(directory,engine+'-build.json');
-const overrides=await sdkBuildOverrides(directory,engine);
-const env={...process.env,...overrides?.env,GOWORK:'off',GOFLAGS:'-buildvcs=false',...(process.env.WASMFYI_BUILD_JOBS?{CARGO_BUILD_JOBS:process.env.WASMFYI_BUILD_JOBS}:{}),WASMBENCH_V8_COMPILER_MODE:'optimizing-only',NODE_OPTIONS:''};
+const env={...process.env,GOWORK:'off',GOFLAGS:'-buildvcs=false',...(process.env.WASMFYI_BUILD_JOBS?{CARGO_BUILD_JOBS:process.env.WASMFYI_BUILD_JOBS}:{}),WASMBENCH_V8_COMPILER_MODE:'optimizing-only',NODE_OPTIONS:''};
 const log=join(directory,engine+'-build.log');
 await requireBuildCapacity(directory,engine,env);
 const sdkBudget=createSDKBuildBudget(env);
@@ -81,7 +79,7 @@ const build=async (...args)=>{
  await run('cargo',['build','--release','--locked','--no-default-features','--features',feature,'--target-dir',target],{cwd:join(root,'adapters/native')});
  await cp(join(target,'release/adapter-native'),join(root,'bin',aot?'adapter-aot':'adapter-'+configuration));
 };
-let runtimeVersion, provenance={...pin,...(overrides?{buildOverrides:overrides.provenance}:{})};
+let runtimeVersion, provenance={...pin};
 if(engine==='wago') {
  const wago=process.env.WEEKLY_WAGO_SOURCE || source;
  const revision=(await run('git',['-C',wago,'rev-parse','HEAD'])).output.trim();

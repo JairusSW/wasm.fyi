@@ -149,19 +149,6 @@ See [updating results](docs/updating.md),
 [features and history](docs/features-and-history.md) for collection and
 publication workflows.
 
-Long-running source sweeps can opt into live build-tool selection with
-`sdk-build-overrides.json` beside the campaign's `source-plan.json`:
-
-```json
-{"schema":1,"engines":{"spidermonkey":{"WASMFYI_BUILD_PYTHON":"/tools/python3.12","WASMFYI_SPIDERMONKEY_CXX_SDK":"/tools/llvm20"}}}
-```
-
-Each new SDK build reads the file; qualified SDKs are reused. Tool paths must
-refer to installed tools. SpiderMonkey also accepts the source-scoped
-`WASMFYI_SPIDERMONKEY_LEGACY_RUST`, `WASMFYI_SPIDERMONKEY_LEGACY_PYTHON`, and
-`WASMFYI_SPIDERMONKEY_LEGACY_CLANG` selectors. Omit the file to use the sweep's
-original environment. The build receipt records the override file hash.
-
 ## Data access
 
 See [API.md](API.md) for the HTTP endpoint reference, authentication, pagination,
