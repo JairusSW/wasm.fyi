@@ -112,7 +112,7 @@ it('requests one merged history for both Hub kernel environments',async()=>{
  vi.stubGlobal('fetch',request);vi.stubGlobal('location',{pathname:'/history/'});
  const {ui}=await import('../state.svelte');ui.machine='m1';
  const {connectSite,loadHistory,closeSite,apiView}=await import('./controller.svelte');
- await connectSite();await loadHistory({...ui.scope,machine:'m1'},'exec');
+ await connectSite();await loadHistory({...ui.scope,machine:'m1',metric:'steady'},'exec');
  expect(apiView.error).toBe('');
  const history=request.mock.calls.filter(([path])=>path.startsWith('/api/history/summary?'));
  expect(history).toHaveLength(1);

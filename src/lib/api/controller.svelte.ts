@@ -163,7 +163,7 @@ export async function connectSite(_origin='',_revision?:string,retry=0){
    for(const p of fresh.platforms){const previous=summary.platforms.find(old=>old.id===p.id);
     const latestChanged=(previous?.latestRevision||previous?.revision||summary.revision)!==(p.latestRevision||p.revision||fresh.revision);
     const historyChanged=(previous?.historyRevision||previous?.revision||summary.revision)!==(p.historyRevision||p.revision||fresh.revision);
-    compactClient.invalidate(path=>{const url=new URL(path,'http://localhost');return (url.searchParams.get('platform')===p.id||url.searchParams.get('platforms')?.split(',').includes(p.id))&&(url.pathname==='/api/timeline'?historyChanged:url.pathname.startsWith('/api/history/')?(historyChanged||latestChanged):latestChanged&&url.pathname!=='/api/observation')});
+    compactClient.invalidate(path=>{const url=new URL(path,'http://localhost');return (url.searchParams.get('platform')===p.id||(url.searchParams.get('platforms')?.split(',').includes(p.id)??false))&&(url.pathname==='/api/timeline'?historyChanged:url.pathname.startsWith('/api/history/')?(historyChanged||latestChanged):latestChanged&&url.pathname!=='/api/observation')});
     if(latestChanged)for(const [key,result] of Object.entries(apiView.precomputed))if(result.platform===p.id)delete apiView.precomputed[key];
    }
   }
