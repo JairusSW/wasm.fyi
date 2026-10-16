@@ -54,7 +54,7 @@ fn bridge(
         c.push_str(if wasm2c {
             "WB_CALLBACK u32 w2c_wasmbench_identity(struct w2c_wasmbench*p,u32 x){(void)p;__asm__ __volatile__(\"\" ::: \"memory\");return x;}\n"
         } else if legacy {
-            "WB_CALLBACK U32 wasmbench__identity(wasmModuleInstance*p,U32 x){(void)p;__asm__ __volatile__(\"\" ::: \"memory\");return x;}\n"
+            "WB_CALLBACK U32 wasmbench__identity(void*p,U32 x){(void)p;__asm__ __volatile__(\"\" ::: \"memory\");return x;}\n"
         } else {
             "WB_CALLBACK U32 i9_wasmbench8_identity(wasmModuleInstance*p,U32 x){(void)p;__asm__ __volatile__(\"\" ::: \"memory\");return x;}\n"
         });
@@ -64,7 +64,8 @@ fn bridge(
         if wasm2c {
             c.push_str("void w2c_env_abort(struct w2c_env*p,u32 a,u32 b,u32 c,u32 d){(void)p;snprintf(error,sizeof(error),\"AssemblyScript abort message_ptr=%u file_ptr=%u line=%u column=%u\",a,b,c,d);longjmp(boundary,1);}\n");
         } else {
-            c.push_str(&format!("void {name}(wasmModuleInstance*p,U32 a,U32 b,U32 c,U32 d){{(void)p;snprintf(error,sizeof(error),\"AssemblyScript abort message_ptr=%u file_ptr=%u line=%u column=%u\",a,b,c,d);longjmp(boundary,1);}}\n"));
+            let instance = if legacy { "void" } else { "wasmModuleInstance" };
+            c.push_str(&format!("void {name}({instance}*p,U32 a,U32 b,U32 c,U32 d){{(void)p;snprintf(error,sizeof(error),\"AssemblyScript abort message_ptr=%u file_ptr=%u line=%u column=%u\",a,b,c,d);longjmp(boundary,1);}}\n"));
         }
     }
     c.push_str(&format!("void* wm_new(void){{{instance}*i=calloc(1,sizeof(*i));if(!i)return NULL;if(setjmp(boundary)){{free(i);return NULL;}}"));
