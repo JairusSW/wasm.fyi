@@ -21,6 +21,9 @@ export async function applyW2c2Bridge(root) {
   if(after.includes(old))after=after.replace(old,value);
   else if(!after.includes(value))throw Error('W2c2 generated symbol seam changed');
  }
+ // Rename embedding exports and their Rust lookups together. The same-length
+ // namespace keeps legacy wb_memory (and guest exports named new/call) distinct.
+ after=after.replace(/\bwb_(error|trap|init|fini|new|free|call|memory)\b/g,'wm_$1');
  if(after!==before)await writeFile(file,after);
  return {policy:'generated-header-selected-w2c2-abi-v1',sdkModified:false,beforeSha256:digest(Buffer.from(before)),adapterSha256:digest(Buffer.from(after)),bridgeSha256:digest(Buffer.from(bridge))};
 }

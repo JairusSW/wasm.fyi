@@ -15,7 +15,7 @@ struct Export { name:String,symbol:String,params:Vec<ValType>,results:Vec<ValTyp
 ${bridge}
 fn main(){
  let header=std::fs::read_to_string(std::env::args().nth(1).unwrap()).unwrap();
- let exports=${exports?'vec![Export{name:"add".into(),symbol:w2c2_export_symbol(&header,"add"),params:vec![ValType::I32,ValType::I32],results:vec![ValType::I32]},Export{name:"X__value".into(),symbol:w2c2_export_symbol(&header,"X__value"),params:vec![],results:vec![ValType::I32]}]':'vec![]'};
+ let exports=${exports?'vec![Export{name:"add".into(),symbol:w2c2_export_symbol(&header,"add"),params:vec![ValType::I32,ValType::I32],results:vec![ValType::I32]},Export{name:"X__value".into(),symbol:w2c2_export_symbol(&header,"X__value"),params:vec![],results:vec![ValType::I32]},Export{name:"new".into(),symbol:w2c2_export_symbol(&header,"new"),params:vec![],results:vec![ValType::I32]},Export{name:"call".into(),symbol:w2c2_export_symbol(&header,"call"),params:vec![],results:vec![ValType::I32]}]':'vec![]'};
  let memory=${exports?'Some(w2c2_export_symbol(&header,"memory"))':'None'};
  print!("{}",bridge(false,&exports,&memory,${exports},${exports},&header));
 }
@@ -24,8 +24,8 @@ fn main(){
   const instance=legacy?'wbInstance':'m2_wbInstance';
   const prefix=legacy?'wb':'m2_wb';
   const declarations=exports?(legacy?
-   'U32 wb_add(wbInstance*,U32,U32);\nU32 wb_X58___value(wbInstance*);\nwasmMemory* wb_memory(wbInstance*);\nU32 wasmbench__identity(wasmModuleInstance*,U32);\nvoid env__abort(wasmModuleInstance*,U32,U32,U32,U32);\n':
-   'U32 m2_wbExport3_add(m2_wbInstance*,U32,U32);\nU32 m2_wbExport8_X58X5FX5Fvalue(m2_wbInstance*);\nwasmMemory* m2_wbExport6_memory(m2_wbInstance*);\nU32 i9_wasmbench8_identity(wasmModuleInstance*,U32);\nvoid i3_env5_abort(wasmModuleInstance*,U32,U32,U32,U32);\n'):'';
+   'U32 wb_add(wbInstance*,U32,U32);\nU32 wb_X58___value(wbInstance*);\nU32 wb_new(wbInstance*);\nU32 wb_call(wbInstance*);\nwasmMemory* wb_memory(wbInstance*);\nU32 wasmbench__identity(wasmModuleInstance*,U32);\nvoid env__abort(wasmModuleInstance*,U32,U32,U32,U32);\n':
+   'U32 m2_wbExport3_add(m2_wbInstance*,U32,U32);\nU32 m2_wbExport8_X58X5FX5Fvalue(m2_wbInstance*);\nU32 m2_wbExport3_new(m2_wbInstance*);\nU32 m2_wbExport4_call(m2_wbInstance*);\nwasmMemory* m2_wbExport6_memory(m2_wbInstance*);\nU32 i9_wasmbench8_identity(wasmModuleInstance*,U32);\nvoid i3_env5_abort(wasmModuleInstance*,U32,U32,U32,U32);\n'):'';
   await writeFile(join(directory,'wb.h'),`#include <stdint.h>
 typedef uint32_t U32;typedef uint64_t U64;
 typedef struct wasmModuleInstance { int unused; } wasmModuleInstance;

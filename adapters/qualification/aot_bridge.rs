@@ -28,6 +28,7 @@ fn ctype(t: ValType, wasm2c: bool) -> &'static str {
         _ => "U64",
     }
 }
+// Internal wm_ symbols cannot collide with legacy wb_ guest exports.
 fn bridge(
     wasm2c: bool,
     exports: &[Export],
@@ -39,12 +40,12 @@ fn bridge(
     let legacy = !wasm2c && w2c2_legacy(header);
     let instance = if wasm2c { "w2c_wb" } else if legacy { "wbInstance" } else { "m2_wbInstance" };
     let mut c = format!(
-        "#include \"wb.h\"\n#include <stdlib.h>\n#include <stdint.h>\n#include <setjmp.h>\n#include <stdio.h>\nstatic jmp_buf boundary;\nstatic char error[256];\nconst char* wb_error(void){{return error;}}\n"
+        "#include \"wb.h\"\n#include <stdlib.h>\n#include <stdint.h>\n#include <setjmp.h>\n#include <stdio.h>\nstatic jmp_buf boundary;\nstatic char error[256];\nconst char* wm_error(void){{return error;}}\n"
     );
     if wasm2c {
-        c.push_str("void wb_trap(wasm_rt_trap_t code){snprintf(error,sizeof(error),\"guest trap %d\",(int)code);longjmp(boundary,1);}\nvoid wb_init(void){wasm_rt_init();}\nvoid wb_fini(void){wasm_rt_free();}\n");
+        c.push_str("void wm_trap(wasm_rt_trap_t code){snprintf(error,sizeof(error),\"guest trap %d\",(int)code);longjmp(boundary,1);}\nvoid wm_init(void){wasm_rt_init();}\nvoid wm_fini(void){wasm_rt_free();}\n");
     } else {
-        c.push_str("void trap(Trap code){snprintf(error,sizeof(error),\"guest trap: %s\",trapDescription(code));longjmp(boundary,1);}\nvoid wb_init(void){}\nvoid wb_fini(void){}\n");
+        c.push_str("void trap(Trap code){snprintf(error,sizeof(error),\"guest trap: %s\",trapDescription(code));longjmp(boundary,1);}\nvoid wm_init(void){}\nvoid wm_fini(void){}\n");
     }
     if identity {
         // The callback is an opaque host boundary, including under GCC LTO.
@@ -66,7 +67,7 @@ fn bridge(
             c.push_str(&format!("void {name}(wasmModuleInstance*p,U32 a,U32 b,U32 c,U32 d){{(void)p;snprintf(error,sizeof(error),\"AssemblyScript abort message_ptr=%u file_ptr=%u line=%u column=%u\",a,b,c,d);longjmp(boundary,1);}}\n"));
         }
     }
-    c.push_str(&format!("void* wb_new(void){{{instance}*i=calloc(1,sizeof(*i));if(!i)return NULL;if(setjmp(boundary)){{free(i);return NULL;}}"));
+    c.push_str(&format!("void* wm_new(void){{{instance}*i=calloc(1,sizeof(*i));if(!i)return NULL;if(setjmp(boundary)){{free(i);return NULL;}}"));
     if wasm2c {
         c.push_str(&format!(
             "wasm2c_wb_instantiate(i{}{});return i;}}\n",
@@ -76,7 +77,7 @@ fn bridge(
     } else {
         c.push_str(if legacy { "wbInstantiate(i,NULL);return i;}\n" } else { "m2_wbInstantiate(i,NULL);return i;}\n" });
     }
-    c.push_str(&format!("void wb_free(void*p){{{instance}*i=p;"));
+    c.push_str(&format!("void wm_free(void*p){{{instance}*i=p;"));
     c.push_str(if wasm2c {
         "wasm2c_wb_free(i);free(i);}\n"
     } else if legacy {
@@ -84,7 +85,7 @@ fn bridge(
     } else {
         "m2_wbFreeInstance(i);free(i);}\n"
     });
-    c.push_str(&format!("int wb_call(void*p,unsigned id,const uint64_t*a,uint64_t*r){{{instance}*i=p;if(setjmp(boundary))return -1;switch(id){{\n"));
+    c.push_str(&format!("int wm_call(void*p,unsigned id,const uint64_t*a,uint64_t*r){{{instance}*i=p;if(setjmp(boundary))return -1;switch(id){{\n"));
     for (id, e) in exports.iter().enumerate() {
         let args = e
             .params
@@ -104,7 +105,7 @@ fn bridge(
     }
     c.push_str("default:return -2;}}\n");
     c.push_str(&format!(
-        "unsigned char* wb_memory(void*p,size_t*n){{{instance}*i=p;"
+        "unsigned char* wm_memory(void*p,size_t*n){{{instance}*i=p;"
     ));
     if let Some(symbol) = memory {
         c.push_str(&format!(
