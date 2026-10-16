@@ -28,6 +28,17 @@ Set `WASMBENCH_RUNTIMES=wago` for a Wago-only pass. The current configuration
 excludes feature collection. `WASMBENCH_WAGO_TAG` selects a published release;
 `WASMBENCH_WAGO_REVISION` requires a clean `WAGO_SOURCE` at that exact commit.
 
+## SpiderMonkey source toolchains
+
+Set `WASMFYI_SPIDERMONKEY_RUST` to an installed numeric Rust toolchain name
+(for example, `1.94` or `1.94.1`) when a historical source cannot interpret the
+current compiler's target list. The setting applies only to SpiderMonkey SDK
+builds, must meet the pinned source's minimum Rust version, and is recorded in
+the SDK build receipt. It does not install a toolchain or change Rust's default.
+`WASMFYI_SPIDERMONKEY_LEGACY_RUST` still takes precedence for source requiring
+Rust 1.70 or older, together with its separately configured legacy build tools.
+With neither setting, the existing compiler selection is preserved.
+
 ## Local website workflow
 
 ```sh

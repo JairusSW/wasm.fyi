@@ -25,8 +25,19 @@ test('actual source builder selects legacy Python for old source while modern so
  const dir=await mkdtemp(join(tmpdir(),'spider-rust-builder-'));
  try{for(const minimum of ['1.66.0','1.95.0']){
   const source=join(dir,minimum,'source'),target=join(dir,minimum,'sdk');await mkdir(join(source,'python/mozboot/mozboot'),{recursive:true});await writeFile(join(source,'python/mozboot/mozboot/util.py'),'MINIMUM_RUST_VERSION = "'+minimum+'"');await mkdir(join(target,'obj/dist/bin'),{recursive:true});await writeFile(join(target,'obj/dist/bin/js'),'fixture');const calls=[];
-  const env={PATH:'/usr/bin',WASMFYI_BUILD_PYTHON:'/current/python',WASMFYI_SPIDERMONKEY_LEGACY_PYTHON:'/private/python',WASMFYI_SPIDERMONKEY_LEGACY_RUST:'1.70.0'};
+  const env={PATH:'/usr/bin',WASMFYI_BUILD_PYTHON:'/current/python',WASMFYI_SPIDERMONKEY_LEGACY_PYTHON:'/private/python',WASMFYI_SPIDERMONKEY_LEGACY_RUST:'1.70.0',WASMFYI_SPIDERMONKEY_RUST:'1.96.0'};
   const result=await buildSpiderMonkeySDK({source,target,env,run:async(program,args,options)=>{calls.push({program,args,options});return {output:args[0]==='-c'?'3.11.14':''};}});
-  const expected=minimum==='1.66.0'?'/private/python':'/current/python';assert.equal(result.python.program,expected);assert.equal(calls[0].program,expected);assert.equal(calls[1].program,expected);assert.equal(calls[1].options.env.WASMFYI_BUILD_PYTHON,expected);
+  const expected=minimum==='1.66.0'?'/private/python':'/current/python';assert.equal(result.python.program,expected);assert.equal(calls[0].program,expected);assert.equal(calls[1].program,expected);assert.equal(calls[1].options.env.WASMFYI_BUILD_PYTHON,expected);assert.equal(calls[1].options.env.RUSTUP_TOOLCHAIN,minimum==='1.66.0'?'1.70.0':'1.96.0');assert.equal(result.rustToolchain,minimum==='1.66.0'?'1.70.0':'1.96.0');
  }}finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test('explicit modern toolchain is isolated to SpiderMonkey without legacy tools',()=>{
+ const env={WASMFYI_SPIDERMONKEY_RUST:'1.94',WASMFYI_SPIDERMONKEY_LEGACY_RUST:'1.70.0',WASMFYI_SPIDERMONKEY_LEGACY_PYTHON:'/old/python',WASMFYI_SPIDERMONKEY_LEGACY_BUILD:'/old/tools',PATH:'/usr/bin',RUSTUP_TOOLCHAIN:'stable'};
+ const actual=spiderMonkeyRustEnvironment(env,'1.90.0');
+ assert.equal(actual.RUSTUP_TOOLCHAIN,'1.94');assert.equal(actual.PATH,env.PATH);assert.equal(actual.M4,undefined);assert.equal(actual.WASMFYI_BUILD_PYTHON,undefined);assert.equal(env.RUSTUP_TOOLCHAIN,'stable');
+ assert.equal(spiderMonkeyRustEnvironment(env,'1.66.0').RUSTUP_TOOLCHAIN,'1.70.0');
+});
+test('explicit modern toolchain validates its version against source minimum',()=>{
+ for(const selected of ['stable;evil','1.89','/tmp/rust','1.94\n'])assert.throws(()=>spiderMonkeyRustEnvironment({WASMFYI_SPIDERMONKEY_RUST:selected},'1.90.0'));
+ assert.equal(spiderMonkeyRustEnvironment({WASMFYI_SPIDERMONKEY_RUST:'1.94.1'},'1.90.0').RUSTUP_TOOLCHAIN,'1.94.1');
 });
