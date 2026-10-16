@@ -213,6 +213,15 @@ family finishes, then retry the rejected workloads. Keep completed measurements;
 do not relabel zero-sample integration rejections as engine incompatibility.
 Descriptor change is implemented; runtime recovery remains pending validation.
 
+### GraalWasm historical feature options
+
+SDK setup queries the pinned runtime's Wasm option descriptors and embeds the
+available feature switches in the Java adapter. This avoids passing newer flags,
+such as `wasm.TailCalls`, to older runtimes. Discovery runs once during SDK setup;
+benchmark processes use the generated constant list. Required measurement
+settings remain strict. The build receipt records enabled and unavailable feature
+options and the discovery helper's hash.
+
 ### V8 optimizing tier and compiler identity (2026-10-10)
 
 An optimizing-only tier lock does not prove the Turboshaft compiler pipeline.

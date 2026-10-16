@@ -4,6 +4,18 @@ import {homedir} from 'node:os';
 import {digest,site} from './wasmbench.mjs';
 // Source driver and JVMCI policy used by the successful AMD64 source build.
 export const graalMxRevision='6c9b38f3373eff9cc7dc9fc21ca4e116dd93786b';
+export function configureGraalFeatureOptions(adapter,names) {
+ if(!Array.isArray(names)||names.some(name=>typeof name!=='string'||!name.startsWith('wasm.')||name.length===5))throw Error('Invalid Graal Wasm option descriptors');
+ const available=new Set(names);
+ for(const required of ['wasm.EvalReturnsInstance','wasm.UseUnsafeMemory','wasm.AsyncParsingBinarySize'])if(!available.has(required))throw Error('Graal SDK lacks required measurement option '+required);
+ const declaration=/static final List<String> FEATURE_OPTIONS=List\.of\(([^\n]*)\);/g;
+ const matches=[...adapter.matchAll(declaration)];
+ if(matches.length!==1)throw Error('Graal feature option declaration changed');
+ const requested=JSON.parse('['+matches[0][1]+']');
+ if(requested.some(name=>typeof name!=='string'||!/^[A-Za-z][A-Za-z0-9]*$/.test(name)))throw Error('Invalid Graal feature option names');
+ const enabled=requested.filter(name=>available.has('wasm.'+name)),unavailable=requested.filter(name=>!available.has('wasm.'+name));
+ return {adapter:adapter.replace(declaration,'static final List<String> FEATURE_OPTIONS=List.of('+enabled.map(name=>JSON.stringify(name)).join(',')+');'),enabled,unavailable};
+}
 export function upgradeGraalRuntimeArguments(extension){
  if(!extension.includes('def wasmfyi_runtime_configuration('))return extension;
  const before='    vm_args = ["--enable-native-access=ALL-UNNAMED", "-XX:ActiveProcessorCount=1", "-XX:+UseSerialGC", "-Xbatch"]';
@@ -73,10 +85,18 @@ def wasmfyi_runtime_configuration(args):
  const json=join(root,'json-20250517.jar');
  if(!await stat(json).catch(()=>null))await run('curl',['--fail','--location','--retry','3','--max-time','180','https://repo.maven.apache.org/maven2/org/json/json/20250517/json-20250517.jar','-o',json]);
  if(digest(await readFile(json))!=='3ea61b2a06e31edf1c91134fe9106b0ebb16628be169f3db75bc7a2b06b45796')throw Error('JSON protocol library checksum differs');
- const adapter=(await readFile(join(site,'adapters/qualification/GraalWasmAdapter.java'),'utf8')).replaceAll('25.4.4.1.1',version);
+ const optionsPath=join(root,'GraalWasmOptions.java'),optionsSource=await readFile(join(site,'adapters/qualification/GraalWasmOptions.java'));
+ await writeFile(optionsPath,optionsSource);
+ const javac=join(dirname(configuration.java),'javac');
+ await run(javac,['-cp',configuration.classpath+':'+json,'-d',classes,optionsPath]);
+ const optionsOutput=(await run(configuration.java,[...configuration.arguments,'-cp',classes+':'+json,'GraalWasmOptions'])).output;
+ const optionsLine=optionsOutput.trim().split('\n').findLast(line=>line.startsWith('{'));
+ if(!optionsLine)throw Error('Graal SDK did not report its supported Wasm options');
+ const features=configureGraalFeatureOptions((await readFile(join(site,'adapters/qualification/GraalWasmAdapter.java'),'utf8')).replaceAll('25.4.4.1.1',version),JSON.parse(optionsLine).wasmOptions);
+ const adapter=features.adapter;
  const adapterPath=join(root,'GraalWasmAdapter.java');await writeFile(adapterPath,adapter);
  await run(join(dirname(configuration.java),'javac'),['-cp',configuration.classpath+':'+json,'-d',classes,adapterPath]);
  const command=[configuration.java,...configuration.arguments,'-cp',classes+':'+json,'GraalWasmAdapter'];
  await mkdir(join(root,'bin'),{recursive:true});await writeFile(join(root,'bin/graalwasm-command.json'),JSON.stringify(command)+'\n');
- return {source,version,driverRevision,java:configuration.java,arguments:configuration.arguments,adapterSha256:digest(Buffer.from(adapter)),nativeCodePolicy:'Artifact-attributed Truffle native code measurement is not yet qualified; InstalledCode APIs require module ownership and extent validation'};
+ return {source,version,driverRevision,java:configuration.java,arguments:configuration.arguments,featureOptions:features.enabled,unavailableFeatureOptions:features.unavailable,optionsDiscoverySha256:digest(optionsSource),adapterSha256:digest(Buffer.from(adapter)),nativeCodePolicy:'Artifact-attributed Truffle native code measurement is not yet qualified; InstalledCode APIs require module ownership and extent validation'};
 }

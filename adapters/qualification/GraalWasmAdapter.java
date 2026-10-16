@@ -11,6 +11,8 @@ import java.util.*;
 
 // Phase-separated decode/instantiate/invoke timers; exact oracles stay outside timers.
 public final class GraalWasmAdapter {
+  // Selected from this SDK's option descriptors during SDK setup, before captures.
+  static final List<String> FEATURE_OPTIONS=List.of("Memory64","MultiMemory","WideArithmetic","Threads","ExtendedConstExpressions","SIMD","RelaxedSIMD","Exceptions","LegacyExceptions","TypedFunctionReferences","GC","TailCalls");
   JSONObject preparation;byte[] bytes;
   Context context;WasmModule compiled;WasmInstance retained;WasmStore retainedStore;Value retainedExports;
   void clear(){if(context!=null)context.close();context=null;compiled=null;retained=null;retainedStore=null;retainedExports=null;preparation=null;bytes=null;}
@@ -35,7 +37,7 @@ public final class GraalWasmAdapter {
   static long pointer(Value exports,WasmInstance instance,JSONObject o,String key){String name=o.optString(key,"");return name.isEmpty()?0:Long.parseUnsignedLong(call(exports,instance,name,new JSONArray()).getString(0));}
   void ensureContext(){if(context!=null)return;
     Context.Builder builder=Context.newBuilder("wasm").allowExperimentalOptions(true).allowCreateThread(true).option("engine.BackgroundCompilation","false").option("engine.CompileImmediately","true").option("engine.MultiTier","false").option("wasm.EvalReturnsInstance","true").option("wasm.UseUnsafeMemory","true").option("wasm.AsyncParsingBinarySize",Integer.toString(Integer.MAX_VALUE));
-      for(String option:List.of("Memory64","MultiMemory","WideArithmetic","Threads","ExtendedConstExpressions","SIMD","RelaxedSIMD","Exceptions","LegacyExceptions","TypedFunctionReferences","GC","TailCalls"))builder.option("wasm."+option,"true");
+      for(String option:FEATURE_OPTIONS)builder.option("wasm."+option,"true");
     context=builder.build();context.initialize("wasm");
   }
   JSONObject runSample(JSONObject r)throws Exception{JSONObject w=preparation.getJSONObject("workload");String phase=r.getString("scenario");
