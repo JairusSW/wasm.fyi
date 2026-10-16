@@ -125,6 +125,14 @@ an overall five-minute execution deadline. Workers on different hosts advance
 independently. SDK builds may use multiple cores; measured execution uses one
 worker, Linux CPU affinity, and Apple's available performance scheduling controls.
 
+For WAMR SDK preparation, set `WASMFYI_WAMR_CMAKE_CACHE` to a persistent host-local
+directory to reuse CMake FetchContent dependencies across source snapshots and
+backends. Builds sharing that directory must use the same host measurement lock.
+CMake still selects each source snapshot's declared dependency pin; changed pins
+are checked out again. This saves dependency downloads and leaves SDK compilation
+parallelism and benchmark sampling unchanged. Unset the variable for isolated
+dependency directories.
+
 Before the next six-month historical campaign begins, clear the measurement
 DB and old captured samples on all machines and servers. Qualification must
 finish before that reset and campaign launch. Repeated source revisions use

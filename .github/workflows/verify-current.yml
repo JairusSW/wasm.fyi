@@ -81,7 +81,7 @@ jobs:
           node --test scripts/history-scope.test.mjs scripts/audit-history-corpus-captures.test.mjs
       - name: Test capture failure handling and SDK policy
         run: |
-          node --test scripts/wamr-sdk.test.mjs scripts/node-fmt-stdlib.test.mjs
+          node --test scripts/wamr-sdk.test.mjs scripts/wamr-dependency-cache.test.mjs scripts/node-fmt-stdlib.test.mjs
           node --test scripts/endive-bridge.test.mjs scripts/endive-jffi.test.mjs scripts/endive-timing-code.test.mjs
           node --test scripts/jsc-sdk.test.mjs scripts/jsc-build-python.test.mjs scripts/lib/jsc-measurement-worktree.test.mjs
           node --test scripts/spidermonkey-esr115.test.mjs scripts/spidermonkey-esr115-native.test.mjs scripts/spidermonkey-rust.test.mjs scripts/spidermonkey-build-environment.test.mjs scripts/spidermonkey-cbindgen.test.mjs

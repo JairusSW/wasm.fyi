@@ -50,6 +50,8 @@ export async function buildWamrSDK({source,sdk,target,configuration,version,env,
  let llvmDirectory=env.LLVM_DIR;
  if(configuration==='wamr-llvm-jit'&&!llvmDirectory){for(const prefix of ['/opt/homebrew/opt/llvm@18','/usr/lib/llvm-18'])if(await stat(join(prefix,'lib/cmake/llvm/LLVMConfig.cmake')).catch(()=>null)){llvmDirectory=join(prefix,'lib/cmake/llvm');break;}}
  const flags=wamrBuildFlags(configuration,llvmDirectory,env.WASMFYI_WAMR_FEATURE_PROPOSALS==='1');
+ // Reuse CMake's pinned FetchContent checkouts across SDKs built under the same host lock.
+ if(env.WASMFYI_WAMR_CMAKE_CACHE)flags.push('-DFETCHCONTENT_BASE_DIR='+resolve(env.WASMFYI_WAMR_CMAKE_CACHE));
  // Official Linux LLVM archives use libc++, including their C++ API ABI.
  // Keep compiler, headers, library ABI and bitcode-capable linker together.
  const compilerPrefix=configuration==='wamr-llvm-jit'&&process.platform==='linux'?(env.WASMFYI_WAMR_CXX_SDK||env.WASMFYI_WAVM_CXX_SDK):null;
