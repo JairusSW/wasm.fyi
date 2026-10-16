@@ -80,6 +80,7 @@ jobs:
       - name: Test capture failure handling and SDK policy
         run: |
           node --test scripts/wamr-sdk.test.mjs scripts/node-fmt-stdlib.test.mjs
+          node --test scripts/sdk-build-overrides.test.mjs
           node --test scripts/endive-bridge.test.mjs scripts/endive-jffi.test.mjs scripts/endive-timing-code.test.mjs
           node --test scripts/spidermonkey-esr115.test.mjs scripts/spidermonkey-esr115-native.test.mjs
           node --test scripts/engine-fatal-reason.test.mjs scripts/latency-capture.test.mjs scripts/test-wavm-configure-policy.mjs scripts/history-sdk-api-failures.test.mjs scripts/worker-resume-failures.test.mjs scripts/test-history-workload-failure.mjs
