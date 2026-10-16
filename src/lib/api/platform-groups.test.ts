@@ -11,3 +11,11 @@ it('keeps both AMD64 machines and preserves earlier platform metadata for histor
  expect(groups[0].platforms.map(p=>p.id)).toEqual(['arm-current','arm-old']);
  expect(groups.flatMap(g=>g.platforms)).toHaveLength(4);
 });
+
+it('uses the current Hub environment for aggregate cards even when an older kernel reports more RAM',()=>{
+ const previous={...host('hub-beta12','AMD Ryzen 7 7800X3D','amd64',32710246400),capturedAt:'2026-10-12T17:08:28.810Z'};
+ const current={...host('hub-beta13','AMD Ryzen 7 7800X3D','amd64',32710213632),capturedAt:'2026-10-16T01:01:28.707Z'};
+ for(const inputs of [[previous,current],[current,previous]]){
+  expect(platformGroups(inputs)[0].platforms.map(p=>p.id)).toEqual(['hub-beta13','hub-beta12']);
+ }
+});
