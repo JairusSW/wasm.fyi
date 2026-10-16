@@ -317,7 +317,7 @@ func loadHistoricalDataset(ctx context.Context, tx *sql.Tx, pids []int64, q Hist
 		}
 		where += " AND e.name IN(" + strings.Join(marks, ",") + ")"
 	}
-	rows, e := tx.QueryContext(ctx, `SELECT o.id,o.metric_bits,o.samples_id,o.timing_samples,o.display_id,o.sampling_id,o.code_kind,w.name,c.digest,d.data,e.name,cfg.version,cfg.backend,o.captured_at,o.latency,o.peak_rss,o.code_bytes,o.latency_status,o.memory_status,o.code_status,s.repository,s.revision,s.ref,s.kind,s.date_basis,snap.as_of FROM history b`+joins+"WHERE "+where+" ORDER BY b.as_of,o.captured_at,o.id", args...)
+	rows, e := tx.QueryContext(ctx, `SELECT o.id,o.metric_bits,o.samples_id,o.timing_samples,o.display_id,o.sampling_id,o.code_kind,w.name,c.digest,d.data,e.name,cfg.version,cfg.backend,o.captured_at,o.latency,o.peak_rss,o.code_bytes,o.latency_status,o.memory_status,o.code_status,s.repository,s.revision,s.ref,s.kind,s.date_basis,snap.as_of FROM history b`+joins+"WHERE "+where+" ORDER BY b.as_of,o.captured_ns,o.id", args...)
 	if e != nil {
 		return nil, e
 	}
