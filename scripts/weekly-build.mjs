@@ -1,4 +1,5 @@
 import {applyWazeroSampling} from './lib/wazero-sampling.mjs';
+import {applyW2c2Bridge} from './lib/w2c2-bridge.mjs';
 import {configureNodeCompilerCache,summarizeCompilerCacheStats} from './lib/node-compiler-cache.mjs';
 import {selectV8TurboshaftPolicy} from './lib/v8-turboshaft.mjs';
 import {selectV8CacheDisableFlag} from './lib/v8-cache-flag.mjs';
@@ -220,6 +221,7 @@ if(engine==='wago') {
  await build();
 } else if(['wasm2c','w2c2'].includes(engine)) {
  provenance.sdk=await buildCTranspilerSDK({source,sdk:join(directory,engine+'-sdk'),target:join(directory,engine+'-build'),engine,env,run});
+ if(engine==='w2c2')provenance.bridgeCompatibility=await applyW2c2Bridge(root);
  await build();
 } else if(engine==='spidermonkey') {
  provenance.sdk=await buildSpiderMonkeySDK({source,target:join(directory,'spidermonkey-build'),env,run});

@@ -1,4 +1,25 @@
 // Native C bridge generation shared with historical AOT qualification.
+fn w2c2_legacy(header: &str) -> bool {
+    header.split(|c: char| !c.is_ascii_alphanumeric() && c != '_').any(|name| name == "wbInstance")
+}
+fn w2c2_export_symbol(header: &str, name: &str) -> String {
+    if !w2c2_legacy(header) {
+        return format!("m2_wbExport{}_{}", name.len(), name.replace("X", "X58").replace("_", "X5F"));
+    }
+    let mut escaped = String::new();
+    let mut underscore = false;
+    for byte in name.bytes() {
+        if byte == b'_' {
+            escaped.push_str(if underscore { "__" } else { "_" });
+        } else if byte != b'X' && byte.is_ascii_alphanumeric() {
+            escaped.push(byte as char);
+        } else {
+            escaped.push_str(&format!("X{byte:02X}"));
+        }
+        underscore = byte == b'_';
+    }
+    format!("wb_{escaped}")
+}
 fn ctype(t: ValType, wasm2c: bool) -> &'static str {
     match (t, wasm2c) {
         (ValType::I32, true) => "u32",
@@ -13,8 +34,10 @@ fn bridge(
     memory: &Option<String>,
     identity: bool,
     abort: bool,
+    header: &str,
 ) -> String {
-    let instance = if wasm2c { "w2c_wb" } else { "m2_wbInstance" };
+    let legacy = !wasm2c && w2c2_legacy(header);
+    let instance = if wasm2c { "w2c_wb" } else if legacy { "wbInstance" } else { "m2_wbInstance" };
     let mut c = format!(
         "#include \"wb.h\"\n#include <stdlib.h>\n#include <stdint.h>\n#include <setjmp.h>\n#include <stdio.h>\nstatic jmp_buf boundary;\nstatic char error[256];\nconst char* wb_error(void){{return error;}}\n"
     );
@@ -29,12 +52,19 @@ fn bridge(
         c.push_str("#if defined(__clang__)\n#define WB_CALLBACK __attribute__((noinline))\n#else\n#define WB_CALLBACK __attribute__((noinline,noipa))\n#endif\n");
         c.push_str(if wasm2c {
             "WB_CALLBACK u32 w2c_wasmbench_identity(struct w2c_wasmbench*p,u32 x){(void)p;__asm__ __volatile__(\"\" ::: \"memory\");return x;}\n"
+        } else if legacy {
+            "WB_CALLBACK U32 wasmbench__identity(wasmModuleInstance*p,U32 x){(void)p;__asm__ __volatile__(\"\" ::: \"memory\");return x;}\n"
         } else {
             "WB_CALLBACK U32 i9_wasmbench8_identity(wasmModuleInstance*p,U32 x){(void)p;__asm__ __volatile__(\"\" ::: \"memory\");return x;}\n"
         });
     }
     if abort {
-        c.push_str(if wasm2c {"void w2c_env_abort(struct w2c_env*p,u32 a,u32 b,u32 c,u32 d){(void)p;snprintf(error,sizeof(error),\"AssemblyScript abort message_ptr=%u file_ptr=%u line=%u column=%u\",a,b,c,d);longjmp(boundary,1);}\n"} else {"void i3_env5_abort(wasmModuleInstance*p,U32 a,U32 b,U32 c,U32 d){(void)p;snprintf(error,sizeof(error),\"AssemblyScript abort message_ptr=%u file_ptr=%u line=%u column=%u\",a,b,c,d);longjmp(boundary,1);}\n"});
+        let name = if legacy { "env__abort" } else { "i3_env5_abort" };
+        if wasm2c {
+            c.push_str("void w2c_env_abort(struct w2c_env*p,u32 a,u32 b,u32 c,u32 d){(void)p;snprintf(error,sizeof(error),\"AssemblyScript abort message_ptr=%u file_ptr=%u line=%u column=%u\",a,b,c,d);longjmp(boundary,1);}\n");
+        } else {
+            c.push_str(&format!("void {name}(wasmModuleInstance*p,U32 a,U32 b,U32 c,U32 d){{(void)p;snprintf(error,sizeof(error),\"AssemblyScript abort message_ptr=%u file_ptr=%u line=%u column=%u\",a,b,c,d);longjmp(boundary,1);}}\n"));
+        }
     }
     c.push_str(&format!("void* wb_new(void){{{instance}*i=calloc(1,sizeof(*i));if(!i)return NULL;if(setjmp(boundary)){{free(i);return NULL;}}"));
     if wasm2c {
@@ -44,11 +74,13 @@ fn bridge(
             if abort { ",NULL" } else { "" }
         ));
     } else {
-        c.push_str("m2_wbInstantiate(i,NULL);return i;}\n");
+        c.push_str(if legacy { "wbInstantiate(i,NULL);return i;}\n" } else { "m2_wbInstantiate(i,NULL);return i;}\n" });
     }
     c.push_str(&format!("void wb_free(void*p){{{instance}*i=p;"));
     c.push_str(if wasm2c {
         "wasm2c_wb_free(i);free(i);}\n"
+    } else if legacy {
+        "wbFreeInstance(i);free(i);}\n"
     } else {
         "m2_wbFreeInstance(i);free(i);}\n"
     });
