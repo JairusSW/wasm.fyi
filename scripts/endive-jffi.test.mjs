@@ -14,6 +14,7 @@ test('Redline packages only the source-resolved provided JFFI dependency and mat
  }});
  assert.equal(result.version,'1.3.14');assert.match(result.bindingSha256,/^[a-f0-9]{64}$/);
  assert(calls[0].args.includes('-DincludeScope=compile'));assert(calls[0].args.includes('-DincludeArtifactIds=jffi'));
+ assert(calls[0].args.includes('-Predline'),'provided dependencies must use the same activated Redline reactor');
  assert.equal(calls[0].options.cwd,root);assert(calls[1].args.includes('https://repo.maven.apache.org/maven2/com/github/jnr/jffi/1.3.14/jffi-1.3.14-native.jar'));
  }finally{await rm(root,{recursive:true,force:true});}
 });

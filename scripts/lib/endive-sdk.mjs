@@ -12,7 +12,7 @@ export function endiveAdapterSource(source,version,configuration){
 export async function ensureEndiveJFFI({source,sdk,run}){
  // The runner declares jffi as provided. Add only that source-resolved
  // dependency alongside the normal runtime classpath.
- await run('bash',[join(source,'mvnw'),'-B','-pl','redline/runner-jffi','dependency:copy-dependencies','-DincludeScope=compile','-DincludeArtifactIds=jffi','-DoutputDirectory='+sdk],{cwd:source});
+ await run('bash',[join(source,'mvnw'),'-B','-Predline','-pl','redline/runner-jffi','dependency:copy-dependencies','-DincludeScope=compile','-DincludeArtifactIds=jffi','-DoutputDirectory='+sdk],{cwd:source});
  const binding=(await readdir(sdk)).find(name=>/^jffi-[\d.]+\.jar$/.test(name));
  if(!binding)throw Error('Redline source-resolved JFFI dependency is missing');
  const version=binding.slice(5,-4),native=join(sdk,'jffi-'+version+'-native.jar');
@@ -34,12 +34,13 @@ export async function endiveJavaEnvironment(env,run){
 export async function buildEndiveSDK({source,root,version,configuration,env,run}){
  const java=await endiveJavaEnvironment(env,run);
  const modules=['wasm','runtime','compiler'];
+ const mavenProfile=configuration==='endive-redline'?['-Predline']:[];
  if(configuration==='endive-redline')modules.push('redline/compiler','redline/runner-jffi');
  for(const module of modules)if(!await stat(join(source,module,'pom.xml')).catch(()=>null))throw Error('Pinned Endive source lacks required SDK module: '+module);
  // Resolve the source's immutable lock, since historical SNAPSHOT tags move.
  // Skip Inlay's tag lookup only after verifying both the manifest and Wasm.
  const bridge=configuration==='endive-redline'?await ensureEndiveBridge({source,env,run}):null;
- await run('bash',[join(source,'mvnw'),'-B','-T',String(env.WASMFYI_BUILD_JOBS||availableParallelism()),'-pl',modules.join(','),'-am','-Dmaven.test.skip=true','-Dcheckstyle.skip=true','-Dspotless.skip=true','-Dmdep.analyze.skip=true',...(bridge?['-Dinlay.skip=true']:[]),'install'],{cwd:source});
+ await run('bash',[join(source,'mvnw'),'-B',...mavenProfile,'-T',String(env.WASMFYI_BUILD_JOBS||availableParallelism()),'-pl',modules.join(','),'-am','-Dmaven.test.skip=true','-Dcheckstyle.skip=true','-Dspotless.skip=true','-Dmdep.analyze.skip=true',...(bridge?['-Dinlay.skip=true']:[]),'install'],{cwd:source});
  const sdk=join(root,'endive-sdk'),classes=join(root,'endive-classes');await mkdir(sdk,{recursive:true});await mkdir(classes,{recursive:true});
  const jars=[];
  const collect=async(directory)=>{
@@ -53,7 +54,7 @@ export async function buildEndiveSDK({source,root,version,configuration,env,run}
   }
  };
  await collect(source);
- for(const module of ['compiler',...(configuration==='endive-redline'?['redline/runner-jffi']:[])])await run('bash',[join(source,'mvnw'),'-B','-pl',module,'dependency:copy-dependencies','-DincludeScope=runtime','-DoutputDirectory='+sdk],{cwd:source});
+ for(const module of ['compiler',...(configuration==='endive-redline'?['redline/runner-jffi']:[])])await run('bash',[join(source,'mvnw'),'-B',...mavenProfile,'-pl',module,'dependency:copy-dependencies','-DincludeScope=runtime','-DoutputDirectory='+sdk],{cwd:source});
  const jffi=configuration==='endive-redline'?await ensureEndiveJFFI({source,sdk,run}):null;
  const json=join(sdk,'json-20250517.jar');
  if(!await stat(json).catch(()=>null))await run('curl',['--fail','--location','--retry','3','--max-time','180','https://repo.maven.apache.org/maven2/org/json/json/20250517/json-20250517.jar','-o',json]);
