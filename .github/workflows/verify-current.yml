@@ -57,6 +57,7 @@ jobs:
             /adapters/qualification/zwasm/
             /adapters/qualification/EndiveAdapter.java
             /adapters/qualification/ChasmAdapter.kt
+            /adapters/wago/cold_compile_test.go
             /adapters/qualification/GraalWasmAdapter.java
             /adapters/qualification/GraalWasmOptions.java
             /adapters/qualification/aot_bridge.rs
