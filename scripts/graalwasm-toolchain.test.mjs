@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {configureGraalJava,configureGraalFeatureOptions,ensureGraalDriver,graalMxRevision,upgradeGraalRuntimeExports,upgradeGraalRuntimeArguments} from './lib/graalwasm-sdk.mjs';
+import {graalOptionDiscoveryArguments,configureGraalJava,configureGraalFeatureOptions,ensureGraalDriver,graalMxRevision,upgradeGraalRuntimeExports,upgradeGraalRuntimeArguments} from './lib/graalwasm-sdk.mjs';
 import {execFileSync} from 'node:child_process';
 import {readFileSync} from 'node:fs';
 
@@ -72,4 +72,15 @@ test('mx migration preserves locally modified tracked source',async()=>{
  }),/local tracked changes/);
  assert.equal(calls.length,2);
  assert.ok(calls.every(args=>!args.includes('fetch')&&!args.includes('checkout')));
+});
+
+// Discovery enumerates descriptors without compiling or executing a workload.
+test('option discovery avoids JVMCI bootstrap without weakening benchmark arguments',()=>{
+ const runtime=Object.freeze(['--enable-native-access=ALL-UNNAMED','-XX:ActiveProcessorCount=1','-Xbatch']);
+ const discovery=graalOptionDiscoveryArguments(runtime);
+ assert.deepEqual(discovery.slice(0,runtime.length),runtime);
+ assert.ok(discovery.includes('-XX:+EnableJVMCI'));
+ assert.ok(discovery.includes('-XX:-UseJVMCICompiler'));
+ assert.equal(runtime.includes('-XX:-UseJVMCICompiler'),false);
+ assert.equal(runtime.includes('-Xint'),false);
 });

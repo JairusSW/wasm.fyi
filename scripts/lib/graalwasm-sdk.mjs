@@ -4,6 +4,11 @@ import {homedir} from 'node:os';
 import {digest,site} from './wasmbench.mjs';
 // Source driver and JVMCI policy used by the successful AMD64 source build.
 export const graalMxRevision='6c9b38f3373eff9cc7dc9fc21ca4e116dd93786b';
+// Descriptor discovery does not execute Wasm. Avoid synchronous JVMCI compiler
+// bootstrap deadlocks here; benchmark launchers retain their optimizing policy.
+export function graalOptionDiscoveryArguments(runtimeArguments) {
+ return [...runtimeArguments,'-XX:+EnableJVMCI','-XX:-UseJVMCICompiler'];
+}
 export function configureGraalFeatureOptions(adapter,names) {
  if(!Array.isArray(names)||names.some(name=>typeof name!=='string'||!name.startsWith('wasm.')||name.length===5))throw Error('Invalid Graal Wasm option descriptors');
  const available=new Set(names);
@@ -89,7 +94,7 @@ def wasmfyi_runtime_configuration(args):
  await writeFile(optionsPath,optionsSource);
  const javac=join(dirname(configuration.java),'javac');
  await run(javac,['-cp',configuration.classpath+':'+json,'-d',classes,optionsPath]);
- const optionsOutput=(await run(configuration.java,[...configuration.arguments,'-cp',classes+':'+json,'GraalWasmOptions'])).output;
+ const optionsOutput=(await run(configuration.java,[...graalOptionDiscoveryArguments(configuration.arguments),'-cp',classes+':'+json,'GraalWasmOptions'])).output;
  const optionsLine=optionsOutput.trim().split('\n').findLast(line=>line.startsWith('{'));
  if(!optionsLine)throw Error('Graal SDK did not report its supported Wasm options');
  const features=configureGraalFeatureOptions((await readFile(join(site,'adapters/qualification/GraalWasmAdapter.java'),'utf8')).replaceAll('25.4.4.1.1',version),JSON.parse(optionsLine).wasmOptions);
