@@ -11,6 +11,7 @@ import {buildWizardSDK} from './lib/wizard-sdk.mjs';
 import {buildGraalWasmSDK} from './lib/graalwasm-sdk.mjs';
 import {applyWasmerCraneliftAdapter} from './lib/wasmer-cranelift-adapter.mjs';
 import {applyWagoColdCompile} from './lib/wago-cold-compile.mjs';
+import {applyWagoThreads} from './lib/wago-threads.mjs';
 import {buildZwasmSDK} from './lib/zwasm-sdk.mjs';
 import {applyLegacyWasmtimeAPI} from './lib/wasmtime-legacy-api.mjs';
 // Build the Saturday default-branch snapshots in an isolated native harness.
@@ -95,6 +96,7 @@ if(engine==='wago') {
   }
  }
  provenance.coldCompile=await applyWagoColdCompile(root);
+ provenance.threads=await applyWagoThreads(root,api);
  await build('--runtimes','wago','--wago-source',wago);
 } else if(engine==='wazero') {
  const download=JSON.parse((await run('go',['mod','download','-json','github.com/tetratelabs/wazero@'+pin.revision])).output);
