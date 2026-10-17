@@ -25,3 +25,20 @@ test('Chasm pins Java25 for both Gradle build and direct runtime without limitin
 test('too-old Java fails before invoking Gradle or writing a launcher',async()=>fixture(17,async f=>{
  await assert.rejects(buildChasmSDK({...f,version:'source-hash'}),/requires Java25/);assert.equal(f.calls.length,1);
 }));
+
+const legacyHostPath='chasm/src/commonMain/kotlin/io/github/charlietap/chasm/embedding/shapes';
+const legacyHostAPI='typealias HostFunction = HostFunctionContext.(List<ExecutionValue>) -> List<ExecutionValue>\n';
+test('historical Chasm callbacks use its real list-based public host API',async()=>fixture(25,async f=>{
+ await mkdir(join(f.source,legacyHostPath),{recursive:true});await writeFile(join(f.source,legacyHostPath,'HostFunction.kt'),legacyHostAPI);
+ const receipt=await buildChasmSDK({...f,version:'1.7.0'});
+ const adapter=await readFile(join(f.source,'wasmfyi-adapter/src/main/kotlin/ChasmAdapter.kt'),'utf8');
+ assert(adapter.includes('reference { parameters -> parameters }'));
+ assert(adapter.includes('reference { _ -> error("AssemblyScript abort") }'));
+ assert(!adapter.includes('HostFunction{'));assert(!adapter.includes('parameters.readI32'));
+ assert.equal(receipt.hostCallbackPolicy,'execution-value-list-v1');
+}));
+test('unknown historical callback type aliases fail before Gradle compilation',async()=>fixture(25,async f=>{
+ await mkdir(join(f.source,legacyHostPath),{recursive:true});await writeFile(join(f.source,legacyHostPath,'HostFunction.kt'),'typealias HostFunction = UnknownABI\n');
+ await assert.rejects(buildChasmSDK({...f,version:'unknown'}),/Unsupported Chasm host callback API/);
+ assert.equal(f.calls.length,1);
+}));

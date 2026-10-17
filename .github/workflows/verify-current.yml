@@ -56,6 +56,7 @@ jobs:
             /scripts/
             /adapters/qualification/zwasm/
             /adapters/qualification/EndiveAdapter.java
+            /adapters/qualification/ChasmAdapter.kt
             /adapters/qualification/GraalWasmAdapter.java
             /adapters/qualification/GraalWasmOptions.java
             /adapters/qualification/aot_bridge.rs
@@ -85,6 +86,7 @@ jobs:
         run: |
           node --test scripts/wamr-sdk.test.mjs scripts/wamr-dependency-cache.test.mjs scripts/node-fmt-stdlib.test.mjs scripts/node-compiler-cache.test.mjs
           node --test scripts/graalwasm-toolchain.test.mjs
+          node --test scripts/chasm-sdk.test.mjs scripts/wago-threads.test.mjs scripts/wago-direct-identity.test.mjs scripts/test-wago-cold-compile.mjs
           node --test scripts/endive-bridge.test.mjs scripts/endive-jffi.test.mjs scripts/endive-timing-code.test.mjs
           node --test scripts/jsc-sdk.test.mjs scripts/jsc-build-python.test.mjs scripts/lib/jsc-measurement-worktree.test.mjs
           node --test scripts/spidermonkey-esr115.test.mjs scripts/spidermonkey-esr115-native.test.mjs scripts/spidermonkey-rust.test.mjs scripts/spidermonkey-build-environment.test.mjs scripts/spidermonkey-cbindgen.test.mjs
