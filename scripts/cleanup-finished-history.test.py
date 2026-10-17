@@ -121,6 +121,15 @@ class CleanupTest(unittest.TestCase):
         self.assertTrue(self.sdk.exists())
         self.assertFalse(newer_sdk.exists())
 
+    def test_latest_only_features_keep_cached_sdk_for_a_new_tag_of_same_commit(self):
+        alias = {**self.pin, 'tag': 'v1.1', 'status': 'reused',
+                 'targetWeek': '2026-10-04T10:00:00.000Z'}
+        self.write('source-plan.json', {'pins': [self.pin, alias]})
+        self.write('feature-sdk-retention.json', {'pendingConfigurations': ['wasmtime-winch'],
+                                                'latestOnly': True})
+        self.sweep()
+        self.assertTrue(self.sdk.exists())
+
     def test_latest_only_features_keep_sdks_when_latest_source_is_unknown(self):
         unknown = {**self.pin, 'status': 'unavailable', 'targetWeek': '2026-10-04T10:00:00.000Z'}
         self.write('source-plan.json', {'pins': [self.pin, unknown]})

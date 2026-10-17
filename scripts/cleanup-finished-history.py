@@ -72,6 +72,11 @@ def feature_holds(root, plan, retention, uses):
         try:
             for pin in latest:
                 held.update(build_paths(root, pin, config))
+                # A newer tag may reuse an existing SDK built for the same commit.
+                identity = (pin.get('engine'), pin.get('repository'), pin['revision'])
+                held.update(path for path, entries in uses.items()
+                            if any(c == config and (p.get('engine'), p.get('repository'),
+                                                    p.get('revision')) == identity for p, c in entries))
         except (KeyError, TypeError):
             held.update(configured_paths)  # Incomplete source identity: retain every version.
     return held
