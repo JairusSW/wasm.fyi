@@ -53,6 +53,25 @@ class CleanupTest(unittest.TestCase):
         with patch.object(m, 'process_paths', return_value=list(active)):
             return m.sweep(self.root, self.ledger, True)
 
+    def add_completed_pin(self, pin):
+        plan = json.loads((self.root / 'source-plan.json').read_text())
+        plan['pins'].append(pin)
+        self.write('source-plan.json', plan)
+        history = json.loads((self.root / 'wasmtime-history-status.json').read_text())
+        sdk = m.build_paths(self.root, pin, 'wasmtime')[0]
+        sdk.mkdir(parents=True, exist_ok=True)
+        (sdk / 'build.log').write_text('compiler output')
+        for config in pin['configurations']:
+            key = m.pin_key(pin, config)
+            history['completed'].append({'pinKey': key})
+            body = json.dumps({'source': {'revision': pin['revision'], 'asOf': pin['targetWeek']},
+                               'results': [{'engine': config, 'workload': 'a'}]}).encode()
+            (self.root / 'captures' / (hashlib.sha256(key.encode()).hexdigest() + '.json')).write_bytes(body)
+            with self.ledger.with_suffix('.journal').open('a') as stream:
+                stream.write(hashlib.sha256(body).hexdigest() + '\n')
+        self.write('wasmtime-history-status.json', history)
+        return sdk
+
     def test_shared_sdk_waits_for_both_backends(self):
         self.complete('wasmtime')
         self.sweep()
@@ -75,6 +94,49 @@ class CleanupTest(unittest.TestCase):
         self.write('feature-sdk-retention.json', {'pendingConfigurations': []})
         self.sweep()
         self.assertFalse(self.sdk.exists())
+
+    def test_latest_only_features_reclaim_published_historical_sdk(self):
+        newer = {**self.pin, 'tag': 'v2', 'revision': 'def', 'targetWeek': '2026-09-27T10:00:00.000Z'}
+        latest_sdk = self.add_completed_pin(newer)
+        retention = {'pendingConfigurations': ['wasmtime-winch'], 'latestOnly': False}
+        self.write('feature-sdk-retention.json', retention)
+        self.sweep()
+        self.assertTrue(self.sdk.exists())
+        self.write('feature-sdk-retention.json', {**retention, 'latestOnly': True})
+        self.sweep([self.sdk / 'bin/adapter'])
+        self.assertTrue(self.sdk.exists())
+        self.sweep()
+        self.assertFalse(self.sdk.exists())
+        self.assertTrue(latest_sdk.exists())
+        self.assertEqual(len(list((self.root / 'captures').glob('*.json'))), 4)
+
+    def test_latest_only_features_protect_reused_latest_source(self):
+        newer = {**self.pin, 'tag': 'v2', 'revision': 'def', 'targetWeek': '2026-09-27T10:00:00.000Z'}
+        newer_sdk = self.add_completed_pin(newer)
+        alias = {**self.pin, 'status': 'reused', 'targetWeek': '2026-10-04T10:00:00.000Z'}
+        self.write('source-plan.json', {'pins': [self.pin, newer, alias]})
+        self.write('feature-sdk-retention.json', {'pendingConfigurations': ['wasmtime-winch'],
+                                                'latestOnly': True})
+        self.sweep()
+        self.assertTrue(self.sdk.exists())
+        self.assertFalse(newer_sdk.exists())
+
+    def test_latest_only_features_keep_sdks_when_latest_source_is_unknown(self):
+        unknown = {**self.pin, 'status': 'unavailable', 'targetWeek': '2026-10-04T10:00:00.000Z'}
+        self.write('source-plan.json', {'pins': [self.pin, unknown]})
+        self.write('feature-sdk-retention.json', {'pendingConfigurations': ['wasmtime-winch'],
+                                                'latestOnly': True})
+        self.sweep()
+        self.assertTrue(self.sdk.exists())
+
+    def test_latest_only_incomplete_latest_source_keeps_older_sdk(self):
+        unknown = {**self.pin, 'tag': 'v2', 'revision': None,
+                   'targetWeek': '2026-10-04T10:00:00.000Z'}
+        self.write('source-plan.json', {'pins': [self.pin, unknown]})
+        self.write('feature-sdk-retention.json', {'pendingConfigurations': ['wasmtime-winch'],
+                                                'latestOnly': True})
+        self.sweep()
+        self.assertTrue(self.sdk.exists())
 
     def test_active_executable_protects_sdk(self):
         self.sweep([self.sdk / 'bin/adapter'])

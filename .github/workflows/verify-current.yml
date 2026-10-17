@@ -95,3 +95,4 @@ jobs:
           python3 scripts/zwasm-memory-policy.test.py
           python3 scripts/publish-host-captures.test.py
           python3 scripts/reuse-history-captures.test.py
+          python3 scripts/cleanup-finished-history.test.py

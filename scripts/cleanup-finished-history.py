@@ -4,6 +4,8 @@
 Only planned source uses with durable completion AND published workload captures
 qualify. Reused weeks need captures for aliasing, never their SDK, so raw captures
 and all progress/error ledgers are retained. Unknown/incomplete SDKs fail closed.
+With feature-sdk-retention.json latestOnly=true, pending features protect the
+latest pinned SDK per configuration, including sources reused by a later week.
 """
 import argparse
 import hashlib
@@ -52,6 +54,27 @@ def required_uses(root, plan, template):
             for path in build_paths(root, pin, config):
                 uses.setdefault(path, []).append((pin, config))
     return uses
+
+
+def feature_holds(root, plan, retention, uses):
+    held = set()
+    for config in retention.get('pendingConfigurations', []):
+        configured_paths = {path for path, entries in uses.items()
+                            if any(c == config for _, c in entries)}
+        pins = [pin for pin in plan['pins'] if config in pin.get('configurations', [])]
+        latest_week = max((pin.get('targetWeek', '') for pin in pins), default='')
+        latest = [pin for pin in pins if pin.get('targetWeek') == latest_week]
+        if (retention.get('latestOnly') is not True or not latest_week
+                or any(pin.get('status') not in ('planned', 'reused')
+                       or not pin.get('revision') or not pin.get('targetType') for pin in latest)):
+            held.update(configured_paths)
+            continue
+        try:
+            for pin in latest:
+                held.update(build_paths(root, pin, config))
+        except (KeyError, TypeError):
+            held.update(configured_paths)  # Incomplete source identity: retain every version.
+    return held
 
 
 def completed_keys(root):
@@ -137,12 +160,14 @@ def sweep(root, ledger, apply=False):
         current_engine = current.get('current') if current.get('status') == 'running' else None
         current_configs = {config for pin in plan['pins'] if pin['engine'] == current_engine
                            for config in pin['configurations']}
-        pending_features = set((read_json(root / 'feature-sdk-retention.json', {}) or {}).get(
-            'pendingConfigurations', []))
-        candidates = {path: uses for path, uses in required_uses(root, plan, template).items()
+        planned_uses = required_uses(root, plan, template)
+        pending_features = feature_holds(root, plan,
+                                        read_json(root / 'feature-sdk-retention.json', {}) or {},
+                                        planned_uses)
+        candidates = {path: uses for path, uses in planned_uses.items()
                       if safe_candidate(root, path, active)
                       and not any(pin['engine'] == current_engine for pin, _ in uses)
-                      and not any(config in pending_features for _, config in uses)
+                      and path not in pending_features
                       and all(pin_key(pin, config) in completed for pin, config in uses)}
         published = published_workloads(root, ledger) if candidates else {}
         removed, eligible = [], []
