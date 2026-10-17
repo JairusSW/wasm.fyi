@@ -38,7 +38,7 @@ export async function buildEndiveSDK({source,root,version,configuration,env,run}
  for(const module of modules)if(!await stat(join(source,module,'pom.xml')).catch(()=>null))throw Error('Pinned Endive source lacks required SDK module: '+module);
  // Resolve the source's immutable lock, since historical SNAPSHOT tags move.
  // Skip Inlay's tag lookup only after verifying both the manifest and Wasm.
- const bridge=configuration==='endive-redline'?await ensureEndiveBridge({source,env}):null;
+ const bridge=configuration==='endive-redline'?await ensureEndiveBridge({source,env,run}):null;
  await run('bash',[join(source,'mvnw'),'-B','-T',String(env.WASMFYI_BUILD_JOBS||availableParallelism()),'-pl',modules.join(','),'-am','-Dmaven.test.skip=true','-Dcheckstyle.skip=true','-Dspotless.skip=true','-Dmdep.analyze.skip=true',...(bridge?['-Dinlay.skip=true']:[]),'install'],{cwd:source});
  const sdk=join(root,'endive-sdk'),classes=join(root,'endive-classes');await mkdir(sdk,{recursive:true});await mkdir(classes,{recursive:true});
  const jars=[];

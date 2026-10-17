@@ -1,5 +1,6 @@
 import {readFile,writeFile,rename,rm} from 'node:fs/promises';
 import {join} from 'node:path';
+import {availableParallelism} from 'node:os';
 import {digest} from './wasmbench.mjs';
 
 const repository='bytecodealliance/endive-cranelift-bridge';
@@ -28,8 +29,31 @@ async function boundedBody(response,limit){
  return Buffer.concat(buffers,size);
 }
 
-export async function ensureEndiveBridge({source,env={},fetchImpl=fetch}){
- const pin=endiveBridgePin(await readFile(join(source,'pom.xml'),'utf8'),await readFile(join(source,'redline/wkg.lock'),'utf8'));
+async function buildSourceBridge({source,env,run}){
+ const build=join(source,'redline/wasm-build');
+ const lock=await readFile(join(build,'Cargo.lock')),manifest=await readFile(join(build,'Cargo.toml'));
+ if(typeof run!=='function')throw Error('Pinned Endive source bridge requires the SDK build runner');
+ if(env.WASMFYI_SDK_BUILD_DEADLINE_AT_MS&&Number(env.WASMFYI_SDK_BUILD_DEADLINE_AT_MS)<=Date.now())throw Error('Pinned Endive bridge SDK build deadline exceeded');
+ const jobs=Number(env.WASMFYI_BUILD_JOBS||availableParallelism());
+ if(!Number.isSafeInteger(jobs)||jobs<1)throw Error('Invalid Endive bridge build parallelism');
+ // This is upstream wasm-build/Makefile's release target, with dependency
+ // resolution locked. Host CPU flags must not leak into a Wasm build.
+ const buildEnv={...env,RUSTFLAGS:'',CARGO_ENCODED_RUSTFLAGS:'',CARGO_TARGET_DIR:join(build,'target')};
+ const targets=(await run('rustup',['target','list','--installed'],{env:buildEnv})).output;
+ if(!targets.trim().split(/\s+/).includes('wasm32-wasip1'))await run('rustup',['target','add','wasm32-wasip1'],{env:buildEnv});
+ await run('cargo',['build','--locked','--target','wasm32-wasip1','--release','--jobs',String(jobs)],{cwd:build,env:buildEnv});
+ const wasm=await readFile(join(build,'target/wasm32-wasip1/release/cranelift_bridge.wasm'));
+ if(wasm.length<8||wasm.length>32*1024*1024||!wasm.subarray(0,8).equals(Buffer.from([0,97,115,109,1,0,0,0])))throw Error('Pinned Endive source bridge is not a bounded core Wasm module');
+ if(!(await readFile(join(build,'Cargo.lock'))).equals(lock))throw Error('Pinned Endive bridge Cargo lock changed during its build');
+ const artifact=join(source,'redline/cranelift_bridge.wasm'),temporary=artifact+'.build-'+process.pid;
+ try{await writeFile(temporary,wasm);await rename(temporary,artifact);}finally{await rm(temporary,{force:true});}
+ return {origin:'pinned-cargo-source',target:'wasm32-wasip1',cargoLockSha256:digest(lock),cargoManifestSha256:digest(manifest),artifactSha256:digest(wasm),artifactBytes:wasm.length,artifact};
+}
+
+export async function ensureEndiveBridge({source,env={},fetchImpl=fetch,run}){
+ const lock=await readFile(join(source,'redline/wkg.lock'),'utf8').catch(error=>{if(error.code==='ENOENT')return null;throw error;});
+ if(lock===null)return buildSourceBridge({source,env,run});
+ const pin=endiveBridgePin(await readFile(join(source,'pom.xml'),'utf8'),lock);
  const timeout=()=>{
   const remaining=env.WASMFYI_SDK_BUILD_DEADLINE_AT_MS?Number(env.WASMFYI_SDK_BUILD_DEADLINE_AT_MS)-Date.now():60000;
   if(!Number.isFinite(remaining)||remaining<=0)throw Error('Pinned Endive bridge SDK build deadline exceeded');

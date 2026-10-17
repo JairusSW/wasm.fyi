@@ -55,3 +55,31 @@ test('oversized response is rejected without leaving partial files',async t=>{
 test('expired build budget fails before making a network request',async t=>{
  const source=await fixture(t);await assert.rejects(ensureEndiveBridge({source,env:{WASMFYI_SDK_BUILD_DEADLINE_AT_MS:'1'},fetchImpl:async()=>{throw Error('must not fetch');}}),/deadline exceeded/);
 });
+
+async function cargoFixture(t){
+ const source=await fixture(t),build=join(source,'redline/wasm-build');
+ await rm(join(source,'redline/wkg.lock'));await mkdir(build);
+ await writeFile(join(build,'Cargo.toml'),'[package]\nname = "cranelift-bridge"\nversion = "0.1.0"\n');
+ await writeFile(join(build,'Cargo.lock'),'version = 4\n');return {source,build};
+}
+test('historical in-tree bridge builds its locked Wasm target without registry substitution',async t=>{
+ const {source,build}=await cargoFixture(t),calls=[];
+ const result=await ensureEndiveBridge({source,env:{WASMFYI_BUILD_JOBS:'8',RUSTFLAGS:'-C target-cpu=native'},fetchImpl:async()=>{throw Error('must not fetch an unpinned registry tag');},run:async(program,args,options)=>{
+  calls.push({program,args,options});
+  if(program==='rustup')return {output:'wasm32-wasip1\n'};
+  assert.equal(program,'cargo');assert.ok(args.includes('--locked'));assert.ok(args.includes('wasm32-wasip1'));assert.equal(args[args.indexOf('--jobs')+1],'8');
+  assert.equal(options.cwd,build);assert.equal(options.env.RUSTFLAGS,'');
+  const out=join(build,'target/wasm32-wasip1/release');await mkdir(out,{recursive:true});await writeFile(join(out,'cranelift_bridge.wasm'),wasm);return {output:''};
+ }});
+ assert.equal(result.origin,'pinned-cargo-source');assert.equal(result.cargoLockSha256,digest(Buffer.from('version = 4\n')));assert.equal(result.artifactSha256,digest(wasm));
+ assert.deepEqual(await readFile(result.artifact),wasm);assert.equal(calls.filter(x=>x.program==='cargo').length,1);assert.equal(await readFile(join(build,'Cargo.lock'),'utf8'),'version = 4\n');
+});
+test('historical bridge requires a lock and rejects corrupt compiler output without replacing an artifact',async t=>{
+ const {source,build}=await cargoFixture(t),artifact=join(source,'redline/cranelift_bridge.wasm');await writeFile(artifact,'previous');
+ await assert.rejects(ensureEndiveBridge({source,run:async(program)=>{
+  if(program==='rustup')return {output:'wasm32-wasip1\n'};
+  const out=join(build,'target/wasm32-wasip1/release');await mkdir(out,{recursive:true});await writeFile(join(out,'cranelift_bridge.wasm'),Buffer.alloc(8));return {output:''};
+ }}),/core Wasm/);
+ assert.equal(await readFile(artifact,'utf8'),'previous');await rm(join(build,'Cargo.lock'));
+ await assert.rejects(ensureEndiveBridge({source,run:async()=>{throw Error('must not build without a lock');}}),/ENOENT/);
+});
