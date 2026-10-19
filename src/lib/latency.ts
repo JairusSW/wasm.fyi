@@ -31,6 +31,20 @@ export function selectEngineVersions(rows:LatencyRow[],selected:Record<string,st
  const correctedCells=new Set(turboshaft.map(row=>JSON.stringify([row.workload,row.phase])));
  return picked.filter(row=>row.engine!=='v8'||row.backend==='turboshaft'||(row.backend!=='optimizing-only'&&!correctedCells.has(JSON.stringify([row.workload,row.phase]))));
 }
+
+// A physical host may acquire a new platform identity after a kernel or memory
+// change. Merge those identities for coverage, but never let an older identity
+// replace a cell already measured on the preferred (newest) identity.
+export function selectPlatformEngineVersions<T extends LatencyRow&{platformId?:string}>(rows:T[],platforms:string[]):T[] {
+ const priority=new Map(platforms.map((id,index)=>[id,index]));
+ const cells=new Map<string,T>();
+ for(const row of selectEngineVersions(rows) as T[]){
+  const key=JSON.stringify([row.engine,row.workload,row.phase]);
+  const current=cells.get(key);
+  if(!current||(priority.get(row.platformId||'')??platforms.length)<(priority.get(current.platformId||'')??platforms.length))cells.set(key,row);
+ }
+ return [...cells.values()];
+}
 export function codeSizeLabel(kind:LatencyRow['codeKind']|undefined) {
  return kind==='native-image'?'Native image':kind==='engine-reported'?'Engine-reported code':kind==='unknown'?'Code (definition unknown)':'Code size';
 }

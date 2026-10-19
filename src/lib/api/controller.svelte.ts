@@ -16,7 +16,7 @@ import type {PageSeed} from './page-seed';
 import type {Result,PlatformChoice,BenchmarkPage,PlatformList} from './benchmark-types';
 import type {ViewCell} from './view-contract';
 import {shortVersion} from '../version-identity';
-import {selectEngineVersions} from '../latency';
+import {selectPlatformEngineVersions} from '../latency';
 import {platformGroups} from './platform-groups';
 import {machineLabel} from './machine-label';
 import {featureResults} from './feature-results';
@@ -214,7 +214,8 @@ export async function connectSite(_origin='',_revision?:string,retry=0){
    const raw=current.flat().map(normalize);
    // Schema 4 already selected each engine's current snapshot. Multiple physical
    // platform records still need a merged selection, as do older API servers.
-   const all=current.length===1&&current[0].activeVersions?raw:[...selectEngineVersions(raw.filter(row=>!row.workload.startsWith('features/'))),...selectEngineVersions(raw.filter(row=>row.workload.startsWith('features/')))] as ScalarResult[];
+   const platformOrder=group.map(platform=>platform.id);
+   const all=current.length===1&&current[0].activeVersions?raw:[...selectPlatformEngineVersions(raw.filter(row=>!row.workload.startsWith('features/')),platformOrder),...selectPlatformEngineVersions(raw.filter(row=>row.workload.startsWith('features/')),platformOrder)] as ScalarResult[];
    historyTargets.push({platforms:group.map(p=>p.id),machine});
    if(reuse)for(const b of view.catalogue)catalogue.set(b.id,b);
    const phases=new Map<string,Set<string>>();

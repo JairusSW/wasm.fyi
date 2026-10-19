@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import {latencyAverages,engineVersionKey,selectEngineVersions,codeSizeLabel,type LatencyRow} from './latency';
+import {latencyAverages,engineVersionKey,selectEngineVersions,selectPlatformEngineVersions,codeSizeLabel,type LatencyRow} from './latency';
 const row=(workload:string,engine:string,latencyNs:number|null,contract='contract'):LatencyRow=>({workload,engine,wasm:'test.wasm',artifactSha256:'artifact',contractSha256:contract,version:'1',backend:'compiler',phase:'steady',capturedAt:'2026-10-08T00:00:00Z',codeKind:null,memoryStatus:'not-measured',codeStatus:'not-measured',peakRssBytes:null,codeBytes:null,latencyStatus:latencyNs==null?'failed':'ok',latencyNs});
 describe('latency-only corpus averages',()=>{
  it('selects per-engine successes or the exact common passed population',()=>{
@@ -72,4 +72,12 @@ it('prefers corrected Turboshaft cells without mixing retained legacy optimizer 
  }
  const newer={...legacy,source:{...source,revision:'c'.repeat(40),asOf:'2026-10-04T10:00:00Z'}};
  expect(selectEngineVersions([corrected,newer])).toEqual([newer]);
+});
+
+it('uses the newest host identity for duplicate cells and older identities only to fill gaps',()=>{
+ const old={...row('coremark','wazero',469_000_000),platformId:'old'};
+ const current={...old,latencyNs:47_000_000,platformId:'current'};
+ const oldOnly={...row('qoi','wasmtime',20_000),platformId:'old'};
+ expect(selectPlatformEngineVersions([current,old,oldOnly],['current','old'])).toEqual([current,oldOnly]);
+ expect(selectPlatformEngineVersions([old,oldOnly,current],['current','old'])).toEqual([current,oldOnly]);
 });
