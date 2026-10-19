@@ -204,3 +204,40 @@ func TestBootstrapEscapingFreshnessAndPrivateRouteExclusion(t *testing.T) {
 		}
 	}
 }
+
+func TestHeadMetadataInjectedPerRoute(t *testing.T) {
+	dir := fixture(t)
+	meta := `{"origin":"https://wasm.fyi","siteName":"wasm.fyi","width":1200,"height":630,
+		"pages":{"":{"title":"Home","description":"Home page","image":"/og/home.png"},"/simd":{"title":"SIMD <b>","description":"Lanes & \"vectors\"","image":"/og/simd.png"},"/dashboard":{"title":"Private","description":"x","image":"/og/home.png"}},
+		"workload":{"title":"{name} · wasm.fyi","description":"{name} measured","image":"/og/workload.png"}}`
+	for name, content := range map[string]string{"404.html": "<html><head></head><body>application shell</body></html>", "og/meta.json": meta} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	host, err := Open(dir, func(_ context.Context, id string) (bool, error) { return id == "applications/image blur", nil })
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer host.Close()
+	for route, want := range map[string][]string{
+		"/":                                {"<title>Home</title>", `property="og:image" content="https://wasm.fyi/og/home.png"`, `rel="canonical" href="https://wasm.fyi/"`, `name="twitter:card" content="summary_large_image"`},
+		"/simd/":                           {"<title>SIMD &lt;b&gt;</title>", `content="Lanes &amp; &#34;vectors&#34;"`, `property="og:url" content="https://wasm.fyi/simd/"`},
+		"/bench/applications/image%20blur": {"<title>image blur · wasm.fyi</title>", `content="https://wasm.fyi/og/workload.png"`, `href="https://wasm.fyi/bench/applications/image%20blur/"`},
+	} {
+		body := request(host, "GET", route).Body.String()
+		for _, w := range want {
+			if !strings.Contains(body, w) {
+				t.Fatalf("%s: missing %s in %s", route, w, body)
+			}
+		}
+		if strings.Index(body, "og:title") > strings.Index(body, "</head>") {
+			t.Fatal(route, "tags outside head")
+		}
+	}
+	for _, route := range []string{"/history", "/dashboard/"} {
+		if body := request(host, "GET", route).Body.String(); strings.Contains(body, "og:title") {
+			t.Fatal("unexpected metadata for", route)
+		}
+	}
+}

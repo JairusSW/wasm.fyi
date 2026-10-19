@@ -7,7 +7,7 @@
 	import '@fontsource/ibm-plex-mono/600.css';
 	import '../app.css';
 	import { base } from '$app/paths';
-	import { SITE_ORIGIN, SITE_DESCRIPTION } from '$lib/site';
+	import { SITE_ORIGIN } from '$lib/site';
 	import { OG_HEIGHT, OG_WIDTH, ogFor } from '$lib/og';
 	import { browser } from '$app/environment';
 	import { afterNavigate, beforeNavigate } from '$app/navigation';
@@ -29,7 +29,7 @@
 	let { children } = $props();
 
 	// Share-card text and image for this page (see src/lib/og.ts).
-	const og = $derived(ogFor(page.route.id, page.params, page.data));
+	const og = $derived(ogFor(page.route.id, page.params));
 	// `base` is relative during SSR; resolve it against the page URL for an absolute path.
 	const ogImage = $derived(SITE_ORIGIN + new URL(base + '/og/' + og.slug + '.png', page.url).pathname);
 
@@ -99,6 +99,9 @@
 		};
 		deviceTheme.addEventListener('change', followDeviceTheme);
 		window.addEventListener('storage', syncTheme);
+		// The production host injects head tags into the bare shell for crawlers; this
+		// layout's own tags take over once hydrated. The <title> stays: Svelte retitles it.
+		document.head.querySelectorAll('meta[data-wasmfyi-head],link[data-wasmfyi-head]').forEach((node)=>node.remove());
 		let mounted=true;
 		const stopFavicon=animateFavicon();
 		const explicitMachine=new URL(location.href).searchParams.has('m');
@@ -152,10 +155,11 @@
 </script>
 
 <svelte:head>
-	<meta name="description" content={SITE_DESCRIPTION} />
+	<meta name="description" content={og.description} />
 	<link rel="canonical" href={SITE_ORIGIN + page.url.pathname} />
 	<meta property="og:type" content="website" />
 	<meta property="og:site_name" content="wasm.fyi" />
+	<meta property="og:locale" content="en_US" />
 	<meta property="og:url" content={SITE_ORIGIN + page.url.pathname} />
 	<meta property="og:title" content={og.title} />
 	<meta property="og:description" content={og.description} />
@@ -168,6 +172,7 @@
 	<meta name="twitter:title" content={og.title} />
 	<meta name="twitter:description" content={og.description} />
 	<meta name="twitter:image" content={ogImage} />
+	<meta name="twitter:image:alt" content={og.title} />
 	<link rel="alternate" type="text/plain" title="LLM reference" href={base + '/llms.txt'} />
 	<link rel="alternate" type="text/plain" title="Expanded LLM reference" href={base + '/llms-full.txt'} />
 	<link rel="alternate" type="application/json" title="Machine-readable data" href={base + '/data/llm/index.json'} />

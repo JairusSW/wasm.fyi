@@ -1,5 +1,5 @@
 import { error } from '@sveltejs/kit';
-import { ogSlugs } from '$lib/og';
+import { ogSlugs, type OgSlug } from '$lib/og';
 import { renderOg } from '$lib/server/og';
 import type { EntryGenerator, RequestHandler } from './$types';
 
@@ -9,8 +9,8 @@ export const prerender = true;
 export const entries: EntryGenerator = () => ogSlugs().map((slug) => ({ slug }));
 
 export const GET: RequestHandler = async ({ params }) => {
-	if (!ogSlugs().includes(params.slug)) error(404, 'No share image for this page');
-	const png = await renderOg(params.slug);
+	if (!ogSlugs().includes(params.slug as OgSlug)) error(404, 'No share image for this page');
+	const png = await renderOg(params.slug as OgSlug);
 	return new Response(png as BodyInit, {
 		headers: { 'content-type': 'image/png', 'cache-control': 'public, max-age=3600' }
 	});

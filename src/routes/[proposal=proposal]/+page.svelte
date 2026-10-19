@@ -40,7 +40,6 @@
 
 <svelte:head>
 	<title>{P.title} · wasm.fyi</title>
-	<meta name="description" content="{P.long}: {P.q}" />
 </svelte:head>
 
 <div class="stack6">

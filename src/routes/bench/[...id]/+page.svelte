@@ -156,7 +156,6 @@ import { RangeSelect } from '$lib/range-select.svelte';
 
 <svelte:head>
 	<title>{workloadName(b.id)} · wasm.fyi</title>
-	<meta name="description" content={b.purpose || `${workloadName(b.id)} — ${b.group} workload on wasm.fyi`} />
 </svelte:head>
 
 {#if !found}

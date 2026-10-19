@@ -1,129 +1,215 @@
-// Share-image rendering. Cards are built from the same measured view and model
-// functions as the pages, laid out with satori and rasterized with resvg at
-// build time (the og/[slug].png endpoint is prerendered).
+// Share-image rendering. Each card pairs the page's headline with a dot-matrix
+// illustration in the brand's 8×8 logo style, laid out with satori and
+// rasterized with resvg at build time (the og/[slug].png endpoint is
+// prerendered). Cards carry no measurements: the build has no live data, and
+// link previews are cached far longer than any capture stays current.
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
-import { CORPUS_FEATS, FEATS, PROPS } from '$lib/data/features';
-import { CFG, FEATURE_CFG } from '$lib/data/runtimes';
-import { ALLB } from '$lib/data/snapshot';
-import type { Cfg, ProposalId } from '$lib/data/types';
-import { fmtU, shortCount, workloadName } from '$lib/format';
-import { PROPOSAL_IDS } from '$lib/links';
-import { absOf, benchVal, compatCell, disp, featureContracts, isVisible, ratio, type Scope } from '$lib/model';
-import { OG_HEIGHT, OG_WIDTH, hasOwnImage, workloadSlug } from '$lib/og';
-import { viewCell, viewData } from '$lib/view-data';
+import { OG_HEIGHT, OG_WIDTH, ogCard, type OgCard, type OgSlug } from '$lib/og';
 
-// Dark theme tokens from app.css (runtime colors converted from oklch).
+// Dark theme tokens from app.css (runtime and status colors converted from oklch).
 const C = { bg: '#0d0e10', bg2: '#131518', line: '#23272c', fg: '#e4e6e9', fg2: '#a6acb4', fg3: '#7d848d' };
-const RUNTIME: Record<string, string> = { wasmtime: '#6aa7f4', wasmer: '#ebae51', wazero: '#b98cea', v8: '#4dcbc4', wago: '#e881b4' };
-const runtimeColor = (rt: string) => RUNTIME[rt] ?? '#6b727b';
+const RUNTIMES = ['#6aa7f4', '#ebae51', '#b98cea', '#4dcbc4', '#e881b4'];
+const PASS = '#4fc27a';
+const WARN = '#eba24e';
+const FAIL = '#ec5f50';
 
-const scope: Scope = { machine: 'm1', baseline: 'A', weighting: 'corpus', hide: {}, snapshot: 's1' };
-const ROWS = 5;
+// ── Dot-matrix illustrations ─────────────────────────────────────────────
 
-interface BarRow {
-	label: string;
-	value: string;
-	frac: number;
-	color: string;
-}
-type Panel = { kind: 'bars'; title: string; rows: BarRow[] } | { kind: 'stats'; items: [string, string][] };
-/** A title and, when there is one, a data panel. A subtitle only appears without a panel. */
-interface Card {
-	title: string;
-	subtitle?: string;
-	panel?: Panel;
-}
+/** A grid of palette indices: -1 is an unlit dot, -2 is no dot, DIM + i is a dimmed color. */
+type Grid = number[][];
+/** Palette for grid indices; 5 = foreground, 6–8 = status colors. */
+const PALETTE = [...RUNTIMES, C.fg, PASS, WARN, FAIL];
+const FG = 5;
+/** Added to a palette index for a dimmed dot. */
+const DIM = 10;
 
-// ── Card content ─────────────────────────────────────────────────────────
+const blank = (w: number, h: number, v = -1): Grid => Array.from({ length: h }, () => Array(w).fill(v));
 
-/** Bar lengths proportional to value, from zero (each bar is also labeled). */
-function fracs(values: number[]): number[] {
-	const hi = Math.max(...values);
-	return values.map((v) => Math.max(0.015, v / hi));
+/** Small deterministic noise, so patterns look organic but render identically every build. */
+function rng(seed: number) {
+	return () => ((seed = (Math.imul(seed ^ (seed >>> 15), 2246822519) + 0x6d2b79f5) >>> 0) / 2 ** 32);
 }
 
-/** Every metric the measured view can hold (matches the packed view's metric table). */
-const METRICS = ['compile', 'inst', 'first', 'steady', 'rss', 'rssCompile', 'rssInst', 'rssFirst', 'code'];
-
-/** Workloads with at least one successful measurement; catalogued but untimed contracts don't count. */
-function measuredWorkloads(): number {
-	const cfgs = Object.keys(viewData.configurations) as Cfg['id'][];
-	const hosts = Object.keys(viewData.hosts) as Scope['machine'][];
-	return viewData.catalogue.filter((w) => hosts.some((m) => (['s1', 's2'] as const).some((sn) => cfgs.some((c) => METRICS.some((k) => viewCell(m, sn, w.id, c, k).st === 'ok'))))).length;
+/** Plot a function into a grid column by column, bridging vertical jumps so lines stay continuous. */
+function plot(g: Grid, color: number, f: (x: number) => number) {
+	const h = g.length;
+	let prev: number | null = null;
+	for (let x = 0; x < g[0].length; x++) {
+		const y = Math.max(0, Math.min(h - 1, Math.round(h - 1 - f(x))));
+		// Bridge in the current column, stopping one short of the previous row (already lit).
+		const from = prev == null ? y : prev + Math.sign(y - prev);
+		for (let yy = Math.min(from, y); yy <= Math.max(from, y); yy++) g[yy][x] = color;
+		prev = y;
+	}
 }
 
-/** Engines with feature-test evidence on any host. */
-function enginesWithEvidence(): number {
-	const hosts = Object.keys(viewData.hosts) as Scope['machine'][];
-	return new Set(FEATURE_CFG.filter((c) => hosts.some((m) => [...FEATS, ...CORPUS_FEATS].some((f) => compatCell(f.id, c.id, { ...scope, machine: m }).run))).map((c) => c.rt)).size;
-}
+// The logo mark, row by row (1 = lit).
+const MARK = ['00000011', '00000011', '00000011', '00011011', '00011011', '11011011', '11011011', '11011011'];
 
-/** Best-first list → each runtime once (its best configuration), top ROWS. */
-function distinct<T extends { c: Cfg }>(sorted: T[]): T[] {
-	const seen = new Set<string>();
-	return sorted.filter((x) => !seen.has(x.c.rt) && seen.add(x.c.rt)).slice(0, ROWS);
-}
+const ART: Record<OgSlug, () => Grid> = {
+	// The logo mark, each column in a runtime color.
+	home: () => MARK.map((row) => [...row].map((c, x) => (c === '1' ? [0, 0, 1, 2, 2, 3, 4, 4][x] : -1))),
+	// Ranked horizontal bars, one per runtime.
+	benchmarks: () => {
+		const g = blank(14, 14);
+		[13, 11, 8, 6, 4].forEach((len, i) => {
+			for (let x = 0; x < len; x++) g[i * 3][x] = g[i * 3 + 1][x] = i;
+		});
+		return g;
+	},
+	// Three series trending over time.
+	history: () => {
+		const g = blank(16, 12);
+		plot(g, 1, (x) => 9.4 - x * 0.2 + Math.sin(x * 0.8) * 0.5);
+		plot(g, 0, (x) => 5.8 - x * 0.1 + Math.sin(x * 0.6 + 2) * 0.45);
+		plot(g, 3, (x) => 1.8 + Math.sin(x * 0.5 + 1) * 0.4);
+		return g;
+	},
+	// A compatibility matrix: runtimes down the side, tests across.
+	features: () => {
+		const r = rng(7);
+		const g = blank(13, 10, -2);
+		for (let y = 0; y < 5; y++) {
+			g[y * 2][0] = y;
+			g[y * 2 + 1][0] = -2;
+			for (let x = 2; x < 13; x++) {
+				const p = r() + y * 0.035;
+				g[y * 2][x] = p < 0.74 ? 6 : p < 0.88 ? 7 : p < 0.95 ? 8 : -1;
+			}
+		}
+		return g;
+	},
+	// High startup, low slope vs low startup, high slope: the lines cross.
+	compare: () => {
+		const g = blank(15, 12);
+		plot(g, 1, (x) => 0.4 + x * 0.78);
+		plot(g, 0, (x) => 4.6 + x * 0.26);
+		g[11 - Math.round(4.6 + 8 * 0.26)][8] = FG;
+		return g;
+	},
+		health: () => {
+		const r = rng(3);
+		const g = blank(14, 9, -2);
+		for (let y = 0; y < 9; y += 2) for (let x = 0; x < 14; x++) g[y][x] = r() < 0.9 ? 6 : r() < 0.6 ? 7 : 8;
+		return g;
+	},
+	// One program measured on every runtime: lines of code beside five result bars.
+	workload: () => {
+		const g = blank(15, 9, -2);
+		[3, 2, 3, 1, 2, 3, 2, 1, 3].forEach((len, y) => {
+			for (let x = 0; x < 3; x++) g[y][x] = x < len ? FG : -1;
+		});
+		[10, 7, 9, 4, 6].forEach((len, i) => {
+			for (let x = 5; x < 15; x++) g[i * 2][x] = x < 5 + len ? i : -1;
+		});
+		return g;
+	},
+	// Four 32-bit lanes of a 128-bit vector: a + b = c, lane by lane.
+	simd: () => {
+		const g = blank(15, 11, -2);
+		const lanes = (y: number, lit: boolean) => {
+			for (let lane = 0; lane < 4; lane++) for (let x = 0; x < 3; x++) g[y][lane * 4 + x] = lit ? lane : lane + DIM;
+		};
+		lanes(0, false);
+		lanes(1, false);
+		lanes(3, false);
+		lanes(4, false);
+		for (let x = 0; x < 15; x++) if ((x + 1) % 4) g[6][x] = FG;
+		lanes(8, true);
+		lanes(9, true);
+		lanes(10, true);
+		return g;
+	},
+	// A heap graph: objects reachable from a root, and two unreachable ones.
+	gc: () => {
+		const g = blank(15, 11, -2);
+		const node = (x: number, y: number, c: number) => {
+			g[y][x] = g[y][x + 1] = g[y + 1][x] = g[y + 1][x + 1] = c;
+		};
+		const edge = (x0: number, y0: number, x1: number, y1: number) => {
+			for (let x = Math.min(x0, x1); x <= Math.max(x0, x1); x++) for (let y = Math.min(y0, y1); y <= Math.max(y0, y1); y++) g[y][x] = -1;
+		};
+		edge(7, 2, 7, 3);
+		edge(2, 3, 12, 3);
+		edge(2, 4, 2, 4);
+		edge(12, 4, 12, 4);
+		edge(2, 7, 2, 8);
+		edge(7, 7, 7, 8);
+		node(6, 0, FG);
+		node(1, 5, 0);
+		node(6, 5, 1);
+		node(11, 5, 2);
+		node(1, 9, 3);
+		node(6, 9, 4);
+		node(11, 9, FG + DIM);
+		return g;
+	},
+	// A 32-bit address space, then a 64-bit one that keeps going.
+	memory64: () => {
+		const g = blank(16, 11, -2);
+		for (let y = 0; y < 3; y++) for (let x = 0; x < 16; x++) g[y][x] = x < 6 ? 2 : -1;
+		for (let y = 5; y < 11; y++) for (let x = 0; x < 16; x++) g[y][x] = 0;
+		for (let x = 0; x < 16; x += 1) g[4][x] = -2;
+		return g;
+	},
+	// Four workers in parallel, meeting at barriers.
+	threads: () => {
+		const r = rng(11);
+		const g = blank(16, 9, -2);
+		for (let t = 0; t < 4; t++) {
+			const y = t * 2;
+			for (let x = 0; x < 16; x++) g[y][x] = x === 5 || x === 11 ? FG : r() < 0.82 ? t : -1;
+		}
+		for (const x of [5, 11]) for (let y = 0; y < 7; y++) if (g[y][x] === -2) g[y][x] = FG;
+		return g;
+	}
+};
 
-function bars(title: string, items: { c: Cfg; v: number; text: string }[]): Panel | undefined {
-	if (!items.length) return undefined;
-	const f = fracs(items.map((x) => x.v));
-	return { kind: 'bars', title, rows: items.map((x, i) => ({ label: x.c.rt, value: x.text, frac: f[i], color: runtimeColor(x.c.rt) })) };
-}
-
-/** Top runtimes on an aggregate column, the same ranking the pages show. */
-function leaders(col: number, title: string): Panel | undefined {
-	const list = CFG.filter((c) => isVisible(scope, c))
-		.map((c) => ({ c, r: ratio(scope, 'lat', c.id, col), a: absOf(scope, 'lat', c.id, col) }))
-		.filter((x) => x.r && x.a)
-		.sort((a, b) => a.r!.r - b.r!.r);
-	return bars(title, distinct(list).map((x) => ({ c: x.c, v: x.a!.v, text: disp(scope, 'lat', x.c.id, col)!.t })));
-}
-
-function workloadBars(id: string): Panel | undefined {
-	const b = ALLB.find((x) => x.id === id)!;
-	const list = CFG.filter((c) => isVisible(scope, c))
-		.map((c) => ({ c, r: benchVal(scope, b, c.id, 'steady') }))
-		.flatMap((x) => (x.r.st === 'ok' ? [{ c: x.c, v: x.r.v }] : []))
-		.sort((a, b) => a.v - b.v);
-	return bars('Steady execution', distinct(list).map((x) => ({ ...x, text: fmtU(x.v, 'ms') })));
-}
-
-function featureBars(family: string): Panel | undefined {
-	const list = distinct(
-		FEATURE_CFG.map((c) => ({ c, r: compatCell(family, c.id, scope) }))
-			.filter((x) => x.r.run && x.r.total)
-			.sort((a, b) => b.r.pass / b.r.total - a.r.pass / a.r.total)
+/** Render a grid as an SVG data URI at a given dot pitch. */
+function gridImage(g: Grid, pitch: number) {
+	const w = g[0].length * pitch;
+	const h = g.length * pitch;
+	const r = pitch * 0.36;
+	let dots = '';
+	g.forEach((row, y) =>
+		row.forEach((c, x) => {
+			if (c === -2) return;
+			const cx = (x + 0.5) * pitch;
+			const cy = (y + 0.5) * pitch;
+			const [fill, opacity] = c === -1 ? [C.fg, 0.09] : c >= DIM ? [PALETTE[c - DIM], 0.3] : [PALETTE[c], 1];
+			dots += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}"${opacity < 1 ? ` fill-opacity="${opacity}"` : ''}/>`;
+		})
 	);
-	if (!list.length) return undefined;
-	return {
-		kind: 'bars',
-		title: 'Tests passed',
-		rows: list.map((x) => ({ label: x.c.rt, value: `${x.r.pass}/${x.r.total}`, frac: Math.max(0.04, x.r.pass / x.r.total), color: runtimeColor(x.c.rt) }))
-	};
+	const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">${dots}</svg>`;
+	return { src: `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`, w, h };
 }
 
-function cardFor(slug: string): Card {
-	if (PROPOSAL_IDS.includes(slug as ProposalId)) return { title: PROPS[slug as ProposalId].title, panel: featureBars(slug), subtitle: PROPS[slug as ProposalId].long };
-	if (slug.startsWith('w-')) {
-		const b = ALLB.find((x) => hasOwnImage(x) && workloadSlug(x.id) === slug);
-		if (b) return { title: workloadName(b.id), subtitle: b.group, panel: workloadBars(b.id) };
-	}
-	const featureTests = [...FEATS, ...CORPUS_FEATS].reduce((n, f) => n + featureContracts(f.id).length, 0);
-	switch (slug) {
-		case 'benchmarks':
-			return { title: 'Benchmarks', panel: leaders(0, 'Fastest compilation') };
-		case 'history':
-			return { title: 'History', panel: { kind: 'stats', items: [[String(viewData.history.m1.points.length), 'weeks'], [String(measuredWorkloads()), 'workloads run'], [viewData.statistics.timingSamples==null?'—':shortCount(viewData.statistics.timingSamples), 'samples'], [String(Object.keys(viewData.reports).length), 'reports']] } };
-		case 'features':
-			return { title: 'Features', panel: { kind: 'stats', items: [[String(FEATS.length), 'features'], [String(enginesWithEvidence()), 'engines tested'], [shortCount(featureTests), 'tests'], [String(Object.keys(viewData.hosts).length), 'machines']] } };
-		case 'compare':
-			return { title: 'Startup vs throughput', subtitle: 'When does a fast runtime that starts slowly win?' };
-		default:
-			return { title: 'The reference for\nWebAssembly runtimes.', panel: leaders(3, 'Fastest execution') };
-	}
+/** Faint full-bleed dot field that fades toward the left, behind the text. */
+function backdrop() {
+	const pitch = 30;
+	let dots = '';
+	for (let y = pitch / 2; y < OG_HEIGHT; y += pitch)
+		for (let x = pitch / 2; x < OG_WIDTH; x += pitch) {
+			const o = Math.max(0, (x / OG_WIDTH - 0.25) * 0.075);
+			if (o > 0.004) dots += `<circle cx="${x}" cy="${y}" r="1.6" fill="${C.fg}" fill-opacity="${o.toFixed(3)}"/>`;
+		}
+	const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${OG_WIDTH}" height="${OG_HEIGHT}">${dots}</svg>`;
+	return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+}
+
+/** The dot-matrix logo from static/brand/logo.svg, recolored for the dark card. */
+let logoSrc: string | null = null;
+function logo() {
+	if (logoSrc) return logoSrc;
+	const svg = readFileSync(resolve('static/brand/logo.svg'), 'utf8')
+		.replace(/<title>.*?<\/title>/, '')
+		.replace(/<style>[\s\S]*?<\/style>/, '')
+		.replaceAll('class="on"', `fill="${C.fg}"`)
+		.replaceAll('class="off"', `fill="${C.fg}" fill-opacity="0.14"`);
+	return (logoSrc = `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`);
 }
 
 // ── Layout ───────────────────────────────────────────────────────────────
@@ -133,71 +219,61 @@ const h = (type: string, style: Record<string, unknown>, ...children: unknown[])
 	type,
 	props: { style: { display: 'flex', ...style }, children: children.flat().filter((c) => c != null && c !== false) }
 });
-const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1).trimEnd() + '…' : s);
-const PANEL_W = 480;
+const img = (src: string, width: number, height: number, style: Record<string, unknown> = {}): El => ({ type: 'img', props: { src, width, height, style } });
 
-function panelEl(p: Panel): El {
-	if (p.kind === 'stats')
-		return h(
-			'div',
-			{ width: PANEL_W, flexWrap: 'wrap', border: `1px solid ${C.line}`, background: C.bg2 },
-			p.items.map(([v, l], i) =>
-				h(
-					'div',
-					{ width: PANEL_W / 2 - 1, flexDirection: 'column', padding: '32px', borderRight: i % 2 === 0 ? `1px solid ${C.line}` : 'none', borderBottom: i < 2 ? `1px solid ${C.line}` : 'none' },
-					h('div', { fontFamily: 'Plex Mono', fontSize: 60, fontWeight: 500, letterSpacing: '-0.03em', lineHeight: 1 }, v),
-					h('div', { fontSize: 22, color: C.fg3, marginTop: 10 }, l)
-				)
-			)
-		);
-	return h(
-		'div',
-		{ width: PANEL_W, flexDirection: 'column', gap: 20, padding: '28px 30px 32px', border: `1px solid ${C.line}`, background: C.bg2 },
-		h('div', { fontSize: 22, fontWeight: 600, color: C.fg2 }, p.title),
-		p.rows.map((r) =>
-			h(
-				'div',
-				{ alignItems: 'center', gap: 14 },
-				h('div', { width: 14, height: 14, background: r.color }),
-				h('div', { width: 160, fontSize: 24, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden' }, clip(r.label, 12)),
-				h('div', { flex: 1, height: 12, background: C.line }, h('div', { width: `${Math.round(r.frac * 100)}%`, height: 12, background: r.color })),
-				h('div', { width: 104, justifyContent: 'flex-end', fontFamily: 'Plex Mono', fontSize: 22 }, r.value)
-			)
-		)
-	);
-}
+const PAD = 72;
+const ART_BOX = 400;
 
-function cardEl(card: Card): El {
-	const wide = !card.panel;
-	const t = card.title;
-	// Titles never wrap mid-thought: size each line to fit its column (~0.56em per glyph).
-	const lines = t.split('\n');
+function cardEl(card: OgCard, slug: OgSlug): El {
+	const grid = ART[slug]();
+	const pitch = Math.floor(Math.min(ART_BOX / grid[0].length, ART_BOX / grid.length, 46));
+	const art = gridImage(grid, pitch);
+	const lines = card.headline.split('\n');
+	// Size the headline so its longest line fits the text column (~0.55em per glyph in Plex Sans 600).
+	const column = OG_WIDTH - PAD * 2 - ART_BOX - 56;
 	const longest = Math.max(...lines.map((l) => l.length));
-	const column = wide ? 1072 : 1072 - 56 - PANEL_W;
-	const fit = Math.floor(column / (longest * 0.56));
-	const size = lines.length > 1 || fit < 88 ? Math.max(40, Math.min(wide ? 104 : 80, fit)) : wide ? 104 : 80;
-	const wrap = lines.length === 1 && fit < 40;
+	const size = Math.max(52, Math.min(lines.length > 1 ? 84 : 104, Math.floor(column / (longest * 0.55))));
 	return h(
 		'div',
-		{ width: OG_WIDTH, height: OG_HEIGHT, flexDirection: 'column', background: C.bg, color: C.fg, fontFamily: 'Plex Sans', position: 'relative', padding: '48px 64px 54px' },
-		h('div', { fontFamily: 'Plex Mono', fontSize: 30, fontWeight: 600 }, 'wasm.fyi'),
+		{ width: OG_WIDTH, height: OG_HEIGHT, flexDirection: 'column', background: C.bg, color: C.fg, fontFamily: 'Plex Sans', position: 'relative' },
+		img(backdrop(), OG_WIDTH, OG_HEIGHT, { position: 'absolute', left: 0, top: 0 }),
+		// Header: logo and kicker
 		h(
 			'div',
-			{ flex: 1, alignItems: 'center', gap: 56 },
+			{ alignItems: 'center', justifyContent: 'space-between', padding: `56px ${PAD}px 0` },
+			img(logo(), Math.round((51 / 9) * 40), 40),
 			h(
 				'div',
-				{ flex: 1, flexDirection: 'column', gap: 20 },
+				{ alignItems: 'center', gap: 12, fontFamily: 'Plex Mono', fontSize: 20, fontWeight: 500, color: C.fg2, letterSpacing: '0.08em', textTransform: 'uppercase' },
+				h('div', { width: 10, height: 10, borderRadius: 5, background: PASS }),
+				card.kicker
+			)
+		),
+		// Body: headline and illustration
+		h(
+			'div',
+			{ flex: 1, alignItems: 'center', justifyContent: 'space-between', padding: `0 ${PAD}px`, gap: 56 },
+			h(
+				'div',
+				{ width: column, flexDirection: 'column', gap: 26 },
 				h(
 					'div',
-					{ flexDirection: 'column', fontSize: size, fontWeight: 600, lineHeight: 1.04, letterSpacing: '-0.03em' },
-					lines.map((line) => h('div', wrap ? {} : { whiteSpace: 'nowrap' }, clip(line, 48)))
+					{ flexDirection: 'column', fontSize: size, fontWeight: 600, lineHeight: 1.02, letterSpacing: '-0.035em' },
+					lines.map((line) => h('div', {}, line))
 				),
-				card.subtitle ? h('div', { fontSize: wide ? 34 : 26, lineHeight: 1.35, color: C.fg3 }, clip(card.subtitle, 70)) : null
+				h('div', { fontSize: 28, lineHeight: 1.38, color: C.fg2, maxWidth: column }, card.subtitle)
 			),
-			card.panel ? panelEl(card.panel) : null
+			h('div', { width: ART_BOX, height: ART_BOX, alignItems: 'center', justifyContent: 'center' }, img(art.src, art.w, art.h))
+		),
+		// Footer: canonical path
+		h(
+			'div',
+			{ alignItems: 'center', justifyContent: 'space-between', padding: `0 ${PAD}px 44px`, fontFamily: 'Plex Mono', fontSize: 22, color: C.fg3 },
+			h('div', {}, h('span', { color: C.fg2 }, 'wasm.fyi'), card.path),
+			h('div', {}, 'Every number links to its run')
 		),
 		// Runtime color stripe
-		h('div', { position: 'absolute', left: 0, right: 0, bottom: 0, height: 8 }, Object.values(RUNTIME).map((c) => h('div', { flex: 1, background: c })))
+		h('div', { position: 'absolute', left: 0, right: 0, bottom: 0, height: 8 }, RUNTIMES.map((c) => h('div', { flex: 1, background: c })))
 	);
 }
 
@@ -214,7 +290,7 @@ function loadFonts() {
 	return fonts;
 }
 
-export async function renderOg(slug: string): Promise<Uint8Array> {
-	const svg = await satori(cardEl(cardFor(slug)) as never, { width: OG_WIDTH, height: OG_HEIGHT, fonts: loadFonts() });
+export async function renderOg(slug: OgSlug): Promise<Uint8Array> {
+	const svg = await satori(cardEl(ogCard(slug), slug) as never, { width: OG_WIDTH, height: OG_HEIGHT, fonts: loadFonts() });
 	return new Resvg(svg, { fitTo: { mode: 'width', value: OG_WIDTH }, font: { loadSystemFonts: false } }).render().asPng();
 }

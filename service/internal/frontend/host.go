@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"html"
 	"io"
 	"net/http"
 	"os"
@@ -28,6 +29,83 @@ type Host struct {
 	workload      WorkloadLookup
 	preparedPages bool
 	bootstrap     func(context.Context) ([]byte, error)
+	meta          *headMeta
+}
+
+// headMeta is the build's og/meta.json: link-preview text and share images per
+// route. The shell carries no page-specific head tags, so they are injected here.
+type headMeta struct {
+	Origin   string              `json:"origin"`
+	SiteName string              `json:"siteName"`
+	Width    int                 `json:"width"`
+	Height   int                 `json:"height"`
+	Pages    map[string]pageMeta `json:"pages"`
+	Workload pageMeta            `json:"workload"`
+}
+
+type pageMeta struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Image       string `json:"image"`
+}
+
+// workloadName mirrors workloadName in src/lib/format.ts.
+func workloadName(id string) string {
+	switch id {
+	case "mechanisms/wasm-host-wasm-loop":
+		return "Wasm → host → Wasm"
+	case "mechanisms/host-to-wasm-call":
+		return "Host → Wasm → host"
+	}
+	for _, prefix := range []string{"wago/", "applications/"} {
+		if strings.HasPrefix(id, prefix) {
+			id = strings.TrimPrefix(id, prefix)
+			break
+		}
+	}
+	return strings.TrimSuffix(id, "/polybench_run")
+}
+
+// headTags renders the head tags for an application route, or nil when the
+// build has no entry for it. Every value is HTML-escaped.
+func (h *Host) headTags(navigation, escapedPath string) []byte {
+	if h.meta == nil {
+		return nil
+	}
+	page, ok := h.meta.Pages[navigation]
+	if workload, isBench := strings.CutPrefix(navigation, "/bench/"); isBench {
+		name := workloadName(workload)
+		page, ok = pageMeta{strings.ReplaceAll(h.meta.Workload.Title, "{name}", name), strings.ReplaceAll(h.meta.Workload.Description, "{name}", name), h.meta.Workload.Image}, h.meta.Workload.Image != ""
+	}
+	if !ok {
+		return nil
+	}
+	pageURL := h.meta.Origin + strings.TrimSuffix(escapedPath, "/") + "/"
+	image := h.meta.Origin + page.Image
+	var b bytes.Buffer
+	b.WriteString("<title>" + html.EscapeString(page.Title) + "</title>")
+	tag := func(kind, key, value string) {
+		fmt.Fprintf(&b, `<meta data-wasmfyi-head %s="%s" content="%s">`, kind, key, html.EscapeString(value))
+	}
+	fmt.Fprintf(&b, `<link data-wasmfyi-head rel="canonical" href="%s">`, html.EscapeString(pageURL))
+	tag("name", "description", page.Description)
+	tag("property", "og:type", "website")
+	tag("property", "og:site_name", h.meta.SiteName)
+	tag("property", "og:locale", "en_US")
+	tag("property", "og:url", pageURL)
+	tag("property", "og:title", page.Title)
+	tag("property", "og:description", page.Description)
+	tag("property", "og:image", image)
+	tag("property", "og:image:type", "image/png")
+	tag("property", "og:image:width", fmt.Sprint(h.meta.Width))
+	tag("property", "og:image:height", fmt.Sprint(h.meta.Height))
+	tag("property", "og:image:alt", page.Title)
+	tag("name", "twitter:card", "summary_large_image")
+	tag("name", "twitter:title", page.Title)
+	tag("name", "twitter:description", page.Description)
+	tag("name", "twitter:image", image)
+	tag("name", "twitter:image:alt", page.Title)
+	return b.Bytes()
 }
 
 // SetBootstrap installs public metadata before the application scripts execute.
@@ -61,6 +139,14 @@ func Open(directory string, workload WorkloadLookup) (*Host, error) {
 		return nil, fmt.Errorf("frontend application shell unreadable or outside byte limit")
 	}
 	h.etag = fmt.Sprintf("\"%x\"", sha256.Sum256(h.shell))
+	// Head metadata is optional: without it the shell is served unchanged.
+	if f, e := h.openFile("og/meta.json", 1<<20); e == nil {
+		var meta headMeta
+		if json.NewDecoder(f).Decode(&meta) == nil && strings.HasPrefix(meta.Origin, "https://") {
+			h.meta = &meta
+		}
+		f.Close()
+	}
 	return h, nil
 }
 
@@ -212,6 +298,10 @@ func (h *Host) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		shell, etag := h.shell, h.etag
+		if tags := h.headTags(navigation, r.URL.EscapedPath()); tags != nil && p != "/dashboard" && p != "/dashboard/" && bytes.Contains(shell, []byte("</head>")) {
+			shell = bytes.Replace(shell, []byte("</head>"), append(tags, "</head>"...), 1)
+			etag = fmt.Sprintf("\"%x\"", sha256.Sum256(shell))
+		}
 		if h.bootstrap != nil && p != "/dashboard" && p != "/dashboard/" && bytes.Contains(shell, []byte("</head>")) {
 			if data, err := h.bootstrap(r.Context()); err == nil && len(data) <= 64<<10 && len(data) > 0 {
 				// Re-marshal RawMessage to escape script delimiters at the HTML boundary,
