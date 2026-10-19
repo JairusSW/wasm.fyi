@@ -241,3 +241,17 @@ func TestHeadMetadataInjectedPerRoute(t *testing.T) {
 		}
 	}
 }
+
+func TestHomeRedirectsToRoot(t *testing.T) {
+	h, e := Open(fixture(t), func(context.Context, string) (bool, error) { return false, nil })
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer h.Close()
+	for route, want := range map[string]string{"/home": "/", "/home/": "/", "/home?m=m2": "/?m=m2"} {
+		w := request(h, "GET", route)
+		if w.Code != http.StatusMovedPermanently || w.Header().Get("Location") != want {
+			t.Fatalf("%s: %d %q", route, w.Code, w.Header().Get("Location"))
+		}
+	}
+}

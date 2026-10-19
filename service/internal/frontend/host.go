@@ -255,6 +255,15 @@ func (h *Host) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	navigation := strings.TrimSuffix(p, "/")
+	// /home is a common guess for the homepage; keep the query string.
+	if navigation == "/home" {
+		target := "/"
+		if r.URL.RawQuery != "" {
+			target += "?" + r.URL.RawQuery
+		}
+		http.Redirect(w, r, target, http.StatusMovedPermanently)
+		return
+	}
 	app := false
 	switch navigation {
 	case "", "/benchmarks", "/dashboard", "/compare", "/history", "/features", "/health", "/simd", "/gc", "/memory64", "/threads":
