@@ -24,7 +24,7 @@ func main() {
 			panic(e)
 		}
 		results := map[string]any{"artifact": path, "bytes": len(data)}
-		cfg := wazero.NewRuntimeConfigCompiler().WithCoreFeatures(api.CoreFeaturesV2).WithCloseOnContextDone(true)
+		cfg := wazero.NewRuntimeConfigCompiler().WithCoreFeatures(api.CoreFeaturesV2)
 		r := wazero.NewRuntimeWithConfig(ctx, cfg)
 		retained, e := r.CompileModule(ctx, data)
 		if e != nil {

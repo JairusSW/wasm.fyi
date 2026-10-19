@@ -20,7 +20,7 @@ func main() {
 		}
 		samples := []int64{}
 		for i := 0; i < 15; i++ {
-			runtime := wazero.NewRuntimeWithConfig(ctx, wazero.NewRuntimeConfigCompiler().WithCoreFeatures(api.CoreFeaturesV2).WithCloseOnContextDone(true))
+			runtime := wazero.NewRuntimeWithConfig(ctx, wazero.NewRuntimeConfigCompiler().WithCoreFeatures(api.CoreFeaturesV2))
 			start := time.Now()
 			module, err := runtime.CompileModule(ctx, data)
 			elapsed := time.Since(start).Nanoseconds()
