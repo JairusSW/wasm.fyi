@@ -31,6 +31,7 @@ const KNOWN: Record<string, { id: string; page?: ProposalId }> = {
   gc: { id: 'gc', page: 'gc' },
   memory64: { id: 'memory64', page: 'memory64' },
   exceptionsFinal: { id: 'exceptions' },
+  exceptions: { id: 'legacy-exceptions' },
   tailCall: { id: 'tail-call' },
   relaxedSimd: { id: 'relaxed-simd' },
   multiMemory: { id: 'multi-memory' },

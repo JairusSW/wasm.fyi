@@ -10,7 +10,7 @@ import { CFG } from '$lib/data/runtimes';
 	import type { MetricKey, OvKey } from '$lib/data/types';
 	import { fmtU, fmtUGroup, n0 } from '$lib/format';
 	import { heatCount, heatField, heatFields, heatCorrectness } from '$lib/heat';
-	import { totalWorkloads, correctnessWorkloads, sharedCount, cov, absOf, disp, isOff, isVisible, compileExcluded } from '$lib/model';
+	import { totalWorkloads, correctnessWorkloads, sharedCount, cov, absOf, combinedLatency, disp, isOff, isVisible, compileExcluded } from '$lib/model';
 import { ui } from '$lib/state.svelte';
 import { viewCell, viewData } from '$lib/view-data';
 	import Carousel from '../Carousel.svelte';
@@ -96,15 +96,11 @@ import { viewCell, viewData } from '$lib/view-data';
 
 	// End-to-end on the Latency tab: compile + instantiate + first call + one steady call,
 	// the sum of the four phase aggregates shown in the row. Missing or excluded phases give no total.
-	const phaseSum = (s: typeof ui.scope, c: (typeof CFG)[number], indices:number[]) => {
-		const parts = indices.map(i => (compileExcluded(s, c, g.metrics[i]) ? null : (absOf(s, 'lat', c.id, i)?.v ?? null)));
-		return parts.every((v) => v != null) ? { total: (parts as number[]).reduce((a, b) => a + b, 0), parts: parts as number[] } : null;
-	};
 	const combinedColumn = (indices:number[]) => {
 		if (ui.group !== 'lat') return null;
 		const s = ui.scope;
 		const cfgs = CFG.filter((c) => isVisible(s, c));
-		const totals = cfgs.map((c) => phaseSum(s, c, indices));
+		const totals = cfgs.map((c) => combinedLatency(s, c, indices));
 		const names = cfgs.map((c) => `${c.rt} ${c.be}`);
 		const values = totals.map((t) => t?.total ?? null);
 		const formatted = fmtUGroup(values, 'ms');

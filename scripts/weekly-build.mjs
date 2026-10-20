@@ -1,4 +1,5 @@
 import {applyWazeroSampling} from './lib/wazero-sampling.mjs';
+import {applyWazeroFeaturePolicy} from './lib/wazero-feature-policy.mjs';
 import {applyW2c2Bridge} from './lib/w2c2-bridge.mjs';
 import {configureNodeCompilerCache,summarizeCompilerCacheStats} from './lib/node-compiler-cache.mjs';
 import {selectV8TurboshaftPolicy} from './lib/v8-turboshaft.mjs';
@@ -10,9 +11,11 @@ import {ensureNodeFmtStandardLibrary} from './lib/node-fmt-stdlib.mjs';
 import {buildWizardSDK} from './lib/wizard-sdk.mjs';
 import {buildGraalWasmSDK} from './lib/graalwasm-sdk.mjs';
 import {applyWasmerCraneliftAdapter} from './lib/wasmer-cranelift-adapter.mjs';
+import {wasmerBuildEnvironment} from './lib/wasmer-build-environment.mjs';
 import {applyWagoColdCompile} from './lib/wago-cold-compile.mjs';
 import {applyWagoThreads} from './lib/wago-threads.mjs';
 import {buildZwasmSDK} from './lib/zwasm-sdk.mjs';
+import {adaptWazyComponents,adaptWazyCoreFeatures} from './lib/wazy-adapter.mjs';
 import {applyLegacyWasmtimeAPI} from './lib/wasmtime-legacy-api.mjs';
 // Build the Saturday default-branch snapshots in an isolated native harness.
 import {readFile, writeFile, mkdir, cp, stat, readdir} from 'node:fs/promises';
@@ -31,6 +34,7 @@ import {configureWasmerLLVM} from './lib/llvm-toolchain.mjs';
 import {buildWamrSDK} from './lib/wamr-sdk.mjs';
 import {buildWasmEdgeSDK} from './lib/wasmedge-sdk.mjs';
 import {applyWasmEdgeWorkloadCoverage} from './lib/wasmedge-workload-coverage.mjs';
+import {applyWasmEdgeFeaturePolicy} from './lib/wasmedge-feature-policy.mjs';
 import {buildWavmSDK} from './lib/wavm-sdk.mjs';
 import {buildChicorySDK} from './lib/chicory-sdk.mjs';
 import {buildCTranspilerSDK} from './lib/c-transpiler-sdk.mjs';
@@ -107,6 +111,7 @@ if(engine==='wago') {
   const file=join(root,'adapters/wazero',entry);await writeFile(file,(await readFile(join(base,'adapters/wazero',entry),'utf8')).replaceAll('1.12.0',download.Version.replace(/^v/,'')));
  }
  await applyWazeroSampling(root);
+	 provenance.featurePolicy=await applyWazeroFeaturePolicy(root);
  await run('go',['build','-mod=mod','-modfile='+mod,'-trimpath','-o',join(root,'bin/adapter-wazero'),'./adapters/wazero']);
  provenance.module=download;runtimeVersion=download.Version;
 } else if(engine==='wasmtime') {
@@ -139,6 +144,7 @@ if(engine==='wago') {
  provenance.compatibility={legacyCompatibility,...(sdkMajor===24?{buildCompilerCompatibility:'allow dangerous_implicit_autorefs for unchanged SDK24 mmap pointer-length code'}:{}),api:fsPerms?'FsPerms':'DirPerms/FilePerms',sourceSha256:digest(await readFile(commands)),p2Sha256:digest(await readFile(p2))};
  await run('cargo',['build','--release','--no-default-features','--manifest-path',cargo,'--bin','adapter-wasmtime']);
 } else if(engine==='wasmer') {
+ const selectedWasmerEnv=wasmerBuildEnvironment(env);for(const name of ['CC','CXX','HOST_CC','HOST_CXX'])if(selectedWasmerEnv[name])env[name]=selectedWasmerEnv[name];
  provenance.sdkVersion=(await readFile(join(source,'Cargo.toml'),'utf8')).split('[workspace.package]')[1]?.split('\n[')[0].match(/^version\s*=\s*"([^"]+)"/m)?.[1];
  if(!provenance.sdkVersion)throw Error('Wasmer pinned source has no SDK version');
  const wasmerSubmodules=['lib/napi'];
@@ -215,6 +221,7 @@ if(engine==='wago') {
  await build();
 } else if(engine==='wasmedge') {
  provenance.sdk=await buildWasmEdgeSDK({source,sdk:join(directory,'wasmedge-sdk'),target:join(directory,'wasmedge-build'),configuration:pin.configurations[0],env,run});
+ provenance.featurePolicy=await applyWasmEdgeFeaturePolicy(root,provenance.sdk.sdk,pin.configurations[0]);
  provenance.adapterWorkloadCoverage=await applyWasmEdgeWorkloadCoverage(root);
  await build();
  } else if(engine==='wavm') {
@@ -239,15 +246,22 @@ if(engine==='wago') {
  env.WASMBENCH_NODE=node;const v8Options=(await run(node,['--v8-options'])).output;env.WASMBENCH_V8_TURBOSHAFT_POLICY=selectV8TurboshaftPolicy(v8Options,await readFile(join(source,'deps/v8/src/wasm/function-compiler.cc'),'utf8'));provenance.wasmCompilerPolicy=env.WASMBENCH_V8_TURBOSHAFT_POLICY;env.WASMBENCH_V8_CACHE_DISABLE_FLAG=selectV8CacheDisableFlag(v8Options);provenance.nativeCacheDisableFlag=env.WASMBENCH_V8_CACHE_DISABLE_FLAG;runtimeVersion=(await run(node,['-p','JSON.stringify(process.versions)'])).output.trim();provenance.versions=JSON.parse(runtimeVersion);provenance.nodeSha256=digest(await readFile(node));
 } else if(engine==='wazy') {
  const adapter=join(root,'adapters/wazy');await mkdir(adapter,{recursive:true});
+ const featureDefinitions=await readFile(join(source,'api/features.go'),'utf8');
+ const hasComponentPackage=Boolean(await stat(join(source,'component')).catch(()=>null));
+ let coreFeaturePolicy,componentPolicy;
  for(const name of ['main.go','phases.go']){
-  const text=await readFile(join(process.cwd(),'adapters/qualification/wazy',name),'utf8');
-  await writeFile(join(adapter,name),text.replace('ed4381b865215e8f5e1575c382b2381422a5a8d6',pin.revision));
+  let text=(await readFile(join(process.cwd(),'adapters/qualification/wazy',name),'utf8')).replace('ed4381b865215e8f5e1575c382b2381422a5a8d6',pin.revision);
+  if(name==='main.go'){
+   ({source:text,policy:coreFeaturePolicy}=adaptWazyCoreFeatures(text,featureDefinitions));
+   ({source:text,policy:componentPolicy}=adaptWazyComponents(text,hasComponentPackage));
+  }
+  await writeFile(join(adapter,name),text);
  }
  await run(process.execPath,['scripts/prepare-wazy-native-size.mjs',source],{cwd:process.cwd()});
  const mod=join(root,'weekly-wazy.mod');await cp(join(root,'go.mod'),mod);await cp(join(root,'go.sum'),mod.replace(/\.mod$/,'.sum'));
  await run('go',['mod','edit','-modfile='+mod,'-require=github.com/samyfodil/wazy@v0.0.0','-replace=github.com/samyfodil/wazy='+source]);
  await run('go',['build','-mod=mod','-modfile='+mod,'-trimpath','-o',join(root,'bin/adapter-wazy'),'./adapters/wazy']);
- provenance.sdk={source,revision:pin.revision,measurement:'module-owned native code and entry preambles',adapterSha256:digest(await readFile(join(root,'bin/adapter-wazy')))};
+ provenance.sdk={source,revision:pin.revision,coreFeaturePolicy,componentPolicy,measurement:'module-owned native code and entry preambles',adapterSha256:digest(await readFile(join(root,'bin/adapter-wazy')))};
 } else if(engine==='endive') {
  provenance.sdk=await buildEndiveSDK({source,root,version:pin.revision,configuration:pin.configurations[0],env,run});
 } else if(engine==='chasm') {

@@ -10,6 +10,19 @@ import {collectCallBatches,callBatchOperations,CALL_LOOP_WORKLOAD,CALL_LOOP_ITER
 
 const median=values=>{const sorted=[...values].sort((a,b)=>a-b),middle=sorted.length>>1;return sorted.length%2?sorted[middle]:(sorted[middle-1]+sorted[middle])/2;};
 const phases=['compile','instantiate','first-call','steady'];
+const cAOT=/^(?:wasm2c|w2c2)(?:-|$)/;
+const aotStage=(suffix)=>new RegExp(`^aot\\.(?:pipeline|translation|transpile|native_compile)\\.${suffix}$`);
+const observations=trial=>[...(trial.observations||[]),...(trial.samples||[]).filter(sample=>sample.verified&&!sample.warmup).flatMap(sample=>sample.observations||[])];
+function timingValue(trial,sample){
+ if(trial.scenario!=='compile'||!cAOT.test(trial.runtime_configuration))return sample.elapsed_ns/sample.operations;
+ const stages=(sample.observations||[]).filter(o=>aotStage('elapsed').test(o.metric)&&o.status==='available'&&Number.isSafeInteger(o.value)&&o.value>=0);
+ const translation=stages.filter(o=>o.metric==='aot.translation.elapsed');
+ const translated=translation.length?translation:stages.filter(o=>o.metric==='aot.transpile.elapsed');
+ const nativeCompile=stages.filter(o=>o.metric==='aot.native_compile.elapsed');
+ const compiled=nativeCompile.length?nativeCompile:stages.filter(o=>o.metric==='aot.pipeline.elapsed');
+ // Never publish a partial C-AOT compile time: it is translation plus native compilation/linking.
+ return translated.length&&compiled.length?[...translated,...compiled].reduce((sum,o)=>sum+o.value,0)/sample.operations:NaN;
+}
 export function latencyIdentity(capture){const p=capture.platform;return digest(Buffer.from(JSON.stringify([p.os,p.arch,p.cpu,p.cores,p.kernel,p.memoryBytes||0,...capture.results.map(r=>r.workload+'|'+r.engine+'|'+r.phase).sort()])))}
 export const latencyCollection=collection=>({adaptiveSampling:samplePolicy,phaseSampleCaps:samplePolicy.phaseSampleCaps,...collection,capture:'latency',memory:true,code:true,timingPeakRSS:true,phaseBarriers:false});
 
@@ -26,7 +39,7 @@ export function summarizeLatencies({manifest,trials,workloads,engines,scenarios=
   const failures=all.filter(t=>!['ok','unsupported','disabled'].includes(t.status));
   const launches=[],samplesNs=[];
   for(const trial of measured.filter(t=>t.status==='ok')) {
-   const values=(trial.samples||[]).filter(s=>!s.warmup&&s.verified&&Number.isSafeInteger(s.operations)&&s.operations>0&&Number.isSafeInteger(s.elapsed_ns)&&s.elapsed_ns>=0).map(s=>s.elapsed_ns/s.operations);
+   const values=(trial.samples||[]).filter(s=>!s.warmup&&s.verified&&Number.isSafeInteger(s.operations)&&s.operations>0&&Number.isSafeInteger(s.elapsed_ns)&&s.elapsed_ns>=0).map(s=>timingValue(trial,s)).filter(Number.isFinite);
    if(values.length){launches.push(median(values));samplesNs.push(...values);}
   }
   const rejected=measured.some(t=>!['ok','unsupported','disabled'].includes(t.status));
@@ -46,17 +59,17 @@ export function summarizeLatencies({manifest,trials,workloads,engines,scenarios=
 export function summarizeResources(trials,phase) {
  const out={memoryStatus:'not-measured',peakRssBytes:null,codeStatus:'not-measured',codeBytes:null,codeKind:null};
  for(const [profile,scenario,field,statusField,metric] of [['memory',phase,'peakRssBytes','memoryStatus','process.peak_rss'],['code','compile','codeBytes','codeStatus','native.code_image']]) {
-  const all=trials.filter(t=>t.profile===profile||(t.profile==='timing'&&(profile==='memory'?(t.observations||[]).some(o=>o.metric===metric):[...(t.observations||[]),...(t.samples||[]).filter(s=>s.verified&&!s.warmup).flatMap(s=>s.observations||[])].some(o=>o.metric==='native.code_size'||o.metric==='native.code_image'))));
+  const all=trials.filter(t=>t.profile===profile||(t.profile==='timing'&&(profile==='memory'?observations(t).some(o=>o.metric===metric||aotStage('peak_rss').test(o.metric)):observations(t).some(o=>o.metric==='native.code_size'||o.metric==='native.code_image'))));
   if(!all.length)continue;
   const measured=all.filter(t=>t.scenario===scenario&&t.block>=0);
   const failed=all.some(t=>!['ok','unsupported','disabled'].includes(t.status));
   const values=[],kinds=new Set();
   for(const t of measured.filter(t=>t.status==='ok')) {
-   const observations=[...(t.observations||[]),...(t.samples||[]).filter(s=>s.verified&&!s.warmup).flatMap(s=>s.observations||[])];
-   const available=name=>observations.filter(o=>o.metric===name&&o.status==='available'&&Number.isSafeInteger(o.value)&&o.value>=0).map(o=>o.value);
+   const observed=observations(t);
+   const available=name=>observed.filter(o=>o.metric===name&&o.status==='available'&&Number.isSafeInteger(o.value)&&o.value>=0).map(o=>o.value);
    if(profile==='memory'){
-    const nativeWorker=observations.filter(o=>o.metric==='aot.native_worker.peak_rss');
-    const children=phase==='compile'?observations.filter(o=>/^aot\.(pipeline|transpile|native_compile)\.peak_rss$/.test(o.metric)&&o.status==='available'&&Number.isSafeInteger(o.value)&&o.value>=0).map(o=>o.value):[];
+    const nativeWorker=observed.filter(o=>o.metric==='aot.native_worker.peak_rss');
+    const children=phase==='compile'?observed.filter(o=>aotStage('peak_rss').test(o.metric)&&o.status==='available'&&Number.isSafeInteger(o.value)&&o.value>=0).map(o=>o.value):[];
     const measured=children.length?[...children,...available(metric)]:nativeWorker.length?available('aot.native_worker.peak_rss'):available(metric);
     if(measured.length)values.push(Math.max(...measured));continue
    }
@@ -152,14 +165,13 @@ export async function collectLatencies({directory,workloads,engines,collection,r
   }
   if(!manifest)throw Error('No latency scenarios selected');
   if(policy&&collection.memory){
-   const observations=trial=>[...(trial.observations||[]),...(trial.samples||[]).filter(sample=>sample.verified&&!sample.warmup).flatMap(sample=>sample.observations||[])];
    const rssPhases=[];
    for(const engine of engines){
     const missingRSS=scenarios.filter(phase=>{
      const measured=trials.filter(trial=>trial.profile==='timing'&&trial.runtime_configuration===engine&&trial.scenario===phase&&trial.block>=0&&trial.status==='ok');
      return measured.length>0&&!measured.some(trial=>{
       const all=observations(trial),native=all.filter(o=>o.metric==='aot.native_worker.peak_rss');
-      const candidates=phase==='compile'&&all.some(o=>/^aot\.(pipeline|transpile|native_compile)\.peak_rss$/.test(o.metric))?all.filter(o=>/^aot\.(pipeline|transpile|native_compile)\.peak_rss$/.test(o.metric)):native.length?native:all.filter(o=>o.metric==='process.peak_rss');
+      const candidates=phase==='compile'&&all.some(o=>aotStage('peak_rss').test(o.metric))?all.filter(o=>aotStage('peak_rss').test(o.metric)):native.length?native:all.filter(o=>o.metric==='process.peak_rss');
       return candidates.some(o=>o.status==='available'&&Number.isFinite(o.value)&&o.value>=0);
      });
     });
@@ -172,7 +184,7 @@ export async function collectLatencies({directory,workloads,engines,collection,r
     if(JSON.stringify(manifest.lock.runtime_configurations.filter(c=>c.id===engine))!==JSON.stringify(rssManifest.lock.runtime_configurations))throw Error('Engine identity changed during deterministic RSS capture');
     for(const trial of await load(out)){
      if(trial.profile!==profile||trial.block<0)continue;
-     trials.push({...trial,profile:'memory',samples:[],observations:observations(trial).filter(o=>o.metric==='process.peak_rss'||/^aot\.(pipeline|transpile|native_compile|native_worker)\.peak_rss$/.test(o.metric))});
+     trials.push({...trial,profile:'memory',samples:[],observations:observations(trial).filter(o=>o.metric==='process.peak_rss'||/^aot\.(pipeline|translation|transpile|native_compile|native_worker)\.peak_rss$/.test(o.metric))});
     }
     rssPhases.push({engine,phases:missingRSS,scope:engine==='wasm2go'?'native_worker_process_lifetime':'adapter_process_lifetime'});
    }

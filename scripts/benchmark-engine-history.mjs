@@ -34,6 +34,13 @@ if(template.collection.samples<1)throw Error('Performance history requires at le
 const env={...process.env,...template.env,GOWORK:'off',GOFLAGS:'-buildvcs=false',...(template.env?.WASMFYI_BUILD_JOBS?{CARGO_BUILD_JOBS:template.env.WASMFYI_BUILD_JOBS,GOMAXPROCS:template.env.WASMFYI_BUILD_JOBS}:{})};
 const statusPath=join(root,engine+(prepareOnly?'-prepare':selectedRefs.size?'-supplement':'')+'-history-status.json');
 const status=await readFile(statusPath,'utf8').then(JSON.parse,()=>({started:new Date().toISOString(),completed:[],errors:[]}));
+async function retainPreparedConfiguration(configuration) {
+ if(!prepareOnly)return;
+ const path=join(root,'feature-sdk-retention.json');
+ const retention=await readFile(path,'utf8').then(JSON.parse,()=>({pendingConfigurations:[],reason:'Latest-only feature compatibility and performance consume these SDKs next',latestOnly:true}));
+ retention.pendingConfigurations=[...new Set([...retention.pendingConfigurations,configuration])].sort();
+ await atomicJSON(path,retention);
+}
 const inventory=new Map(template.workloads.map(w=>[w.id,w.sha256]));
 const suite=(await readCache(template.corpusRoot)).filter(w=>inventory.has(w.id));
 if(suite.length!==inventory.size)throw Error('Frozen corpus incomplete');
@@ -53,6 +60,7 @@ for(const pin of plan.pins.filter(p=>historyPinAllowed(p,template)&&historyWeekM
  if(Date.parse(pin.targetWeek)<Date.parse(plan.cutoff)||Date.parse(pin.targetWeek)>Date.parse(plan.anchor))throw Error('Pin outside year');
  for(const configuration of pin.configurations) {
   const pinKey=[configuration,pin.targetType,pin.tag||pin.revision,pin.targetWeek].join('|');
+  await retainPreparedConfiguration(configuration);
   if(prepareOnly)status.completed=status.completed.filter(x=>x.pinKey!==pinKey);
   else if(status.completed.some(x=>x.pinKey===pinKey))continue;
   const label=[configuration,pin.tag||pin.revision,pin.targetType,pin.targetWeek].join('-').replace(/[^a-zA-Z0-9.-]/g,'_');

@@ -1,0 +1,808 @@
+{
+  "compiler": "wasm-tools 1.260.0",
+  "performanceContracts": 60,
+  "repeats": 64,
+  "minimumBatchNs": 50000000,
+  "recipes": [
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/typed-function-references-call-ref.wat",
+      "sourceSha256": "9e069b63b5e2ddc8db09a1a916daa8583f9c8fc7e1f9d10965e794a4013ebe0e",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/typed-function-references-call-ref.wasm",
+      "sha256": "7057d28da1a881ce7870b7e0956b247a95e5192915e5904bad7244a943a39f98",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "45669e3bb231fb89d05203487f99d06239e2f1b6feac330bf3dae75237a64c6d",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/typed-function-references-selected-target.wat",
+      "sourceSha256": "154e250c476888646515584fb5718c7f86e4401d09beee9db4c71a6905eb768a",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/typed-function-references-selected-target.wasm",
+      "sha256": "a7b84a305ffc7249132a93285840f7f938a337a6933c3898026b7a1e5b1e8461",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "389d7bea0ddff22257280458fb70baaf8d22e4c4ac83b44476a46e97a284c9a4",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/typed-function-references-reference-composition.wat",
+      "sourceSha256": "f0a499e64d8c96133198ee0c90be11396ac7a95f20a5ea62ece13ce099d75e4d",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/typed-function-references-reference-composition.wasm",
+      "sha256": "6edadc91e03c3903c2bb2f189643a1d791769a1db6eb7a8590d636a9831d4ca9",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "642daf3079b0b5ac6420f25f6ac053e172bc1a2d79f6f60f6d4b453b288837a9",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/typed-function-references-typed-table.wat",
+      "sourceSha256": "d0188a732fc7af2e17f489c06625367d4a84dd6f899482fe6f0ffe86ccc10a1c",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/typed-function-references-typed-table.wasm",
+      "sha256": "4ce74ce79491e251f15dcb05a786da471ab94e112065378bd4a6f9186ba33e1d",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "29e8cb15367ad01481b1fc8ff51e963c2b90a82555c5c4b9eb827f4dbb09c16c",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/typed-function-references-nullable-local-refinement.wat",
+      "sourceSha256": "c627a4e17ea69c7a88491a930ccfa2e1226db981703b7b5432c0f34f30447f4c",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/typed-function-references-nullable-local-refinement.wasm",
+      "sha256": "178a1d91a6a94e37e1a005e832bd78785fafa90c26ddd37c3648a20d57b2bdb7",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "031a2fb2090aef6af395785a1dc2032336771e7da82f7568269c49c652c5e400",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/branch-hinting-rare-error.wat",
+      "sourceSha256": "80c197073ee108735456064ccca4055215f5cc96164584324377896ecf630e02",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/branch-hinting-rare-error.wasm",
+      "sha256": "3788e50b57ac124f8a8600f1621436df888f05945fccf077164132363bda1e3c",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "c370033a873d5cbd0e933fa397ef5a786f1d3310dd892fd2343cd3322c54c76a",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/branch-hinting-mostly-taken.wat",
+      "sourceSha256": "7d1527b8512147fd95e2fbcbf09e0078bfc47b3f271f3b55e4347a080f01c55b",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/branch-hinting-mostly-taken.wasm",
+      "sha256": "f1e4a5f719b3278aff1fc25676ba0aa9bf6f113e9c107983ef664d1ed64d0acc",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "6f55cbe624f42fa937f5ec05186c6e1590a2730ef78b1f21d68240be6839256e",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/branch-hinting-alternating.wat",
+      "sourceSha256": "fec2ad88d678db412b392b72c8e01684b1c44d42859d9345e9ae04f4bd063a85",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/branch-hinting-alternating.wasm",
+      "sha256": "a7179869d7a427327cd0fec7627b9f05683652700d78ac4e3899446629be495e",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "6432fd7422ab2baa5f185ef7d68c851d2446c152f83f5704981a3e3862dd5745",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/branch-hinting-clustered.wat",
+      "sourceSha256": "32e5336ae310adbae00a3d2e48f1ea667e0fb695af047d4d97c60cff6ce769b4",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/branch-hinting-clustered.wasm",
+      "sha256": "029511be9c5c80aad979b5cc9254fcaa9c7003287a559146b99cd4e272c3432b",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "d10fc17f54a8d3da46629a095fbb471e79e4330ad4621ad3ef664c6e8a5eaa70",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/branch-hinting-misleading-hint.wat",
+      "sourceSha256": "43a9b3dd55113492d29c3bf3b3867651b262255c33fa53b97835a499003923a6",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/branch-hinting-misleading-hint.wasm",
+      "sha256": "27b3893755258347457cf7332d3e04720b61155c1625df95f6ec8b5543428e0f",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "239075da72880a9beb695e529fcefb8a005869785c9de50340a4b52caa3d1e16",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/custom-page-sizes-byte-addressed-store.wat",
+      "sourceSha256": "b549a6b7b12adf0edad356a51fb7a9806d816b7ebbd2823f615bed342cffc91e",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/custom-page-sizes-byte-addressed-store.wasm",
+      "sha256": "33c2f75835b88dd5ce3c06357a829ce879f38dacc0d6c184a7ca945dba4e3862",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "42097fca201092941203b63bc07060eb6eba6f3db72cc219694a9a5e04ed8475",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/custom-page-sizes-last-byte.wat",
+      "sourceSha256": "4bc46ebf68af1006a7532bd0aa34756e18d4ba2323ee39feea9ba8afa8fe387e",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/custom-page-sizes-last-byte.wasm",
+      "sha256": "fa6e76866b3bf29e6613d44d83afb3cce0e19bf0aed4b0cb93bcb4b13d3b13df",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "a9cf850e954e02985c2f7a6121e04166a4d964ffe1ebbc540279999e8d61e891",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/custom-page-sizes-unaligned-word.wat",
+      "sourceSha256": "83e5b4357ee25b1c8f0197123d1eba6321bba5c5a12fee7205e4953779cc00b1",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/custom-page-sizes-unaligned-word.wasm",
+      "sha256": "d7d234c05cfbf7829d64680cd93f0e8dcc8b2f33ddeeeee3b06460967a5eb4a3",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "7b09199ea0a04aec5233bea7e21468683db2f31f042983833019235d66098ee9",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/custom-page-sizes-page-count.wat",
+      "sourceSha256": "605ca386bd5703fc796bff18fde1364aacc294e803e1d276b6872fa2204df02d",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/custom-page-sizes-page-count.wasm",
+      "sha256": "6a4c3f3d49f4830dbb77caad7d5718f2bdf301a26e91e5d0dd9e193ddc2ff50c",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "13c9f3a38db14249422febcc4a305fd92bf6e1a5edcedd7b00f2d85ad93c3c90",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/custom-page-sizes-zero-grow.wat",
+      "sourceSha256": "158a49e4789b67db874f048a8283408c0dc01bd4a20aaee8ca1e27a51403d27e",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/custom-page-sizes-zero-grow.wasm",
+      "sha256": "929132c9e5b13c17aecefece7fe5981e83594f57db6e705916d1de667f3d9759",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "bcae6456492c68dccdaff87555fad6ade71597b271285a04c067eeab4a627ed4",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/legacy-exceptions-payload-catch.wat",
+      "sourceSha256": "c6c03a727bfe1d857f00ee1bd221b5d27500b0bd2023c24858dcf4a34d9f94f1",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/legacy-exceptions-payload-catch.wasm",
+      "sha256": "fb5374a60d6fb1890fb682a1d3d5c51937aa75b5a9c7ef88851f12f38b8ee070",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "71c4ca99e3401ad4293a1ede12b16953688c3d6457cc56f7c9beba3d8964189e",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/legacy-exceptions-selective-throw.wat",
+      "sourceSha256": "0d38b725c8ee59fed9aaa282b406bcb6ff62a060f9b433511ec5d0dae6309f05",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/legacy-exceptions-selective-throw.wasm",
+      "sha256": "b58ceb7014789cba78e9ad5c561eef4e8632b4eb17848bf7a1a02ed9a312f586",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "d5b657e88a4080965527a8a48866272ceae4dca1fedc137862db165c4dcaf8e8",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/legacy-exceptions-nested-rethrow.wat",
+      "sourceSha256": "e895ac2a6e843cc04639e3b24ecb70c8f1c00506345b842595fe793f58d2d70e",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/legacy-exceptions-nested-rethrow.wasm",
+      "sha256": "c7e84975c6f255c7597fd414cc7637628a46a1a1ee7a2dede5c32aafb861490e",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "1f035784b2c8dff535416169c25fcf86f4cb0e00afdd3ebe61c4020d37ad68ca",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/legacy-exceptions-tag-dispatch.wat",
+      "sourceSha256": "43dd2e17cc7ee2967023dd0923a907e2ca64d43d22c14736a698422e80413f3f",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/legacy-exceptions-tag-dispatch.wasm",
+      "sha256": "6982e1845d68328dd3641ca956da715513d37512b963e2cdfa04cd4c462836da",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "5be39904f74ab1edbbe759c53821bfadd584084ad9e5f461ae45183d6d5454b5",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/legacy-exceptions-catch-all.wat",
+      "sourceSha256": "6bc108052830bd0293c501c42b48d83360d04e904e46ae689b6c92e1321fd42f",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/legacy-exceptions-catch-all.wasm",
+      "sha256": "8c17d273957089370091d3ab994f1970c08cfe845d5c72fb8706c7e19b10d98c",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "2d4b3b0c73cae5a49d5cc5ecc187e89804bca78ed48e9810842a1b24c71c65a3",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/shared-everything-threads-struct-exchange.wat",
+      "sourceSha256": "1dce9421bd8f50f28e1f65837f793b931eac91978495345a022cff69b352aa95",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/shared-everything-threads-struct-exchange.wasm",
+      "sha256": "893788699c9607133bc34e6b541029364e2c9f66a7995de1cd77457b42198035",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "50d37e6400fcf4810a2c2e08d2176529cf9f1c3cb0e74e7364b2dd2c954cf47b",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/shared-everything-threads-struct-add.wat",
+      "sourceSha256": "021d63cb2d25edf4bfdfcf27b7e6157fdb85cc462100325337255235388702a6",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/shared-everything-threads-struct-add.wasm",
+      "sha256": "f3cc8c7ffb2bdc9c6ef057f3a729e6595c98e195eddff0543014a0cd71027e23",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "8d813bc8b678b546a1de359647c2dd95ad9f70100135bfbfcc40a0631d8c9363",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/shared-everything-threads-struct-xor.wat",
+      "sourceSha256": "b624b9a14ae88c4c1da17f2b42d017da87b18cb80372b4e4a9ab2ffcacabc6ba",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/shared-everything-threads-struct-xor.wasm",
+      "sha256": "b880565634a12b7322318dee693e4f64c48891e3c919721c93880fa9fe116f62",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "c943d900e7f51574f5f9c96c4e0f4b8bc6468ec7dbba51ee4e96e4ed9e98b777",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/shared-everything-threads-struct-or.wat",
+      "sourceSha256": "69c56208a2a6918f209578f9d4a08e6dde074b0ebba759e5ff14a3da50f9a9e8",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/shared-everything-threads-struct-or.wasm",
+      "sha256": "b4011e90bb95c06e4ab3feff5630d771e37a7eac00f3263bef460f1ff4decacb",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "607ae2582fe666474b8aa5b81a808cecb8ec37356856685b68f7404cf4d1618b",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/shared-everything-threads-struct-and.wat",
+      "sourceSha256": "99b639e2bf192d85c030263ae93f4e6aa0ab1533f7f4a657f5482ced452a064e",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/shared-everything-threads-struct-and.wasm",
+      "sha256": "2a6eadff1aa0e51d7a9392664733d1dd7dadcc1e2f365aa61c9d9015a5fa73b1",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "af4450b2e3778da6b496ab792a34bd46199d6695d0176b6c4db4310a4048e2da",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/stack-switching-resume-value.wat",
+      "sourceSha256": "cfdb23402b1cccd7943e0f0636ce7be548c7e12bc8f194d38de9f9729239e772",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/stack-switching-resume-value.wasm",
+      "sha256": "6918ea5274b634eaf3380e7206b946ead28c44f674c5395e44f1c14298181eb3",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "11e2c99daaac597def4b1815aae4a3ac7dd92090914ce1e64a2409a366bd6dbb",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/stack-switching-resume-composed.wat",
+      "sourceSha256": "26941dcb099e9cc999b16df1ef2f3bf494a8a0be4e2f06ee1cf05c91ab209024",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/stack-switching-resume-composed.wasm",
+      "sha256": "1936b383754e4462b3808b521e7ab668be82dccfa874abc90fb5efa9f8f76011",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "16b780afbcfe7d56bf57da772a38f96eceee2316569a72968fd5c2e491a5ad65",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/stack-switching-bound-parameter.wat",
+      "sourceSha256": "35fa8c13177303a369b4c8fd8106566d7bc47a7af8857cb3b7d745ba0107ba35",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/stack-switching-bound-parameter.wasm",
+      "sha256": "b55914df7200e3d1a9dd0ae82667c0782dd0fdc51340fe42cd9ec5211daa02b9",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "e54a214886c6877e983d346043de61e10bc784e6f9de50aadb9074c889f2e854",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/stack-switching-nested-stack-resume.wat",
+      "sourceSha256": "f087a3ca3bf9ed10af304d75c1fe2be547827af4775086eead0336107618e1e9",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/stack-switching-nested-stack-resume.wasm",
+      "sha256": "b6ae1aeb774748a934c445dad0fe064155657e2a0340205e5c60fbac7adc155c",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "76046acbd740b06c7f16d5dad7d15d829f6971195db63448f5742aff39f4b802",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/stack-switching-suspend-payload-resume.wat",
+      "sourceSha256": "3bdd011a838073d063077618eaafb189a00a8a5593fd682f1d94b5ce0a393b5c",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/stack-switching-suspend-payload-resume.wasm",
+      "sha256": "718ab769440be33504c5d781772cb5541efb781653c6d729ebd0d2789958393e",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "c3ff4574e39dd50dc5c219004248eeb2b607ad0e373d4ee8263ce0e724886f5c",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/memory-control-first-page.wat",
+      "sourceSha256": "a29b746cabef8a3f54fad0fc7b58b22117d4b2989c8ee8ca88a0b5b791de9e08",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/memory-control-first-page.wasm",
+      "sha256": "5886658f1081681dd2344212727a9cfbde8c8da0be17c1a8a1809c11a370a129",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "723f3bc69e9689afc70442b544623bfed7d9d942fd40e5d1e44f011e6f03bbe3",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/memory-control-second-page.wat",
+      "sourceSha256": "bbad007869f028aa38bffdb2d02eb639be12494dfebc7f235829fe105d2a3f46",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/memory-control-second-page.wasm",
+      "sha256": "1f65d5def437808fa24b6d6b04a165e998a8230655a5b327b9d0f32349eb7e01",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "0578cda6e3162b604333118d58dbef2a9c904d3a0fd709ea3de226bbc05152b5",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/memory-control-last-byte.wat",
+      "sourceSha256": "7ea077e9a76482c143cf46f384dd6037d092cc2115c3d003234f8f70cf00f09a",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/memory-control-last-byte.wasm",
+      "sha256": "434bf5c9a35ce891a7b2cd4e3ffac27f6ec8bb7fd5da1269944df0787a085ac3",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "87fefa60f14226838cff957d029851fe14191178d4c47153dab1c6c95350f75a",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/memory-control-interior-word.wat",
+      "sourceSha256": "5b1864ad9aaa4fd87eadfc30caab13e8b9be533ed1d22cec48e328eeb534d156",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/memory-control-interior-word.wasm",
+      "sha256": "f7893738dc94363e6361d77840162d22ffe7f770bf6e1624950e3be5940498f1",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "2f765bbaa0e64a069cb2bcd33bc61168bf3929e55e400bb10241f20e43c3303a",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/memory-control-other-page-preserved.wat",
+      "sourceSha256": "b5f6157e8353ab83abba961e3999ed39dcf3df4647764acc57a30f383d835895",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/memory-control-other-page-preserved.wasm",
+      "sha256": "e18cb24931386bcef24bf3f1d299c5fddacfbc02b75754419ef60089c156f6a2",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "bc2aca5d167ed74dab7b86db43f8913f5f374eecf3d47e198cbe71333882849c",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/big-int-high-bit-identity.wat",
+      "sourceSha256": "22dc26fa218875efd982d3742f48fe326749dcc1a6837bdeb461a3e1024048c4",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/big-int-high-bit-identity.wasm",
+      "sha256": "8fcfa86b52416a6f111dc52c834aa7f0a736719efc57b16ceb5a63cd58c5b69c",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "8fcfa86b52416a6f111dc52c834aa7f0a736719efc57b16ceb5a63cd58c5b69c",
+      "repeats": 1,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/big-int-wrapping-add.wat",
+      "sourceSha256": "96895c84969ed5c2d08d25ab3f8283b4ec8702cb3f256c00d09c1a46e3ce5401",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/big-int-wrapping-add.wasm",
+      "sha256": "0ea37646f1e312110842c6cd545c55c42c6a1fd210d60eb1ca3ea6e5e0b3dd23",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "0ea37646f1e312110842c6cd545c55c42c6a1fd210d60eb1ca3ea6e5e0b3dd23",
+      "repeats": 1,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/big-int-signed-divide.wat",
+      "sourceSha256": "00788c8c337cfc7cb4bdca6a7f615daf4cf4ccd1686acd7c4e0ce2aebc6e63f6",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/big-int-signed-divide.wasm",
+      "sha256": "98aa12cd0df53e7825acc06e02d3ca0ecb0fe00d3b2b5ca1707b09045d8b3acf",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "98aa12cd0df53e7825acc06e02d3ca0ecb0fe00d3b2b5ca1707b09045d8b3acf",
+      "repeats": 1,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/big-int-wide-multiply.wat",
+      "sourceSha256": "97c5e855d14cae1a6d2b62c9fa1452e49caedea09fecaed4e07815ecb6ef45dc",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/big-int-wide-multiply.wasm",
+      "sha256": "c7fb4e792c1a6b144e74250d5f165548662445d02ca2dcb257fe7cc473494077",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "c7fb4e792c1a6b144e74250d5f165548662445d02ca2dcb257fe7cc473494077",
+      "repeats": 1,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/big-int-bitwise-complement.wat",
+      "sourceSha256": "2799909ae47ad85045bbef53f526979e48952f1548fc5ce232fd0d74b1e35290",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/big-int-bitwise-complement.wasm",
+      "sha256": "49c0a62696ab451b3baacca3e0d126c8ea03bab059acd155045da8d3c5a65eab",
+      "compiler": "wasm-tools 1.260.0",
+      "originalArtifactSha256": "49c0a62696ab451b3baacca3e0d126c8ea03bab059acd155045da8d3c5a65eab",
+      "repeats": 1,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/half-precision-lane-add.wat",
+      "sourceSha256": "db59cf256483dec6b450bd3c43ed6fe4eb7cfa6f29c81e4886d2071df139de8a",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/half-precision-lane-add.wasm",
+      "sha256": "b64175db4bc221f2128847060ae65d7733677a0543c009ffebb9c5d4035ea5ed",
+      "compiler": "V8 wasm-module-builder@34f4bf16f621ceba505ef2b7b818d48d09a5d3d3",
+      "validator": {
+        "engine": "V8 15.2.20",
+        "flags": [
+          "--wasm-fp16"
+        ],
+        "entry": "WebAssembly.Module",
+        "policy": "Pinned proposal dialect; wasm-tools does not implement these encodings"
+      },
+      "originalArtifactSha256": "d1751edf56b95710739adca188f252cc4320c0cb0be96cf6b910a06c40471cbc",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/half-precision-lane-subtract.wat",
+      "sourceSha256": "c7594e225096ba60167d9c3438cd7371d4ffd82aac18e0c0b0c147ccbbf44016",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/half-precision-lane-subtract.wasm",
+      "sha256": "9a227aa03c15f730c546fa8c794ea6afd0f4f23bb82984a697111aebf5ff0a62",
+      "compiler": "V8 wasm-module-builder@34f4bf16f621ceba505ef2b7b818d48d09a5d3d3",
+      "validator": {
+        "engine": "V8 15.2.20",
+        "flags": [
+          "--wasm-fp16"
+        ],
+        "entry": "WebAssembly.Module",
+        "policy": "Pinned proposal dialect; wasm-tools does not implement these encodings"
+      },
+      "originalArtifactSha256": "1dc2eeee5589772d91e2e4238d5ca338c8dada60907d3b51a230ba81bd6cc6ca",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/half-precision-lane-multiply.wat",
+      "sourceSha256": "36589cda0f4bba2356ca16671e0280928fae00bc6858c87cdbf67dec7875c55d",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/half-precision-lane-multiply.wasm",
+      "sha256": "11e48613049a9b0deaeb8514931acb543186e55d04f2654ee0e2a7980089214b",
+      "compiler": "V8 wasm-module-builder@34f4bf16f621ceba505ef2b7b818d48d09a5d3d3",
+      "validator": {
+        "engine": "V8 15.2.20",
+        "flags": [
+          "--wasm-fp16"
+        ],
+        "entry": "WebAssembly.Module",
+        "policy": "Pinned proposal dialect; wasm-tools does not implement these encodings"
+      },
+      "originalArtifactSha256": "db25b8e129115328a13b93444909243fbb895772528c25edbdfbe902d8e7fb0f",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/half-precision-lane-minimum.wat",
+      "sourceSha256": "755156c540dadca6913f9fb389040a7c7b1d5caab660f79abd7deb270de8b94e",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/half-precision-lane-minimum.wasm",
+      "sha256": "01731d6af6b06be2fdb9d9de1919368b8703377cfb4a42f1112a23148c9cf787",
+      "compiler": "V8 wasm-module-builder@34f4bf16f621ceba505ef2b7b818d48d09a5d3d3",
+      "validator": {
+        "engine": "V8 15.2.20",
+        "flags": [
+          "--wasm-fp16"
+        ],
+        "entry": "WebAssembly.Module",
+        "policy": "Pinned proposal dialect; wasm-tools does not implement these encodings"
+      },
+      "originalArtifactSha256": "4dd3354baedfa675d874ed8da5c1b9fbae1dbe2f2260fb5ad11849f8ba9f8f79",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/half-precision-lane-maximum.wat",
+      "sourceSha256": "329276a9b7a7148f93c8083dc966ed10b00e70ed99415b013bc83b22fb90eb52",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/half-precision-lane-maximum.wasm",
+      "sha256": "b26fe24d682b0e86f6b92a906008fa017ab14561472591909cabce0775e4e0c2",
+      "compiler": "V8 wasm-module-builder@34f4bf16f621ceba505ef2b7b818d48d09a5d3d3",
+      "validator": {
+        "engine": "V8 15.2.20",
+        "flags": [
+          "--wasm-fp16"
+        ],
+        "entry": "WebAssembly.Module",
+        "policy": "Pinned proposal dialect; wasm-tools does not implement these encodings"
+      },
+      "originalArtifactSha256": "657252a787f9054b6357510b9267516e3a0ea595831101def61d86a92678e241",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/stringref-utf16-length.wat",
+      "sourceSha256": "7b84c32df0f240921b319166d6fae24a2f80b079d3f8d536ce7ee034522fdfbb",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/stringref-utf16-length.wasm",
+      "sha256": "8b34708d20e2d55fe84ba04f15f5322b0cb08867700cb96fa5a42e5664d8f54a",
+      "compiler": "V8 wasm-module-builder@34f4bf16f621ceba505ef2b7b818d48d09a5d3d3",
+      "validator": {
+        "engine": "V8 15.2.20",
+        "flags": [
+          "--wasm-stringref"
+        ],
+        "entry": "WebAssembly.Module",
+        "policy": "Pinned proposal dialect; wasm-tools does not implement these encodings"
+      },
+      "originalArtifactSha256": "0f28582cc8d845c306e02a6fe651cec216058db62525b578156d742d30cf0426",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/stringref-utf8-length.wat",
+      "sourceSha256": "3dfbc8217d974cc10d16251c8dc6c9ebc2856fc78d55cc9fa4c12e766c2d82ac",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/stringref-utf8-length.wasm",
+      "sha256": "36886ff64155f596c2543d14f0f55e4d9d4c7f6ac74eb429a3fe51a37758123a",
+      "compiler": "V8 wasm-module-builder@34f4bf16f621ceba505ef2b7b818d48d09a5d3d3",
+      "validator": {
+        "engine": "V8 15.2.20",
+        "flags": [
+          "--wasm-stringref"
+        ],
+        "entry": "WebAssembly.Module",
+        "policy": "Pinned proposal dialect; wasm-tools does not implement these encodings"
+      },
+      "originalArtifactSha256": "7b3161d5af7d2e60e863af6d4a9982b7a213ffd7d57653f1479dc0d8b40d4888",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/stringref-concat-length.wat",
+      "sourceSha256": "4da2425da4f19361f980feaaef6d854747997f8509ecff37ee42014833a8fce6",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/stringref-concat-length.wasm",
+      "sha256": "9a887506f087b3c0bb8bdfafcca25df45242420cfd755814c41fd63c37af9743",
+      "compiler": "V8 wasm-module-builder@34f4bf16f621ceba505ef2b7b818d48d09a5d3d3",
+      "validator": {
+        "engine": "V8 15.2.20",
+        "flags": [
+          "--wasm-stringref"
+        ],
+        "entry": "WebAssembly.Module",
+        "policy": "Pinned proposal dialect; wasm-tools does not implement these encodings"
+      },
+      "originalArtifactSha256": "728057f01516aa3c8a0b244c62323f8716d88a6bce3cb4d9658f44113b1ff726",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/stringref-value-equality.wat",
+      "sourceSha256": "922ed757f97b24d45e4a680ade5066ac64a55d1fb69cd6316bdbcd0a437a09ab",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/stringref-value-equality.wasm",
+      "sha256": "82d977dc399f37f9936b96429424c39c233c759ebb06bb5e01eb95990ba73978",
+      "compiler": "V8 wasm-module-builder@34f4bf16f621ceba505ef2b7b818d48d09a5d3d3",
+      "validator": {
+        "engine": "V8 15.2.20",
+        "flags": [
+          "--wasm-stringref"
+        ],
+        "entry": "WebAssembly.Module",
+        "policy": "Pinned proposal dialect; wasm-tools does not implement these encodings"
+      },
+      "originalArtifactSha256": "3e9510c3d2ed621eafbbb7fce022f9a8606955ddb32d3c885f1fd3e060e1b461",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/stringref-codeunit-access.wat",
+      "sourceSha256": "82f6eb58bf3e3ebf3471988ed753beaed4e2edd3ef60c007b126cfc6e2eb3b5a",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/stringref-codeunit-access.wasm",
+      "sha256": "d19712daa34ef8a3d01bbb5c08d901093fd8c1e4a712c4ddf92f62d0340e02cc",
+      "compiler": "V8 wasm-module-builder@34f4bf16f621ceba505ef2b7b818d48d09a5d3d3",
+      "validator": {
+        "engine": "V8 15.2.20",
+        "flags": [
+          "--wasm-stringref"
+        ],
+        "entry": "WebAssembly.Module",
+        "policy": "Pinned proposal dialect; wasm-tools does not implement these encodings"
+      },
+      "originalArtifactSha256": "61e56eff8b6a33fb4d61bcc54eb94f24a922c9a44f7b157bd11be66107f5bad0",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/acquire-release-atomics-rmw-add.wat",
+      "sourceSha256": "34e4b340e88f7e4c789243077186f6085835fc0870925fb87ef754f7e5947211",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/acquire-release-atomics-rmw-add.wasm",
+      "sha256": "f8583e7022b29229e4fd42afe83b000bc9ce4c098a6535e6a5a1c97629341d61",
+      "compiler": "V8 wasm-module-builder@34f4bf16f621ceba505ef2b7b818d48d09a5d3d3",
+      "validator": {
+        "engine": "V8 15.2.20",
+        "flags": [
+          "--wasm-acquire-release"
+        ],
+        "entry": "WebAssembly.Module",
+        "policy": "Pinned proposal dialect; wasm-tools does not implement these encodings"
+      },
+      "originalArtifactSha256": "6993f3467d898f060d5914ac205aef2ea04264e8512e754bbe249a14fae533fe",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/acquire-release-atomics-rmw-subtract.wat",
+      "sourceSha256": "8a55e6261da56550b90980b475fbf0e99e46a83fa746ab59278b0407d5ac1513",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/acquire-release-atomics-rmw-subtract.wasm",
+      "sha256": "bd70153f168f99ad54d707454af43cf6cd52c563748e06a001a635cda022f94c",
+      "compiler": "V8 wasm-module-builder@34f4bf16f621ceba505ef2b7b818d48d09a5d3d3",
+      "validator": {
+        "engine": "V8 15.2.20",
+        "flags": [
+          "--wasm-acquire-release"
+        ],
+        "entry": "WebAssembly.Module",
+        "policy": "Pinned proposal dialect; wasm-tools does not implement these encodings"
+      },
+      "originalArtifactSha256": "68186f7a288383dfcb257a262a776bbd1d904a2f574f038a1ecf7a9c75eb88e3",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/acquire-release-atomics-rmw-exchange.wat",
+      "sourceSha256": "a0c130e0b3173dcccb4b65da5104251ebbc34d09cfd4b725a3669ea4c6352549",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/acquire-release-atomics-rmw-exchange.wasm",
+      "sha256": "3eb1bddb9522869833566e57b5b2fbd4826ab3147af75e0ca3d40eac1833b0a4",
+      "compiler": "V8 wasm-module-builder@34f4bf16f621ceba505ef2b7b818d48d09a5d3d3",
+      "validator": {
+        "engine": "V8 15.2.20",
+        "flags": [
+          "--wasm-acquire-release"
+        ],
+        "entry": "WebAssembly.Module",
+        "policy": "Pinned proposal dialect; wasm-tools does not implement these encodings"
+      },
+      "originalArtifactSha256": "7b7984a8dd0927afc2a99d0b59b96d903b12ad658dc7d59a0fb80247d4e5793c",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/acquire-release-atomics-rmw-xor.wat",
+      "sourceSha256": "0eefbdfa3bdd043b5fce58d766fa42ef4649d80a382232f7768344cadc16b45c",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/acquire-release-atomics-rmw-xor.wasm",
+      "sha256": "79760e066fc6d3e43dd7c26a6b30a8cca7863b492a8c05e8244b0b8f67dd0eb7",
+      "compiler": "V8 wasm-module-builder@34f4bf16f621ceba505ef2b7b818d48d09a5d3d3",
+      "validator": {
+        "engine": "V8 15.2.20",
+        "flags": [
+          "--wasm-acquire-release"
+        ],
+        "entry": "WebAssembly.Module",
+        "policy": "Pinned proposal dialect; wasm-tools does not implement these encodings"
+      },
+      "originalArtifactSha256": "e3d117a6486b0f690857606f34971151b29260167aad3f990dd42c67d970cb8b",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/acquire-release-atomics-compare-exchange.wat",
+      "sourceSha256": "c36298e0f63ab8c4f7fa3df8e2c43220133eb6139f7358eab148478a4f0bdea6",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/acquire-release-atomics-compare-exchange.wasm",
+      "sha256": "f8f4f1c1d83537b13b5fa02bb60fb4cec1e69a844d5caa548f756b183206cb37",
+      "compiler": "V8 wasm-module-builder@34f4bf16f621ceba505ef2b7b818d48d09a5d3d3",
+      "validator": {
+        "engine": "V8 15.2.20",
+        "flags": [
+          "--wasm-acquire-release"
+        ],
+        "entry": "WebAssembly.Module",
+        "policy": "Pinned proposal dialect; wasm-tools does not implement these encodings"
+      },
+      "originalArtifactSha256": "b875f9b5f6efd195e5b83ae98ec4c3d04f34976beada6b02ca6f2af211ac405d",
+      "repeats": 64,
+      "retainedGcRoots": false
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/custom-descriptors-payload-read.wat",
+      "sourceSha256": "8c6027948d2ab40802059d49905e436d33b171b1bfa2077bd96673336d778aa6",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/custom-descriptors-payload-read.wasm",
+      "sha256": "ce3eb3144dd8f4eb7d44351799c20a70367fac77619b68df3992b7cd646b7433",
+      "compiler": "V8 wasm-module-builder@34f4bf16f621ceba505ef2b7b818d48d09a5d3d3",
+      "validator": {
+        "engine": "V8 15.2.20",
+        "flags": [
+          "--wasm-custom-descriptors"
+        ],
+        "entry": "WebAssembly.Module",
+        "policy": "Pinned proposal dialect; wasm-tools does not implement these encodings"
+      },
+      "originalArtifactSha256": "01d6c15b7c1af573e3fc98402f77f2361cc4d100a8a83e9be1d3fee6c773a177",
+      "repeats": 64,
+      "retainedGcRoots": true
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/custom-descriptors-descriptor-read.wat",
+      "sourceSha256": "b21a28c29f645be02ef2b1ef76ca12072a645dcd544307079ccdf1b46874d1cb",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/custom-descriptors-descriptor-read.wasm",
+      "sha256": "96718aa71bdd87cdcd34ac654b8c5c1c05e1d5b614c3923de224f984110b3952",
+      "compiler": "V8 wasm-module-builder@34f4bf16f621ceba505ef2b7b818d48d09a5d3d3",
+      "validator": {
+        "engine": "V8 15.2.20",
+        "flags": [
+          "--wasm-custom-descriptors"
+        ],
+        "entry": "WebAssembly.Module",
+        "policy": "Pinned proposal dialect; wasm-tools does not implement these encodings"
+      },
+      "originalArtifactSha256": "ecd4a662c4404bdbd8bb9b5bc279e9265c5bca879785bdb7814c44b8bfc90531",
+      "repeats": 64,
+      "retainedGcRoots": true
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/custom-descriptors-identity.wat",
+      "sourceSha256": "979940c8a6236b4b9b1666eb7b9cee3b80ba38c54ade267c0686d1e74aaf3929",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/custom-descriptors-identity.wasm",
+      "sha256": "c60b6992a53de54264e35cfb7444e98993bacfdad061ceda651fb5794bd8bd5b",
+      "compiler": "V8 wasm-module-builder@34f4bf16f621ceba505ef2b7b818d48d09a5d3d3",
+      "validator": {
+        "engine": "V8 15.2.20",
+        "flags": [
+          "--wasm-custom-descriptors"
+        ],
+        "entry": "WebAssembly.Module",
+        "policy": "Pinned proposal dialect; wasm-tools does not implement these encodings"
+      },
+      "originalArtifactSha256": "b604494c794588a3dc1c97ff1c6ac3f0b123e1bc3f072ff6f7c245bf8d70105d",
+      "repeats": 64,
+      "retainedGcRoots": true
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/custom-descriptors-mutable-payload.wat",
+      "sourceSha256": "d604cdd6968fbdabdfbfaf87154a2acbd335a674ecef959f5884c01ae50569a5",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/custom-descriptors-mutable-payload.wasm",
+      "sha256": "011447c6b9621b3a1c1b21132879938136ee6a9ac91ed98e3a51c8859e97b348",
+      "compiler": "V8 wasm-module-builder@34f4bf16f621ceba505ef2b7b818d48d09a5d3d3",
+      "validator": {
+        "engine": "V8 15.2.20",
+        "flags": [
+          "--wasm-custom-descriptors"
+        ],
+        "entry": "WebAssembly.Module",
+        "policy": "Pinned proposal dialect; wasm-tools does not implement these encodings"
+      },
+      "originalArtifactSha256": "616a7d029300a7d00ad311e14e6e380ad2f1d1ad1d83565b8671f506fc153187",
+      "repeats": 64,
+      "retainedGcRoots": true
+    },
+    {
+      "source": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/sources/custom-descriptors-default-payload.wat",
+      "sourceSha256": "ae9ce7fb9db308956a6219be6ddd0bdf2d3ee7294cf3654df734d9701d20215a",
+      "artifact": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-performance/artifacts/custom-descriptors-default-payload.wasm",
+      "sha256": "6ccbcc6c53b6628ca5e9c141c8d89c3241693adde712bc76c4093d05c2055044",
+      "compiler": "V8 wasm-module-builder@34f4bf16f621ceba505ef2b7b818d48d09a5d3d3",
+      "validator": {
+        "engine": "V8 15.2.20",
+        "flags": [
+          "--wasm-custom-descriptors"
+        ],
+        "entry": "WebAssembly.Module",
+        "policy": "Pinned proposal dialect; wasm-tools does not implement these encodings"
+      },
+      "originalArtifactSha256": "564f8f376b7c21fce111d1d69b9891e922fd56b0c50f2b0c3fb4bad986ed2d31",
+      "repeats": 64,
+      "retainedGcRoots": true
+    }
+  ],
+  "lifecycleOnly": [],
+  "compileProbes": [
+    "features/shared-everything-threads/global-exchange/4096",
+    "features/shared-everything-threads/global-add/4096",
+    "features/shared-everything-threads/global-xor/4096",
+    "features/shared-everything-threads/global-or/4096",
+    "features/shared-everything-threads/global-and/4096",
+    "features/stack-switching/resume-negative/4096",
+    "features/stack-switching/resume-affine/4096",
+    "features/stack-switching/resume-masked/4096",
+    "features/custom-annotation-syntax-in-the-text-format/module-note/4096",
+    "features/custom-annotation-syntax-in-the-text-format/nested-note/4096",
+    "features/custom-annotation-syntax-in-the-text-format/unicode-note/4096",
+    "features/custom-annotation-syntax-in-the-text-format/empty-note/4096",
+    "features/custom-annotation-syntax-in-the-text-format/multiple-notes/4096",
+    "features/extended-name-section/type-name/4096",
+    "features/extended-name-section/memory-name/4096",
+    "features/extended-name-section/table-name/4096",
+    "features/extended-name-section/global-name/4096",
+    "features/extended-name-section/element-name/4096",
+    "features/extended-name-section/data-name/4096",
+    "features/extended-name-section/field-name/4096",
+    "features/extended-name-section/tag-name/4096",
+    "features/compilation-hints/priority/4096",
+    "features/compilation-hints/run-once/4096",
+    "features/compilation-hints/optimization/4096",
+    "features/compilation-hints/priority-only/4096",
+    "features/compilation-hints/priority-extension/4096",
+    "features/numeric-values-in-wat/signed-bytes/4096",
+    "features/numeric-values-in-wat/little-endian-i16/4096",
+    "features/numeric-values-in-wat/little-endian-i32/4096",
+    "features/numeric-values-in-wat/little-endian-i64/4096",
+    "features/numeric-values-in-wat/f32-signed-zero/4096",
+    "features/numeric-values-in-wat/f64-exact-fraction/4096",
+    "features/instrument-and-tracing-technology/affine-region/4096",
+    "features/instrument-and-tracing-technology/masked-region/4096",
+    "features/instrument-and-tracing-technology/branch-region/4096",
+    "features/instrument-and-tracing-technology/division-region/4096",
+    "features/instrument-and-tracing-technology/remainder-region/4096"
+  ]
+}

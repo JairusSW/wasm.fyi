@@ -1,0 +1,47 @@
+✔ checked-in feature artifacts and provenance cover every declared family (107.218125ms)
+✔ independent admission rejects malformed input (17.653917ms)
+✔ repetition oracles use Wasm i32 wrapping rather than lossy Number multiplication (0.350709ms)
+﹣ source-built allocation kernels retain distinct observable objects across repeated calls (0.103584ms) # Build feature performance artifacts and set WASMFYI_FEATURE_PERFORMANCE_ROOT
+✔ steady calibration discards short runs and ignores preflight and warmup durations (0.203292ms)
+✔ an adapter forcing fresh instances cannot silently publish short batches (0.200625ms)
+✔ boundary inputs exercise both sides of interior benchmark sizes without exceeding allocation limits (0.604125ms)
+✔ validation recomputes the source oracle and preserves destructive reset rules (6.01575ms)
+✔ native validation rejects wrong results, wrong artifact digests and wrong data bytes (170.808792ms)
+✔ metadata checker rejects a hint referencing a non-branch byte (3.354625ms)
+✔ unavailable classification never hides wrong results or runtime memory faults (0.170333ms)
+✔ full upstream inventory records complete file identities without a selection quota (1.28025ms)
+✔ upstream runner retains required native flags, dependencies and spec error policy (0.476416ms)
+✔ stages dual-tier worker evidence while rejecting unsafe paths and incomplete cohorts (1.484292ms)
+✔ retains true zero, missing intervals and partial failure outcomes (0.255667ms)
+✔ external projections retain evidence and reject changed summaries or index metadata (6.376375ms)
+✔ evidence transport preserves duplicate bytes and source files and retains failed passes (37.505875ms)
+✔ complete Hub transport can include only the latest sealed report (22.20975ms)
+✔ wasm.fyi transport exports only the verified website projection (51.744833ms)
+✔ rejects diagnostic timing masquerading as latency (0.206459ms)
+✔ rejects invented one-launch confidence intervals (0.095875ms)
+✔ rejects values outside the exact locked configuration/workload cohort (0.079ms)
+✔ rejects memory values without paired-pass provenance (0.118458ms)
+✔ same-trial RSS requires its locked timing run and source profile (0.283875ms)
+✔ snapshot IDs preserve original timing memory provenance and reject tampering (0.25375ms)
+✔ checks evidence digests and rejects unsafe paths (2.363334ms)
+✔ directory installation failure restores the previous dataset (1.811625ms)
+✔ static evidence rollback backups stay outside the public directory (1.625792ms)
+✔ original report seal rejects corrupted and unsealed files before rebuilding (1.889083ms)
+✔ feature support excludes scalar baselines and distinguishes failures and compile-only evidence (3.646583ms)
+✔ a failed launch withholds headline timing even when other launches succeeded (0.422041ms)
+✔ history baseline refresh preserves retrospective evidence and rejects changed hosts or artifacts (11.685333ms)
+✔ feature cells do not combine changed engines, native dependencies or launch arguments (0.284166ms)
+✔ release tracks require exact release evidence and source provenance overrides version strings (0.086709ms)
+✔ feature evidence retains separate versions without filling across runtime identities (1.184958ms)
+✔ feature track passes require the oracle scenario declared by the contract (0.128208ms)
+✔ changed feature probes cannot inherit archived successes (0.077542ms)
+✔ staged historical evidence includes verified external trial and throughput dependencies (14.984ms)
+✔ an empty checkout stages no invented history (1.516333ms)
+ℹ tests 39
+ℹ suites 0
+ℹ pass 38
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 1
+ℹ todo 0
+ℹ duration_ms 222.4085

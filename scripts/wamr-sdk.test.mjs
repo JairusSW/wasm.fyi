@@ -25,7 +25,10 @@ test('builds distinct eager backends with compatible feature combinations',()=>{
  assert.ok(interp.includes('-DWAMR_BUILD_FAST_INTERP=1'));assert.ok(interp.includes('-DWAMR_BUILD_JIT=0'));
  assert.ok(fast.includes('-DWAMR_BUILD_FAST_JIT=1'));assert.ok(fast.includes('-DWAMR_BUILD_SIMD=0'));assert.ok(fast.includes('-DWAMR_BUILD_GC=0'));
  assert.ok(llvm.includes('-DWAMR_BUILD_JIT=1'));assert.ok(llvm.includes('-DLLVM_DIR=/llvm/lib/cmake/llvm'));
- for(const flags of [interp,fast,llvm]){assert.ok(flags.includes('-DWAMR_BUILD_LAZY_JIT=0'));assert.ok(flags.includes('-DWAMR_BUILD_EXCE_HANDLING=0'));assert.ok(flags.includes('-DWAMR_BUILD_LIBC_WASI=0'));}
+ for(const flags of [interp,fast,llvm]){assert.ok(flags.includes('-DWAMR_BUILD_LAZY_JIT=0'));assert.ok(flags.includes('-DWAMR_BUILD_EXCE_HANDLING=0'));assert.ok(flags.includes('-DWAMR_BUILD_EXTENDED_CONST_EXPR=1'));assert.ok(flags.includes('-DWAMR_BUILD_LIBC_WASI=0'));}
+ for(const flags of [interp,fast,llvm]){assert.ok(flags.includes('-DWAMR_BUILD_MEMORY64=1'));assert.ok(flags.includes('-DWAMR_BUILD_SHARED_MEMORY=1'));}
+ assert.ok(interp.includes('-DWAMR_BUILD_MULTI_MEMORY=1'));assert.ok(fast.includes('-DWAMR_BUILD_MULTI_MEMORY=0'));assert.ok(llvm.includes('-DWAMR_BUILD_MULTI_MEMORY=0'));
+ assert(!interp.includes('-DWAMR_BUILD_TAIL_CALL=1'));assert.ok(wamrBuildFlags('wamr',undefined,true).includes('-DWAMR_BUILD_TAIL_CALL=1'));
  assert.throws(()=>wamrBuildFlags('wamr-llvm-jit'),/explicit LLVM/);
 });
 test('proves Fast JIT architecture gaps from the exact SDK build rules',async()=>{

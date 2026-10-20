@@ -100,6 +100,26 @@ export function disp(s:Scope,group:PerfGroup,cid:CfgId,col:number) {
   return a && {t:fmtAverage(a.v,UNIT[group]),ci:a.interval?`95% CI ${fmtU(a.interval[0],UNIT[group])} – ${fmtU(a.interval[1],UNIT[group])}`:'CI unavailable'};
 }
 
+const LATENCY_PHASES: MetricKey[] = ['compile', 'inst', 'first', 'steady'];
+
+/** Sum selected latency aggregates using the same cohort and averaging policy as the latency table. */
+export function combinedLatency(s: Scope, c: Cfg, indices: number[]) {
+	const phases = indices.map((col) => {
+		const metric = LATENCY_PHASES[col];
+		if (!metric || compileExcluded(s, c, metric)) return null;
+		return absOf(s, 'lat', c.id, col);
+	});
+	if (phases.some((phase) => !phase || !Number.isFinite(phase.v) || phase.v <= 0)) return null;
+	const measured = phases as NonNullable<(typeof phases)[number]>[];
+	const interval = measured.every((phase) => phase.interval)
+		? ([
+			measured.reduce((sum, phase) => sum + phase.interval![0], 0),
+			measured.reduce((sum, phase) => sum + phase.interval![1], 0)
+		] as [number, number])
+		: undefined;
+	return { total: measured.reduce((sum, phase) => sum + phase.v, 0), parts: measured.map((phase) => phase.v), interval };
+}
+
 export type BenchResult = { st: 'ok'; v: number } | { st: Exclude<Status, 'ok'> };
 
 /** One workload × config × metric result, or the reason there is none. */
@@ -158,6 +178,30 @@ export function leader(s: Scope, label: string, group: PerfGroup, col: number, m
 		cfg: a.c,
 		value: firstText,
 		versus: b ? `${cn(a.c)} ${firstText} and ${cn(b.c)} ${secondText} · ${Number.isFinite(a.x.ci)&&Number.isFinite(b.x.ci)?'95% intervals overlap':'comparison interval unavailable'}` : ''
+	};
+}
+
+/** Headline end-to-end leader: compile + instantiate + first call + one steady call. */
+export function endToEndLeader(s: Scope, label = 'Fastest end-to-end') {
+	const dependencies = [...LATENCY_PHASES];
+	const list = CFG.filter((c) => viewData.applicationConfigurations.includes(c.id) && isVisible(s, c))
+		.map((c) => ({ c, x: combinedLatency(s, c, [0, 1, 2, 3]) }))
+		.filter((entry): entry is { c: Cfg; x: NonNullable<ReturnType<typeof combinedLatency>> } => entry.x != null)
+		.sort((a, b) => a.x.total - b.x.total);
+	const values = fmtUGroup(list.map((entry) => entry.x.total), UNIT.lat);
+	const places = list.map(({ c, x }, i) => ({ place: i + 1, cfg: c, value: `~${values[i]}`, ratio: x.total / list[0].x.total }));
+	if (!list.length) return { label, metric: 'steady' as const, dependencies, places, clear: false as const, versus: 'No selected runtime has all four latency phases.' };
+	const [first, second] = list;
+	const clear = !!second && !!first.x.interval && !!second.x.interval && first.x.interval[1] < second.x.interval[0];
+	return {
+		label,
+		metric: 'steady' as const,
+		dependencies,
+		places,
+		clear,
+		cfg: first.c,
+		value: places[0].value,
+		versus: second ? `${cn(first.c)} ${places[0].value} and ${cn(second.c)} ${places[1].value}` : ''
 	};
 }
 

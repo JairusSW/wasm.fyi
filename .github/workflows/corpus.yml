@@ -20,15 +20,16 @@ jobs:
       - uses: actions/cache@v5
         with:
           path: ~/.local/share/wasm-fyi/toolchains
-          key: corpus-linux-x64-llvm-22.1.8-wasm-tools-1.260.0
+          key: corpus-linux-x64-llvm-22.1.8-wasm-tools-1.260.0-v8-15.2.20
       - name: Install pinned compilers
         run: |
           rustup toolchain install 1.98.1 --profile minimal --target wasm32-unknown-unknown,wasm32-wasip1
           node scripts/llvm-toolchain.mjs
           cargo install wasm-tools --version 1.260.0 --locked --root "$HOME/.local/share/wasm-fyi/toolchains/wasm-tools-1.260.0"
+          node scripts/proposal-toolchain.mjs
       - name: Verify committed inputs and execution
         run: |
-          node --test scripts/workflow.test.mjs scripts/corpus-source-manifest.test.mjs scripts/application-corpus.test.mjs scripts/corpus-v8.test.mjs scripts/upstream-sources.test.mjs scripts/feature-adapter.test.mjs
+          node --test scripts/workflow.test.mjs scripts/corpus-source-manifest.test.mjs scripts/application-corpus.test.mjs scripts/corpus-v8.test.mjs scripts/upstream-sources.test.mjs scripts/feature-adapter.test.mjs scripts/proposal-corpora.test.mjs
           node scripts/corpus-v8.mjs --local
       - name: Recompile editable sources and verify again
         env:
@@ -65,7 +66,7 @@ jobs:
             ~/.local/share/wasm-fyi/toolchains
             ~/.cargo/registry
             ~/.cargo/git
-          key: corpus-all-sources-linux-x64-rust-1.98.1-llvm-22.1.8-wasm-tools-1.260.0
+          key: corpus-all-sources-linux-x64-rust-1.98.1-llvm-22.1.8-wasm-tools-1.260.0-v8-15.2.20
       - uses: actions/setup-go@v6
         with:
           go-version: '1.26.5'
@@ -77,6 +78,7 @@ jobs:
           rustup toolchain install 1.98.1 --profile minimal --target wasm32-unknown-unknown,wasm32-wasip1
           node scripts/llvm-toolchain.mjs
           cargo install wasm-tools --version 1.260.0 --locked --root "$HOME/.local/share/wasm-fyi/toolchains/wasm-tools-1.260.0"
+          node scripts/proposal-toolchain.mjs
           curl --fail --location --retry 3 https://github.com/bytecodealliance/wasmtime/releases/download/v46.0.1/wasmtime-v46.0.1-x86_64-linux.tar.xz -o /tmp/wasmtime.tar.xz
           echo '9ae0b17ea298bcc52277a8208d6ab7fae8e1a89579672f9d82f9d86c116edb62  /tmp/wasmtime.tar.xz' | sha256sum -c -
           tar -xJf /tmp/wasmtime.tar.xz -C /tmp
@@ -86,6 +88,12 @@ jobs:
           corpus_tool_bin=$(dirname "$WASMBENCH_WASM_TOOLS")
           export PATH="$corpus_tool_bin:$PATH"
           node scripts/corpus-build-all.mjs
+      - name: Verify proposal kernels and the full enabled V8 Wasm suite
+        run: |
+          node scripts/feature-proposal-build.mjs
+          node scripts/feature-proposal-check.mjs
+          node scripts/feature-proposal-check.mjs --performance=.wasmbench/proposal-performance
+          node scripts/proposal-v8-official.mjs
       - uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -94,5 +102,9 @@ jobs:
             .wasmbench/upstream/*.json
             .wasmbench/source-builds/*/report.json
             .wasmbench/source-builds/*/inputs.json
+            .wasmbench/proposal-source-builds/*/report.json
             .wasmbench/corpus-v8-check.json
             .wasmbench/corpus-components-check.json
+            .wasmbench/proposal-coverage/*.json
+            .wasmbench/proposal-coverage/v8-official/*.json
+            .wasmbench/proposal-coverage/v8-official/schedule.log

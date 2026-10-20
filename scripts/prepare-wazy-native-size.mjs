@@ -1,6 +1,14 @@
-import {readFile,writeFile} from 'node:fs/promises';
+import {readFile,writeFile,stat} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
+import {wazyNativeSizeLayout} from './lib/wazy-native-size.mjs';
 const root=resolve(process.argv[2]);
+const exists=async path=>Boolean(await stat(join(root,path)).catch(()=>null));
+const candidates=['internal/engine/native/engine.go','internal/engine/wazevo/engine.go'];
+const layout=wazyNativeSizeLayout(new Set((await Promise.all(candidates.map(async path=>[path,await exists(path)]))).filter(([,ok])=>ok).map(([path])=>path)));
+if(layout==='unavailable-wazevo'){
+ console.log(JSON.stringify({status:'unavailable',reason:'Pinned Wazy Wazevo layout has no qualified module-owned native-size getter'}));
+ process.exit(0);
+}
 const engine=await readFile(join(root,'internal/engine/native/engine.go'),'utf8');
 const config=await readFile(join(root,'config.go'),'utf8');
 if(!/entryPreambles\s+\[\]byte/.test(engine)||!config.includes('compiledEngine wasm.Engine'))throw Error('Pinned Wazy native-size API anchors changed');

@@ -1,0 +1,25 @@
+diff --git a/adapters/native/Cargo.toml b/adapters/native/Cargo.toml
+--- a/adapters/native/Cargo.toml
++++ b/adapters/native/Cargo.toml
+@@ -19,6 +19,6 @@ serde_json = "1"
+ sha2 = "0.10"
+ hex = "0.4"
+ wasmparser = "=0.251.0"
+-wasmi = { version = "=2.0.0", optional = true, default-features = false, features = ["std", "validate", "portable-dispatch"] }
++wasmi = { version = "=2.0.0", optional = true, default-features = false, features = ["std", "validate", "portable-dispatch", "memory64", "simd"] }
+ 
+ object = { version = "=0.37.3", optional = true, default-features = false, features = ["read", "std"] }
+diff --git a/adapters/native/src/wasmi.rs b/adapters/native/src/wasmi.rs
+--- a/adapters/native/src/wasmi.rs
++++ b/adapters/native/src/wasmi.rs
+@@ -12,5 +12,10 @@ impl Engine {
+     pub fn new() -> Result<Self> {
+         let mut config = Config::default();
+         config.compilation_mode(CompilationMode::Eager);
++        config.wasm_custom_page_sizes(true);
++        config.wasm_memory64(true);
++        config.wasm_simd(true);
++        config.wasm_relaxed_simd(true);
++        config.wasm_wide_arithmetic(true);
+         Ok(Self(wasmi::Engine::new(&config)))
+     }

@@ -1,8 +1,9 @@
-export async function nodeBuildPython(env,run,engine='Node') {
+export async function nodeBuildPython(env,run,engine='Node',minimumMinor=10) {
+ if(!Number.isInteger(minimumMinor)||minimumMinor<0)throw Error('Invalid minimum Python minor version');
  const program=env.WASMFYI_BUILD_PYTHON||env.WASMFYI_NODE_PYTHON||'python3';
  const version=(await run(program,['-c','import sys; print(".".join(map(str,sys.version_info[:3])))'])).output.trim();
  const match=version.match(/^(\d+)\.(\d+)\.(\d+)$/);
- if(!match||Number(match[1])!==3||Number(match[2])<10)throw Error(engine+' source configure requires Python >=3.10; selected '+program+' reported '+version);
+ if(!match||Number(match[1])!==3||Number(match[2])<minimumMinor)throw Error(engine+' source configure requires Python >=3.'+minimumMinor+'; selected '+program+' reported '+version);
  return {program,version};
 }
 

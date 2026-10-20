@@ -151,6 +151,31 @@ test('transpiler compilation memory uses the largest kernel peak without summing
  assert.equal(summarizeLatencies({manifest,trials:[t],workloads:[workload],engines:['engine'],scenarios:['compile']}).results[0].peakRssBytes,3000);
 });
 
+test('C transpiler compilation sums translation and native compiler time and takes max RSS',()=>{
+ const cManifest=structuredClone(manifest);cManifest.lock.runtime_configurations[0].id='w2c2-gcc';
+ const t={...trial(0,[999999]),runtime_configuration:'w2c2-gcc',scenario:'compile'};
+ t.samples[0].operations=1;
+ t.samples[0].observations=[
+  {metric:'aot.translation.elapsed',status:'available',value:2000},
+  {metric:'aot.native_compile.elapsed',status:'available',value:7000},
+  {metric:'aot.translation.peak_rss',status:'available',value:12000},
+  {metric:'aot.native_compile.peak_rss',status:'available',value:45000}
+ ];
+ const row=summarizeLatencies({manifest:cManifest,trials:[t],workloads:[workload],engines:['w2c2-gcc'],scenarios:['compile']}).results[0];
+ assert.equal(row.latencyNs,9000);
+ assert.equal(row.peakRssBytes,45000);
+ assert.equal(row.memoryStatus,'ok');
+});
+
+test('C transpiler compile time is unavailable rather than publishing a partial pipeline',()=>{
+ const cManifest=structuredClone(manifest);cManifest.lock.runtime_configurations[0].id='wasm2c-gcc';
+ const t={...trial(0,[999999]),runtime_configuration:'wasm2c-gcc',scenario:'compile'};
+ t.samples[0].observations=[{metric:'aot.translation.elapsed',status:'available',value:2000}];
+ const row=summarizeLatencies({manifest:cManifest,trials:[t],workloads:[workload],engines:['wasm2c-gcc'],scenarios:['compile']}).results[0];
+ assert.equal(row.latencyStatus,'not-measured');
+ assert.equal(row.latencyNs,null);
+});
+
 test('peak RSS retains the maximum across measured trials',()=>{
  const trials=[1000,5000,2000].map(value=>({...trial(0,[10]),observations:[{metric:'process.peak_rss',status:'available',value}]}));
  assert.equal(summarizeLatencies({manifest,trials,workloads:[workload],engines:['engine'],scenarios:['steady']}).results[0].peakRssBytes,5000);

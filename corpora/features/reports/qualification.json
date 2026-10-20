@@ -1,0 +1,88 @@
+{
+  "created": "2026-10-20T16:38:20.306Z",
+  "results": [
+    {
+      "name": "build",
+      "args": [
+        "scripts/feature-proposal-build.mjs"
+      ],
+      "exitCode": 0
+    },
+    {
+      "name": "reproduce",
+      "args": [
+        "scripts/feature-corpus.mjs",
+        "verify",
+        "--family=typed-function-references,branch-hinting,custom-page-sizes,legacy-exceptions,shared-everything-threads,stack-switching,memory-control,custom-annotation-syntax-in-the-text-format,extended-name-section,compilation-hints,numeric-values-in-wat,big-int,instrument-and-tracing-technology,half-precision,stringref,acquire-release-atomics,custom-descriptors"
+      ],
+      "exitCode": 0
+    },
+    {
+      "name": "correctness",
+      "args": [
+        "scripts/feature-proposal-check.mjs"
+      ],
+      "exitCode": 0
+    },
+    {
+      "name": "performance",
+      "args": [
+        "scripts/feature-proposal-check.mjs",
+        "--performance=.wasmbench/proposal-performance"
+      ],
+      "exitCode": 0
+    },
+    {
+      "name": "focused-tests",
+      "args": [
+        "--test",
+        "scripts/proposal-corpora.test.mjs",
+        "scripts/feature-adapter.test.mjs",
+        "scripts/feature-performance.test.mjs",
+        "scripts/feature-validation.test.mjs"
+      ],
+      "exitCode": 0
+    },
+    {
+      "name": "curation-tests",
+      "args": [
+        "--test",
+        "scripts/feature-curation.test.mjs"
+      ],
+      "exitCode": 1
+    },
+    {
+      "name": "baseline-curation-tests",
+      "source": "760c5cca867b9b0028e3f76aab6983db4fcfe0bf",
+      "exitCode": 1,
+      "scratch": "/var/folders/qh/_8tbhdf16tv0jdqp1pb5jf2w0000gp/T/wasmfyi-proposal-baseline-H7EceI"
+    }
+  ],
+  "finalWorkflowTests": {
+    "command": [
+      "node",
+      "--test",
+      "scripts/workflow.test.mjs",
+      "scripts/proposal-corpora.test.mjs",
+      "scripts/feature-adapter.test.mjs",
+      "scripts/feature-performance.test.mjs",
+      "scripts/feature-validation.test.mjs"
+    ],
+    "tests": 39,
+    "passed": 38,
+    "failed": 0,
+    "skipped": 1,
+    "exitCode": 0,
+    "log": "final-focused-tests.log"
+  },
+  "baselineComparison": {
+    "sameFailedTests": true,
+    "failedTests": [
+      "execution diversity counts operations once, excluding baselines and size-only variants",
+      "shared curated modules have identical source and unique named benchmark exports",
+      "core curated algorithms match independent oracles at varied runtime inputs and reused instances",
+      "ordinary curated verification rejects changed artifact digests and wrong arithmetic oracles"
+    ],
+    "baseline": "760c5cca867b9b0028e3f76aab6983db4fcfe0bf"
+  }
+}

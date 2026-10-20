@@ -11,6 +11,11 @@ test('pinned compatible Python is selected for source configuration',async()=>{
 test('old Python fails closed before SDK configure scripts run',async()=>{
  for(const engine of ['Node','SpiderMonkey','JavaScriptCore'])await assert.rejects(nodeBuildPython({},async()=>({output:'3.8.10'}),engine),new RegExp(engine+' source configure requires Python >=3.10'));
 });
+test('an explicitly source-scoped legacy floor accepts Python 3.8 without weakening modern builders',async()=>{
+ const run=async()=>({output:'3.8.10'});
+ assert.equal((await nodeBuildPython({WASMFYI_BUILD_PYTHON:'/usr/bin/python3'},run,'SpiderMonkey',8)).version,'3.8.10');
+ await assert.rejects(nodeBuildPython({},run,'SpiderMonkey'),/Python >=3.10/);
+});
 test('compatible native compiler paths and library search are explicit and build-only',()=>{
  const original={WASMFYI_WAVM_CXX_SDK:'/cache/llvm20-compatible',CXXFLAGS:'-O2'};
  const selected=nodeBuildEnvironment(original,'linux');

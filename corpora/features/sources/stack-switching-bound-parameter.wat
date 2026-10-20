@@ -1,0 +1,11 @@
+(module (type $f (func (param i32) (result i32))) (type $c (cont $f))
+  (func $identity (type $f) (local.get 0)) (elem declare func $identity)(type $pair (func (param i32 i32) (result i32))) (type $pair-c (cont $pair))
+   (func $add (type $pair) (i32.add (local.get 0) (local.get 1))) (elem declare func $add)
+ (func (export "benchmark") (param $n i32) (result i32)
+  (local $i i32) (local $sum i32)  
+  (block $done (br_if $done (i32.eqz (local.get $n)))
+   (loop $again
+    (local.set $sum (i32.add (local.get $sum) (resume $c (local.get $i)
+  (cont.bind $pair-c $c (i32.const 7) (cont.new $pair-c (ref.func $add))))))
+    (local.set $i (i32.add (local.get $i) (i32.const 1)))
+    (br_if $again (i32.lt_u (local.get $i) (local.get $n))))) (local.get $sum)))

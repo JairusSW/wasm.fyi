@@ -3,9 +3,19 @@ import {readFile,writeFile,copyFile,rename,stat} from 'node:fs/promises';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
+export function assertWazeroInterruptsDisabled(source) {
+ if(source.includes('WithCloseOnContextDone(true)'))throw Error('Wazero context interruption must stay disabled for benchmark execution');
+ if(source.includes('"context_termination": "enabled"')||source.includes('"context_termination":"enabled"'))throw Error('Wazero adapter metadata still claims context interruption is enabled');
+}
+export function disableWazeroInterrupts(source) {
+ source=source.replaceAll('.WithCloseOnContextDone(true)','');
+ source=source.replaceAll('"context_termination": "enabled"','"context_termination": "disabled"').replaceAll('"context_termination":"enabled"','"context_termination":"disabled"');
+ assertWazeroInterruptsDisabled(source);return source;
+}
+
 export async function applyWazeroSampling(root) {
  const path=join(root,'adapters/wazero/main.go');
- let source=await readFile(path,'utf8');
+ let source=disableWazeroInterrupts(await readFile(path,'utf8'));
  const begin='\t// Validate in this process outside measurement as well. Controller uses a separate';
  const finish='\twarmup := r.Warmup';
  const marker='\t// Every measured sample validates its own result or fresh instance outside timing.\n\t// Do not invoke the retained guest again between phase/sample groups.\n';
@@ -28,6 +38,7 @@ export async function rebuildWazeroSampling({root,env,run}) {
  const module=join(root,'weekly-wazero.mod');
  if(!await stat(module).catch(()=>null))throw Error('Pinned Wazero module file unavailable');
  const file=join(root,'adapters/wazero/main.go'),binary=join(root,'bin/adapter-wazero');
+ assertWazeroInterruptsDisabled(await readFile(file,'utf8'));
  const hash=b=>createHash('sha256').update(b).digest('hex'),receiptPath=join(root,'wazero-fresh-lifecycle.json');
  const previous=await readFile(receiptPath,'utf8').then(JSON.parse,()=>null);
  if(previous?.sourceSha256===hash(await readFile(file))&&previous?.binarySha256===hash(await readFile(binary)))return previous;

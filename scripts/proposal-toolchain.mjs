@@ -1,0 +1,31 @@
+import {mkdir,readFile,writeFile,chmod} from 'node:fs/promises';
+import {join} from 'node:path';
+import {platform,arch} from 'node:os';
+import {spawnSync} from 'node:child_process';
+import {digest} from './lib/wasmbench.mjs';
+import {proposalToolchainRoot as root,proposalToolchains} from './lib/proposal-toolchain.mjs';
+const target=`${platform()}-${arch()}`,pin=proposalToolchains[target];
+if(!pin)throw Error('No pinned V8 shell archive for '+target+'; supply WASMBENCH_D8 for a qualified V8 15.2.20 installation');
+await mkdir(root,{recursive:true});await mkdir(join(root,'bin'),{recursive:true});
+const input=process.argv.find(a=>a.startsWith('--archive='))?.slice(10);
+const archive=join(root,pin.file),url='https://storage.googleapis.com/chromium-v8/official/canary/'+pin.file;
+let bytes;
+if(input)bytes=await readFile(input);
+else try{bytes=await readFile(archive);}catch(error){
+ if(error.code!=='ENOENT')throw error;
+ const response=await fetch(url);if(!response.ok)throw Error('Cannot download pinned V8 shell: '+response.status);
+ bytes=Buffer.from(await response.arrayBuffer());
+}
+if(digest(bytes)!==pin.sha256)throw Error('Pinned V8 archive digest mismatch');
+await writeFile(archive,bytes);
+const extracted=spawnSync('unzip',['-qo',archive,'-d',root],{encoding:'utf8'});
+if(extracted.status!==0)throw Error('Cannot extract V8 shell: '+extracted.stderr);
+await chmod(join(root,'d8'),0o755);
+const quote=s=>"'"+s.replaceAll("'","'\\''")+"'";
+const launcher=join(root,'bin/d8');
+await writeFile(launcher,`#!/bin/sh\nexec ${quote(join(root,'d8'))} --snapshot_blob=${quote(join(root,'snapshot_blob.bin'))} "$@"\n`);await chmod(launcher,0o755);
+const fileSha256=Object.fromEntries(await Promise.all(['d8','snapshot_blob.bin','icudtl.dat','v8_build_config.json'].map(async file=>[file,digest(await readFile(join(root,file)))])));
+const version=spawnSync(launcher,['--version'],{encoding:'utf8'});
+if(version.status!==0||!/^V8 version 15\.2\.20\b/.test(version.stdout))throw Error('Pinned V8 shell version mismatch');
+await writeFile(join(root,'receipt.json'),JSON.stringify({schema:1,target,url,archiveSha256:pin.sha256,version:version.stdout.trim(),fileSha256},null,2)+'\n');
+console.log(launcher);

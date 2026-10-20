@@ -1,5 +1,10 @@
 # Feature curation: execution workloads and upstream semantic checks
 
+This document describes the earlier curation change. For current proposal
+inventory and qualification, see [proposal corpora](../../../docs/proposal-corpora.md)
+and [the complete census](proposal-coverage.json); the historical counts below
+are not the current inventory.
+
 This change adds **49 execution contracts in 16 shared multi-export modules**,
 including one explicitly labelled GC loop-copy baseline. The complete feature
 inventory has **290 contracts, 168 workload recipes and 135 unique artifacts**.

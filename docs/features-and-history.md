@@ -38,7 +38,29 @@ The default collection covers qualified Wasmtime lanes and Wago Component Model.
 
 Coverage includes integer and floating arithmetic; aligned, unaligned, narrow and growing memory; branches, direct/indirect calls and tables; bulk-memory operations; references; multi-value; five SIMD variants; deterministic relaxed SIMD; GC structs, arrays, i31 and subtype casts; Memory64; exception throw/catch/rethrow; direct and indirect tail calls; multi-memory; constant initializers; native JS string builtins; atomics; five host-interface workloads for each WASI preview; nested component calls; canonical u64 crossings; resource destructor lifetimes; and asynchronous component compilation at three structural sizes.
 
-Ordinary engine configurations include V8 with Node's production-default tiering. They are supplemented by `wasmtime-component-async`, built with `component-async-probes` and explicitly enabled async component validation. JS string support is checked by constructing and executing a builtin module with imported string constants, not by Node version alone. The default Wasmtime adapter is built without GC/threads/async Cargo features; its unavailable cells describe that build, not the entire Wasmtime product.
+Ordinary engine configurations include V8 with Node's production-default tiering. They are supplemented by `wasmtime-component-async`, built with `component-async-probes` and explicitly enabled async component validation. JS string support is checked by constructing and executing a builtin module with imported string constants, not by Node version alone. The Wasmtime Cranelift adapter builds and explicitly enables its shipped GC and threads support; Winch keeps unsupported backend combinations disabled. Async component support remains isolated in its dedicated configuration.
+
+### Engine feature enablement policy
+
+Every latest-version adapter is audited against its pinned build and execution backend. A parser accepting a proposal does not count as executable support. The adapter enables stable/default features plus the following opt-in switches when the selected backend implements them:
+
+The proposal inventory and names come from [webassembly.org/features](https://webassembly.org/features/) and its [machine-readable source](https://github.com/WebAssembly/website/blob/main/features.json). Runtime claims are cross-checked against primary project documentation, including [Wasmtime `Config`](https://docs.wasmtime.dev/api/wasmtime/struct.Config.html), [Wasmer's backend matrix](https://docs.wasmer.io/runtime/features/), [WasmEdge proposals](https://wasmedge.org/docs/start/wasmedge/extensions/proposals/), [WAMR build options](https://github.com/bytecodealliance/wasm-micro-runtime/blob/main/doc/build_wamr.md), [Wizard's feature table](https://github.com/titzer/wizard-engine#features), [GraalWasm's changelog](https://github.com/oracle/graal/blob/master/wasm/CHANGELOG.md), [Wasm3's feature table](https://github.com/wasm3/wasm3#features), and [Wasmi's `Config`](https://docs.rs/wasmi/latest/wasmi/struct.Config.html). These sources select flags and candidate probes; only an executed exact-oracle contract produces a support result.
+
+| Engines | Policy |
+| --- | --- |
+| Wago Railshot | Uses the feature set exposed by the exact released or source-pinned Go API; proposal-specific corpus probes remain the authority for executable support. |
+| Wasmtime Cranelift | Cargo `gc`, `gc-drc`, and `threads`; runtime GC, typed references, GC types, and shared memory enabled. Winch retains its narrower backend policy. |
+| Wasmi | Crate `simd` and `memory64`; runtime custom page sizes, SIMD, relaxed SIMD, Memory64, and wide arithmetic enabled. |
+| wazero compiler/interpreter | Core v2 plus its public experimental threads, tail-call, extended-const, exception-handling, and typed-function-reference bits. |
+| Wizard V3/fast/SPC | CLI custom-page-size, stack-switching, threads, and wide-arithmetic extensions. |
+| WAMR interpreter/Fast JIT/LLVM JIT | Extended constants, Memory64, shared memory, SIMD, and tail calls are explicitly enabled. Multi-memory is interpreter-only. GC stays disabled for Fast JIT and final exception handling stays disabled because upstream documents only legacy exceptions; executable probes decide the remaining backend combinations. |
+| GraalWasm | Discovers the exact installed `wasm.*` option set and enables every available proposal option; absent options are not invented for older releases. |
+| V8, SpiderMonkey, JavaScriptCore | Stable engine defaults plus adapter probes for flag-gated proposals. A declaration is published only when a probe module validates and executes under the same command. |
+| Wasmer Cranelift/LLVM/Singlepass, WAVM, WasmEdge interpreter/JIT | Backend-specific feature policies follow actual lowering support. Known parser/backend mismatches stay disabled. |
+| wasm2c, w2c2, wasm2go, Wazy | Translation flags, generated runtime support, and the native compiler are treated as one configuration; a successful translation alone is insufficient. |
+| Wasm3, Chicory interpreter/JIT, libwasm, Chasm, zwasm interpreter/JIT, Endive interpreter/JIT/Redline | Features are admitted only where the pinned revision and selected backend expose an executable implementation. No switches from newer upstream versions are applied to older pins. |
+
+This audit controls future captures. Existing published outcomes do not change until a fresh latest-version feature compatibility and performance capture executes the affected adapter.
 
 Async component cases measure compilation only. They do not claim future/stream execution support. Exact command outputs and result codes check WASI host interfaces; the random-get case does not claim entropy-quality testing. These workloads test representative behavior and performance, not complete specification conformance.
 

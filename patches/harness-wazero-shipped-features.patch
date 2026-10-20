@@ -1,0 +1,62 @@
+diff --git a/adapters/wazero/features.go b/adapters/wazero/features.go
+--- a/adapters/wazero/features.go
++++ b/adapters/wazero/features.go
+@@ -1,16 +1,20 @@
+ package main
+ 
+-import "github.com/wasmbench/wasmbench/protocol"
++import (
++	"github.com/tetratelabs/wazero/api"
++	"github.com/tetratelabs/wazero/experimental"
++	"github.com/wasmbench/wasmbench/protocol"
++)
++
++const enabledCoreFeatures = api.CoreFeaturesV2 | experimental.CoreFeaturesThreads | experimental.CoreFeaturesTailCall | experimental.CoreFeaturesExtendedConst | experimental.CoreFeaturesExceptionHandling | experimental.CoreFeaturesTypedFunctionReferences
+ 
+ func validatorFeaturePolicy() *protocol.ValidatorFeaturePolicy {
+ 	return &protocol.ValidatorFeaturePolicy{
+ 		Namespace: "wasmparser/0.251.0",
+-		Evidence:  "wazero v1.12.0 api/features.go and experimental/features.go; engine explicitly configured WithCoreFeatures(api.CoreFeaturesV2)",
+-		// These experimental bits are excluded from CoreFeaturesV2. This is
+-		// deliberately not a blanket declaration about every validator flag.
++		Evidence:  "wazero v1.12.0 api/features.go and experimental/features.go; both engines explicitly enable every proposal bit exposed by the pinned public API",
+ 		Supported: map[string]bool{
+-			"THREADS": false, "TAIL_CALL": false, "EXTENDED_CONST": false,
+-			"EXCEPTIONS": false, "FUNCTION_REFERENCES": false,
++			"THREADS": true, "TAIL_CALL": true, "EXTENDED_CONST": true,
++			"EXCEPTIONS": true, "FUNCTION_REFERENCES": true,
+ 			"RELAXED_SIMD": false, "GC": false, "MEMORY64": false,
+ 			"MULTI_MEMORY": false, "STACK_SWITCHING": false, "LEGACY_EXCEPTIONS": false,
+ 		},
+diff --git a/adapters/wazero/main.go b/adapters/wazero/main.go
+--- a/adapters/wazero/main.go
++++ b/adapters/wazero/main.go
+@@ -39,7 +39,7 @@
+ 	if a.interpreter {
+ 		c = wazero.NewRuntimeConfigInterpreter()
+ 	}
+-	return wazero.NewRuntimeWithConfig(ctx, c.WithCoreFeatures(api.CoreFeaturesV2).WithCloseOnContextDone(true))
++	return wazero.NewRuntimeWithConfig(ctx, c.WithCoreFeatures(enabledCoreFeatures).WithCloseOnContextDone(true))
+ }
+ 
+ // Verify the newly constructed engine, not a separately prepared runtime.
+diff --git a/adapters/wazero/native_code.go b/adapters/wazero/native_code.go
+--- a/adapters/wazero/native_code.go
++++ b/adapters/wazero/native_code.go
+@@ -4,7 +4,6 @@
+ 	"encoding/binary"
+ 	"fmt"
+ 	"github.com/tetratelabs/wazero"
+-	"github.com/tetratelabs/wazero/api"
+ 	"github.com/wasmbench/wasmbench/corpus"
+ 	"github.com/wasmbench/wasmbench/protocol"
+ 	"hash/crc32"
+@@ -100,7 +99,7 @@
+ 		return nil, nil, err
+ 	}
+ 	defer cache.Close(ctx)
+-	engine := wazero.NewRuntimeWithConfig(ctx, wazero.NewRuntimeConfigCompiler().WithCoreFeatures(api.CoreFeaturesV2).WithCloseOnContextDone(true).WithCompilationCache(cache))
++	engine := wazero.NewRuntimeWithConfig(ctx, wazero.NewRuntimeConfigCompiler().WithCoreFeatures(enabledCoreFeatures).WithCloseOnContextDone(true).WithCompilationCache(cache))
+ 	defer engine.Close(ctx)
+ 	compiled, err := engine.CompileModule(ctx, a.wasm)
+ 	if err != nil {

@@ -1,6 +1,14 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {javaScriptCoreFrameworkRelativePath,javaScriptCoreBuildLayout,javaScriptCorePort,javaScriptCoreICUFlags,javaScriptCoreRuntimeLinkFlags,verifyJavaScriptCoreICUBindings} from './lib/jsc-sdk.mjs';
+import {javaScriptCoreCompilerFlags,javaScriptCoreFrameworkRelativePath,javaScriptCoreBuildLayout,javaScriptCorePort,javaScriptCoreICUFlags,javaScriptCoreRuntimeLinkFlags,verifyJavaScriptCoreICUBindings} from './lib/jsc-sdk.mjs';
+
+test('compiler flags preserve the selected C++ standard library ABI',()=>{
+ const libcxx=javaScriptCoreCompilerFlags('/sdk','libc++').find(flag=>flag.startsWith('-DCMAKE_CXX_FLAGS='));
+ assert.match(libcxx,/-stdlib=libc\+\+ -nostdinc\+\+ -isystem '\/sdk\/include\/c\+\+\/v1'/);
+ const libstdcxx=javaScriptCoreCompilerFlags('/sdk','libstdc++').find(flag=>flag.startsWith('-DCMAKE_CXX_FLAGS='));
+ assert.match(libstdcxx,/-stdlib=libstdc\+\+/);assert.doesNotMatch(libstdcxx,/nostdinc|include\/c\+\+/);
+ assert.throws(()=>javaScriptCoreCompilerFlags('/sdk','arbitrary'),/Unsupported/);
+});
 
 test('ICU qualification rejects stale system libraries and ignored lowercase overrides',()=>{
  const cache=['ICU_INCLUDE_DIR:PATH=/private/icu/usr/include','ICU_UC_LIBRARY_RELEASE:FILEPATH=/private/icu/usr/lib/x86_64-linux-gnu/libicuuc.so','ICU_I18N_LIBRARY_RELEASE:FILEPATH=/private/icu/usr/lib/x86_64-linux-gnu/libicui18n.so','ICU_DATA_LIBRARY_RELEASE:FILEPATH=/private/icu/usr/lib/x86_64-linux-gnu/libicudata.so'].join('\n');

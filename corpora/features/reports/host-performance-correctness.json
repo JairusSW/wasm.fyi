@@ -1,0 +1,260 @@
+{
+  "schema": 1,
+  "created": "2026-10-20T16:58:19.747Z",
+  "timing": false,
+  "node": {
+    "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+    "version": "v26.4.0",
+    "fileSha256": {
+      "/opt/homebrew/Cellar/node/26.4.0/bin/node": "59cd4fb59cf5bc239f43d5db8c0cd8c23c22db79419612b92da3b7cf34de8553"
+    }
+  },
+  "manifestSha256": "e0000a99e359d07f9ae7141c1541099faf613d33cd829577701aef303f9369e8",
+  "outcomes": [
+    {
+      "id": "features/esm-integration/named-function",
+      "status": "verified",
+      "command": [
+        "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+        "--experimental-wasm-modules",
+        "corpora/features/host-proposals/esm.mjs",
+        "named-function",
+        "corpora/features/host-proposals/esm-named-function.wasm",
+        "4096"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "sourceSha256": "3d50c7f7c9ba78700f4fd8ddddc79198452496cfb3ea73f6c3f0d6df031a282d",
+      "artifactSha256": "6e0f874f2cff9412b97478a600cf15d6426a22cc94841ad83a70e8d3331c4ae6",
+      "stdout": "{\"case\":\"named-function\",\"status\":\"verified\"}\n",
+      "stderr": "(node:57396) ExperimentalWarning: Importing WebAssembly module instances is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+    },
+    {
+      "id": "features/esm-integration/immutable-global",
+      "status": "verified",
+      "command": [
+        "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+        "--experimental-wasm-modules",
+        "corpora/features/host-proposals/esm.mjs",
+        "immutable-global",
+        "corpora/features/host-proposals/esm-immutable-global.wasm",
+        "4096"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "sourceSha256": "94ef6f6db6e3c06024dd60493af746f4aef6e08a7f28e5a52d05ee665c3a88e1",
+      "artifactSha256": "2cb2fb20c2606ff6c486267e8c02eeb180b0e4037c0fdb180c7d7a80f6f0a125",
+      "stdout": "{\"case\":\"immutable-global\",\"status\":\"verified\"}\n",
+      "stderr": "(node:57397) ExperimentalWarning: Importing WebAssembly module instances is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+    },
+    {
+      "id": "features/esm-integration/memory-segment",
+      "status": "verified",
+      "command": [
+        "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+        "--experimental-wasm-modules",
+        "corpora/features/host-proposals/esm.mjs",
+        "memory-segment",
+        "corpora/features/host-proposals/esm-memory-segment.wasm",
+        "4096"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "sourceSha256": "70b844def59de0dc27df2fa73a842017a666300be6b826d0fd8aee57cf4bc725",
+      "artifactSha256": "e3d17bc4f630f8be6e9804fb4ee7b7def7023e502d67dd2bfb0cfea46e6f87ed",
+      "stdout": "{\"case\":\"memory-segment\",\"status\":\"verified\"}\n",
+      "stderr": "(node:57398) ExperimentalWarning: Importing WebAssembly module instances is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+    },
+    {
+      "id": "features/esm-integration/host-import",
+      "status": "verified",
+      "command": [
+        "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+        "--experimental-wasm-modules",
+        "corpora/features/host-proposals/esm.mjs",
+        "host-import",
+        "corpora/features/host-proposals/esm-host-import.wasm",
+        "4096"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "sourceSha256": "8bb418bbee4294a3866547d6cf31821771eee761d92022044e73bc2c94f356f6",
+      "artifactSha256": "80c133048dc5e292165153cbf855154dbabe5b2f1a7d88237f879c431ce29070",
+      "stdout": "{\"case\":\"host-import\",\"status\":\"verified\"}\n",
+      "stderr": "(node:57399) ExperimentalWarning: Importing WebAssembly module instances is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+    },
+    {
+      "id": "features/esm-integration/source-phase",
+      "status": "verified",
+      "command": [
+        "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+        "--experimental-wasm-modules",
+        "corpora/features/host-proposals/esm.mjs",
+        "source-phase",
+        "corpora/features/host-proposals/esm-source-phase.wasm",
+        "4096"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "sourceSha256": "3d50c7f7c9ba78700f4fd8ddddc79198452496cfb3ea73f6c3f0d6df031a282d",
+      "artifactSha256": "6e0f874f2cff9412b97478a600cf15d6426a22cc94841ad83a70e8d3331c4ae6",
+      "stdout": "{\"case\":\"source-phase\",\"status\":\"verified\"}\n",
+      "stderr": ""
+    },
+    {
+      "id": "features/type-reflection/function-type",
+      "status": "verified",
+      "command": [
+        "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+        "--experimental-wasm-type-reflection",
+        "corpora/features/host-proposals/reflection.mjs",
+        "function-type",
+        "corpora/features/host-proposals/esm-named-function.wasm",
+        "4096"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "sourceSha256": "1b7f957a26d86da6e29cbc147f61b1aa438b3c5a5a37b871da28c02ce4506866",
+      "stdout": "{\"case\":\"function-type\",\"status\":\"verified\"}\n",
+      "stderr": ""
+    },
+    {
+      "id": "features/type-reflection/typed-host-function",
+      "status": "verified",
+      "command": [
+        "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+        "--experimental-wasm-type-reflection",
+        "corpora/features/host-proposals/reflection.mjs",
+        "typed-host-function",
+        "corpora/features/host-proposals/esm-named-function.wasm",
+        "4096"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "sourceSha256": "1b7f957a26d86da6e29cbc147f61b1aa438b3c5a5a37b871da28c02ce4506866",
+      "stdout": "{\"case\":\"typed-host-function\",\"status\":\"verified\"}\n",
+      "stderr": ""
+    },
+    {
+      "id": "features/type-reflection/global-type",
+      "status": "verified",
+      "command": [
+        "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+        "--experimental-wasm-type-reflection",
+        "corpora/features/host-proposals/reflection.mjs",
+        "global-type",
+        "corpora/features/host-proposals/esm-named-function.wasm",
+        "4096"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "sourceSha256": "1b7f957a26d86da6e29cbc147f61b1aa438b3c5a5a37b871da28c02ce4506866",
+      "stdout": "{\"case\":\"global-type\",\"status\":\"verified\"}\n",
+      "stderr": ""
+    },
+    {
+      "id": "features/type-reflection/memory-type",
+      "status": "verified",
+      "command": [
+        "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+        "--experimental-wasm-type-reflection",
+        "corpora/features/host-proposals/reflection.mjs",
+        "memory-type",
+        "corpora/features/host-proposals/esm-named-function.wasm",
+        "4096"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "sourceSha256": "1b7f957a26d86da6e29cbc147f61b1aa438b3c5a5a37b871da28c02ce4506866",
+      "stdout": "{\"case\":\"memory-type\",\"status\":\"verified\"}\n",
+      "stderr": ""
+    },
+    {
+      "id": "features/type-reflection/table-type",
+      "status": "verified",
+      "command": [
+        "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+        "--experimental-wasm-type-reflection",
+        "corpora/features/host-proposals/reflection.mjs",
+        "table-type",
+        "corpora/features/host-proposals/esm-named-function.wasm",
+        "4096"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "sourceSha256": "1b7f957a26d86da6e29cbc147f61b1aa438b3c5a5a37b871da28c02ce4506866",
+      "stdout": "{\"case\":\"table-type\",\"status\":\"verified\"}\n",
+      "stderr": ""
+    },
+    {
+      "id": "features/wasm-c-api/direct-call",
+      "status": "verified",
+      "command": [
+        ".wasmbench/proposal-coverage/wasm-c-api-corpus",
+        "direct-call",
+        "4096"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "sourceSha256": "d98797a8a3bebf8aa92987ffb292cf7a8dd7cfa5f3bdc0bd2a241d46a56ce180",
+      "stdout": "{\"case\":\"direct-call\",\"operations\":4096,\"checksum\":1570816}\n",
+      "stderr": ""
+    },
+    {
+      "id": "features/wasm-c-api/host-callback",
+      "status": "verified",
+      "command": [
+        ".wasmbench/proposal-coverage/wasm-c-api-corpus",
+        "host-callback",
+        "4096"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "sourceSha256": "d98797a8a3bebf8aa92987ffb292cf7a8dd7cfa5f3bdc0bd2a241d46a56ce180",
+      "stdout": "{\"case\":\"host-callback\",\"operations\":4096,\"checksum\":1570816}\n",
+      "stderr": ""
+    },
+    {
+      "id": "features/wasm-c-api/mutable-global",
+      "status": "verified",
+      "command": [
+        ".wasmbench/proposal-coverage/wasm-c-api-corpus",
+        "mutable-global",
+        "4096"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "sourceSha256": "d98797a8a3bebf8aa92987ffb292cf7a8dd7cfa5f3bdc0bd2a241d46a56ce180",
+      "stdout": "{\"case\":\"mutable-global\",\"operations\":4096,\"checksum\":522240}\n",
+      "stderr": ""
+    },
+    {
+      "id": "features/wasm-c-api/memory-access",
+      "status": "verified",
+      "command": [
+        ".wasmbench/proposal-coverage/wasm-c-api-corpus",
+        "memory-access",
+        "4096"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "sourceSha256": "d98797a8a3bebf8aa92987ffb292cf7a8dd7cfa5f3bdc0bd2a241d46a56ce180",
+      "stdout": "{\"case\":\"memory-access\",\"operations\":4096,\"checksum\":522240}\n",
+      "stderr": ""
+    },
+    {
+      "id": "features/wasm-c-api/trap-lifecycle",
+      "status": "verified",
+      "command": [
+        ".wasmbench/proposal-coverage/wasm-c-api-corpus",
+        "trap-lifecycle",
+        "4096"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "sourceSha256": "d98797a8a3bebf8aa92987ffb292cf7a8dd7cfa5f3bdc0bd2a241d46a56ce180",
+      "stdout": "{\"case\":\"trap-lifecycle\",\"operations\":4096,\"checksum\":4096}\n",
+      "stderr": ""
+    }
+  ]
+}

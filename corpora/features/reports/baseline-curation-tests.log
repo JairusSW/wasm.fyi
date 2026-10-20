@@ -1,0 +1,90 @@
+(node:30874) ExperimentalWarning: WASI is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✖ execution diversity counts operations once, excluding baselines and size-only variants (0.818042ms)
+✖ shared curated modules have identical source and unique named benchmark exports (2.004458ms)
+✔ compile and initializer scaling remain explicitly separate from execution workloads (0.13475ms)
+✔ every manifest contract matches its source, artifact, export, initializer and independent oracle (38.611083ms)
+✔ curated ordinary core workloads declare only the intended string builtins as imports (0.120167ms)
+✔ upstream selections retain source pins, local digests, licenses and positive-only assertion accounting (2.226083ms)
+✖ core curated algorithms match independent oracles at varied runtime inputs and reused instances (1.149042ms)
+✖ ordinary curated verification rejects changed artifact digests and wrong arithmetic oracles (1.229458ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 4
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 90.577042
+
+✖ failing tests:
+
+test at ../../../../../private/var/folders/qh/_8tbhdf16tv0jdqp1pb5jf2w0000gp/T/wasmfyi-proposal-baseline-H7EceI/scripts/feature-curation.test.mjs:23:1
+✖ execution diversity counts operations once, excluding baselines and size-only variants (0.818042ms)
+  AssertionError [ERR_ASSERTION]: core-mem has 2 distinct executable operation names
+      at TestContext.<anonymous> (file:///private/var/folders/qh/_8tbhdf16tv0jdqp1pb5jf2w0000gp/T/wasmfyi-proposal-baseline-H7EceI/scripts/feature-curation.test.mjs:35:12)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.start (node:internal/test_runner/test:1242:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at ../../../../../private/var/folders/qh/_8tbhdf16tv0jdqp1pb5jf2w0000gp/T/wasmfyi-proposal-baseline-H7EceI/scripts/feature-curation.test.mjs:44:1
+✖ shared curated modules have identical source and unique named benchmark exports (2.004458ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(modules.size >= 16)
+  
+      at TestContext.<anonymous> (file:///private/var/folders/qh/_8tbhdf16tv0jdqp1pb5jf2w0000gp/T/wasmfyi-proposal-baseline-H7EceI/scripts/feature-curation.test.mjs:61:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at ../../../../../private/var/folders/qh/_8tbhdf16tv0jdqp1pb5jf2w0000gp/T/wasmfyi-proposal-baseline-H7EceI/scripts/feature-curation.test.mjs:178:1
+✖ core curated algorithms match independent oracles at varied runtime inputs and reused instances (1.149042ms)
+  AssertionError [ERR_ASSERTION]: Missing core curated contract: br-table-state-machine
+      at TestContext.<anonymous> (file:///private/var/folders/qh/_8tbhdf16tv0jdqp1pb5jf2w0000gp/T/wasmfyi-proposal-baseline-H7EceI/scripts/feature-curation.test.mjs:184:12)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at ../../../../../private/var/folders/qh/_8tbhdf16tv0jdqp1pb5jf2w0000gp/T/wasmfyi-proposal-baseline-H7EceI/scripts/feature-curation.test.mjs:198:1
+✖ ordinary curated verification rejects changed artifact digests and wrong arithmetic oracles (1.229458ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(row)
+  
+      at TestContext.<anonymous> (file:///private/var/folders/qh/_8tbhdf16tv0jdqp1pb5jf2w0000gp/T/wasmfyi-proposal-baseline-H7EceI/scripts/feature-curation.test.mjs:200:10)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

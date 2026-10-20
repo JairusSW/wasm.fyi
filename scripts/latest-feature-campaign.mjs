@@ -1,5 +1,7 @@
 import {featureScenarios} from './lib/feature-scenario-policy.mjs';
-import {rebuildWazeroSampling} from './lib/wazero-sampling.mjs';
+import {rebuildWazeroSampling,assertWazeroInterruptsDisabled} from './lib/wazero-sampling.mjs';
+import {applyWasmEdgeFeaturePolicy} from './lib/wasmedge-feature-policy.mjs';
+import {applyWasmerCraneliftAdapter} from './lib/wasmer-cranelift-adapter.mjs';
 import {featureRepairPhases} from './lib/feature-repair-phases.mjs';
 // Latest-only, source-bound compatibility followed by feature performance.
 import {readFile,writeFile,mkdir,readdir,stat,cp} from 'node:fs/promises';
@@ -100,12 +102,39 @@ campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
  let {job,plan}=binding;
  try{if(engine==='v8'){for(const name of await readdir(join(campaign,'sdk-builds')).catch(()=>[])){const dir=join(campaign,'sdk-builds',name),receipt=await readJSON(join(dir,'v8-build.json')).catch(()=>null);if(receipt?.pin?.revision===pin.revision){const release=await acquireFeatureProjectLock();let upgraded;try{upgraded=await ensureV8BindingPolicy(campaign,dir,receipt,{reserved:true,env:{...template.env,...plan.env,...job.env},featureJspi:true})}finally{await release()};job={...job,controller:upgraded.controller,harness:upgraded.root,env:{...job.env,...upgraded.env},backend:'turboshaft'};break;}}}}catch(error){if(error.code==='FEATURE_PROJECT_OCCUPIED')throw error;state.errors.push({engine,kind:'adapter-binding-migration',error:String(error),source:job.source});await atomicJSON(join(root,'binding-repairs',engine+'.json'),{status:'repair-pending',source:job.source,error:String(error)});state.completed++;await save();continue;}
  const controller=job.controller||plan.controller,harness=job.harness||plan.harness;
+ if(['wazero','wazero-interpreter'].includes(engine))assertWazeroInterruptsDisabled(await readFile(join(harness,'adapters/wazero/main.go'),'utf8'));
  if(repairEngines.includes(engine)&&['wazero','wazero-interpreter'].includes(engine)){
   const release=await acquireFeatureProjectLock();
   try{
    const buildEnv={...process.env,...template.env,...plan.env,...job.env,GOWORK:'off',GOFLAGS:'-buildvcs=false'};
    for(const k of ['GOMAXPROCS','OMP_NUM_THREADS','RAYON_NUM_THREADS','CARGO_BUILD_JOBS','CMAKE_BUILD_PARALLEL_LEVEL','MAKEFLAGS','UV_THREADPOOL_SIZE'])delete buildEnv[k];
    await rebuildWazeroSampling({root:harness,env:buildEnv,run:(program,args,options)=>runCommand(program,args,{...options,log:join(root,'wazero-lifecycle-build.log')})});
+  }catch(error){state.errors.push({engine,kind:'adapter-binding-migration',error:String(error)});state.completed++;await save();continue}finally{await release()}
+ }
+ if(repairEngines.includes(engine)&&['wasmedge','wasmedge-jit'].includes(engine)){
+  const release=await acquireFeatureProjectLock();
+  try{
+   const buildEnv={...process.env,...template.env,...plan.env,...job.env,GOWORK:'off',GOFLAGS:'-buildvcs=false'};
+   for(const k of ['GOMAXPROCS','OMP_NUM_THREADS','RAYON_NUM_THREADS','CARGO_BUILD_JOBS','CMAKE_BUILD_PARALLEL_LEVEL','MAKEFLAGS','UV_THREADPOOL_SIZE'])delete buildEnv[k];
+   const sdk=buildEnv.WASMBENCH_WASMEDGE_SDK;
+   if(!sdk)throw Error('WasmEdge SDK path is missing from the frozen build binding');
+   await applyWasmEdgeFeaturePolicy(harness,sdk,engine);
+   const target=join(harness,'adapters/native/target',engine);
+   await runCommand('cargo',['build','--release','--locked','--no-default-features','--features','wasmedge','--target-dir',target],{cwd:join(harness,'adapters/native'),env:buildEnv,log:join(root,engine+'-feature-policy-build.log')});
+   await cp(join(target,'release/adapter-native'),join(harness,'bin','adapter-'+engine));
+  }catch(error){state.errors.push({engine,kind:'adapter-binding-migration',error:String(error)});state.completed++;await save();continue}finally{await release()}
+ }
+ if(repairEngines.includes(engine)&&['wasmer-singlepass','wasmer-cranelift','wasmer-llvm'].includes(engine)){
+  const release=await acquireFeatureProjectLock();
+  try{
+   const buildEnv={...process.env,...template.env,...plan.env,...job.env,GOWORK:'off',GOFLAGS:'-buildvcs=false'};
+   for(const k of ['GOMAXPROCS','OMP_NUM_THREADS','RAYON_NUM_THREADS','CARGO_BUILD_JOBS','CMAKE_BUILD_PARALLEL_LEVEL','MAKEFLAGS','UV_THREADPOOL_SIZE'])delete buildEnv[k];
+   await applyWasmerCraneliftAdapter(harness);
+   if(engine==='wasmer-cranelift')buildEnv.WASMBENCH_WASMER_COMPILER='cranelift';
+   const feature=engine==='wasmer-llvm'?'wasmer_llvm':'wasmer_singlepass';
+   const target=join(harness,'adapters/native/target',engine);
+   await runCommand('cargo',['build','--release','--locked','--no-default-features','--features',feature,'--target-dir',target,'--manifest-path',join(harness,'adapters/native/Cargo.toml')],{cwd:harness,env:buildEnv,log:join(root,engine+'-feature-policy-build.log')});
+   await cp(join(target,'release/adapter-native'),join(harness,'bin','adapter-'+engine));
   }catch(error){state.errors.push({engine,kind:'adapter-binding-migration',error:String(error)});state.completed++;await save();continue}finally{await release()}
  }
 
@@ -124,7 +153,7 @@ campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
    if(!repairEngines.length&&prior?.status==='repair-pending'){if(prior.failure)state.errors.push(prior.failure);held=true;break;}
    // Explicit source-backed Wasmi proposal activation can repair old admission
    // outcomes too. It never selects unrelated GC/EH or an already OK phase.
-   const repairPhases=featureRepairPhases({engine,workload,prior,repairEngines,repairWorkloads,wasmiProposals:process.env.WASMFYI_FEATURE_REPAIR_WASMI_PROPOSALS==='1'});
+   const repairPhases=featureRepairPhases({engine,workload,prior,repairEngines,repairWorkloads,wasmiProposals:process.env.WASMFYI_FEATURE_REPAIR_WASMI_PROPOSALS==='1',documentedProposals:process.env.WASMFYI_FEATURE_REPAIR_DOCUMENTED_PROPOSALS==='1'});
    if(repairEngines.length&&prior&&!repairPhases.length)continue;
    if(!repairPhases.length&&ledger.items[key]?.status==='completed'){if(ledger.items[key].failure)state.errors.push(ledger.items[key].failure);continue;}
    state.current={engine,stage:kind,workload:workload.id,revision:job.source.revision};await save();

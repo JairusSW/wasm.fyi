@@ -26,12 +26,14 @@ export async function javaScriptCoreFrameworkRelativePath(directory) {
  if(!/^JavaScriptCore\.framework\/Versions\/[^/]+\/JavaScriptCore$/.test(path))throw Error('Unexpected JavaScriptCore framework binary path: '+path);
  return path;
 }
-export function javaScriptCoreCompilerFlags(prefix) {
+export function javaScriptCoreCompilerFlags(prefix,standardLibrary='libc++') {
+ if(!['libc++','libstdc++'].includes(standardLibrary))throw Error('Unsupported JavaScriptCore C++ standard library '+standardLibrary);
  const quote=value=>"'"+value.replaceAll("'","'\\''")+"'";
  const library=join(prefix,'lib/x86_64-unknown-linux-gnu');
  const linker='-fuse-ld='+quote(join(prefix,'bin/ld.lld'))+' -L'+quote(library)+' '+quote('-Wl,-rpath,'+library);
+ const cxx=standardLibrary==='libc++'?'-stdlib=libc++ -nostdinc++ -isystem '+quote(join(prefix,'include/c++/v1')):'-stdlib=libstdc++';
  return ['-DCMAKE_C_COMPILER='+join(prefix,'bin/clang'),'-DCMAKE_CXX_COMPILER='+join(prefix,'bin/clang++'),
-  '-DCMAKE_CXX_FLAGS=-stdlib=libc++ -nostdinc++ -isystem '+quote(join(prefix,'include/c++/v1'))+' -Wno-error=unused-const-variable -Wno-error=unused-command-line-argument',
+  '-DCMAKE_CXX_FLAGS='+cxx+' -Wno-error=unused-const-variable -Wno-error=unused-command-line-argument',
   '-DCMAKE_EXE_LINKER_FLAGS='+linker,'-DCMAKE_SHARED_LINKER_FLAGS='+linker];
 }
 export function javaScriptCoreICUFlags(prefix){
@@ -93,8 +95,11 @@ export async function buildJavaScriptCoreSDK({source,target,revision,env,run}) {
   }
   const compilerSDK=env.WASMFYI_JSC_CXX_SDK||env.WASMFYI_WAVM_CXX_SDK;
   if(compilerSDK){
-   for(const file of ['bin/clang','bin/clang++','bin/ld.lld','include/c++/v1/vector'])if(!await stat(join(compilerSDK,file)).catch(()=>null))throw Error('JavaScriptCore compiler SDK lacks '+file);
-   flags.push(...javaScriptCoreCompilerFlags(compilerSDK));
+   const standardLibrary=env.WASMFYI_JSC_CXX_STDLIB||(env.WASMFYI_JSC_CXX_SDK?'libc++':env.WASMFYI_WAVM_CXX_STDLIB)||'libc++';
+   if(!['libc++','libstdc++'].includes(standardLibrary))throw Error('Unsupported JavaScriptCore C++ standard library '+standardLibrary);
+   const required=['bin/clang','bin/clang++','bin/ld.lld',...(standardLibrary==='libc++'?['include/c++/v1/vector']:[])];
+   for(const file of required)if(!await stat(join(compilerSDK,file)).catch(()=>null))throw Error('JavaScriptCore compiler SDK lacks '+file);
+   flags.push(...javaScriptCoreCompilerFlags(compilerSDK,standardLibrary));
   }else flags.push('-DCMAKE_CXX_FLAGS=-Wno-error=unused-const-variable');
  }
  if(!mac&&env.WASMFYI_PRIVATE_GLIBC_LIBRARY_DIR){

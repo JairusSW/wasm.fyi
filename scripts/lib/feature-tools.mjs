@@ -24,7 +24,7 @@ export async function prepareFeatureTools(root,settings,ids) {
   if(!pins?.assets?.[platform])throw new Error('Feature toolchain is not pinned for '+platform);
   const target=join(homedir(),'.local/share/wasm-fyi/toolchains/features-v1-'+platform);
   const identity=digest(JSON.stringify(pins)+await readFile(fileURLToPath(import.meta.url),'utf8'));
-  const wamrFlags=['-DCMAKE_BUILD_TYPE=Release','-DWAMR_BUILD_AOT=0','-DWAMR_DISABLE_STACK_HW_BOUND_CHECK=1','-DWAMR_BUILD_FAST_INTERP=0','-DWAMR_BUILD_GC=1','-DWAMR_BUILD_EXCE_HANDLING=1','-DWAMR_BUILD_LIBC_WASI=0','-DWAMR_BUILD_LIBC_BUILTIN=0','-DBUILD_SHARED_LIBS=ON'];
+  const wamrFlags=['-DCMAKE_BUILD_TYPE=Release','-DWAMR_BUILD_AOT=0','-DWAMR_DISABLE_STACK_HW_BOUND_CHECK=1','-DWAMR_BUILD_FAST_INTERP=0','-DWAMR_BUILD_GC=1','-DWAMR_BUILD_EXCE_HANDLING=0','-DWAMR_BUILD_EXTENDED_CONST_EXPR=1','-DWAMR_BUILD_MEMORY64=1','-DWAMR_BUILD_SHARED_MEMORY=1','-DWAMR_BUILD_SIMD=1','-DWAMR_BUILD_TAIL_CALL=1','-DWAMR_BUILD_MULTI_MEMORY=1','-DWAMR_BUILD_LIBC_WASI=0','-DWAMR_BUILD_LIBC_BUILTIN=0','-DBUILD_SHARED_LIBS=ON'];
   const ready=await exists(join(target,'build.json')) && JSON.parse(await readFile(join(target,'build.json')));
   if(ready && ready.identity===identity) {
     if(JSON.stringify(await tree(target))!==JSON.stringify(ready.files))throw new Error('Managed feature toolchain changed; restore its recorded build before collecting');

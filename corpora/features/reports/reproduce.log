@@ -1,0 +1,18 @@
+✓ typed-function-references  5/5 artifacts reproduce from source
+✓ branch-hinting             5/5 artifacts reproduce from source
+✓ custom-page-sizes          5/5 artifacts reproduce from source
+✓ legacy-exceptions          5/5 artifacts reproduce from source
+✓ shared-everything-threads  10/10 artifacts reproduce from source
+✓ stack-switching            8/8 artifacts reproduce from source
+✓ memory-control             5/5 artifacts reproduce from source
+✓ custom-annotation-syntax-in-the-text-format 5/5 artifacts reproduce from source
+✓ extended-name-section      8/8 artifacts reproduce from source
+✓ compilation-hints          5/5 artifacts reproduce from source
+✓ numeric-values-in-wat      6/6 artifacts reproduce from source
+✓ big-int                    5/5 artifacts reproduce from source
+✓ instrument-and-tracing-technology 5/5 artifacts reproduce from source
+✓ half-precision             5/5 artifacts reproduce from source
+✓ stringref                  5/5 artifacts reproduce from source
+✓ acquire-release-atomics    5/5 artifacts reproduce from source
+✓ custom-descriptors         5/5 artifacts reproduce from source
+97/97 artifacts reproduced byte-for-byte (WAT: wasm-tools 1.260.0; binary proposals: pinned V8 encoder/native validator).

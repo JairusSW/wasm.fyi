@@ -12,6 +12,7 @@ from driver import build_driver, inspect
 binary, backend = sys.argv[1:3]
 mode = {'v3-interpreter': 'v3-int', 'fast-interpreter': 'int', 'spc': 'spc'}[backend]
 runtime = {'v3-interpreter': 'wizard-v3-int', 'fast-interpreter': 'wizard-fast-int', 'spc': 'wizard-spc'}[backend]
+feature_flags = ['--ext:custom-page-sizes', '--ext:stack-switching', '--ext:threads', '--ext:wide-arithmetic']
 prepared = directory = driver = expected_words = result_types = None
 
 
@@ -45,7 +46,7 @@ for line in sys.stdin:
             run = request['run']; w = prepared['workload']
             if (run['samples'], run['operations'], run['warmup']) != (1, 1, 0): raise ValueError('single-sample qualification only')
             started = time.monotonic_ns()
-            process = subprocess.run([binary, '--mode=' + mode, '--invoke=qualification', prepared['artifact'], str(driver)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=290)
+            process = subprocess.run([binary, '--mode=' + mode, *feature_flags, '--invoke=qualification', prepared['artifact'], str(driver)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=290)
             output = process.stdout.decode(errors='replace')
             if process.returncode != 0: raise RuntimeError('Wizard execution failed: ' + (process.stderr.decode(errors='replace') + output)[-1800:])
             if 'WIZARD_QUALIFIED' not in output.splitlines(): raise RuntimeError('Wizard omitted verified execution marker')
