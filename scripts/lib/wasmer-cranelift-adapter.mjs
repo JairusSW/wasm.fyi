@@ -19,7 +19,9 @@ export async function applyWasmerCraneliftAdapter(root) {
  if(build.includes(sdkBlock))build=build.replace(sdkBlock,'if wasmer {\n'+compilerDefinition+'\n        println!("cargo:rerun-if-changed=src/wasmer_wasi.h");');
  else if(build.includes(receiptCompilerBlock))build=build.replace(receiptCompilerBlock,receiptCompilerBlock+'\n'+compilerDefinition);
  else throw Error('Pinned Wasmer SDK compiler-definition seam changed');
- for(const feature of ['SIMD','RELAXED_SIMD','EXCEPTIONS','LEGACY_EXCEPTIONS'])main=main.replace(`"${feature}":cfg!(feature="wasmer_llvm")`,`"${feature}":(cfg!(feature="wasmer_llvm") || RUNTIME=="wasmer-cranelift")`);
+ for(const feature of ['SIMD','RELAXED_SIMD','EXCEPTIONS'])main=main.replace(`"${feature}":cfg!(feature="wasmer_llvm")`,`"${feature}":(cfg!(feature="wasmer_llvm") || RUNTIME=="wasmer-cranelift")`);
+ main=main.replace('"LEGACY_EXCEPTIONS":(cfg!(feature="wasmer_llvm") || RUNTIME=="wasmer-cranelift")','"LEGACY_EXCEPTIONS":false');
+ main=main.replace('"LEGACY_EXCEPTIONS":cfg!(feature="wasmer_llvm")','"LEGACY_EXCEPTIONS":false');
  const tail='"TAIL_CALL":cfg!(feature="wasmer_llvm")';
  main=main.replace('"TAIL_CALL":(cfg!(feature="wasmer_llvm") || RUNTIME=="wasmer-cranelift")',tail);
  if(!main.includes('"THREADS":true'))main=main.replace(tail,tail+',"THREADS":true,"WIDE_ARITHMETIC":(cfg!(feature="wasmer_llvm") || RUNTIME=="wasmer-cranelift")');

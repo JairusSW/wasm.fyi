@@ -17,7 +17,7 @@ if wasmer {
         println!("cargo:rerun-if-changed=src/wasmer_wasi.h");
         build.define("WB_WASMER_LLVM", Some("0")); }`);
   await writeFile(join(dir,'src/main.rs'),`else if cfg!(feature="wasmer_singlepass"){"singlepass-jit"}
-"SIMD":cfg!(feature="wasmer_llvm"),"TAIL_CALL":cfg!(feature="wasmer_llvm")
+"SIMD":cfg!(feature="wasmer_llvm"),"LEGACY_EXCEPTIONS":cfg!(feature="wasmer_llvm"),"TAIL_CALL":cfg!(feature="wasmer_llvm")
 let identity_host = true && w["host_profile"] == "identity-v1";
                 if cfg!(feature = "wasmer_llvm") || cfg!(feature = "wasmer_singlepass") {
                     description["description"]["validator_features"] = json!({});
@@ -36,6 +36,7 @@ wasmer_features_tail_call(features,WB_WASMER_LLVM);`);
   assert.match(first[1],/RUNTIME=="wasmer-cranelift"\{"cranelift-jit"\}else\{"singlepass-jit"\}/);
   assert.match(first[1],/"SIMD":\(cfg!\(feature="wasmer_llvm"\) \|\| RUNTIME=="wasmer-cranelift"\)/);
   assert.match(first[1],/"TAIL_CALL":cfg!\(feature="wasmer_llvm"\)/);
+  assert.match(first[1],/"LEGACY_EXCEPTIONS":false/);
   assert.match(first[1],/"THREADS":true/);
   assert.match(first[1],/"WIDE_ARITHMETIC":\(cfg!\(feature="wasmer_llvm"\) \|\| RUNTIME=="wasmer-cranelift"\)/);
   assert.match(first[1],/threads-opaque-identity-v1/);
@@ -68,7 +69,7 @@ if wasmer {
         );
 }`);
   await writeFile(join(dir,'src/main.rs'),`else if cfg!(feature="wasmer_singlepass"){"singlepass-jit"}
-"SIMD":cfg!(feature="wasmer_llvm"),"TAIL_CALL":cfg!(feature="wasmer_llvm")
+"SIMD":cfg!(feature="wasmer_llvm"),"LEGACY_EXCEPTIONS":cfg!(feature="wasmer_llvm"),"TAIL_CALL":cfg!(feature="wasmer_llvm")
 let identity_host = true && w["host_profile"] == "identity-v1";
                 if cfg!(feature = "wasmer_llvm") || cfg!(feature = "wasmer_singlepass") {}`);
   await writeFile(join(dir,'src/wasmer.cpp'),`const auto backend=WB_WASMER_LLVM?LLVM:SINGLEPASS;
@@ -78,6 +79,7 @@ wasmer_features_exceptions(features,WB_WASMER_LLVM);
 wasmer_features_tail_call(features,WB_WASMER_LLVM);`);
   await applyWasmerCraneliftAdapter(root);
   const build=await readFile(join(dir,'build.rs'),'utf8');
+  assert.match(await readFile(join(dir,'src/main.rs'),'utf8'),/"LEGACY_EXCEPTIONS":false/);
   assert.ok(build.indexOf('build.define("WB_WASMER_CRANELIFT"')>build.indexOf('let mut build ='));
   assert.equal((build.match(/WB_WASMER_CRANELIFT/g)||[]).length,1);
   await applyWasmerCraneliftAdapter(root);

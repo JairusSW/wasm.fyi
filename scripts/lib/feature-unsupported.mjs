@@ -35,6 +35,7 @@ const wasmerRejections=[
  {feature:'acquire-release-atomics',reason:/atomic instructions must always specify maximum alignment/},
  {feature:'memory-control',reason:/memory control support is not enabled/},
  {feature:'shared-everything-threads',reason:/shared (?:composite types|globals) require the shared-everything-threads proposal/},
+ {feature:'legacy-exceptions',reason:/legacy_exceptions feature required for try instruction/},
 ];
 
 // Wasmtime's validator knows encodings for some proposals which the compiler

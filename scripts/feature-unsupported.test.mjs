@@ -56,6 +56,7 @@ test('Wasmer compact-import validation rejection remains source and artifact bou
    ['acquire-release-atomics','atomic instructions must always specify maximum alignment'],
    ['memory-control','memory control support is not enabled'],
    ['shared-everything-threads','shared globals require the shared-everything-threads proposal'],
+   ['legacy-exceptions','legacy_exceptions feature required for try instruction'],
   ]){
    const w={id:`features/${feature}/case/1`,sha256:'a'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
    const contractSha256=workloadContract(w),capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256,phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
