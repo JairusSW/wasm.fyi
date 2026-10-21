@@ -22,6 +22,9 @@ import {ensureV8BindingPolicy} from './lib/v8-binding-policy.mjs';
 import {historyIntegrationFailure} from './lib/history-completion-audit.mjs';
 import {classifyFeatureRuntimeRejection,classifyFeatureCapture} from './lib/feature-unsupported.mjs';
 import {latestFeaturePins} from './lib/latest-feature-pins.mjs';
+import {v8FlagsForWorkload} from './lib/v8-feature-flags.mjs';
+import {applyWavmFeaturePolicy} from './lib/wavm-feature-policy.mjs';
+import {buildWavmSDK} from './lib/wavm-sdk.mjs';
 const [campaignArg,rootArg,inputsArg,bindingsArg]=process.argv.slice(2);
 if(!campaignArg||!rootArg||!inputsArg)throw Error('Usage: latest-feature-campaign CAMPAIGN FEATURE_ROOT INPUTS [BINDINGS_JSON]');
 const campaign=resolve(campaignArg),root=resolve(rootArg),inputs=resolve(inputsArg);
@@ -57,7 +60,7 @@ if(!bindingsArg){
   if(e.name==='plan.json'){try{const p=await readJSON(join(path,e.name));if(p.jobs)plans.push(p)}catch{}}
   else if(e.isDirectory()&&!['scratch','harness','sources','sdk-builds','captures','node_modules','target','data'].includes(e.name))await scan(join(path,e.name),depth+1);
  }}
- for(const name of ['engine-builds','go-builds','libwasm-builds','builds'])await scan(join(campaign,name));
+ for(const name of ['sdk-builds','engine-builds','go-builds','libwasm-builds','builds'])await scan(join(campaign,name));
  for(const pin of latest)for(const engine of pin.configurations){
   const match=plans.flatMap(plan=>plan.jobs.map(job=>({engine:job.engine,job,plan}))).find(b=>b.engine===engine&&b.job.source?.revision===pin.revision&&b.job.source?.asOf===pin.targetWeek);
   if(match)bindings.push(match);
@@ -96,7 +99,9 @@ async function acquireFeatureProjectLock(){
 }
 await save();
 const repairEngines=(process.env.WASMFYI_FEATURE_REPAIR_ENGINES||'').split(',').filter(Boolean);
-const repairWorkloads=JSON.parse(process.env.WASMFYI_FEATURE_REPAIR_WORKLOADS||'[]');
+const repairWorkloads=process.env.WASMFYI_FEATURE_REPAIR_WORKLOADS_FILE
+ ?await readJSON(resolve(process.env.WASMFYI_FEATURE_REPAIR_WORKLOADS_FILE))
+ :JSON.parse(process.env.WASMFYI_FEATURE_REPAIR_WORKLOADS||'[]');
 const upgradedHostProfileControllers=new Set();
 campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
  if(selectedEngines.length&&!selectedEngines.includes(engine))continue;
@@ -150,6 +155,19 @@ campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
    await cp(join(target,'release/adapter-native'),join(harness,'bin','adapter-'+engine));
   }catch(error){state.errors.push({engine,kind:'adapter-binding-migration',error:String(error)});state.completed++;await save();continue}finally{await release()}
  }
+ if(repairEngines.includes(engine)&&engine==='wavm'){
+  const release=await acquireFeatureProjectLock();
+  try{
+   const buildEnv={...process.env,...template.env,...plan.env,...job.env,GOWORK:'off',GOFLAGS:'-buildvcs=false'};
+   for(const k of ['GOMAXPROCS','OMP_NUM_THREADS','RAYON_NUM_THREADS','CARGO_BUILD_JOBS','CMAKE_BUILD_PARALLEL_LEVEL','MAKEFLAGS','UV_THREADPOOL_SIZE'])delete buildEnv[k];
+   const buildDirectory=dirname(dirname(job.harness)),source=join(buildDirectory,'sources','wavm'),sdk=buildEnv.WASMBENCH_WAVM_SDK||join(buildDirectory,'wavm-sdk'),target=join(buildDirectory,'wavm-build');
+   await applyWavmFeaturePolicy(source,job.harness);
+   await buildWavmSDK({source,sdk,target,harness:job.harness,env:buildEnv,run:(program,args,options)=>runCommand(program,args,{...options,cwd:options?.cwd||job.harness,env:buildEnv,log:join(root,'wavm-feature-policy-build.log')})});
+   const adapterTarget=join(job.harness,'adapters/native/target/wavm');
+   await runCommand('cargo',['build','--release','--locked','--no-default-features','--features','wavm','--target-dir',adapterTarget,'--manifest-path',join(job.harness,'adapters/native/Cargo.toml')],{cwd:job.harness,env:buildEnv,log:join(root,'wavm-feature-policy-build.log')});
+   await cp(join(adapterTarget,'release/adapter-native'),join(job.harness,'bin/adapter-wavm'));
+  }catch(error){state.errors.push({engine,kind:'adapter-binding-migration',error:String(error)});state.completed++;await save();continue}finally{await release()}
+ }
 
  if(!await stat(controller).catch(()=>null)||!await stat(harness).catch(()=>null)){state.errors.push({engine,kind:'adapter-binding-path-missing'});state.completed++;await save();continue}
  const env={...process.env,...template.env,...plan.env,...job.env,GOWORK:'off',GOFLAGS:'-buildvcs=false',GOMAXPROCS:'1',OMP_NUM_THREADS:'1',RAYON_NUM_THREADS:'1',UV_THREADPOOL_SIZE:'1',WASMBENCH_SINGLE_CORE:'1',WASMBENCH_RECORD_FAILURES:'1',WASMBENCH_CODE_SIZE_ONLY:'1',WASMBENCH_SOURCE_JSON:JSON.stringify(job.source)};
@@ -161,15 +179,29 @@ campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
    if(abort.signal.aborted||performance.now()+360000>deadline){state.status=abort.signal.aborted?'paused':'yielded';await save();process.exitCode=abort.signal.aborted?130:76;break}
    if(repairEngines.length&&repairWorkloads.length&&!repairWorkloads.includes(workload.id))continue;
    const key=featureLedgerKey(hostKey,engine,job.source,kind,workload,inputIdentity);
-   const prior=ledger.items[key];
+   let prior=ledger.items[key];
+   // A newly audited source-bound rejection can be applied to retained raw
+   // evidence without executing the workload again. Preserve the original
+   // capture and failure record as the classification receipt.
+   if(prior?.status==='completed'&&prior.failure&&prior.outcomes?.some(([,status])=>status==='failed')){
+    const retained=await readJSON(join(root,'captures',prior.capture)).catch(()=>null);
+    const disposition=retained&&classifyFeatureRuntimeRejection({source:job.source,engine,workload,capture:retained,failures:prior.failure.failures});
+    const classified=disposition&&classifyFeatureCapture(retained,disposition);
+    if(classified){
+     const classifiedName='feature-classified-'+engine+'-'+key+'.json';
+     await atomicJSON(join(root,'captures',classifiedName),classified);await atomicJSON(join(campaign,'captures',classifiedName),classified);await atomicJSON(join(root,'source-dispositions',key+'.json'),disposition);
+     prior=ledger.items[key]={...prior,capture:classifiedName,outcomes:classified.results.map(row=>[row.phase,row.latencyStatus]),classifiedFrom:prior.capture,classification:disposition};delete prior.failure;await save();
+    }
+   }
    // Adapter failures are retried only by an explicit repair owner.
    if(!repairEngines.length&&prior?.status==='repair-pending'){if(prior.failure)state.errors.push(prior.failure);held=true;break;}
    // Explicit source-backed Wasmi proposal activation can repair old admission
    // outcomes too. It never selects unrelated GC/EH or an already OK phase.
-   const repairPhases=featureRepairPhases({engine,workload,prior,repairEngines,repairWorkloads,wasmiProposals:process.env.WASMFYI_FEATURE_REPAIR_WASMI_PROPOSALS==='1',documentedProposals:process.env.WASMFYI_FEATURE_REPAIR_DOCUMENTED_PROPOSALS==='1'});
+   const repairPhases=featureRepairPhases({engine,workload,prior,repairEngines,repairWorkloads,wasmiProposals:process.env.WASMFYI_FEATURE_REPAIR_WASMI_PROPOSALS==='1',documentedProposals:process.env.WASMFYI_FEATURE_REPAIR_DOCUMENTED_PROPOSALS==='1',retryCompleted:process.env.WASMFYI_FEATURE_REPAIR_RETRY_COMPLETED==='1',forceAll:process.env.WASMFYI_FEATURE_REPAIR_ALL==='1'});
    if(repairEngines.length&&prior&&!repairPhases.length)continue;
    if(!repairPhases.length&&ledger.items[key]?.status==='completed'){if(ledger.items[key].failure)state.errors.push(ledger.items[key].failure);continue;}
    state.current={engine,stage:kind,workload:workload.id,revision:job.source.revision};await save();
+   if(engine==='v8')env.WASMBENCH_V8_FEATURE_FLAGS=v8FlagsForWorkload(workload).join(' ');
    const release=await acquireFeatureProjectLock();
    const scratch=join(root,'scratch',key);if(repairPhases.length&&await stat(scratch).catch(()=>null))await cp(scratch,scratch+'.before-repair-'+Date.now(),{recursive:true});await mkdir(scratch,{recursive:true});
    const producerDirectory=join(root,'compatibility',engine,key,repairPhases.length?'producer-repair-'+Date.now():'producer');await atomicJSON(join(scratch,'wago-suite.json'),[workload]);

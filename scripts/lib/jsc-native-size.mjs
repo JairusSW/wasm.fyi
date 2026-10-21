@@ -3,6 +3,12 @@ import {join} from 'node:path';
 import {digest} from './wasmbench.mjs';
 import {prepareJavaScriptCoreMeasurementWorktree} from './jsc-measurement-worktree.mjs';
 
+export function javaScriptCoreModuleCast(source) {
+ return source.includes('dynamicDowncast<JSWebAssemblyMemory>')
+  ? 'dynamicDowncast<JSWebAssemblyModule>'
+  : 'jsDynamicCast<JSWebAssemblyModule*>';
+}
+
 // A read-only SDK measurement ABI. It runs only for code inspection, never
 // on compilation/execution paths, and returns extents rather than code bytes.
 export async function prepareJavaScriptCoreNativeSize({source,target,run,sparse=false}) {
@@ -81,6 +87,7 @@ uint64_t Module::wasmFyiNativeCodeSize()
  // JS objects use JSC ClassInfo casts; historical releases lack WTF traits.
  await patch(base+'jsc.cpp',text=>{
   text=replace(text,'#include "JSWebAssemblyMemory.h"','#include "JSWebAssemblyMemory.h"\n#include "JSWebAssemblyModule.h"\n#include "WasmModule.h"');
+  const moduleCast=javaScriptCoreModuleCast(text);
   const declaration='static JSC_DECLARE_HOST_FUNCTION(functionWebAssemblyMemoryMode);';
   text=replace(text,declaration,declaration+'\nstatic JSC_DECLARE_HOST_FUNCTION(functionWasmFyiNativeCodeSize);');
   const registration='addFunction(vm, "WebAssemblyMemoryMode"_s, functionWebAssemblyMemoryMode, 1);';
@@ -89,7 +96,7 @@ uint64_t Module::wasmFyiNativeCodeSize()
   return replace(text,definition,`JSC_DEFINE_HOST_FUNCTION(functionWasmFyiNativeCodeSize, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     auto scope = DECLARE_THROW_SCOPE(globalObject->vm());
-    if (auto* module = jsDynamicCast<JSWebAssemblyModule*>(callFrame->argument(0)))
+    if (auto* module = ${moduleCast}(callFrame->argument(0)))
         return JSValue::encode(jsNumber(static_cast<double>(module->module().wasmFyiNativeCodeSize())));
     return throwVMTypeError(globalObject, scope, "wasmFyiNativeCodeSize requires a WebAssembly.Module"_s);
 }

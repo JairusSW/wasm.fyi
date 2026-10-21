@@ -1,5 +1,13 @@
-import {join} from 'node:path';import test from 'node:test';import assert from 'node:assert/strict';import {readFile} from 'node:fs/promises';import {withV8FreshSampling} from './lib/v8-fresh-sampling.mjs';
-const source=await readFile(process.env.WASMFYI_TEST_HARNESS?join(process.env.WASMFYI_TEST_HARNESS,'adapters/v8/adapter.mjs'):new URL('../.wasmfyi/local/six-month-campaign-20261009/frozen-harness/adapters/v8/adapter.mjs',import.meta.url),'utf8');
+import test from 'node:test';import assert from 'node:assert/strict';import {withV8FreshSampling} from './lib/v8-fresh-sampling.mjs';
+const source=`      if(r.scenario!=='compile'){setup();
+      if (!['first-call', 'trajectory', 'teardown'].includes(r.scenario)) verify(invoke());}
+      const samples=[];
+      for(let i=0;i<r.samples;i++){
+        const target=construct(),start=now(),result=invoke(target),elapsed=now()-start;
+        verify(result,target);
+        samples.push({index:i,warmup:false,elapsed_ns:Number(elapsed),operations:1,sample_type:'individual_operation',verified:true,result:normalize(result,target)});
+      }
+      return {samples};`;
 const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
 function run(source){const start=source.indexOf("      if(r.scenario!=='compile')"),end=source.indexOf('      return {samples};',start)+'      return {samples};'.length;return new AsyncFunction('r','context','with(context){'+source.slice(start,end)+'}')}
 function context(bad=false){let elapsed=0n;const instances=[];const make=(consumed=false)=>{const m={calls:consumed?1:0,exports:{}};m.exports.benchmark=()=>{m.calls++;return bad?99:1+m.calls*16};instances.push(m);return m};const original=make(true);return {instances,original,instance:original,module:{},prep:{profile:'timing',workload:{export:'benchmark',reset:'fresh_instance_per_sample'}},setup(){},construct:()=>make(),initialize:x=>x,invoke(target){return (target||this.instance).exports.benchmark()},verify(result){if(result!==17)throw Error('incorrect result')},normalize:x=>x,argumentsForCall:()=>[16],now:()=>++elapsed,req:{}}}

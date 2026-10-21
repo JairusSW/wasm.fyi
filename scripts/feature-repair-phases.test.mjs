@@ -9,6 +9,9 @@ test('completed audited repairs are terminal across device slices',()=>{
  assert.deepEqual(featureRepairPhases({...input,prior:{...input.prior,status:'completed',repairOf:'older-capture.json'}}),[]);
  assert.deepEqual(featureRepairPhases({...input,prior:{...input.prior,status:'repair-pending',repairOf:'older-capture.json'}}),['compile','instantiate']);
 });
+test('source-bound reclassification is terminal without rerunning retained evidence',()=>assert.deepEqual(featureRepairPhases({...input,prior:{...input.prior,status:'completed',classifiedFrom:'raw.json'}}),[]));
+test('an explicit adapter upgrade may retry a completed failed repair',()=>assert.deepEqual(featureRepairPhases({...input,prior:{...input.prior,status:'completed',repairOf:'older.json'},retryCompleted:true}),['compile','instantiate']));
+test('a backend-binding repair reruns every recorded phase',()=>assert.deepEqual(featureRepairPhases({...input,forceAll:true}),['compile','instantiate','first-call']));
 test('other engines and unrelated proposals never repair unsupported',()=>{
  assert.deepEqual(featureRepairPhases({...input,engine:'wasm3',repairEngines:['wasm3']}),['instantiate']);
  assert.deepEqual(featureRepairPhases({...input,workload:{...workload,features:['gc']}}),['instantiate']);

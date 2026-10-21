@@ -79,10 +79,11 @@ class FeatureReuseTest(unittest.TestCase):
         self.c.execute('INSERT INTO history VALUES(?,?,?)', (platform, self.old, row))
         self.c.execute('INSERT INTO platform_observations VALUES(?,?)', (platform, row))
 
-    def run_reuse(self):
+    def run_reuse(self, feature_root=None):
         self.c.commit()
         before = self.db.read_bytes()
-        receipt = reuse.reuse(self.db, self.expected, self.root, publisher.valid_sample_count)
+        receipt = reuse.reuse(self.db, self.expected, self.root,
+                              publisher.valid_sample_count, feature_root)
         self.assertEqual(self.db.read_bytes(), before, 'Reuse modified the source database')
         return receipt
 
@@ -148,6 +149,16 @@ class FeatureReuseTest(unittest.TestCase):
         reuse.write(path, {'items': {'1' * 64: {'status': 'repair-pending'}}, 'completedEngines': []})
         self.assertEqual(self.run_reuse()['reused'], 0)
         self.assertEqual(json.loads(path.read_text())['items']['1' * 64]['status'], 'repair-pending')
+
+    def test_named_feature_root_receives_reused_ledger_and_capture(self):
+        for phase in range(4):
+            self.observation(phase)
+        feature_root = self.root / 'latest-features-v2'
+        self.assertEqual(self.run_reuse(feature_root)['reused'], 1)
+        entry = json.loads((feature_root / 'ledger.json').read_text())['items']['1' * 64]
+        self.assertEqual(entry['engine'], 'wasmi')
+        self.assertEqual((feature_root / 'captures' / entry['capture']).read_bytes(),
+                         (self.root / 'captures' / entry['capture']).read_bytes())
 
 
 if __name__ == '__main__':

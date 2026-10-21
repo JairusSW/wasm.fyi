@@ -45,6 +45,98 @@ const wazeroRejections=[
  {feature:'half-precision',reason:/cannot pop the operand for i32x4\.abs: type mismatch: expected v128, but was f32/},
  {feature:'stringref',reason:/invalid instruction 0xfb/},
  {feature:'acquire-release-atomics',reason:/invalid memory alignment/},
+ {feature:'shared-everything-threads',reason:/invalid byte for mutability: 0x3 != 0x00 or 0x01/},
+];
+const v8Rejections=[
+ {feature:'custom-page-sizes',reason:/invalid memory limits flags 0x9/},
+ {feature:'acquire-release-atomics',reason:/(?:invalid alignment; expected maximum alignment is 2|shared memories are not supported with --experimental-wasm-shared yet)/},
+ {feature:'shared-everything-threads',reason:/(?:invalid atomic opcode: 0xfe[0-9a-f]+|shared memories are not supported with --experimental-wasm-shared yet)/},
+ {feature:'memory-control',reason:/invalid numeric opcode: 0xfc12/},
+ {feature:'custom-descriptors',reason:/invalid gc opcode: fb2[01]/},
+];
+const wavmRejections=[
+ {feature:'gc',reason:/(?:unknown function type tag \((?:80|94|95)\)|unknown opcode \(64284\))/},
+ {feature:'exceptions',reason:/unknown section ID \(13/},
+ {feature:'legacy-exceptions',reason:/unknown section ID \(13/},
+ {feature:'tail-call',reason:/unknown opcode \((?:18|19)\)/},
+ {feature:'compact-imports',reason:/(?:invalid value type encoding|invalid reference type encoding)/},
+ {feature:'relaxed-simd',reason:/unknown opcode \(253 2(?:56|59|61|67)\)/},
+ {feature:'typed-function-references',reason:/(?:unknown opcode \(20\)|invalid (?:value|reference) type encoding)/},
+ {feature:'custom-page-sizes',reason:/unknown memory type flag/},
+ {feature:'shared-everything-threads',reason:/(?:unknown function type tag \(101\)|Invalid unsigned LEB encoding)/},
+ {feature:'stack-switching',reason:/unknown function type tag \(93\)/},
+ {feature:'memory-control',reason:/unknown opcode \(64530\)/},
+ {feature:'half-precision',reason:/unknown opcode \(253 288\)/},
+ {feature:'stringref',reason:/unknown opcode \(64425\)/},
+ {feature:'acquire-release-atomics',reason:/(?:invalid alignment|unknown atomic opcode|shared memory requires atomics feature)/},
+ {feature:'custom-descriptors',reason:/unknown function type tag \(78\)/},
+ {feature:'wide-arithmetic',reason:/unknown opcode \(6453[1-4]\)/},
+ {feature:'extended-const',reason:/expected end opcode: loaded 65 but was expecting 11/},
+ {feature:'extended-name-section',reason:/unknown function type tag \(95\)/},
+];
+const spiderMonkeyRejections=[
+ {feature:'gc',reason:/(?:Structure types not enabled|gc types not enabled|expected type form|unrecognized opcode: fb 1c)/},
+ {feature:'compact-imports',reason:/unsupported import kind/},
+ {feature:'wide-arithmetic',reason:/unrecognized opcode: fc 1[3-6]/},
+ {feature:'typed-function-references',reason:/(?:unrecognized opcode: 14 0|bad type|invalid result type for select)/},
+ {feature:'custom-page-sizes',reason:/unexpected bits set in flags: 8/},
+ {feature:'shared-everything-threads',reason:/(?:expected type form|unexpected bits set in global flags)/},
+ {feature:'stack-switching',reason:/expected type form/},
+ {feature:'memory-control',reason:/unrecognized opcode: fc 12/},
+ {feature:'half-precision',reason:/unrecognized opcode: fd 120/},
+ {feature:'stringref',reason:/unrecognized opcode: fb a9/},
+ {feature:'acquire-release-atomics',reason:/greater than natural alignment/},
+ {feature:'custom-descriptors',reason:/expected type form/},
+ {feature:'relaxed-simd',reason:/unrecognized opcode: fd 10(?:0|3|5|b)/},
+ {feature:'exceptions',reason:/unrecognized opcode: 1f 0/},
+ {feature:'tail-call',reason:/unrecognized opcode: 1[23] 0/},
+ {feature:'memory64',reason:/unexpected bits set in flags: 4/},
+ {feature:'multi-memory',reason:/the number of memories must be at most one/},
+];
+const jscRejections=[
+ {feature:'compact-imports',reason:/can't get \d+(?:th|st|nd|rd) Import's kind in module 'wasmbench' field ''/},
+ {feature:'custom-page-sizes',reason:/resizable limits flag are not valid 09/},
+ {feature:'shared-everything-threads',reason:/(?:Type is non-Func, non-Struct, and non-Array -27|invalid Global's mutability: 0x03)/},
+ {feature:'stack-switching',reason:/Type is non-Func, non-Struct, and non-Array -35/},
+ {feature:'memory-control',reason:/invalid 0xfc extended op 18/},
+ {feature:'half-precision',reason:/invalid extended simd op 288/},
+ {feature:'stringref',reason:/invalid extended GC op 169/},
+ {feature:'acquire-release-atomics',reason:/byte alignment 17179869184 does not match against atomic op's natural alignment 4/},
+ {feature:'custom-descriptors',reason:/Type is non-Func, non-Struct, and non-Array -51/},
+];
+const wasmiRejections=[
+ {feature:'gc',reason:/(?:struct|array) indexed types not supported without the gc feature|gc (?:support is not enabled|proposal must be enabled to use subtypes)/},
+ {feature:'compact-imports',reason:/invalid leading byte \(0x7[ef]\) for external kind/},
+ {feature:'typed-function-references',reason:/(?:function references support is not enabled|function references required for index reference types)/},
+ {feature:'exceptions',reason:/exceptions proposal not enabled/},
+ {feature:'legacy-exceptions',reason:/exceptions proposal not enabled/},
+ {feature:'shared-everything-threads',reason:/(?:shared composite types require the shared-everything-threads proposal|malformed mutability -- or shared globals require the shared-everything-threads proposal)/},
+ {feature:'stack-switching',reason:/cannot define continuation types when stack switching is disabled/},
+ {feature:'memory-control',reason:/memory control support is not enabled/},
+ {feature:'half-precision',reason:/unknown 0xfd subopcode: 0x120/},
+ {feature:'stringref',reason:/unknown 0xfb subopcode: 0xa9/},
+ {feature:'acquire-release-atomics',reason:/threads must be enabled for shared memories/},
+ {feature:'custom-descriptors',reason:/invalid leading byte \(0x4d\) for type/},
+ {feature:'extended-name-section',reason:/(?:struct indexed types not supported without the gc feature|exceptions proposal not enabled)/},
+];
+const wamrRejections=[
+ // WAMR's pinned build rules restrict these proposals to the classic
+ // interpreter; the LLVM JIT deliberately builds them out.
+ {engine:'wamr-llvm-jit',feature:'memory64',reason:/module validation\/loading rejected input/},
+ {engine:'wamr-llvm-jit',feature:'multi-memory',reason:/module validation\/loading rejected input/},
+ {engine:'wamr-llvm-jit',feature:'legacy-exceptions',reason:/module validation\/loading rejected input/},
+ {feature:'relaxed-simd',reason:/module validation\/loading rejected input/},
+ {feature:'exceptions',reason:/module validation\/loading rejected input/},
+ {feature:'compact-imports',reason:/module validation\/loading rejected input/},
+ {feature:'custom-page-sizes',reason:/module validation\/loading rejected input/},
+ {feature:'shared-everything-threads',reason:/module validation\/loading rejected input/},
+ {feature:'stack-switching',reason:/module validation\/loading rejected input/},
+ {feature:'memory-control',reason:/module validation\/loading rejected input/},
+ {feature:'half-precision',reason:/module validation\/loading rejected input/},
+ {feature:'stringref',reason:/module validation\/loading rejected input/},
+ {feature:'acquire-release-atomics',reason:/module validation\/loading rejected input/},
+ {feature:'custom-descriptors',reason:/module validation\/loading rejected input/},
+ {feature:'wide-arithmetic',reason:/module validation\/loading rejected input/},
 ];
 
 // Wasmtime's validator knows encodings for some proposals which the compiler
@@ -55,12 +147,18 @@ export function classifyFeatureRuntimeRejection({source,engine,workload,capture,
  const wasmtime=source?.repository==='bytecodealliance/wasmtime'&&['wasmtime','wasmtime-winch'].includes(engine);
  const wasmer=source?.repository==='wasmerio/wasmer'&&['wasmer-singlepass','wasmer-cranelift','wasmer-llvm'].includes(engine);
  const wazero=source?.repository==='tetratelabs/wazero'&&['wazero','wazero-interpreter'].includes(engine);
- if((!wasmtime&&!wasmer&&!wazero)||!/^[a-f0-9]{40}$/.test(source.revision||'')||!workload?.id?.startsWith('features/')||!sha(workload.sha256)||!capture?.results?.length)return null;
+ const v8=source?.repository==='nodejs/node'&&engine==='v8';
+ const wavm=source?.repository==='WAVM/WAVM'&&engine==='wavm';
+ const spiderMonkey=source?.repository==='mozilla-firefox/firefox'&&engine==='spidermonkey';
+ const jsc=source?.repository==='WebKit/WebKit'&&engine==='jsc';
+ const wasmi=source?.repository==='wasmi-labs/wasmi'&&engine==='wasmi';
+ const wamr=source?.repository==='bytecodealliance/wasm-micro-runtime'&&['wamr','wamr-fast-jit','wamr-llvm-jit'].includes(engine);
+ if((!wasmtime&&!wasmer&&!wazero&&!v8&&!wavm&&!spiderMonkey&&!jsc&&!wasmi&&!wamr)||!/^[a-f0-9]{40}$/.test(source.revision||'')||!workload?.id?.startsWith('features/')||!sha(workload.sha256)||!capture?.results?.length)return null;
  if(capture.source?.revision!==source.revision||capture.source?.repository!==source.repository)return null;
  const contractSha256=workloadContract(workload),failed=capture.results.filter(row=>row.latencyStatus==='failed');
  if(failed.length!==capture.results.length||failed.some(row=>row.engine!==engine||row.workload!==workload.id||row.artifactSha256!==workload.sha256||row.contractSha256!==contractSha256||(row.timingSamples||0)!==0||(row.samplesNs?.length||0)!==0))return null;
- const rejection=(wasmtime?wasmtimeRejections:wasmer?wasmerRejections:wazeroRejections).find(candidate=>(!candidate.engine||candidate.engine===engine)&&workload.features?.includes(candidate.feature));
+ const rejection=(wasmtime?wasmtimeRejections:wasmer?wasmerRejections:wazero?wazeroRejections:v8?v8Rejections:wavm?wavmRejections:spiderMonkey?spiderMonkeyRejections:jsc?jscRejections:wasmi?wasmiRejections:wamrRejections).find(candidate=>(!candidate.engine||candidate.engine===engine)&&workload.features?.includes(candidate.feature));
  if(!rejection||!failures?.length||failures.some(failure=>failure.engine!==engine||failure.workload!==workload.id||!['error','preflight_failed'].includes(failure.status)||!rejection.reason.test(failure.reason||'')||(failure.samples?.length||0)!==0))return null;
- const runtime=wasmtime?`Wasmtime ${engine==='wasmtime-winch'?'Winch':'Cranelift'}`:wasmer?`Wasmer ${engine.slice('wasmer-'.length)}`:`Wazero ${engine==='wazero'?'compiler':'interpreter'}`;
+ const runtime=wasmtime?`Wasmtime ${engine==='wasmtime-winch'?'Winch':'Cranelift'}`:wasmer?`Wasmer ${engine.slice('wasmer-'.length)}`:wazero?`Wazero ${engine==='wazero'?'compiler':'interpreter'}`:v8?'V8 Turboshaft':wavm?'WAVM LLVM':spiderMonkey?'SpiderMonkey Ion':jsc?'JSC OMG':wasmi?'Wasmi':`WAMR ${engine==='wamr-llvm-jit'?'LLVM JIT':engine==='wamr-fast-jit'?'Fast JIT':'interpreter'}`;
  return {engine,workload:workload.id,status:'unsupported',reason:`Source-bound ${runtime} compiler rejects ${rejection.feature}`,sourceRevision:source.revision,artifactSha256:workload.sha256,contractSha256,rawFailures:failures.map(({phase,reason})=>({phase,reason}))};
 }

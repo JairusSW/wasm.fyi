@@ -131,11 +131,12 @@ export async function buildHistoricalBinding({root,pin,configuration,invoke,env}
     if(!['darwin-arm64','linux-x64'].includes(`${process.platform}-${process.arch}`))throw Error('No qualified Node release archive for '+process.platform+'/'+process.arch);
     const archive=join(root,'toolchains',archiveName),checksums=join(root,'toolchains','SHASUMS256-'+version+'.txt');
     await mkdir(join(root,'toolchains'),{recursive:true});
-    command('curl',['--fail','--location','--retry','3','--max-time','600',`https://nodejs.org/dist/${pin.tag}/${archiveName}`,'-o',archive],{timeout:10*60*1000});
-    command('curl',['--fail','--location','--retry','3','--max-time','120',`https://nodejs.org/dist/${pin.tag}/SHASUMS256.txt`,'-o',checksums],{timeout:3*60*1000});
+    if(!await exists(checksums))command('curl',['--fail','--location','--retry','3','--max-time','120',`https://nodejs.org/dist/${pin.tag}/SHASUMS256.txt`,'-o',checksums],{timeout:3*60*1000});
     const line=(await readFile(checksums,'utf8')).split(/\r?\n/).find(item=>item.trim().endsWith('  '+archiveName));
     if(!line)throw Error('Official Node SHA256 manifest does not contain '+archiveName);
     const archiveSha256=line.trim().split(/\s+/)[0];
+    if(!await exists(archive)||digest(await readFile(archive))!==archiveSha256)
+      command('curl',['--fail','--location','--retry','3','--max-time','600',`https://nodejs.org/dist/${pin.tag}/${archiveName}`,'-o',archive],{timeout:10*60*1000});
     if(digest(await readFile(archive))!==archiveSha256)throw Error('Official Node release archive checksum mismatch');
     await mkdir(target,{recursive:true});
     command('tar',['-xJf',archive,'--strip-components=1','-C',target],{timeout:10*60*1000});

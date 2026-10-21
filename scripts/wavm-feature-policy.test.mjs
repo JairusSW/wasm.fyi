@@ -1,19 +1,14 @@
-import {test} from 'node:test';import assert from 'node:assert/strict';
-import {withWavmFeaturePolicy} from './lib/wavm-feature-policy.mjs';
-const fixture=`struct Engine { wasm_engine_t* value=wasm_engine_new(); ~Engine(){if(value)wasm_engine_delete(value);} };
-if(!WAVM::Runtime::loadBinaryModule(bytes,size,module))throw error;
-loadBinaryModule(bytes,size,*module,WAVM::IR::FeatureSpec(),&error);
-loadBinaryModule(data,size,diagnostic,WAVM::IR::FeatureSpec(),&loadError);`;
-test('configured engine and code/WASI/diagnostic loaders share enabled feature specification',()=>{
- const s=withWavmFeaturePolicy(fixture);
- assert.match(s,/spec.memory64=true; spec.multipleMemories=true/);
- assert.match(s,/wasm_config_feature_set_memory64\(config,true\)/);assert.match(s,/wasm_config_feature_set_multimemory\(config,true\)/);
- assert.match(s,/loadBinaryModule\(bytes,size,module,wb_feature_spec\(\)\)/);
- assert.match(s,/loadBinaryModule\(bytes,size,\*module,wb_feature_spec\(\),&error\)/);
- assert.match(s,/loadBinaryModule\(data,size,diagnostic,wb_feature_spec\(\),&loadError\)/);
- assert.equal(withWavmFeaturePolicy(s),s);
+import test from 'node:test';import assert from 'node:assert/strict';
+import {withWavmMemory64CAPI,withWavmFeatureEngine,withWavmDiagnosticFeatures} from './lib/wavm-feature-policy.mjs';
+test('exposes source-declared memory64 through WAVM C API idempotently',()=>{
+ const once=withWavmMemory64CAPI('WASM_DECLARE_FEATURE(multimemory)','IMPLEMENT_FEATURE(multimemory, multipleMemories)');
+ assert.match(once.header,/FEATURE\(memory64\)/);assert.match(once.implementation,/FEATURE\(memory64, memory64\)/);
+ assert.deepEqual(withWavmMemory64CAPI(once.header,once.implementation),once);
 });
-test('unknown or partially patched loader seams fail closed',()=>{
- assert.throws(()=>withWavmFeaturePolicy(fixture.replace('loadBinaryModule(bytes,size,module))','changed_loader()')));
- assert.throws(()=>withWavmFeaturePolicy(withWavmFeaturePolicy(fixture)+' WAVM::IR::FeatureSpec()'));
+test('diagnoses rejected modules with every source-declared proposal enabled',()=>{
+ const source='if(!load(bytes,WAVM::IR::FeatureSpec(),&error)) fail();';const once=withWavmDiagnosticFeatures(source);assert.match(once,/FeatureLevel::proposed/);assert.equal(withWavmDiagnosticFeatures(once),once);
+});
+test('constructs the WAVM engine with all source-declared WebAssembly features',()=>{
+ const source='struct Engine { wasm_engine_t* value=wasm_engine_new(); ~Engine(){if(value)wasm_engine_delete(value);} };';
+ const once=withWavmFeatureEngine(source);for(const name of ['atomics','exception_handling','extended_name_section','multimemory','memory64'])assert.match(once,new RegExp('feature_set_'+name));assert.equal(withWavmFeatureEngine(once),once);
 });

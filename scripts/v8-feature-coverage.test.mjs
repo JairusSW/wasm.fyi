@@ -26,3 +26,11 @@ test('adds actual decoder probes and remains idempotent',()=>{
  assert.throws(()=>withV8FeatureCoverage(source,{}));
  assert.throws(()=>withV8FeatureCoverage('',probes));
 });
+test('extends a harness that already admits typed thread callbacks',()=>{
+ const current=source
+  .replace("'can_host_profile_threads-defined-v1':true,","'can_host_profile_threads-defined-v1':true,'can_host_profile_threads-identity-v1':true,")
+  .replace("'threads-defined-v1','wasi-preview1-readonly-v1'","'jspi-v1','threads-defined-v1','threads-identity-v1','wasi-preview1-readonly-v1'");
+ const updated=withV8FeatureCoverage(current,probes);
+ assert.equal(updated.match(/can_host_profile_threads-identity-v1/g)?.length,1);
+ assert.equal(updated.match(/threads-opaque-identity-v1/g)?.length,3);
+});

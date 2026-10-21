@@ -130,12 +130,20 @@ if(!files.get('experiment/runner.go').includes('trackSDKJVMInputs(&r)')){
 `));
 }
 function replace(file,old,next){const text=files.get(file);if(!text.includes(old))throw Error(`Collector source changed: ${file}`);files.set(file,text.replace(old,next));}
-if(!files.get('experiment/types.go').includes('SteadyOperations')){
- replace('experiment/types.go','type Options struct {','type Options struct {\n SteadyOperations int `json:"steady_operations,omitempty"`');
+if(!files.get('experiment/types.go').includes('SteadyOperations'))replace('experiment/types.go','type Options struct {','type Options struct {\n SteadyOperations int `json:"steady_operations,omitempty"`');
+if(!files.get('experiment/runner.go').includes('validateSteadyOperations(o.SteadyOperations)')){
  replace('experiment/runner.go','\to := l.Options','\to := l.Options\n if err := validateSteadyOperations(o.SteadyOperations); err != nil { return err }');
+}
+if(!files.get('experiment/runner.go').includes('r.Operations = o.SteadyOperations')){
  replace('experiment/runner.go','\tr := protocol.RunRequest{Scenario: scenario, Samples: o.Samples, Operations: o.Operations, Warmup: warmup, PhaseBarriers: o.PhaseBarriers && block >= 0}', '\tr := protocol.RunRequest{Scenario: scenario, Samples: o.Samples, Operations: o.Operations, Warmup: warmup, PhaseBarriers: o.PhaseBarriers && block >= 0}\n if scenario == "steady" && o.SteadyOperations > 0 { r.Operations = o.SteadyOperations }');
+}
+if(!files.get('cmd/wasmbench/main.go').includes('steadyOperations := f.Int(')){
  replace('cmd/wasmbench/main.go','\t\toperations :=','\t\tsteadyOperations := f.Int("steady-operations",0,"operations per steady batch only; 0 uses --operations, maximum 1000000")\n\t\toperations :=');
+}
+if(!files.get('cmd/wasmbench/main.go').includes('if *steadyOperations != 0')){
  replace('cmd/wasmbench/main.go','\t\tif *lockPath != "" {','\t\tif *lockPath != "" {\n   if *steadyOperations != 0 { return fmt.Errorf("--steady-operations cannot override an existing lock") }');
+}
+if(!files.get('cmd/wasmbench/main.go').includes('SteadyOperations:*steadyOperations,')){
  replace('cmd/wasmbench/main.go','experiment.Options{','experiment.Options{SteadyOperations:*steadyOperations,');
 }
 if(!files.get('experiment/runner.go').includes('case "chasm":')){
@@ -170,27 +178,37 @@ if(!files.get('experiment/runner.go').includes('case "chicory-jit":')){
             r.Command = []string{java,"-XX:ActiveProcessorCount=1","-XX:+UseSerialGC","-Xbatch","-jar",filepath.Join(root,"bin","adapter-chicory-jit.jar")}`));
  await writeFile(join(root,'experiment/runner.go'),files.get('experiment/runner.go'));
 }
-if(!files.get('experiment/types.go').includes('AdaptiveSamples')){
- replace('experiment/types.go','type Options struct {','type Options struct {\n AdaptiveSamples bool `json:"adaptive_samples,omitempty"`');
+if(!files.get('experiment/types.go').includes('AdaptiveSamples'))replace('experiment/types.go','type Options struct {','type Options struct {\n AdaptiveSamples bool `json:"adaptive_samples,omitempty"`');
+if(!files.get('experiment/runner.go').includes('adaptive sampling requires timing')){
  replace('experiment/runner.go','\tif o.Launches < 1',` if o.AdaptiveSamples {
   if o.Profile!="timing"||o.Launches!=1||o.Samples!=5||o.Warmup!=0||o.PhaseBarriers{return fmt.Errorf("adaptive sampling requires timing, one process, groups of five, zero warmup, no phase barriers")}
   for _,n:=range o.ScenarioSamples{if n!=5{return fmt.Errorf("adaptive sample overrides must equal five")}}
   for _,scenario:=range o.Scenarios{if !slices.Contains([]string{"compile","instantiate","first-call","steady"},scenario){return fmt.Errorf("adaptive sampling requires latency scenarios")}}
  }
 \tif o.Launches < 1`);
+}
+if(!files.get('experiment/runner.go').includes('collectAdaptiveSamples(func(group protocol.RunRequest)')){
  replace('experiment/runner.go','\t\tresp, e = c.CallPhased(protocol.Request{Method: "run", Run: &request}, handler)',`  if o.AdaptiveSamples && block>=0 && o.Profile=="timing" {
    resp,e=collectAdaptiveSamples(func(group protocol.RunRequest)(protocol.Response,error){return c.CallPhased(protocol.Request{Method:"run",Run:&group},nil)},request)
    request.Samples=len(resp.Samples)
   } else {
    resp, e = c.CallPhased(protocol.Request{Method: "run", Run: &request}, handler)
   }`);
+}
+if(!files.get('cmd/wasmbench/main.go').includes('adaptiveSamples := f.Bool(')){
  replace('cmd/wasmbench/main.go','\t\ttimingPeakRSS :=', '\t\tadaptiveSamples := f.Bool("adaptive-samples",false,"same-process groups of five until stable; compile/instantiate maximum 10; execution maximum 25; zero warmup")\n\t\ttimingPeakRSS :=');
+}
+if(!files.get('cmd/wasmbench/main.go').includes('if *adaptiveSamples{return')){
  replace('cmd/wasmbench/main.go','\t\tif *lockPath != "" {','\t\tif *lockPath != "" {\n   if *adaptiveSamples{return fmt.Errorf("--adaptive-samples cannot override an existing lock")}');
+}
+if(!files.get('cmd/wasmbench/main.go').includes('AdaptiveSamples:*adaptiveSamples,')){
  replace('cmd/wasmbench/main.go','experiment.Options{', 'experiment.Options{AdaptiveSamples:*adaptiveSamples,');
 }
-if(!files.get('experiment/types.go').includes('adaptiveSessions')){
- replace('experiment/types.go','type Options struct {','type Options struct {\n adaptiveSessions *adaptiveSessionPool');
+if(!files.get('experiment/types.go').includes('adaptiveSessions'))replace('experiment/types.go','type Options struct {','type Options struct {\n adaptiveSessions *adaptiveSessionPool');
+if(!files.get('experiment/runner.go').includes('lock.Options.adaptiveSessions = newAdaptiveSessionPool(ctx)')){
  replace('experiment/runner.go','\texecutable, runnerErr := os.Executable()', '\tif lock.Options.AdaptiveSamples {\n  lock.Options.adaptiveSessions = newAdaptiveSessionPool(ctx)\n  defer lock.Options.adaptiveSessions.closeAll()\n }\n\texecutable, runnerErr := os.Executable()');
+}
+if(!files.get('experiment/runner.go').includes('groups := make(map[[3]int][]measurement)')){
  replace('experiment/runner.go','\t\tmeasurementOutcomes := make(map[string]int)',`  if lock.Options.AdaptiveSamples {
    // Finish one runtime/workload/launch before opening the next SDK session.
    groups := make(map[[3]int][]measurement)
@@ -206,7 +224,11 @@ if(!files.get('experiment/types.go').includes('adaptiveSessions')){
    for _,key:=range order { for _,job:=range groups[key] { phases=append(phases,[]measurement{job});manifest.Order=append(manifest.Order,job.id) } }
   }
 \t\tmeasurementOutcomes := make(map[string]int)`);
+}
+if(!files.get('experiment/runner.go').includes('adaptiveSessions.complete(')){
  replace('experiment/runner.go','\tstart := time.Now()\n\tdefer func() { t.DurationNS = time.Since(start).Nanoseconds() }()', '\tif o.adaptiveSessions != nil && block >= 0 { defer func(){ o.adaptiveSessions.complete(r,w,block,scenario,o,&t) }() }\n\tstart := time.Now()\n\tdefer func() { t.DurationNS = time.Since(start).Nanoseconds() }()');
+}
+if(!files.get('experiment/runner.go').includes('var sharedSession *adaptiveSession')){
  replace('experiment/runner.go','\tc, e := agent.StartIsolated(trialCtx, r.Command, filepath.Join(root, t.Log), o.Timeout, o.Resources)',` var sharedSession *adaptiveSession
  var c *agent.Client
  var e error
@@ -215,24 +237,32 @@ if(!files.get('experiment/types.go').includes('adaptiveSessions')){
   if sharedSession!=nil { t.Log=sharedSession.log }
   if e==nil { c=sharedSession.client; if o.TimingPeakRSS { beginAdaptiveRSSPhase(sharedSession) } }
  } else { c,e=agent.StartIsolated(trialCtx,r.Command,filepath.Join(root,t.Log),o.Timeout,o.Resources) }`);
+}
+if(!files.get('experiment/runner.go').includes('sharedSession.failureStatus')){
  replace('experiment/runner.go','\t\tt.Reason = e.Error()\n\t\treturn\n\t}\n\tt.Isolation = c.Isolation()', '\t\tt.Reason = e.Error()\n  if sharedSession!=nil && sharedSession.failureStatus!="" { t.Status=sharedSession.failureStatus }\n\t\treturn\n\t}\n\tt.Isolation = c.Isolation()');
+}
+if(!files.get('experiment/runner.go').includes('adaptivePhaseRSS(')){
  replace('experiment/runner.go','\t\tif err := c.Close(); err != nil {',`  if sharedSession!=nil {
    if block>=0 && o.TimingPeakRSS { t.Observations=append(t.Observations,adaptivePhaseRSS(sharedSession,scenario)) }
    return
   }
 \t\tif err := c.Close(); err != nil {`);
+}
+if(!files.get('experiment/runner.go').includes('context.AfterFunc(trialCtx')){
  replace('experiment/runner.go','\tprepareProfile := o.Profile',` if sharedSession!=nil {
   stop:=context.AfterFunc(trialCtx,func(){ sharedSession.cancel() })
   defer stop()
  }
 \tprepareProfile := o.Profile`);
+}
+if(!files.get('experiment/runner.go').includes('sharedSession.prepared')){
  replace('experiment/runner.go','\tresp, e := c.Call(protocol.Request{Method: "prepare", Prepare: &protocol.Preparation{Artifact: filepath.Join(root, w.Artifact), ArtifactSHA256: w.SHA256, Workload: resolveCommandFiles(w, root), Profile: prepareProfile}})',` var resp protocol.Response
  if sharedSession==nil || !sharedSession.prepared {
   resp,e=c.Call(protocol.Request{Method:"prepare",Prepare:&protocol.Preparation{Artifact:filepath.Join(root,w.Artifact),ArtifactSHA256:w.SHA256,Workload:resolveCommandFiles(w,root),Profile:prepareProfile}})
   if e==nil && sharedSession!=nil { sharedSession.prepared=true }
  }`);
 }
-files.set('experiment/runner.go',files.get('experiment/runner.go').replace('for phaseIndex, scenario := range lock.Options.Scenarios {','for phaseIndex, scenario := range adaptivePhaseOrder(lock.Options.Scenarios) {'));
+if(!files.get('experiment/runner.go').includes('for phaseIndex, scenario := range adaptivePhaseOrder(lock.Options.Scenarios) {'))files.set('experiment/runner.go',files.get('experiment/runner.go').replace('for phaseIndex, scenario := range lock.Options.Scenarios {','for phaseIndex, scenario := range adaptivePhaseOrder(lock.Options.Scenarios) {'));
 for(const [file,text]of files)await writeFile(join(root,file),text);
 for(const name of ['adaptive.go','adaptive_test.go','steady_operations_test.go','adaptive_session.go','adaptive_session_test.go','timing_rss.go','timing_rss_shared_test.go','runtime_inputs.go','runtime_inputs_test.go'])await copyFile(fileURLToPath(new URL('../adapters/controller/'+name,import.meta.url)),join(root,'experiment',name));
 const jsPath=join(root,'adapters/js-shell/adapter.js');

@@ -49,9 +49,9 @@ def row_result(row):
     return result
 
 
-def reuse(database, expected, campaign, valid_sample_count):
+def reuse(database, expected, campaign, valid_sample_count, feature_root=None):
     campaign = Path(campaign)
-    feature_root = campaign / 'latest-features'
+    feature_root = Path(feature_root) if feature_root else campaign / 'latest-features'
     if (feature_root / 'ledger-writer-lock').exists():
         raise RuntimeError('A feature writer owns the ledger; do not seed concurrently')
     ledger_path = feature_root / 'ledger.json'
@@ -148,12 +148,15 @@ def main():
     parser.add_argument('--database', type=Path, required=True)
     parser.add_argument('--expected', type=Path, required=True)
     parser.add_argument('--campaign', type=Path, required=True)
+    parser.add_argument('--feature-root', type=Path,
+                        help='Feature ledger directory (defaults to CAMPAIGN/latest-features)')
     parser.add_argument('--publisher', type=Path, required=True)
     args = parser.parse_args()
     spec = importlib.util.spec_from_file_location('publisher', args.publisher)
     publisher = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(publisher)
-    reuse(args.database, json.loads(args.expected.read_text()), args.campaign, publisher.valid_sample_count)
+    reuse(args.database, json.loads(args.expected.read_text()), args.campaign,
+          publisher.valid_sample_count, args.feature_root)
 
 
 if __name__ == '__main__':

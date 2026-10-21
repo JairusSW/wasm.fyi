@@ -36,6 +36,7 @@ import {buildWasmEdgeSDK} from './lib/wasmedge-sdk.mjs';
 import {applyWasmEdgeWorkloadCoverage} from './lib/wasmedge-workload-coverage.mjs';
 import {applyWasmEdgeFeaturePolicy} from './lib/wasmedge-feature-policy.mjs';
 import {buildWavmSDK} from './lib/wavm-sdk.mjs';
+import {applyWavmFeaturePolicy} from './lib/wavm-feature-policy.mjs';
 import {buildChicorySDK} from './lib/chicory-sdk.mjs';
 import {buildCTranspilerSDK} from './lib/c-transpiler-sdk.mjs';
 import {buildSpiderMonkeySDK} from './lib/spidermonkey-sdk.mjs';
@@ -60,6 +61,32 @@ const run=async(program,args,options={})=>{console.log(engine,program,args.join(
 if(!(await stat(root).catch(()=>null)))await copyHistoricalHarness(base,root);
 if(['jsc','spidermonkey','chicory'].includes(engine)) {
  for(const path of ['adapters/js-shell/adapter.js','adapters/js-shell/jsc-host.cpp','experiment/extra_runtimes.go','experiment/extra_runtimes_test.go','experiment/runner.go'])await cp(join(base,path),join(root,path));
+}
+if(engine==='wamr'){
+ const path=join(root,'experiment/extra_runtimes.go');let text=await readFile(path,'utf8');
+ const base='"wasmi", "wavm", "wamr", "wasm3"',aliases='"wasmi", "wavm", "wamr", "wamr-fast-jit", "wamr-llvm-jit", "wasm3"';
+ const occurrences=text.split(base).length-1,adapted=text.split(aliases).length-1;
+ if(occurrences===3)text=text.replaceAll(base,aliases).replace('strings.ReplaceAll(id, "-", "_")','func() string { if strings.HasPrefix(id, "wamr-") { return "wamr" }; return strings.ReplaceAll(id, "-", "_") }()');
+ else if(adapted!==3)throw Error('WAMR runtime alias anchors changed');
+ await writeFile(path,text);
+ const embeddingPath=join(root,'adapters/native/src/wamr.cpp');let embedding=await readFile(embeddingPath,'utf8');
+ const oldEngine='struct Engine { wasm_engine_t* value=wasm_engine_new(); Engine(){wasm_runtime_set_log_level(WASM_LOG_LEVEL_FATAL);if(!wasm_runtime_register_natives("wasmbench",host_symbols,1))throw std::runtime_error("identity host function registration failed");} ~Engine(){if(value)wasm_engine_delete(value);} };';
+ const newEngine=`// wasm.fyi: bind the requested WAMR execution backend before engine creation.
+struct Engine { wasm_engine_t* value=nullptr; Engine(){value=wasm_engine_new();if(!value)throw std::runtime_error("engine creation failed");wasm_runtime_set_log_level(getenv("WASMBENCH_WAMR_DIAGNOSTICS")?WASM_LOG_LEVEL_VERBOSE:WASM_LOG_LEVEL_FATAL);const char* selected=getenv("WASMBENCH_WAMR_RUNNING_MODE");RunningMode mode=Mode_Interp;if(selected&&strcmp(selected,"llvm-jit")==0)mode=Mode_LLVM_JIT;else if(selected&&strcmp(selected,"fast-jit")==0)mode=Mode_Fast_JIT;if(!wasm_runtime_is_running_mode_supported(mode)||!wasm_runtime_set_default_running_mode(mode))throw std::runtime_error("requested WAMR running mode is unavailable");if(!wasm_runtime_register_natives("wasmbench",host_symbols,1))throw std::runtime_error("identity host function registration failed");} ~Engine(){if(value)wasm_engine_delete(value);} };`;
+ embedding=embedding.replace(String.raw`creation.\nstruct`,`creation.
+struct`);
+ if(embedding.includes(oldEngine))embedding=embedding.replace(oldEngine,newEngine);
+ else if(embedding.includes('// wasm.fyi: bind the requested WAMR execution backend'))embedding=embedding.replace(/\/\/ wasm\.fyi: bind the requested WAMR execution backend before engine creation\.\nstruct Engine \{[^\n]+ \};/,newEngine);
+ else throw Error('WAMR running-mode adapter anchor changed');
+ const moduleAnchor='void* wb_module_new(void* e,const uint8_t* bytes,size_t n){WB_TRY{\n';
+ const diagnostic='    if(getenv("WASMBENCH_WAMR_DIAGNOSTICS")){char error[512]={};auto probe=wasm_runtime_load(const_cast<uint8_t*>(bytes),static_cast<uint32_t>(n),error,sizeof(error));if(!probe)throw std::runtime_error(std::string("raw WAMR loader: ")+error);wasm_runtime_unload(probe);}\n';
+ if(!embedding.includes('raw WAMR loader:')){if(!embedding.includes(moduleAnchor))throw Error('WAMR module diagnostic anchor changed');embedding=embedding.replace(moduleAnchor,moduleAnchor+diagnostic)}
+ await writeFile(embeddingPath,embedding);
+ const mainPath=join(root,'adapters/native/src/main.rs');let main=await readFile(mainPath,'utf8');
+ const backend='if cfg!(feature="wavm") || cfg!(feature="wasmer_llvm"){"llvm-jit"}else if cfg!(feature="wasmer_singlepass"){"singlepass-jit"}else{"interpreter"}';
+ const wamrBackend='if cfg!(feature="wamr"){match option_env!("WASMBENCH_WAMR_RUNNING_MODE"){Some("llvm-jit")=>"llvm-jit",Some("fast-jit")=>"fast-jit",_=>"interpreter"}}else '+backend;
+ if(main.includes(backend))main=main.replace(backend,wamrBackend);else if(!main.includes('option_env!("WASMBENCH_WAMR_RUNNING_MODE")'))throw Error('WAMR backend description anchor changed');
+ await writeFile(mainPath,main);
 }
 const harnessRevision=(await run('git',['-C',base,'rev-parse','HEAD'])).output.trim();
 if((await run('git',['-C',base,'status','--porcelain','--untracked-files=no'])).output.trim())throw Error('Frozen harness has tracked changes');
@@ -224,6 +251,7 @@ if(engine==='wago') {
  provenance.adapterWorkloadCoverage=await applyWasmEdgeWorkloadCoverage(root);
  await build();
  } else if(engine==='wavm') {
+ provenance.featurePolicy=await applyWavmFeaturePolicy(source,root);
  provenance.sdk=await buildWavmSDK({source,sdk:join(directory,'wavm-sdk'),target:join(directory,'wavm-build'),harness:root,env,run});
  env.WASMBENCH_WAVM_VERSION=pin.revision;
  await build();
