@@ -107,6 +107,7 @@ async function acquireFeatureProjectLock(){
 }
 await save();
 const repairEngines=(process.env.WASMFYI_FEATURE_REPAIR_ENGINES||'').split(',').filter(Boolean);
+const repairPolicy=process.env.WASMFYI_FEATURE_REPAIR_POLICY||'declared-feature-repair-v1';
 const repairWorkloads=process.env.WASMFYI_FEATURE_REPAIR_WORKLOADS_FILE
  ?await readJSON(resolve(process.env.WASMFYI_FEATURE_REPAIR_WORKLOADS_FILE))
  :JSON.parse(process.env.WASMFYI_FEATURE_REPAIR_WORKLOADS||'[]');
@@ -227,7 +228,7 @@ campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
    }
    // Explicit source-backed Wasmi proposal activation can repair old admission
    // outcomes too. It never selects unrelated GC/EH or an already OK phase.
-   const repairPhases=featureRepairPhases({engine,workload,prior,repairEngines,repairWorkloads,wasmiProposals:process.env.WASMFYI_FEATURE_REPAIR_WASMI_PROPOSALS==='1',documentedProposals:process.env.WASMFYI_FEATURE_REPAIR_DOCUMENTED_PROPOSALS==='1',retryCompleted:process.env.WASMFYI_FEATURE_REPAIR_RETRY_COMPLETED==='1',forceAll:process.env.WASMFYI_FEATURE_REPAIR_ALL==='1'});
+   const repairPhases=featureRepairPhases({engine,workload,prior,repairEngines,repairWorkloads,wasmiProposals:process.env.WASMFYI_FEATURE_REPAIR_WASMI_PROPOSALS==='1',documentedProposals:process.env.WASMFYI_FEATURE_REPAIR_DOCUMENTED_PROPOSALS==='1',retryCompleted:process.env.WASMFYI_FEATURE_REPAIR_RETRY_COMPLETED==='1',forceAll:process.env.WASMFYI_FEATURE_REPAIR_ALL==='1',repairPolicy});
    if(repairEngines.length&&prior&&!repairPhases.length)continue;
    if(!repairPhases.length&&ledger.items[key]?.status==='completed'){if(ledger.items[key].failure)state.errors.push(ledger.items[key].failure);continue;}
    state.current={engine,stage:kind,workload:workload.id,revision:job.source.revision};await save();
@@ -263,7 +264,7 @@ campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
    if(note){await atomicJSON(join(root,'failure-notes',name),note);await atomicJSON(join(campaign,'failure-notes',name),note);state.errors.push({...state.current,...note});}
    const engineQualified=Object.values(ledger.items).some(item=>item.engine===engine&&item.outcomes?.some(([,status])=>status==='ok'));
    const integration=note&&historyIntegrationFailure(note)&&!terminalFeatureRuntimeFailure(note,{engineQualified});
-   ledger.items[key]={...(kind==='compatibility'?{compatibilityScenarioPolicy:repairPhases.length?'retained-original-repair-phases':'scope-aware-v2'}:{}),status:integration?'repair-pending':'completed',engine,stage:kind,workload:workload.id,source:job.source,capture:name,artifactSha256:workload.sha256,contractSha256:workloadContract(workload),outcomes:repairPhases.length?prior.outcomes.map(([phase,status])=>[phase,capture.results.find(r=>r.phase===phase)?.latencyStatus||status]):capture.results.map(r=>[r.phase,r.latencyStatus]),...(repairPhases.length?{repairOf:prior.capture,repairPhases}:{}),...(note?{failure:note}:{}),finished:new Date().toISOString()};await save();
+   ledger.items[key]={...(kind==='compatibility'?{compatibilityScenarioPolicy:repairPhases.length?'retained-original-repair-phases':'scope-aware-v2'}:{}),status:integration?'repair-pending':'completed',engine,stage:kind,workload:workload.id,source:job.source,capture:name,artifactSha256:workload.sha256,contractSha256:workloadContract(workload),outcomes:repairPhases.length?prior.outcomes.map(([phase,status])=>[phase,capture.results.find(r=>r.phase===phase)?.latencyStatus||status]):capture.results.map(r=>[r.phase,r.latencyStatus]),...(repairPhases.length?{repairOf:prior.capture,repairPhases,repairPolicy}:{}),...(note?{failure:note}:{}),finished:new Date().toISOString()};await save();
    if(integration){held=true;break}
   }
   if(process.exitCode)break;
