@@ -12,6 +12,7 @@ import {openSync,closeSync,fstatSync} from 'node:fs';
 import {completedHistoryJob} from './lib/history-job-result.mjs';
 import {availableParallelism} from 'node:os';
 import {acquireMeasurementLock} from './lib/measurement-lock.mjs';
+import {prepareLibWasmAdapter} from './lib/libwasm-adapter.mjs';
 import {readFile,writeFile,mkdir,stat,cp,symlink} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {command as rawCommand,digest} from './lib/wasmbench.mjs';
@@ -48,11 +49,18 @@ for(const pin of plan.pins.filter(p=>historyPinAllowed(p,template)&&historyWeekM
   const actualRevision=command('git',['-C',checkout,'rev-parse','HEAD'],{env}).toString().trim();
   if(actualRevision!==pin.revision)throw Error('Libwasm checkout differs from source pin');
   await preparePinnedSparseWorktree(checkout,pin.revision,command,env);
-  command('git',['-C',checkout,'sparse-checkout','set','AK','Libraries/LibWasm','Libraries/LibMain','Libraries/LibCore','Libraries/LibGC','Libraries/LibThreading','Libraries/LibFileSystem','Libraries/LibUnicode','Libraries/LibTextCodec','Meta','Docs'],{env,stdio:'inherit'});
+  command('git',['-C',checkout,'sparse-checkout','set','AK','Libraries/LibWasm','Libraries/LibMain','Libraries/LibCore','Libraries/LibGC','Libraries/LibThreading','Libraries/LibFileSystem','Libraries/LibSync','Libraries/LibUnicode','Libraries/LibTextCodec','Meta','Docs'],{env,stdio:'inherit'});
   command('git',['-C',checkout,'reset','--hard',pin.revision],{env,stdio:'inherit'});
   command('cmake',['-S',project,'-B',build,'-DSRC='+checkout,'-DFASTFLOAT='+join(tools,'libwasm-fastfloat'),'-DMIMALLOC='+join(tools,'libwasm-mimalloc'),'-DCMAKE_PREFIX_PATH='+deps,'-DCMAKE_CXX_FLAGS=-Wno-invalid-constexpr','-DCMAKE_C_COMPILER='+env.CC,'-DCMAKE_CXX_COMPILER='+env.CXX],{env,stdio:'inherit'});
   command('cmake',['--build',build,'--parallel',String(template.env?.WASMFYI_BUILD_JOBS||availableParallelism())],{env,stdio:'inherit',timeout:90*60*1000});
-  command('cargo',['build','--manifest-path',join(nativeBase,'adapters/native/Cargo.toml'),'--release','--no-default-features','--features','libwasm','--target-dir',join(dir,'native')],{env:{...env,WASMBENCH_LIBWASM_SOURCE:checkout,WASMBENCH_LIBWASM_BUILD:build,WASMBENCH_LIBWASM_VERSION:pin.revision},stdio:'inherit',timeout:90*60*1000});
+  const adapter=await prepareLibWasmAdapter(join(nativeBase,'adapters/native'),dir,await readFile(join(checkout,'Libraries/LibWasm/AbstractMachine/AbstractMachine.h'),'utf8'));
+  const libSyncArchive=join(build,'Libraries/LibSync/libLibSync.a');
+  const adapterEnv={...env,WASMBENCH_LIBWASM_SOURCE:checkout,WASMBENCH_LIBWASM_BUILD:build,WASMBENCH_LIBWASM_VERSION:pin.revision};
+  // LibSync became a separate static library inside the historical window.
+  // The frozen adapter predates that split, so append the exact pinned
+  // archive when it exists rather than changing the measured embedding.
+  if(await stat(libSyncArchive).catch(()=>null))adapterEnv.RUSTFLAGS=[env.RUSTFLAGS,`-C link-arg=${libSyncArchive}`].filter(Boolean).join(' ');
+  command('cargo',['build','--manifest-path',join(adapter.root,'Cargo.toml'),'--release','--no-default-features','--features','libwasm','--target-dir',join(dir,'native')],{env:adapterEnv,stdio:'inherit',timeout:90*60*1000});
   await mkdir(join(harness,'bin'),{recursive:true});await cp(join(dir,'native/release/adapter-native'),join(harness,'bin/adapter-libwasm'));
   await mkdir(join(harness,'adapters/wasmtime/target/release'),{recursive:true});const analyzer=join(harness,'adapters/wasmtime/target/release/wasm-analyze');if(!await stat(analyzer).catch(()=>null))await symlink(join(nativeBase,'adapters/wasmtime/target/release/wasm-analyze'),analyzer);
   // Bind collector/controller sampling together without mutating the frozen source.

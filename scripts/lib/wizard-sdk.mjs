@@ -7,6 +7,10 @@ import {digest,site} from './wasmbench.mjs';
 // This compiler revision supplied the SDK used by both architecture proofs.
 // SDK history remains pinned independently; no moving compiler branch is used.
 export const wizardVirgilRevision='7cf038fc13a5474836bec8b14c7a3e796fd07fa5';
+// These extensions are implemented by the pinned Wizard engine but remain
+// opt-in at its CLI. Keep the list beside command construction so SDK and
+// qualification executions cannot silently test different feature sets.
+export const wizardFeatureFlags=['--ext:custom-page-sizes','--ext:stack-switching','--ext:threads','--ext:wide-arithmetic'];
 export async function ensureWizardCompiler({virgil,external=false,run}) {
  const initialized=await stat(join(virgil,'.git')).catch(()=>null);
  if(!initialized){
@@ -54,7 +58,7 @@ export async function buildWizardSDK({source,root,version,configuration,env,run}
  const artifact=join(source,'bin',target==='jvm'?'wizeng.jvm.jar':'wizeng.x86-64-linux');
  if(!await stat(artifact).catch(()=>null))throw Error('Pinned Wizard source did not produce its selected SDK target');
  const mode=configuration==='wizard-spc'?'spc':configuration==='wizard-fast-int'?'int':'v3-int';
- const command=target==='jvm'?[env.WASMBENCH_JAVA||'java','-XX:ActiveProcessorCount=1','-XX:+UseSerialGC','-Xbatch','-jar',artifact,'--mode='+mode,'--invoke=wasmfyi-bench']:[artifact,'--mode='+mode,'--invoke=wasmfyi-bench'];
+ const command=target==='jvm'?[env.WASMBENCH_JAVA||'java','-XX:ActiveProcessorCount=1','-XX:+UseSerialGC','-Xbatch','-jar',artifact,'--mode='+mode,...wizardFeatureFlags,'--invoke=wasmfyi-bench']:[artifact,'--mode='+mode,...wizardFeatureFlags,'--invoke=wasmfyi-bench'];
  // SDK CLI routing token: the RPC entrypoint intercepts it before file loading.
  command.push('wasmfyi-bench.wasm');
  await mkdir(join(root,'bin'),{recursive:true});

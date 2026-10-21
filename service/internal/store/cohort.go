@@ -398,10 +398,6 @@ func (s *Store) ComputeCohort(ctx context.Context, scope CohortScope) (Cohort, e
 				continue
 			}
 			status, reason, e := s.cohortEligibility(scope.Revision, v)
-			if scope.Policy == "available-rss-arithmetic-v1" && (v.Runtime == "wasm2c-gcc" || v.Runtime == "w2c2-gcc") {
-				status = "unavailable"
-				reason = "compiler-inclusive-rss-policy-unavailable"
-			}
 			if e != nil {
 				return c, e
 			}

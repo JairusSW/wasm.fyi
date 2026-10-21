@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {wizardArchitectureUnavailable,ensureWizardCompiler,wizardVirgilRevision} from './lib/wizard-sdk.mjs';
+import {wizardArchitectureUnavailable,ensureWizardCompiler,wizardVirgilRevision,wizardFeatureFlags} from './lib/wizard-sdk.mjs';
 import {mkdtemp,mkdir,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
@@ -37,4 +37,7 @@ test('Wizard source targets expose portable interpretation and reject unavailabl
  }
  for(const configuration of ['wizard-v3-int','wizard-fast-int','wizard-spc'])assert.equal(wizardArchitectureUnavailable(configuration,{platform:'linux',architecture:'x64'}),null);
  assert.throws(()=>wizardArchitectureUnavailable('wizard-other'),/Unknown/);
+});
+test('Wizard opts into every extension exposed by the pinned CLI',()=>{
+ assert.deepEqual(wizardFeatureFlags,['--ext:custom-page-sizes','--ext:stack-switching','--ext:threads','--ext:wide-arithmetic']);
 });

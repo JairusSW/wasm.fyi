@@ -1,4 +1,4 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {spiderMonkeyBuildEnvironment,spiderMonkeyLegacyLinkerEnvironment,resetSpiderMonkeyCompilerCache,stageSpiderMonkeyCxxRuntime} from './lib/spidermonkey-sdk.mjs';
+import test from 'node:test';import assert from 'node:assert/strict';import {spiderMonkeyBuildEnvironment,spiderMonkeyLegacyLinkerEnvironment,spiderMonkeyPythonEnvironment,repairSpiderMonkeyLinuxSingleThreadedWrapper,resetSpiderMonkeyCompilerCache,stageSpiderMonkeyCxxRuntime} from './lib/spidermonkey-sdk.mjs';
 test('Linux SpiderMonkey selects only its bundled C++ library without mixing glibc families',()=>{
  const env={WASMFYI_SPIDERMONKEY_CC:'/compiler/clang',WASMFYI_SPIDERMONKEY_CXX:'/compiler/clang++',WASMFYI_SPIDERMONKEY_CXX_RUNTIME:'/qualified/runtime',WASMFYI_PRIVATE_GLIBC_LIBRARY_DIR:'/other/glibc'};
  const result=spiderMonkeyBuildEnvironment(env,'linux');
@@ -97,6 +97,21 @@ test('Mozilla objects are refreshed once when the required C stdio preinclude is
   await mkdir(object);await writeFile(join(object,'config.status'),"substs = {'_CXX': '/same/clang++', 'OS_CFLAGS': ['-O2', '-include', 'stdio.h']}");
   assert.equal(await resetSpiderMonkeyCompilerCache(object,env),false);
  }finally{await rm(root,{recursive:true,force:true})}
+});
+test('Linux lets the selected sysroot answer single_threaded header probes without a false-positive wrapper',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'mozilla-system-headers-'));
+ try{
+  await mkdir(join(root,'config'));const path=join(root,'config/system-headers.mozbuild');await writeFile(path,'headers = [\n    "stdio.h",\n    "sys/single_threaded.h",\n]\n');
+  const repaired=await repairSpiderMonkeyLinuxSingleThreadedWrapper(root,'linux');assert.equal(repaired.path,path);assert.equal(await readFile(path,'utf8'),'headers = [\n    "stdio.h",\n]\n');assert.equal(await repairSpiderMonkeyLinuxSingleThreadedWrapper(root,'linux'),null);
+  await writeFile(path,'headers = [\n    "sys/single_threaded.h",\n]\n');assert.equal(await repairSpiderMonkeyLinuxSingleThreadedWrapper(root,'darwin'),null);assert.match(await readFile(path,'utf8'),/single_threaded/);
+ }finally{await rm(root,{recursive:true,force:true})}
+});
+test('Linux ESR 115 alone selects an explicitly qualified legacy Python',()=>{
+ const env={WASMFYI_BUILD_PYTHON:'/sdk/python3.12',WASMFYI_SPIDERMONKEY_LEGACY_PYTHON:'/usr/bin/python3'};
+ assert.equal(spiderMonkeyPythonEnvironment(env,'1.66.0','linux').WASMFYI_BUILD_PYTHON,'/usr/bin/python3');
+ assert.equal(spiderMonkeyPythonEnvironment(env,'1.70.0','linux').WASMFYI_BUILD_PYTHON,'/sdk/python3.12');
+ assert.equal(spiderMonkeyPythonEnvironment(env,'1.66.0','darwin').WASMFYI_BUILD_PYTHON,'/sdk/python3.12');
+ assert.throws(()=>spiderMonkeyPythonEnvironment({...env,WASMFYI_SPIDERMONKEY_LEGACY_PYTHON:'python 3'},'1.66.0','linux'),/Unsafe/);
 });
 
 test('Mozilla Rust option retains private linker arguments without comma-separated values',()=>{

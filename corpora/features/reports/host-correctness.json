@@ -1,0 +1,1795 @@
+{
+  "schema": 1,
+  "created": "2026-10-20T16:57:07.553Z",
+  "timing": false,
+  "host": {
+    "hostname": "Jairus-Tanaka.local",
+    "os": "darwin",
+    "arch": "arm64"
+  },
+  "engines": [
+    {
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "version": "v26.4.0",
+      "fileSha256": {
+        "/opt/homebrew/Cellar/node/26.4.0/bin/node": "59cd4fb59cf5bc239f43d5db8c0cd8c23c22db79419612b92da3b7cf34de8553"
+      }
+    },
+    {
+      "binary": "/Users/work/.local/share/wasm-fyi/toolchains/v8-15.2.20/darwin-arm64/bin/d8",
+      "version": "V8 version 15.2.20",
+      "fileSha256": {
+        "/Users/work/.local/share/wasm-fyi/toolchains/v8-15.2.20/darwin-arm64/bin/d8": "1c66340a84483865631e827257ad34a14421b762d4c99972105550b69f9f8856",
+        "/Users/work/.local/share/wasm-fyi/toolchains/v8-15.2.20/darwin-arm64/d8": "70efb343d027a0e8ccc7944fcc675b536ba3f6fd1629c849ce81afe3eed2abf2",
+        "/Users/work/.local/share/wasm-fyi/toolchains/v8-15.2.20/darwin-arm64/snapshot_blob.bin": "873635c89b599fa1517846903c1920f41a550d52494a38c264cc519ac3395ab1",
+        "/Users/work/.local/share/wasm-fyi/toolchains/v8-15.2.20/darwin-arm64/icudtl.dat": "9f48c7f9c7c94d516a14870707e910ab94d75ae640ff6842c4af53276cd26ebe",
+        "/Users/work/.local/share/wasm-fyi/toolchains/v8-15.2.20/darwin-arm64/v8_build_config.json": "9159b83e8057db9b1d8904224f85a5e0aad8d8f86a64ed448c3732b7224364ba"
+      }
+    }
+  ],
+  "outcomes": [
+    {
+      "feature": "esm-integration",
+      "name": "named-function/1",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-modules",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm.mjs",
+        "named-function",
+        "file:///Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-named-function.wasm",
+        "1"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"named-function\",\"status\":\"verified\"}\n",
+      "stderr": "(node:55661) ExperimentalWarning: Importing WebAssembly module instances is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+    },
+    {
+      "feature": "esm-integration",
+      "name": "named-function/7",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-modules",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm.mjs",
+        "named-function",
+        "file:///Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-named-function.wasm",
+        "7"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"named-function\",\"status\":\"verified\"}\n",
+      "stderr": "(node:55662) ExperimentalWarning: Importing WebAssembly module instances is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+    },
+    {
+      "feature": "esm-integration",
+      "name": "named-function/64",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-modules",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm.mjs",
+        "named-function",
+        "file:///Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-named-function.wasm",
+        "64"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"named-function\",\"status\":\"verified\"}\n",
+      "stderr": "(node:55663) ExperimentalWarning: Importing WebAssembly module instances is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+    },
+    {
+      "feature": "esm-integration",
+      "name": "named-function/4096",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-modules",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm.mjs",
+        "named-function",
+        "file:///Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-named-function.wasm",
+        "4096"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"named-function\",\"status\":\"verified\"}\n",
+      "stderr": "(node:55664) ExperimentalWarning: Importing WebAssembly module instances is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+    },
+    {
+      "feature": "esm-integration",
+      "name": "immutable-global/1",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-modules",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm.mjs",
+        "immutable-global",
+        "file:///Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-immutable-global.wasm",
+        "1"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"immutable-global\",\"status\":\"verified\"}\n",
+      "stderr": "(node:55669) ExperimentalWarning: Importing WebAssembly module instances is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+    },
+    {
+      "feature": "esm-integration",
+      "name": "immutable-global/7",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-modules",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm.mjs",
+        "immutable-global",
+        "file:///Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-immutable-global.wasm",
+        "7"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"immutable-global\",\"status\":\"verified\"}\n",
+      "stderr": "(node:55670) ExperimentalWarning: Importing WebAssembly module instances is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+    },
+    {
+      "feature": "esm-integration",
+      "name": "immutable-global/64",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-modules",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm.mjs",
+        "immutable-global",
+        "file:///Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-immutable-global.wasm",
+        "64"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"immutable-global\",\"status\":\"verified\"}\n",
+      "stderr": "(node:55672) ExperimentalWarning: Importing WebAssembly module instances is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+    },
+    {
+      "feature": "esm-integration",
+      "name": "immutable-global/4096",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-modules",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm.mjs",
+        "immutable-global",
+        "file:///Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-immutable-global.wasm",
+        "4096"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"immutable-global\",\"status\":\"verified\"}\n",
+      "stderr": "(node:55673) ExperimentalWarning: Importing WebAssembly module instances is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+    },
+    {
+      "feature": "esm-integration",
+      "name": "memory-segment/1",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-modules",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm.mjs",
+        "memory-segment",
+        "file:///Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-memory-segment.wasm",
+        "1"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"memory-segment\",\"status\":\"verified\"}\n",
+      "stderr": "(node:55678) ExperimentalWarning: Importing WebAssembly module instances is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+    },
+    {
+      "feature": "esm-integration",
+      "name": "memory-segment/7",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-modules",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm.mjs",
+        "memory-segment",
+        "file:///Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-memory-segment.wasm",
+        "7"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"memory-segment\",\"status\":\"verified\"}\n",
+      "stderr": "(node:55679) ExperimentalWarning: Importing WebAssembly module instances is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+    },
+    {
+      "feature": "esm-integration",
+      "name": "memory-segment/64",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-modules",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm.mjs",
+        "memory-segment",
+        "file:///Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-memory-segment.wasm",
+        "64"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"memory-segment\",\"status\":\"verified\"}\n",
+      "stderr": "(node:55680) ExperimentalWarning: Importing WebAssembly module instances is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+    },
+    {
+      "feature": "esm-integration",
+      "name": "memory-segment/4096",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-modules",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm.mjs",
+        "memory-segment",
+        "file:///Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-memory-segment.wasm",
+        "4096"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"memory-segment\",\"status\":\"verified\"}\n",
+      "stderr": "(node:55681) ExperimentalWarning: Importing WebAssembly module instances is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+    },
+    {
+      "feature": "esm-integration",
+      "name": "host-import/1",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-modules",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm.mjs",
+        "host-import",
+        "file:///Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-host-import.wasm",
+        "1"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"host-import\",\"status\":\"verified\"}\n",
+      "stderr": "(node:55682) ExperimentalWarning: Importing WebAssembly module instances is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+    },
+    {
+      "feature": "esm-integration",
+      "name": "host-import/7",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-modules",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm.mjs",
+        "host-import",
+        "file:///Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-host-import.wasm",
+        "7"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"host-import\",\"status\":\"verified\"}\n",
+      "stderr": "(node:55683) ExperimentalWarning: Importing WebAssembly module instances is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+    },
+    {
+      "feature": "esm-integration",
+      "name": "host-import/64",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-modules",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm.mjs",
+        "host-import",
+        "file:///Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-host-import.wasm",
+        "64"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"host-import\",\"status\":\"verified\"}\n",
+      "stderr": "(node:55684) ExperimentalWarning: Importing WebAssembly module instances is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+    },
+    {
+      "feature": "esm-integration",
+      "name": "host-import/4096",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-modules",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm.mjs",
+        "host-import",
+        "file:///Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-host-import.wasm",
+        "4096"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"host-import\",\"status\":\"verified\"}\n",
+      "stderr": "(node:55685) ExperimentalWarning: Importing WebAssembly module instances is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+    },
+    {
+      "feature": "esm-integration",
+      "name": "source-phase/1",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-modules",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm.mjs",
+        "source-phase",
+        "file:///Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-source-phase.wasm",
+        "1"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"source-phase\",\"status\":\"verified\"}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "esm-integration",
+      "name": "source-phase/7",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-modules",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm.mjs",
+        "source-phase",
+        "file:///Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-source-phase.wasm",
+        "7"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"source-phase\",\"status\":\"verified\"}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "esm-integration",
+      "name": "source-phase/64",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-modules",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm.mjs",
+        "source-phase",
+        "file:///Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-source-phase.wasm",
+        "64"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"source-phase\",\"status\":\"verified\"}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "esm-integration",
+      "name": "source-phase/4096",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-modules",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm.mjs",
+        "source-phase",
+        "file:///Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-source-phase.wasm",
+        "4096"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"source-phase\",\"status\":\"verified\"}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "type-reflection",
+      "name": "function-type/1",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-type-reflection",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/reflection.mjs",
+        "function-type",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-named-function.wasm",
+        "1"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"function-type\",\"status\":\"verified\"}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "type-reflection",
+      "name": "function-type/7",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-type-reflection",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/reflection.mjs",
+        "function-type",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-named-function.wasm",
+        "7"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"function-type\",\"status\":\"verified\"}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "type-reflection",
+      "name": "function-type/64",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-type-reflection",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/reflection.mjs",
+        "function-type",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-named-function.wasm",
+        "64"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"function-type\",\"status\":\"verified\"}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "type-reflection",
+      "name": "function-type/4096",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-type-reflection",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/reflection.mjs",
+        "function-type",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-named-function.wasm",
+        "4096"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"function-type\",\"status\":\"verified\"}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "type-reflection",
+      "name": "typed-host-function/1",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-type-reflection",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/reflection.mjs",
+        "typed-host-function",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-named-function.wasm",
+        "1"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"typed-host-function\",\"status\":\"verified\"}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "type-reflection",
+      "name": "typed-host-function/7",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-type-reflection",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/reflection.mjs",
+        "typed-host-function",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-named-function.wasm",
+        "7"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"typed-host-function\",\"status\":\"verified\"}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "type-reflection",
+      "name": "typed-host-function/64",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-type-reflection",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/reflection.mjs",
+        "typed-host-function",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-named-function.wasm",
+        "64"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"typed-host-function\",\"status\":\"verified\"}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "type-reflection",
+      "name": "typed-host-function/4096",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-type-reflection",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/reflection.mjs",
+        "typed-host-function",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-named-function.wasm",
+        "4096"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"typed-host-function\",\"status\":\"verified\"}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "type-reflection",
+      "name": "global-type/1",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-type-reflection",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/reflection.mjs",
+        "global-type",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-named-function.wasm",
+        "1"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"global-type\",\"status\":\"verified\"}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "type-reflection",
+      "name": "global-type/7",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-type-reflection",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/reflection.mjs",
+        "global-type",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-named-function.wasm",
+        "7"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"global-type\",\"status\":\"verified\"}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "type-reflection",
+      "name": "global-type/64",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-type-reflection",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/reflection.mjs",
+        "global-type",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-named-function.wasm",
+        "64"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"global-type\",\"status\":\"verified\"}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "type-reflection",
+      "name": "global-type/4096",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-type-reflection",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/reflection.mjs",
+        "global-type",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-named-function.wasm",
+        "4096"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"global-type\",\"status\":\"verified\"}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "type-reflection",
+      "name": "memory-type/1",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-type-reflection",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/reflection.mjs",
+        "memory-type",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-named-function.wasm",
+        "1"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"memory-type\",\"status\":\"verified\"}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "type-reflection",
+      "name": "memory-type/7",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-type-reflection",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/reflection.mjs",
+        "memory-type",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-named-function.wasm",
+        "7"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"memory-type\",\"status\":\"verified\"}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "type-reflection",
+      "name": "memory-type/64",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-type-reflection",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/reflection.mjs",
+        "memory-type",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-named-function.wasm",
+        "64"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"memory-type\",\"status\":\"verified\"}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "type-reflection",
+      "name": "memory-type/4096",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-type-reflection",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/reflection.mjs",
+        "memory-type",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-named-function.wasm",
+        "4096"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"memory-type\",\"status\":\"verified\"}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "type-reflection",
+      "name": "table-type/1",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-type-reflection",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/reflection.mjs",
+        "table-type",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-named-function.wasm",
+        "1"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"table-type\",\"status\":\"verified\"}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "type-reflection",
+      "name": "table-type/7",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-type-reflection",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/reflection.mjs",
+        "table-type",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-named-function.wasm",
+        "7"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"table-type\",\"status\":\"verified\"}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "type-reflection",
+      "name": "table-type/64",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-type-reflection",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/reflection.mjs",
+        "table-type",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-named-function.wasm",
+        "64"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"table-type\",\"status\":\"verified\"}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "type-reflection",
+      "name": "table-type/4096",
+      "status": "verified",
+      "binary": "/opt/homebrew/Cellar/node/26.4.0/bin/node",
+      "args": [
+        "--experimental-wasm-type-reflection",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/reflection.mjs",
+        "table-type",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/esm-named-function.wasm",
+        "4096"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"table-type\",\"status\":\"verified\"}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "memory-control",
+      "name": "zero-initialization",
+      "status": "unavailable",
+      "binary": "/Users/work/.local/share/wasm-fyi/toolchains/v8-15.2.20/darwin-arm64/bin/d8",
+      "args": [
+        "--wasm-memory-control",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/memory-map.js",
+        "--",
+        "zero-initialization"
+      ],
+      "exitCode": 1,
+      "signal": null,
+      "stdout": "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/memory-map.js:6: RuntimeError: WebAssembly.MemoryMapDescriptor(): Failed to create a MemoryMapDescriptor\nconst descriptor=new WebAssembly.MemoryMapDescriptor(65536);\n                 ^\nRuntimeError: WebAssembly.MemoryMapDescriptor(): Failed to create a MemoryMapDescriptor\n    at /Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/memory-map.js:6:18\n\n",
+      "stderr": "V8 is running with experimental features enabled. Stability and security will suffer.\n"
+    },
+    {
+      "feature": "memory-control",
+      "name": "mapped-write",
+      "status": "unavailable",
+      "binary": "/Users/work/.local/share/wasm-fyi/toolchains/v8-15.2.20/darwin-arm64/bin/d8",
+      "args": [
+        "--wasm-memory-control",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/memory-map.js",
+        "--",
+        "mapped-write"
+      ],
+      "exitCode": 1,
+      "signal": null,
+      "stdout": "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/memory-map.js:6: RuntimeError: WebAssembly.MemoryMapDescriptor(): Failed to create a MemoryMapDescriptor\nconst descriptor=new WebAssembly.MemoryMapDescriptor(65536);\n                 ^\nRuntimeError: WebAssembly.MemoryMapDescriptor(): Failed to create a MemoryMapDescriptor\n    at /Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/memory-map.js:6:18\n\n",
+      "stderr": "V8 is running with experimental features enabled. Stability and security will suffer.\n"
+    },
+    {
+      "feature": "memory-control",
+      "name": "unmap-zero",
+      "status": "unavailable",
+      "binary": "/Users/work/.local/share/wasm-fyi/toolchains/v8-15.2.20/darwin-arm64/bin/d8",
+      "args": [
+        "--wasm-memory-control",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/memory-map.js",
+        "--",
+        "unmap-zero"
+      ],
+      "exitCode": 1,
+      "signal": null,
+      "stdout": "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/memory-map.js:6: RuntimeError: WebAssembly.MemoryMapDescriptor(): Failed to create a MemoryMapDescriptor\nconst descriptor=new WebAssembly.MemoryMapDescriptor(65536);\n                 ^\nRuntimeError: WebAssembly.MemoryMapDescriptor(): Failed to create a MemoryMapDescriptor\n    at /Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/memory-map.js:6:18\n\n",
+      "stderr": "V8 is running with experimental features enabled. Stability and security will suffer.\n"
+    },
+    {
+      "feature": "memory-control",
+      "name": "adjacent-preserved",
+      "status": "unavailable",
+      "binary": "/Users/work/.local/share/wasm-fyi/toolchains/v8-15.2.20/darwin-arm64/bin/d8",
+      "args": [
+        "--wasm-memory-control",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/memory-map.js",
+        "--",
+        "adjacent-preserved"
+      ],
+      "exitCode": 1,
+      "signal": null,
+      "stdout": "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/memory-map.js:6: RuntimeError: WebAssembly.MemoryMapDescriptor(): Failed to create a MemoryMapDescriptor\nconst descriptor=new WebAssembly.MemoryMapDescriptor(65536);\n                 ^\nRuntimeError: WebAssembly.MemoryMapDescriptor(): Failed to create a MemoryMapDescriptor\n    at /Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/memory-map.js:6:18\n\n",
+      "stderr": "V8 is running with experimental features enabled. Stability and security will suffer.\n"
+    },
+    {
+      "feature": "memory-control",
+      "name": "remap-data",
+      "status": "unavailable",
+      "binary": "/Users/work/.local/share/wasm-fyi/toolchains/v8-15.2.20/darwin-arm64/bin/d8",
+      "args": [
+        "--wasm-memory-control",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/memory-map.js",
+        "--",
+        "remap-data"
+      ],
+      "exitCode": 1,
+      "signal": null,
+      "stdout": "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/memory-map.js:6: RuntimeError: WebAssembly.MemoryMapDescriptor(): Failed to create a MemoryMapDescriptor\nconst descriptor=new WebAssembly.MemoryMapDescriptor(65536);\n                 ^\nRuntimeError: WebAssembly.MemoryMapDescriptor(): Failed to create a MemoryMapDescriptor\n    at /Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/memory-map.js:6:18\n\n",
+      "stderr": "V8 is running with experimental features enabled. Stability and security will suffer.\n"
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "build",
+      "status": "verified",
+      "binary": "clang",
+      "args": [
+        "-std=c11",
+        "-O2",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "/Users/work/Code/Web/wasm.fyi/corpora/features/host-proposals/c-api.c",
+        "-I/opt/homebrew/include",
+        "-L/opt/homebrew/lib",
+        "-lwasmtime",
+        "-Wl,-rpath,/opt/homebrew/lib",
+        "-o",
+        "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/wasm-c-api-corpus"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "direct-call/0",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/wasm-c-api-corpus",
+      "args": [
+        "direct-call",
+        "0"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"direct-call\",\"operations\":0,\"checksum\":0}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "direct-call/1",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/wasm-c-api-corpus",
+      "args": [
+        "direct-call",
+        "1"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"direct-call\",\"operations\":1,\"checksum\":1}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "direct-call/7",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/wasm-c-api-corpus",
+      "args": [
+        "direct-call",
+        "7"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"direct-call\",\"operations\":7,\"checksum\":70}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "direct-call/64",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/wasm-c-api-corpus",
+      "args": [
+        "direct-call",
+        "64"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"direct-call\",\"operations\":64,\"checksum\":6112}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "direct-call/4096",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/wasm-c-api-corpus",
+      "args": [
+        "direct-call",
+        "4096"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"direct-call\",\"operations\":4096,\"checksum\":1570816}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "host-callback/0",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/wasm-c-api-corpus",
+      "args": [
+        "host-callback",
+        "0"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"host-callback\",\"operations\":0,\"checksum\":0}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "host-callback/1",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/wasm-c-api-corpus",
+      "args": [
+        "host-callback",
+        "1"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"host-callback\",\"operations\":1,\"checksum\":1}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "host-callback/7",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/wasm-c-api-corpus",
+      "args": [
+        "host-callback",
+        "7"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"host-callback\",\"operations\":7,\"checksum\":70}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "host-callback/64",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/wasm-c-api-corpus",
+      "args": [
+        "host-callback",
+        "64"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"host-callback\",\"operations\":64,\"checksum\":6112}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "host-callback/4096",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/wasm-c-api-corpus",
+      "args": [
+        "host-callback",
+        "4096"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"host-callback\",\"operations\":4096,\"checksum\":1570816}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "mutable-global/0",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/wasm-c-api-corpus",
+      "args": [
+        "mutable-global",
+        "0"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"mutable-global\",\"operations\":0,\"checksum\":0}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "mutable-global/1",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/wasm-c-api-corpus",
+      "args": [
+        "mutable-global",
+        "1"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"mutable-global\",\"operations\":1,\"checksum\":0}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "mutable-global/7",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/wasm-c-api-corpus",
+      "args": [
+        "mutable-global",
+        "7"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"mutable-global\",\"operations\":7,\"checksum\":21}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "mutable-global/64",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/wasm-c-api-corpus",
+      "args": [
+        "mutable-global",
+        "64"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"mutable-global\",\"operations\":64,\"checksum\":2016}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "mutable-global/4096",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/wasm-c-api-corpus",
+      "args": [
+        "mutable-global",
+        "4096"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"mutable-global\",\"operations\":4096,\"checksum\":522240}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "memory-access/0",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/wasm-c-api-corpus",
+      "args": [
+        "memory-access",
+        "0"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"memory-access\",\"operations\":0,\"checksum\":0}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "memory-access/1",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/wasm-c-api-corpus",
+      "args": [
+        "memory-access",
+        "1"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"memory-access\",\"operations\":1,\"checksum\":0}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "memory-access/7",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/wasm-c-api-corpus",
+      "args": [
+        "memory-access",
+        "7"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"memory-access\",\"operations\":7,\"checksum\":21}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "memory-access/64",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/wasm-c-api-corpus",
+      "args": [
+        "memory-access",
+        "64"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"memory-access\",\"operations\":64,\"checksum\":2016}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "memory-access/4096",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/wasm-c-api-corpus",
+      "args": [
+        "memory-access",
+        "4096"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"memory-access\",\"operations\":4096,\"checksum\":522240}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "table-call/0",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/wasm-c-api-corpus",
+      "args": [
+        "table-call",
+        "0"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"table-call\",\"operations\":0,\"checksum\":0}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "table-call/1",
+      "status": "unavailable",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/wasm-c-api-corpus",
+      "args": [
+        "table-call",
+        "1"
+      ],
+      "exitCode": null,
+      "signal": "SIGABRT",
+      "stdout": "",
+      "stderr": "`wasm_func_as_ref` is not implemented\n"
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "table-call/7",
+      "status": "unavailable",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/wasm-c-api-corpus",
+      "args": [
+        "table-call",
+        "7"
+      ],
+      "exitCode": null,
+      "signal": "SIGABRT",
+      "stdout": "",
+      "stderr": "`wasm_func_as_ref` is not implemented\n"
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "table-call/64",
+      "status": "unavailable",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/wasm-c-api-corpus",
+      "args": [
+        "table-call",
+        "64"
+      ],
+      "exitCode": null,
+      "signal": "SIGABRT",
+      "stdout": "",
+      "stderr": "`wasm_func_as_ref` is not implemented\n"
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "table-call/4096",
+      "status": "unavailable",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/wasm-c-api-corpus",
+      "args": [
+        "table-call",
+        "4096"
+      ],
+      "exitCode": null,
+      "signal": "SIGABRT",
+      "stdout": "",
+      "stderr": "`wasm_func_as_ref` is not implemented\n"
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "trap-lifecycle/0",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/wasm-c-api-corpus",
+      "args": [
+        "trap-lifecycle",
+        "0"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"trap-lifecycle\",\"operations\":0,\"checksum\":0}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "trap-lifecycle/1",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/wasm-c-api-corpus",
+      "args": [
+        "trap-lifecycle",
+        "1"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"trap-lifecycle\",\"operations\":1,\"checksum\":1}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "trap-lifecycle/7",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/wasm-c-api-corpus",
+      "args": [
+        "trap-lifecycle",
+        "7"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"trap-lifecycle\",\"operations\":7,\"checksum\":7}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "trap-lifecycle/64",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/wasm-c-api-corpus",
+      "args": [
+        "trap-lifecycle",
+        "64"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"trap-lifecycle\",\"operations\":64,\"checksum\":64}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "trap-lifecycle/4096",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/wasm-c-api-corpus",
+      "args": [
+        "trap-lifecycle",
+        "4096"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "{\"case\":\"trap-lifecycle\",\"operations\":4096,\"checksum\":4096}\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasmtime-c-examples",
+      "name": "anyref.c/build",
+      "status": "verified",
+      "binary": "clang",
+      "args": [
+        "-O2",
+        "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream/wasmtime/examples/anyref.c",
+        "-I/opt/homebrew/include",
+        "-L/opt/homebrew/lib",
+        "-lwasmtime",
+        "-Wl,-rpath,/opt/homebrew/lib",
+        "-pthread",
+        "-lm",
+        "-o",
+        "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream-c-anyref"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "feature": "wasmtime-c-examples",
+      "name": "anyref.c",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream-c-anyref",
+      "args": [],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "Initializing...\nCompiling module...\nInstantiating module...\nCreating new `anyref` from i31...\nTouching `anyref` table...\nTouching `anyref` global...\nPassing `anyref` into func...\nGetting `anyref` from func...\nGCing within the store...\nAll finished!\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasmtime-c-examples",
+      "name": "externref.c/build",
+      "status": "verified",
+      "binary": "clang",
+      "args": [
+        "-O2",
+        "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream/wasmtime/examples/externref.c",
+        "-I/opt/homebrew/include",
+        "-L/opt/homebrew/lib",
+        "-lwasmtime",
+        "-Wl,-rpath,/opt/homebrew/lib",
+        "-pthread",
+        "-lm",
+        "-o",
+        "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream-c-externref"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "feature": "wasmtime-c-examples",
+      "name": "externref.c",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream-c-externref",
+      "args": [],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "Initializing...\nCompiling module...\nInstantiating module...\nCreating new `externref`...\nTouching `externref` table...\nTouching `externref` global...\nCalling `externref` func...\nGCing within the store...\nAll finished!\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasmtime-c-examples",
+      "name": "fuel.c/build",
+      "status": "verified",
+      "binary": "clang",
+      "args": [
+        "-O2",
+        "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream/wasmtime/examples/fuel.c",
+        "-I/opt/homebrew/include",
+        "-L/opt/homebrew/lib",
+        "-lwasmtime",
+        "-Wl,-rpath,/opt/homebrew/lib",
+        "-pthread",
+        "-lm",
+        "-o",
+        "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream-c-fuel"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "",
+      "stderr": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream/wasmtime/examples/fuel.c:111:12: warning: format specifies type 'unsigned long' but the argument has type 'uint64_t' (aka 'unsigned long long') [-Wformat]\n  110 |     printf(\"fib(%d) = %d [consumed %lu fuel]\\n\", n, results[0].of.i32,\n      |                                    ~~~\n      |                                    %llu\n  111 |            fuel_after - fuel_before);\n      |            ^~~~~~~~~~~~~~~~~~~~~~~~\n1 warning generated.\n"
+    },
+    {
+      "feature": "wasmtime-c-examples",
+      "name": "fuel.c",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream-c-fuel",
+      "args": [],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "fib(1) = 1 [consumed 18446744073709551610 fuel]\nfib(2) = 1 [consumed 18446744073709551590 fuel]\nfib(3) = 2 [consumed 18446744073709551570 fuel]\nfib(4) = 3 [consumed 18446744073709551530 fuel]\nfib(5) = 5 [consumed 18446744073709551470 fuel]\nfib(6) = 8 [consumed 18446744073709551370 fuel]\nfib(7) = 13 [consumed 18446744073709551210 fuel]\nfib(8) = 21 [consumed 18446744073709550950 fuel]\nfib(9) = 34 [consumed 18446744073709550530 fuel]\nfib(10) = 55 [consumed 18446744073709549850 fuel]\nfib(11) = 89 [consumed 18446744073709548750 fuel]\nfib(12) = 144 [consumed 18446744073709546970 fuel]\nfib(13) = 233 [consumed 18446744073709544090 fuel]\nExhausted fuel computing fib(14)\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasmtime-c-examples",
+      "name": "gcd.c/build",
+      "status": "verified",
+      "binary": "clang",
+      "args": [
+        "-O2",
+        "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream/wasmtime/examples/gcd.c",
+        "-I/opt/homebrew/include",
+        "-L/opt/homebrew/lib",
+        "-lwasmtime",
+        "-Wl,-rpath,/opt/homebrew/lib",
+        "-pthread",
+        "-lm",
+        "-o",
+        "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream-c-gcd"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "feature": "wasmtime-c-examples",
+      "name": "gcd.c",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream-c-gcd",
+      "args": [],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "gcd(6, 27) = 3\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasmtime-c-examples",
+      "name": "hello.c/build",
+      "status": "verified",
+      "binary": "clang",
+      "args": [
+        "-O2",
+        "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream/wasmtime/examples/hello.c",
+        "-I/opt/homebrew/include",
+        "-L/opt/homebrew/lib",
+        "-lwasmtime",
+        "-Wl,-rpath,/opt/homebrew/lib",
+        "-pthread",
+        "-lm",
+        "-o",
+        "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream-c-hello"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "feature": "wasmtime-c-examples",
+      "name": "hello.c",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream-c-hello",
+      "args": [],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "Initializing...\nCompiling module...\nCreating callback...\nInstantiating module...\nExtracting export...\nCalling export...\nCalling back...\n> Hello World!\nAll finished!\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasmtime-c-examples",
+      "name": "interrupt.c/build",
+      "status": "verified",
+      "binary": "clang",
+      "args": [
+        "-O2",
+        "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream/wasmtime/examples/interrupt.c",
+        "-I/opt/homebrew/include",
+        "-L/opt/homebrew/lib",
+        "-lwasmtime",
+        "-Wl,-rpath,/opt/homebrew/lib",
+        "-pthread",
+        "-lm",
+        "-o",
+        "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream-c-interrupt"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "feature": "wasmtime-c-examples",
+      "name": "interrupt.c",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream-c-interrupt",
+      "args": [],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "Entering infinite loop...\nSending an interrupt\nGot a trap!...\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasmtime-c-examples",
+      "name": "linking.c/build",
+      "status": "verified",
+      "binary": "clang",
+      "args": [
+        "-O2",
+        "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream/wasmtime/examples/linking.c",
+        "-I/opt/homebrew/include",
+        "-L/opt/homebrew/lib",
+        "-lwasmtime",
+        "-Wl,-rpath,/opt/homebrew/lib",
+        "-pthread",
+        "-lm",
+        "-o",
+        "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream-c-linking"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "feature": "wasmtime-c-examples",
+      "name": "linking.c",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream-c-linking",
+      "args": [],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "Hello, world!\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasmtime-c-examples",
+      "name": "memory.c/build",
+      "status": "verified",
+      "binary": "clang",
+      "args": [
+        "-O2",
+        "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream/wasmtime/examples/memory.c",
+        "-I/opt/homebrew/include",
+        "-L/opt/homebrew/lib",
+        "-lwasmtime",
+        "-Wl,-rpath,/opt/homebrew/lib",
+        "-pthread",
+        "-lm",
+        "-o",
+        "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream-c-memory"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "feature": "wasmtime-c-examples",
+      "name": "memory.c",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream-c-memory",
+      "args": [],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "Initializing...\nCompiling module...\nInstantiating module...\nExtracting exports...\nChecking memory...\nMutating memory...\nGrowing memory...\nCreating stand-alone memory...\nShutting down...\nDone.\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasmtime-c-examples",
+      "name": "multi.c/build",
+      "status": "verified",
+      "binary": "clang",
+      "args": [
+        "-O2",
+        "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream/wasmtime/examples/multi.c",
+        "-I/opt/homebrew/include",
+        "-L/opt/homebrew/lib",
+        "-lwasmtime",
+        "-Wl,-rpath,/opt/homebrew/lib",
+        "-pthread",
+        "-lm",
+        "-o",
+        "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream-c-multi"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "feature": "wasmtime-c-examples",
+      "name": "multi.c",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream-c-multi",
+      "args": [],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "Initializing...\nCompiling module...\nCreating callback...\nInstantiating module...\nExtracting export...\nCalling export...\nCalling back...\n> 1 2\n\nPrinting result...\n> 2 1\nShutting down...\nDone.\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasmtime-c-examples",
+      "name": "multimemory.c/build",
+      "status": "verified",
+      "binary": "clang",
+      "args": [
+        "-O2",
+        "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream/wasmtime/examples/multimemory.c",
+        "-I/opt/homebrew/include",
+        "-L/opt/homebrew/lib",
+        "-lwasmtime",
+        "-Wl,-rpath,/opt/homebrew/lib",
+        "-pthread",
+        "-lm",
+        "-o",
+        "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream-c-multimemory"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "feature": "wasmtime-c-examples",
+      "name": "multimemory.c",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream-c-multimemory",
+      "args": [],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "Initializing...\nCompiling module...\nInstantiating module...\nExtracting exports...\nChecking memory...\nMutating memory...\nGrowing memory...\nShutting down...\nDone.\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasmtime-c-examples",
+      "name": "serialize.c/build",
+      "status": "verified",
+      "binary": "clang",
+      "args": [
+        "-O2",
+        "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream/wasmtime/examples/serialize.c",
+        "-I/opt/homebrew/include",
+        "-L/opt/homebrew/lib",
+        "-lwasmtime",
+        "-Wl,-rpath,/opt/homebrew/lib",
+        "-pthread",
+        "-lm",
+        "-o",
+        "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream-c-serialize"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "feature": "wasmtime-c-examples",
+      "name": "serialize.c",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream-c-serialize",
+      "args": [],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "Initializing...\nCompiling and serializing module...\nSerialized.\nInitializing...\nDeserialize module...\nCreating callback...\nInstantiating module...\nCalling export...\nCalling back...\n> Hello World!\nAll finished!\n",
+      "stderr": ""
+    },
+    {
+      "feature": "wasmtime-c-examples",
+      "name": "threads.c/build",
+      "status": "verified",
+      "binary": "clang",
+      "args": [
+        "-O2",
+        "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream/wasmtime/examples/threads.c",
+        "-I/opt/homebrew/include",
+        "-L/opt/homebrew/lib",
+        "-lwasmtime",
+        "-Wl,-rpath,/opt/homebrew/lib",
+        "-pthread",
+        "-lm",
+        "-o",
+        "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream-c-threads"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "",
+      "stderr": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream/wasmtime/examples/threads.c:50:36: warning: format specifies type 'unsigned long' but the argument has type 'uint64_t' (aka 'unsigned long long') [-Wformat]\n   50 |   printf(\"> Thread %lu running\\n\", (uint64_t)get_thread_id());\n      |                    ~~~             ^~~~~~~~~~~~~~~~~~~~~~~~~\n      |                    %llu\n/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream/wasmtime/examples/threads.c:168:21: warning: variable length array folded to constant array as an extension [-Wgnu-folding-constant]\n  168 |   pthread_t threads[N_THREADS];\n      |                     ^~~~~~~~~\n2 warnings generated.\n"
+    },
+    {
+      "feature": "wasmtime-c-examples",
+      "name": "threads.c",
+      "status": "verified",
+      "binary": "/Users/work/Code/Web/wasm.fyi/.wasmbench/proposal-coverage/upstream-c-threads",
+      "args": [],
+      "exitCode": 0,
+      "signal": null,
+      "stdout": "Initializing thread 0...\nInitializing thread 1...\nInitializing thread 2...\nInitializing thread 3...\nInitializing thread 4...\nInitializing thread 5...\nInitializing thread 6...\nInitializing thread 7...\nInitializing thread 8...\nInitializing thread 9...\nWaiting for thread: 0\n> Thread 113577144 running\n> Thread 113577143 running\n> Thread 113577146 running\n> Thread 113577142 running\n> Thread 113577147 running\n> Thread 113577151 running\n> Thread 113577145 running\n> Thread 113577149 running\n> Thread 113577148 running\n> Thread 113577150 running\n> Thread 113577146 running\n> Thread 113577144 running\n> Thread 113577149 running\n> Thread 113577147 running\n> Thread 113577150 running\n> Thread 113577143 running\n> Thread 113577142 running\n> Thread 113577145 running\n> Thread 113577148 running\n> Thread 113577151 running\n> Thread 113577147 running\n> Thread 113577146 running\n> Thread 113577149 running\n> Thread 113577143 running\n> Thread 113577144 running\n> Thread 113577148 running\n> Thread 113577150 running\n> Thread 113577142 running\n> Thread 113577151 running\nWaiting for thread: 1\n> Thread 113577145 running\nWaiting for thread: 2\nWaiting for thread: 3\nWaiting for thread: 4\nWaiting for thread: 5\nWaiting for thread: 6\nWaiting for thread: 7\nWaiting for thread: 8\nWaiting for thread: 9\n",
+      "stderr": ""
+    },
+    {
+      "feature": "web-content-security-policy",
+      "name": "allow-compile",
+      "status": "crashed",
+      "exitCode": null,
+      "signal": "SIGABRT",
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "feature": "web-content-security-policy",
+      "name": "deny-compile",
+      "status": "crashed",
+      "exitCode": null,
+      "signal": "SIGABRT",
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "feature": "web-content-security-policy",
+      "name": "allow-instantiate",
+      "status": "crashed",
+      "exitCode": null,
+      "signal": "SIGABRT",
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "feature": "web-content-security-policy",
+      "name": "deny-instantiate",
+      "status": "crashed",
+      "exitCode": null,
+      "signal": "SIGABRT",
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "feature": "web-content-security-policy",
+      "name": "allow-compileStreaming",
+      "status": "crashed",
+      "exitCode": null,
+      "signal": "SIGABRT",
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "feature": "web-content-security-policy",
+      "name": "deny-compileStreaming",
+      "status": "crashed",
+      "exitCode": null,
+      "signal": "SIGABRT",
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "feature": "web-content-security-policy",
+      "name": "allow-instantiateStreaming",
+      "status": "crashed",
+      "exitCode": null,
+      "signal": "SIGABRT",
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "feature": "web-content-security-policy",
+      "name": "deny-instantiateStreaming",
+      "status": "crashed",
+      "exitCode": null,
+      "signal": "SIGABRT",
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "feature": "web-content-security-policy",
+      "name": "allow-module-constructor",
+      "status": "crashed",
+      "exitCode": null,
+      "signal": "SIGABRT",
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "feature": "web-content-security-policy",
+      "name": "deny-module-constructor",
+      "status": "crashed",
+      "exitCode": null,
+      "signal": "SIGABRT",
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "cLibrary": {
+    "version": "46.0.1",
+    "headerSha256": "856296ab186798707937742326798f4702d4c407dc9b27f88b9268a9e16b5c6b",
+    "librarySha256": "a52834004f23f7ebcac5318dd22a30804dfdaec149c773dda2dc76cbcd22459d",
+    "binarySha256": "fbe0d290c009352de3b9c70cbcd52906936fad46dde2fa21d79381255bb8a5ee"
+  },
+  "upstreamCExamples": {
+    "repository": "bytecodealliance/wasmtime",
+    "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+    "archiveSha256": "ebe701bbb0a7a7508f22b906ed423e3554b5b9541bcc7a51cc84f271c0843009",
+    "files": [
+      {
+        "path": "examples/anyref.c",
+        "sha256": "89eb5c95949d27c92c0ec433d30eeebb85d1ef60d2bfd042a7fb3d061790064d"
+      },
+      {
+        "path": "examples/externref.c",
+        "sha256": "56c763ba1d90772957ace70d93187ab9a16a13f2ebed990c73d97f48a2f4ddaa"
+      },
+      {
+        "path": "examples/fuel.c",
+        "sha256": "7a0d7caa70d063d05ccf2b794476600413e34810337d5200a5bb142368d28d6e"
+      },
+      {
+        "path": "examples/gcd.c",
+        "sha256": "a6f796be0c06a463fe529e370fc8e65b9c4006303784b47f9a7905681d2758f6"
+      },
+      {
+        "path": "examples/hello.c",
+        "sha256": "7c2e1146243d3bc6d1975ad61cc4ad6520025a95bbb91ea0d347065f473baa04"
+      },
+      {
+        "path": "examples/interrupt.c",
+        "sha256": "f695bb48b4e188a26be8091a537b74fbdb81ee05d84dbbe753e03dd94367b4b8"
+      },
+      {
+        "path": "examples/linking.c",
+        "sha256": "2573b4e4ca33e60582a6142380b3e85a6b22e21138d9a70eadf7db97e5eda650"
+      },
+      {
+        "path": "examples/memory.c",
+        "sha256": "c8f2ff1b12fbec2d6f931596aba8c5e79ba398082bc66bdd70f37dd11792457e"
+      },
+      {
+        "path": "examples/multi.c",
+        "sha256": "3204f0eed1c8cdfcc7e502e5afbc91cc39ae32ec91da0a3b3ed5c5eaaa74c88b"
+      },
+      {
+        "path": "examples/multimemory.c",
+        "sha256": "d47f85a45b3119094172d1c971e85225a6af5aac45c9933803ddba0221ec3563"
+      },
+      {
+        "path": "examples/serialize.c",
+        "sha256": "26c9c82cf18c830dbacc8099c962b35f04ca5825b9ff44d24fe69db7a4aff4bf"
+      },
+      {
+        "path": "examples/threads.c",
+        "sha256": "a99357df9198294580c3d5773327bcc53689da43158592cf29669c8bc4989217"
+      }
+    ]
+  },
+  "browser": {
+    "binary": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "version": "Google Chrome 155.0.8059.85",
+    "fixtureSha256": "6e0f874f2cff9412b97478a600cf15d6426a22cc94841ad83a70e8d3331c4ae6"
+  },
+  "totals": {
+    "verified": 91,
+    "unavailable": 9,
+    "failed": 0,
+    "crashed": 10,
+    "runner-error": 0
+  }
+}

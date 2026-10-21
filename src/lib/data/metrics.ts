@@ -12,8 +12,8 @@ export const MET: Record<MetricKey, { l: string; short: string; g: "lat" | "mem"
   code: { l: 'Native code size', short: 'Native code', g: 'code', c: 3, u: 'KiB' }
 };
 export const PHASE_NOTE: Record<MetricKey, string> = {
-  compile: 'Compilation: validation + code generation until the module object is ready. Lazy and tiered backends report only work done before instantiation; interpreters report translation. C AOT includes Wasm-to-C transpilation, GCC compilation/linking and library loading.',
-  rssCompile: 'Process-lifetime peak RSS for compilation, from its recorded timing or memory source pass. Each trial supplies one RSS observation; inner timing samples do not add independent RSS observations.',
+  compile: 'Compilation: validation + code generation until the module object is ready. Lazy and tiered backends report only work done before instantiation; interpreters report translation. C AOT is Wasm-to-C transpilation time plus GCC or Clang compilation/linking time.',
+  rssCompile: 'Process-lifetime peak RSS for compilation, from its recorded timing or memory source pass. C AOT uses the larger of the transpiler and native compiler/linker process peaks. Each trial supplies one RSS observation; inner timing samples do not add independent RSS observations.',
   inst: 'Instantiation: imports resolved, memories/tables allocated, data/elem segments applied, and the module start function invoked if one is declared. An exported _start is not part of instantiation.',
   rssInst: 'Process-lifetime peak RSS for instantiation, retaining its recorded source pass and collector. No phase subtraction or heap substitution.',
   first: 'First call: the first invocation of the entry export (e.g. _start), measured separately. Includes lazy compilation and tier-up triggered by the call.',

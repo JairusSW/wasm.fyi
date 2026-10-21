@@ -38,6 +38,9 @@ function(ladybird_lib name fs_name)
     endif()
 endfunction()
 add_subdirectory("${SRC}/AK" AK)
+if(EXISTS "${SRC}/Libraries/LibSync/CMakeLists.txt")
+    add_subdirectory("${SRC}/Libraries/LibSync" Libraries/LibSync)
+endif()
 # Only the embedding's Core dependencies; UI, geolocation, Unicode generators,
 # resource bundles and browser helper processes are not part of this target.
 set(core_sources
@@ -48,7 +51,12 @@ set(core_sources
     SystemServerTakeover ThreadEventQueue Timer TCPServer UDPServer)
 set(core_files)
 foreach(file IN LISTS core_sources)
-    list(APPEND core_files "${SRC}/Libraries/LibCore/${file}.cpp")
+    # LibCore moved the POSIX file and futex implementations during the
+    # historical window.  Build the embedding against the exact pinned tree
+    # instead of requiring filenames introduced by a newer checkout.
+    if(EXISTS "${SRC}/Libraries/LibCore/${file}.cpp")
+        list(APPEND core_files "${SRC}/Libraries/LibCore/${file}.cpp")
+    endif()
 endforeach()
 if(APPLE)
     enable_language(OBJCXX)
@@ -60,6 +68,9 @@ add_library(LibCore STATIC ${core_files})
 file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/Libraries/LibCore")
 generate_export_header(LibCore EXPORT_MACRO_NAME CORE_API EXPORT_FILE_NAME "${CMAKE_BINARY_DIR}/Libraries/LibCore/Export.h")
 target_link_libraries(LibCore PRIVATE AK Threads::Threads)
+if(TARGET LibSync)
+    target_link_libraries(LibCore PRIVATE LibSync)
+endif()
 if(APPLE)
     target_link_libraries(LibCore PRIVATE "-framework CoreFoundation" "-framework Foundation")
 endif()

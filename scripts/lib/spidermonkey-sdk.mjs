@@ -69,6 +69,15 @@ export function spiderMonkeyZlibEnvironment(env,minimumRust,platform=process.pla
  if(platform==='darwin'&&minimumRust==='1.66.0'&&!/(?:^|\s)-include\s+stdio\.h(?:\s|$)/.test(result.CFLAGS||''))result.CFLAGS=((result.CFLAGS||'')+' -include stdio.h').trim();
  return result;
 }
+export function spiderMonkeyPythonEnvironment(env,minimumRust,platform=process.platform){
+ const python=env.WASMFYI_SPIDERMONKEY_LEGACY_PYTHON;
+ if(platform!=='linux'||minimumRust!=='1.66.0'||!python)return {...env};
+ if(!python.startsWith('/')||/[\s"'$`]/.test(python))throw Error('Unsafe legacy SpiderMonkey Python path');
+ // ESR 115's virtualenv implementation predates Python 3.12 and assumes its
+ // sysconfig data directory is the virtualenv root. Use an explicitly
+ // qualified older host interpreter for this source family only.
+ return {...env,WASMFYI_BUILD_PYTHON:python};
+}
 export async function resetSpiderMonkeyCompilerCache(object,env){
  const status=await readFile(join(object,'config.status'),'utf8').catch(error=>{if(error.code==='ENOENT')return '';throw error});
  const previous=status.match(/['"]_CXX['"]:\s*['"]([^'"]+)['"]/)?.[1];
@@ -78,6 +87,15 @@ export async function resetSpiderMonkeyCompilerCache(object,env){
  // Mozilla reuses config.status even after CXX changes. Mixing objects from
  // different libc++ headers is unsafe, so clobber this SDK's objects only.
  await rm(object,{recursive:true,force:true});return true;
+}
+export async function repairSpiderMonkeyLinuxSingleThreadedWrapper(source,platform=process.platform){
+ if(platform!=='linux')return null;
+ const path=join(source,'config/system-headers.mozbuild'),header='    "sys/single_threaded.h",\n';
+ const current=await readFile(path,'utf8');
+ if(!current.includes(header))return null;
+ if(current.split(header).length!==2)throw Error('Ambiguous SpiderMonkey single_threaded system-header declaration');
+ const corrected=current.replace(header,'');await writeFile(path,corrected);
+ return {path,originalSha256:digest(Buffer.from(current)),compiledSha256:digest(Buffer.from(corrected)),policy:'Let the selected Linux sysroot answer __has_include directly; a generated wrapper makes missing sys/single_threaded.h look present and then fail include_next'};
 }
 export async function buildSpiderMonkeySDK({source,target,env,run}) {
  await mkdir(target,{recursive:true});
@@ -90,19 +108,21 @@ export async function buildSpiderMonkeySDK({source,target,env,run}) {
  const minimumRust=rustPolicy.match(/^MINIMUM_RUST_VERSION\s*=\s*["']([^"']+)["']/m)?.[1];
  if(env.WASMFYI_SPIDERMONKEY_LEGACY_RUST&&!minimumRust)throw Error('Pinned SpiderMonkey Rust minimum unavailable');
  const sourceCompatibility=await repairSpiderMonkeyESR115(source,minimumRust,env);
+ const linuxSingleThreadedWrapper=await repairSpiderMonkeyLinuxSingleThreadedWrapper(source);
+ if(linuxSingleThreadedWrapper)await rm(object,{recursive:true,force:true});
  const bindgenPolicy=await readFile(join(source,'build/moz.configure/bindgen.configure'),'utf8').catch(()=>'');
  const minimumCbindgen=bindgenPolicy.match(/cbindgen_min_version\s*=\s*Version\("([^"]+)"\)/)?.[1];
  const cxxRuntime=await stageSpiderMonkeyCxxRuntime(target,env);
  const selectedEnv=cxxRuntime?{...env,WASMFYI_SPIDERMONKEY_CXX_RUNTIME:cxxRuntime.directory}:env;
- const buildEnv=spiderMonkeyCbindgenEnvironment(spiderMonkeyZlibEnvironment(spiderMonkeyLegacyLinkerEnvironment({...spiderMonkeyRustEnvironment(spiderMonkeyBuildEnvironment(selectedEnv),minimumRust),MOZCONFIG:mozconfig},minimumRust),minimumRust),minimumRust,minimumCbindgen);
+ const buildEnv=spiderMonkeyPythonEnvironment(spiderMonkeyCbindgenEnvironment(spiderMonkeyZlibEnvironment(spiderMonkeyLegacyLinkerEnvironment({...spiderMonkeyRustEnvironment(spiderMonkeyBuildEnvironment(selectedEnv),minimumRust),MOZCONFIG:mozconfig},minimumRust),minimumRust),minimumRust,minimumCbindgen),minimumRust);
  if(buildEnv.CC?.includes('-fuse-ld=/Library/Developer/CommandLineTools/usr/bin/ld-classic')&&!await stat('/Library/Developer/CommandLineTools/usr/bin/ld-classic').catch(()=>null))throw Error('Legacy SpiderMonkey requires installed Apple ld-classic');
- const python=await nodeBuildPython(buildEnv,run,'SpiderMonkey');
+ const python=await nodeBuildPython(buildEnv,run,'SpiderMonkey',minimumRust==='1.66.0'?8:10);
  await resetSpiderMonkeyCompilerCache(object,buildEnv);
  await run(python.program,[join(source,'mach'),'build','--jobs',String(env.WASMFYI_BUILD_JOBS||availableParallelism())],{cwd:source,env:buildEnv});
  const binary=join(object,'dist/bin/js');if(!await stat(binary).catch(()=>null))throw Error('SpiderMonkey source build did not produce its shell');
  await run(binary,['--wasm-compiler=ion','-e','if(!wasmIsSupported())throw Error("WebAssembly disabled")']);
  env.WASMBENCH_SPIDERMONKEY=binary;env.NODE_OPTIONS='';
- return {source,target,binary,binarySha256:digest(await readFile(binary)),flags,python,rustToolchain:buildEnv.RUSTUP_TOOLCHAIN||null,minimumRust,sourceCompatibility,...(cxxRuntime?{cxxRuntime}:{}),mozconfigSha256:digest(await readFile(mozconfig)),wasmCompiler:'Ion only'};
+ return {source,target,binary,binarySha256:digest(await readFile(binary)),flags,python,rustToolchain:buildEnv.RUSTUP_TOOLCHAIN||null,minimumRust,sourceCompatibility,linuxSingleThreadedWrapper,...(cxxRuntime?{cxxRuntime}:{}),mozconfigSha256:digest(await readFile(mozconfig)),wasmCompiler:'Ion only'};
 }
 export async function stageSpiderMonkeyCxxRuntime(target,env,platform=process.platform){
  if(platform!=='linux'||!env.WASMFYI_SPIDERMONKEY_CXX_RUNTIME)return null;

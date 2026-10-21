@@ -112,7 +112,7 @@
 -            }})),
 +            }});
 +                if cfg!(feature="wasmer_llvm") || cfg!(feature="wasmer_singlepass") {
-+                    description["description"]["validator_features"]=json!({"namespace":"wasmparser/0.251.0","evidence":"Pinned Wasmer 7.3.0 compiler configuration and explicit C API feature subset; Singlepass SIMD disabled after corpus instruction lowering failures; enabled validation is not a guarantee of complete backend support","supported":{"GC":false,"FUNCTION_REFERENCES":false,"MEMORY64":false,"STACK_SWITCHING":false,"SIMD":cfg!(feature="wasmer_llvm"),"RELAXED_SIMD":cfg!(feature="wasmer_llvm"),"EXCEPTIONS":cfg!(feature="wasmer_llvm"),"LEGACY_EXCEPTIONS":cfg!(feature="wasmer_llvm"),"TAIL_CALL":cfg!(feature="wasmer_llvm")}});
++                    description["description"]["validator_features"]=json!({"namespace":"wasmparser/0.251.0","evidence":"Pinned Wasmer compiler and explicit backend-specific C API feature subset cross-checked against Wasmer's feature matrix; Singlepass SIMD and wide arithmetic disabled; enabled validation is not a guarantee of complete backend support","supported":{"GC":false,"FUNCTION_REFERENCES":false,"MEMORY64":false,"STACK_SWITCHING":false,"SIMD":cfg!(feature="wasmer_llvm"),"RELAXED_SIMD":cfg!(feature="wasmer_llvm"),"EXCEPTIONS":cfg!(feature="wasmer_llvm"),"LEGACY_EXCEPTIONS":cfg!(feature="wasmer_llvm"),"TAIL_CALL":cfg!(feature="wasmer_llvm"),"THREADS":true,"WIDE_ARITHMETIC":cfg!(feature="wasmer_llvm")}});
 +                }
 +                if cfg!(feature="wasmer_llvm") || cfg!(feature="wasmer_singlepass") { description["description"]["capabilities"]["can_code_profile"]=json!(false);
 +                    description["description"]["capabilities"]["can_run_vectors"]=json!(true);
@@ -296,6 +296,8 @@
 +    wasmer_features_relaxed_simd(features,WB_WASMER_LLVM);
 +    wasmer_features_exceptions(features,WB_WASMER_LLVM);
 +    wasmer_features_tail_call(features,WB_WASMER_LLVM);
++    wasmer_features_threads(features,true);
++    wasmer_features_wide_arithmetic(features,WB_WASMER_LLVM);
 +    wasmer_features_memory64(features,false);
 +    wasm_config_set_features(config,features);
 +    e->engine=wasm_engine_new_with_config(config);if(!e->engine)throw last_error("engine");return e.release();

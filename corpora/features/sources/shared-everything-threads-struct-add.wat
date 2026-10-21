@@ -1,0 +1,11 @@
+(module (type $cell (shared (struct (field (mut i32)))))
+ (func (export "benchmark") (param $n i32) (result i32)
+  (local $i i32) (local $sum i32) (local $cell (ref null $cell)) (local.set $cell (struct.new $cell (i32.const 0)))
+  (block $done (br_if $done (i32.eqz (local.get $n)))
+   (loop $again
+    (local.set $sum (i32.add (local.get $sum) (block (result i32)
+   (struct.atomic.set seqcst $cell 0 (local.get $cell) (local.get $i))
+   (i32.add (i32.mul (struct.atomic.rmw.add seqcst $cell 0 (local.get $cell) (i32.const 7)) (i32.const 3))
+    (struct.atomic.get seqcst $cell 0 (local.get $cell))))))
+    (local.set $i (i32.add (local.get $i) (i32.const 1)))
+    (br_if $again (i32.lt_u (local.get $i) (local.get $n))))) (local.get $sum)))

@@ -3,6 +3,7 @@ export const FEATURE_PERFORMANCE_BATCH_NS=50_000_000;
 
 /** Keep GC allocations observable rather than allowing allocation/access fusion. */
 export function performanceSource(fixture) {
+ if(fixture.retainedRoots)return {wat:fixture.wat,retained:true};
  if(fixture.feature!=='gc'||!['struct-allocation-access','array-allocation-access','array-fill'].includes(fixture.name))return {wat:fixture.wat,retained:false};
  const structure=fixture.name==='struct-allocation-access';
  const declarations=structure?'(type $item (struct (field i32)))':'(type $item (array (mut i32)))';
@@ -29,11 +30,11 @@ export function performanceSource(fixture) {
   (local.get $sum)))`};
 }
 /** Repetition stays within Wasm; no extra feature or host import is introduced. */
-export function repeatedFeatureSource(wat,repeats=FEATURE_PERFORMANCE_REPEATS) {
+export function repeatedFeatureSource(wat,repeats=FEATURE_PERFORMANCE_REPEATS,exportName='benchmark') {
  if(!Number.isSafeInteger(repeats)||repeats<1)throw Error('Invalid repetition count');
- const needle='(func (export "benchmark")';
- if(!wat.includes(needle))throw Error('Feature kernel must expose an i32 benchmark export');
- const named=wat.replace(needle,'(func $performance_kernel (export "benchmark")').trim();
+ const needle=`(func (export "${exportName}")`;
+ if(!wat.includes(needle))throw Error(`Feature kernel must expose its declared i32 export: ${exportName}`);
+ const named=wat.replace(needle,`(func $performance_kernel (export "${exportName}")`).trim();
  return named.slice(0,-1)+`\n (func (export "performance") (param $n i32) (result i32)
   (local $iteration i32) (local $checksum i32)
   (loop $repeat

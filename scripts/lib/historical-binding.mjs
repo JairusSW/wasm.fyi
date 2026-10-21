@@ -6,6 +6,7 @@ import {command,digest,exists} from './wasmbench.mjs';
 import {releaseSource,assertReleasedSource,releaseCache,githubRelease} from './release-policy.mjs';
 import {configureWasmerLLVM} from './llvm-toolchain.mjs';
 import {buildWamrSDK} from './wamr-sdk.mjs';
+import {assertWazeroInterruptsDisabled} from './wazero-sampling.mjs';
 import {buildWasmEdgeSDK} from './wasmedge-sdk.mjs';
 import {buildChicorySDK} from './chicory-sdk.mjs';
 import {buildCTranspilerSDK} from './c-transpiler-sdk.mjs';
@@ -61,6 +62,10 @@ export async function copyHistoricalHarness(base,root) {
   await mkdir(root,{recursive:false});
   const files=command('git',['ls-files','-z','--cached','--others','--exclude-standard'],{cwd:base}).toString().split('\0').filter(Boolean);
   for(const path of files) {
+    // Git reports an untracked nested repository as a trailing-slash directory
+    // entry. Those SDK caches are not harness source files and fs.cp refuses to
+    // dereference them without a recursive copy.
+    if(path.endsWith('/'))continue;
     if(path.startsWith('toolchains/') || path.split('/').some(part=>part==='__pycache__'))continue;
     if(path.startsWith('/') || path.split('/').includes('..'))throw Error('Unsafe harness input: '+path);
     await mkdir(dirname(join(root,path)),{recursive:true});
@@ -87,6 +92,7 @@ export async function copyHistoricalHarness(base,root) {
 export async function restoreHistoricalHarnessSources(base,root) {
  const files=command('git',['ls-files','-z','--cached','--others','--exclude-standard'],{cwd:base}).toString().split('\0').filter(Boolean);
  for(const path of files) {
+  if(path.endsWith('/'))continue;
   if(path.startsWith('toolchains/')||path.split('/').includes('__pycache__'))continue;
   if(path.startsWith('/')||path.split('/').includes('..'))throw Error('Unsafe harness input');
   await mkdir(dirname(join(root,path)),{recursive:true});await cp(join(base,path),join(root,path),{dereference:true});
@@ -144,6 +150,7 @@ export async function buildHistoricalBinding({root,pin,configuration,invoke,env}
     assertReleasedSource(source.source,source);
   } else if(pin.engine==='wazero') {
     await replaceSourceTree('adapters/wazero','.go','1.12.0');
+    assertWazeroInterruptsDisabled(await readFile(join(root,'adapters/wazero/main.go'),'utf8'));
     // The controller and its oracle keep their original module graph. Only the
     // adapter gets the historical dependency, using a separate Go modfile.
     const mod=join(root,'historical-wazero.mod');

@@ -7,7 +7,7 @@ import {instrumentWasmEdgeJIT} from './wasmedge-jit-bridge.mjs';
 import {digest} from './wasmbench.mjs';
 export function wasmEdgeHostLinkFlags(env,platform=process.platform) {
  if(platform!=='linux')return [];
- const prefix=env.WASMFYI_WASMEDGE_CXX_SDK||env.WASMFYI_WAVM_CXX_SDK;
+ const prefix=env.WASMFYI_WASMEDGE_SYSTEM_CXX==='1'?null:env.WASMFYI_WASMEDGE_CXX_SDK||env.WASMFYI_WAVM_CXX_SDK;
  // The upstream version script also lists optional/removed C API exports.
  // Permit those labels only, while requiring every actual import to resolve.
  const linker=['-Wl,--undefined-version','-Wl,--no-undefined'];
@@ -20,14 +20,14 @@ export function wasmEdgeHostLinkFlags(env,platform=process.platform) {
  }
  linker.push(...privateGlibcLinkFlags(env,platform));
  flags.push('-DCMAKE_SHARED_LINKER_FLAGS='+linker.join(' '));
+ const executable=linker.filter(flag=>flag!=='-Wl,--undefined-version');
  if(env.WASMFYI_PRIVATE_GLIBC_LIBRARY_DIR){
   // CMake compiler probes are executables too. Bind their libc and loader to
   // the same qualified family instead of the host's implicit linker script.
   const loader=join(env.WASMFYI_PRIVATE_GLIBC_LIBRARY_DIR,'ld-linux-x86-64.so.2');
-  const executable=linker.filter(flag=>flag!=='-Wl,--undefined-version');
   executable.push('-Wl,--no-as-needed',loader,'-Wl,--as-needed','-Wl,--dynamic-linker,'+loader);
-  flags.push('-DCMAKE_EXE_LINKER_FLAGS='+executable.join(' '));
  }
+ flags.push('-DCMAKE_EXE_LINKER_FLAGS='+executable.join(' '));
  return flags;
 }
 export async function wasmedgeJITUnavailable(source,configuration) {

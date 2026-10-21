@@ -1,0 +1,12 @@
+(module (type $unary (func (param i32) (result i32)))
+  (func $inc (type $unary) (i32.add (local.get 0) (i32.const 3)))
+  (func $scale (type $unary) (i32.mul (local.get 0) (i32.const 5)))
+  (elem declare func $inc $scale)
+ (func (export "benchmark") (param $n i32) (result i32)
+  (local $i i32) (local $sum i32)  
+  (block $done (br_if $done (i32.eqz (local.get $n)))
+   (loop $again
+    (local.set $sum (i32.add (local.get $sum) (call_ref $unary (local.get $i)
+  (select (result (ref $unary)) (ref.func $inc) (ref.func $scale) (i32.and (local.get $i) (i32.const 1))))))
+    (local.set $i (i32.add (local.get $i) (i32.const 1)))
+    (br_if $again (i32.lt_u (local.get $i) (local.get $n))))) (local.get $sum)))

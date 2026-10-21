@@ -1,0 +1,15 @@
+verified features/esm-integration/named-function
+verified features/esm-integration/immutable-global
+verified features/esm-integration/memory-segment
+verified features/esm-integration/host-import
+verified features/esm-integration/source-phase
+verified features/type-reflection/function-type
+verified features/type-reflection/typed-host-function
+verified features/type-reflection/global-type
+verified features/type-reflection/memory-type
+verified features/type-reflection/table-type
+verified features/wasm-c-api/direct-call
+verified features/wasm-c-api/host-callback
+verified features/wasm-c-api/mutable-global
+verified features/wasm-c-api/memory-access
+verified features/wasm-c-api/trap-lifecycle

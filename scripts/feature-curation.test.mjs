@@ -10,7 +10,8 @@ import { digest, site } from './lib/wasmbench.mjs';
 const root = join(site, 'corpora/features');
 const generated = fixtures();
 const executableScope = new Set(['execution', 'memory-bandwidth', 'host-interface', 'host-interface-result-code']);
-const compileOnlyFeatures = new Set(['core-val', 'extended-const', 'cm-async']);
+const compileOnlyFeatures = new Set(featureIds.filter(feature => generated.filter(f => f.feature === feature)
+  .every(f => ['compile-only', 'compile-and-instantiate'].includes(f.scope))));
 const manifest = async () => JSON.parse(await readFile(join(root, 'manifest.json'), 'utf8'));
 const id = (fixture, size) => `features/${fixture.feature}/${fixture.name}/${size}`;
 const localPath = (base, relative) => {
@@ -32,7 +33,11 @@ test('execution diversity counts operations once, excluding baselines and size-o
         if(f.feature==='tail-call' && ['direct-recursion','indirect-recursion'].includes(f.name))return 'recursive-sum';
         return f.name.replace(/-\d+$/, '');
       }));
-    assert.ok(operations.size >= 5, `${feature} has ${operations.size} distinct executable operation names`);
+    // These proposals have a smaller finite set of distinct encodings or
+    // instructions; scale variants do not count as new algorithms.
+    const minimum = feature === 'wide-arithmetic' ? 4
+      : feature === 'compact-imports' ? 3 : 5;
+    assert.ok(operations.size >= minimum, `${feature} has ${operations.size} distinct executable operation names`);
   }
   // The old direct/indirect tail recursion and pair/block arithmetic overlap.
   // Require four genuinely additional named algorithms in these families.

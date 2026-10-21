@@ -11,13 +11,22 @@ import {applyWavmLoadDiagnostic} from './lib/wavm-load-diagnostic.mjs';
 import {applyV8CacheFlag} from './lib/v8-cache-flag.mjs';
 import {applyV8NativeSizePolicy} from './lib/v8-native-size-policy.mjs';
 import {applyV8SingleCoreMode} from './lib/v8-single-core-mode.mjs';
+import {applyPrivateELFInterpreter} from './lib/private-elf-interpreter.mjs';
 const root=resolve(process.argv[2]||'');
 if(!process.argv[2])throw Error('Harness source directory required');
+// A historical wazero rebuild only changes that adapter. Avoid migrating
+// unrelated JS/V8 seams in a harness that may come from a newer recipe.
+if(process.env.WASMFYI_PATCH_ONLY==='wazero'){
+ await applyWazeroSampling(root);
+ console.log('Installed wazero-only sampling and interruption policy in '+root);
+ process.exit(0);
+}
 await applyV8SingleCoreMode(root);
 await applyV8CacheFlag(root);
 await applyV8NativeSizePolicy(root);
 await applyV8Turboshaft(root);
 await applyControllerPreflightPolicy(root);
+await applyPrivateELFInterpreter(root);
 const files=new Map();
 for(const relative of ['experiment/types.go','experiment/runner.go','cmd/wasmbench/main.go'])files.set(relative,await readFile(join(root,relative),'utf8'));
 if(!files.get('experiment/runner.go').includes('case "wasmer-cranelift":')){

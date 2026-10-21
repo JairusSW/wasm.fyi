@@ -1,9 +1,14 @@
 # Corpus sources and correctness
 
 Every configured corpus artifact has a source build: 166 application algorithms
-in 27 categories and 241 feature contracts. The application inventory contains
+in 27 categories and 725 feature contracts. The application inventory contains
 102 original import-free C kernels and 64 retained upstream workloads. Each
 category has 6–9 distinct algorithms. Feature probes are counted separately.
+
+The [proposal census and correctness evidence](../docs/proposal-corpora.md)
+account for every feature-page proposal, including unavailable and inactive
+ones. Native embedding corpora and full upstream suites have separate counts;
+compatibility inventory has no quota or cap.
 
 The default inventory has no Emscripten modules. The DNA/text kernels replacing
 six Emscripten defaults are original implementations; they do not claim to run
@@ -19,6 +24,8 @@ Prerequisites:
 - Go **1.26.5** with automatic toolchain selection enabled; age selects **1.27.0**.
 - `wasm-tools` **1.260.0**, Wasmtime **46.0.1**, WABT, CMake, Ninja, make, Git,
   curl, tar and unzip.
+- The pinned V8 **15.2.20** proposal validator:
+  `node scripts/proposal-toolchain.mjs` installs it on Linux x64/macOS ARM64.
 - Docker. The large Ruby, Yosys and Swift ports use pinned Linux toolchains.
   Allow Docker 12 GB of memory for Yosys linking. Linux x64 is recommended for
   the complete build; Mac hosts can build the other modules natively and run
@@ -66,7 +73,8 @@ For a focused rebuild:
 ```sh
 node scripts/corpus-rebuild.mjs --ids=json2csv-people,lua-cli-buckets
 just applications-build      # all 102 C kernels
-just features-build          # all 119 feature artifacts / 241 contracts
+just features-build          # all source-generated feature artifacts
+just features-proposals-source-check # fresh proposal builds, hash checks and native C workloads
 just corpus-wat-build        # seven retained WAT workloads
 ```
 

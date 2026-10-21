@@ -1,0 +1,1763 @@
+{
+  "schema": 1,
+  "created": "2026-10-20T16:59:14.286Z",
+  "proposalSource": [
+    "https://webassembly.org/features/",
+    "https://github.com/WebAssembly/proposals/blob/main/finished-proposals.md"
+  ],
+  "proposalSnapshotRetrieved": "2026-10-06",
+  "liveIdentity": {
+    "verified": "2026-10-20T16:59:14.279Z",
+    "source": "https://raw.githubusercontent.com/WebAssembly/website/main/features.json",
+    "identitySha256": "f13c6b2ea030e38e2b915cbab8e8305094f01a7452ffa31396d58b736903e6ca",
+    "identities": [
+      {
+        "key": "acquireReleaseAtomics",
+        "name": "Acquire-Release Atomics",
+        "url": "https://github.com/WebAssembly/acquire-release-atomics",
+        "phase": 2
+      },
+      {
+        "key": "bigInt",
+        "name": "JS BigInt to Wasm i64 Integration",
+        "url": "https://github.com/WebAssembly/JS-BigInt-integration",
+        "phase": 5
+      },
+      {
+        "key": "branchHinting",
+        "name": "Branch Hinting",
+        "url": "https://github.com/WebAssembly/branch-hinting/blob/master/proposals/branch-hinting/Overview.md",
+        "phase": 5
+      },
+      {
+        "key": "bulkMemory",
+        "name": "Bulk Memory Operations",
+        "url": "https://github.com/WebAssembly/bulk-memory-operations/blob/master/proposals/bulk-memory-operations/Overview.md",
+        "phase": 5
+      },
+      {
+        "key": "compactImportSection",
+        "name": "Compact Import Section",
+        "url": "https://github.com/WebAssembly/compact-import-section/blob/main/proposals/compact-import-section/Overview.md",
+        "phase": 4
+      },
+      {
+        "key": "compilationHints",
+        "name": "Compilation Hints",
+        "url": "https://github.com/WebAssembly/compilation-hints/blob/main/proposals/compilation-hints/Overview.md",
+        "phase": 2
+      },
+      {
+        "key": "componentModel",
+        "name": "Component Model",
+        "url": "https://github.com/WebAssembly/component-model",
+        "phase": 1
+      },
+      {
+        "key": "customAnnotationSyntaxInTheTextFormat",
+        "name": "Custom Text Format Annotations",
+        "url": "https://github.com/WebAssembly/annotations/blob/main/proposals/annotations/Overview.md",
+        "phase": 5
+      },
+      {
+        "key": "customDescriptors",
+        "name": "Custom Descriptors and JS Interop",
+        "url": "https://github.com/WebAssembly/custom-descriptors/blob/main/proposals/custom-descriptors/Overview.md",
+        "phase": 3
+      },
+      {
+        "key": "customPageSizes",
+        "name": "Custom Page Sizes",
+        "url": "https://github.com/WebAssembly/custom-page-sizes/blob/main/proposals/custom-page-sizes/Overview.md",
+        "phase": 3
+      },
+      {
+        "key": "esmIntegration",
+        "name": "ESM Integration",
+        "url": "https://github.com/WebAssembly/esm-integration",
+        "phase": 3
+      },
+      {
+        "key": "exceptions",
+        "name": "Legacy Exception Handling",
+        "url": "https://github.com/WebAssembly/exception-handling/blob/master/proposals/exception-handling/legacy/Exceptions.md",
+        "phase": "inactive"
+      },
+      {
+        "key": "exceptionsFinal",
+        "name": "Exception Handling with exnref",
+        "url": "https://github.com/WebAssembly/exception-handling/blob/master/proposals/exception-handling/Exceptions.md",
+        "phase": 5
+      },
+      {
+        "key": "extendedConst",
+        "name": "Extended Constant Expressions",
+        "url": "https://github.com/WebAssembly/extended-const/blob/master/proposals/extended-const/Overview.md",
+        "phase": 5
+      },
+      {
+        "key": "extendedNameSection",
+        "name": "Extended Name Section",
+        "url": "https://github.com/WebAssembly/extended-name-section/blob/main/proposals/extended-name-section/Overview.md",
+        "phase": 2
+      },
+      {
+        "key": "flexibleVectors",
+        "name": "Flexible Vectors",
+        "url": "https://github.com/WebAssembly/flexible-vectors/blob/main/proposals/flexible-vectors/Overview.md",
+        "phase": 1
+      },
+      {
+        "key": "frozenValues",
+        "name": "Frozen Values",
+        "url": "https://github.com/WebAssembly/frozen-values/blob/main/proposals/frozen-values/Overview.md",
+        "phase": 1
+      },
+      {
+        "key": "gc",
+        "name": "Garbage Collection",
+        "url": "https://github.com/WebAssembly/gc",
+        "phase": 5
+      },
+      {
+        "key": "halfPrecision",
+        "name": "Half Precision",
+        "url": "https://github.com/WebAssembly/half-precision/blob/main/proposals/half-precision/Overview.md",
+        "phase": 1
+      },
+      {
+        "key": "instrumentAndTracingTechnology",
+        "name": "Instrument and Tracing Technology",
+        "url": "https://github.com/WebAssembly/instrument-tracing/blob/main/proposals/instrument-tracing/Overview.md",
+        "phase": "inactive"
+      },
+      {
+        "key": "jitInterface",
+        "name": "JIT Interface",
+        "url": "https://github.com/WebAssembly/jit-interface/blob/main/proposals/jit-interface/Explainer.md",
+        "phase": 1
+      },
+      {
+        "key": "jspi",
+        "name": "JS Promise Integration",
+        "url": "https://github.com/WebAssembly/js-promise-integration",
+        "phase": 5
+      },
+      {
+        "key": "jsPrimitiveBuiltins",
+        "name": "JS Primitive Builtins",
+        "url": "https://github.com/WebAssembly/js-primitive-builtins/blob/main/proposals/js-primitive-builtins/Overview.md",
+        "phase": 2
+      },
+      {
+        "key": "jsStringBuiltins",
+        "name": "JS String Builtins",
+        "url": "https://github.com/WebAssembly/js-string-builtins/blob/main/proposals/js-string-builtins/Overview.md",
+        "phase": 5
+      },
+      {
+        "key": "memory64",
+        "name": "Memory64",
+        "url": "https://github.com/WebAssembly/memory64/blob/master/proposals/memory64/Overview.md",
+        "phase": 5
+      },
+      {
+        "key": "memoryControl",
+        "name": "Memory Control",
+        "url": "https://github.com/WebAssembly/memory-control/blob/main/proposals/memory-control/Overview.md",
+        "phase": 1
+      },
+      {
+        "key": "moreArrayConstructors",
+        "name": "More Array Constructors",
+        "url": "https://github.com/WebAssembly/more-array-constructors/blob/main/proposals/more-array-constructors/Overview.md",
+        "phase": 1
+      },
+      {
+        "key": "multibyteArrayAccess",
+        "name": "Multibyte Array Access",
+        "url": "https://github.com/WebAssembly/multibyte-array-access",
+        "phase": 2
+      },
+      {
+        "key": "multiMemory",
+        "name": "Multiple Memories",
+        "url": "https://github.com/WebAssembly/multi-memory/blob/master/proposals/multi-memory/Overview.md",
+        "phase": 5
+      },
+      {
+        "key": "multiValue",
+        "name": "Multi-value",
+        "url": "https://github.com/WebAssembly/spec/blob/master/proposals/multi-value/Overview.md",
+        "phase": 5
+      },
+      {
+        "key": "mutableGlobals",
+        "name": "Import/Export of Mutable Globals",
+        "url": "https://github.com/WebAssembly/mutable-global/blob/master/proposals/mutable-global/Overview.md",
+        "phase": 5
+      },
+      {
+        "key": "numericValuesInWat",
+        "name": "Numeric Values in WAT Data Segments",
+        "url": "https://github.com/WebAssembly/wat-numeric-values/blob/main/proposals/wat-numeric-values/Overview.md",
+        "phase": 2
+      },
+      {
+        "key": "profiles",
+        "name": "Profiles",
+        "url": "https://github.com/WebAssembly/profiles/blob/main/proposals/profiles/Overview.md",
+        "phase": 1
+      },
+      {
+        "key": "referenceTypes",
+        "name": "Reference Types",
+        "url": "https://github.com/WebAssembly/reference-types/blob/master/proposals/reference-types/Overview.md",
+        "phase": 5
+      },
+      {
+        "key": "relaxedDeadCodeValidation",
+        "name": "Relaxed Dead Code Validation",
+        "url": "https://github.com/WebAssembly/relaxed-dead-code-validation/blob/main/proposals/relaxed-dead-code-validation/Overview.md",
+        "phase": 2
+      },
+      {
+        "key": "relaxedSimd",
+        "name": "Relaxed SIMD",
+        "url": "https://github.com/WebAssembly/relaxed-simd/tree/main/proposals/relaxed-simd",
+        "phase": 5
+      },
+      {
+        "key": "roundingVariants",
+        "name": "Rounding Variants",
+        "url": "https://github.com/WebAssembly/rounding-mode-control/blob/main/proposals/rounding-mode-control/Overview.md",
+        "phase": 2
+      },
+      {
+        "key": "saturatedFloatToInt",
+        "name": "Non-trapping float-to-int Conversions",
+        "url": "https://github.com/WebAssembly/spec/blob/master/proposals/nontrapping-float-to-int-conversion/Overview.md",
+        "phase": 5
+      },
+      {
+        "key": "sharedEverythingThreads",
+        "name": "Shared-Everything Threads",
+        "url": "https://github.com/WebAssembly/shared-everything-threads/blob/main/proposals/shared-everything-threads/Overview.md",
+        "phase": 1
+      },
+      {
+        "key": "signExtensions",
+        "name": "Sign-extension Operators",
+        "url": "https://github.com/WebAssembly/spec/blob/master/proposals/sign-extension-ops/Overview.md",
+        "phase": 5
+      },
+      {
+        "key": "simd",
+        "name": "Fixed-width SIMD",
+        "url": "https://github.com/WebAssembly/simd/blob/master/proposals/simd/SIMD.md",
+        "phase": 5
+      },
+      {
+        "key": "stackSwitching",
+        "name": "Stack Switching",
+        "url": "https://github.com/WebAssembly/stack-switching/blob/main/proposals/stack-switching/Explainer.md",
+        "phase": 3
+      },
+      {
+        "key": "stringref",
+        "name": "Reference-Typed Strings",
+        "url": "https://github.com/WebAssembly/stringref/blob/main/proposals/stringref/Overview.md",
+        "phase": 1
+      },
+      {
+        "key": "tailCall",
+        "name": "Tail Call",
+        "url": "https://github.com/WebAssembly/tail-call/blob/master/proposals/tail-call/Overview.md",
+        "phase": 5
+      },
+      {
+        "key": "threads",
+        "name": "Threads",
+        "url": "https://github.com/WebAssembly/threads/blob/main-legacy/proposals/threads/Overview.md",
+        "phase": 4
+      },
+      {
+        "key": "typedFunctionReferences",
+        "name": "Typed Function References",
+        "url": "https://github.com/WebAssembly/function-references/blob/main/proposals/function-references/Overview.md",
+        "phase": 5
+      },
+      {
+        "key": "typeImports",
+        "name": "Type Imports",
+        "url": "https://github.com/WebAssembly/proposal-type-imports/blob/main/proposals/type-imports/Overview.md",
+        "phase": 1
+      },
+      {
+        "key": "typeReflection",
+        "name": "Type Reflection for JS API",
+        "url": "https://github.com/WebAssembly/js-types/blob/main/proposals/js-types/Overview.md",
+        "phase": 1
+      },
+      {
+        "key": "wasmCApi",
+        "name": "WebAssembly C and C++ API",
+        "url": "https://github.com/WebAssembly/wasm-c-api",
+        "phase": 1
+      },
+      {
+        "key": "webContentSecurityPolicy",
+        "name": "Web Content Security Policy",
+        "url": "https://github.com/WebAssembly/content-security-policy/blob/main/proposals/CSP.md",
+        "phase": 5
+      },
+      {
+        "key": "wideArithmetic",
+        "name": "Wide Arithmetic",
+        "url": "https://github.com/WebAssembly/wide-arithmetic/blob/main/proposals/wide-arithmetic/Overview.md",
+        "phase": 4
+      }
+    ]
+  },
+  "policy": "Every proposal is accounted for, including inactive entries. No compatibility quota or cap. Programs, size variants, embedding API cases and upstream files remain separate counts. Corpus verification does not assert support by every engine or publish performance measurements.",
+  "host": {
+    "hostname": "Jairus-Tanaka.local",
+    "os": "darwin",
+    "arch": "arm64"
+  },
+  "suites": [
+    {
+      "id": "wasmtime",
+      "repository": "bytecodealliance/wasmtime",
+      "revision": "823d1b8f251494a06288194d0df746191f535ff7",
+      "files": 312,
+      "totals": {
+        "passed": 311,
+        "failed": 1,
+        "crashed": 0,
+        "runner-error": 0
+      },
+      "sourceInventorySha256": "27407391fc5dd7cc18e67996dca7cd82f4d46e89577ab83c41b9d7fc4f4c153f",
+      "report": "reports/upstream-wasmtime.json"
+    },
+    {
+      "id": "spec",
+      "repository": "WebAssembly/testsuite",
+      "revision": "0dc0343c9876267d99a7577ed4fc2289406a7869",
+      "files": 288,
+      "totals": {
+        "passed": 267,
+        "failed": 21,
+        "crashed": 0,
+        "runner-error": 0
+      },
+      "sourceInventorySha256": "0a1654c06eed5e9115dc3cb3fc62f7fe05f0ca385a4ca3dbec7cb67f4e1cd419",
+      "report": "reports/upstream-spec.json"
+    },
+    {
+      "id": "component",
+      "repository": "WebAssembly/component-model",
+      "revision": "694d789e46eaa8c52bfbc93871e2190a9f8afc60",
+      "files": 74,
+      "totals": {
+        "passed": 72,
+        "failed": 2,
+        "crashed": 0,
+        "runner-error": 0
+      },
+      "sourceInventorySha256": "f43b896c2d2f9741852f9ecb0129db362dc3c488832e117821b821c1ff5f412c",
+      "report": "reports/upstream-component.json"
+    },
+    {
+      "id": "v8-15.2.20",
+      "repository": "v8/v8",
+      "revision": "34f4bf16f621ceba505ef2b7b818d48d09a5d3d3",
+      "files": 549,
+      "totals": {
+        "passed": 537,
+        "failed": 1,
+        "crashed": 10,
+        "runner-error": 1
+      },
+      "sourceInventorySha256": "519ffe3cfb417be6fe5ad2c2df42cf396d74c47907f719f96097ee9e256718ac",
+      "report": "reports/upstream-v8-15.2.20.json"
+    }
+  ],
+  "officialV8": {
+    "status": "passed",
+    "tests": 538,
+    "totals": {
+      "PASS": 538
+    },
+    "report": "reports/upstream-v8-official.json",
+    "policy": "Unmodified upstream V8 runner, real published build configuration, upstream default variants/status filters. No corpus quota. Zero tests or an incomplete schedule is a runner error. Status-selected skips are never counted as passes. This is the full enabled mjsunit/wasm suite for this build, not all V8 test suites."
+  },
+  "proposals": [
+    {
+      "key": "acquireReleaseAtomics",
+      "name": "Acquire-Release Atomics",
+      "url": "https://github.com/WebAssembly/acquire-release-atomics",
+      "phase": 2,
+      "spec": null,
+      "id": "acquire-release-atomics",
+      "newCorpus": true,
+      "compatibility": {
+        "programs": 5,
+        "sizeContracts": 15,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 5,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "see retained exact-artifact report"
+      },
+      "performance": {
+        "executionPrograms": 5,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 5,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "partial",
+      "limitations": [
+        "The encoder and runtime pin V8 15.2.20, which uses memarg bit 5 for ordering. The current proposal Overview uses bit 4; that newer wire format is not qualified here. Single-agent RMW checks do not prove inter-thread memory ordering."
+      ]
+    },
+    {
+      "key": "bigInt",
+      "name": "JS BigInt to Wasm i64 Integration",
+      "url": "https://github.com/WebAssembly/JS-BigInt-integration",
+      "phase": 5,
+      "spec": "2.0",
+      "id": "big-int",
+      "newCorpus": true,
+      "compatibility": {
+        "programs": 5,
+        "sizeContracts": 15,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 5,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "see retained exact-artifact report"
+      },
+      "performance": {
+        "executionPrograms": 5,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 5,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "verified-corpus",
+      "limitations": []
+    },
+    {
+      "key": "branchHinting",
+      "name": "Branch Hinting",
+      "url": "https://github.com/WebAssembly/branch-hinting/blob/master/proposals/branch-hinting/Overview.md",
+      "phase": 5,
+      "spec": "3.0",
+      "id": "branch-hinting",
+      "newCorpus": true,
+      "compatibility": {
+        "programs": 5,
+        "sizeContracts": 15,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 5,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "see retained exact-artifact report"
+      },
+      "performance": {
+        "executionPrograms": 5,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 5,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "verified-corpus",
+      "limitations": [
+        "Original kernels verify metadata and result preservation. Successful execution alone is not evidence that an engine honored a performance hint; upstream native tests are retained separately."
+      ]
+    },
+    {
+      "key": "bulkMemory",
+      "name": "Bulk Memory Operations",
+      "url": "https://github.com/WebAssembly/bulk-memory-operations/blob/master/proposals/bulk-memory-operations/Overview.md",
+      "phase": 5,
+      "spec": "2.0",
+      "id": "bulk-memory",
+      "newCorpus": false,
+      "compatibility": {
+        "programs": 3,
+        "sizeContracts": 7,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "existing corpus; not requalified by this change"
+      },
+      "performance": {
+        "executionPrograms": 3,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "existing-corpus",
+      "limitations": []
+    },
+    {
+      "key": "compactImportSection",
+      "name": "Compact Import Section",
+      "url": "https://github.com/WebAssembly/compact-import-section/blob/main/proposals/compact-import-section/Overview.md",
+      "phase": 4,
+      "spec": null,
+      "id": "compact-imports",
+      "newCorpus": false,
+      "compatibility": {
+        "programs": 5,
+        "sizeContracts": 15,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "existing corpus; not requalified by this change"
+      },
+      "performance": {
+        "executionPrograms": 5,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "existing-corpus",
+      "limitations": []
+    },
+    {
+      "key": "compilationHints",
+      "name": "Compilation Hints",
+      "url": "https://github.com/WebAssembly/compilation-hints/blob/main/proposals/compilation-hints/Overview.md",
+      "phase": 2,
+      "spec": null,
+      "id": "compilation-hints",
+      "newCorpus": true,
+      "compatibility": {
+        "programs": 5,
+        "sizeContracts": 15,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 5,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "see retained exact-artifact report"
+      },
+      "performance": {
+        "executionPrograms": 0,
+        "compileOrInstantiatePrograms": 5,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "verified-corpus",
+      "limitations": [
+        "Original kernels verify metadata and result preservation. Successful execution alone is not evidence that an engine honored a performance hint; upstream native tests are retained separately."
+      ]
+    },
+    {
+      "key": "componentModel",
+      "name": "Component Model",
+      "url": "https://github.com/WebAssembly/component-model",
+      "phase": 1,
+      "spec": null,
+      "id": "component-model",
+      "newCorpus": false,
+      "compatibility": {
+        "programs": 1,
+        "sizeContracts": 3,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "existing corpus; not requalified by this change"
+      },
+      "performance": {
+        "executionPrograms": 1,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "existing-corpus",
+      "limitations": []
+    },
+    {
+      "key": "customAnnotationSyntaxInTheTextFormat",
+      "name": "Custom Text Format Annotations",
+      "url": "https://github.com/WebAssembly/annotations/blob/main/proposals/annotations/Overview.md",
+      "phase": 5,
+      "spec": "3.0",
+      "id": "custom-annotation-syntax-in-the-text-format",
+      "newCorpus": true,
+      "compatibility": {
+        "programs": 5,
+        "sizeContracts": 15,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 5,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "see retained exact-artifact report"
+      },
+      "performance": {
+        "executionPrograms": 0,
+        "compileOrInstantiatePrograms": 5,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "verified-corpus",
+      "limitations": [
+        "This is text-assembler syntax. Binary compile/instantiate probes are semantic controls; syntax throughput must be measured in the pinned text assembler, not attributed to core runtime execution."
+      ]
+    },
+    {
+      "key": "customDescriptors",
+      "name": "Custom Descriptors and JS Interop",
+      "url": "https://github.com/WebAssembly/custom-descriptors/blob/main/proposals/custom-descriptors/Overview.md",
+      "phase": 3,
+      "spec": null,
+      "id": "custom-descriptors",
+      "newCorpus": true,
+      "compatibility": {
+        "programs": 5,
+        "sizeContracts": 15,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 5,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "see retained exact-artifact report"
+      },
+      "performance": {
+        "executionPrograms": 5,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 5,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "verified-corpus",
+      "limitations": []
+    },
+    {
+      "key": "customPageSizes",
+      "name": "Custom Page Sizes",
+      "url": "https://github.com/WebAssembly/custom-page-sizes/blob/main/proposals/custom-page-sizes/Overview.md",
+      "phase": 3,
+      "spec": null,
+      "id": "custom-page-sizes",
+      "newCorpus": true,
+      "compatibility": {
+        "programs": 5,
+        "sizeContracts": 15,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 5,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "see retained exact-artifact report"
+      },
+      "performance": {
+        "executionPrograms": 5,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 5,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "verified-corpus",
+      "limitations": []
+    },
+    {
+      "key": "esmIntegration",
+      "name": "ESM Integration",
+      "url": "https://github.com/WebAssembly/esm-integration",
+      "phase": 3,
+      "spec": null,
+      "id": "esm-integration",
+      "newCorpus": true,
+      "compatibility": {
+        "programs": 0,
+        "sizeContracts": 0,
+        "nativeEmbeddingPrograms": 5,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 5,
+        "verification": "see embedding evidence or explicit gap"
+      },
+      "performance": {
+        "executionPrograms": 0,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 5
+      },
+      "status": "verified-corpus",
+      "limitations": []
+    },
+    {
+      "key": "exceptions",
+      "name": "Legacy Exception Handling",
+      "url": "https://github.com/WebAssembly/exception-handling/blob/master/proposals/exception-handling/legacy/Exceptions.md",
+      "phase": "inactive",
+      "spec": null,
+      "id": "legacy-exceptions",
+      "newCorpus": true,
+      "compatibility": {
+        "programs": 5,
+        "sizeContracts": 15,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 5,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "see retained exact-artifact report"
+      },
+      "performance": {
+        "executionPrograms": 5,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 5,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "verified-corpus",
+      "limitations": []
+    },
+    {
+      "key": "exceptionsFinal",
+      "name": "Exception Handling with exnref",
+      "url": "https://github.com/WebAssembly/exception-handling/blob/master/proposals/exception-handling/Exceptions.md",
+      "phase": 5,
+      "spec": "3.0",
+      "id": "exceptions",
+      "newCorpus": false,
+      "compatibility": {
+        "programs": 3,
+        "sizeContracts": 9,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "existing corpus; not requalified by this change"
+      },
+      "performance": {
+        "executionPrograms": 3,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "existing-corpus",
+      "limitations": []
+    },
+    {
+      "key": "extendedConst",
+      "name": "Extended Constant Expressions",
+      "url": "https://github.com/WebAssembly/extended-const/blob/master/proposals/extended-const/Overview.md",
+      "phase": 5,
+      "spec": "3.0",
+      "id": "extended-const",
+      "newCorpus": false,
+      "compatibility": {
+        "programs": 3,
+        "sizeContracts": 3,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "existing corpus; not requalified by this change"
+      },
+      "performance": {
+        "executionPrograms": 0,
+        "compileOrInstantiatePrograms": 3,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "existing-corpus",
+      "limitations": []
+    },
+    {
+      "key": "extendedNameSection",
+      "name": "Extended Name Section",
+      "url": "https://github.com/WebAssembly/extended-name-section/blob/main/proposals/extended-name-section/Overview.md",
+      "phase": 2,
+      "spec": null,
+      "id": "extended-name-section",
+      "newCorpus": true,
+      "compatibility": {
+        "programs": 8,
+        "sizeContracts": 24,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 8,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "see retained exact-artifact report"
+      },
+      "performance": {
+        "executionPrograms": 0,
+        "compileOrInstantiatePrograms": 8,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "verified-corpus",
+      "limitations": []
+    },
+    {
+      "key": "flexibleVectors",
+      "name": "Flexible Vectors",
+      "url": "https://github.com/WebAssembly/flexible-vectors/blob/main/proposals/flexible-vectors/Overview.md",
+      "phase": 1,
+      "spec": null,
+      "id": "flexible-vectors",
+      "newCorpus": false,
+      "compatibility": {
+        "programs": 0,
+        "sizeContracts": 0,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "see embedding evidence or explicit gap"
+      },
+      "performance": {
+        "executionPrograms": 0,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "gap",
+      "limitations": [
+        "No runnable variable-width vector instruction implementation or qualified adapter was found in the pinned V8/Wasmtime sources; fixed-width SIMD does not qualify."
+      ]
+    },
+    {
+      "key": "frozenValues",
+      "name": "Frozen Values",
+      "url": "https://github.com/WebAssembly/frozen-values/blob/main/proposals/frozen-values/Overview.md",
+      "phase": 1,
+      "spec": null,
+      "id": "frozen-values",
+      "newCorpus": false,
+      "compatibility": {
+        "programs": 0,
+        "sizeContracts": 0,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "see embedding evidence or explicit gap"
+      },
+      "performance": {
+        "executionPrograms": 0,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "gap",
+      "limitations": [
+        "No native frozen-value API/opcode or qualified upstream runner in the pinned engines; ordinary immutable globals/structs do not qualify."
+      ]
+    },
+    {
+      "key": "gc",
+      "name": "Garbage Collection",
+      "url": "https://github.com/WebAssembly/gc",
+      "phase": 5,
+      "spec": "3.0",
+      "id": "gc",
+      "newCorpus": false,
+      "compatibility": {
+        "programs": 5,
+        "sizeContracts": 15,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "existing corpus; not requalified by this change"
+      },
+      "performance": {
+        "executionPrograms": 5,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "existing-corpus",
+      "limitations": []
+    },
+    {
+      "key": "halfPrecision",
+      "name": "Half Precision",
+      "url": "https://github.com/WebAssembly/half-precision/blob/main/proposals/half-precision/Overview.md",
+      "phase": 1,
+      "spec": null,
+      "id": "half-precision",
+      "newCorpus": true,
+      "compatibility": {
+        "programs": 5,
+        "sizeContracts": 15,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 5,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "see retained exact-artifact report"
+      },
+      "performance": {
+        "executionPrograms": 5,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 5,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "verified-corpus",
+      "limitations": []
+    },
+    {
+      "key": "instrumentAndTracingTechnology",
+      "name": "Instrument and Tracing Technology",
+      "url": "https://github.com/WebAssembly/instrument-tracing/blob/main/proposals/instrument-tracing/Overview.md",
+      "phase": "inactive",
+      "spec": null,
+      "id": "instrument-and-tracing-technology",
+      "newCorpus": true,
+      "compatibility": {
+        "programs": 5,
+        "sizeContracts": 15,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 5,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "see retained exact-artifact report"
+      },
+      "performance": {
+        "executionPrograms": 0,
+        "compileOrInstantiatePrograms": 5,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "partial",
+      "limitations": [
+        "Metadata bytes/offsets and unchanged results are verified. V8 emits native trace markers only on x64; native trace emission is unverified on this ARM64 host."
+      ]
+    },
+    {
+      "key": "jitInterface",
+      "name": "JIT Interface",
+      "url": "https://github.com/WebAssembly/jit-interface/blob/main/proposals/jit-interface/Explainer.md",
+      "phase": 1,
+      "spec": null,
+      "id": "jit-interface",
+      "newCorpus": false,
+      "compatibility": {
+        "programs": 0,
+        "sizeContracts": 0,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "see embedding evidence or explicit gap"
+      },
+      "performance": {
+        "executionPrograms": 0,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "gap",
+      "limitations": [
+        "No qualified JIT-interface host implementation/runner in this environment; ordinary WebAssembly.compile does not qualify."
+      ]
+    },
+    {
+      "key": "jspi",
+      "name": "JS Promise Integration",
+      "url": "https://github.com/WebAssembly/js-promise-integration",
+      "phase": 5,
+      "spec": null,
+      "id": "jspi",
+      "newCorpus": false,
+      "compatibility": {
+        "programs": 5,
+        "sizeContracts": 15,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "existing corpus; not requalified by this change"
+      },
+      "performance": {
+        "executionPrograms": 5,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "existing-corpus",
+      "limitations": []
+    },
+    {
+      "key": "jsPrimitiveBuiltins",
+      "name": "JS Primitive Builtins",
+      "url": "https://github.com/WebAssembly/js-primitive-builtins/blob/main/proposals/js-primitive-builtins/Overview.md",
+      "phase": 2,
+      "spec": null,
+      "id": "js-primitive-builtins",
+      "newCorpus": false,
+      "compatibility": {
+        "programs": 0,
+        "sizeContracts": 0,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "see embedding evidence or explicit gap"
+      },
+      "performance": {
+        "executionPrograms": 0,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "gap",
+      "limitations": [
+        "No native JS primitive builtins binding in the pinned engines; JS polyfills do not qualify."
+      ]
+    },
+    {
+      "key": "jsStringBuiltins",
+      "name": "JS String Builtins",
+      "url": "https://github.com/WebAssembly/js-string-builtins/blob/main/proposals/js-string-builtins/Overview.md",
+      "phase": 5,
+      "spec": "3.0",
+      "id": "js-string-builtins",
+      "newCorpus": false,
+      "compatibility": {
+        "programs": 3,
+        "sizeContracts": 9,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "existing corpus; not requalified by this change"
+      },
+      "performance": {
+        "executionPrograms": 3,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "existing-corpus",
+      "limitations": []
+    },
+    {
+      "key": "memory64",
+      "name": "Memory64",
+      "url": "https://github.com/WebAssembly/memory64/blob/master/proposals/memory64/Overview.md",
+      "phase": 5,
+      "spec": "3.0",
+      "id": "memory64",
+      "newCorpus": false,
+      "compatibility": {
+        "programs": 3,
+        "sizeContracts": 9,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "existing corpus; not requalified by this change"
+      },
+      "performance": {
+        "executionPrograms": 3,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "existing-corpus",
+      "limitations": []
+    },
+    {
+      "key": "memoryControl",
+      "name": "Memory Control",
+      "url": "https://github.com/WebAssembly/memory-control/blob/main/proposals/memory-control/Overview.md",
+      "phase": 1,
+      "spec": null,
+      "id": "memory-control",
+      "newCorpus": true,
+      "compatibility": {
+        "programs": 5,
+        "sizeContracts": 15,
+        "nativeEmbeddingPrograms": 5,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "see retained exact-artifact report"
+      },
+      "performance": {
+        "executionPrograms": 5,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 5,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "partial",
+      "limitations": [
+        "memory.discard compiles with wasm-tools but neither local execution engine implements it. V8 exposes MemoryMapDescriptor but cannot create one on this host; file-backed mapping helpers are absent. All these probes remain unverified."
+      ]
+    },
+    {
+      "key": "moreArrayConstructors",
+      "name": "More Array Constructors",
+      "url": "https://github.com/WebAssembly/more-array-constructors/blob/main/proposals/more-array-constructors/Overview.md",
+      "phase": 1,
+      "spec": null,
+      "id": "more-array-constructors",
+      "newCorpus": false,
+      "compatibility": {
+        "programs": 0,
+        "sizeContracts": 0,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "see embedding evidence or explicit gap"
+      },
+      "performance": {
+        "executionPrograms": 0,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "gap",
+      "limitations": [
+        "No runnable implementation of the proposed additional constructors in the pinned engines; existing GC array constructors do not qualify."
+      ]
+    },
+    {
+      "key": "multibyteArrayAccess",
+      "name": "Multibyte Array Access",
+      "url": "https://github.com/WebAssembly/multibyte-array-access",
+      "phase": 2,
+      "spec": null,
+      "id": "multibyte-array-access",
+      "newCorpus": false,
+      "compatibility": {
+        "programs": 0,
+        "sizeContracts": 0,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "see embedding evidence or explicit gap"
+      },
+      "performance": {
+        "executionPrograms": 0,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "gap",
+      "limitations": [
+        "No implementation of the proposed multibyte array accesses in the pinned engines; linear-memory loads do not qualify."
+      ]
+    },
+    {
+      "key": "multiMemory",
+      "name": "Multiple Memories",
+      "url": "https://github.com/WebAssembly/multi-memory/blob/master/proposals/multi-memory/Overview.md",
+      "phase": 5,
+      "spec": "3.0",
+      "id": "multi-memory",
+      "newCorpus": false,
+      "compatibility": {
+        "programs": 2,
+        "sizeContracts": 6,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "existing corpus; not requalified by this change"
+      },
+      "performance": {
+        "executionPrograms": 2,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "existing-corpus",
+      "limitations": []
+    },
+    {
+      "key": "multiValue",
+      "name": "Multi-value",
+      "url": "https://github.com/WebAssembly/spec/blob/master/proposals/multi-value/Overview.md",
+      "phase": 5,
+      "spec": "2.0",
+      "id": "multi-value",
+      "newCorpus": false,
+      "compatibility": {
+        "programs": 2,
+        "sizeContracts": 6,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "existing corpus; not requalified by this change"
+      },
+      "performance": {
+        "executionPrograms": 2,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "existing-corpus",
+      "limitations": []
+    },
+    {
+      "key": "mutableGlobals",
+      "name": "Import/Export of Mutable Globals",
+      "url": "https://github.com/WebAssembly/mutable-global/blob/master/proposals/mutable-global/Overview.md",
+      "phase": 5,
+      "spec": "1.0",
+      "id": "mutable-globals",
+      "newCorpus": false,
+      "compatibility": {
+        "programs": 8,
+        "sizeContracts": 24,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "existing corpus; not requalified by this change"
+      },
+      "performance": {
+        "executionPrograms": 8,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "existing-corpus",
+      "limitations": []
+    },
+    {
+      "key": "numericValuesInWat",
+      "name": "Numeric Values in WAT Data Segments",
+      "url": "https://github.com/WebAssembly/wat-numeric-values/blob/main/proposals/wat-numeric-values/Overview.md",
+      "phase": 2,
+      "spec": null,
+      "id": "numeric-values-in-wat",
+      "newCorpus": true,
+      "compatibility": {
+        "programs": 6,
+        "sizeContracts": 18,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 6,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "see retained exact-artifact report"
+      },
+      "performance": {
+        "executionPrograms": 0,
+        "compileOrInstantiatePrograms": 6,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "verified-corpus",
+      "limitations": [
+        "This is text-assembler syntax. Binary compile/instantiate probes are semantic controls; syntax throughput must be measured in the pinned text assembler, not attributed to core runtime execution."
+      ]
+    },
+    {
+      "key": "profiles",
+      "name": "Profiles",
+      "url": "https://github.com/WebAssembly/profiles/blob/main/proposals/profiles/Overview.md",
+      "phase": 1,
+      "spec": null,
+      "id": "profiles",
+      "newCorpus": false,
+      "compatibility": {
+        "programs": 0,
+        "sizeContracts": 0,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "see embedding evidence or explicit gap"
+      },
+      "performance": {
+        "executionPrograms": 0,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "gap",
+      "limitations": [
+        "Profile conformance needs a profile-specific validator and profile definition. An engine accepting ordinary Wasm is not evidence of a profile, and there is no profile-specific execution opcode to time."
+      ]
+    },
+    {
+      "key": "referenceTypes",
+      "name": "Reference Types",
+      "url": "https://github.com/WebAssembly/reference-types/blob/master/proposals/reference-types/Overview.md",
+      "phase": 5,
+      "spec": "2.0",
+      "id": "reference-types",
+      "newCorpus": false,
+      "compatibility": {
+        "programs": 4,
+        "sizeContracts": 12,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "existing corpus; not requalified by this change"
+      },
+      "performance": {
+        "executionPrograms": 4,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "existing-corpus",
+      "limitations": []
+    },
+    {
+      "key": "relaxedDeadCodeValidation",
+      "name": "Relaxed Dead Code Validation",
+      "url": "https://github.com/WebAssembly/relaxed-dead-code-validation/blob/main/proposals/relaxed-dead-code-validation/Overview.md",
+      "phase": 2,
+      "spec": null,
+      "id": "relaxed-dead-code-validation",
+      "newCorpus": false,
+      "compatibility": {
+        "programs": 0,
+        "sizeContracts": 0,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "see embedding evidence or explicit gap"
+      },
+      "performance": {
+        "executionPrograms": 0,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "gap",
+      "limitations": [
+        "No qualified implementation/feature switch for the relaxed validator in the pinned engines. Existing unreachable-code tests exercise current validation rules and do not qualify."
+      ]
+    },
+    {
+      "key": "relaxedSimd",
+      "name": "Relaxed SIMD",
+      "url": "https://github.com/WebAssembly/relaxed-simd/tree/main/proposals/relaxed-simd",
+      "phase": 5,
+      "spec": "3.0",
+      "id": "relaxed-simd",
+      "newCorpus": false,
+      "compatibility": {
+        "programs": 3,
+        "sizeContracts": 9,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "existing corpus; not requalified by this change"
+      },
+      "performance": {
+        "executionPrograms": 3,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "existing-corpus",
+      "limitations": []
+    },
+    {
+      "key": "roundingVariants",
+      "name": "Rounding Variants",
+      "url": "https://github.com/WebAssembly/rounding-mode-control/blob/main/proposals/rounding-mode-control/Overview.md",
+      "phase": 2,
+      "spec": null,
+      "id": "rounding-variants",
+      "newCorpus": false,
+      "compatibility": {
+        "programs": 0,
+        "sizeContracts": 0,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "see embedding evidence or explicit gap"
+      },
+      "performance": {
+        "executionPrograms": 0,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "gap",
+      "limitations": [
+        "The feature page advertises an assembler (watr); neither pinned execution engine implements these rounding-variant opcodes. Ordinary ceil/floor oracles do not substitute for executing the proposal."
+      ]
+    },
+    {
+      "key": "saturatedFloatToInt",
+      "name": "Non-trapping float-to-int Conversions",
+      "url": "https://github.com/WebAssembly/spec/blob/master/proposals/nontrapping-float-to-int-conversion/Overview.md",
+      "phase": 5,
+      "spec": "2.0",
+      "id": "saturating-float-to-int",
+      "newCorpus": false,
+      "compatibility": {
+        "programs": 5,
+        "sizeContracts": 15,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "existing corpus; not requalified by this change"
+      },
+      "performance": {
+        "executionPrograms": 5,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "existing-corpus",
+      "limitations": []
+    },
+    {
+      "key": "sharedEverythingThreads",
+      "name": "Shared-Everything Threads",
+      "url": "https://github.com/WebAssembly/shared-everything-threads/blob/main/proposals/shared-everything-threads/Overview.md",
+      "phase": 1,
+      "spec": null,
+      "id": "shared-everything-threads",
+      "newCorpus": true,
+      "compatibility": {
+        "programs": 10,
+        "sizeContracts": 30,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 5,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "see retained exact-artifact report"
+      },
+      "performance": {
+        "executionPrograms": 5,
+        "compileOrInstantiatePrograms": 5,
+        "verifiedExecutionPrograms": 5,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "partial",
+      "limitations": [
+        "Shared struct atomics execute; shared globals are rejected by this V8. Original kernels test single-agent semantics; concurrent coverage remains in the full upstream suite."
+      ]
+    },
+    {
+      "key": "signExtensions",
+      "name": "Sign-extension Operators",
+      "url": "https://github.com/WebAssembly/spec/blob/master/proposals/sign-extension-ops/Overview.md",
+      "phase": 5,
+      "spec": "2.0",
+      "id": "sign-extension",
+      "newCorpus": false,
+      "compatibility": {
+        "programs": 5,
+        "sizeContracts": 15,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "existing corpus; not requalified by this change"
+      },
+      "performance": {
+        "executionPrograms": 5,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "existing-corpus",
+      "limitations": []
+    },
+    {
+      "key": "simd",
+      "name": "Fixed-width SIMD",
+      "url": "https://github.com/WebAssembly/simd/blob/master/proposals/simd/SIMD.md",
+      "phase": 5,
+      "spec": "2.0",
+      "id": "simd",
+      "newCorpus": false,
+      "compatibility": {
+        "programs": 5,
+        "sizeContracts": 15,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "existing corpus; not requalified by this change"
+      },
+      "performance": {
+        "executionPrograms": 5,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "existing-corpus",
+      "limitations": []
+    },
+    {
+      "key": "stackSwitching",
+      "name": "Stack Switching",
+      "url": "https://github.com/WebAssembly/stack-switching/blob/main/proposals/stack-switching/Explainer.md",
+      "phase": 3,
+      "spec": null,
+      "id": "stack-switching",
+      "newCorpus": true,
+      "compatibility": {
+        "programs": 8,
+        "sizeContracts": 24,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 8,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "see retained exact-artifact report"
+      },
+      "performance": {
+        "executionPrograms": 5,
+        "compileOrInstantiatePrograms": 3,
+        "verifiedExecutionPrograms": 5,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "verified-corpus",
+      "limitations": []
+    },
+    {
+      "key": "stringref",
+      "name": "Reference-Typed Strings",
+      "url": "https://github.com/WebAssembly/stringref/blob/main/proposals/stringref/Overview.md",
+      "phase": 1,
+      "spec": null,
+      "id": "stringref",
+      "newCorpus": true,
+      "compatibility": {
+        "programs": 5,
+        "sizeContracts": 15,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 5,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "see retained exact-artifact report"
+      },
+      "performance": {
+        "executionPrograms": 5,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 5,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "verified-corpus",
+      "limitations": []
+    },
+    {
+      "key": "tailCall",
+      "name": "Tail Call",
+      "url": "https://github.com/WebAssembly/tail-call/blob/master/proposals/tail-call/Overview.md",
+      "phase": 5,
+      "spec": "3.0",
+      "id": "tail-call",
+      "newCorpus": false,
+      "compatibility": {
+        "programs": 2,
+        "sizeContracts": 6,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "existing corpus; not requalified by this change"
+      },
+      "performance": {
+        "executionPrograms": 2,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "existing-corpus",
+      "limitations": []
+    },
+    {
+      "key": "threads",
+      "name": "Threads",
+      "url": "https://github.com/WebAssembly/threads/blob/main-legacy/proposals/threads/Overview.md",
+      "phase": 4,
+      "spec": null,
+      "id": "threads",
+      "newCorpus": false,
+      "compatibility": {
+        "programs": 27,
+        "sizeContracts": 81,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "existing corpus; not requalified by this change"
+      },
+      "performance": {
+        "executionPrograms": 27,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "existing-corpus",
+      "limitations": []
+    },
+    {
+      "key": "typedFunctionReferences",
+      "name": "Typed Function References",
+      "url": "https://github.com/WebAssembly/function-references/blob/main/proposals/function-references/Overview.md",
+      "phase": 5,
+      "spec": "3.0",
+      "id": "typed-function-references",
+      "newCorpus": true,
+      "compatibility": {
+        "programs": 5,
+        "sizeContracts": 15,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 5,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "see retained exact-artifact report"
+      },
+      "performance": {
+        "executionPrograms": 5,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 5,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "verified-corpus",
+      "limitations": []
+    },
+    {
+      "key": "typeImports",
+      "name": "Type Imports",
+      "url": "https://github.com/WebAssembly/proposal-type-imports/blob/main/proposals/type-imports/Overview.md",
+      "phase": 1,
+      "spec": null,
+      "id": "type-imports",
+      "newCorpus": false,
+      "compatibility": {
+        "programs": 0,
+        "sizeContracts": 0,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "see embedding evidence or explicit gap"
+      },
+      "performance": {
+        "executionPrograms": 0,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "gap",
+      "limitations": [
+        "No qualified implementation of imported abstract types in the pinned engines; ordinary imported functions/types do not qualify."
+      ]
+    },
+    {
+      "key": "typeReflection",
+      "name": "Type Reflection for JS API",
+      "url": "https://github.com/WebAssembly/js-types/blob/main/proposals/js-types/Overview.md",
+      "phase": 1,
+      "spec": null,
+      "id": "type-reflection",
+      "newCorpus": true,
+      "compatibility": {
+        "programs": 0,
+        "sizeContracts": 0,
+        "nativeEmbeddingPrograms": 5,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 5,
+        "verification": "see embedding evidence or explicit gap"
+      },
+      "performance": {
+        "executionPrograms": 0,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 5
+      },
+      "status": "verified-corpus",
+      "limitations": []
+    },
+    {
+      "key": "wasmCApi",
+      "name": "WebAssembly C and C++ API",
+      "url": "https://github.com/WebAssembly/wasm-c-api",
+      "phase": 1,
+      "spec": null,
+      "id": "wasm-c-api",
+      "newCorpus": true,
+      "compatibility": {
+        "programs": 0,
+        "sizeContracts": 0,
+        "nativeEmbeddingPrograms": 6,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 5,
+        "verification": "see embedding evidence or explicit gap"
+      },
+      "performance": {
+        "executionPrograms": 0,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 5
+      },
+      "status": "partial",
+      "limitations": [
+        "Five native kernels pass. The portable table-reference case is retained as unavailable: this Wasmtime C library reports wasm_func_as_ref as unimplemented. All 12 shipped C examples execute, separately from the Rust API test matrix."
+      ]
+    },
+    {
+      "key": "webContentSecurityPolicy",
+      "name": "Web Content Security Policy",
+      "url": "https://github.com/WebAssembly/content-security-policy/blob/main/proposals/CSP.md",
+      "phase": 5,
+      "spec": null,
+      "id": "web-content-security-policy",
+      "newCorpus": true,
+      "compatibility": {
+        "programs": 0,
+        "sizeContracts": 0,
+        "nativeEmbeddingPrograms": 5,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "see embedding evidence or explicit gap"
+      },
+      "performance": {
+        "executionPrograms": 0,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "partial",
+      "limitations": [
+        "Chrome 155 aborts with SIGABRT before loading any page, including an independent about:blank preflight. Browser CSP source contracts are staged but unverified in this environment."
+      ]
+    },
+    {
+      "key": "wideArithmetic",
+      "name": "Wide Arithmetic",
+      "url": "https://github.com/WebAssembly/wide-arithmetic/blob/main/proposals/wide-arithmetic/Overview.md",
+      "phase": 4,
+      "spec": null,
+      "id": "wide-arithmetic",
+      "newCorpus": false,
+      "compatibility": {
+        "programs": 4,
+        "sizeContracts": 12,
+        "nativeEmbeddingPrograms": 0,
+        "verifiedPrograms": 0,
+        "verifiedEmbeddingPrograms": 0,
+        "verification": "existing corpus; not requalified by this change"
+      },
+      "performance": {
+        "executionPrograms": 4,
+        "compileOrInstantiatePrograms": 0,
+        "verifiedExecutionPrograms": 0,
+        "unavailableExecutionPrograms": 0,
+        "verifiedNativeEmbeddingPrograms": 0
+      },
+      "status": "existing-corpus",
+      "limitations": []
+    }
+  ]
+}

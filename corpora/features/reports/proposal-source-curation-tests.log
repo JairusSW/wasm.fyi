@@ -1,0 +1,16 @@
+✔ execution diversity counts operations once, excluding baselines and size-only variants (0.729583ms)
+✔ shared curated modules have identical source and unique named benchmark exports (0.241208ms)
+✔ compile and initializer scaling remain explicitly separate from execution workloads (0.084875ms)
+✔ every manifest contract matches its source, artifact, export, initializer and independent oracle (72.289375ms)
+✔ curated ordinary core workloads declare only the intended string builtins as imports (0.339583ms)
+✔ upstream selections retain source pins, local digests, licenses and positive-only assertion accounting (6.972542ms)
+✔ core curated algorithms match independent oracles at varied runtime inputs and reused instances (17.886375ms)
+✔ ordinary curated verification rejects changed artifact digests and wrong arithmetic oracles (3.829917ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 160.497292

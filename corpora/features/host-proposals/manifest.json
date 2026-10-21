@@ -1,0 +1,498 @@
+{
+  "schema": 1,
+  "pathBase": "repository-root",
+  "policy": "Native embedding contracts; kept separate from portable Wasm execution. These are source/performance recipes, not collected timings. Compatibility counts have no quota or cap.",
+  "contracts": [
+    {
+      "feature": "esm-integration",
+      "name": "named-function",
+      "source": "corpora/features/host-proposals/esm-named-function.wat",
+      "artifact": "corpora/features/host-proposals/esm-named-function.wasm",
+      "sourceSha256": "3d50c7f7c9ba78700f4fd8ddddc79198452496cfb3ea73f6c3f0d6df031a282d",
+      "sha256": "6e0f874f2cff9412b97478a600cf15d6426a22cc94841ad83a70e8d3331c4ae6",
+      "phase": "module-linking",
+      "scope": "host-interface",
+      "id": "features/esm-integration/named-function",
+      "license": "MIT",
+      "validation": "verified",
+      "performance": {
+        "iterations": 4096,
+        "phase": "module-linking",
+        "argv": [
+          "node",
+          "--experimental-wasm-modules",
+          "corpora/features/host-proposals/esm.mjs",
+          "named-function",
+          "corpora/features/host-proposals/esm-named-function.wasm",
+          "4096"
+        ],
+        "policy": "Native host source workload, validated at this size. Separate from portable Wasm steady contracts and not a collected timing result."
+      }
+    },
+    {
+      "feature": "esm-integration",
+      "name": "immutable-global",
+      "source": "corpora/features/host-proposals/esm-immutable-global.wat",
+      "artifact": "corpora/features/host-proposals/esm-immutable-global.wasm",
+      "sourceSha256": "94ef6f6db6e3c06024dd60493af746f4aef6e08a7f28e5a52d05ee665c3a88e1",
+      "sha256": "2cb2fb20c2606ff6c486267e8c02eeb180b0e4037c0fdb180c7d7a80f6f0a125",
+      "phase": "module-linking",
+      "scope": "host-interface",
+      "id": "features/esm-integration/immutable-global",
+      "license": "MIT",
+      "validation": "verified",
+      "performance": {
+        "iterations": 4096,
+        "phase": "module-linking",
+        "argv": [
+          "node",
+          "--experimental-wasm-modules",
+          "corpora/features/host-proposals/esm.mjs",
+          "immutable-global",
+          "corpora/features/host-proposals/esm-immutable-global.wasm",
+          "4096"
+        ],
+        "policy": "Native host source workload, validated at this size. Separate from portable Wasm steady contracts and not a collected timing result."
+      }
+    },
+    {
+      "feature": "esm-integration",
+      "name": "memory-segment",
+      "source": "corpora/features/host-proposals/esm-memory-segment.wat",
+      "artifact": "corpora/features/host-proposals/esm-memory-segment.wasm",
+      "sourceSha256": "70b844def59de0dc27df2fa73a842017a666300be6b826d0fd8aee57cf4bc725",
+      "sha256": "e3d17bc4f630f8be6e9804fb4ee7b7def7023e502d67dd2bfb0cfea46e6f87ed",
+      "phase": "module-linking",
+      "scope": "host-interface",
+      "id": "features/esm-integration/memory-segment",
+      "license": "MIT",
+      "validation": "verified",
+      "performance": {
+        "iterations": 4096,
+        "phase": "module-linking",
+        "argv": [
+          "node",
+          "--experimental-wasm-modules",
+          "corpora/features/host-proposals/esm.mjs",
+          "memory-segment",
+          "corpora/features/host-proposals/esm-memory-segment.wasm",
+          "4096"
+        ],
+        "policy": "Native host source workload, validated at this size. Separate from portable Wasm steady contracts and not a collected timing result."
+      }
+    },
+    {
+      "feature": "esm-integration",
+      "name": "host-import",
+      "source": "corpora/features/host-proposals/esm-host-import.wat",
+      "artifact": "corpora/features/host-proposals/esm-host-import.wasm",
+      "sourceSha256": "8bb418bbee4294a3866547d6cf31821771eee761d92022044e73bc2c94f356f6",
+      "sha256": "80c133048dc5e292165153cbf855154dbabe5b2f1a7d88237f879c431ce29070",
+      "phase": "module-linking",
+      "scope": "host-interface",
+      "id": "features/esm-integration/host-import",
+      "license": "MIT",
+      "validation": "verified",
+      "performance": {
+        "iterations": 4096,
+        "phase": "module-linking",
+        "argv": [
+          "node",
+          "--experimental-wasm-modules",
+          "corpora/features/host-proposals/esm.mjs",
+          "host-import",
+          "corpora/features/host-proposals/esm-host-import.wasm",
+          "4096"
+        ],
+        "policy": "Native host source workload, validated at this size. Separate from portable Wasm steady contracts and not a collected timing result."
+      }
+    },
+    {
+      "feature": "esm-integration",
+      "name": "source-phase",
+      "source": "corpora/features/host-proposals/esm-source-phase.wat",
+      "artifact": "corpora/features/host-proposals/esm-source-phase.wasm",
+      "sourceSha256": "3d50c7f7c9ba78700f4fd8ddddc79198452496cfb3ea73f6c3f0d6df031a282d",
+      "sha256": "6e0f874f2cff9412b97478a600cf15d6426a22cc94841ad83a70e8d3331c4ae6",
+      "phase": "source-import",
+      "scope": "host-interface",
+      "id": "features/esm-integration/source-phase",
+      "license": "MIT",
+      "validation": "verified",
+      "performance": {
+        "iterations": 4096,
+        "phase": "source-import",
+        "argv": [
+          "node",
+          "--experimental-wasm-modules",
+          "corpora/features/host-proposals/esm.mjs",
+          "source-phase",
+          "corpora/features/host-proposals/esm-source-phase.wasm",
+          "4096"
+        ],
+        "policy": "Native host source workload, validated at this size. Separate from portable Wasm steady contracts and not a collected timing result."
+      }
+    },
+    {
+      "feature": "type-reflection",
+      "name": "function-type",
+      "source": "corpora/features/host-proposals/reflection.mjs",
+      "scope": "host-interface",
+      "phase": "host-api",
+      "sourceSha256": "1b7f957a26d86da6e29cbc147f61b1aa438b3c5a5a37b871da28c02ce4506866",
+      "id": "features/type-reflection/function-type",
+      "license": "MIT",
+      "validation": "verified",
+      "performance": {
+        "iterations": 4096,
+        "phase": "host-api",
+        "argv": [
+          "node",
+          "--experimental-wasm-type-reflection",
+          "corpora/features/host-proposals/reflection.mjs",
+          "function-type",
+          "corpora/features/host-proposals/esm-named-function.wasm",
+          "4096"
+        ],
+        "policy": "Native host source workload, validated at this size. Separate from portable Wasm steady contracts and not a collected timing result."
+      }
+    },
+    {
+      "feature": "type-reflection",
+      "name": "typed-host-function",
+      "source": "corpora/features/host-proposals/reflection.mjs",
+      "scope": "host-interface",
+      "phase": "host-api",
+      "sourceSha256": "1b7f957a26d86da6e29cbc147f61b1aa438b3c5a5a37b871da28c02ce4506866",
+      "id": "features/type-reflection/typed-host-function",
+      "license": "MIT",
+      "validation": "verified",
+      "performance": {
+        "iterations": 4096,
+        "phase": "host-api",
+        "argv": [
+          "node",
+          "--experimental-wasm-type-reflection",
+          "corpora/features/host-proposals/reflection.mjs",
+          "typed-host-function",
+          "corpora/features/host-proposals/esm-named-function.wasm",
+          "4096"
+        ],
+        "policy": "Native host source workload, validated at this size. Separate from portable Wasm steady contracts and not a collected timing result."
+      }
+    },
+    {
+      "feature": "type-reflection",
+      "name": "global-type",
+      "source": "corpora/features/host-proposals/reflection.mjs",
+      "scope": "host-interface",
+      "phase": "host-api",
+      "sourceSha256": "1b7f957a26d86da6e29cbc147f61b1aa438b3c5a5a37b871da28c02ce4506866",
+      "id": "features/type-reflection/global-type",
+      "license": "MIT",
+      "validation": "verified",
+      "performance": {
+        "iterations": 4096,
+        "phase": "host-api",
+        "argv": [
+          "node",
+          "--experimental-wasm-type-reflection",
+          "corpora/features/host-proposals/reflection.mjs",
+          "global-type",
+          "corpora/features/host-proposals/esm-named-function.wasm",
+          "4096"
+        ],
+        "policy": "Native host source workload, validated at this size. Separate from portable Wasm steady contracts and not a collected timing result."
+      }
+    },
+    {
+      "feature": "type-reflection",
+      "name": "memory-type",
+      "source": "corpora/features/host-proposals/reflection.mjs",
+      "scope": "host-interface",
+      "phase": "host-api",
+      "sourceSha256": "1b7f957a26d86da6e29cbc147f61b1aa438b3c5a5a37b871da28c02ce4506866",
+      "id": "features/type-reflection/memory-type",
+      "license": "MIT",
+      "validation": "verified",
+      "performance": {
+        "iterations": 4096,
+        "phase": "host-api",
+        "argv": [
+          "node",
+          "--experimental-wasm-type-reflection",
+          "corpora/features/host-proposals/reflection.mjs",
+          "memory-type",
+          "corpora/features/host-proposals/esm-named-function.wasm",
+          "4096"
+        ],
+        "policy": "Native host source workload, validated at this size. Separate from portable Wasm steady contracts and not a collected timing result."
+      }
+    },
+    {
+      "feature": "type-reflection",
+      "name": "table-type",
+      "source": "corpora/features/host-proposals/reflection.mjs",
+      "scope": "host-interface",
+      "phase": "host-api",
+      "sourceSha256": "1b7f957a26d86da6e29cbc147f61b1aa438b3c5a5a37b871da28c02ce4506866",
+      "id": "features/type-reflection/table-type",
+      "license": "MIT",
+      "validation": "verified",
+      "performance": {
+        "iterations": 4096,
+        "phase": "host-api",
+        "argv": [
+          "node",
+          "--experimental-wasm-type-reflection",
+          "corpora/features/host-proposals/reflection.mjs",
+          "table-type",
+          "corpora/features/host-proposals/esm-named-function.wasm",
+          "4096"
+        ],
+        "policy": "Native host source workload, validated at this size. Separate from portable Wasm steady contracts and not a collected timing result."
+      }
+    },
+    {
+      "feature": "memory-control",
+      "name": "zero-initialization",
+      "source": "corpora/features/host-proposals/memory-map.js",
+      "scope": "host-interface",
+      "phase": "native-memory-map",
+      "sourceSha256": "48920a63c29bedc5841f0d57308da34a0f5f9984ba3250c8a3d033017cf7b32e",
+      "id": "features/memory-control/zero-initialization",
+      "license": "MIT",
+      "validation": "unavailable"
+    },
+    {
+      "feature": "memory-control",
+      "name": "mapped-write",
+      "source": "corpora/features/host-proposals/memory-map.js",
+      "scope": "host-interface",
+      "phase": "native-memory-map",
+      "sourceSha256": "48920a63c29bedc5841f0d57308da34a0f5f9984ba3250c8a3d033017cf7b32e",
+      "id": "features/memory-control/mapped-write",
+      "license": "MIT",
+      "validation": "unavailable"
+    },
+    {
+      "feature": "memory-control",
+      "name": "unmap-zero",
+      "source": "corpora/features/host-proposals/memory-map.js",
+      "scope": "host-interface",
+      "phase": "native-memory-map",
+      "sourceSha256": "48920a63c29bedc5841f0d57308da34a0f5f9984ba3250c8a3d033017cf7b32e",
+      "id": "features/memory-control/unmap-zero",
+      "license": "MIT",
+      "validation": "unavailable"
+    },
+    {
+      "feature": "memory-control",
+      "name": "adjacent-preserved",
+      "source": "corpora/features/host-proposals/memory-map.js",
+      "scope": "host-interface",
+      "phase": "native-memory-map",
+      "sourceSha256": "48920a63c29bedc5841f0d57308da34a0f5f9984ba3250c8a3d033017cf7b32e",
+      "id": "features/memory-control/adjacent-preserved",
+      "license": "MIT",
+      "validation": "unavailable"
+    },
+    {
+      "feature": "memory-control",
+      "name": "remap-data",
+      "source": "corpora/features/host-proposals/memory-map.js",
+      "scope": "host-interface",
+      "phase": "native-memory-map",
+      "sourceSha256": "48920a63c29bedc5841f0d57308da34a0f5f9984ba3250c8a3d033017cf7b32e",
+      "id": "features/memory-control/remap-data",
+      "license": "MIT",
+      "validation": "unavailable"
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "direct-call",
+      "source": "corpora/features/host-proposals/c-api.c",
+      "scope": "host-interface",
+      "phase": "host-api",
+      "sourceSha256": "d98797a8a3bebf8aa92987ffb292cf7a8dd7cfa5f3bdc0bd2a241d46a56ce180",
+      "id": "features/wasm-c-api/direct-call",
+      "license": "MIT",
+      "validation": "verified",
+      "performance": {
+        "iterations": 4096,
+        "phase": "host-api",
+        "argv": [
+          ".wasmbench/proposal-coverage/wasm-c-api-corpus",
+          "direct-call",
+          "4096"
+        ],
+        "policy": "Native host source workload, validated at this size. Separate from portable Wasm steady contracts and not a collected timing result."
+      }
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "host-callback",
+      "source": "corpora/features/host-proposals/c-api.c",
+      "scope": "host-interface",
+      "phase": "host-api",
+      "sourceSha256": "d98797a8a3bebf8aa92987ffb292cf7a8dd7cfa5f3bdc0bd2a241d46a56ce180",
+      "id": "features/wasm-c-api/host-callback",
+      "license": "MIT",
+      "validation": "verified",
+      "performance": {
+        "iterations": 4096,
+        "phase": "host-api",
+        "argv": [
+          ".wasmbench/proposal-coverage/wasm-c-api-corpus",
+          "host-callback",
+          "4096"
+        ],
+        "policy": "Native host source workload, validated at this size. Separate from portable Wasm steady contracts and not a collected timing result."
+      }
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "mutable-global",
+      "source": "corpora/features/host-proposals/c-api.c",
+      "scope": "host-interface",
+      "phase": "host-api",
+      "sourceSha256": "d98797a8a3bebf8aa92987ffb292cf7a8dd7cfa5f3bdc0bd2a241d46a56ce180",
+      "id": "features/wasm-c-api/mutable-global",
+      "license": "MIT",
+      "validation": "verified",
+      "performance": {
+        "iterations": 4096,
+        "phase": "host-api",
+        "argv": [
+          ".wasmbench/proposal-coverage/wasm-c-api-corpus",
+          "mutable-global",
+          "4096"
+        ],
+        "policy": "Native host source workload, validated at this size. Separate from portable Wasm steady contracts and not a collected timing result."
+      }
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "memory-access",
+      "source": "corpora/features/host-proposals/c-api.c",
+      "scope": "host-interface",
+      "phase": "host-api",
+      "sourceSha256": "d98797a8a3bebf8aa92987ffb292cf7a8dd7cfa5f3bdc0bd2a241d46a56ce180",
+      "id": "features/wasm-c-api/memory-access",
+      "license": "MIT",
+      "validation": "verified",
+      "performance": {
+        "iterations": 4096,
+        "phase": "host-api",
+        "argv": [
+          ".wasmbench/proposal-coverage/wasm-c-api-corpus",
+          "memory-access",
+          "4096"
+        ],
+        "policy": "Native host source workload, validated at this size. Separate from portable Wasm steady contracts and not a collected timing result."
+      }
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "table-call",
+      "source": "corpora/features/host-proposals/c-api.c",
+      "scope": "host-interface",
+      "phase": "host-api",
+      "sourceSha256": "d98797a8a3bebf8aa92987ffb292cf7a8dd7cfa5f3bdc0bd2a241d46a56ce180",
+      "id": "features/wasm-c-api/table-call",
+      "license": "MIT",
+      "validation": "unavailable"
+    },
+    {
+      "feature": "wasm-c-api",
+      "name": "trap-lifecycle",
+      "source": "corpora/features/host-proposals/c-api.c",
+      "scope": "host-interface",
+      "phase": "host-api",
+      "sourceSha256": "d98797a8a3bebf8aa92987ffb292cf7a8dd7cfa5f3bdc0bd2a241d46a56ce180",
+      "id": "features/wasm-c-api/trap-lifecycle",
+      "license": "MIT",
+      "validation": "verified",
+      "performance": {
+        "iterations": 4096,
+        "phase": "host-api",
+        "argv": [
+          ".wasmbench/proposal-coverage/wasm-c-api-corpus",
+          "trap-lifecycle",
+          "4096"
+        ],
+        "policy": "Native host source workload, validated at this size. Separate from portable Wasm steady contracts and not a collected timing result."
+      }
+    },
+    {
+      "feature": "web-content-security-policy",
+      "name": "compile",
+      "source": "scripts/feature-host-proposals.mjs",
+      "scope": "host-interface",
+      "phase": "compile",
+      "policy": "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
+      "artifact": "corpora/features/host-proposals/esm-named-function.wasm",
+      "sha256": "6e0f874f2cff9412b97478a600cf15d6426a22cc94841ad83a70e8d3331c4ae6",
+      "sourceSha256": "48433b51dddb577d01fb2d5303c6f0dfdc4b73cbfb61adebc934a71c36efa29b",
+      "id": "features/web-content-security-policy/compile",
+      "license": "MIT",
+      "validation": "unavailable"
+    },
+    {
+      "feature": "web-content-security-policy",
+      "name": "instantiate",
+      "source": "scripts/feature-host-proposals.mjs",
+      "scope": "host-interface",
+      "phase": "instantiate",
+      "policy": "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
+      "artifact": "corpora/features/host-proposals/esm-named-function.wasm",
+      "sha256": "6e0f874f2cff9412b97478a600cf15d6426a22cc94841ad83a70e8d3331c4ae6",
+      "sourceSha256": "48433b51dddb577d01fb2d5303c6f0dfdc4b73cbfb61adebc934a71c36efa29b",
+      "id": "features/web-content-security-policy/instantiate",
+      "license": "MIT",
+      "validation": "unavailable"
+    },
+    {
+      "feature": "web-content-security-policy",
+      "name": "compileStreaming",
+      "source": "scripts/feature-host-proposals.mjs",
+      "scope": "host-interface",
+      "phase": "compileStreaming",
+      "policy": "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
+      "artifact": "corpora/features/host-proposals/esm-named-function.wasm",
+      "sha256": "6e0f874f2cff9412b97478a600cf15d6426a22cc94841ad83a70e8d3331c4ae6",
+      "sourceSha256": "48433b51dddb577d01fb2d5303c6f0dfdc4b73cbfb61adebc934a71c36efa29b",
+      "id": "features/web-content-security-policy/compileStreaming",
+      "license": "MIT",
+      "validation": "unavailable"
+    },
+    {
+      "feature": "web-content-security-policy",
+      "name": "instantiateStreaming",
+      "source": "scripts/feature-host-proposals.mjs",
+      "scope": "host-interface",
+      "phase": "instantiateStreaming",
+      "policy": "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
+      "artifact": "corpora/features/host-proposals/esm-named-function.wasm",
+      "sha256": "6e0f874f2cff9412b97478a600cf15d6426a22cc94841ad83a70e8d3331c4ae6",
+      "sourceSha256": "48433b51dddb577d01fb2d5303c6f0dfdc4b73cbfb61adebc934a71c36efa29b",
+      "id": "features/web-content-security-policy/instantiateStreaming",
+      "license": "MIT",
+      "validation": "unavailable"
+    },
+    {
+      "feature": "web-content-security-policy",
+      "name": "module-constructor",
+      "source": "scripts/feature-host-proposals.mjs",
+      "scope": "host-interface",
+      "phase": "module-constructor",
+      "policy": "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
+      "artifact": "corpora/features/host-proposals/esm-named-function.wasm",
+      "sha256": "6e0f874f2cff9412b97478a600cf15d6426a22cc94841ad83a70e8d3331c4ae6",
+      "sourceSha256": "48433b51dddb577d01fb2d5303c6f0dfdc4b73cbfb61adebc934a71c36efa29b",
+      "id": "features/web-content-security-policy/module-constructor",
+      "license": "MIT",
+      "validation": "unavailable"
+    }
+  ]
+}

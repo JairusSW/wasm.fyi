@@ -1,0 +1,20 @@
+✔ checked-in feature artifacts and provenance cover every declared family (98.725083ms)
+✔ independent admission rejects malformed input (4.46525ms)
+✔ repetition oracles use Wasm i32 wrapping rather than lossy Number multiplication (0.355208ms)
+﹣ source-built allocation kernels retain distinct observable objects across repeated calls (0.106667ms) # Build feature performance artifacts and set WASMFYI_FEATURE_PERFORMANCE_ROOT
+✔ steady calibration discards short runs and ignores preflight and warmup durations (0.198ms)
+✔ an adapter forcing fresh instances cannot silently publish short batches (0.222292ms)
+✔ boundary inputs exercise both sides of interior benchmark sizes without exceeding allocation limits (0.650541ms)
+✔ validation recomputes the source oracle and preserves destructive reset rules (6.409042ms)
+✔ native validation rejects wrong results, wrong artifact digests and wrong data bytes (86.041583ms)
+✔ metadata checker rejects a hint referencing a non-branch byte (3.868ms)
+✔ full upstream inventory records complete file identities without a selection quota (1.473292ms)
+✔ upstream runner retains required native flags, dependencies and spec error policy (0.583417ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 1
+ℹ todo 0
+ℹ duration_ms 146.900042

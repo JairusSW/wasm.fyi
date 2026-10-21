@@ -204,6 +204,32 @@ features-performance-build: features-build
 features-performance-probe plan:
     node scripts/feature-performance-probe.mjs {{quote(plan)}}
 
+# Previously missing proposals: pinned source/artifact builds and untimed proof.
+features-proposals-build:
+    node scripts/proposal-toolchain.mjs
+    node scripts/feature-proposal-build.mjs
+
+# Fresh outputs, hash comparisons, native C workload and all upstream C examples.
+features-proposals-source-check:
+    node scripts/proposal-toolchain.mjs
+    node scripts/proposal-source-build.mjs
+
+features-proposals-check:
+    node scripts/feature-proposal-check.mjs
+    node scripts/feature-proposal-check.mjs --performance=.wasmbench/proposal-performance
+
+features-host-proposals-check:
+    node scripts/feature-host-proposals.mjs
+
+features-full-upstream-check:
+    node scripts/proposal-upstream.mjs prepare
+    node scripts/proposal-upstream.mjs check
+
+# The pinned V8 shell archive includes the genuine upstream build configuration.
+features-v8-official-check:
+    node scripts/proposal-toolchain.mjs
+    node scripts/proposal-v8-official.mjs
+
 # Execute exact feature oracles across all configured runtimes.
 features-check: features-adapters
     node scripts/feature-corpus.mjs check

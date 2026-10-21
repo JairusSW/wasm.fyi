@@ -1,5 +1,9 @@
 # Feature performance workloads
 
+The [proposal expansion](proposal-corpora.md) adds execution, compilation and
+native embedding inventories with separate retained correctness reports. Its
+complete proposal census records unavailable features explicitly.
+
 Correctness probes and performance workloads have separate inventories. The
 small source fixtures remain in `corpora/features/manifest.json`. Build the
 long execution variants with `just features-performance-build`; their source,

@@ -1,0 +1,1321 @@
+{
+  "schema": 1,
+  "created": "2026-10-20T16:38:16.189Z",
+  "timing": false,
+  "host": {
+    "hostname": "Jairus-Tanaka.local",
+    "os": "darwin",
+    "arch": "arm64"
+  },
+  "sourcePolicy": "Independent deterministic expectations; runtime outputs never establish oracles. Fresh instances and reused calls are checked separately.",
+  "performance": true,
+  "engines": [
+    {
+      "name": "v8",
+      "binary": "/Users/work/.local/share/wasm-fyi/toolchains/v8-15.2.20/darwin-arm64/bin/d8",
+      "version": "V8 version 15.2.20",
+      "fileSha256": {
+        "/Users/work/.local/share/wasm-fyi/toolchains/v8-15.2.20/darwin-arm64/bin/d8": "1c66340a84483865631e827257ad34a14421b762d4c99972105550b69f9f8856",
+        "/Users/work/.local/share/wasm-fyi/toolchains/v8-15.2.20/darwin-arm64/d8": "70efb343d027a0e8ccc7944fcc675b536ba3f6fd1629c849ce81afe3eed2abf2",
+        "/Users/work/.local/share/wasm-fyi/toolchains/v8-15.2.20/darwin-arm64/snapshot_blob.bin": "873635c89b599fa1517846903c1920f41a550d52494a38c264cc519ac3395ab1",
+        "/Users/work/.local/share/wasm-fyi/toolchains/v8-15.2.20/darwin-arm64/icudtl.dat": "9f48c7f9c7c94d516a14870707e910ab94d75ae640ff6842c4af53276cd26ebe",
+        "/Users/work/.local/share/wasm-fyi/toolchains/v8-15.2.20/darwin-arm64/v8_build_config.json": "9159b83e8057db9b1d8904224f85a5e0aad8d8f86a64ed448c3732b7224364ba"
+      }
+    },
+    {
+      "name": "wasmtime",
+      "binary": "/opt/homebrew/Cellar/wasmtime/46.0.1/bin/wasmtime",
+      "version": "wasmtime 46.0.1 (823d1b8f2 2026-06-24)",
+      "fileSha256": {
+        "/opt/homebrew/Cellar/wasmtime/46.0.1/bin/wasmtime": "ac78ac0fb2715d2ff03cb1944e17b2aa76cc308baad315b92162db8562a4c15d"
+      }
+    }
+  ],
+  "outcomes": [
+    {
+      "id": "features/typed-function-references/call-ref/performance-4096x64",
+      "sha256": "7057d28da1a881ce7870b7e0956b247a95e5192915e5904bad7244a943a39f98",
+      "sourceSha256": "9e069b63b5e2ddc8db09a1a916daa8583f9c8fc7e1f9d10965e794a4013ebe0e",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            537526272
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [],
+      "engine": "v8"
+    },
+    {
+      "id": "features/typed-function-references/selected-target/performance-4096x64",
+      "sha256": "a7b84a305ffc7249132a93285840f7f938a337a6933c3898026b7a1e5b1e8461",
+      "sourceSha256": "154e250c476888646515584fb5718c7f86e4401d09beee9db4c71a6905eb768a",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            1610350592
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [],
+      "engine": "v8"
+    },
+    {
+      "id": "features/typed-function-references/reference-composition/performance-4096x64",
+      "sha256": "6edadc91e03c3903c2bb2f189643a1d791769a1db6eb7a8590d636a9831d4ca9",
+      "sourceSha256": "f0a499e64d8c96133198ee0c90be11396ac7a95f20a5ea62ece13ce099d75e4d",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            2687631360
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [],
+      "engine": "v8"
+    },
+    {
+      "id": "features/typed-function-references/typed-table/performance-4096x64",
+      "sha256": "4ce74ce79491e251f15dcb05a786da471ab94e112065378bd4a6f9186ba33e1d",
+      "sourceSha256": "d0188a732fc7af2e17f489c06625367d4a84dd6f899482fe6f0ffe86ccc10a1c",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            1610874880
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [],
+      "engine": "v8"
+    },
+    {
+      "id": "features/typed-function-references/nullable-local-refinement/performance-4096x64",
+      "sha256": "178a1d91a6a94e37e1a005e832bd78785fafa90c26ddd37c3648a20d57b2bdb7",
+      "sourceSha256": "c627a4e17ea69c7a88491a930ccfa2e1226db981703b7b5432c0f34f30447f4c",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            537526272
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [],
+      "engine": "v8"
+    },
+    {
+      "id": "features/branch-hinting/rare-error/performance-4096x64",
+      "sha256": "3788e50b57ac124f8a8600f1621436df888f05945fccf077164132363bda1e3c",
+      "sourceSha256": "80c197073ee108735456064ccca4055215f5cc96164584324377896ecf630e02",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            851968
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [],
+      "engine": "v8"
+    },
+    {
+      "id": "features/branch-hinting/mostly-taken/performance-4096x64",
+      "sha256": "f1e4a5f719b3278aff1fc25676ba0aa9bf6f113e9c107983ef664d1ed64d0acc",
+      "sourceSha256": "7d1527b8512147fd95e2fbcbf09e0078bfc47b3f271f3b55e4347a080f01c55b",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            1900544
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [],
+      "engine": "v8"
+    },
+    {
+      "id": "features/branch-hinting/alternating/performance-4096x64",
+      "sha256": "a7179869d7a427327cd0fec7627b9f05683652700d78ac4e3899446629be495e",
+      "sourceSha256": "fec2ad88d678db412b392b72c8e01684b1c44d42859d9345e9ae04f4bd063a85",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            2097152
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [],
+      "engine": "v8"
+    },
+    {
+      "id": "features/branch-hinting/clustered/performance-4096x64",
+      "sha256": "029511be9c5c80aad979b5cc9254fcaa9c7003287a559146b99cd4e272c3432b",
+      "sourceSha256": "32e5336ae310adbae00a3d2e48f1ea667e0fb695af047d4d97c60cff6ce769b4",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            3670016
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [],
+      "engine": "v8"
+    },
+    {
+      "id": "features/branch-hinting/misleading-hint/performance-4096x64",
+      "sha256": "27b3893755258347457cf7332d3e04720b61155c1625df95f6ec8b5543428e0f",
+      "sourceSha256": "43a9b3dd55113492d29c3bf3b3867651b262255c33fa53b97835a499003923a6",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            761856
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [],
+      "engine": "v8"
+    },
+    {
+      "id": "features/custom-page-sizes/byte-addressed-store/performance-4096x64",
+      "sha256": "33c2f75835b88dd5ce3c06357a829ce879f38dacc0d6c184a7ca945dba4e3862",
+      "sourceSha256": "b549a6b7b12adf0edad356a51fb7a9806d816b7ebbd2823f615bed342cffc91e",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            33423360
+          ]
+        }
+      ],
+      "status": "verified",
+      "engine": "wasmtime",
+      "flags": [
+        "-C",
+        "cache=n",
+        "-W",
+        "custom-page-sizes=y"
+      ],
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3
+    },
+    {
+      "id": "features/custom-page-sizes/last-byte/performance-4096x64",
+      "sha256": "fa6e76866b3bf29e6613d44d83afb3cce0e19bf0aed4b0cb93bcb4b13d3b13df",
+      "sourceSha256": "4bc46ebf68af1006a7532bd0aa34756e18d4ba2323ee39feea9ba8afa8fe387e",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            33423360
+          ]
+        }
+      ],
+      "status": "verified",
+      "engine": "wasmtime",
+      "flags": [
+        "-C",
+        "cache=n",
+        "-W",
+        "custom-page-sizes=y"
+      ],
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3
+    },
+    {
+      "id": "features/custom-page-sizes/unaligned-word/performance-4096x64",
+      "sha256": "d7d234c05cfbf7829d64680cd93f0e8dcc8b2f33ddeeeee3b06460967a5eb4a3",
+      "sourceSha256": "83e5b4357ee25b1c8f0197123d1eba6321bba5c5a12fee7205e4953779cc00b1",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            536739840
+          ]
+        }
+      ],
+      "status": "verified",
+      "engine": "wasmtime",
+      "flags": [
+        "-C",
+        "cache=n",
+        "-W",
+        "custom-page-sizes=y"
+      ],
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3
+    },
+    {
+      "id": "features/custom-page-sizes/page-count/performance-4096x64",
+      "sha256": "6a4c3f3d49f4830dbb77caad7d5718f2bdf301a26e91e5d0dd9e193ddc2ff50c",
+      "sourceSha256": "605ca386bd5703fc796bff18fde1364aacc294e803e1d276b6872fa2204df02d",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            536739840
+          ]
+        }
+      ],
+      "status": "verified",
+      "engine": "wasmtime",
+      "flags": [
+        "-C",
+        "cache=n",
+        "-W",
+        "custom-page-sizes=y"
+      ],
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3
+    },
+    {
+      "id": "features/custom-page-sizes/zero-grow/performance-4096x64",
+      "sha256": "929132c9e5b13c17aecefece7fe5981e83594f57db6e705916d1de667f3d9759",
+      "sourceSha256": "158a49e4789b67db874f048a8283408c0dc01bd4a20aaee8ca1e27a51403d27e",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            536739840
+          ]
+        }
+      ],
+      "status": "verified",
+      "engine": "wasmtime",
+      "flags": [
+        "-C",
+        "cache=n",
+        "-W",
+        "custom-page-sizes=y"
+      ],
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3
+    },
+    {
+      "id": "features/legacy-exceptions/payload-catch/performance-4096x64",
+      "sha256": "fb5374a60d6fb1890fb682a1d3d5c51937aa75b5a9c7ef88851f12f38b8ee070",
+      "sourceSha256": "c6c03a727bfe1d857f00ee1bd221b5d27500b0bd2023c24858dcf4a34d9f94f1",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            536739840
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-legacy-eh"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/legacy-exceptions/selective-throw/performance-4096x64",
+      "sha256": "b58ceb7014789cba78e9ad5c561eef4e8632b4eb17848bf7a1a02ed9a312f586",
+      "sourceSha256": "0d38b725c8ee59fed9aaa282b406bcb6ff62a060f9b433511ec5d0dae6309f05",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            269352960
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-legacy-eh"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/legacy-exceptions/nested-rethrow/performance-4096x64",
+      "sha256": "c7e84975c6f255c7597fd414cc7637628a46a1a1ee7a2dede5c32aafb861490e",
+      "sourceSha256": "e895ac2a6e843cc04639e3b24ecb70c8f1c00506345b842595fe793f58d2d70e",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            536739840
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-legacy-eh"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/legacy-exceptions/tag-dispatch/performance-4096x64",
+      "sha256": "6982e1845d68328dd3641ca956da715513d37512b963e2cdfa04cd4c462836da",
+      "sourceSha256": "43dd2e17cc7ee2967023dd0923a907e2ca64d43d22c14736a698422e80413f3f",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            537526272
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-legacy-eh"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/legacy-exceptions/catch-all/performance-4096x64",
+      "sha256": "8c17d273957089370091d3ab994f1970c08cfe845d5c72fb8706c7e19b10d98c",
+      "sourceSha256": "6bc108052830bd0293c501c42b48d83360d04e904e46ae689b6c92e1321fd42f",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            4456448
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-legacy-eh"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/shared-everything-threads/struct-exchange/performance-4096x64",
+      "sha256": "893788699c9607133bc34e6b541029364e2c9f66a7995de1cd77457b42198035",
+      "sourceSha256": "1dce9421bd8f50f28e1f65837f793b931eac91978495345a022cff69b352aa95",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            1612054528
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-shared"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/shared-everything-threads/struct-add/performance-4096x64",
+      "sha256": "f3cc8c7ffb2bdc9c6ef057f3a729e6595c98e195eddff0543014a0cd71027e23",
+      "sourceSha256": "021d63cb2d25edf4bfdfcf27b7e6157fdb85cc462100325337255235388702a6",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            2148794368
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-shared"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/shared-everything-threads/struct-xor/performance-4096x64",
+      "sha256": "b880565634a12b7322318dee693e4f64c48891e3c919721c93880fa9fe116f62",
+      "sourceSha256": "b624b9a14ae88c4c1da17f2b42d017da87b18cb80372b4e4a9ab2ffcacabc6ba",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            2146959360
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-shared"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/shared-everything-threads/struct-or/performance-4096x64",
+      "sha256": "b4011e90bb95c06e4ab3feff5630d771e37a7eac00f3263bef460f1ff4decacb",
+      "sourceSha256": "69c56208a2a6918f209578f9d4a08e6dde074b0ebba759e5ff14a3da50f9a9e8",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            2147876864
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-shared"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/shared-everything-threads/struct-and/performance-4096x64",
+      "sha256": "2a6eadff1aa0e51d7a9392664733d1dd7dadcc1e2f365aa61c9d9015a5fa73b1",
+      "sourceSha256": "99b639e2bf192d85c030263ae93f4e6aa0ab1533f7f4a657f5482ced452a064e",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            1611137024
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-shared"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/stack-switching/resume-value/performance-4096x64",
+      "sha256": "6918ea5274b634eaf3380e7206b946ead28c44f674c5395e44f1c14298181eb3",
+      "sourceSha256": "cfdb23402b1cccd7943e0f0636ce7be548c7e12bc8f194d38de9f9729239e772",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            536739840
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-wasmfx"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/stack-switching/resume-composed/performance-4096x64",
+      "sha256": "1936b383754e4462b3808b521e7ab668be82dccfa874abc90fb5efa9f8f76011",
+      "sourceSha256": "26941dcb099e9cc999b16df1ef2f3bf494a8a0be4e2f06ee1cf05c91ab209024",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            536739840
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-wasmfx"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/stack-switching/bound-parameter/performance-4096x64",
+      "sha256": "b55914df7200e3d1a9dd0ae82667c0782dd0fdc51340fe42cd9ec5211daa02b9",
+      "sourceSha256": "35fa8c13177303a369b4c8fd8106566d7bc47a7af8857cb3b7d745ba0107ba35",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            538574848
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-wasmfx"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/stack-switching/nested-stack-resume/performance-4096x64",
+      "sha256": "b6ae1aeb774748a934c445dad0fe064155657e2a0340205e5c60fbac7adc155c",
+      "sourceSha256": "f087a3ca3bf9ed10af304d75c1fe2be547827af4775086eead0336107618e1e9",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            536739840
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-wasmfx"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/stack-switching/suspend-payload-resume/performance-4096x64",
+      "sha256": "718ab769440be33504c5d781772cb5541efb781653c6d729ebd0d2789958393e",
+      "sourceSha256": "3bdd011a838073d063077618eaafb189a00a8a5593fd682f1d94b5ce0a393b5c",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            540934144
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-wasmfx"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/memory-control/first-page/performance-64x64",
+      "sha256": "5886658f1081681dd2344212727a9cfbde8c8da0be17c1a8a1809c11a370a129",
+      "sourceSha256": "a29b746cabef8a3f54fad0fc7b58b22117d4b2989c8ee8ca88a0b5b791de9e08",
+      "vectors": [
+        {
+          "args": [
+            64
+          ],
+          "expected": [
+            0
+          ]
+        }
+      ],
+      "status": "unavailable",
+      "reason": "CompileError: WebAssembly.Module(): Compiling function #0:\"performance_kernel\" failed: invalid numeric opcode: 0xfc12 @+92\n    at /var/folders/qh/_8tbhdf16tv0jdqp1pb5jf2w0000gp/T/wasmfyi-proposal-6uqhia/check.js:3:15"
+    },
+    {
+      "id": "features/memory-control/second-page/performance-64x64",
+      "sha256": "1f65d5def437808fa24b6d6b04a165e998a8230655a5b327b9d0f32349eb7e01",
+      "sourceSha256": "bbad007869f028aa38bffdb2d02eb639be12494dfebc7f235829fe105d2a3f46",
+      "vectors": [
+        {
+          "args": [
+            64
+          ],
+          "expected": [
+            0
+          ]
+        }
+      ],
+      "status": "unavailable",
+      "reason": "CompileError: WebAssembly.Module(): Compiling function #0:\"performance_kernel\" failed: invalid numeric opcode: 0xfc12 @+96\n    at /var/folders/qh/_8tbhdf16tv0jdqp1pb5jf2w0000gp/T/wasmfyi-proposal-AnBl6o/check.js:3:15"
+    },
+    {
+      "id": "features/memory-control/last-byte/performance-64x64",
+      "sha256": "434bf5c9a35ce891a7b2cd4e3ffac27f6ec8bb7fd5da1269944df0787a085ac3",
+      "sourceSha256": "7ea077e9a76482c143cf46f384dd6037d092cc2115c3d003234f8f70cf00f09a",
+      "vectors": [
+        {
+          "args": [
+            64
+          ],
+          "expected": [
+            0
+          ]
+        }
+      ],
+      "status": "unavailable",
+      "reason": "CompileError: WebAssembly.Module(): Compiling function #0:\"performance_kernel\" failed: invalid numeric opcode: 0xfc12 @+94\n    at /var/folders/qh/_8tbhdf16tv0jdqp1pb5jf2w0000gp/T/wasmfyi-proposal-t5uA3I/check.js:3:15"
+    },
+    {
+      "id": "features/memory-control/interior-word/performance-64x64",
+      "sha256": "f7893738dc94363e6361d77840162d22ffe7f770bf6e1624950e3be5940498f1",
+      "sourceSha256": "5b1864ad9aaa4fd87eadfc30caab13e8b9be533ed1d22cec48e328eeb534d156",
+      "vectors": [
+        {
+          "args": [
+            64
+          ],
+          "expected": [
+            0
+          ]
+        }
+      ],
+      "status": "unavailable",
+      "reason": "CompileError: WebAssembly.Module(): Compiling function #0:\"performance_kernel\" failed: invalid numeric opcode: 0xfc12 @+93\n    at /var/folders/qh/_8tbhdf16tv0jdqp1pb5jf2w0000gp/T/wasmfyi-proposal-XkswF6/check.js:3:15"
+    },
+    {
+      "id": "features/memory-control/other-page-preserved/performance-64x64",
+      "sha256": "e18cb24931386bcef24bf3f1d299c5fddacfbc02b75754419ef60089c156f6a2",
+      "sourceSha256": "b5f6157e8353ab83abba961e3999ed39dcf3df4647764acc57a30f383d835895",
+      "vectors": [
+        {
+          "args": [
+            64
+          ],
+          "expected": [
+            133120
+          ]
+        }
+      ],
+      "status": "unavailable",
+      "reason": "CompileError: WebAssembly.Module(): Compiling function #0:\"performance_kernel\" failed: invalid numeric opcode: 0xfc12 @+94\n    at /var/folders/qh/_8tbhdf16tv0jdqp1pb5jf2w0000gp/T/wasmfyi-proposal-I7w8Ya/check.js:3:15"
+    },
+    {
+      "id": "features/big-int/high-bit-identity/performance-4096x1",
+      "sha256": "8fcfa86b52416a6f111dc52c834aa7f0a736719efc57b16ceb5a63cd58c5b69c",
+      "sourceSha256": "22dc26fa218875efd982d3742f48fe326749dcc1a6837bdeb461a3e1024048c4",
+      "vectors": [
+        {
+          "args": [
+            "1152921504606851072"
+          ],
+          "expected": [
+            "1152921504606851072"
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [],
+      "engine": "v8"
+    },
+    {
+      "id": "features/big-int/wrapping-add/performance-4096x1",
+      "sha256": "0ea37646f1e312110842c6cd545c55c42c6a1fd210d60eb1ca3ea6e5e0b3dd23",
+      "sourceSha256": "96895c84969ed5c2d08d25ab3f8283b4ec8702cb3f256c00d09c1a46e3ce5401",
+      "vectors": [
+        {
+          "args": [
+            "18446744073709547519"
+          ],
+          "expected": [
+            "18446744073709547536"
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [],
+      "engine": "v8"
+    },
+    {
+      "id": "features/big-int/signed-divide/performance-4096x1",
+      "sha256": "98aa12cd0df53e7825acc06e02d3ca0ecb0fe00d3b2b5ca1707b09045d8b3acf",
+      "sourceSha256": "00788c8c337cfc7cb4bdca6a7f615daf4cf4ccd1686acd7c4e0ce2aebc6e63f6",
+      "vectors": [
+        {
+          "args": [
+            "-1152921504606851072"
+          ],
+          "expected": [
+            "18062436905507267926"
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [],
+      "engine": "v8"
+    },
+    {
+      "id": "features/big-int/wide-multiply/performance-4096x1",
+      "sha256": "c7fb4e792c1a6b144e74250d5f165548662445d02ca2dcb257fe7cc473494077",
+      "sourceSha256": "97c5e855d14cae1a6d2b62c9fa1452e49caedea09fecaed4e07815ecb6ef45dc",
+      "vectors": [
+        {
+          "args": [
+            "1099511631872"
+          ],
+          "expected": [
+            "18691697676288"
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [],
+      "engine": "v8"
+    },
+    {
+      "id": "features/big-int/bitwise-complement/performance-4096x1",
+      "sha256": "49c0a62696ab451b3baacca3e0d126c8ea03bab059acd155045da8d3c5a65eab",
+      "sourceSha256": "2799909ae47ad85045bbef53f526979e48952f1548fc5ce232fd0d74b1e35290",
+      "vectors": [
+        {
+          "args": [
+            "9223372036854779904"
+          ],
+          "expected": [
+            "9223372036854771711"
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [],
+      "engine": "v8"
+    },
+    {
+      "id": "features/half-precision/lane-add/performance-4096x64",
+      "sha256": "b64175db4bc221f2128847060ae65d7733677a0543c009ffebb9c5d4035ea5ed",
+      "sourceSha256": "db59cf256483dec6b450bd3c43ed6fe4eb7cfa6f29c81e4886d2071df139de8a",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            33947648
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-fp16"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/half-precision/lane-subtract/performance-4096x64",
+      "sha256": "9a227aa03c15f730c546fa8c794ea6afd0f4f23bb82984a697111aebf5ff0a62",
+      "sourceSha256": "c7594e225096ba60167d9c3438cd7371d4ffd82aac18e0c0b0c147ccbbf44016",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            32636928
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-fp16"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/half-precision/lane-multiply/performance-4096x64",
+      "sha256": "11e48613049a9b0deaeb8514931acb543186e55d04f2654ee0e2a7980089214b",
+      "sourceSha256": "36589cda0f4bba2356ca16671e0280928fae00bc6858c87cdbf67dec7875c55d",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            66846720
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-fp16"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/half-precision/lane-minimum/performance-4096x64",
+      "sha256": "01731d6af6b06be2fdb9d9de1919368b8703377cfb4a42f1112a23148c9cf787",
+      "sourceSha256": "755156c540dadca6913f9fb389040a7c7b1d5caab660f79abd7deb270de8b94e",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            24969216
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-fp16"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/half-precision/lane-maximum/performance-4096x64",
+      "sha256": "b26fe24d682b0e86f6b92a906008fa017ab14561472591909cabce0775e4e0c2",
+      "sourceSha256": "329276a9b7a7148f93c8083dc966ed10b00e70ed99415b013bc83b22fb90eb52",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            41746432
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-fp16"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/stringref/utf16-length/performance-4096x64",
+      "sha256": "8b34708d20e2d55fe84ba04f15f5322b0cb08867700cb96fa5a42e5664d8f54a",
+      "sourceSha256": "7b84c32df0f240921b319166d6fae24a2f80b079d3f8d536ce7ee034522fdfbb",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            393216
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-stringref"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/stringref/utf8-length/performance-4096x64",
+      "sha256": "36886ff64155f596c2543d14f0f55e4d9d4c7f6ac74eb429a3fe51a37758123a",
+      "sourceSha256": "3dfbc8217d974cc10d16251c8dc6c9ebc2856fc78d55cc9fa4c12e766c2d82ac",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            917504
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-stringref"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/stringref/concat-length/performance-4096x64",
+      "sha256": "9a887506f087b3c0bb8bdfafcca25df45242420cfd755814c41fd63c37af9743",
+      "sourceSha256": "4da2425da4f19361f980feaaef6d854747997f8509ecff37ee42014833a8fce6",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            655360
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-stringref"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/stringref/value-equality/performance-4096x64",
+      "sha256": "82d977dc399f37f9936b96429424c39c233c759ebb06bb5e01eb95990ba73978",
+      "sourceSha256": "922ed757f97b24d45e4a680ade5066ac64a55d1fb69cd6316bdbcd0a437a09ab",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            16384
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-stringref"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/stringref/codeunit-access/performance-4096x64",
+      "sha256": "d19712daa34ef8a3d01bbb5c08d901093fd8c1e4a712c4ddf92f62d0340e02cc",
+      "sourceSha256": "82f6eb58bf3e3ebf3471988ed753beaed4e2edd3ef60c007b126cfc6e2eb3b5a",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            255983616
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-stringref"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/acquire-release-atomics/rmw-add/performance-4096x64",
+      "sha256": "f8583e7022b29229e4fd42afe83b000bc9ce4c098a6535e6a5a1c97629341d61",
+      "sourceSha256": "34e4b340e88f7e4c789243077186f6085835fc0870925fb87ef754f7e5947211",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            2148794368
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-acquire-release"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/acquire-release-atomics/rmw-subtract/performance-4096x64",
+      "sha256": "bd70153f168f99ad54d707454af43cf6cd52c563748e06a001a635cda022f94c",
+      "sourceSha256": "8a55e6261da56550b90980b475fbf0e99e46a83fa746ab59278b0407d5ac1513",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            2145124352
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-acquire-release"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/acquire-release-atomics/rmw-exchange/performance-4096x64",
+      "sha256": "3eb1bddb9522869833566e57b5b2fbd4826ab3147af75e0ca3d40eac1833b0a4",
+      "sourceSha256": "a0c130e0b3173dcccb4b65da5104251ebbc34d09cfd4b725a3669ea4c6352549",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            1612054528
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-acquire-release"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/acquire-release-atomics/rmw-xor/performance-4096x64",
+      "sha256": "79760e066fc6d3e43dd7c26a6b30a8cca7863b492a8c05e8244b0b8f67dd0eb7",
+      "sourceSha256": "0eefbdfa3bdd043b5fce58d766fa42ef4649d80a382232f7768344cadc16b45c",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            2146959360
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-acquire-release"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/acquire-release-atomics/compare-exchange/performance-4096x64",
+      "sha256": "f8f4f1c1d83537b13b5fa02bb60fb4cec1e69a844d5caa548f756b183206cb37",
+      "sourceSha256": "c36298e0f63ab8c4f7fa3df8e2c43220133eb6139f7358eab148478a4f0bdea6",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            1612054528
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-acquire-release"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/custom-descriptors/payload-read/performance-4096x64",
+      "sha256": "ce3eb3144dd8f4eb7d44351799c20a70367fac77619b68df3992b7cd646b7433",
+      "sourceSha256": "8c6027948d2ab40802059d49905e436d33b171b1bfa2077bd96673336d778aa6",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            536739840
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-custom-descriptors"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/custom-descriptors/descriptor-read/performance-4096x64",
+      "sha256": "96718aa71bdd87cdcd34ac654b8c5c1c05e1d5b614c3923de224f984110b3952",
+      "sourceSha256": "b21a28c29f645be02ef2b1ef76ca12072a645dcd544307079ccdf1b46874d1cb",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            538574848
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-custom-descriptors"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/custom-descriptors/identity/performance-4096x64",
+      "sha256": "c60b6992a53de54264e35cfb7444e98993bacfdad061ceda651fb5794bd8bd5b",
+      "sourceSha256": "979940c8a6236b4b9b1666eb7b9cee3b80ba38c54ade267c0686d1e74aaf3929",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            262144
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-custom-descriptors"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/custom-descriptors/mutable-payload/performance-4096x64",
+      "sha256": "011447c6b9621b3a1c1b21132879938136ee6a9ac91ed98e3a51c8859e97b348",
+      "sourceSha256": "d604cdd6968fbdabdfbfaf87154a2acbd335a674ecef959f5884c01ae50569a5",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            1610219520
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-custom-descriptors"
+      ],
+      "engine": "v8"
+    },
+    {
+      "id": "features/custom-descriptors/default-payload/performance-4096x64",
+      "sha256": "6ccbcc6c53b6628ca5e9c141c8d89c3241693adde712bc76c4093d05c2055044",
+      "sourceSha256": "ae9ce7fb9db308956a6219be6ddd0bdf2d3ee7294cf3654df734d9701d20215a",
+      "vectors": [
+        {
+          "args": [
+            4096
+          ],
+          "expected": [
+            0
+          ]
+        }
+      ],
+      "status": "verified",
+      "freshInstances": 2,
+      "reusedCallsPerInput": 3,
+      "flags": [
+        "--wasm-custom-descriptors"
+      ],
+      "engine": "v8"
+    }
+  ],
+  "totals": {
+    "verified": 55,
+    "unavailable": 5,
+    "failed": 0
+  }
+}

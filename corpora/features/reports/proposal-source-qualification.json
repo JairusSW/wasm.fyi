@@ -1,0 +1,53 @@
+{
+  "schema": 1,
+  "created": "2026-10-20T19:48:17.525Z",
+  "sourceBuild": {
+    "report": "proposal-source-build.json",
+    "sha256": "cb6dda905687c4c5c2bbafd886346ffc62acef1dee7911016b6b1cc59593b380",
+    "status": "verified",
+    "artifacts": 175,
+    "totals": {
+      "correctness": 97,
+      "performance": 60,
+      "host-esm": 5,
+      "native-c-api": 1,
+      "upstream-c-example": 12
+    }
+  },
+  "tests": {
+    "total": 47,
+    "passed": 46,
+    "failed": 0,
+    "skipped": 1,
+    "skipReason": "GC performance fixtures not built in the default performance root",
+    "runs": [
+      {
+        "argv": [
+          "node",
+          "--test",
+          "scripts/workflow.test.mjs",
+          "scripts/proposal-corpora.test.mjs",
+          "scripts/feature-performance.test.mjs",
+          "scripts/feature-adapter.test.mjs"
+        ],
+        "exitCode": 0,
+        "log": "proposal-source-tests.log",
+        "sha256": "6b5a07e0bcadcd07f90ec52fb692efea4dcc74fee81aeb4fac59e369aeb251de",
+        "passed": 38,
+        "skipped": 1
+      },
+      {
+        "argv": [
+          "node",
+          "--test",
+          "scripts/feature-curation.test.mjs"
+        ],
+        "exitCode": 0,
+        "log": "proposal-source-curation-tests.log",
+        "sha256": "cd5bd83601b65c1643fab1c2099c818fecbc0113c96ca6201862ee81e1424408",
+        "passed": 8,
+        "skipped": 0
+      }
+    ]
+  }
+}

@@ -2,7 +2,7 @@
 	import {apiView,aggregateKey} from '$lib/api/controller.svelte';
 	import {datasetView} from '$lib/api/view.svelte';
 	import type { MetricKey, OvKey } from '$lib/data/types';
-	import { leader } from '$lib/model';
+	import { endToEndLeader, leader } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 	import { relative } from '$lib/format';
 	import { tipCard, tipWho } from '$lib/tip';
@@ -14,6 +14,7 @@
 	const leaders = $derived([
 		{ ...leader(ui.scope, 'Fastest compilation', 'lat', 0, 'compile'), overview: null, points: [rankingNote, 'Transpiler pipelines are excluded from fastest compilation; their full translate + compile times remain in the table.'] },
 		{ ...leader(ui.scope, 'Fastest instantiation', 'lat', 1, 'inst'), overview: null, points: [rankingNote] },
+		{ ...endToEndLeader(ui.scope), overview: null, points: [rankingNote, 'Compile + instantiate + first call + one steady call; runtimes need all four measurements.'] },
 		{ ...leader(ui.scope, 'Lowest average peak RSS', 'mem', 3, 'rss'), overview: 'mem' as OvKey,
 			points: [
                 'Arithmetic mean of available compile, instantiate, first-call and steady run peak RSS measurements',
@@ -25,13 +26,14 @@
 	]);
 	const ordinal = (n: number) => (n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : `${n}th`);
 	const cards = $derived(leaders.map((l): LeaderCard => {
-		const key = aggregateKey(ui.scope, l.overview === 'mem' ? 'rssAverage' : l.metric);
-		const error = apiView.aggregateErrors[key];
-		const loading = !error && (apiView.serverAggregates ? !apiView.precomputed[key] : !!datasetView.revision && !apiView.aggregates[key]);
+		const metrics = 'dependencies' in l ? l.dependencies : [l.overview === 'mem' ? 'rssAverage' : l.metric];
+		const keys = metrics.map((metric) => aggregateKey(ui.scope, metric));
+		const error = keys.map((key) => apiView.aggregateErrors[key]).find(Boolean);
+		const loading = !error && keys.some((key) => apiView.serverAggregates ? !apiView.precomputed[key] : !!datasetView.revision && !apiView.aggregates[key]);
 		return {
 			label: l.label,
 			points: l.points,
-			chips: l.places.length > 1 ? [l.clear ? 'clear lead' : 'intervals overlap'] : [],
+			chips: l.places.length > 1 && !('dependencies' in l) ? [l.clear ? 'clear lead' : 'intervals overlap'] : [],
 			onselect: () => (l.overview ? onoverview(l.overview) : onmetric(l.metric)),
 			places: l.places.map((p) => ({
 				place: p.place,

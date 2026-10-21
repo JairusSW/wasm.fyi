@@ -1,5 +1,8 @@
 import {compactImportFixtures} from './compact-imports.mjs';
 import {wideArithmeticFixtures} from './wide-arithmetic.mjs';
+import {proposalGapFixtures,proposalGapIds} from './proposal-gaps.mjs';
+import {proposalBinaryFixtures,proposalBinaryIds} from './proposal-binary.mjs';
+import {curatedFixtures} from './curated.mjs';
 // Original, deterministic feature workloads. Each operation has an independent
 // arithmetic oracle; runtime output is never used to invent an expected value.
 const sum = (n, value) => {
@@ -27,7 +30,7 @@ export const featureIds = ['core-num', 'core-mem', 'core-ctl', 'core-tab', 'core
   'bulk-memory', 'reference-types', 'multi-value', 'simd', 'gc', 'memory64',
   'exceptions', 'tail-call', 'relaxed-simd', 'multi-memory', 'extended-const',
   'js-string-builtins', 'jspi', 'threads',
-  'component-model', 'cm-abi', 'cm-res', 'cm-async'];
+  'component-model', 'cm-abi', 'cm-res', 'cm-async', ...proposalGapIds, ...proposalBinaryIds];
 
 export function fixtures() {
   const out = [];
@@ -303,6 +306,7 @@ export function fixtures() {
 
   for (const f of wideArithmeticFixtures()) add('wide-arithmetic', f.name, f.wat, f.expected);
   for (const f of compactImportFixtures()) add('compact-imports', f.name, f.wat, f.expected, {hostProfile:f.hostProfile,baseline:f.baseline});
+  out.push(...curatedFixtures(), ...proposalGapFixtures(), ...proposalBinaryFixtures());
 
   return out;
 }

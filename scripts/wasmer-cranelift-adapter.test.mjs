@@ -16,7 +16,12 @@ let mut build = cc::Build::new();
 if wasmer {
         println!("cargo:rerun-if-changed=src/wasmer_wasi.h");
         build.define("WB_WASMER_LLVM", Some("0")); }`);
-  await writeFile(join(dir,'src/main.rs'),'else if cfg!(feature="wasmer_singlepass"){"singlepass-jit"}\n"SIMD":cfg!(feature="wasmer_llvm"),"TAIL_CALL":cfg!(feature="wasmer_llvm")');
+  await writeFile(join(dir,'src/main.rs'),`else if cfg!(feature="wasmer_singlepass"){"singlepass-jit"}
+"SIMD":cfg!(feature="wasmer_llvm"),"TAIL_CALL":cfg!(feature="wasmer_llvm")
+let identity_host = true && w["host_profile"] == "identity-v1";
+                if cfg!(feature = "wasmer_llvm") || cfg!(feature = "wasmer_singlepass") {
+                    description["description"]["validator_features"] = json!({});
+                }`);
   await writeFile(join(dir,'src/wasmer.cpp'),`const auto backend=WB_WASMER_LLVM?LLVM:SINGLEPASS;
 wasmer_features_simd(features,WB_WASMER_LLVM);
 wasmer_features_relaxed_simd(features,WB_WASMER_LLVM);
@@ -30,9 +35,16 @@ wasmer_features_tail_call(features,WB_WASMER_LLVM);`);
   assert.match(first[0],/"wasmer-cranelift"\.to_owned\(\)/);
   assert.match(first[1],/RUNTIME=="wasmer-cranelift"\{"cranelift-jit"\}else\{"singlepass-jit"\}/);
   assert.match(first[1],/"SIMD":\(cfg!\(feature="wasmer_llvm"\) \|\| RUNTIME=="wasmer-cranelift"\)/);
-  assert.match(first[1],/"TAIL_CALL":\(cfg!\(feature="wasmer_llvm"\) \|\| RUNTIME=="wasmer-cranelift"\)/);
+  assert.match(first[1],/"TAIL_CALL":cfg!\(feature="wasmer_llvm"\)/);
+  assert.match(first[1],/"THREADS":true/);
+  assert.match(first[1],/"WIDE_ARITHMETIC":\(cfg!\(feature="wasmer_llvm"\) \|\| RUNTIME=="wasmer-cranelift"\)/);
+  assert.match(first[1],/threads-opaque-identity-v1/);
+  assert.match(first[1],/let threads_defined_host =/);
+  assert.match(first[1],/can_host_profile_\{profile\}/);
   assert.match(first[2],/WB_WASMER_CRANELIFT\?CRANELIFT:SINGLEPASS/);
   assert.equal((first[2].match(/WB_WASMER_LLVM \|\| WB_WASMER_CRANELIFT/g)||[]).length,4);
+  assert.match(first[2],/wasmer_features_tail_call\(features,WB_WASMER_LLVM\)/);
+  assert.match(first[2],/wasmer_features_threads\(features,true\)/);
   await applyWasmerCraneliftAdapter(root);
   assert.deepEqual(await Promise.all(paths.map(name=>readFile(join(dir,name),'utf8'))),first);
   await writeFile(join(dir,'build.rs'),'upstream selection changed');

@@ -16,17 +16,23 @@ const eligiblePins=plan.pins.filter(pin=>historyPinAllowed(pin,template));
 const directory=join(root,'captures'),notes=join(root,'failure-notes');
 const files=(await readdir(directory).catch(()=>[])).filter(name=>name.endsWith('.json')&&!name.startsWith('alias-'));
 const optional=path=>readFile(path).catch(error=>{if(error.code==='ENOENT')return null;throw error});
+const captureIdentity=(source,row)=>JSON.stringify([source?.repository,source?.revision,source?.asOf,row?.engine,row?.workload,row?.artifactSha256,row?.contractSha256]);
+const originals=await Promise.all(files.map(async name=>{const path=join(directory,name),bytes=await readFile(path);return{name,path,bytes,capture:JSON.parse(bytes)}}));
+// A real capture at the alias target wins over reuse. This matters when an
+// unchanged runtime revision spans a corpus-contract change: the unaffected
+// workloads can still be aliased while the changed workloads are recaptured.
+const genuineCaptures=new Set(originals.flatMap(({capture})=>capture.results?.map(row=>captureIdentity(capture.source,row))||[]));
 // Linking a fully written private inode is atomic and cannot replace any existing file.
 async function publishMissing(path,bytes){await mkdir(dirname(path),{recursive:true});const temporary=path+'.tmp-'+randomUUID();await writeFile(temporary,bytes,{flag:'wx'});try{await link(temporary,path);return true}catch(error){if(error.code==='EEXIST')return false;throw error}finally{await unlink(temporary)}}
 let linked=0,notesLinked=0,notesExisting=0;const errors=[];
-for(const name of files){
- const originalPath=join(directory,name),originalBytes=await readFile(originalPath),original=JSON.parse(originalBytes);
+for(const {name,path:originalPath,bytes:originalBytes,capture:original} of originals){
  for(const pin of eligiblePins){
   const copy=aliasCapture(original,pin);if(!copy)continue;
   const targetName='alias-'+digest(Buffer.from(name+'|'+pin.targetWeek+'|'+(pin.tag||pin.revision)))+'.json',target=join(directory,targetName);
   try{
    let aliasBytes=await optional(target);
    const row=original.results?.[0],workload=workloads.get(row?.workload);if(!workload)throw Error('Frozen workload is missing: '+row?.workload);
+   if(genuineCaptures.has(captureIdentity({repository:pin.repository,revision:pin.revision,asOf:pin.targetWeek},{engine:row.engine,workload:workload.id,artifactSha256:workload.sha256,contractSha256:workloadContract(workload)})))continue;
    const notePath=join(notes,name),targetNote=join(notes,targetName),existingBytes=await optional(targetNote);
    const existing=existingBytes?JSON.parse(existingBytes):null;
    const expectedIdentity={repository:pin.repository,revision:pin.revision,originalAsOf:pin.reuseTargetWeek,aliasAsOf:pin.targetWeek,configuration:row.engine,workload:workload.id,artifactSha256:workload.sha256,contractSha256:workloadContract(workload)};

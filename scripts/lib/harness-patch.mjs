@@ -57,7 +57,7 @@ function patchBase(root) {
 }
 
 export function patchHarness(root) {
-  const names=['harness-wazero-compile-freshness.patch','harness-finder-metadata.patch'];
+  const names=['harness-wasmtime-shipped-features.patch','harness-wasmi-shipped-features.patch','harness-wazero-shipped-features.patch','harness-wazero-compile-freshness.patch','harness-finder-metadata.patch'];
   const check=(name,args)=>spawnSync('git',['apply',...args,join(site,'patches',name)],{cwd:root,stdio:'ignore'}).status===0;
   const peeled=[];
   for(const name of [...names].reverse())if(check(name,['--reverse','--check'])) {
