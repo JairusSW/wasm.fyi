@@ -66,19 +66,29 @@ for(const pin of plan.pins.filter(p=>historyPinAllowed(p,template)&&historyWeekM
   // Bind collector/controller sampling together without mutating the frozen source.
   const controllerSource=join(dir,'controller-source');
   if(!await stat(join(controllerSource,'go.mod')).catch(()=>null))await copyHistoricalHarness(nativeBase,controllerSource);
+  if(!await stat(join(controllerSource,'.git')).catch(()=>null)){
+   command('git',['init',controllerSource],{env,stdio:'inherit'});
+   command('git',['-C',controllerSource,'add','.'],{env,stdio:'inherit'});
+   command('git',['-C',controllerSource,'-c','user.name=wasmfyi benchmark harness','-c','user.email=benchmark@localhost','commit','-m','Freeze LibWasm benchmark harness'],{env,stdio:'inherit'});
+  }
+  await mkdir(join(controllerSource,'bin'),{recursive:true});await cp(join(harness,'bin/adapter-libwasm'),join(controllerSource,'bin/adapter-libwasm'));
   command(process.execPath,[join(process.cwd(),'scripts/apply-controller-sampling.mjs'),controllerSource],{env,stdio:'inherit'});
   command('go',['build','-trimpath','-o',controller,'./cmd/wasmbench'],{cwd:controllerSource,env,stdio:'inherit'});
   await writeFile(join(dir,'controller-build.json'),JSON.stringify({source:controllerSource,controller,controllerSha256:digest(await readFile(controller)),adaptiveSourceSha256:digest(await readFile(join(controllerSource,'experiment/adaptive.go'))),phaseSampleCaps:template.collection.phaseSampleCaps,builtAt:new Date().toISOString()},null,2));
-  if(prepareOnly){await writeFile(join(dir,'qualification-build.json'),JSON.stringify({revision:pin.revision,harness,controller,builtAt:new Date().toISOString()},null,2));break;}
-  const job={id:'libwasm-'+pin.revision.slice(0,12)+'-'+pin.targetWeek.replace(/[^0-9]/g,''),engine:'libwasm',harness,controller,historical:true,source:{repository:pin.repository,revision:pin.revision,ref:'main@'+pin.revision.slice(0,12),asOf:pin.targetWeek,kind:'snapshot'}};
+  const job={id:'libwasm-'+pin.revision.slice(0,12)+'-'+pin.targetWeek.replace(/[^0-9]/g,''),engine:'libwasm',harness:controllerSource,controller,historical:true,source:{repository:pin.repository,revision:pin.revision,ref:'main@'+pin.revision.slice(0,12),asOf:pin.targetWeek,kind:'snapshot'}};
+  const bindingPlan={...template,anchor:plan.anchor,cutoff:plan.cutoff,captureDirectory:join(root,'captures'),jobs:[job]};
+  // Latest feature qualification discovers exact source bindings from plans.
+  // Preserve that binding even when preparation intentionally stops before a
+  // main-corpus collection.
+  if(prepareOnly){await writeFile(join(dir,'plan.json'),JSON.stringify(bindingPlan));await writeFile(join(dir,'qualification-build.json'),JSON.stringify({revision:pin.revision,harness:controllerSource,controller,builtAt:new Date().toISOString()},null,2));break;}
   const runDirectory=join(dir,'runs',job.id);await mkdir(runDirectory,{recursive:true});
   if(JSON.parse(env.WASMFYI_GUEST_QUALIFY_CONFIGS||'[]').includes('libwasm')){
    const inventory=new Map(template.workloads.map(w=>[w.id,w.sha256]));
    const suite=(await readCache(template.corpusRoot)).filter(w=>inventory.has(w.id));
    if(suite.length!==inventory.size||suite.some(w=>w.sha256!==inventory.get(w.id)))throw Error('Libwasm qualification corpus differs from frozen inventory');
-   if(env.WASMFYI_HISTORY_FAST!=='1')await qualifyHistoryStartup({directory:runDirectory,configuration:'libwasm',suite,harness,controller,source:job.source,env,run:async(program,args,options)=>command(program,args,{...options,stdio:'inherit'})});
+   if(env.WASMFYI_HISTORY_FAST!=='1')await qualifyHistoryStartup({directory:runDirectory,configuration:'libwasm',suite,harness:controllerSource,controller,source:job.source,env,run:async(program,args,options)=>command(program,args,{...options,stdio:'inherit'})});
   }
-  await writeFile(join(runDirectory,'plan.json'),JSON.stringify({...template,anchor:plan.anchor,cutoff:plan.cutoff,captureDirectory:join(root,'captures'),jobs:[job]}));
+  await writeFile(join(runDirectory,'plan.json'),JSON.stringify(bindingPlan));
   await releaseBuild();
   command(process.execPath,[join(process.cwd(),'scripts/benchmark-history-worker.mjs'),runDirectory],{env:{...process.env,...template.env},cwd:process.cwd(),stdio:'inherit',timeout:48*60*60*1000});const result=JSON.parse(await readFile(join(runDirectory,'status.json'),'utf8'));
   if(!completedHistoryJob(result,template.workloads.length))throw Error('Incomplete Libwasm collection: '+result.status+'; '+result.errors.length+' errors');
