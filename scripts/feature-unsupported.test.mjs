@@ -16,6 +16,17 @@ test('capture annotation changes failed zero-sample status only, preserves resou
  const mixed=structuredClone(capture);mixed.results[0].latencyStatus='ok';assert.equal(classifyFeatureCapture(mixed,evidence),null);
 });
 
+test('source-bound rejection covers only its unadvertised propagated phases',()=>{
+ const featureWorkload={id:'features/memory-control/performance/1',sha256:'c'.repeat(64),abi:'core',features:['memory-control'],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+ const source={repository:'bytecodealliance/wasmtime',revision:'d'.repeat(40)},contractSha256=workloadContract(featureWorkload);
+ const capture={source,results:['compile','instantiate'].map(phase=>({engine:'wasmtime',workload:featureWorkload.id,artifactSha256:featureWorkload.sha256,contractSha256,phase,latencyStatus:'failed',timingSamples:0,samplesNs:[]}))};
+ const rejected={engine:'wasmtime',workload:featureWorkload.id,phase:'compile',status:'error',reason:'memory control support is not enabled'};
+ const propagated={engine:'wasmtime',workload:featureWorkload.id,phase:'instantiate',status:'unsupported',reason:'scenario not advertised'};
+ assert.equal(classifyFeatureRuntimeRejection({source,engine:'wasmtime',workload:featureWorkload,capture,failures:[rejected,propagated]})?.status,'unsupported');
+ assert.equal(classifyFeatureRuntimeRejection({source,engine:'wasmtime',workload:featureWorkload,capture,failures:[propagated]}),null);
+ assert.equal(classifyFeatureRuntimeRejection({source,engine:'wasmtime',workload:featureWorkload,capture,failures:[rejected,{...propagated,reason:'error: incorrect result'}]}),null);
+});
+
 test('source-bound Wasmtime proposal rejection becomes unsupported',()=>{
  const featureWorkload={id:'features/memory-control/first-page/1',sha256:'c'.repeat(64),abi:'core',features:['memory-control'],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
  const source={repository:'bytecodealliance/wasmtime',revision:'d'.repeat(40)};
