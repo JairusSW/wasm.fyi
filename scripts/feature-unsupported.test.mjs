@@ -26,3 +26,20 @@ test('source-bound Wasmtime proposal rejection becomes unsupported',()=>{
  assert.equal(evidence.status,'unsupported');assert.equal(classifyFeatureCapture(capture,evidence).results[0].latencyStatus,'unsupported');
  for(const reason of ['error: trap: unreachable','error: incorrect result','error: unsupported instruction'])assert.equal(classifyFeatureRuntimeRejection({source,engine:'wasmtime',workload:featureWorkload,capture,failures:[{...failures[0],reason}]}),null);
 });
+
+test('Wasmtime sacrificial preflight and exact proposal encoding rejections remain source bound',()=>{
+ const source={repository:'bytecodealliance/wasmtime',revision:'e'.repeat(40)};
+ for(const [feature,engine,reason] of [
+  ['half-precision','wasmtime','unknown 0xfd subopcode: 0x120'],
+  ['stringref','wasmtime','unknown 0xfb subopcode: 0xa9'],
+  ['acquire-release-atomics','wasmtime','atomic instructions must always specify maximum alignment'],
+  ['custom-descriptors','wasmtime','custom descriptors proposal must be enabled'],
+  ['shared-everything-threads','wasmtime','shared globals require the shared-everything-threads proposal'],
+  ['reference-types','wasmtime-winch','Compilation error: Unsupported Wasm type'],
+ ]){
+  const w={id:`features/${feature}/case/1`,sha256:'f'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+  const contractSha256=workloadContract(w),capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256,phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+  const failures=['preflight_failed','error'].map(status=>({engine,workload:w.id,phase:'first-call',status,reason:`${status==='preflight_failed'?'sacrificial check check-0-0: ':''}error: ${reason}`}));
+  assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures})?.status,'unsupported',feature);
+ }
+});
