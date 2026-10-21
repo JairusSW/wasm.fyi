@@ -6,9 +6,11 @@ import {runCommand} from './benchmark-process.mjs';
 const hash=data=>createHash('sha256').update(data).digest('hex');
 export function withFeatureHostProfileAdmission(source){
  if(source.includes('"adapter does not advertise host profile: "+w.HostProfile')){
-  for(const profile of ['threads-identity-v1','threads-opaque-identity-v1']){
-   if(!source.includes(`w.HostProfile == "${profile}"`))source=source.replace('w.HostProfile == "threads-defined-v1"',`w.HostProfile == "threads-defined-v1" || w.HostProfile == "${profile}"`);
-  }
+  const guard=/\tif (w\.HostProfile == "[^"\n]+"(?: \|\| w\.HostProfile == "[^"\n]+")*) \{\n\t\tif !r\.Description\.Capabilities\["can_host_profile_"\+w\.HostProfile\] \{/;
+  const match=source.match(guard);if(!match)throw Error('Existing feature host-profile admission guard is malformed');
+  let profiles=match[1];
+  for(const profile of ['js-string-builtins-v1','jspi-v1','threads-defined-v1','threads-identity-v1','threads-opaque-identity-v1'])if(!profiles.includes(`w.HostProfile == "${profile}"`))profiles+=` || w.HostProfile == "${profile}"`;
+  source=source.replace(match[0],`\tif ${profiles} {\n\t\tif !r.Description.Capabilities["can_host_profile_"+w.HostProfile] {`);
   return source;
  }
  const anchor='\tif !slices.Contains(r.Description.ABIs, w.ABI) {';
