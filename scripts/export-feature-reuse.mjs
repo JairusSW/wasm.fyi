@@ -5,6 +5,7 @@ import {digest} from './lib/wasmbench.mjs';
 import {workloadContract} from './lib/workload-contract.mjs';
 import {featureScenarios} from './lib/feature-scenario-policy.mjs';
 import {featureCampaignPlatform,featureInputIdentity,featureLedgerKey} from './lib/feature-campaign-identity.mjs';
+import {latestFeaturePins} from './lib/latest-feature-pins.mjs';
 const [campaignArg,inputsArg,outputArg]=process.argv.slice(2);
 if(!campaignArg||!inputsArg||!outputArg)throw Error('Usage: export-feature-reuse CAMPAIGN INPUTS OUTPUT');
 const campaign=resolve(campaignArg),inputs=resolve(inputsArg);
@@ -17,7 +18,7 @@ for(const kind of ['compatibility','performance','compile','lifecycle']){
 }
 const platform=featureCampaignPlatform(template),hostKey=digest(Buffer.from(JSON.stringify(platform))),inputIdentity=featureInputIdentity(suites);
 const workloads=Object.entries(suites).flatMap(([kind,list])=>list.map(workload=>({kind,workload,contract:workloadContract(workload),phases:featureScenarios(kind,workload).split(',')})));
-const targets=plan.pins.filter(p=>p.targetWeek===plan.anchor&&['planned','reused'].includes(p.status)&&!plan.excludedEngines?.includes(p.engine)).flatMap(pin=>pin.configurations.map(engine=>{
+const targets=latestFeaturePins(plan.pins).filter(p=>!plan.excludedEngines?.includes(p.engine)).flatMap(pin=>pin.configurations.map(engine=>{
  const source={repository:pin.repository,revision:pin.revision,ref:pin.tag||'main@'+pin.revision.slice(0,['wago','wazero','wasm2go','libwasm'].includes(pin.engine)?12:8),kind:pin.tag?'release':'snapshot',asOf:pin.targetWeek,...(pin.dateBasis?{dateBasis:pin.dateBasis}:{})};
  return {engine,source,keys:workloads.map(({kind,workload})=>featureLedgerKey(hostKey,engine,source,kind,workload,inputIdentity))};
 }));
