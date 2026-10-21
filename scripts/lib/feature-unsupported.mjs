@@ -19,9 +19,13 @@ export function classifyFeatureCapture(capture,evidence){
 }
 
 const wasmtimeRejections=[
- {feature:'shared-everything-threads',reason:/shared composite types require the shared-everything-threads proposal/},
+ {feature:'shared-everything-threads',reason:/shared (?:composite types|globals) require the shared-everything-threads proposal/},
  {feature:'memory-control',reason:/memory control support is not enabled/},
- {feature:'custom-descriptors',reason:/custom descriptors? support is not enabled/},
+ {feature:'custom-descriptors',reason:/custom descriptors? (?:support is not enabled|proposal must be enabled)/},
+ {feature:'half-precision',reason:/unknown 0xfd subopcode: 0x120/},
+ {feature:'stringref',reason:/unknown 0xfb subopcode: 0xa9/},
+ {feature:'acquire-release-atomics',reason:/atomic instructions must always specify maximum alignment/},
+ {feature:'reference-types',engine:'wasmtime-winch',reason:/Compilation error: Unsupported Wasm type/},
 ];
 
 // Wasmtime's validator knows encodings for some proposals which the compiler
@@ -33,7 +37,7 @@ export function classifyFeatureRuntimeRejection({source,engine,workload,capture,
  if(capture.source?.revision!==source.revision||capture.source?.repository!==source.repository)return null;
  const contractSha256=workloadContract(workload),failed=capture.results.filter(row=>row.latencyStatus==='failed');
  if(failed.length!==capture.results.length||failed.some(row=>row.engine!==engine||row.workload!==workload.id||row.artifactSha256!==workload.sha256||row.contractSha256!==contractSha256||(row.timingSamples||0)!==0||(row.samplesNs?.length||0)!==0))return null;
- const rejection=wasmtimeRejections.find(candidate=>workload.features?.includes(candidate.feature));
- if(!rejection||!failures?.length||failures.some(failure=>failure.engine!==engine||failure.workload!==workload.id||failure.status!=='error'||!rejection.reason.test(failure.reason||'')||(failure.samples?.length||0)!==0))return null;
+ const rejection=wasmtimeRejections.find(candidate=>(!candidate.engine||candidate.engine===engine)&&workload.features?.includes(candidate.feature));
+ if(!rejection||!failures?.length||failures.some(failure=>failure.engine!==engine||failure.workload!==workload.id||!['error','preflight_failed'].includes(failure.status)||!rejection.reason.test(failure.reason||'')||(failure.samples?.length||0)!==0))return null;
  return {engine,workload:workload.id,status:'unsupported',reason:`Source-bound Wasmtime ${engine==='wasmtime-winch'?'Winch':'Cranelift'} compiler rejects ${rejection.feature}`,sourceRevision:source.revision,artifactSha256:workload.sha256,contractSha256,rawFailures:failures.map(({phase,reason})=>({phase,reason}))};
 }
