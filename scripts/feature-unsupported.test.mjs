@@ -122,6 +122,30 @@ test('Wazero typed-function-reference runtime traps remain failures',()=>{
  assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures}),null);
 });
 
+test('Chasm 2.2.0 decoder gaps stay bounded by its declared proposal table',()=>{
+ const source={repository:'CharlieTap/chasm',revision:'2'.repeat(40)},engine='chasm';
+ for(const [feature,reason] of [
+  ['compact-imports','DecodeError(error=UnknownImportDescriptor(descriptor=127))'],
+  ['custom-page-sizes','DecodeError(error=UnknownLimitsFlag(encoded=9))'],
+  ['legacy-exceptions','DecodeError(error=UnknownInstruction(byte=6))'],
+  ['shared-everything-threads','DecodeError(error=InvalidCompositeType(encoded=101))'],
+  ['stack-switching','DecodeError(error=InvalidCompositeType(encoded=93))'],
+  ['memory-control','DecodeError(error=InvalidPrefixInstruction(prefix=252, opcode=18))'],
+  ['half-precision','DecodeError(error=UnknownInstruction(byte=32))'],
+  ['stringref','DecodeError(error=InvalidPrefixInstruction(prefix=251, opcode=169))'],
+  ['acquire-release-atomics','DecodeError(error=InvalidAlignment(alignment=34))'],
+ ]){
+  const w={id:`features/${feature}/case/1`,sha256:'3'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+  const capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+  const failures=['preflight_failed','error'].map(status=>({engine,workload:w.id,phase:'first-call',status,reason:`${status==='preflight_failed'?'sacrificial check check-0-0: ':''}error: module decode failed: ${reason}`}));
+  assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures})?.status,'unsupported',feature);
+ }
+ const declared={id:'features/gc/case/1',sha256:'3'.repeat(64),abi:'core',features:['gc'],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+ const capture={source,results:[{engine,workload:declared.id,artifactSha256:declared.sha256,contractSha256:workloadContract(declared),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+ const failures=[{engine,workload:declared.id,phase:'first-call',status:'error',reason:'error: module decode failed: DecodeError(error=InvalidCompositeType(encoded=101))'}];
+ assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:declared,capture,failures}),null);
+});
+
 test('V8 exact flagged proposal gaps are source and artifact bound',()=>{
  const source={repository:'nodejs/node',revision:'5'.repeat(40)},engine='v8';
  for(const [feature,reason] of [
