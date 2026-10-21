@@ -368,6 +368,32 @@ test('w2c2 classifies only exact gaps outside its pinned declared feature set',(
  assert.equal(classifyFeatureRuntimeRejection({source:{...source,repository:'other/w2c2'},engine,workload:w,capture:{...capture,source:{...source,repository:'other/w2c2'}},failures:[{engine,workload:w.id,phase:'first-call',status:'error',reason:'unsupported opcode unknown (0xFD)'}]}),null);
 });
 
+test('Wazy classifies exact post-3.0 gaps but preserves declared feature failures',()=>{
+ const source={repository:'samyfodil/wazy',revision:'1'.repeat(40)},engine='wazy';
+ for(const [feature,reason] of [
+  ['compact-imports','import[0] 0x7f[wasmbench.]: invalid byte: invalid byte for importdesc: 0x7f'],
+  ['custom-page-sizes','section memory: invalid byte for limits: 0x9 not in (0x00, 0x01)'],
+  ['legacy-exceptions','legacy exception handling instruction 0x6 not supported'],
+  ['shared-everything-threads','global[0]: invalid byte for mutability: 0x3 != 0x00 or 0x01'],
+  ['stack-switching','section type: read 1-th type: invalid byte: 0x5d != 0x60'],
+  ['memory-control','unknown misc opcode 0x12'],
+  ['half-precision','unknown SIMD instruction'],
+  ['stringref','invalid GC instruction: 0xa9'],
+  ['acquire-release-atomics','invalid memory alignment'],
+  ['custom-descriptors','invalid byte: 0x4d != 0x60'],
+  ['wide-arithmetic','unknown misc opcode 0x16'],
+ ]){
+  const w={id:`features/${feature}/case/1`,sha256:'1'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+  const capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+  const failures=[{engine,workload:w.id,phase:'first-call',status:'error',reason:`error: ${reason}`}];
+  assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures})?.status,'unsupported',feature);
+ }
+ const w={id:'features/typed-function-references/selected-target/1',sha256:'1'.repeat(64),abi:'core',features:['typed-function-references'],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+ const capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+ const failures=[{engine,workload:w.id,phase:'first-call',status:'error',reason:'error: wasm error: unreachable'}];
+ assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures}),null);
+});
+
 test('wasm2c classifies exact documented gaps but keeps declared custom pages repairable',()=>{
  const source={repository:'WebAssembly/wabt',revision:'f'.repeat(40)},engine='wasm2c-gcc';
  for(const [feature,reason] of [
