@@ -16658,7 +16658,8 @@
     "sha256": "f42fee7b4072747b2c4632c2d7b001b5fe81def13133529a97c6ef701a1c2c4a",
     "abi": "core",
     "features": [
-      "threads"
+      "threads",
+      "simd"
     ],
     "export": "benchmark",
     "args": [
@@ -16714,7 +16715,8 @@
     "sha256": "f42fee7b4072747b2c4632c2d7b001b5fe81def13133529a97c6ef701a1c2c4a",
     "abi": "core",
     "features": [
-      "threads"
+      "threads",
+      "simd"
     ],
     "export": "benchmark",
     "args": [
@@ -16770,7 +16772,8 @@
     "sha256": "f42fee7b4072747b2c4632c2d7b001b5fe81def13133529a97c6ef701a1c2c4a",
     "abi": "core",
     "features": [
-      "threads"
+      "threads",
+      "simd"
     ],
     "export": "benchmark",
     "args": [

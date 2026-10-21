@@ -12,3 +12,7 @@ test('validation recomputes the source oracle and preserves destructive reset ru
  assert.deepEqual(w.args,[0]);assert.deepEqual(w.oracle,{kind:'exact_u64',expected:[1]});
  assert.equal(w.reset,'fresh_instance_per_sample');assert.equal(w.provenance.validationOnly,true);
 });
+test('combined feature workloads declare every proposal used by their instructions',()=>{
+ const simdThreads=fixtures().find(f=>f.feature==='threads'&&f.name==='simd-load-store');
+ assert.deepEqual(simdThreads.features,['threads','simd']);
+});

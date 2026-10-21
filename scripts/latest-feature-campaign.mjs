@@ -24,6 +24,7 @@ import {applyWavmFeaturePolicy} from './lib/wavm-feature-policy.mjs';
 import {buildWavmSDK} from './lib/wavm-sdk.mjs';
 import {applyWasm3FeaturePolicy,wasm3FeatureCMakeFlags} from './lib/wasm3-feature-policy.mjs';
 import {terminalFeatureRuntimeFailure} from './lib/feature-terminal-failure.mjs';
+import {applyWasm2GoFeaturePolicy} from './lib/wasm2go-feature-policy.mjs';
 const [campaignArg,rootArg,inputsArg,bindingsArg]=process.argv.slice(2);
 if(!campaignArg||!rootArg||!inputsArg)throw Error('Usage: latest-feature-campaign CAMPAIGN FEATURE_ROOT INPUTS [BINDINGS_JSON]');
 const campaign=resolve(campaignArg),root=resolve(rootArg),inputs=resolve(inputsArg);
@@ -130,6 +131,15 @@ campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
    await runCommand('cargo',['build','--release','--locked','--no-default-features','--features','wasm3','--target-dir',target,'--manifest-path',join(harness,'adapters/native/Cargo.toml')],{cwd:harness,env:buildEnv,log:join(root,'wasm3-feature-policy-build.log')});
    await cp(join(target,'release/adapter-native'),join(harness,'bin/adapter-wasm3'));
   }catch(error){state.errors.push({engine,kind:'adapter-binding-migration',error:String(error)});state.completed++;await save();continue}finally{await release()}
+ }
+ if(repairEngines.includes(engine)&&engine==='wasm2go'){
+  const release=await acquireFeatureProjectLock();
+  try{
+   const buildEnv={...process.env,...template.env,...plan.env,...job.env,GOWORK:'off',GOFLAGS:'-buildvcs=false'};
+   for(const k of ['GOMAXPROCS','OMP_NUM_THREADS','RAYON_NUM_THREADS','CARGO_BUILD_JOBS','CMAKE_BUILD_PARALLEL_LEVEL','MAKEFLAGS','UV_THREADPOOL_SIZE'])delete buildEnv[k];
+   await applyWasm2GoFeaturePolicy(harness);
+   await runCommand('go',['build','-trimpath','-o',join(harness,'bin/adapter-wasm2go'),'./adapters/wasm2go'],{cwd:harness,env:buildEnv,log:join(root,'wasm2go-feature-policy-build.log')});
+  }catch(error){state.errors.push({engine,kind:'adapter-binding-migration',error:String(error),source:job.source});state.completed++;await save();continue}finally{await release()}
  }
  if(repairEngines.includes(engine)&&['wasmedge','wasmedge-jit'].includes(engine)){
   const release=await acquireFeatureProjectLock();
