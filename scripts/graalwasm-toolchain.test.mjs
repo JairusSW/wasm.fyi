@@ -7,24 +7,29 @@ import {readFileSync} from 'node:fs';
 const adapter=readFileSync(new URL('../adapters/qualification/GraalWasmAdapter.java',import.meta.url),'utf8');
 const required=['wasm.EvalReturnsInstance','wasm.UseUnsafeMemory','wasm.AsyncParsingBinarySize'];
 test('Graal feature options omit unavailable historical switches from the actual adapter',()=>{
- const result=configureGraalFeatureOptions(adapter,[...required,'wasm.Memory64','wasm.Threads','wasm.SIMD']);
+ const result=configureGraalFeatureOptions(adapter,[...required,'wasm.Memory64','wasm.Threads','wasm.SIMD'],[]);
  assert.deepEqual(result.enabled,['Memory64','Threads','SIMD']);
  assert.ok(result.unavailable.includes('TailCalls'));
  assert.equal(result.adapter.includes('"TailCalls"'),false);
  assert.ok(result.adapter.includes('.option("wasm.UseUnsafeMemory","true")'));
  assert.ok(result.adapter.includes('for(String option:FEATURE_OPTIONS)'));
+ assert.ok(result.adapter.includes('ENGINE_OPTIONS=Map.of()'));
 });
 test('Graal feature options preserve modern configuration and never enable unrequested switches',()=>{
  const features=['Memory64','MultiMemory','WideArithmetic','Threads','ExtendedConstExpressions','SIMD','RelaxedSIMD','Exceptions','LegacyExceptions','TypedFunctionReferences','GC','TailCalls'];
- const result=configureGraalFeatureOptions(adapter,[...required,...features.map(name=>'wasm.'+name),'wasm.UnrequestedFeature']);
+ const engine=['engine.BackgroundCompilation','engine.CompileImmediately','engine.MultiTier'];
+ const result=configureGraalFeatureOptions(adapter,[...required,...features.map(name=>'wasm.'+name),'wasm.UnrequestedFeature'],engine);
  assert.equal(result.adapter,adapter);
  assert.deepEqual(result.enabled,features);
  assert.deepEqual(result.unavailable,[]);
+ assert.deepEqual(result.engineOptions,{BackgroundCompilation:'false',CompileImmediately:'true',MultiTier:'false'});
 });
 test('Graal feature options keep required measurement controls strict',()=>{
  assert.throws(()=>configureGraalFeatureOptions(adapter,['wasm.SIMD']),/required measurement option/);
  assert.throws(()=>configureGraalFeatureOptions(adapter,[...required,42]),/Invalid Graal Wasm option descriptors/);
  assert.throws(()=>configureGraalFeatureOptions(adapter.replace('FEATURE_OPTIONS=','RENAMED='),required),/declaration changed/);
+ assert.throws(()=>configureGraalFeatureOptions(adapter,required,[42]),/Invalid Graal engine option descriptors/);
+ assert.throws(()=>configureGraalFeatureOptions(adapter.replace('ENGINE_OPTIONS=','RENAMED_ENGINE_OPTIONS='),required),/engine option declaration changed/);
 });
 
 test('Graal launcher avoids synchronous JVMCI bootstrap on Darwin while retaining Linux policy',()=>{

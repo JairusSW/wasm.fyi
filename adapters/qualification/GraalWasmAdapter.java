@@ -13,6 +13,7 @@ import java.util.*;
 public final class GraalWasmAdapter {
   // Selected from this SDK's option descriptors during SDK setup, before captures.
   static final List<String> FEATURE_OPTIONS=List.of("Memory64","MultiMemory","WideArithmetic","Threads","ExtendedConstExpressions","SIMD","RelaxedSIMD","Exceptions","LegacyExceptions","TypedFunctionReferences","GC","TailCalls");
+  static final Map<String,String> ENGINE_OPTIONS=Map.of("BackgroundCompilation","false","CompileImmediately","true","MultiTier","false");
   JSONObject preparation;byte[] bytes;
   Context context;WasmModule compiled;WasmInstance retained;WasmStore retainedStore;Value retainedExports;
   void clear(){if(context!=null)context.close();context=null;compiled=null;retained=null;retainedStore=null;retainedExports=null;preparation=null;bytes=null;}
@@ -36,7 +37,8 @@ public final class GraalWasmAdapter {
   }
   static long pointer(Value exports,WasmInstance instance,JSONObject o,String key){String name=o.optString(key,"");return name.isEmpty()?0:Long.parseUnsignedLong(call(exports,instance,name,new JSONArray()).getString(0));}
   void ensureContext(){if(context!=null)return;
-    Context.Builder builder=Context.newBuilder("wasm").allowExperimentalOptions(true).allowCreateThread(true).option("engine.BackgroundCompilation","false").option("engine.CompileImmediately","true").option("engine.MultiTier","false").option("wasm.EvalReturnsInstance","true").option("wasm.UseUnsafeMemory","true").option("wasm.AsyncParsingBinarySize",Integer.toString(Integer.MAX_VALUE));
+    Context.Builder builder=Context.newBuilder("wasm").allowExperimentalOptions(true).allowCreateThread(true).option("wasm.EvalReturnsInstance","true").option("wasm.UseUnsafeMemory","true").option("wasm.AsyncParsingBinarySize",Integer.toString(Integer.MAX_VALUE));
+      for(var option:ENGINE_OPTIONS.entrySet())builder.option("engine."+option.getKey(),option.getValue());
       for(String option:FEATURE_OPTIONS)builder.option("wasm."+option,"true");
     context=builder.build();context.initialize("wasm");
   }
@@ -78,7 +80,7 @@ public final class GraalWasmAdapter {
   }
   JSONObject handle(JSONObject request)throws Exception{
     switch(request.getString("method")){
-    case "describe":return new JSONObject().put("description",new JSONObject().put("runtime","graalwasm").put("runtime_version","25.4.4.1.1").put("build","wasm-fyi GraalWasm adapter v1; source 25.4.4.1.1; Java "+System.getProperty("java.runtime.version")).put("backend","truffle-graal").put("embedding","GraalVM Polyglot/Wasm SDK").put("abis",new JSONArray(List.of("core"))).put("capabilities",new JSONObject().put("can_compile_separately",true).put("can_instantiate_separately",true).put("can_run_vectors",true)).put("scenarios",new JSONArray(List.of("compile","instantiate","first-call","steady"))).put("effective_configuration",new JSONObject().put("java_vm",System.getProperty("java.vm.name")).put("java_version",System.getProperty("java.runtime.version")).put("tiering","eager synchronous highest-tier Truffle compilation; no guest warmup").put("vector_policy","ordered sequence; input writes and exact output checks outside summed export-call timers; one operation per sequence; no phase-barrier support").put("purpose","compile: SDK binary decode/validation; instantiate: fresh store instance and linking; Truffle native tiering occurs during recorded calls; cached module and stateless steady instance")));
+    case "describe":return new JSONObject().put("description",new JSONObject().put("runtime","graalwasm").put("runtime_version","25.4.4.1.1").put("build","wasm-fyi GraalWasm adapter v1; source 25.4.4.1.1; Java "+System.getProperty("java.runtime.version")).put("backend","truffle-graal").put("embedding","GraalVM Polyglot/Wasm SDK").put("abis",new JSONArray(List.of("core"))).put("capabilities",new JSONObject().put("can_compile_separately",true).put("can_instantiate_separately",true).put("can_run_vectors",true)).put("scenarios",new JSONArray(List.of("compile","instantiate","first-call","steady"))).put("effective_configuration",new JSONObject().put("java_vm",System.getProperty("java.vm.name")).put("java_version",System.getProperty("java.runtime.version")).put("tiering",ENGINE_OPTIONS.isEmpty()?"build-default Truffle tiering; no guest warmup":"available engine controls select eager synchronous highest-tier Truffle compilation; no guest warmup").put("vector_policy","ordered sequence; input writes and exact output checks outside summed export-call timers; one operation per sequence; no phase-barrier support").put("purpose","compile: SDK binary decode/validation; instantiate: fresh store instance and linking; Truffle native tiering occurs during recorded calls; cached module and stateless steady instance")));
     case "close":clear();return new JSONObject();
     case "prepare":{
       JSONObject p=request.getJSONObject("prepare"),w=p.getJSONObject("workload");clear();if(!List.of("timing","memory").contains(p.getString("profile"))||!w.getString("abi").equals("core"))throw new IllegalArgumentException("unsupported: core timing qualification required");
