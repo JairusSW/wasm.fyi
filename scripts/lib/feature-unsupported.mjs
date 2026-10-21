@@ -212,7 +212,7 @@ const wasm2cRejections=[
  {feature:'compact-imports',reason:/module uses compact imports, but feature not enabled/},
  {feature:'gc',reason:/(?:unexpected type form \(got 0x(?:50|5e|5f)\)|unexpected opcode: 0xfb)/},
  {feature:'typed-function-references',reason:/(?:unexpected opcode: 0x14|expected valid (?:local|select result) type|table elem type must be a reference type)/},
- {feature:'relaxed-simd',reason:/translation failed:\s*$/},
+ {feature:'relaxed-simd',reason:/translation failed: (?:unimplemented: \.\.\.\s*)?$/},
  {feature:'shared-everything-threads',reason:/(?:unexpected type form \(got 0x65\)|global mutability must be 0 or 1)/},
  {feature:'stack-switching',reason:/unexpected type form \(got 0x5d\)/},
  {feature:'memory-control',reason:/unexpected opcode: 0xfc 0x12/},
@@ -220,7 +220,7 @@ const wasm2cRejections=[
  {feature:'stringref',reason:/unexpected opcode: 0xfb/},
  {feature:'acquire-release-atomics',reason:/memory may not be shared: threads not allowed/},
  {feature:'custom-descriptors',reason:/unexpected type form \(got 0x4e\)/},
- {feature:'wide-arithmetic',reason:/translation failed:\s*$/},
+ {feature:'wide-arithmetic',reason:/translation failed: (?:unimplemented: \.\.\.\s*)?$/},
  {feature:'extended-name-section',reason:/unexpected type form \(got 0x5f\)/},
 ];
 const wasmedgeRejections=[

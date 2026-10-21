@@ -382,7 +382,7 @@ test('wasm2c classifies exact documented gaps but keeps declared custom pages re
   ['stringref','unexpected opcode: 0xfb'],
   ['acquire-release-atomics','memory may not be shared: threads not allowed'],
   ['custom-descriptors','unexpected type form (got 0x4e)'],
-  ['wide-arithmetic',''],
+  ['wide-arithmetic','unimplemented: ...'],
   ['extended-name-section','unexpected type form (got 0x5f)'],
  ]){
   const w={id:`features/${feature}/case/1`,sha256:'a'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
