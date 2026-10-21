@@ -44,3 +44,16 @@ test('Wasmtime sacrificial preflight and exact proposal encoding rejections rema
   assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures})?.status,'unsupported',feature);
  }
 });
+
+test('Wasmer compact-import validation rejection remains source and artifact bound',()=>{
+ const source={repository:'wasmerio/wasmer',revision:'f'.repeat(40)};
+ for(const engine of ['wasmer-singlepass','wasmer-cranelift','wasmer-llvm']){
+  const w={id:'features/compact-imports/module-group/1',sha256:'a'.repeat(64),abi:'core',features:['compact-imports'],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+  const contractSha256=workloadContract(w),capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256,phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+  const failures=['preflight_failed','error'].map(status=>({engine,workload:w.id,phase:'first-call',status,reason:`${status==='preflight_failed'?'sacrificial check check-0-0: ':''}error: compile: Validation error: invalid leading byte 0x7F with compact imports proposal disabled (at offset 0x1e)`}));
+  const evidence=classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures});
+  assert.equal(evidence?.status,'unsupported',engine);
+  const wrong=structuredClone(failures);wrong[1].reason='error: trap: unreachable';
+  assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures:wrong}),null);
+ }
+});
