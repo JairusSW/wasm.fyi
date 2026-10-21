@@ -3,6 +3,7 @@ import {rebuildWazeroSampling,assertWazeroInterruptsDisabled} from './lib/wazero
 import {applyWasmEdgeFeaturePolicy} from './lib/wasmedge-feature-policy.mjs';
 import {applyWasmerCraneliftAdapter} from './lib/wasmer-cranelift-adapter.mjs';
 import {featureRepairPhases} from './lib/feature-repair-phases.mjs';
+import {upgradeFeatureHostProfileController} from './lib/feature-host-profile-policy.mjs';
 // Latest-only, source-bound compatibility followed by feature performance.
 import {readFile,writeFile,mkdir,readdir,stat,cp} from 'node:fs/promises';
 import {join,resolve,basename,dirname} from 'node:path';
@@ -94,6 +95,7 @@ async function acquireFeatureProjectLock(){
 await save();
 const repairEngines=(process.env.WASMFYI_FEATURE_REPAIR_ENGINES||'').split(',').filter(Boolean);
 const repairWorkloads=JSON.parse(process.env.WASMFYI_FEATURE_REPAIR_WORKLOADS||'[]');
+const upgradedHostProfileControllers=new Set();
 campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
  if(selectedEngines.length&&!selectedEngines.includes(engine))continue;
  if(repairEngines.length&&!repairEngines.includes(engine))continue;
@@ -102,6 +104,15 @@ campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
  let {job,plan}=binding;
  try{if(engine==='v8'){for(const name of await readdir(join(campaign,'sdk-builds')).catch(()=>[])){const dir=join(campaign,'sdk-builds',name),receipt=await readJSON(join(dir,'v8-build.json')).catch(()=>null);if(receipt?.pin?.revision===pin.revision){const release=await acquireFeatureProjectLock();let upgraded;try{upgraded=await ensureV8BindingPolicy(campaign,dir,receipt,{reserved:true,env:{...template.env,...plan.env,...job.env},featureJspi:true})}finally{await release()};job={...job,controller:upgraded.controller,harness:upgraded.root,env:{...job.env,...upgraded.env},backend:'turboshaft'};break;}}}}catch(error){if(error.code==='FEATURE_PROJECT_OCCUPIED')throw error;state.errors.push({engine,kind:'adapter-binding-migration',error:String(error),source:job.source});await atomicJSON(join(root,'binding-repairs',engine+'.json'),{status:'repair-pending',source:job.source,error:String(error)});state.completed++;await save();continue;}
  const controller=job.controller||plan.controller,harness=job.harness||plan.harness;
+ if(!job.unavailableReason&&!upgradedHostProfileControllers.has(controller)){
+  const release=await acquireFeatureProjectLock();
+  try{
+   const buildEnv={...process.env,...template.env,...plan.env,...job.env,GOWORK:'off',GOFLAGS:'-buildvcs=false'};
+   for(const k of ['GOMAXPROCS','OMP_NUM_THREADS','RAYON_NUM_THREADS','CARGO_BUILD_JOBS','CMAKE_BUILD_PARALLEL_LEVEL','MAKEFLAGS','UV_THREADPOOL_SIZE'])delete buildEnv[k];
+   await upgradeFeatureHostProfileController({root:harness,controller,env:buildEnv});
+   upgradedHostProfileControllers.add(controller);
+  }catch(error){state.errors.push({engine,kind:'adapter-binding-migration',error:String(error),source:job.source});await atomicJSON(join(root,'binding-repairs',engine+'.json'),{status:'repair-pending',source:job.source,error:String(error)});state.completed++;await save();continue}finally{await release()}
+ }
  if(['wazero','wazero-interpreter'].includes(engine))assertWazeroInterruptsDisabled(await readFile(join(harness,'adapters/wazero/main.go'),'utf8'));
  if(repairEngines.includes(engine)&&['wazero','wazero-interpreter'].includes(engine)){
   const release=await acquireFeatureProjectLock();
