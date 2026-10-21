@@ -3,6 +3,18 @@ import { join } from 'node:path';
 import { featureIds } from '../../corpora/features/generator.mjs';
 import { digest, config } from './wasmbench.mjs';
 
+// These proposals are encoded as ignorable metadata. A successful compile or
+// execution therefore proves only that the module still behaves correctly; it
+// does not prove that the engine consumed the hint. Require the pinned adapter
+// configuration to declare the feature as enabled before publishing support.
+export const declarationRequiredFeatures = new Set(['branch-hinting','compilation-hints']);
+const declarationKeys={'branch-hinting':'BRANCH_HINTING','compilation-hints':'COMPILATION_HINTS'};
+export function runtimeDeclaresFeature(description,feature) {
+  if(description?.features?.includes(feature))return true;
+  if(description?.validator_features?.[feature.replaceAll('-','_')]===true)return true;
+  return description?.validator_features?.supported?.[declarationKeys[feature]]===true;
+}
+
 export function runtimeIdentity(runtime) {
   return digest(JSON.stringify({command:runtime.command,files:runtime.file_sha256,hostFiles:runtime.host_file_sha256,nativePolicy:runtime.native_dependency_policy,nativeDependencies:runtime.elf_startup_dependencies,description:runtime.description}));
 }
@@ -50,10 +62,12 @@ export async function featureSupport(directory, reports) {
         const errors=cases.filter(t=>!['ok','unsupported'].includes(t.status));
         const executed=cases.some(t=>t.status==='ok' && ['first-call','steady'].includes(t.scenario));
         const compiled=cases.some(t=>t.status==='ok' && t.scenario==='compile');
-        const status=errors.length?'failed':executed?'executed':compiled?'compile-only':'unsupported';
+        const required=(workload.features || []).filter(feature=>declarationRequiredFeatures.has(feature));
+        const missing=required.filter(feature=>!runtimeDeclaresFeature(runtime.description,feature));
+        const status=errors.length?'failed':missing.length?'unsupported':executed?'executed':compiled?'compile-only':'unsupported';
         configuration.cases.set(workload.id,{workload:workload.id,artifactSha256:workload.sha256,scope:workload.provenance?.scope,status,
           scenarios:[...new Set(cases.filter(t=>t.status==='ok').map(t=>t.scenario))],
-          reasons:[...new Set(cases.filter(t=>t.status!=='ok').map(t=>t.reason).filter(Boolean))],
+          reasons:[...new Set([...cases.filter(t=>t.status!=='ok').map(t=>t.reason).filter(Boolean),...missing.map(feature=>`Pinned runtime configuration does not declare ${feature} enabled`)])],
           report:report.id,collectedAt:report.created,evidence:report.evidence,evidenceSha256:report.evidenceSha256});
       }
     }

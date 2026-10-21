@@ -264,6 +264,29 @@ test('feature support excludes scalar baselines and distinguishes failures and c
   } finally {await rm(directory,{recursive:true,force:true});}
 });
 
+test('ignorable hint metadata requires an explicit pinned runtime declaration', async () => {
+  const { featureSupport } = await import('./lib/feature-support.mjs');
+  const directory = await mkdtemp(join(tmpdir(), 'wasm-fyi-feature-declaration-'));
+  try {
+    const workload={id:'features/branch-hinting/mostly-taken/64',sha256:'a'.repeat(64),features:['branch-hinting'],provenance:{scope:'execution'}};
+    await writeFile(join(directory,'raw.json'),JSON.stringify({trials:[{workload:workload.id,runtime_configuration:'r',scenario:'steady',status:'ok'}]}));
+    const report=features=>({id:'e',created:'2026-10-01',host:{hostname:'test',os:'test',arch:'test'},runtimes:[{id:'r',description:{features}}],workloads:[workload],evidence:'raw.json',evidenceSha256:'d'});
+    const absent=await featureSupport(directory,[report(['mvp'])]);
+    const absentCase=absent.hosts[0].configurations[0].features.find(f=>f.id==='branch-hinting').cases[0];
+    assert.equal(absentCase.status,'unsupported');
+    assert.match(absentCase.reasons[0],/does not declare branch-hinting enabled/);
+    const declared=await featureSupport(directory,[report(['mvp','branch-hinting'])]);
+    assert.equal(declared.hosts[0].configurations[0].features.find(f=>f.id==='branch-hinting').cases[0].status,'executed');
+    const structured=report(['mvp']);
+    structured.runtimes[0].description.validator_features={supported:{BRANCH_HINTING:true}};
+    const configured=await featureSupport(directory,[structured]);
+    assert.equal(configured.hosts[0].configurations[0].features.find(f=>f.id==='branch-hinting').cases[0].status,'executed');
+    structured.runtimes[0].description.validator_features={branch_hinting:true,supported:{}};
+    const dedicated=await featureSupport(directory,[structured]);
+    assert.equal(dedicated.hosts[0].configurations[0].features.find(f=>f.id==='branch-hinting').cases[0].status,'executed');
+  } finally {await rm(directory,{recursive:true,force:true});}
+});
+
 test('a failed launch withholds headline timing even when other launches succeeded',async()=>{
   const {withholdFailedCells}=await import('./lib/measurement-policy.mjs');
   const value={median_ns_per_operation:123,ci95_low:100,ci95_high:150,outcomes:{ok:2,error:1},latency_status:'timing_pass'};
