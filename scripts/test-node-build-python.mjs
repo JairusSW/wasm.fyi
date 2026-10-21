@@ -29,3 +29,7 @@ test('non-Linux Node builds preserve native tools when a WAVM SDK is also config
  const env={WASMFYI_WAVM_CXX_SDK:'/opt/homebrew/opt/llvm@20',CC:'/opt/homebrew/opt/llvm/bin/clang',CXX:'/opt/homebrew/opt/llvm/bin/clang++',LDFLAGS:'-Wl,-dead_strip'};
  for(const platform of ['darwin','win32'])assert.deepEqual(nodeBuildEnvironment(env,platform),env);
 });
+test('explicit system compiler policy does not reuse an unrelated incomplete WAVM SDK',()=>{
+ const env={WASMFYI_NODE_USE_SYSTEM_CXX:'1',WASMFYI_WAVM_CXX_SDK:'/cache/incomplete',CC:'/usr/bin/gcc',CXX:'/usr/bin/g++'};
+ assert.deepEqual(nodeBuildEnvironment(env,'linux'),env);
+});

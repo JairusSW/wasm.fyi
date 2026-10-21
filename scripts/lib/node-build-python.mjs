@@ -9,6 +9,7 @@ export async function nodeBuildPython(env,run,engine='Node',minimumMinor=10) {
 
 export function nodeBuildEnvironment(env,platform=process.platform) {
  if(platform!=='linux')return {...env};
+ if(env.WASMFYI_NODE_USE_SYSTEM_CXX==='1')return {...env};
  const prefix=env.WASMFYI_NODE_CXX_SDK||env.WASMFYI_WAVM_CXX_SDK;
  if(!prefix)return {...env};
  if(!prefix.startsWith('/')||/[\s"'`$]/.test(prefix))throw Error('Unsafe Node compiler SDK prefix');
