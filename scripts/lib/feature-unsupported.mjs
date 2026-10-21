@@ -24,7 +24,7 @@ const wasmtimeRejections=[
  {feature:'custom-descriptors',reason:/custom descriptors? (?:support is not enabled|proposal must be enabled)/},
  {feature:'half-precision',reason:/unknown 0xfd subopcode: 0x120/},
  {feature:'stringref',reason:/unknown 0xfb subopcode: 0xa9/},
- {feature:'acquire-release-atomics',reason:/atomic instructions must always specify maximum alignment/},
+ {feature:'acquire-release-atomics',reason:/(?:atomic instructions must always specify maximum alignment|threads must be enabled for shared memories)/},
  {feature:'reference-types',engine:'wasmtime-winch',reason:/Compilation error: Unsupported Wasm type/},
 ];
 
