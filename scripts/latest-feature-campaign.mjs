@@ -20,6 +20,7 @@ import {sharedDeviceSliceMs} from './lib/shared-device-slice.mjs';
 import {historyWorkloadFailure} from './lib/history-workload-failure.mjs';
 import {ensureV8BindingPolicy} from './lib/v8-binding-policy.mjs';
 import {historyIntegrationFailure} from './lib/history-completion-audit.mjs';
+import {classifyFeatureRuntimeRejection,classifyFeatureCapture} from './lib/feature-unsupported.mjs';
 const [campaignArg,rootArg,inputsArg,bindingsArg]=process.argv.slice(2);
 if(!campaignArg||!rootArg||!inputsArg)throw Error('Usage: latest-feature-campaign CAMPAIGN FEATURE_ROOT INPUTS [BINDINGS_JSON]');
 const campaign=resolve(campaignArg),root=resolve(rootArg),inputs=resolve(inputsArg);
@@ -186,6 +187,8 @@ campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
      for(const row of capture.results)if(row.latencyStatus==='ok')row.sampling={method:'feature-compatibility-v1',groupSize:1,maxSamples:1,warmup:0,retainedStart:0,stopReason:'fixed-sample'};
     }
     const failures=await readJSON(join(scratch,'failures.json')).catch(()=>[]);
+    const unsupported=classifyFeatureRuntimeRejection({source:job.source,engine,workload,capture,failures});
+    if(unsupported){capture=classifyFeatureCapture(capture,unsupported);await atomicJSON(join(root,'source-dispositions',key+'.json'),unsupported)}
     if(capture.results.some(row=>row.latencyStatus==='failed'))note={source:job.source,engine,workload:workload.id,kind:'failed-trials',failures,reason:failures.map(f=>f.reason).join('; '),phases:capture.results.filter(r=>r.latencyStatus==='failed').map(r=>r.phase)};
    }catch(error){({capture,note}=historyWorkloadFailure({workload,job,platform,error,signal}));capture.results=capture.results.filter(row=>scenarios.split(',').includes(row.phase));}
    finally{await release()}
