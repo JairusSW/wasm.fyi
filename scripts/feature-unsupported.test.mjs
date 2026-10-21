@@ -488,6 +488,33 @@ test('Endive classifies parser gaps while preserving README-declared features',(
  assert.equal(classify('endive-redline','multi-memory','incorrect result: scalar oracle mismatch'),null);
 });
 
+test('GraalWasm classifies only proposals absent from exact SDK descriptors',()=>{
+ const source={repository:'oracle/graal',revision:'7'.repeat(40)},engine='graalwasm';
+ const classify=(feature,reason)=>{
+  const w={id:`features/${feature}/case/1`,sha256:'7'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+  const capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+  const failures=['preflight_failed','error'].map(status=>({engine,workload:w.id,phase:'first-call',status,reason:`${status==='preflight_failed'?'sacrificial check check-0-0: ':''}error: ${reason}`}));
+  return classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures});
+ };
+ for(const [feature,reason] of [
+  ['compact-imports','Invalid import type identifier: 0x7f'],
+  ['custom-page-sizes','Invalid limits prefix (expected 0x00-0x07, got 0x09)'],
+  ['shared-everything-threads','Only function types are supported in the type section'],
+  ['stack-switching','Only function types are supported in the type section'],
+  ['memory-control','Unknown opcode: 0xFC 0x12'],
+  ['half-precision','Unknown opcode: 0xFD 0x120'],
+  ['stringref','Unknown opcode: 0xFB 0xA9'],
+  ['acquire-release-atomics','malformed memop flags: 34 should be < 32'],
+  ['custom-descriptors','Only function types are supported in the type section'],
+ ])assert.equal(classify(feature,reason)?.status,'unsupported',feature);
+ for(const [feature,reason] of [
+  ['memory64','Invalid limits prefix'],
+  ['threads','guest trap: unreachable'],
+  ['gc','Unknown opcode: 0xFB 0x00'],
+  ['tail-call','Unknown opcode: 0x12'],
+ ])assert.equal(classify(feature,reason),null,feature);
+});
+
 test('wasm2c classifies exact documented gaps but keeps declared custom pages repairable',()=>{
  const source={repository:'WebAssembly/wabt',revision:'f'.repeat(40)},engine='wasm2c-gcc';
  for(const [feature,reason] of [
