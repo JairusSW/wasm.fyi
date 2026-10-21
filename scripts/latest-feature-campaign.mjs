@@ -20,7 +20,7 @@ import {sharedDeviceSliceMs} from './lib/shared-device-slice.mjs';
 import {historyWorkloadFailure} from './lib/history-workload-failure.mjs';
 import {ensureV8BindingPolicy} from './lib/v8-binding-policy.mjs';
 import {historyIntegrationFailure} from './lib/history-completion-audit.mjs';
-import {classifyFeatureRuntimeRejection,classifyFeatureCapture} from './lib/feature-unsupported.mjs';
+import {classifyFeatureRuntimeRejection,classifyFeatureCapture,featureFailureRecords} from './lib/feature-unsupported.mjs';
 import {latestFeaturePins} from './lib/latest-feature-pins.mjs';
 import {v8FlagsForWorkload} from './lib/v8-feature-flags.mjs';
 import {applyWavmFeaturePolicy} from './lib/wavm-feature-policy.mjs';
@@ -52,7 +52,13 @@ try {
 const readJSON=async path=>JSON.parse(await readFile(path,'utf8'));
 const frozen=await readJSON(join(campaign,'source-plan.json'));
 const template=await readJSON(join(campaign,'collection-template.json'));
-const latest=latestFeaturePins(frozen.pins);
+// Latest feature qualification can intentionally advance ahead of the frozen
+// historical calendar. Keep that input explicit so history remains immutable.
+const featurePins=process.env.WASMFYI_FEATURE_PINS_FILE
+ ?(await readJSON(resolve(process.env.WASMFYI_FEATURE_PINS_FILE))).pins
+ :frozen.pins;
+if(!Array.isArray(featurePins))throw Error('Latest feature pins file must contain a pins array');
+const latest=latestFeaturePins(featurePins);
 const selectedEngines=(process.env.WASMFYI_FEATURE_ENGINES||'').split(',').filter(Boolean);
 for(const engine of selectedEngines)if(!latest.some(pin=>pin.configurations.includes(engine)))throw Error('Unknown latest feature engine '+engine);
 let bindings=bindingsArg?await readJSON(resolve(bindingsArg)):[];
@@ -205,7 +211,7 @@ campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
    // capture and failure record as the classification receipt.
    if(prior?.status==='completed'&&prior.failure&&prior.outcomes?.some(([,status])=>status==='failed')){
     const retained=await readJSON(join(root,'captures',prior.capture)).catch(()=>null);
-    const disposition=retained&&classifyFeatureRuntimeRejection({source:job.source,engine,workload,capture:retained,failures:prior.failure.failures});
+    const disposition=retained&&classifyFeatureRuntimeRejection({source:job.source,engine,workload,capture:retained,failures:featureFailureRecords(prior.failure,{engine,workload,capture:retained})});
     const classified=disposition&&classifyFeatureCapture(retained,disposition);
     if(classified){
      const classifiedName='feature-classified-'+engine+'-'+key+'.json';

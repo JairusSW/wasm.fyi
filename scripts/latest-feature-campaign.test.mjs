@@ -39,3 +39,23 @@ for(const [scope,phase] of [['execution','first-call'],['compile-only','compile'
   assert.equal(JSON.parse(await readFile(join(output,'status.json'),'utf8')).status,'completed');
  }finally{await rm(root,{recursive:true,force:true})}
 });
+
+test('explicit feature pins can advance beyond the frozen history plan',{skip:process.platform!=='linux'},async()=>{
+ const root=await mkdtemp(join(tmpdir(),'feature-pin-'));
+ try{
+  const inputs=join(root,'inputs'),output=join(root,'features'),harness=join(root,'harness');
+  await mkdir(inputs);await mkdir(harness);
+  for(const kind of ['compatibility','performance','compile','lifecycle'])await writeFile(join(inputs,kind+'.json'),'[]');
+  const engine='pin-fixture',oldRevision='a'.repeat(40),revision='b'.repeat(40),oldAnchor='2026-10-01T00:00:00.000Z',anchor='2026-10-20T00:00:00.000Z';
+  await writeFile(join(root,'source-plan.json'),JSON.stringify({pins:[{engine:'fixture',configurations:[engine],status:'planned',revision:oldRevision,targetWeek:oldAnchor}]}));
+  await writeFile(join(root,'collection-template.json'),JSON.stringify({env:{},platformSpecs:{cores:8,memoryBytes:1024}}));
+  const pins=join(root,'pins.json');
+  await writeFile(pins,JSON.stringify({pins:[{engine:'fixture',configurations:[engine],status:'planned',revision,targetWeek:anchor}]}));
+  const controller=join(root,'controller');await writeFile(controller,'#!/bin/sh\nexit 1\n',{mode:0o755});
+  const bindings=join(root,'bindings.json');
+  await writeFile(bindings,JSON.stringify([{engine,plan:{env:{}},job:{engine,harness,controller,source:{revision,asOf:anchor,repository:'fixture/fixture',ref:'main@bbbbbbbb',kind:'snapshot'},unavailableReason:'fixture unavailable'}}]));
+  await execute(process.execPath,[new URL('./latest-feature-campaign.mjs',import.meta.url).pathname,root,output,inputs,bindings],{env:{...process.env,WASMFYI_FEATURE_ENGINES:engine,WASMFYI_FEATURE_PINS_FILE:pins}});
+  const status=JSON.parse(await readFile(join(output,'status.json'),'utf8'));
+  assert.deepEqual(status.errors,[]);assert.equal(status.status,'completed');
+ }finally{await rm(root,{recursive:true,force:true})}
+});

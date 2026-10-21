@@ -7,7 +7,7 @@ test('oracle, profile, trap and unbound compiler failures remain failures',()=>{
  for(const reason of ['error: incorrect result','error: unsupported host profile','error: trap: unreachable','error: compile: unsupported instruction']){const v=make();v.trials[0].reason=reason;assert.equal(classifyFeatureCompilerRejection(v),null)}
  for(const mutate of [v=>v.source.revision='c'.repeat(40),v=>v.workload.sha256='d'.repeat(64),v=>v.workload.oracle.expected=['1'],v=>v.manifest.lock.runtime_configurations[0].description.backend='singlepass-jit',v=>v.manifest.lock.runtime_configurations[0].file_sha256['/sdk/libwasmer.so']='e'.repeat(64),v=>v.trials[0].samples=[{verified:true}],v=>v.trials[0].workload='other']){const v=make();mutate(v);assert.equal(classifyFeatureCompilerRejection(v),null)}
 });
-import {classifyFeatureCapture,classifyFeatureRuntimeRejection} from './lib/feature-unsupported.mjs';
+import {classifyFeatureCapture,classifyFeatureRuntimeRejection,featureFailureRecords} from './lib/feature-unsupported.mjs';
 test('capture annotation changes failed zero-sample status only, preserves resources',()=>{
  const evidence=classifyFeatureCompilerRejection(make());
  const capture={capturedAt:'2026-10-10T00:00:00Z',platform:{memoryBytes:123},results:[{engine:'wasmer-cranelift',workload:workload.id,artifactSha256:workload.sha256,contractSha256:evidence.contractSha256,phase:'compile',latencyStatus:'failed',timingSamples:0,samplesNs:[],memoryStatus:'not-measured',codeStatus:'not-measured'}]};
@@ -36,6 +36,15 @@ test('source-bound Wasmtime proposal rejection becomes unsupported',()=>{
  const evidence=classifyFeatureRuntimeRejection({source,engine:'wasmtime',workload:featureWorkload,capture,failures});
  assert.equal(evidence.status,'unsupported');assert.equal(classifyFeatureCapture(capture,evidence).results[0].latencyStatus,'unsupported');
  for(const reason of ['error: trap: unreachable','error: incorrect result','error: unsupported instruction'])assert.equal(classifyFeatureRuntimeRejection({source,engine:'wasmtime',workload:featureWorkload,capture,failures:[{...failures[0],reason}]}),null);
+});
+
+test('capture errors retain exact diagnostics for source-bound classification',()=>{
+ const engine='wasmtime',featureWorkload={id:'features/half-precision/lane-add/1',sha256:'c'.repeat(64),abi:'core',features:['half-precision'],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}},source={repository:'bytecodealliance/wasmtime',revision:'d'.repeat(40)};
+ const capture={source,results:[{engine,workload:featureWorkload.id,artifactSha256:featureWorkload.sha256,contractSha256:workloadContract(featureWorkload),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+ const note={kind:'capture-error',reason:'Error: independent validation: Error: unknown 0xfd subopcode: 0x120 (at offset 0x3c)'};
+ const failures=featureFailureRecords(note,{engine,workload:featureWorkload,capture});
+ assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:featureWorkload,capture,failures})?.status,'unsupported');
+ assert.deepEqual(featureFailureRecords({kind:'capture-error',reason:''},{engine,workload:featureWorkload,capture}),[]);
 });
 
 test('Wasmtime sacrificial preflight and exact proposal encoding rejections remain source bound',()=>{
@@ -359,4 +368,17 @@ test('wasm2c classifies exact documented gaps but keeps declared custom pages re
  const capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'compile',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
  const failures=[{engine,workload:w.id,phase:'compile',status:'error',reason:'error: translation failed: custom page sizes not allowed'}];
  assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures}),null);
+});
+
+test('Wago classifies only proposal encodings absent from its beta feature registry',()=>{
+ const source={repository:'wago-org/wago',revision:'a'.repeat(40)};
+ const runtimeCase=({source,engine,feature,reason})=>{
+  const w={id:`features/${feature}/case/1`,sha256:'b'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+  const capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+  return classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures:[{engine,workload:w.id,phase:'first-call',status:'error',reason}]});
+ };
+ const unsupported=runtimeCase({source,engine:'wago',feature:'custom-page-sizes',reason:'error: decode: wasm decode: invalid limits at offset 23 in section 5 [22,31)'});
+ assert.equal(unsupported?.status,'unsupported');
+ assert.equal(runtimeCase({source,engine:'wago',feature:'threads',reason:'error: validate: wasm validate: invalid alignment in function 0'}),null);
+ assert.equal(runtimeCase({source,engine:'wago',feature:'custom-page-sizes',reason:'guest returned wrong result'}),null);
 });
