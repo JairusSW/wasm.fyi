@@ -34,6 +34,7 @@ const wasmerRejections=[
  {feature:'stringref',reason:/unknown 0xfb subopcode: 0xa9/},
  {feature:'acquire-release-atomics',reason:/atomic instructions must always specify maximum alignment/},
  {feature:'memory-control',reason:/memory control support is not enabled/},
+ {feature:'shared-everything-threads',reason:/shared (?:composite types|globals) require the shared-everything-threads proposal/},
 ];
 
 // Wasmtime's validator knows encodings for some proposals which the compiler
