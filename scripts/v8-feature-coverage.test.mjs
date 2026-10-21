@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {withV8FeatureCoverage} from './lib/v8-feature-coverage.mjs';
 const source=`const featureProbes={};
-const validatorFeatures = {supported:Object.fromEntries(Object.entries(featureProbes).map(([key,value])=>[key,WebAssembly.validate(Buffer.from(value,'base64'))]))};
+const validatorFeatures = {namespace:'test',supported:Object.fromEntries(Object.entries(featureProbes).map(([key,value])=>[key,WebAssembly.validate(Buffer.from(value,'base64'))]))};
 const capabilities={'can_host_profile_threads-defined-v1':true,};
 function prepare(prep){const imports={};
  if(!['identity-v1','threads-defined-v1','wasi-preview1-readonly-v1'].includes(prep.workload.host_profile))throw Error('unsupported host profile');
@@ -19,6 +19,8 @@ test('admits both thread callback profiles through the ordinary typed identity i
 test('adds actual decoder probes and remains idempotent',()=>{
  const updated=withV8FeatureCoverage(source,probes);
  assert(updated.includes('Object.assign(featureProbes,'));
+ assert(updated.includes("branch_hinting:process.execArgv.includes('--experimental-wasm-branch-hinting')"));
+ assert(updated.includes("compilation_hints:process.execArgv.includes('--experimental-wasm-compilation-hints')"));
  assert(updated.includes('can_host_profile_threads-opaque-identity-v1'));
  assert.equal(withV8FeatureCoverage(updated,probes),updated);
  assert.throws(()=>withV8FeatureCoverage(source,{}));
