@@ -25,6 +25,7 @@ import {latestFeaturePins} from './lib/latest-feature-pins.mjs';
 import {v8FlagsForWorkload} from './lib/v8-feature-flags.mjs';
 import {applyWavmFeaturePolicy} from './lib/wavm-feature-policy.mjs';
 import {buildWavmSDK} from './lib/wavm-sdk.mjs';
+import {applyWasm3FeaturePolicy,wasm3FeatureCMakeFlags} from './lib/wasm3-feature-policy.mjs';
 import {terminalFeatureRuntimeFailure} from './lib/feature-terminal-failure.mjs';
 const [campaignArg,rootArg,inputsArg,bindingsArg]=process.argv.slice(2);
 if(!campaignArg||!rootArg||!inputsArg)throw Error('Usage: latest-feature-campaign CAMPAIGN FEATURE_ROOT INPUTS [BINDINGS_JSON]');
@@ -128,6 +129,24 @@ campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
    const buildEnv={...process.env,...template.env,...plan.env,...job.env,GOWORK:'off',GOFLAGS:'-buildvcs=false'};
    for(const k of ['GOMAXPROCS','OMP_NUM_THREADS','RAYON_NUM_THREADS','CARGO_BUILD_JOBS','CMAKE_BUILD_PARALLEL_LEVEL','MAKEFLAGS','UV_THREADPOOL_SIZE'])delete buildEnv[k];
    await rebuildWazeroSampling({root:harness,env:buildEnv,run:(program,args,options)=>runCommand(program,args,{...options,log:join(root,'wazero-lifecycle-build.log')})});
+  }catch(error){state.errors.push({engine,kind:'adapter-binding-migration',error:String(error)});state.completed++;await save();continue}finally{await release()}
+ }
+ if(repairEngines.includes(engine)&&engine==='wasm3'){
+  const release=await acquireFeatureProjectLock();
+  try{
+   const buildEnv={...process.env,...template.env,...plan.env,...job.env,GOWORK:'off',GOFLAGS:'-buildvcs=false'};
+   for(const k of ['GOMAXPROCS','OMP_NUM_THREADS','RAYON_NUM_THREADS','CARGO_BUILD_JOBS','CMAKE_BUILD_PARALLEL_LEVEL','MAKEFLAGS','UV_THREADPOOL_SIZE'])delete buildEnv[k];
+   const sdk=buildEnv.WASMBENCH_WASM3_SDK;if(!sdk)throw Error('wasm3 SDK path is missing from the frozen build binding');
+   const buildDirectory=dirname(dirname(harness)),source=join(buildDirectory,'sources/wasm3'),sdkTarget=join(buildDirectory,'wasm3-build');
+   await runCommand('cmake',['-S',source,'-B',sdkTarget,'-DCMAKE_BUILD_TYPE=Release','-DBUILD_WASI=none',...wasm3FeatureCMakeFlags],{cwd:harness,env:buildEnv,log:join(root,'wasm3-feature-policy-build.log')});
+   await runCommand('cmake',['--build',sdkTarget,'--target','m3','--parallel'],{cwd:harness,env:buildEnv,log:join(root,'wasm3-feature-policy-build.log')});
+   await mkdir(join(sdk,'include'),{recursive:true});await mkdir(join(sdk,'lib'),{recursive:true});
+   for(const name of await readdir(join(source,'source')))if(name.endsWith('.h'))await cp(join(source,'source',name),join(sdk,'include',name));
+   await cp(join(sdkTarget,'source/libm3.a'),join(sdk,'lib/libm3.a'));
+   await applyWasm3FeaturePolicy(harness);
+   const target=join(harness,'adapters/native/target/wasm3');
+   await runCommand('cargo',['build','--release','--locked','--no-default-features','--features','wasm3','--target-dir',target,'--manifest-path',join(harness,'adapters/native/Cargo.toml')],{cwd:harness,env:buildEnv,log:join(root,'wasm3-feature-policy-build.log')});
+   await cp(join(target,'release/adapter-native'),join(harness,'bin/adapter-wasm3'));
   }catch(error){state.errors.push({engine,kind:'adapter-binding-migration',error:String(error)});state.completed++;await save();continue}finally{await release()}
  }
  if(repairEngines.includes(engine)&&['wasmedge','wasmedge-jit'].includes(engine)){
