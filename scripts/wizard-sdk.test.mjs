@@ -39,5 +39,5 @@ test('Wizard source targets expose portable interpretation and reject unavailabl
  assert.throws(()=>wizardArchitectureUnavailable('wizard-other'),/Unknown/);
 });
 test('Wizard opts into every extension exposed by the pinned CLI',()=>{
- assert.deepEqual(wizardFeatureFlags,['--ext:custom-page-sizes','--ext:stack-switching','--ext:threads','--ext:wide-arithmetic']);
+ assert.deepEqual(wizardFeatureFlags,['--ext:custom-page-sizes','--ext:legacy-eh','--ext:stack-switching','--ext:threads','--ext:wide-arithmetic']);
 });

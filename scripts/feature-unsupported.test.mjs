@@ -148,6 +148,28 @@ test('Chasm 2.2.0 decoder gaps stay bounded by its declared proposal table',()=>
  assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:declared,capture,failures}),null);
 });
 
+test('Wizard V3 classifies only proposals absent from its pinned support table',()=>{
+ const source={repository:'titzer/wizard-engine',revision:'4'.repeat(40)},engine='wizard-v3-int';
+ for(const [feature,reason] of [
+  ['compact-imports','invalid import kind 0x7F'],
+  ['shared-everything-threads','expected type decl code, got 101'],
+  ['memory-control','unsupported opcode 0x00 0xFF (<invalid>)'],
+  ['half-precision','unsupported opcode 0x00 0xFF (<invalid>)'],
+  ['stringref','unsupported opcode 0x00 0xFF (<invalid>)'],
+  ['acquire-release-atomics','expected max alignment 4, got 34'],
+  ['custom-descriptors','expected type decl code, got 77'],
+ ]){
+  const w={id:`features/${feature}/case/1`,sha256:'4'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+  const capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+  const failures=[{engine,workload:w.id,phase:'first-call',status:'error',reason:`error: ${reason}`}];
+  assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures})?.status,'unsupported',feature);
+ }
+ const w={id:'features/legacy-exceptions/case/1',sha256:'4'.repeat(64),abi:'core',features:['legacy-exceptions'],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+ const capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+ const failures=[{engine,workload:w.id,phase:'first-call',status:'error',reason:'error: opcode 06 (try) requires "legacy-eh" extension'}];
+ assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures}),null);
+});
+
 test('V8 exact flagged proposal gaps are source and artifact bound',()=>{
  const source={repository:'nodejs/node',revision:'5'.repeat(40)},engine='v8';
  for(const [feature,reason] of [

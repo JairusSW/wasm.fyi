@@ -290,6 +290,19 @@ const chasmRejections=[
  {feature:'acquire-release-atomics',reason:/InvalidAlignment\(alignment=34\)/},
  {feature:'custom-descriptors',reason:/InvalidCompositeType\(encoded=77\)/},
 ];
+const wizardRejections=[
+ // The pinned Wizard support matrix declares Wasm 3.0 plus stack switching,
+ // custom page sizes, wide arithmetic, legacy EH and threads for v3-int.
+ // Keep every newer absent proposal tied to the portable interpreter's exact
+ // loader diagnostic so declared-extension regressions remain failures.
+ {feature:'compact-imports',reason:/invalid import kind 0x7[EF]/},
+ {feature:'shared-everything-threads',reason:/expected type decl code, got 101/},
+ {feature:'memory-control',reason:/unsupported opcode 0x00 0xFF \(<invalid>\)/},
+ {feature:'half-precision',reason:/unsupported opcode 0x00 0xFF \(<invalid>\)/},
+ {feature:'stringref',reason:/unsupported opcode 0x00 0xFF \(<invalid>\)/},
+ {feature:'acquire-release-atomics',reason:/expected max alignment 4, got 34/},
+ {feature:'custom-descriptors',reason:/expected type decl code, got 77/},
+];
 
 // Wasmtime's validator knows encodings for some proposals which the compiler
 // deliberately does not implement. Bind that distinction to the exact source,
@@ -313,14 +326,15 @@ export function classifyFeatureRuntimeRejection({source,engine,workload,capture,
  const wasmedge=source?.repository==='WasmEdge/WasmEdge'&&['wasmedge','wasmedge-jit'].includes(engine);
  const chicory=source?.repository==='dylibso/chicory'&&['chicory','chicory-jit'].includes(engine);
  const chasm=source?.repository==='CharlieTap/chasm'&&engine==='chasm';
- if((!wasmtime&&!wago&&!wasmer&&!wazero&&!v8&&!wavm&&!spiderMonkey&&!jsc&&!wasmi&&!wamr&&!wasm3&&!w2c2&&!wasm2c&&!wazy&&!wasmedge&&!chicory&&!chasm)||!/^[a-f0-9]{40}$/.test(source.revision||'')||!workload?.id?.startsWith('features/')||!sha(workload.sha256)||!capture?.results?.length)return null;
+ const wizard=source?.repository==='titzer/wizard-engine'&&engine==='wizard-v3-int';
+ if((!wasmtime&&!wago&&!wasmer&&!wazero&&!v8&&!wavm&&!spiderMonkey&&!jsc&&!wasmi&&!wamr&&!wasm3&&!w2c2&&!wasm2c&&!wazy&&!wasmedge&&!chicory&&!chasm&&!wizard)||!/^[a-f0-9]{40}$/.test(source.revision||'')||!workload?.id?.startsWith('features/')||!sha(workload.sha256)||!capture?.results?.length)return null;
  if(capture.source?.revision!==source.revision||capture.source?.repository!==source.repository)return null;
  const contractSha256=workloadContract(workload),failed=capture.results.filter(row=>row.latencyStatus==='failed');
  if(failed.length!==capture.results.length||failed.some(row=>row.engine!==engine||row.workload!==workload.id||row.artifactSha256!==workload.sha256||row.contractSha256!==contractSha256||(row.timingSamples||0)!==0||(row.samplesNs?.length||0)!==0))return null;
- const rejection=(wasmtime?wasmtimeRejections:wago?wagoRejections:wasmer?wasmerRejections:wazero?wazeroRejections:v8?v8Rejections:wavm?wavmRejections:spiderMonkey?spiderMonkeyRejections:jsc?jscRejections:wasmi?wasmiRejections:wamr?wamrRejections:wasm3?wasm3Rejections:w2c2?w2c2Rejections:wasm2c?wasm2cRejections:wazy?wazyRejections:wasmedge?wasmedgeRejections:chicory?chicoryRejections:chasmRejections).find(candidate=>(!candidate.engine||candidate.engine===engine)&&workload.features?.includes(candidate.feature));
+ const rejection=(wasmtime?wasmtimeRejections:wago?wagoRejections:wasmer?wasmerRejections:wazero?wazeroRejections:v8?v8Rejections:wavm?wavmRejections:spiderMonkey?spiderMonkeyRejections:jsc?jscRejections:wasmi?wasmiRejections:wamr?wamrRejections:wasm3?wasm3Rejections:w2c2?w2c2Rejections:wasm2c?wasm2cRejections:wazy?wazyRejections:wasmedge?wasmedgeRejections:chicory?chicoryRejections:chasm?chasmRejections:wizardRejections).find(candidate=>(!candidate.engine||candidate.engine===engine)&&workload.features?.includes(candidate.feature));
  if(!rejection||!failures?.length||failures.some(failure=>failure.engine!==engine||failure.workload!==workload.id||(!['error','preflight_failed'].includes(failure.status)&&!(failure.status==='unsupported'&&failure.reason==='scenario not advertised'))||(failure.samples?.length||0)!==0))return null;
  const sourceBound=failures.filter(failure=>rejection.reason.test(failure.reason||''));
  if(!sourceBound.length||failures.some(failure=>!sourceBound.includes(failure)&&failure.reason!=='scenario not advertised'))return null;
- const runtime=wasmtime?`Wasmtime ${engine==='wasmtime-winch'?'Winch':'Cranelift'}`:wago?'Wago Railshot':wasmer?`Wasmer ${engine.slice('wasmer-'.length)}`:wazero?`Wazero ${engine==='wazero'?'compiler':'interpreter'}`:v8?'V8 Turboshaft':wavm?'WAVM LLVM':spiderMonkey?'SpiderMonkey Ion':jsc?'JSC OMG':wasmi?'Wasmi':wasm3?'wasm3':w2c2?'w2c2 GCC':wasm2c?'wasm2c GCC':wazy?'Wazy':wasmedge?`WasmEdge ${engine==='wasmedge-jit'?'JIT':'interpreter'}`:chicory?`Chicory ${engine==='chicory-jit'?'compiler':'interpreter'}`:chasm?'Chasm':`WAMR ${engine==='wamr-llvm-jit'?'LLVM JIT':engine==='wamr-fast-jit'?'Fast JIT':'interpreter'}`;
+ const runtime=wasmtime?`Wasmtime ${engine==='wasmtime-winch'?'Winch':'Cranelift'}`:wago?'Wago Railshot':wasmer?`Wasmer ${engine.slice('wasmer-'.length)}`:wazero?`Wazero ${engine==='wazero'?'compiler':'interpreter'}`:v8?'V8 Turboshaft':wavm?'WAVM LLVM':spiderMonkey?'SpiderMonkey Ion':jsc?'JSC OMG':wasmi?'Wasmi':wasm3?'wasm3':w2c2?'w2c2 GCC':wasm2c?'wasm2c GCC':wazy?'Wazy':wasmedge?`WasmEdge ${engine==='wasmedge-jit'?'JIT':'interpreter'}`:chicory?`Chicory ${engine==='chicory-jit'?'compiler':'interpreter'}`:chasm?'Chasm':wizard?'Wizard V3 interpreter':`WAMR ${engine==='wamr-llvm-jit'?'LLVM JIT':engine==='wamr-fast-jit'?'Fast JIT':'interpreter'}`;
  return {engine,workload:workload.id,status:'unsupported',reason:`Source-bound ${runtime} compiler rejects ${rejection.feature}`,sourceRevision:source.revision,artifactSha256:workload.sha256,contractSha256,rawFailures:failures.map(({phase,reason})=>({phase,reason}))};
 }

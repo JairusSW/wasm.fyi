@@ -10,7 +10,7 @@ export const wizardVirgilRevision='7cf038fc13a5474836bec8b14c7a3e796fd07fa5';
 // These extensions are implemented by the pinned Wizard engine but remain
 // opt-in at its CLI. Keep the list beside command construction so SDK and
 // qualification executions cannot silently test different feature sets.
-export const wizardFeatureFlags=['--ext:custom-page-sizes','--ext:stack-switching','--ext:threads','--ext:wide-arithmetic'];
+export const wizardFeatureFlags=['--ext:custom-page-sizes','--ext:legacy-eh','--ext:stack-switching','--ext:threads','--ext:wide-arithmetic'];
 export async function ensureWizardCompiler({virgil,external=false,run}) {
  const initialized=await stat(join(virgil,'.git')).catch(()=>null);
  if(!initialized){
