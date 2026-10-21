@@ -41,6 +41,11 @@ test('cached Wasm is verified and reused without fetching the blob',async t=>{
  const source=await fixture(t);await writeFile(join(source,'redline/cranelift_bridge.wasm'),wasm);let count=0;
  await ensureEndiveBridge({source,fetchImpl:async url=>{count++;assert.ok(url.includes('/manifests/'));return respond(manifest);}});assert.equal(count,1);
 });
+test('locked manifest and Wasm caches support an offline rebuild',async t=>{
+ const source=await fixture(t);await writeFile(join(source,'redline/cranelift_bridge.manifest.json'),manifest);await writeFile(join(source,'redline/cranelift_bridge.wasm'),wasm);
+ const result=await ensureEndiveBridge({source,fetchImpl:async()=>{throw Error('must not fetch verified caches');}});
+ assert.equal(result.manifestSha256,locked);assert.equal(result.artifactSha256,digest(wasm));
+});
 test('manifest substitution fails before writing an artifact',async t=>{
  const source=await fixture(t);await assert.rejects(ensureEndiveBridge({source,fetchImpl:async()=>respond('{}')}),/manifest digest/);assert.deepEqual(await readdir(join(source,'redline')),['wkg.lock']);
 });

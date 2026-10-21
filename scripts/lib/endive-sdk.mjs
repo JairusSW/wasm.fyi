@@ -31,17 +31,22 @@ export async function endiveJavaEnvironment(env,run){
  await run(java,['-version'],{env,signal:AbortSignal.timeout(10000)});
  return java;
 }
+export function reusableEndiveSDK(configuration,names){
+ if(configuration==='endive-redline')return false;
+ return ['wasm','runtime','compiler'].every(module=>names.some(name=>name.startsWith(module+'-')&&name.endsWith('.jar')));
+}
 export async function buildEndiveSDK({source,root,version,configuration,env,run}){
  const java=await endiveJavaEnvironment(env,run);
  const modules=['wasm','runtime','compiler'];
  const mavenProfile=configuration==='endive-redline'?['-Predline']:[];
  if(configuration==='endive-redline')modules.push('redline/compiler','redline/runner-jffi');
  for(const module of modules)if(!await stat(join(source,module,'pom.xml')).catch(()=>null))throw Error('Pinned Endive source lacks required SDK module: '+module);
+ const sdk=join(root,'endive-sdk'),classes=join(root,'endive-classes');await mkdir(sdk,{recursive:true});await mkdir(classes,{recursive:true});
+ const cached=reusableEndiveSDK(configuration,await readdir(sdk));
  // Resolve the source's immutable lock, since historical SNAPSHOT tags move.
  // Skip Inlay's tag lookup only after verifying both the manifest and Wasm.
  const bridge=configuration==='endive-redline'?await ensureEndiveBridge({source,env,run}):null;
- await run('bash',[join(source,'mvnw'),'-B',...mavenProfile,'-T',String(env.WASMFYI_BUILD_JOBS||availableParallelism()),'-pl',modules.join(','),'-am','-Dmaven.test.skip=true','-Dcheckstyle.skip=true','-Dspotless.skip=true','-Dmdep.analyze.skip=true',...(bridge?['-Dinlay.skip=true']:[]),'install'],{cwd:source});
- const sdk=join(root,'endive-sdk'),classes=join(root,'endive-classes');await mkdir(sdk,{recursive:true});await mkdir(classes,{recursive:true});
+ if(!cached)await run('bash',[join(source,'mvnw'),'-B',...mavenProfile,'-T',String(env.WASMFYI_BUILD_JOBS||availableParallelism()),'-pl',modules.join(','),'-am','-Dmaven.test.skip=true','-Dcheckstyle.skip=true','-Dspotless.skip=true','-Dmdep.analyze.skip=true',...(bridge?['-Dinlay.skip=true']:[]),'install'],{cwd:source});
  const jars=[];
  const collect=async(directory)=>{
   for(const item of await readdir(directory,{withFileTypes:true})){
@@ -53,8 +58,9 @@ export async function buildEndiveSDK({source,root,version,configuration,env,run}
    }
   }
  };
- await collect(source);
- for(const module of ['compiler',...(configuration==='endive-redline'?['redline/runner-jffi']:[])])await run('bash',[join(source,'mvnw'),'-B',...mavenProfile,'-pl',module,'dependency:copy-dependencies','-DincludeScope=runtime','-DoutputDirectory='+sdk],{cwd:source});
+ if(!cached){await collect(source);
+  for(const module of ['compiler',...(configuration==='endive-redline'?['redline/runner-jffi']:[])])await run('bash',[join(source,'mvnw'),'-B',...mavenProfile,'-pl',module,'dependency:copy-dependencies','-DincludeScope=runtime','-DoutputDirectory='+sdk],{cwd:source});
+ }
  const jffi=configuration==='endive-redline'?await ensureEndiveJFFI({source,sdk,run}):null;
  const json=join(sdk,'json-20250517.jar');
  if(!await stat(json).catch(()=>null))await run('curl',['--fail','--location','--retry','3','--max-time','180','https://repo.maven.apache.org/maven2/org/json/json/20250517/json-20250517.jar','-o',json]);

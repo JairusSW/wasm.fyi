@@ -3,7 +3,15 @@ import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,writeFile,rm,realpath} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {buildEndiveSDK} from './lib/endive-sdk.mjs';
+import {buildEndiveSDK,reusableEndiveSDK} from './lib/endive-sdk.mjs';
+
+test('completed revision-specific core SDKs resume without rebuilding Maven',()=>{
+ const jars=['wasm-999-SNAPSHOT.jar','runtime-999-SNAPSHOT.jar','compiler-999-SNAPSHOT.jar'];
+ assert.equal(reusableEndiveSDK('endive-interpreter',jars),true);
+ assert.equal(reusableEndiveSDK('endive-jit',jars),true);
+ assert.equal(reusableEndiveSDK('endive-redline',jars),false);
+ assert.equal(reusableEndiveSDK('endive-jit',jars.slice(1)),false);
+});
 
 for(const configuration of ['endive-redline','endive-jit'])test(configuration+' selects its Maven reactor without running a compiler',async t=>{
  const root=await realpath(await mkdtemp(join(tmpdir(),'endive-reactor-')));t.after(()=>rm(root,{recursive:true,force:true}));

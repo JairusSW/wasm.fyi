@@ -61,16 +61,23 @@ export async function ensureEndiveBridge({source,env={},fetchImpl=fetch,run}){
  };
  const manifestUrl='https://ghcr.io/v2/'+repository+'/manifests/'+pin.manifestDigest;
  const headers={Accept:'application/vnd.oci.image.manifest.v1+json'};
- let response=await fetchImpl(manifestUrl,{headers,signal:timeout()});
- if(response.status===401){
-  await response.body?.cancel();
-  const url='https://ghcr.io/token?'+new URLSearchParams({service:'ghcr.io',scope:'repository:'+repository+':pull'});
-  const auth=JSON.parse((await boundedBody(await fetchImpl(url,{signal:timeout()}),65536)).toString());
-  const token=auth.token||auth.access_token;if(typeof token!=='string'||!token||/[\r\n]/.test(token))throw Error('Pinned Endive bridge anonymous pull token is invalid');
-  headers.Authorization='Bearer '+token;
-  response=await fetchImpl(manifestUrl,{headers,signal:timeout()});
+ const manifestCache=join(source,'redline/cranelift_bridge.manifest.json');
+ let body=await readFile(manifestCache).catch(error=>{if(error.code==='ENOENT')return null;throw error;});
+ let downloadedManifest=false;
+ if(!body||'sha256:'+digest(body)!==pin.manifestDigest){
+  let response=await fetchImpl(manifestUrl,{headers,signal:timeout()});
+  if(response.status===401){
+   await response.body?.cancel();
+   const url='https://ghcr.io/token?'+new URLSearchParams({service:'ghcr.io',scope:'repository:'+repository+':pull'});
+   const auth=JSON.parse((await boundedBody(await fetchImpl(url,{signal:timeout()}),65536)).toString());
+   const token=auth.token||auth.access_token;if(typeof token!=='string'||!token||/[\r\n]/.test(token))throw Error('Pinned Endive bridge anonymous pull token is invalid');
+   headers.Authorization='Bearer '+token;
+   response=await fetchImpl(manifestUrl,{headers,signal:timeout()});
+  }
+  body=await boundedBody(response,1024*1024);
+  if('sha256:'+digest(body)!==pin.manifestDigest)throw Error('Pinned Endive bridge manifest digest differs');
+  downloadedManifest=true;
  }
- const body=await boundedBody(response,1024*1024);
  if('sha256:'+digest(body)!==pin.manifestDigest)throw Error('Pinned Endive bridge manifest digest differs');
  const manifest=JSON.parse(body.toString());
  if(manifest.schemaVersion!==2||manifest.mediaType!=='application/vnd.oci.image.manifest.v1+json'||manifest.layers?.length!==1)throw Error('Pinned Endive bridge must contain one OCI Wasm layer');
@@ -85,5 +92,6 @@ export async function ensureEndiveBridge({source,env={},fetchImpl=fetch,run}){
   const temporary=artifact+'.download-'+process.pid;
   try{await writeFile(temporary,wasm);await rename(temporary,artifact);}finally{await rm(temporary,{force:true});}
  }else if(!wasm.subarray(0,8).equals(Buffer.from([0,97,115,109,1,0,0,0])))throw Error('Pinned Endive bridge is not a core Wasm module');
+ if(downloadedManifest){const temporary=manifestCache+'.download-'+process.pid;try{await writeFile(temporary,body);await rename(temporary,manifestCache);}finally{await rm(temporary,{force:true});}}
  return {registry:'ghcr.io',repository,version:pin.version,manifestSha256:pin.manifestDigest.slice(7),artifactSha256,artifactBytes:wasm.length,artifact};
 }

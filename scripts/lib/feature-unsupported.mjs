@@ -303,6 +303,47 @@ const wizardRejections=[
  {feature:'acquire-release-atomics',reason:/expected max alignment 4, got 34/},
  {feature:'custom-descriptors',reason:/expected type decl code, got 77/},
 ];
+const zwasmRejections=[
+ // The pinned source declares full Core Wasm 3.0. These proposals are outside
+ // that support statement and are rejected by its front-end validator. The C
+ // API deliberately exposes only an accepted/rejected verdict, so keep each
+ // generic rejection feature-, source-, artifact-, and contract-bound here.
+ {feature:'compact-imports',reason:/Zwasm C API failure: compile/},
+ {feature:'legacy-exceptions',reason:/Zwasm C API failure: compile/},
+ {feature:'shared-everything-threads',reason:/Zwasm C API failure: compile/},
+ {feature:'stack-switching',reason:/Zwasm C API failure: compile/},
+ {feature:'memory-control',reason:/Zwasm C API failure: compile/},
+ {feature:'half-precision',reason:/Zwasm C API failure: compile/},
+ {feature:'stringref',reason:/Zwasm C API failure: compile/},
+ {feature:'acquire-release-atomics',reason:/Zwasm C API failure: compile/},
+ {feature:'custom-descriptors',reason:/Zwasm C API failure: compile/},
+ // Its pinned README explicitly limits SIMD execution to the JIT backend.
+ {engine:'zwasm-interpreter',feature:'simd',reason:/guest trap: unreachable/},
+ {engine:'zwasm-interpreter',feature:'relaxed-simd',reason:/guest trap: unreachable/},
+];
+const endiveRejections=[
+ // The pinned README declares SIMD, tail calls, exception handling, threads,
+ // extended constants, GC and multi-memory. Keep failures in those features
+ // visible; these newer proposal encodings are absent from its parser tables.
+ // Redline has its own source support contract: its spec-test manifest omits
+ // GC, EH and typed function references, and explicitly excludes every SIMD
+ // WAST. Bind only the concrete compiler gaps observed from that backend.
+ {engine:'endive-redline',feature:'simd',reason:/Opcode not yet supported: (?:I32x4_SPLAT|I8x16_SPLAT|F32x4_SPLAT)/},
+ {engine:'endive-redline',feature:'gc',reason:/Opcode not yet supported: (?:STRUCT_NEW|ARRAY_NEW|ARRAY_GET|ARRAY_LEN|REF_I31)/},
+ {engine:'endive-redline',feature:'exceptions',reason:/Opcode not yet supported: TRY_TABLE/},
+ {engine:'endive-redline',feature:'typed-function-references',reason:/Opcode not yet supported: (?:CALL_REF|REF_AS_NON_NULL)/},
+ {feature:'compact-imports',reason:/malformed import kind/},
+ {feature:'custom-page-sizes',reason:/invalid memory limit: 9/},
+ {feature:'legacy-exceptions',reason:/illegal opcode, op value 06/},
+ {feature:'shared-everything-threads',reason:/(?:Invalid composite type\. Form 0x65|malformed mutability 3)/},
+ {feature:'stack-switching',reason:/Invalid composite type\. Form 0x5D/},
+ {feature:'memory-control',reason:/illegal opcode, op value FC12/},
+ {feature:'half-precision',reason:/(?:unknown memory 0|labels are not empty)/},
+ {feature:'stringref',reason:/illegal opcode, op value FBA9/},
+ {feature:'acquire-release-atomics',reason:/invalid memory alignment, current: 34, expected: 2/},
+ {feature:'custom-descriptors',reason:/Invalid composite type\. Form 0x4D/},
+ {feature:'wide-arithmetic',reason:/illegal opcode, op value FC1[3-6]/},
+];
 
 // Wasmtime's validator knows encodings for some proposals which the compiler
 // deliberately does not implement. Bind that distinction to the exact source,
@@ -327,14 +368,16 @@ export function classifyFeatureRuntimeRejection({source,engine,workload,capture,
  const chicory=source?.repository==='dylibso/chicory'&&['chicory','chicory-jit'].includes(engine);
  const chasm=source?.repository==='CharlieTap/chasm'&&engine==='chasm';
  const wizard=source?.repository==='titzer/wizard-engine'&&engine==='wizard-v3-int';
- if((!wasmtime&&!wago&&!wasmer&&!wazero&&!v8&&!wavm&&!spiderMonkey&&!jsc&&!wasmi&&!wamr&&!wasm3&&!w2c2&&!wasm2c&&!wazy&&!wasmedge&&!chicory&&!chasm&&!wizard)||!/^[a-f0-9]{40}$/.test(source.revision||'')||!workload?.id?.startsWith('features/')||!sha(workload.sha256)||!capture?.results?.length)return null;
+ const zwasm=source?.repository==='zwasm/zwasm'&&['zwasm-interpreter','zwasm-jit'].includes(engine);
+ const endive=source?.repository==='bytecodealliance/endive'&&['endive-interpreter','endive-jit','endive-redline'].includes(engine);
+ if((!wasmtime&&!wago&&!wasmer&&!wazero&&!v8&&!wavm&&!spiderMonkey&&!jsc&&!wasmi&&!wamr&&!wasm3&&!w2c2&&!wasm2c&&!wazy&&!wasmedge&&!chicory&&!chasm&&!wizard&&!zwasm&&!endive)||!/^[a-f0-9]{40}$/.test(source.revision||'')||!workload?.id?.startsWith('features/')||!sha(workload.sha256)||!capture?.results?.length)return null;
  if(capture.source?.revision!==source.revision||capture.source?.repository!==source.repository)return null;
  const contractSha256=workloadContract(workload),failed=capture.results.filter(row=>row.latencyStatus==='failed');
  if(failed.length!==capture.results.length||failed.some(row=>row.engine!==engine||row.workload!==workload.id||row.artifactSha256!==workload.sha256||row.contractSha256!==contractSha256||(row.timingSamples||0)!==0||(row.samplesNs?.length||0)!==0))return null;
- const rejection=(wasmtime?wasmtimeRejections:wago?wagoRejections:wasmer?wasmerRejections:wazero?wazeroRejections:v8?v8Rejections:wavm?wavmRejections:spiderMonkey?spiderMonkeyRejections:jsc?jscRejections:wasmi?wasmiRejections:wamr?wamrRejections:wasm3?wasm3Rejections:w2c2?w2c2Rejections:wasm2c?wasm2cRejections:wazy?wazyRejections:wasmedge?wasmedgeRejections:chicory?chicoryRejections:chasm?chasmRejections:wizardRejections).find(candidate=>(!candidate.engine||candidate.engine===engine)&&workload.features?.includes(candidate.feature));
+ const rejection=(wasmtime?wasmtimeRejections:wago?wagoRejections:wasmer?wasmerRejections:wazero?wazeroRejections:v8?v8Rejections:wavm?wavmRejections:spiderMonkey?spiderMonkeyRejections:jsc?jscRejections:wasmi?wasmiRejections:wamr?wamrRejections:wasm3?wasm3Rejections:w2c2?w2c2Rejections:wasm2c?wasm2cRejections:wazy?wazyRejections:wasmedge?wasmedgeRejections:chicory?chicoryRejections:chasm?chasmRejections:wizard?wizardRejections:zwasm?zwasmRejections:endiveRejections).find(candidate=>(!candidate.engine||candidate.engine===engine)&&workload.features?.includes(candidate.feature));
  if(!rejection||!failures?.length||failures.some(failure=>failure.engine!==engine||failure.workload!==workload.id||(!['error','preflight_failed'].includes(failure.status)&&!(failure.status==='unsupported'&&failure.reason==='scenario not advertised'))||(failure.samples?.length||0)!==0))return null;
  const sourceBound=failures.filter(failure=>rejection.reason.test(failure.reason||''));
  if(!sourceBound.length||failures.some(failure=>!sourceBound.includes(failure)&&failure.reason!=='scenario not advertised'))return null;
- const runtime=wasmtime?`Wasmtime ${engine==='wasmtime-winch'?'Winch':'Cranelift'}`:wago?'Wago Railshot':wasmer?`Wasmer ${engine.slice('wasmer-'.length)}`:wazero?`Wazero ${engine==='wazero'?'compiler':'interpreter'}`:v8?'V8 Turboshaft':wavm?'WAVM LLVM':spiderMonkey?'SpiderMonkey Ion':jsc?'JSC OMG':wasmi?'Wasmi':wasm3?'wasm3':w2c2?'w2c2 GCC':wasm2c?'wasm2c GCC':wazy?'Wazy':wasmedge?`WasmEdge ${engine==='wasmedge-jit'?'JIT':'interpreter'}`:chicory?`Chicory ${engine==='chicory-jit'?'compiler':'interpreter'}`:chasm?'Chasm':wizard?'Wizard V3 interpreter':`WAMR ${engine==='wamr-llvm-jit'?'LLVM JIT':engine==='wamr-fast-jit'?'Fast JIT':'interpreter'}`;
+ const runtime=wasmtime?`Wasmtime ${engine==='wasmtime-winch'?'Winch':'Cranelift'}`:wago?'Wago Railshot':wasmer?`Wasmer ${engine.slice('wasmer-'.length)}`:wazero?`Wazero ${engine==='wazero'?'compiler':'interpreter'}`:v8?'V8 Turboshaft':wavm?'WAVM LLVM':spiderMonkey?'SpiderMonkey Ion':jsc?'JSC OMG':wasmi?'Wasmi':wasm3?'wasm3':w2c2?'w2c2 GCC':wasm2c?'wasm2c GCC':wazy?'Wazy':wasmedge?`WasmEdge ${engine==='wasmedge-jit'?'JIT':'interpreter'}`:chicory?`Chicory ${engine==='chicory-jit'?'compiler':'interpreter'}`:chasm?'Chasm':wizard?'Wizard V3 interpreter':zwasm?`Zwasm ${engine==='zwasm-jit'?'JIT':'interpreter'}`:endive?`Endive ${engine.slice('endive-'.length)}`:`WAMR ${engine==='wamr-llvm-jit'?'LLVM JIT':engine==='wamr-fast-jit'?'Fast JIT':'interpreter'}`;
  return {engine,workload:workload.id,status:'unsupported',reason:`Source-bound ${runtime} compiler rejects ${rejection.feature}`,sourceRevision:source.revision,artifactSha256:workload.sha256,contractSha256,rawFailures:failures.map(({phase,reason})=>({phase,reason}))};
 }

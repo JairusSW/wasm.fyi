@@ -419,6 +419,75 @@ test('Wazy classifies exact post-3.0 gaps but preserves declared feature failure
  assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures}),null);
 });
 
+test('Zwasm classifies source-declared gaps and interpreter-only SIMD absence',()=>{
+ const source={repository:'zwasm/zwasm',revision:'5'.repeat(40)};
+ for(const [engine,feature,reason] of [
+  ['zwasm-interpreter','compact-imports','error: Zwasm C API failure: compile'],
+  ['zwasm-jit','custom-descriptors','sacrificial check check-0-0: error: Zwasm C API failure: compile'],
+  ['zwasm-interpreter','simd','error: guest trap: unreachable'],
+  ['zwasm-interpreter','relaxed-simd','sacrificial check check-0-0: error: guest trap: unreachable'],
+ ]){
+  const w={id:`features/${feature}/case/1`,sha256:'5'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+  const capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+  const failures=[{engine,workload:w.id,phase:'first-call',status:'error',reason}];
+  assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures})?.status,'unsupported',`${engine} ${feature}`);
+ }
+ for(const [engine,feature,reason] of [
+  ['zwasm-jit','simd','error: guest trap: unreachable'],
+  ['zwasm-interpreter','typed-function-references','error: Zwasm C API failure: compile'],
+  ['zwasm-interpreter','gc','error: resource budget exceeded'],
+  ['zwasm-interpreter','multi-value','error: guest trap: unreachable'],
+ ]){
+  const w={id:`features/${feature}/case/1`,sha256:'5'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+  const capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+  const failures=[{engine,workload:w.id,phase:'first-call',status:'error',reason}];
+  assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures}),null,`${engine} ${feature}`);
+ }
+});
+
+test('Endive classifies parser gaps while preserving README-declared features',()=>{
+ const source={repository:'bytecodealliance/endive',revision:'6'.repeat(40)};
+ const classify=(engine,feature,reason)=>{
+  const w={id:`features/${feature}/case/1`,sha256:'6'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+  const capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+  return classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures:[{engine,workload:w.id,phase:'first-call',status:'error',reason:`error: ${reason}`}]});
+ };
+ for(const [feature,reason] of [
+  ['compact-imports','malformed import kind'],
+  ['custom-page-sizes','integer too large, invalid memory limit: 9'],
+  ['legacy-exceptions','illegal opcode, op value 06'],
+  ['shared-everything-threads','Invalid composite type. Form 0x65 was not 0x60'],
+  ['stack-switching','Invalid composite type. Form 0x5D was not 0x60'],
+  ['memory-control','illegal opcode, op value FC12'],
+  ['half-precision','unknown memory 0'],
+  ['half-precision','labels are not empty'],
+  ['stringref','illegal opcode, op value FBA9'],
+  ['acquire-release-atomics','invalid memory alignment, current: 34, expected: 2'],
+  ['custom-descriptors','Invalid composite type. Form 0x4D was not 0x60'],
+  ['wide-arithmetic','illegal opcode, op value FC16'],
+ ])for(const engine of ['endive-interpreter','endive-jit','endive-redline'])assert.equal(classify(engine,feature,reason)?.status,'unsupported',`${engine} ${feature}`);
+ for(const [feature,reason] of [
+  ['simd','incorrect result: scalar oracle mismatch'],
+  ['tail-call','labels are not empty'],
+  ['exceptions','guest trap: unreachable'],
+  ['threads','guest trap: unreachable'],
+  ['extended-const','incorrect result: scalar oracle mismatch'],
+  ['gc','guest trap: unreachable'],
+  ['multi-memory','unknown memory 0'],
+  ['multi-value','labels are not empty'],
+ ])assert.equal(classify('endive-interpreter',feature,reason),null,feature);
+ for(const [feature,reason] of [
+  ['simd','Failed to compile function 0: Opcode not yet supported: I32x4_SPLAT'],
+  ['gc','Failed to compile function 0: Opcode not yet supported: STRUCT_NEW'],
+  ['exceptions','Failed to compile function 0: Opcode not yet supported: TRY_TABLE'],
+  ['typed-function-references','Failed to compile function 2: Opcode not yet supported: CALL_REF'],
+ ]){
+  assert.equal(classify('endive-redline',feature,reason)?.status,'unsupported',`redline ${feature}`);
+  assert.equal(classify('endive-jit',feature,reason),null,`jit ${feature}`);
+ }
+ assert.equal(classify('endive-redline','multi-memory','incorrect result: scalar oracle mismatch'),null);
+});
+
 test('wasm2c classifies exact documented gaps but keeps declared custom pages repairable',()=>{
  const source={repository:'WebAssembly/wabt',revision:'f'.repeat(40)},engine='wasm2c-gcc';
  for(const [feature,reason] of [
