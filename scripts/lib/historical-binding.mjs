@@ -5,6 +5,7 @@ import {join,dirname} from 'node:path';
 import {command,digest,exists} from './wasmbench.mjs';
 import {releaseSource,assertReleasedSource,releaseCache,githubRelease} from './release-policy.mjs';
 import {configureWasmerLLVM} from './llvm-toolchain.mjs';
+import {wasmerNativeSizeGetter} from './wasmer-native-size.mjs';
 import {buildWamrSDK} from './wamr-sdk.mjs';
 import {assertWazeroInterruptsDisabled} from './wazero-sampling.mjs';
 import {buildWasmEdgeSDK} from './wasmedge-sdk.mjs';
@@ -294,7 +295,7 @@ export async function buildHistoricalBinding({root,pin,configuration,invoke,env}
     const api=await readFile(join(measurementSource,'lib/api/src/backend/sys/entities/module.rs'),'utf8');
     const artifact=await readFile(join(measurementSource,'lib/compiler/src/engine/artifact.rs'),'utf8');
     const cModule=join(measurementSource,'lib/c-api/src/wasm_c_api/module.rs');
-    const getter=await readFile(join(root,'adapters/native/wasmer-native-size.rs'),'utf8');
+    const getter=await wasmerNativeSizeGetter(root);
     let measurementPatchSha256=null;
     if(api.includes('pub fn sys_artifact')&&artifact.includes('pub fn finished_function_extents')){
       const current=await readFile(cModule,'utf8');if(!current.includes('fn wasmbench_module_native_function_size'))await writeFile(cModule,current+getter);

@@ -46,6 +46,7 @@ import {startupLaunchCommand} from './lib/sdk-startup.mjs';
 import {requireBuildCapacity,withBuildReserve} from './lib/build-capacity.mjs';
 import {createSDKBuildBudget} from './lib/sdk-build-budget.mjs';
 import {applyWasmiProposals} from './lib/wasmi-proposals.mjs';
+import {wasmerNativeSizeGetter} from './lib/wasmer-native-size.mjs';
 const [directoryArg, engine, baseArg] = process.argv.slice(2);
 const directory=resolve(directoryArg), base=resolve(baseArg), root=join(directory,'harness',engine);
 const pin=JSON.parse(await readFile(join(directory,'pins.json'))).pins.find(p=>p.engine===engine);
@@ -164,7 +165,7 @@ if(engine==='wago') {
  const api=await readFile(join(source,'lib/api/src/backend/sys/entities/module.rs'),'utf8');
  const artifact=await readFile(join(source,'lib/compiler/src/engine/artifact.rs'),'utf8');
  const cModule=join(source,'lib/c-api/src/wasm_c_api/module.rs');
- const getter=await readFile(join(root,'adapters/native/wasmer-native-size.rs'),'utf8');
+ const getter=await wasmerNativeSizeGetter(root);
  let measurementPatchSha256=null;
  if(api.includes('pub fn sys_artifact')&&artifact.includes('pub fn finished_function_extents')){
   const current=await readFile(cModule,'utf8');if(!current.includes('fn wasmbench_module_native_function_size'))await writeFile(cModule,current+getter);
