@@ -1,5 +1,5 @@
 import {createHash} from 'node:crypto';
-import {readFile,writeFile,copyFile,rename,stat} from 'node:fs/promises';
+import {readFile,writeFile,copyFile,rename,stat,readdir} from 'node:fs/promises';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
@@ -11,6 +11,21 @@ export function disableWazeroInterrupts(source) {
  source=source.replaceAll('.WithCloseOnContextDone(true)','');
  source=source.replaceAll('"context_termination": "enabled"','"context_termination": "disabled"').replaceAll('"context_termination":"enabled"','"context_termination":"disabled"');
  assertWazeroInterruptsDisabled(source);return source;
+}
+
+// Restore files that existed in the frozen harness while retaining sampling
+// support files introduced by the current collector.
+export async function restoreHistoricalWazeroSources(root,base,version,{includeTests=true}={}) {
+ const directory=join(root,'adapters/wazero'),frozen=join(base,'adapters/wazero');
+ const restored=[];
+ for(const entry of await readdir(directory)) {
+  if(!entry.endsWith('.go')||(!includeTests&&entry.endsWith('_test.go')))continue;
+  const source=join(frozen,entry);
+  if(!await stat(source).catch(()=>null))continue;
+  await writeFile(join(directory,entry),(await readFile(source,'utf8')).replaceAll('1.12.0',version));
+  restored.push(entry);
+ }
+ return restored;
 }
 
 export async function applyWazeroSampling(root) {

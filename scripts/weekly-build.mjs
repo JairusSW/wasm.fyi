@@ -1,4 +1,4 @@
-import {applyWazeroSampling} from './lib/wazero-sampling.mjs';
+import {applyWazeroSampling,restoreHistoricalWazeroSources} from './lib/wazero-sampling.mjs';
 import {applyWazeroFeaturePolicy} from './lib/wazero-feature-policy.mjs';
 import {applyW2c2Bridge} from './lib/w2c2-bridge.mjs';
 import {configureNodeCompilerCache,summarizeCompilerCacheStats} from './lib/node-compiler-cache.mjs';
@@ -108,9 +108,7 @@ if(engine==='wago') {
  if(!download.Version || !download.Sum || download.Origin?.Hash!==pin.revision)throw Error('Wazero module receipt differs from source pin');
  const mod=join(root,'weekly-wazero.mod');await cp(join(root,'go.mod'),mod);await cp(join(root,'go.sum'),mod.replace(/\.mod$/,'.sum'));
  await run('go',['mod','edit','-modfile='+mod,'-require=github.com/tetratelabs/wazero@'+download.Version]);
- for(const entry of await (await import('node:fs/promises')).readdir(join(root,'adapters/wazero')))if(entry.endsWith('.go')&&(env.WASMFYI_HISTORY_FAST!=='1'||!entry.endsWith('_test.go'))){
-  const file=join(root,'adapters/wazero',entry);await writeFile(file,(await readFile(join(base,'adapters/wazero',entry),'utf8')).replaceAll('1.12.0',download.Version.replace(/^v/,'')));
- }
+ await restoreHistoricalWazeroSources(root,base,download.Version.replace(/^v/,''),{includeTests:env.WASMFYI_HISTORY_FAST!=='1'});
  await applyWazeroSampling(root);
 	 provenance.featurePolicy=await applyWazeroFeaturePolicy(root);
  await run('go',['build','-mod=mod','-modfile='+mod,'-trimpath','-o',join(root,'bin/adapter-wazero'),'./adapters/wazero']);
