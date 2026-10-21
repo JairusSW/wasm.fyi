@@ -68,6 +68,7 @@ const wazeroRejections=[
  {feature:'shared-everything-threads',reason:/invalid byte for mutability: 0x3 != 0x00 or 0x01/},
 ];
 const v8Rejections=[
+ {feature:'stack-switching',reason:/Invalid opcode 0xe[0-3]/},
  {feature:'custom-page-sizes',reason:/invalid memory limits flags 0x9/},
  {feature:'acquire-release-atomics',reason:/(?:invalid alignment; expected maximum alignment is 2|shared memories are not supported with --experimental-wasm-shared yet)/},
  {feature:'shared-everything-threads',reason:/(?:invalid atomic opcode: 0xfe[0-9a-f]+|shared memories are not supported with --experimental-wasm-shared yet)/},

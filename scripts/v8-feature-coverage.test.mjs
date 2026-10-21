@@ -17,14 +17,21 @@ test('admits both thread callback profiles through the ordinary typed identity i
  assert.throws(()=>prepare({workload:{host_profile:'unknown'}}));
 });
 test('adds actual decoder probes and remains idempotent',()=>{
- const updated=withV8FeatureCoverage(source,probes);
+ const updated=withV8FeatureCoverage(source,probes,{stackSwitching:true});
  assert(updated.includes('Object.assign(featureProbes,'));
  assert(updated.includes("branch_hinting:process.execArgv.includes('--experimental-wasm-branch-hinting')"));
  assert(updated.includes("compilation_hints:process.execArgv.includes('--experimental-wasm-compilation-hints')"));
+ assert(updated.includes('supported.STACK_SWITCHING=true'));
  assert(updated.includes('can_host_profile_threads-opaque-identity-v1'));
- assert.equal(withV8FeatureCoverage(updated,probes),updated);
+ assert.equal(withV8FeatureCoverage(updated,probes,{stackSwitching:true}),updated);
  assert.throws(()=>withV8FeatureCoverage(source,{}));
  assert.throws(()=>withV8FeatureCoverage('',probes));
+});
+test('upgrades retained v1 coverage when the exact runtime exposes wasmfx',()=>{
+ const current=withV8FeatureCoverage(source,probes).replace('feature coverage v2','feature coverage v1');
+ const updated=withV8FeatureCoverage(current,probes,{stackSwitching:true});
+ assert(updated.includes('feature coverage v2'));
+ assert(updated.includes('supported.STACK_SWITCHING=true'));
 });
 test('extends a harness that already admits typed thread callbacks',()=>{
  const current=source

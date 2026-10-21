@@ -125,6 +125,8 @@ test('Wazero typed-function-reference runtime traps remain failures',()=>{
 test('V8 exact flagged proposal gaps are source and artifact bound',()=>{
  const source={repository:'nodejs/node',revision:'5'.repeat(40)},engine='v8';
  for(const [feature,reason] of [
+  ['stack-switching','WebAssembly.Module(): Compiling function #1 failed: Invalid opcode 0xe0 @+72'],
+  ['stack-switching','WebAssembly.Module(): Compiling function #1 failed: Invalid opcode 0xe2 @+73'],
   ['custom-page-sizes','WebAssembly.Module(): invalid memory limits flags 0x9 @+23'],
   ['acquire-release-atomics','WebAssembly.Module(): invalid alignment; expected maximum alignment is 2, actual alignment is 34 @+82'],
   ['shared-everything-threads','WebAssembly.Module(): Compiling function #0 failed: invalid atomic opcode: 0xfe5f @+74'],

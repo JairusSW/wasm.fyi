@@ -15,8 +15,8 @@ export function withV8Jspi(source){
  source=source.replace("      if(prep.workload.oracle.kind==='expected_trap')return runTraps(r);","      if(prep.workload.oracle.kind==='expected_trap')return runTraps(r);\n      if(prep.workload.host_profile==='jspi-v1')return runJspi(r);");
  return source.replace("prep.profile !== 'timing' || r.phase_barriers", "!['timing','code'].includes(prep.profile) || r.phase_barriers");
 }
-export async function applyV8Jspi(root){
+export async function applyV8Jspi(root,coverage={}){
  const file=join(root,'adapters/v8/adapter.mjs'),before=await readFile(file,'utf8'),after=withV8FreshSampling(withV8Jspi(before));
  if(before!==after){await copyFile(file,file+'.before-feature-jspi');await writeFile(file,after)}
- await applyV8FeatureCoverage(root);
+ await applyV8FeatureCoverage(root,coverage);
 }
