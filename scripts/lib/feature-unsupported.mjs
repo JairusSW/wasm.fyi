@@ -38,7 +38,7 @@ const wasmerRejections=[
  {feature:'legacy-exceptions',reason:/legacy_exceptions feature required for try instruction/},
 ];
 const wazeroRejections=[
- {feature:'wide-arithmetic',reason:/unknown misc opcode 0x13/},
+ {feature:'wide-arithmetic',reason:/unknown misc opcode 0x1[3-6]/},
  {feature:'compact-imports',reason:/invalid byte for importdesc: 0x7[ef]/i},
  {feature:'custom-page-sizes',reason:/invalid byte for limits: 0x9 not in \(0x00, 0x01, 0x02, 0x03\)/},
  {feature:'memory-control',reason:/unknown misc opcode 0x12/},

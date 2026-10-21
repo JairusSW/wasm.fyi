@@ -73,6 +73,9 @@ test('Wazero proposal encodings absent from its public feature API are source bo
  const source={repository:'tetratelabs/wazero',revision:'1'.repeat(40)};
  for(const engine of ['wazero','wazero-interpreter'])for(const [feature,reason] of [
   ['wide-arithmetic','unknown misc opcode 0x13'],
+  ['wide-arithmetic','unknown misc opcode 0x14'],
+  ['wide-arithmetic','unknown misc opcode 0x15'],
+  ['wide-arithmetic','unknown misc opcode 0x16'],
   ['compact-imports','import[0] 0x7f[wasmbench.]: invalid byte: invalid byte for importdesc: 0x7f'],
   ['custom-page-sizes','section memory: invalid byte for limits: 0x9 not in (0x00, 0x01, 0x02, 0x03)'],
   ['memory-control','unknown misc opcode 0x12'],
