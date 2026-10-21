@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {wasmedgeProposalPolicy} from './lib/wasmedge-feature-policy.mjs';
+import {wasmedgeProposalPolicy,wasmedgeProtocolOutputPolicy} from './lib/wasmedge-feature-policy.mjs';
 
 const source='struct Engine { Engine(){if(!config)throw std::runtime_error("configuration creation failed");WasmEdge_ConfigureSetRunMode(config,WasmEdge_RunMode_Interpreter);} };';
 const headers=['TailCall','GC','Threads','ExceptionHandling'].map(x=>'WasmEdge_Proposal_'+x).join('\n');
@@ -34,4 +34,12 @@ test('upgrades an already patched V1 adapter without duplicating proposal calls'
  assert.equal(result.source.match(/WasmEdge_Proposal_GC/g)?.length,1);
  assert.match(result.source,/WASMFYI_WASMEDGE_PROPOSALS_V2/);
  assert.doesNotMatch(result.source,/WASMFYI_WASMEDGE_PROPOSALS_V1/);
+});
+
+test('keeps WasmEdge and JIT diagnostics off the JSON protocol stream',()=>{
+ const body=`#include <cstdio>\nstatic bool capture_native_size=false;\nvoid* wb_engine_new(){WB_TRY{return nullptr;}WB_CATCH(nullptr)}\nvoid* wb_module_new(int){WB_TRY{return nullptr;}WB_CATCH(nullptr)}\nvoid* wb_instance_new(int){WB_TRY{return nullptr;}WB_CATCH(nullptr)}\nint wb_call(int){WB_TRY{return 0;}WB_CATCH(-1)}`;
+ const result=wasmedgeProtocolOutputPolicy(body);
+ assert.match(result.source,/WASMFYI_WASMEDGE_PROTOCOL_STDOUT_V1/);
+ assert.equal(result.source.match(/ProtocolStdoutGuard protocol_stdout/g)?.length,4);
+ assert.equal(wasmedgeProtocolOutputPolicy(result.source).source,result.source);
 });

@@ -1,4 +1,4 @@
-import {readFile,writeFile} from 'node:fs/promises';
+import {readFile,writeFile,stat} from 'node:fs/promises';
 import {join} from 'node:path';
 import {selectV8CacheDisableFlag} from './v8-cache-flag.mjs';
 import {v8SingleCoreFlags} from './v8-single-core-mode.mjs';
@@ -13,4 +13,13 @@ export function withV8NativeSizePolicy(source){
  const replacement=importLine.includes('{ spawn }')?"import { spawn, spawnSync } from 'node:child_process';":"import { spawnSync } from 'node:child_process';";
  return source.replace(importLine,replacement+policy).replace('const nativeDiagnosticTimeoutMs = 30 * 60 * 1000;','const nativeDiagnosticTimeoutMs = 290 * 1000;').replace('timeout:240000','timeout:290000').replace(old,"[...qualifiedNativeDiagnosticFlags(),'--print-wasm-code','-e',program,artifact,moduleSha256]");
 }
-export async function applyV8NativeSizePolicy(root){const file=join(root,'adapters/v8/native-size.mjs');const source=await readFile(file,'utf8'),next=withV8NativeSizePolicy(source);if(next!==source)await writeFile(file,next);await applyV8NativeCompileOptions(root);return next!==source;}
+export async function applyV8NativeSizePolicy(root){
+ const file=join(root,'adapters/v8/native-size.mjs');
+ // Older frozen harnesses predate the qualified V8 native-size observer. The
+ // policy is optional for those harnesses and must not block unrelated SDKs.
+ if(!await stat(file).catch(()=>null))return false;
+ const source=await readFile(file,'utf8'),next=withV8NativeSizePolicy(source);
+ if(next!==source)await writeFile(file,next);
+ await applyV8NativeCompileOptions(root);
+ return next!==source;
+}

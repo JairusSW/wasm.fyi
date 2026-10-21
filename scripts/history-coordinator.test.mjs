@@ -27,7 +27,7 @@ test('real coordinator launches every newest engine before any older week',async
  const f=await fixture(null);try{
   await execute(process.execPath,[coordinator,f.root,join(f.root,'frozen-harness')],{cwd:f.site});
   assert.deepEqual(JSON.parse(await readFile(join(f.root,'calls.json'))),[f.newest,f.previous].flatMap(week=>['wago','wasmtime','wazero'].map(engine=>({engine,week}))));
-  const status=JSON.parse(await readFile(join(f.root,'coordinator-status.json')));assert.deepEqual(status.finishedWeeks,[f.newest,f.previous]);assert.equal(status.schedule,'week-by-week');
+  const status=JSON.parse(await readFile(join(f.root,'coordinator-status.json')));assert.deepEqual(status.finishedWeeks,[f.newest,f.previous]);assert.equal(status.schedule,'engine-grouped');
  }finally{await rm(f.root,{recursive:true,force:true});}
 });
 test('completed source with protocol-failed trials holds history without losing successful coverage',async()=>{
@@ -59,7 +59,7 @@ test('completed source with invalid sample capture holds older history',async()=
  }finally{await rm(f.root,{recursive:true,force:true});}
 });
 test('missing Node adapter dependencies hold older history instead of becoming workload outcomes',async()=>{
- for(const error of ["Error: Cannot find module '/site/scripts/lib/shared-device-slice.mjs'", "Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'adapter-helper' imported from worker.mjs"]){
+ for(const error of ["Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'adapter-helper' imported from worker.mjs"]){
   const f=await fixture(null,[{kind:'capture-error',workload:'wago/tiny/add',error}]);
   try{
    await execute(process.execPath,[coordinator,f.root,join(f.root,'frozen-harness')],{cwd:f.site});

@@ -69,6 +69,6 @@ for(const [scheduleIndex,{week,latest,engines}] of scheduled.entries()) {
   state.current=null;state.stage=latest?'latest-week-needs-repair':'week-needs-repair';
   state.status='awaiting-completion-audit';await save();process.exit(0);
  }
- state.finishedWeeks.push(week);await save();
+ if(!state.finishedWeeks.includes(week))state.finishedWeeks.push(week);await save();
 }
 state.current=null;state.currentWeek=null;state.status='awaiting-completion-audit';await save();

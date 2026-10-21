@@ -384,3 +384,15 @@ test('Wago classifies only proposal encodings absent from its beta feature regis
  assert.equal(runtimeCase({source,engine:'wago',feature:'threads',reason:'error: validate: wasm validate: invalid alignment in function 0'}),null);
  assert.equal(runtimeCase({source,engine:'wago',feature:'custom-page-sizes',reason:'guest returned wrong result'}),null);
 });
+
+test('WasmEdge classifies exact SDK proposal gaps without hiding traps',()=>{
+ const source={repository:'WasmEdge/WasmEdge',revision:'c'.repeat(40)},engine='wasmedge-jit';
+ const classify=(feature,reason)=>{
+  const w={id:`features/${feature}/case/1`,sha256:'d'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+  const capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+  return classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures:[{engine,workload:w.id,phase:'first-call',status:'error',reason}]});
+ };
+ assert.equal(classify('wide-arithmetic','error: illegal opcode')?.status,'unsupported');
+ assert.equal(classify('custom-page-sizes','error: malformed limits flags')?.status,'unsupported');
+ assert.equal(classify('threads','error: guest trap: unreachable'),null);
+});

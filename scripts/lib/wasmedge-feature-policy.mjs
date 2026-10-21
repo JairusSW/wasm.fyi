@@ -4,6 +4,7 @@ import {digest} from './wasmbench.mjs';
 
 const marker='WASMFYI_WASMEDGE_PROPOSALS_V2';
 const oldMarker='WASMFYI_WASMEDGE_PROPOSALS_V1';
+const protocolOutputMarker='WASMFYI_WASMEDGE_PROTOCOL_STDOUT_V1';
 const proposals=[
  ['TailCall','tail-call'],
  ['ExtendedConst','extended-const'],
@@ -36,12 +37,39 @@ export function wasmedgeProposalPolicy(source,headers,{jit=false}={}) {
  };
 }
 
+export function wasmedgeProtocolOutputPolicy(source) {
+ if(source.includes(protocolOutputMarker))return {source,alreadyApplied:true};
+ const include=source.includes('#include <cstdio>')?'#include <cstdio>':'#include "embedding.h"';
+ const includes=source.includes('#include <cstdio>')?'#include <cstdio>\n#include <unistd.h>':'#include "embedding.h"\n#include <cstdio>\n#include <unistd.h>';
+ const anchor=['static bool capture_native_size=false;','static bool assemblyscript_profile_requested=false;'].find(candidate=>source.includes(candidate));
+ if(!anchor)throw Error('WasmEdge protocol-output seam changed');
+ let next=source.replace(include,includes).replace(anchor,`${anchor}
+// ${protocolOutputMarker}: keep SDK/JIT diagnostics off the JSON control stream.
+struct ProtocolStdoutGuard {
+    int saved=-1;
+    ProtocolStdoutGuard(){fflush(stdout);saved=dup(STDOUT_FILENO);if(saved>=0)dup2(STDERR_FILENO,STDOUT_FILENO);}
+    ~ProtocolStdoutGuard(){fflush(stdout);if(saved>=0){dup2(saved,STDOUT_FILENO);close(saved);}}
+};`);
+ const functions=['wb_engine_new','wb_module_new','wb_instance_new','wb_call'];
+ for(const name of functions){
+  const seam=name+'(';
+  const start=next.indexOf(seam);
+  if(start<0)throw Error(`WasmEdge ${name} seam changed`);
+  const body=next.indexOf('WB_TRY{',start);
+  if(body<0)throw Error(`WasmEdge ${name} guard seam changed`);
+  next=next.slice(0,body)+'WB_TRY{ProtocolStdoutGuard protocol_stdout;'+next.slice(body+'WB_TRY{'.length);
+ }
+ return {source:next,alreadyApplied:false};
+}
+
 export async function applyWasmEdgeFeaturePolicy(root,sdk,configuration) {
  const cpp=join(root,'adapters/native/src/wasmedge.cpp');
  const header=join(sdk,'include/wasmedge/wasmedge.h');
  const enumDefinitions=join(sdk,'include/wasmedge/enum.inc');
  const before=await readFile(cpp,'utf8'),headers=(await Promise.all([readFile(header,'utf8'),readFile(enumDefinitions,'utf8')])).join('\n');
  const result=wasmedgeProposalPolicy(before,headers,{jit:configuration==='wasmedge-jit'});
+ const output=wasmedgeProtocolOutputPolicy(result.source);
+ result.source=output.source;
  if(result.source!==before)await writeFile(cpp,result.source);
  return {...result,source:undefined,adapterSha256:digest(Buffer.from(result.source)),headerSha256:digest(Buffer.from(headers))};
 }
