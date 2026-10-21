@@ -68,3 +68,31 @@ test('Wasmer compact-import validation rejection remains source and artifact bou
   }
  }
 });
+
+test('Wazero proposal encodings absent from its public feature API are source bound',()=>{
+ const source={repository:'tetratelabs/wazero',revision:'1'.repeat(40)};
+ for(const engine of ['wazero','wazero-interpreter'])for(const [feature,reason] of [
+  ['wide-arithmetic','unknown misc opcode 0x13'],
+  ['compact-imports','import[0] 0x7f[wasmbench.]: invalid byte: invalid byte for importdesc: 0x7f'],
+  ['custom-page-sizes','section memory: invalid byte for limits: 0x9 not in (0x00, 0x01, 0x02, 0x03)'],
+  ['memory-control','unknown misc opcode 0x12'],
+  ['half-precision','cannot pop the operand for i32x4.abs: type mismatch: expected v128, but was f32'],
+  ['stringref','invalid instruction 0xfb'],
+  ['acquire-release-atomics','invalid memory alignment'],
+ ]){
+  const w={id:`features/${feature}/case/1`,sha256:'2'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+  const contractSha256=workloadContract(w),capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256,phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+  const failures=['preflight_failed','error'].map(status=>({engine,workload:w.id,phase:'first-call',status,reason:`${status==='preflight_failed'?'sacrificial check check-0-0: ':''}error: ${reason}`}));
+  assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures})?.status,'unsupported',`${engine} ${feature}`);
+  const trap=structuredClone(failures);trap[1].reason='error: wasm error: unreachable';
+  assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures:trap}),null);
+ }
+});
+
+test('Wazero typed-function-reference runtime traps remain failures',()=>{
+ const source={repository:'tetratelabs/wazero',revision:'3'.repeat(40)},engine='wazero';
+ const w={id:'features/typed-function-references/selected-target/1',sha256:'4'.repeat(64),abi:'core',features:['typed-function-references'],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+ const capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+ const failures=[{engine,workload:w.id,phase:'first-call',status:'error',reason:'error: wasm error: unreachable'}];
+ assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures}),null);
+});
