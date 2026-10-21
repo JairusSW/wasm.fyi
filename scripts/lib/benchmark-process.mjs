@@ -1,7 +1,6 @@
 import { spawn } from "node:child_process";
 import { appendFile, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
-import {fileURLToPath} from "node:url";
 export const quote = (value) =>
   "'" + String(value).replaceAll("'", "'\\''") + "'";
 export async function runCommand(
@@ -18,10 +17,6 @@ export async function runCommand(
   } = {},
 ) {
   if (signal?.aborted) throw Error("Interrupted");
-  if(process.platform==='darwin'&&env.WASMBENCH_SHARED_DEVICE_RESERVED!=='1'){
-    args=[fileURLToPath(new URL('../shared-device-run.py',import.meta.url)),'--','env','WASMBENCH_SHARED_DEVICE_RESERVED=1',program,...args];
-    program='python3';
-  }
   if (log) await mkdir(dirname(log), { recursive: true });
   return await new Promise((resolve, reject) => {
     const child = spawn(program, args, {
@@ -103,10 +98,6 @@ export async function runCommand(
 // process group on cancellation rather than leaving those descendants alive.
 export function runBenchmarkProcess(program,args,{cwd,env=process.env,signal}={}) {
  signal?.throwIfAborted();
- if(process.platform==='darwin'&&env.WASMBENCH_SHARED_DEVICE_RESERVED!=='1'){
-  args=[fileURLToPath(new URL('../shared-device-run.py',import.meta.url)),'--','env','WASMBENCH_SHARED_DEVICE_RESERVED=1',program,...args];
-  program='python3';
- }
  return new Promise((resolve,reject)=>{
   const child=spawn(program,args,{cwd,env,detached:true,stdio:['ignore','ignore','pipe']});
   let stderr='',force,reason,escalation;

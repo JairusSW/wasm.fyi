@@ -1,4 +1,3 @@
-import {homedir} from 'node:os';
 import {readFile,writeFile,mkdir,stat} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {copyHistoricalHarness} from './lib/historical-binding.mjs';
@@ -10,8 +9,7 @@ import {runCommand} from './lib/benchmark-process.mjs';
 import {acquireMeasurementLock} from './lib/measurement-lock.mjs';
 const [rootArg,manifestArg]=process.argv.slice(2),r=resolve(rootArg),request=JSON.parse(await readFile(resolve(manifestArg))),directory=join(r,'wago-current-priority',request.id),sdk=join(directory,'sdk-'+WAGO_IDENTITY_EMBEDDING),source=join(sdk,'sources/wago'),harness=join(sdk,'harness/wago'),revision=request.source.revision;
 if(!/^[a-f0-9]{40}$/.test(revision)||!/^[a-zA-Z0-9_-]+$/.test(request.id))throw Error('Invalid exact snapshot identity');
-if(process.platform==='darwin'){const owner=JSON.parse(await readFile(join(homedir(),'.benchmark-lock/owner.json')));if(owner.workload_pid!==process.pid)throw Error('Snapshot build requires actual global device claim');const schedule=JSON.parse(await readFile(join(r,'device-schedule.json')));if(schedule.breakUntil>Date.now()/1000||1800-(schedule.ownedSeconds||0)<120)process.exit(75);}
-await mkdir(directory,{recursive:true});const template=JSON.parse(await readFile(join(r,'collection-template.json'))),env={...process.env,...template.env,WASMBENCH_SHARED_DEVICE_RESERVED:'1',WASMFYI_HISTORY_FAST:'1',GOWORK:'off',GOFLAGS:'-buildvcs=false',GOMAXPROCS:String(template.env.WASMFYI_BUILD_JOBS||8)};
+await mkdir(directory,{recursive:true});const template=JSON.parse(await readFile(join(r,'collection-template.json'))),env={...process.env,...template.env,WASMFYI_HISTORY_FAST:'1',GOWORK:'off',GOFLAGS:'-buildvcs=false',GOMAXPROCS:String(template.env.WASMFYI_BUILD_JOBS||8)};
 for(const key of ['WASMBENCH_SINGLE_CORE','OMP_NUM_THREADS','RAYON_NUM_THREADS'])delete env[key];
 const abort=new AbortController();for(const signal of ['SIGTERM','SIGINT','SIGHUP'])process.on(signal,()=>abort.abort());const signal=AbortSignal.any([abort.signal,AbortSignal.timeout(90*60*1000)]),log=join(directory,'build.log');
 const run=async(program,args,cwd=harness)=>{const result=await runCommand(program,args,{cwd,env,signal,log});return result.output.trim();};

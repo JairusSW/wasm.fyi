@@ -30,7 +30,7 @@ async function resume(statuses,note,retainRecordedSamples=false){
   await writeFile(file,original);
   if(note){await mkdir(join(directory,'failure-notes'));await writeFile(join(directory,'failure-notes',key+'.json'),JSON.stringify({capturedAt:capture.capturedAt,source,engine:'fixture',workload:workload.id,kind:'failed-trials',...note}));}
   const result=await new Promise((resolve,reject)=>{
-   const child=spawn(process.execPath,[new URL('./benchmark-history-worker.mjs',import.meta.url).pathname,directory],{env:{...process.env,WASMBENCH_SHARED_DEVICE_RESERVED:'1',WASMBENCH_SHARED_DEVICE_SCHEDULE:join(root,'schedule.json')},stdio:['ignore','pipe','pipe']});
+   const child=spawn(process.execPath,[new URL('./benchmark-history-worker.mjs',import.meta.url).pathname,directory],{env:process.env,stdio:['ignore','pipe','pipe']});
    let stderr='';child.stderr.on('data',data=>stderr+=data);child.on('error',reject);child.on('close',code=>resolve({code,stderr}));
   });
   assert.equal(result.code,0,result.stderr);assert.equal(await readFile(file,'utf8'),original,'A resume must retain the capture bytes');

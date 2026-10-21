@@ -7,8 +7,6 @@ import {upgradeFeatureHostProfileController} from './lib/feature-host-profile-po
 // Latest-only, source-bound compatibility followed by feature performance.
 import {readFile,writeFile,mkdir,readdir,stat,cp} from 'node:fs/promises';
 import {join,resolve,basename,dirname} from 'node:path';
-import {fileURLToPath} from 'node:url';
-import {spawn} from 'node:child_process';
 import {featureCampaignPlatform,featureInputIdentity,featureLedgerKey} from './lib/feature-campaign-identity.mjs';
 import {atomicJSON} from './lib/benchmark-plan.mjs';
 import {digest} from './lib/wasmbench.mjs';
@@ -16,7 +14,6 @@ import {workloadContract} from './lib/workload-contract.mjs';
 import {collectLatencies,latencyCollection} from './lib/latency-capture.mjs';
 import {acquireMeasurementLock} from './lib/measurement-lock.mjs';
 import {runBenchmarkProcess,runCommand} from './lib/benchmark-process.mjs';
-import {sharedDeviceSliceMs} from './lib/shared-device-slice.mjs';
 import {historyWorkloadFailure} from './lib/history-workload-failure.mjs';
 import {ensureV8BindingPolicy} from './lib/v8-binding-policy.mjs';
 import {historyIntegrationFailure} from './lib/history-completion-audit.mjs';
@@ -30,19 +27,6 @@ import {terminalFeatureRuntimeFailure} from './lib/feature-terminal-failure.mjs'
 const [campaignArg,rootArg,inputsArg,bindingsArg]=process.argv.slice(2);
 if(!campaignArg||!rootArg||!inputsArg)throw Error('Usage: latest-feature-campaign CAMPAIGN FEATURE_ROOT INPUTS [BINDINGS_JSON]');
 const campaign=resolve(campaignArg),root=resolve(rootArg),inputs=resolve(inputsArg);
-if(process.platform==='darwin'&&process.env.WASMBENCH_SHARED_DEVICE_RESERVED!=='1'){
- // Match the history worker's lock order. The reserved inner worker acquires
- // project locks per case, so a device handoff never leaves this lock held.
- // runCommand also reserves Darwin commands: using it here would nest two
- // reservations and leave the inner coordinator waiting on its own parent.
- const child=spawn('python3',[fileURLToPath(new URL('./shared-device-run.py',import.meta.url)),'--repeat-slices','--','env','WASMBENCH_SHARED_DEVICE_RESERVED=1',process.execPath,fileURLToPath(import.meta.url),...process.argv.slice(2)],{cwd:campaign,stdio:'inherit'});
- const handlers=new Map(['SIGTERM','SIGINT'].map(signal=>[signal,()=>child.kill(signal)]));
- for(const [signal,handler]of handlers)process.on(signal,handler);
- let code;
- try{code=await new Promise((resolve,reject)=>{child.on('error',reject);child.on('exit',resolve)})}
- finally{for(const [signal,handler]of handlers)process.removeListener(signal,handler)}
- process.exit(code??1);
-}
 await mkdir(root,{recursive:true});
 // Serialize ledger writers before reading any cached state. Measurement leases remain per case.
 const writerAbort=new AbortController();
@@ -88,22 +72,13 @@ const inputIdentity=featureInputIdentity(suites);
 const ledgerPath=join(root,'ledger.json');const ledger=await readJSON(ledgerPath).catch(()=>({items:{},completedEngines:[]}));
 const state={status:'running',started:new Date().toISOString(),updated:'',current:null,completed:0,total:latest.reduce((n,p)=>n+p.configurations.filter(engine=>!selectedEngines.length||selectedEngines.includes(engine)).length,0),errors:[],inputIdentity,compatibilityWorkloads:suites.compatibility.length,performanceWorkloads:suites.performance.length+suites.compile.length+suites.lifecycle.length};
 const save=async()=>{state.updated=new Date().toISOString();await atomicJSON(join(root,'status.json'),state);await atomicJSON(ledgerPath,ledger)};
-const deadline=performance.now()+(process.platform==='darwin'?await sharedDeviceSliceMs(campaign):Infinity);
+const deadline=Infinity;
 const platform=featureCampaignPlatform(template);
 const hostKey=digest(Buffer.from(JSON.stringify(platform)));
 const abort=writerAbort;
 async function acquireFeatureProjectLock(){
  if(process.env.WASMBENCH_PROJECT_RESERVED==='1')return async()=>{};
- const bounded=process.platform==='darwin'&&process.env.WASMBENCH_SHARED_DEVICE_RESERVED==='1';
- const signal=bounded?AbortSignal.any([abort.signal,AbortSignal.timeout(2000)]):abort.signal;
- try{return await acquireMeasurementLock(join(campaign,'measurement-lock'),signal)}
- catch(error){
-  if(bounded&&!abort.signal.aborted&&['TimeoutError','AbortError'].includes(error.name)){
-   state.status='waiting-host-lock';await save();
-   throw Object.assign(Error('Project occupied; release the shared device before retrying'),{code:'FEATURE_PROJECT_OCCUPIED'});
-  }
-  throw error;
- }
+ return await acquireMeasurementLock(join(campaign,'measurement-lock'),abort.signal);
 }
 await save();
 const repairEngines=(process.env.WASMFYI_FEATURE_REPAIR_ENGINES||'').split(',').filter(Boolean);

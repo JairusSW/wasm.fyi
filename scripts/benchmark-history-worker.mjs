@@ -1,4 +1,3 @@
-import {sharedDeviceSliceMs} from './lib/shared-device-slice.mjs';
 import {restoredWorkloadFailure} from './lib/resumed-workload-failure.mjs';
 import {selectRepairPhases,mergePhaseRepair} from './lib/phase-repair.mjs';
 import {workloadContract} from './lib/workload-contract.mjs';
@@ -6,26 +5,16 @@ import {historyWorkloadFailure,workloadBudgetMs} from './lib/history-workload-fa
 // Compact native collection for current builds and source-pinned historical jobs.
 import {readFile,writeFile,mkdir,stat} from 'node:fs/promises';
 import {join,basename} from 'node:path';
-import {spawn,execFileSync} from 'node:child_process';
+import {execFileSync} from 'node:child_process';
 import {runBenchmarkProcess} from './lib/benchmark-process.mjs';
 import {cpus} from 'node:os';
-import {fileURLToPath} from 'node:url';
 import {readCache,verifyWorkloads,atomicJSON} from './lib/benchmark-plan.mjs';
 import {collectLatencies} from './lib/latency-capture.mjs';
 import {reusableCapture,validateHistoricalScope} from './lib/history-scope.mjs';
 import {digest} from './lib/wasmbench.mjs';
 import {acquireMeasurementLock} from './lib/measurement-lock.mjs';
-// On Apple, reserve through the shared device coordinator before taking the
-// repository's own lock. Work slices release both locks between reservations.
-if(process.platform==='darwin'&&process.env.WASMBENCH_SHARED_DEVICE_RESERVED!=='1'){
- const coordinator=fileURLToPath(new URL('./shared-device-run.py',import.meta.url));
- const child=spawn('python3',[coordinator,'--repeat-slices','--','env','WASMBENCH_SHARED_DEVICE_RESERVED=1',process.execPath,fileURLToPath(import.meta.url),...process.argv.slice(2)],{stdio:'inherit'});
- for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>child.kill(signal));
- const code=await new Promise((resolve,reject)=>{child.on('error',reject);child.on('exit',resolve)});
- process.exit(code??1);
-}
 const directory=process.argv[2];if(!directory)throw Error('A job-plan directory is required');
-const sliceDeadline=performance.now()+(process.platform==='darwin'?await sharedDeviceSliceMs(directory):30*60*1000);
+const sliceDeadline=performance.now()+30*60*1000;
 const plan=JSON.parse(await readFile(join(directory,'plan.json')));
 if(!plan.platformSpecs){const memoryBytes=process.platform==='darwin'?Number(execFileSync('sysctl',['-n','hw.memsize']).toString().trim()):process.platform==='linux'?Number((await readFile('/proc/meminfo','utf8')).match(/^MemTotal:\s+(\d+)/m)?.[1]||0)*1024:0;plan.platformSpecs={cores:cpus().length,memoryBytes};}
 plan.jobs=plan.jobs.filter(job=>!['deno','wasm2js','wasm2rs'].includes(job.engine));
