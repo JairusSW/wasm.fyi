@@ -4,16 +4,16 @@ function once(s,b,a,n){if(s.split(b).length!==2)throw Error('WasmEdge coverage s
 export function wasmedgeWorkloadCoverageSources({main,ffi,cpp}){
  if([main,ffi,cpp].every(s=>s.includes(marker)))return{main,ffi,cpp};
  if([main,ffi,cpp].some(s=>s.includes(marker)))throw Error('Partial WasmEdge coverage patch');
- main=once(main,'    feature = "libwasm"\n))]\nmod vectors;','    feature = "libwasm",\n    feature = "wasmedge"\n))]\nmod vectors;','vectors module');
- const group='feature = "aot", feature = "libwasm"';if(main.split(group).length!==3)throw Error('WasmEdge vector dispatch seam changed');main=main.replaceAll(group,group+', feature = "wasmedge"');
- main=once(main,'|| cfg!(feature = "aot") || cfg!(feature = "libwasm"))\n                    && w["oracle"]["kind"]','|| cfg!(feature = "aot") || cfg!(feature = "libwasm") || cfg!(feature = "wasmedge"))\n                    && w["oracle"]["kind"]','vector contract');
- main=once(main,'|| cfg!(feature = "aot"))\n                    && w["host_profile"] == "assemblyscript-abort-v1"','|| cfg!(feature = "aot") || cfg!(feature = "wasmedge"))\n                    && w["host_profile"] == "assemblyscript-abort-v1"','AS profile');
+ main=once(main,'    feature = "wavm"\n))]\nmod vectors;','    feature = "wavm",\n    feature = "wasmedge"\n))]\nmod vectors;','vectors module');
+ const cfgGroup='feature = "wavm"\n                ))]';if(main.split(cfgGroup).length!==3)throw Error('WasmEdge vector dispatch seam changed');main=main.replaceAll(cfgGroup,'feature = "wavm",\n                    feature = "wasmedge"\n                ))]');
+ main=once(main,'|| cfg!(feature = "wavm"))\n                    && w["oracle"]["kind"]','|| cfg!(feature = "wavm")\n                    || cfg!(feature = "wasmedge"))\n                    && w["oracle"]["kind"]','vector contract');
+ main=once(main,'|| cfg!(feature = "wavm"))\n                    && w["host_profile"] == "assemblyscript-abort-v1"','|| cfg!(feature = "wavm")\n                    || cfg!(feature = "wasmedge"))\n                    && w["host_profile"] == "assemblyscript-abort-v1"','AS profile');
  const cap='if cfg!(feature = "wasmer_llvm")\n                    || cfg!(feature = "wasmer_singlepass")\n                    || cfg!(feature = "wavm")\n                {';main=once(main,cap,cap.replace('|| cfg!(feature = "wavm")','|| cfg!(feature = "wavm")\n                    || cfg!(feature = "wasmedge")'),'describe');
  main=once(main,'                self.bytes = bytes;\n                self.prep = Some(p.clone());','                #[cfg(feature = "wasmedge")]\n                embedding::set_assemblyscript_profile(assemblyscript);\n                self.bytes = bytes;\n                self.prep = Some(p.clone());','requested profile');main='// '+marker+'\n'+main;
  ffi='// '+marker+'\n'+ffi+'\n#[cfg(feature = "wasmedge")]\nunsafe extern "C" { fn wb_assemblyscript_profile(enabled: bool); }\n#[cfg(feature = "wasmedge")]\npub fn set_assemblyscript_profile(enabled: bool) { unsafe { wb_assemblyscript_profile(enabled) } }\n';
- cpp=once(cpp,'static bool capture_native_size=false;','static bool capture_native_size=false;\nstatic bool assemblyscript_profile_requested=false;\nextern "C" void wb_assemblyscript_profile(bool enabled){assemblyscript_profile_requested=enabled;}','profile state');
- cpp=once(cpp,'    WasmEdge_ModuleInstanceContext* host=nullptr;','    WasmEdge_ModuleInstanceContext* host=nullptr;\n    WasmEdge_ModuleInstanceContext* assemblyscript_host=nullptr;','host lifetime');
- cpp=once(cpp,'if(host)WasmEdge_ModuleInstanceDelete(host);','if(host)WasmEdge_ModuleInstanceDelete(host);if(assemblyscript_host)WasmEdge_ModuleInstanceDelete(assemblyscript_host);','host release');
+ cpp=once(cpp,'#include <memory>','#include <memory>\nstatic bool assemblyscript_profile_requested=false;\nextern "C" void wb_assemblyscript_profile(bool enabled){assemblyscript_profile_requested=enabled;}','profile state');
+ cpp=once(cpp,'    WasmEdge_ModuleInstanceContext* module=nullptr;','    WasmEdge_ModuleInstanceContext* module=nullptr;\n    WasmEdge_ModuleInstanceContext* assemblyscript_host=nullptr;','host lifetime');
+ cpp=once(cpp,'if(module)WasmEdge_ModuleInstanceDelete(module);','if(module)WasmEdge_ModuleInstanceDelete(module);if(assemblyscript_host)WasmEdge_ModuleInstanceDelete(assemblyscript_host);','host release');
  const callback=`static WasmEdge_Result assemblyscript_abort(void*,const WasmEdge_CallingFrameContext*,const WasmEdge_Value*,WasmEdge_Value*){return WasmEdge_ResultGen(WasmEdge_ErrCategory_UserLevelError,1);}
 static void register_assemblyscript(Instance* i){
  if(!assemblyscript_profile_requested)return;
@@ -28,7 +28,7 @@ static void register_assemblyscript(Instance* i){
 }
 `;
  cpp=once(cpp,'static const WasmEdge_FunctionInstanceContext* function(',callback+'static const WasmEdge_FunctionInstanceContext* function(','callback');
- cpp=once(cpp,'    register_identity(i.get());','    register_identity(i.get());register_assemblyscript(i.get());','instance imports');cpp='// '+marker+'\n'+cpp;
+ cpp=once(cpp,'if(!i->executor||!i->store)throw std::runtime_error("executor/store creation failed");','if(!i->executor||!i->store)throw std::runtime_error("executor/store creation failed");register_assemblyscript(i.get());','instance imports');cpp='// '+marker+'\n'+cpp;
  return{main,ffi,cpp};
 }
 

@@ -89,6 +89,15 @@ struct`);
  if(main.includes(backend))main=main.replace(backend,wamrBackend);else if(!main.includes('option_env!("WASMBENCH_WAMR_RUNNING_MODE")'))throw Error('WAMR backend description anchor changed');
  await writeFile(mainPath,main);
 }
+if(engine==='wasmedge'){
+ const path=join(root,'experiment/extra_runtimes.go');let text=await readFile(path,'utf8');
+ const base='"wasmi", "wavm", "wamr", "wasm3", "wasmedge", "wasmer-llvm", "wasmer-singlepass"';
+ const aliases='"wasmi", "wavm", "wamr", "wasm3", "wasmedge", "wasmedge-jit", "wasmer-llvm", "wasmer-singlepass"';
+ const occurrences=text.split(base).length-1,adapted=text.split(aliases).length-1;
+ if(occurrences===3)text=text.replaceAll(base,aliases);
+ else if(adapted!==3)throw Error('WasmEdge runtime alias anchors changed');
+ await writeFile(path,text);
+}
 const harnessRevision=(await run('git',['-C',base,'rev-parse','HEAD'])).output.trim();
 if((await run('git',['-C',base,'status','--porcelain','--untracked-files=no'])).output.trim())throw Error('Frozen harness has tracked changes');
 if(!(await stat(join(root,'.git')).catch(()=>null)))await run('git',['init',root]);
