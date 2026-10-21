@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {withFeatureHostProfileAdmission,withSignedWireValues,withCurrentAnalyzerIdentity,withProposalSourceAdmission} from './lib/feature-host-profile-policy.mjs';
+import {withFeatureHostProfileAdmission,withSignedWireValues,pinnedAnalyzerIdentity,withProposalSourceAdmission} from './lib/feature-host-profile-policy.mjs';
 
 test('optional embedding profiles become unsupported before ABI admission',()=>{
  const source='package experiment\n\nfunc run() {\n\tif !slices.Contains(r.Description.ABIs, w.ABI) {\n\t}\n}\n';
@@ -25,11 +25,12 @@ test('signed decimal values are accepted as exact two-complement bits',()=>{
  assert.equal(withSignedWireValues(upgraded),upgraded);
 });
 
-test('the controller pins the analyzer version emitted by the merged corpus build',()=>{
- const source='a := &AnalyzerLock{Version: "0.251.0"}\nif a.Version != "0.251.0" { return }\n';
- const upgraded=withCurrentAnalyzerIdentity(source);
- assert.equal(upgraded,'a := &AnalyzerLock{Version: "0.258.3"}\nif a.Version != "0.258.3" { return }\n');
- assert.equal(withCurrentAnalyzerIdentity(upgraded),upgraded);
+test('the controller pins the identity declared by its exact analyzer source',()=>{
+ const controller='a := &AnalyzerLock{Version: "0.258.3"}\nif a.Version != "0.258.3" { return }\n';
+ const pinned=pinnedAnalyzerIdentity('json!({"analyzer_version":"0.251.0"})',controller);
+ assert.equal(pinned.version,'0.251.0');
+ assert.equal(pinned.source,'a := &AnalyzerLock{Version: "0.251.0"}\nif a.Version != "0.251.0" { return }\n');
+ assert.throws(()=>pinnedAnalyzerIdentity('no identity',controller),/absent or ambiguous/);
 });
 
 test('pinned proposal source validation is an explicit analyzer fallback',async()=>{
