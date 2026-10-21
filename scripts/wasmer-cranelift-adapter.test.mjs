@@ -51,3 +51,36 @@ wasmer_features_tail_call(features,WB_WASMER_LLVM);`);
   await assert.rejects(applyWasmerCraneliftAdapter(root),/seam changed/);
  } finally {await rm(root,{recursive:true,force:true});}
 });
+
+test('Cranelift compiler define follows the receipt-aware Wasmer SDK block',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'wasmer-receipt-selection-'));
+ try {
+  const dir=join(root,'adapters/native');await mkdir(join(dir,'src'),{recursive:true});
+  await writeFile(join(dir,'build.rs'),`let runtime = selected[0];
+println!("cargo:rustc-env=WB_RUNTIME={}", runtime.replace('_', "-"));
+let sdk_runtime = if wasmer { "wasmer" } else { runtime };
+let mut build = cc::Build::new();
+if wasmer {
+        let receipt = sdk.join("receipt.json");
+        build.define(
+            "WB_WASMER_LLVM",
+            Some(if runtime == "wasmer_llvm" { "1" } else { "0" }),
+        );
+}`);
+  await writeFile(join(dir,'src/main.rs'),`else if cfg!(feature="wasmer_singlepass"){"singlepass-jit"}
+"SIMD":cfg!(feature="wasmer_llvm"),"TAIL_CALL":cfg!(feature="wasmer_llvm")
+let identity_host = true && w["host_profile"] == "identity-v1";
+                if cfg!(feature = "wasmer_llvm") || cfg!(feature = "wasmer_singlepass") {}`);
+  await writeFile(join(dir,'src/wasmer.cpp'),`const auto backend=WB_WASMER_LLVM?LLVM:SINGLEPASS;
+wasmer_features_simd(features,WB_WASMER_LLVM);
+wasmer_features_relaxed_simd(features,WB_WASMER_LLVM);
+wasmer_features_exceptions(features,WB_WASMER_LLVM);
+wasmer_features_tail_call(features,WB_WASMER_LLVM);`);
+  await applyWasmerCraneliftAdapter(root);
+  const build=await readFile(join(dir,'build.rs'),'utf8');
+  assert.ok(build.indexOf('build.define("WB_WASMER_CRANELIFT"')>build.indexOf('let mut build ='));
+  assert.equal((build.match(/WB_WASMER_CRANELIFT/g)||[]).length,1);
+  await applyWasmerCraneliftAdapter(root);
+  assert.equal(await readFile(join(dir,'build.rs'),'utf8'),build);
+ } finally {await rm(root,{recursive:true,force:true});}
+});

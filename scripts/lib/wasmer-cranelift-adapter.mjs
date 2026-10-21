@@ -9,11 +9,16 @@ export async function applyWasmerCraneliftAdapter(root) {
  let [build,main,cpp]=files;
  const compilerDefinition='        build.define("WB_WASMER_CRANELIFT", Some(if cranelift { "1" } else { "0" }));';
  const sdkBlock='if wasmer {\n        println!("cargo:rerun-if-changed=src/wasmer_wasi.h");';
+ const receiptCompilerBlock=`        build.define(
+            "WB_WASMER_LLVM",
+            Some(if runtime == "wasmer_llvm" { "1" } else { "0" }),
+        );`;
  // Older drafts inserted this at the SDK-name expression, before cc::Build
  // existed. Anchor to the actual compiler configuration block instead.
  build=build.replace('\n'+compilerDefinition,'');
- if(!build.includes(sdkBlock))throw Error('Pinned Wasmer SDK compiler-definition seam changed');
- build=build.replace(sdkBlock,'if wasmer {\n'+compilerDefinition+'\n        println!("cargo:rerun-if-changed=src/wasmer_wasi.h");');
+ if(build.includes(sdkBlock))build=build.replace(sdkBlock,'if wasmer {\n'+compilerDefinition+'\n        println!("cargo:rerun-if-changed=src/wasmer_wasi.h");');
+ else if(build.includes(receiptCompilerBlock))build=build.replace(receiptCompilerBlock,receiptCompilerBlock+'\n'+compilerDefinition);
+ else throw Error('Pinned Wasmer SDK compiler-definition seam changed');
  for(const feature of ['SIMD','RELAXED_SIMD','EXCEPTIONS','LEGACY_EXCEPTIONS'])main=main.replace(`"${feature}":cfg!(feature="wasmer_llvm")`,`"${feature}":(cfg!(feature="wasmer_llvm") || RUNTIME=="wasmer-cranelift")`);
  const tail='"TAIL_CALL":cfg!(feature="wasmer_llvm")';
  main=main.replace('"TAIL_CALL":(cfg!(feature="wasmer_llvm") || RUNTIME=="wasmer-cranelift")',tail);
