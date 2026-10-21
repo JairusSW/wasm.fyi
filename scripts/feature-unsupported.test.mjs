@@ -33,6 +33,7 @@ test('Wasmtime sacrificial preflight and exact proposal encoding rejections rema
   ['half-precision','wasmtime','unknown 0xfd subopcode: 0x120'],
   ['stringref','wasmtime','unknown 0xfb subopcode: 0xa9'],
   ['acquire-release-atomics','wasmtime','atomic instructions must always specify maximum alignment'],
+  ['acquire-release-atomics','wasmtime-winch','threads must be enabled for shared memories'],
   ['custom-descriptors','wasmtime','custom descriptors proposal must be enabled'],
   ['shared-everything-threads','wasmtime','shared globals require the shared-everything-threads proposal'],
   ['reference-types','wasmtime-winch','Compilation error: Unsupported Wasm type'],
