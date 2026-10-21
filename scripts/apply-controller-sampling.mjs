@@ -12,6 +12,7 @@ import {applyV8CacheFlag} from './lib/v8-cache-flag.mjs';
 import {applyV8NativeSizePolicy} from './lib/v8-native-size-policy.mjs';
 import {applyV8SingleCoreMode} from './lib/v8-single-core-mode.mjs';
 import {applyPrivateELFInterpreter} from './lib/private-elf-interpreter.mjs';
+import {applyJavaScriptSampling} from './lib/js-shell-sampling.mjs';
 const root=resolve(process.argv[2]||'');
 if(!process.argv[2])throw Error('Harness source directory required');
 // A historical wazero rebuild only changes that adapter. Avoid migrating
@@ -236,21 +237,7 @@ for(const [file,text]of files)await writeFile(join(root,file),text);
 for(const name of ['adaptive.go','adaptive_test.go','steady_operations_test.go','adaptive_session.go','adaptive_session_test.go','timing_rss.go','timing_rss_shared_test.go','runtime_inputs.go','runtime_inputs_test.go'])await copyFile(fileURLToPath(new URL('../adapters/controller/'+name,import.meta.url)),join(root,'experiment',name));
 const jsPath=join(root,'adapters/js-shell/adapter.js');
 let js=await readFile(jsPath,'utf8');
-js=js.replace("Math.max(r.warmup, runtime==='jsc'&&tierMode==='omg-eager'?2:0)",'r.warmup');
-js=js.replace('      if (shared) verify(invoke(shared,args),shared);\n','');
-js=js.replace("warmup_minimum:'2'","warmup_minimum:'0'");
-js=js.replace('IPInt → BBQ → OMG tier-up forced after warmup; synchronous OMG compilation','IPInt → BBQ → OMG synchronous tier-up during recorded samples');
-js=js.replace(/        \/\/ Internal JSC tier-up calls[\s\S]*?        if\(i<r\.warmup\)/,'        // Retain every requested sample, including any tier-up cost.\n        if(i<r.warmup)');
-if(!js.includes('let cachedModule, cachedSteady, cachedVectors;')){
- const patch=(old,next)=>{if(!js.includes(old))throw Error('JavaScript adapter cache seam changed: '+old);js=js.replace(old,next);};
- patch('  let prep, bytes, signature;','  let prep, bytes, signature;\n  let cachedModule, cachedSteady, cachedVectors;');
- js=js.replaceAll('prep = bytes = signature = undefined;', 'prep = bytes = signature = cachedModule = cachedSteady = cachedVectors = undefined;');
- patch('const w=prep.workload,v=w.vectors,cases=vectorCases(w),samples=[];', 'const w=prep.workload,v=w.vectors,cases=cachedVectors ||= vectorCases(w),samples=[];');
- patch("const shared=r.scenario==='compile'?undefined:new WebAssembly.Module(bytes);", "const shared=r.scenario==='compile'?undefined:(cachedModule ||= new WebAssembly.Module(bytes));");
- patch('const start=now(),target=new WebAssembly.Instance(module);', "const start=now(),target=r.scenario==='steady' && w.reset==='stateless' ? (cachedSteady ||= new WebAssembly.Instance(module)) : new WebAssembly.Instance(module);");
- patch("let compiled = r.scenario === 'compile' ? undefined : new WebAssembly.Module(bytes);", "let compiled = r.scenario === 'compile' ? undefined : (cachedModule ||= new WebAssembly.Module(bytes));");
- patch("let shared = r.scenario === 'steady' && !freshSteady ? initialize(new WebAssembly.Instance(compiled, imports)) : undefined;", "let shared = r.scenario === 'steady' && !freshSteady ? (cachedSteady ||= initialize(new WebAssembly.Instance(compiled, imports))) : undefined;");
-}
+js=applyJavaScriptSampling(js);
 await writeFile(jsPath,js);
 console.log('Installed same-process sampling collector in '+root);
 
