@@ -2,6 +2,7 @@ import {featureScenarios} from './lib/feature-scenario-policy.mjs';
 import {rebuildWazeroSampling,assertWazeroInterruptsDisabled} from './lib/wazero-sampling.mjs';
 import {applyWasmEdgeFeaturePolicy} from './lib/wasmedge-feature-policy.mjs';
 import {applyWasmerCraneliftAdapter} from './lib/wasmer-cranelift-adapter.mjs';
+import {applyWasmtimeDeclaredFeatures} from './lib/wasmtime-feature-policy.mjs';
 import {featureRepairPhases} from './lib/feature-repair-phases.mjs';
 import {upgradeFeatureHostProfileController} from './lib/feature-host-profile-policy.mjs';
 // Latest-only, source-bound compatibility followed by feature performance.
@@ -128,6 +129,15 @@ campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
    const buildEnv={...process.env,...template.env,...plan.env,...job.env,GOWORK:'off',GOFLAGS:'-buildvcs=false'};
    for(const k of ['GOMAXPROCS','OMP_NUM_THREADS','RAYON_NUM_THREADS','CARGO_BUILD_JOBS','CMAKE_BUILD_PARALLEL_LEVEL','MAKEFLAGS','UV_THREADPOOL_SIZE'])delete buildEnv[k];
    await rebuildWazeroSampling({root:harness,env:buildEnv,run:(program,args,options)=>runCommand(program,args,{...options,log:join(root,'wazero-lifecycle-build.log')})});
+  }catch(error){state.errors.push({engine,kind:'adapter-binding-migration',error:String(error)});state.completed++;await save();continue}finally{await release()}
+ }
+ if(repairEngines.includes(engine)&&['wasmtime','wasmtime-winch'].includes(engine)){
+  const release=await acquireFeatureProjectLock();
+  try{
+   const buildEnv={...process.env,...template.env,...plan.env,...job.env,GOWORK:'off',GOFLAGS:'-buildvcs=false'};
+   for(const k of ['GOMAXPROCS','OMP_NUM_THREADS','RAYON_NUM_THREADS','CARGO_BUILD_JOBS','CMAKE_BUILD_PARALLEL_LEVEL','MAKEFLAGS','UV_THREADPOOL_SIZE'])delete buildEnv[k];
+   await applyWasmtimeDeclaredFeatures(harness);
+   await runCommand('cargo',['build','--release','--no-default-features','--manifest-path',join(harness,'adapters/wasmtime/Cargo.toml'),'--bin','adapter-wasmtime'],{cwd:harness,env:buildEnv,log:join(root,'wasmtime-feature-policy-build.log')});
   }catch(error){state.errors.push({engine,kind:'adapter-binding-migration',error:String(error)});state.completed++;await save();continue}finally{await release()}
  }
  if(repairEngines.includes(engine)&&['wasmedge','wasmedge-jit'].includes(engine)){
