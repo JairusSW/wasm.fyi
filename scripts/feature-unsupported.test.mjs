@@ -293,3 +293,42 @@ test('wasm3 source-declared gaps are classified without hiding claimed feature f
   assert.equal(classifyFeatureRuntimeRejection({source,engine:'wasm3',workload:w,capture,failures}),null,feature);
  }
 });
+
+test('w2c2 classifies only exact gaps outside its pinned declared feature set',()=>{
+ const source={repository:'turbolent/w2c2',revision:'e'.repeat(40)},engine='w2c2-gcc';
+ for(const [feature,reason] of [
+  ['reference-types','unsupported opcode unknown (0x25)'],
+  ['multi-value','unsupported function type 0 with 2 result values'],
+  ['simd','unsupported opcode unknown (0xFD)'],
+  ['relaxed-simd','invalid code section local declarations'],
+  ['gc','invalid function type indicator'],
+  ['exceptions',"skipping unsupported section 13\nw2c2: unsupported opcode unknown (0x1F)"],
+  ['tail-call','unsupported opcode unknown (0x13)'],
+  ['multi-memory','invalid memory.copy instruction: expected memory index 1 to be 0, got 1'],
+  ['multi-memory','guest trap: unreachable'],
+  ['typed-function-references','invalid table section table type'],
+  ['memory64','invalid limit kind'],
+  ['compact-imports','invalid import section import kind'],
+  ['custom-page-sizes','invalid limit kind'],
+  ['legacy-exceptions',"skipping unsupported section 13\nw2c2: unsupported opcode unknown (0x6)"],
+  ['shared-everything-threads','invalid global section mutability indicator'],
+  ['stack-switching','invalid function type indicator'],
+  ['memory-control','unsupported opcode unknown (0x12)'],
+  ['half-precision','unsupported opcode unknown (0xFD)'],
+  ['stringref','unsupported opcode unknown (0xFB)'],
+  ['wide-arithmetic','unsupported opcode unknown (0x16)'],
+  ['acquire-release-atomics','invalid i32.atomic.rmw.cmpxchg instruction: expected alignment 2, got 34'],
+  ['custom-descriptors','invalid function type indicator'],
+  ['extended-const','invalid global section init expression'],
+  ['extended-name-section','invalid function type indicator'],
+ ]){
+  const w={id:`features/${feature}/case/1`,sha256:'f'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+  const capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+  const failures=[{engine,workload:w.id,phase:'first-call',status:'error',reason:`adaptive phase compile: error: translation failed: w2c2: ${reason}`}];
+  assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures})?.status,'unsupported',feature+' '+reason);
+ }
+ const w={id:'features/simd/case/1',sha256:'f'.repeat(64),abi:'core',features:['simd'],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+ const capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+ for(const reason of ['error: incorrect result: scalar oracle mismatch','error: guest trap: unreachable','error: unsupported instruction'])assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures:[{engine,workload:w.id,phase:'first-call',status:'error',reason}]}),null,reason);
+ assert.equal(classifyFeatureRuntimeRejection({source:{...source,repository:'other/w2c2'},engine,workload:w,capture:{...capture,source:{...source,repository:'other/w2c2'}},failures:[{engine,workload:w.id,phase:'first-call',status:'error',reason:'unsupported opcode unknown (0xFD)'}]}),null);
+});

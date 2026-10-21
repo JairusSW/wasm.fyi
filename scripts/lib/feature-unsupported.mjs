@@ -155,6 +155,34 @@ const wasm3Rejections=[
  {feature:'custom-descriptors',reason:/malformed Wasm binary/},
  {feature:'typed-function-references',reason:/unknown value_type/},
 ];
+const w2c2Rejections=[
+ // The pinned source declares Core 1.0 plus threads/atomics, bulk memory,
+ // sign extension and non-trapping conversions. Keep every newer proposal
+ // bound to the concrete decoder/compiler diagnostic observed below.
+ {feature:'reference-types',reason:/(?:unsupported opcode unknown \(0x25\)|invalid element section offset expression|invalid table section table type)/},
+ {feature:'multi-value',reason:/(?:unsupported function type \d+ with \d+ result values|invalid block instruction: expected block type)/},
+ {feature:'simd',reason:/unsupported opcode unknown \(0xFD\)/},
+ {feature:'relaxed-simd',reason:/(?:unsupported opcode unknown \(0xFD\)|invalid code section local declarations)/},
+ {feature:'gc',reason:/(?:invalid function type indicator|unsupported opcode unknown \(0xFB\))/},
+ {feature:'exceptions',reason:/(?:unsupported section 13[\s\S]*unsupported opcode unknown \(0x1F\)|unsupported section 13[\s\S]*invalid block instruction: expected block type)/},
+ {feature:'tail-call',reason:/unsupported opcode unknown \(0x1[23]\)/},
+ {feature:'multi-memory',reason:/(?:invalid memory\.copy instruction: expected memory index 1 to be 0, got 1|guest trap: unreachable)/},
+ {feature:'typed-function-references',reason:/(?:invalid element section offset expression|invalid table section table type)/},
+ {feature:'memory64',reason:/invalid limit kind/},
+ {feature:'compact-imports',reason:/invalid import section import kind/},
+ {feature:'custom-page-sizes',reason:/invalid limit kind/},
+ {feature:'legacy-exceptions',reason:/unsupported section 13[\s\S]*unsupported opcode unknown \(0x6\)/},
+ {feature:'shared-everything-threads',reason:/(?:invalid function type indicator|invalid global section mutability indicator)/},
+ {feature:'stack-switching',reason:/invalid function type indicator/},
+ {feature:'memory-control',reason:/unsupported opcode unknown \(0x12\)/},
+ {feature:'half-precision',reason:/unsupported opcode unknown \(0xFD\)/},
+ {feature:'stringref',reason:/unsupported opcode unknown \(0xFB\)/},
+ {feature:'wide-arithmetic',reason:/unsupported opcode unknown \(0x1[3-6]\)/},
+ {feature:'acquire-release-atomics',reason:/invalid i32\.atomic\.rmw\.(?:add|sub|xchg|xor|cmpxchg) instruction: expected alignment 2, got 34/},
+ {feature:'custom-descriptors',reason:/invalid function type indicator/},
+ {feature:'extended-const',reason:/invalid global section init expression/},
+ {feature:'extended-name-section',reason:/invalid function type indicator/},
+];
 
 // Wasmtime's validator knows encodings for some proposals which the compiler
 // deliberately does not implement. Bind that distinction to the exact source,
@@ -171,14 +199,15 @@ export function classifyFeatureRuntimeRejection({source,engine,workload,capture,
  const wasmi=source?.repository==='wasmi-labs/wasmi'&&engine==='wasmi';
  const wamr=source?.repository==='bytecodealliance/wasm-micro-runtime'&&['wamr','wamr-fast-jit','wamr-llvm-jit'].includes(engine);
  const wasm3=source?.repository==='wasm3/wasm3'&&engine==='wasm3';
- if((!wasmtime&&!wasmer&&!wazero&&!v8&&!wavm&&!spiderMonkey&&!jsc&&!wasmi&&!wamr&&!wasm3)||!/^[a-f0-9]{40}$/.test(source.revision||'')||!workload?.id?.startsWith('features/')||!sha(workload.sha256)||!capture?.results?.length)return null;
+ const w2c2=source?.repository==='turbolent/w2c2'&&engine==='w2c2-gcc';
+ if((!wasmtime&&!wasmer&&!wazero&&!v8&&!wavm&&!spiderMonkey&&!jsc&&!wasmi&&!wamr&&!wasm3&&!w2c2)||!/^[a-f0-9]{40}$/.test(source.revision||'')||!workload?.id?.startsWith('features/')||!sha(workload.sha256)||!capture?.results?.length)return null;
  if(capture.source?.revision!==source.revision||capture.source?.repository!==source.repository)return null;
  const contractSha256=workloadContract(workload),failed=capture.results.filter(row=>row.latencyStatus==='failed');
  if(failed.length!==capture.results.length||failed.some(row=>row.engine!==engine||row.workload!==workload.id||row.artifactSha256!==workload.sha256||row.contractSha256!==contractSha256||(row.timingSamples||0)!==0||(row.samplesNs?.length||0)!==0))return null;
- const rejection=(wasmtime?wasmtimeRejections:wasmer?wasmerRejections:wazero?wazeroRejections:v8?v8Rejections:wavm?wavmRejections:spiderMonkey?spiderMonkeyRejections:jsc?jscRejections:wasmi?wasmiRejections:wamr?wamrRejections:wasm3Rejections).find(candidate=>(!candidate.engine||candidate.engine===engine)&&workload.features?.includes(candidate.feature));
+ const rejection=(wasmtime?wasmtimeRejections:wasmer?wasmerRejections:wazero?wazeroRejections:v8?v8Rejections:wavm?wavmRejections:spiderMonkey?spiderMonkeyRejections:jsc?jscRejections:wasmi?wasmiRejections:wamr?wamrRejections:wasm3?wasm3Rejections:w2c2Rejections).find(candidate=>(!candidate.engine||candidate.engine===engine)&&workload.features?.includes(candidate.feature));
  if(!rejection||!failures?.length||failures.some(failure=>failure.engine!==engine||failure.workload!==workload.id||(!['error','preflight_failed'].includes(failure.status)&&!(failure.status==='unsupported'&&failure.reason==='scenario not advertised'))||(failure.samples?.length||0)!==0))return null;
  const sourceBound=failures.filter(failure=>rejection.reason.test(failure.reason||''));
  if(!sourceBound.length||failures.some(failure=>!sourceBound.includes(failure)&&failure.reason!=='scenario not advertised'))return null;
- const runtime=wasmtime?`Wasmtime ${engine==='wasmtime-winch'?'Winch':'Cranelift'}`:wasmer?`Wasmer ${engine.slice('wasmer-'.length)}`:wazero?`Wazero ${engine==='wazero'?'compiler':'interpreter'}`:v8?'V8 Turboshaft':wavm?'WAVM LLVM':spiderMonkey?'SpiderMonkey Ion':jsc?'JSC OMG':wasmi?'Wasmi':wasm3?'wasm3':`WAMR ${engine==='wamr-llvm-jit'?'LLVM JIT':engine==='wamr-fast-jit'?'Fast JIT':'interpreter'}`;
+ const runtime=wasmtime?`Wasmtime ${engine==='wasmtime-winch'?'Winch':'Cranelift'}`:wasmer?`Wasmer ${engine.slice('wasmer-'.length)}`:wazero?`Wazero ${engine==='wazero'?'compiler':'interpreter'}`:v8?'V8 Turboshaft':wavm?'WAVM LLVM':spiderMonkey?'SpiderMonkey Ion':jsc?'JSC OMG':wasmi?'Wasmi':wasm3?'wasm3':w2c2?'w2c2 GCC':`WAMR ${engine==='wamr-llvm-jit'?'LLVM JIT':engine==='wamr-fast-jit'?'Fast JIT':'interpreter'}`;
  return {engine,workload:workload.id,status:'unsupported',reason:`Source-bound ${runtime} compiler rejects ${rejection.feature}`,sourceRevision:source.revision,artifactSha256:workload.sha256,contractSha256,rawFailures:failures.map(({phase,reason})=>({phase,reason}))};
 }
