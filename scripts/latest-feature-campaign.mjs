@@ -21,6 +21,7 @@ import {historyWorkloadFailure} from './lib/history-workload-failure.mjs';
 import {ensureV8BindingPolicy} from './lib/v8-binding-policy.mjs';
 import {historyIntegrationFailure} from './lib/history-completion-audit.mjs';
 import {classifyFeatureRuntimeRejection,classifyFeatureCapture} from './lib/feature-unsupported.mjs';
+import {latestFeaturePins} from './lib/latest-feature-pins.mjs';
 const [campaignArg,rootArg,inputsArg,bindingsArg]=process.argv.slice(2);
 if(!campaignArg||!rootArg||!inputsArg)throw Error('Usage: latest-feature-campaign CAMPAIGN FEATURE_ROOT INPUTS [BINDINGS_JSON]');
 const campaign=resolve(campaignArg),root=resolve(rootArg),inputs=resolve(inputsArg);
@@ -46,7 +47,7 @@ try {
 const readJSON=async path=>JSON.parse(await readFile(path,'utf8'));
 const frozen=await readJSON(join(campaign,'source-plan.json'));
 const template=await readJSON(join(campaign,'collection-template.json'));
-const latest=frozen.pins.filter(p=>p.targetWeek===frozen.anchor&&['planned','reused'].includes(p.status));
+const latest=latestFeaturePins(frozen.pins);
 const selectedEngines=(process.env.WASMFYI_FEATURE_ENGINES||'').split(',').filter(Boolean);
 for(const engine of selectedEngines)if(!latest.some(pin=>pin.configurations.includes(engine)))throw Error('Unknown latest feature engine '+engine);
 let bindings=bindingsArg?await readJSON(resolve(bindingsArg)):[];
