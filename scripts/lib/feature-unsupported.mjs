@@ -282,12 +282,13 @@ const chasmRejections=[
  {feature:'compact-imports',reason:/UnknownImportDescriptor\(descriptor=12[67]\)/},
  {feature:'custom-page-sizes',reason:/UnknownLimitsFlag\(encoded=9\)/},
  {feature:'legacy-exceptions',reason:/UnknownInstruction\(byte=6\)/},
- {feature:'shared-everything-threads',reason:/InvalidCompositeType\(encoded=101\)/},
+ {feature:'shared-everything-threads',reason:/(?:InvalidCompositeType\(encoded=101\)|UnknownMutabilityFlag\(encoded=3\))/},
  {feature:'stack-switching',reason:/InvalidCompositeType\(encoded=93\)/},
  {feature:'memory-control',reason:/InvalidPrefixInstruction\(prefix=252, opcode=18\)/},
  {feature:'half-precision',reason:/UnknownInstruction\(byte=32\)/},
  {feature:'stringref',reason:/InvalidPrefixInstruction\(prefix=251, opcode=169\)/},
  {feature:'acquire-release-atomics',reason:/InvalidAlignment\(alignment=34\)/},
+ {feature:'custom-descriptors',reason:/InvalidCompositeType\(encoded=77\)/},
 ];
 
 // Wasmtime's validator knows encodings for some proposals which the compiler

@@ -129,11 +129,13 @@ test('Chasm 2.2.0 decoder gaps stay bounded by its declared proposal table',()=>
   ['custom-page-sizes','DecodeError(error=UnknownLimitsFlag(encoded=9))'],
   ['legacy-exceptions','DecodeError(error=UnknownInstruction(byte=6))'],
   ['shared-everything-threads','DecodeError(error=InvalidCompositeType(encoded=101))'],
+  ['shared-everything-threads','DecodeError(error=UnknownMutabilityFlag(encoded=3))'],
   ['stack-switching','DecodeError(error=InvalidCompositeType(encoded=93))'],
   ['memory-control','DecodeError(error=InvalidPrefixInstruction(prefix=252, opcode=18))'],
   ['half-precision','DecodeError(error=UnknownInstruction(byte=32))'],
   ['stringref','DecodeError(error=InvalidPrefixInstruction(prefix=251, opcode=169))'],
   ['acquire-release-atomics','DecodeError(error=InvalidAlignment(alignment=34))'],
+  ['custom-descriptors','DecodeError(error=InvalidCompositeType(encoded=77))'],
  ]){
   const w={id:`features/${feature}/case/1`,sha256:'3'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
   const capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
