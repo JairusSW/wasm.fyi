@@ -20,9 +20,13 @@ const run=(program,args)=>runCommand(program,args,{cwd:process.cwd(),env,log:joi
 const source=join(directory,'sources',engine);await mkdir(join(directory,'sources'),{recursive:true});
 if(!await stat(join(source,'.git')).catch(()=>null)){
  const cachedSource=join(baseDirectory,'sources',engine);
- if(profile&&await stat(join(cachedSource,'.git')).catch(()=>null))await run('git',['clone','--shared','--no-checkout',cachedSource,source]);
- else {await mkdir(source,{recursive:true});await run('git',['init',source]);}
- await run('git',['-C',source,'remote','set-url','origin','https://github.com/'+pin.repository+'.git']);
+ if(profile&&await stat(join(cachedSource,'.git')).catch(()=>null)){
+  await run('git',['clone','--shared','--no-checkout',cachedSource,source]);
+  await run('git',['-C',source,'remote','set-url','origin','https://github.com/'+pin.repository+'.git']);
+ }else{
+  await mkdir(source,{recursive:true});await run('git',['init',source]);
+  await run('git',['-C',source,'remote','add','origin','https://github.com/'+pin.repository+'.git']);
+ }
 }
 if(engine==='jsc'){
  await run('git',['-C',source,'sparse-checkout','init','--cone']);

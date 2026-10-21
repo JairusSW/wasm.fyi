@@ -25,6 +25,7 @@ import {latestFeaturePins} from './lib/latest-feature-pins.mjs';
 import {v8FlagsForWorkload} from './lib/v8-feature-flags.mjs';
 import {applyWavmFeaturePolicy} from './lib/wavm-feature-policy.mjs';
 import {buildWavmSDK} from './lib/wavm-sdk.mjs';
+import {terminalFeatureRuntimeFailure} from './lib/feature-terminal-failure.mjs';
 const [campaignArg,rootArg,inputsArg,bindingsArg]=process.argv.slice(2);
 if(!campaignArg||!rootArg||!inputsArg)throw Error('Usage: latest-feature-campaign CAMPAIGN FEATURE_ROOT INPUTS [BINDINGS_JSON]');
 const campaign=resolve(campaignArg),root=resolve(rootArg),inputs=resolve(inputsArg);
@@ -194,7 +195,11 @@ campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
     }
    }
    // Adapter failures are retried only by an explicit repair owner.
-   if(!repairEngines.length&&prior?.status==='repair-pending'){if(prior.failure)state.errors.push(prior.failure);held=true;break;}
+   if(!repairEngines.length&&prior?.status==='repair-pending'){
+    const engineQualified=Object.values(ledger.items).some(item=>item.engine===engine&&item.outcomes?.some(([,status])=>status==='ok'));
+    if(prior.failure&&terminalFeatureRuntimeFailure(prior.failure,{engineQualified})){prior.status='completed';prior.terminalRuntimeFailure=true;await save()}
+    else {if(prior.failure)state.errors.push(prior.failure);held=true;break}
+   }
    // Explicit source-backed Wasmi proposal activation can repair old admission
    // outcomes too. It never selects unrelated GC/EH or an already OK phase.
    const repairPhases=featureRepairPhases({engine,workload,prior,repairEngines,repairWorkloads,wasmiProposals:process.env.WASMFYI_FEATURE_REPAIR_WASMI_PROPOSALS==='1',documentedProposals:process.env.WASMFYI_FEATURE_REPAIR_DOCUMENTED_PROPOSALS==='1',retryCompleted:process.env.WASMFYI_FEATURE_REPAIR_RETRY_COMPLETED==='1',forceAll:process.env.WASMFYI_FEATURE_REPAIR_ALL==='1'});
@@ -231,7 +236,8 @@ campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
    const name='feature-'+(repairPhases.length?'repair-'+Date.now()+'-':'')+(kind==='compatibility'?'compat':'perf')+'-'+engine+'-'+key+'.json';
    await atomicJSON(join(root,'captures',name),capture);await atomicJSON(join(campaign,'captures',name),capture);
    if(note){await atomicJSON(join(root,'failure-notes',name),note);await atomicJSON(join(campaign,'failure-notes',name),note);state.errors.push({...state.current,...note});}
-   const integration=note&&historyIntegrationFailure(note);
+   const engineQualified=Object.values(ledger.items).some(item=>item.engine===engine&&item.outcomes?.some(([,status])=>status==='ok'));
+   const integration=note&&historyIntegrationFailure(note)&&!terminalFeatureRuntimeFailure(note,{engineQualified});
    ledger.items[key]={...(kind==='compatibility'?{compatibilityScenarioPolicy:repairPhases.length?'retained-original-repair-phases':'scope-aware-v2'}:{}),status:integration?'repair-pending':'completed',engine,stage:kind,workload:workload.id,source:job.source,capture:name,artifactSha256:workload.sha256,contractSha256:workloadContract(workload),outcomes:repairPhases.length?prior.outcomes.map(([phase,status])=>[phase,capture.results.find(r=>r.phase===phase)?.latencyStatus||status]):capture.results.map(r=>[r.phase,r.latencyStatus]),...(repairPhases.length?{repairOf:prior.capture,repairPhases}:{}),...(note?{failure:note}:{}),finished:new Date().toISOString()};await save();
    if(integration){held=true;break}
   }

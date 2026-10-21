@@ -5,6 +5,7 @@ import {configureNodeCompilerCache,summarizeCompilerCacheStats} from './lib/node
 import {selectV8TurboshaftPolicy} from './lib/v8-turboshaft.mjs';
 import {selectV8CacheDisableFlag} from './lib/v8-cache-flag.mjs';
 import {applyWasm3Sampling} from './lib/wasm3-sampling.mjs';
+import {applyWasm3FeaturePolicy,wasm3FeatureCMakeFlags} from './lib/wasm3-feature-policy.mjs';
 import {verifySDKSubmodules} from './lib/sdk-submodules.mjs';
 import {nodeBuildPython,nodeBuildEnvironment} from './lib/node-build-python.mjs';
 import {ensureNodeFmtStandardLibrary} from './lib/node-fmt-stdlib.mjs';
@@ -229,7 +230,7 @@ if(engine==='wago') {
  provenance.sdk={source,sdk,revision:pin.revision,manifestSha256:digest(await readFile(cargo)),lockSha256:digest(await readFile(join(root,'adapters/native/Cargo.lock')))};
 } else if(engine==='wasm3') {
  const sdk=join(directory,'wasm3-sdk'),target=join(directory,'wasm3-build');
- await run('cmake',['-S',source,'-B',target,'-DCMAKE_BUILD_TYPE=Release','-DBUILD_WASI=none']);
+ await run('cmake',['-S',source,'-B',target,'-DCMAKE_BUILD_TYPE=Release','-DBUILD_WASI=none',...wasm3FeatureCMakeFlags]);
  await run('cmake',['--build',target,'--target','m3','-j',String(env.WASMFYI_BUILD_JOBS||availableParallelism())]);
  await mkdir(join(sdk,'include'),{recursive:true});await mkdir(join(sdk,'lib'),{recursive:true});
  for(const name of await readdir(join(source,'source')))if(name.endsWith('.h'))await cp(join(source,'source',name),join(sdk,'include',name));
@@ -238,9 +239,10 @@ if(engine==='wago') {
  const adapter=join(root,'adapters/native/src/wasm3.cpp');let embedding=await readFile(join(base,'adapters/native/src/wasm3.cpp'),'utf8');
  if(moduleMemory)embedding=embedding.replace('uint32_t size=0;auto p=m3_GetMemory(static_cast<Module*>(m)->runtime,&size,0);','size_t size=0;auto p=m3_GetMemory(static_cast<Module*>(m)->module,&size,0);');
  await writeFile(adapter,embedding);
+ await applyWasm3FeaturePolicy(root);
  await applyWasm3Sampling(root);
  env.WASMBENCH_WASM3_SDK=sdk;env.WASMBENCH_WASM3_VERSION=pin.revision;
- await build();provenance.sdk={source,sdk,revision:pin.revision,librarySha256:digest(await readFile(join(sdk,'lib/libm3.a'))),flags:['Release','WASI disabled'],memoryApi:moduleMemory?'module/size_t':'runtime/uint32_t',embeddingSha256:digest(Buffer.from(embedding))};
+ await build();provenance.sdk={source,sdk,revision:pin.revision,librarySha256:digest(await readFile(join(sdk,'lib/libm3.a'))),flags:['Release','WASI disabled','bounds-checked memory for custom page sizes'],memoryApi:moduleMemory?'module/size_t':'runtime/uint32_t',embeddingSha256:digest(await readFile(adapter))};
 } else if(engine==='wamr') {
  const configuration=pin.configurations[0];
  provenance.sdk=await buildWamrSDK({source,sdk:join(directory,'wamr-sdk'),target:join(directory,'wamr-build'),configuration,version:pin.revision,env,run});

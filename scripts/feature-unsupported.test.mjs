@@ -254,3 +254,30 @@ test('WAMR LLVM interpreter-only proposals stay backend-specific',()=>{
   }
  }
 });
+test('wasm3 source-declared gaps are classified without hiding claimed feature failures',()=>{
+ const source={repository:'wasm3/wasm3',revision:'d'.repeat(40)};
+ for(const [feature,reason] of [
+  ['simd','unknown opcode'],
+  ['relaxed-simd','unknown type'],
+  ['gc','malformed Wasm binary'],
+  ['shared-everything-threads','malformed Wasm binary'],
+  ['legacy-exceptions','compiling function underran the stack'],
+  ['memory-control','unknown opcode'],
+  ['half-precision','incorrect type on stack'],
+  ['stringref','incorrect type on stack'],
+  ['acquire-release-atomics','[trap] unaligned atomic'],
+  ['custom-descriptors','malformed Wasm binary'],
+  ['typed-function-references','unknown value_type'],
+ ]){
+  const w={id:`features/${feature}/case/1`,sha256:'e'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+  const capture={source,results:[{engine:'wasm3',workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+  const failures=['preflight_failed','error'].map(status=>({engine:'wasm3',workload:w.id,phase:'first-call',status,reason:`${status==='preflight_failed'?'sacrificial check check-0-0: ':''}error: ${reason}`}));
+  assert.equal(classifyFeatureRuntimeRejection({source,engine:'wasm3',workload:w,capture,failures})?.status,'unsupported',feature);
+ }
+ for(const [feature,reason] of [['custom-page-sizes','adapter terminated before response (see trial log)']]){
+  const w={id:`features/${feature}/case/1`,sha256:'e'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+  const capture={source,results:[{engine:'wasm3',workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+  const failures=[{engine:'wasm3',workload:w.id,phase:'first-call',status:'error',reason:`error: ${reason}`}];
+  assert.equal(classifyFeatureRuntimeRejection({source,engine:'wasm3',workload:w,capture,failures}),null,feature);
+ }
+});

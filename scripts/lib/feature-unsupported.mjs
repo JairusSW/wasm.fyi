@@ -138,6 +138,23 @@ const wamrRejections=[
  {feature:'custom-descriptors',reason:/module validation\/loading rejected input/},
  {feature:'wide-arithmetic',reason:/module validation\/loading rejected input/},
 ];
+const wasm3Rejections=[
+ // The pinned source README declares fixed-width SIMD, GC and full threads N/A;
+ // its configuration also states that relaxed SIMD is absent. Typed function
+ // references are explicitly partial, so reject only the exact value-type gap.
+ // Custom page sizes are declared ready and must remain a repairable failure.
+ {feature:'simd',reason:/unknown (?:type|opcode|label)/},
+ {feature:'relaxed-simd',reason:/unknown (?:type|label)/},
+ {feature:'gc',reason:/malformed Wasm binary/},
+ {feature:'shared-everything-threads',reason:/malformed Wasm binary/},
+ {feature:'legacy-exceptions',reason:/compiling function underran the stack/},
+ {feature:'memory-control',reason:/unknown opcode/},
+ {feature:'half-precision',reason:/incorrect type on stack/},
+ {feature:'stringref',reason:/incorrect type on stack/},
+ {feature:'acquire-release-atomics',reason:/\[trap\] unaligned atomic/},
+ {feature:'custom-descriptors',reason:/malformed Wasm binary/},
+ {feature:'typed-function-references',reason:/unknown value_type/},
+];
 
 // Wasmtime's validator knows encodings for some proposals which the compiler
 // deliberately does not implement. Bind that distinction to the exact source,
@@ -153,12 +170,13 @@ export function classifyFeatureRuntimeRejection({source,engine,workload,capture,
  const jsc=source?.repository==='WebKit/WebKit'&&engine==='jsc';
  const wasmi=source?.repository==='wasmi-labs/wasmi'&&engine==='wasmi';
  const wamr=source?.repository==='bytecodealliance/wasm-micro-runtime'&&['wamr','wamr-fast-jit','wamr-llvm-jit'].includes(engine);
- if((!wasmtime&&!wasmer&&!wazero&&!v8&&!wavm&&!spiderMonkey&&!jsc&&!wasmi&&!wamr)||!/^[a-f0-9]{40}$/.test(source.revision||'')||!workload?.id?.startsWith('features/')||!sha(workload.sha256)||!capture?.results?.length)return null;
+ const wasm3=source?.repository==='wasm3/wasm3'&&engine==='wasm3';
+ if((!wasmtime&&!wasmer&&!wazero&&!v8&&!wavm&&!spiderMonkey&&!jsc&&!wasmi&&!wamr&&!wasm3)||!/^[a-f0-9]{40}$/.test(source.revision||'')||!workload?.id?.startsWith('features/')||!sha(workload.sha256)||!capture?.results?.length)return null;
  if(capture.source?.revision!==source.revision||capture.source?.repository!==source.repository)return null;
  const contractSha256=workloadContract(workload),failed=capture.results.filter(row=>row.latencyStatus==='failed');
  if(failed.length!==capture.results.length||failed.some(row=>row.engine!==engine||row.workload!==workload.id||row.artifactSha256!==workload.sha256||row.contractSha256!==contractSha256||(row.timingSamples||0)!==0||(row.samplesNs?.length||0)!==0))return null;
- const rejection=(wasmtime?wasmtimeRejections:wasmer?wasmerRejections:wazero?wazeroRejections:v8?v8Rejections:wavm?wavmRejections:spiderMonkey?spiderMonkeyRejections:jsc?jscRejections:wasmi?wasmiRejections:wamrRejections).find(candidate=>(!candidate.engine||candidate.engine===engine)&&workload.features?.includes(candidate.feature));
+ const rejection=(wasmtime?wasmtimeRejections:wasmer?wasmerRejections:wazero?wazeroRejections:v8?v8Rejections:wavm?wavmRejections:spiderMonkey?spiderMonkeyRejections:jsc?jscRejections:wasmi?wasmiRejections:wamr?wamrRejections:wasm3Rejections).find(candidate=>(!candidate.engine||candidate.engine===engine)&&workload.features?.includes(candidate.feature));
  if(!rejection||!failures?.length||failures.some(failure=>failure.engine!==engine||failure.workload!==workload.id||!['error','preflight_failed'].includes(failure.status)||!rejection.reason.test(failure.reason||'')||(failure.samples?.length||0)!==0))return null;
- const runtime=wasmtime?`Wasmtime ${engine==='wasmtime-winch'?'Winch':'Cranelift'}`:wasmer?`Wasmer ${engine.slice('wasmer-'.length)}`:wazero?`Wazero ${engine==='wazero'?'compiler':'interpreter'}`:v8?'V8 Turboshaft':wavm?'WAVM LLVM':spiderMonkey?'SpiderMonkey Ion':jsc?'JSC OMG':wasmi?'Wasmi':`WAMR ${engine==='wamr-llvm-jit'?'LLVM JIT':engine==='wamr-fast-jit'?'Fast JIT':'interpreter'}`;
+ const runtime=wasmtime?`Wasmtime ${engine==='wasmtime-winch'?'Winch':'Cranelift'}`:wasmer?`Wasmer ${engine.slice('wasmer-'.length)}`:wazero?`Wazero ${engine==='wazero'?'compiler':'interpreter'}`:v8?'V8 Turboshaft':wavm?'WAVM LLVM':spiderMonkey?'SpiderMonkey Ion':jsc?'JSC OMG':wasmi?'Wasmi':wasm3?'wasm3':`WAMR ${engine==='wamr-llvm-jit'?'LLVM JIT':engine==='wamr-fast-jit'?'Fast JIT':'interpreter'}`;
  return {engine,workload:workload.id,status:'unsupported',reason:`Source-bound ${runtime} compiler rejects ${rejection.feature}`,sourceRevision:source.revision,artifactSha256:workload.sha256,contractSha256,rawFailures:failures.map(({phase,reason})=>({phase,reason}))};
 }
