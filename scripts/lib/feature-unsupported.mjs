@@ -237,6 +237,26 @@ const wasmedgeRejections=[
  {feature:'custom-descriptors',reason:/integer representation too long/},
  {feature:'wide-arithmetic',reason:/illegal opcode/},
 ];
+const chicoryRejections=[
+ // The exact source README at the pinned revision declares SIMD (interpreter
+ // only), tail calls, exception handling, threads, extended constants, GC and
+ // multi-memory. These newer encodings are absent from the parser/opcode
+ // tables. Bind each disposition to the concrete diagnostic so Chicory bugs
+ // in its declared features remain failures.
+ {feature:'compact-imports',reason:/malformed import kind/},
+ {feature:'custom-page-sizes',reason:/invalid memory limit: 9/},
+ {feature:'memory64',reason:/invalid memory limit: 5/},
+ {feature:'legacy-exceptions',reason:/illegal opcode, op value 06/},
+ {feature:'shared-everything-threads',reason:/(?:Invalid composite type\. Form 0x65|malformed mutability 3)/},
+ {feature:'stack-switching',reason:/Invalid composite type\. Form 0x5D/},
+ {feature:'memory-control',reason:/illegal opcode, op value FC12/},
+ {feature:'half-precision',reason:/unknown memory 0/},
+ {feature:'stringref',reason:/illegal opcode, op value FBA9/},
+ {feature:'acquire-release-atomics',reason:/invalid memory alignement, current: 34, expected: 2/},
+ {feature:'custom-descriptors',reason:/Invalid composite type\. Form 0x4D/},
+ {feature:'wide-arithmetic',reason:/illegal opcode, op value FC1[3-6]/},
+ {engine:'chicory',feature:'relaxed-simd',reason:/(?:unknown memory 3|illegal opcode, op value FE(?:05|0B)|unexpected end)/},
+];
 
 // Wasmtime's validator knows encodings for some proposals which the compiler
 // deliberately does not implement. Bind that distinction to the exact source,
@@ -257,14 +277,15 @@ export function classifyFeatureRuntimeRejection({source,engine,workload,capture,
  const w2c2=source?.repository==='turbolent/w2c2'&&engine==='w2c2-gcc';
  const wasm2c=source?.repository==='WebAssembly/wabt'&&engine==='wasm2c-gcc';
  const wasmedge=source?.repository==='WasmEdge/WasmEdge'&&['wasmedge','wasmedge-jit'].includes(engine);
- if((!wasmtime&&!wago&&!wasmer&&!wazero&&!v8&&!wavm&&!spiderMonkey&&!jsc&&!wasmi&&!wamr&&!wasm3&&!w2c2&&!wasm2c&&!wasmedge)||!/^[a-f0-9]{40}$/.test(source.revision||'')||!workload?.id?.startsWith('features/')||!sha(workload.sha256)||!capture?.results?.length)return null;
+ const chicory=source?.repository==='dylibso/chicory'&&['chicory','chicory-jit'].includes(engine);
+ if((!wasmtime&&!wago&&!wasmer&&!wazero&&!v8&&!wavm&&!spiderMonkey&&!jsc&&!wasmi&&!wamr&&!wasm3&&!w2c2&&!wasm2c&&!wasmedge&&!chicory)||!/^[a-f0-9]{40}$/.test(source.revision||'')||!workload?.id?.startsWith('features/')||!sha(workload.sha256)||!capture?.results?.length)return null;
  if(capture.source?.revision!==source.revision||capture.source?.repository!==source.repository)return null;
  const contractSha256=workloadContract(workload),failed=capture.results.filter(row=>row.latencyStatus==='failed');
  if(failed.length!==capture.results.length||failed.some(row=>row.engine!==engine||row.workload!==workload.id||row.artifactSha256!==workload.sha256||row.contractSha256!==contractSha256||(row.timingSamples||0)!==0||(row.samplesNs?.length||0)!==0))return null;
- const rejection=(wasmtime?wasmtimeRejections:wago?wagoRejections:wasmer?wasmerRejections:wazero?wazeroRejections:v8?v8Rejections:wavm?wavmRejections:spiderMonkey?spiderMonkeyRejections:jsc?jscRejections:wasmi?wasmiRejections:wamr?wamrRejections:wasm3?wasm3Rejections:w2c2?w2c2Rejections:wasm2c?wasm2cRejections:wasmedgeRejections).find(candidate=>(!candidate.engine||candidate.engine===engine)&&workload.features?.includes(candidate.feature));
+ const rejection=(wasmtime?wasmtimeRejections:wago?wagoRejections:wasmer?wasmerRejections:wazero?wazeroRejections:v8?v8Rejections:wavm?wavmRejections:spiderMonkey?spiderMonkeyRejections:jsc?jscRejections:wasmi?wasmiRejections:wamr?wamrRejections:wasm3?wasm3Rejections:w2c2?w2c2Rejections:wasm2c?wasm2cRejections:wasmedge?wasmedgeRejections:chicoryRejections).find(candidate=>(!candidate.engine||candidate.engine===engine)&&workload.features?.includes(candidate.feature));
  if(!rejection||!failures?.length||failures.some(failure=>failure.engine!==engine||failure.workload!==workload.id||(!['error','preflight_failed'].includes(failure.status)&&!(failure.status==='unsupported'&&failure.reason==='scenario not advertised'))||(failure.samples?.length||0)!==0))return null;
  const sourceBound=failures.filter(failure=>rejection.reason.test(failure.reason||''));
  if(!sourceBound.length||failures.some(failure=>!sourceBound.includes(failure)&&failure.reason!=='scenario not advertised'))return null;
- const runtime=wasmtime?`Wasmtime ${engine==='wasmtime-winch'?'Winch':'Cranelift'}`:wago?'Wago Railshot':wasmer?`Wasmer ${engine.slice('wasmer-'.length)}`:wazero?`Wazero ${engine==='wazero'?'compiler':'interpreter'}`:v8?'V8 Turboshaft':wavm?'WAVM LLVM':spiderMonkey?'SpiderMonkey Ion':jsc?'JSC OMG':wasmi?'Wasmi':wasm3?'wasm3':w2c2?'w2c2 GCC':wasm2c?'wasm2c GCC':wasmedge?`WasmEdge ${engine==='wasmedge-jit'?'JIT':'interpreter'}`:`WAMR ${engine==='wamr-llvm-jit'?'LLVM JIT':engine==='wamr-fast-jit'?'Fast JIT':'interpreter'}`;
+ const runtime=wasmtime?`Wasmtime ${engine==='wasmtime-winch'?'Winch':'Cranelift'}`:wago?'Wago Railshot':wasmer?`Wasmer ${engine.slice('wasmer-'.length)}`:wazero?`Wazero ${engine==='wazero'?'compiler':'interpreter'}`:v8?'V8 Turboshaft':wavm?'WAVM LLVM':spiderMonkey?'SpiderMonkey Ion':jsc?'JSC OMG':wasmi?'Wasmi':wasm3?'wasm3':w2c2?'w2c2 GCC':wasm2c?'wasm2c GCC':wasmedge?`WasmEdge ${engine==='wasmedge-jit'?'JIT':'interpreter'}`:chicory?`Chicory ${engine==='chicory-jit'?'compiler':'interpreter'}`:`WAMR ${engine==='wamr-llvm-jit'?'LLVM JIT':engine==='wamr-fast-jit'?'Fast JIT':'interpreter'}`;
  return {engine,workload:workload.id,status:'unsupported',reason:`Source-bound ${runtime} compiler rejects ${rejection.feature}`,sourceRevision:source.revision,artifactSha256:workload.sha256,contractSha256,rawFailures:failures.map(({phase,reason})=>({phase,reason}))};
 }

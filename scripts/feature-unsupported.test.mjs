@@ -396,3 +396,34 @@ test('WasmEdge classifies exact SDK proposal gaps without hiding traps',()=>{
  assert.equal(classify('custom-page-sizes','error: malformed limits flags')?.status,'unsupported');
  assert.equal(classify('threads','error: guest trap: unreachable'),null);
 });
+
+test('Chicory classifies only exact source-absent proposal encodings',()=>{
+ const source={repository:'dylibso/chicory',revision:'e'.repeat(40)};
+ const classify=(engine,feature,reason)=>{
+  const w={id:`features/${feature}/case/1`,sha256:'f'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+  const capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+  return classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures:[{engine,workload:w.id,phase:'first-call',status:'error',reason}]});
+ };
+ for(const [feature,reason] of [
+  ['compact-imports','malformed import kind'],
+  ['custom-page-sizes','integer too large, invalid memory limit: 9'],
+  ['memory64','integer too large, invalid memory limit: 5'],
+  ['legacy-exceptions','illegal opcode, op value 06'],
+  ['shared-everything-threads','Invalid composite type. Form 0x65 was not 0x5E'],
+  ['stack-switching','Invalid composite type. Form 0x5D was not 0x5E'],
+  ['memory-control','illegal opcode, op value FC12'],
+  ['half-precision','unknown memory 0'],
+  ['stringref','illegal opcode, op value FBA9'],
+  ['acquire-release-atomics','invalid memory alignement, current: 34, expected: 2'],
+  ['custom-descriptors','Invalid composite type. Form 0x4D was not 0x5E'],
+  ['wide-arithmetic','illegal opcode, op value FC16'],
+ ])for(const engine of ['chicory','chicory-jit'])assert.equal(classify(engine,feature,reason)?.status,'unsupported',`${engine} ${feature}`);
+ assert.equal(classify('chicory','relaxed-simd','illegal opcode, op value FE05')?.status,'unsupported');
+ assert.equal(classify('chicory-jit','relaxed-simd','illegal opcode, op value FE05'),null);
+ for(const [feature,reason] of [
+  ['multi-value','incorrect result: scalar oracle mismatch'],
+  ['reference-types','Cannot read the array length because local is null'],
+  ['tail-call','Index 3 out of bounds for length 3'],
+  ['threads','guest trap: unreachable'],
+ ])assert.equal(classify('chicory',feature,reason),null,feature);
+});
