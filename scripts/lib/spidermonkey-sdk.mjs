@@ -91,7 +91,7 @@ export async function resetSpiderMonkeyCompilerCache(object,env){
 export async function repairSpiderMonkeyLinuxSingleThreadedWrapper(source,platform=process.platform){
  if(platform!=='linux')return null;
  const path=join(source,'config/system-headers.mozbuild'),header='    "sys/single_threaded.h",\n';
- const current=await readFile(path,'utf8');
+ const current=await readFile(path,'utf8').catch(error=>{if(error.code==='ENOENT')return '';throw error});
  if(!current.includes(header))return null;
  if(current.split(header).length!==2)throw Error('Ambiguous SpiderMonkey single_threaded system-header declaration');
  const corrected=current.replace(header,'');await writeFile(path,corrected);
