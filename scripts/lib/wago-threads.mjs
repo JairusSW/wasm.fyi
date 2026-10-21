@@ -7,6 +7,22 @@ export function withWagoThreads(source){
   return source;
  }
  const replace=(before,after)=>{if(source.split(before).length!==2)throw Error('Wago threads adapter seam changed');source=source.replace(before,after)};
+ const currentProfiles=[
+  '"can_host_profile_threads-defined-v1"',
+  '"can_host_profile_threads-identity-v1"',
+  '"can_host_profile_threads-opaque-identity-v1"',
+ ];
+ // Current harnesses already implement the thread profiles and scope feature
+ // activation in compileConfig. Add only the audit metadata; reapplying the
+ // legacy source rewrite would duplicate the behavior and is intentionally
+ // rejected by its older, narrower seams.
+ if(currentProfiles.every(profile=>source.includes(profile))&&
+   source.includes('cfg = cfg.WithFeature(wago.CoreFeatureThreads, true)')){
+  replace('\t\t\tcase "prepare":',`\t\t\t\tresp.Description.Configuration["threads_policy"] = "${WAGO_THREADS_POLICY}; only thread feature workloads opt in; other workloads keep runtime defaults"
+\t\t\t\tresp.Description.Features = append(resp.Description.Features, "threads")
+\t\t\tcase "prepare":`);
+  return source;
+ }
  replace('\t\t\tcase "prepare":',`\t\t\t\tresp.Description.Configuration["threads_policy"] = "${WAGO_THREADS_POLICY}; only thread feature workloads opt in; other workloads keep runtime defaults"
 \t\t\t\tif wago.SupportedFeatures()&wago.CoreFeatureThreads != 0 {
 \t\t\t\t\tfor _, profile := range []string{"threads-defined-v1", "threads-identity-v1", "threads-opaque-identity-v1"} {

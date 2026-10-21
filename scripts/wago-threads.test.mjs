@@ -16,6 +16,21 @@ test('thread activation is workload-scoped and preserves ordinary identity bindi
  assert(output.includes(WAGO_THREADS_POLICY));
  assert.equal(withWagoThreads(output),output);
 });
+test('current adapters retain their existing scoped thread implementation',()=>{
+ const current=`describe:
+\t\t\t\tresp.Description.Capabilities["can_host_profile_threads-defined-v1"] = true
+\t\t\t\tresp.Description.Capabilities["can_host_profile_threads-identity-v1"] = true
+\t\t\t\tresp.Description.Capabilities["can_host_profile_threads-opaque-identity-v1"] = true
+\t\t\tcase "prepare":
+if w.HostProfile == "threads-defined-v1" {
+ cfg = cfg.WithFeature(wago.CoreFeatureThreads, true)
+}`;
+ const output=withWagoThreads(current);
+ assert(output.includes(WAGO_THREADS_POLICY));
+ assert(output.includes('resp.Description.Features = append(resp.Description.Features, "threads")'));
+ assert.equal(output.match(/WithFeature\(wago\.CoreFeatureThreads, true\)/g).length,1);
+ assert.equal(withWagoThreads(output),output);
+});
 test('unknown and ambiguous adapters are rejected',()=>{
  assert.throws(()=>withWagoThreads('changed adapter'),/seam changed/);
  assert.throws(()=>withWagoThreads(fixture()+fixture()),/seam changed/);
