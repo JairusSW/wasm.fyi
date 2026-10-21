@@ -31,11 +31,10 @@ diff --git a/adapters/wasmtime/src/main.rs b/adapters/wasmtime/src/main.rs
 diff --git a/adapters/wasmtime/src/features.rs b/adapters/wasmtime/src/features.rs
 --- a/adapters/wasmtime/src/features.rs
 +++ b/adapters/wasmtime/src/features.rs
-@@ -7,10 +7,14 @@ fn policy(winch: bool) -> Vec<(&'static str, WasmFeatures, bool)> {
+@@ -7,10 +7,13 @@ fn policy(winch: bool) -> Vec<(&'static str, WasmFeatures, bool)> {
 +        ("CUSTOM_PAGE_SIZES", WasmFeatures::CUSTOM_PAGE_SIZES, true),
 +        ("COMPACT_IMPORTS", WasmFeatures::COMPACT_IMPORTS, false),
 +        ("WIDE_ARITHMETIC", WasmFeatures::WIDE_ARITHMETIC, !winch || cfg!(target_arch = "x86_64")),
-+        ("SHARED_EVERYTHING_THREADS", WasmFeatures::SHARED_EVERYTHING_THREADS, !winch),
          ("TAIL_CALL", WasmFeatures::TAIL_CALL, !winch),
          ("RELAXED_SIMD", WasmFeatures::RELAXED_SIMD, !winch),
 -        ("GC", WasmFeatures::GC, false),
@@ -63,12 +62,11 @@ diff --git a/adapters/wasmtime/src/features.rs b/adapters/wasmtime/src/features.
 -        flags.push(("GC_TYPES", WasmFeatures::GC_TYPES, false));
          flags.push(("STACK_SWITCHING", WasmFeatures::STACK_SWITCHING, false));
          if cfg!(target_arch = "aarch64") {
-@@ -36,5 +36,13 @@ pub fn configure(config: &mut Config, winch: bool) {
+@@ -36,5 +36,12 @@ pub fn configure(config: &mut Config, winch: bool) {
      for (_, flag, enabled) in policy(winch) {
          config.wasm_features(flag, enabled);
      }
 +    config.wasm_branch_hinting(!winch);
-+    config.wasm_shared_everything_threads(!winch);
 +    if !winch {
 +        config.gc_support(true);
 +    }
@@ -82,12 +80,12 @@ diff --git a/adapters/wasmtime/src/features.rs b/adapters/wasmtime/src/features.
      json!({
          "namespace": "wasmparser/0.251.0",
 -        "evidence": "Wasmtime 46.0.1 config.rs default features and compiler_panicking_wasm_features; explicitly applied Config::wasm_features subset; enabled validation is not a guarantee of complete backend instruction support; optional --component-async uses the component-async-probes Cargo feature and explicitly enables wasm_component_model_async",
-+        "evidence": "Wasmtime Config and Cargo features cross-checked against webassembly.org/features; Cranelift explicitly enables branch hints, custom page sizes, wide arithmetic, final exceptions, GC, function references, GC types, threads, shared-everything threads, GC runtime support and shared memories; enabled validation is not a guarantee of complete backend instruction support; optional --component-async uses the component-async-probes Cargo feature and explicitly enables wasm_component_model_async",
++        "evidence": "Wasmtime Config and Cargo features cross-checked against webassembly.org/features; Cranelift explicitly enables branch hints, custom page sizes, wide arithmetic, final exceptions, GC, function references, GC types, threads, GC runtime support and shared memories; enabled validation is not a guarantee of complete backend instruction support; optional --component-async uses the component-async-probes Cargo feature and explicitly enables wasm_component_model_async",
 +        "branch_hinting": !winch,
          "supported": supported
      })
  }
-@@ -81,5 +87,11 @@ mod tests {
+@@ -81,5 +87,10 @@ mod tests {
              };
              let engine = adapter.engine().unwrap();
              assert_eq!(describe(winch)["supported"]["TAIL_CALL"], json!(!winch));
@@ -95,7 +93,6 @@ diff --git a/adapters/wasmtime/src/features.rs b/adapters/wasmtime/src/features.
 +            assert_eq!(describe(winch)["supported"]["FUNCTION_REFERENCES"], json!(!winch));
 +            assert_eq!(describe(winch)["supported"]["EXCEPTIONS"], json!(true));
 +            assert_eq!(describe(winch)["supported"]["THREADS"], json!(!winch || cfg!(target_arch = "x86_64")));
-+            assert_eq!(describe(winch)["supported"]["SHARED_EVERYTHING_THREADS"], json!(!winch));
 +            assert_eq!(describe(winch)["supported"]["COMPACT_IMPORTS"], json!(false));
              assert_eq!(Module::validate(&engine, tail).is_ok(), !winch);
              let simd_enabled = !(winch && cfg!(target_arch = "aarch64"));

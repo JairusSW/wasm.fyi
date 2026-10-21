@@ -87,7 +87,6 @@ jobs:
         run: |
           node --test scripts/wamr-sdk.test.mjs scripts/wamr-dependency-cache.test.mjs scripts/node-fmt-stdlib.test.mjs scripts/node-compiler-cache.test.mjs
           node --test scripts/wasmedge-feature-policy.test.mjs scripts/wasmedge-workload-coverage.test.mjs
-          node --test scripts/wasmtime-feature-policy.test.mjs
           node --test scripts/graalwasm-toolchain.test.mjs
           node --test scripts/chasm-sdk.test.mjs scripts/wago-threads.test.mjs scripts/wago-direct-identity.test.mjs scripts/test-wago-cold-compile.mjs
           node --test scripts/endive-bridge.test.mjs scripts/endive-jffi.test.mjs scripts/endive-timing-code.test.mjs

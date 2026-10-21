@@ -19,7 +19,7 @@ export function classifyFeatureCapture(capture,evidence){
 }
 
 const wasmtimeRejections=[
- {feature:'shared-everything-threads',engine:'wasmtime-winch',reason:/shared (?:composite types|globals) require the shared-everything-threads proposal/},
+ {feature:'shared-everything-threads',reason:/shared (?:composite types|globals) require the shared-everything-threads proposal/},
  {feature:'memory-control',reason:/memory control support is not enabled/},
  {feature:'custom-descriptors',reason:/custom descriptors? (?:support is not enabled|proposal must be enabled)/},
  {feature:'half-precision',reason:/unknown 0xfd subopcode: 0x120/},
