@@ -29,6 +29,11 @@ const wasmtimeRejections=[
 ];
 const wasmerRejections=[
  {feature:'compact-imports',reason:/invalid leading byte 0x7[EF] with compact imports proposal disabled/},
+ {feature:'custom-page-sizes',reason:/custom page sizes proposal must be enabled to customize a memory's page size/},
+ {feature:'half-precision',reason:/unknown 0xfd subopcode: 0x120/},
+ {feature:'stringref',reason:/unknown 0xfb subopcode: 0xa9/},
+ {feature:'acquire-release-atomics',reason:/atomic instructions must always specify maximum alignment/},
+ {feature:'memory-control',reason:/memory control support is not enabled/},
 ];
 
 // Wasmtime's validator knows encodings for some proposals which the compiler

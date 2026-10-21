@@ -48,12 +48,21 @@ test('Wasmtime sacrificial preflight and exact proposal encoding rejections rema
 test('Wasmer compact-import validation rejection remains source and artifact bound',()=>{
  const source={repository:'wasmerio/wasmer',revision:'f'.repeat(40)};
  for(const engine of ['wasmer-singlepass','wasmer-cranelift','wasmer-llvm']){
-  const w={id:'features/compact-imports/module-group/1',sha256:'a'.repeat(64),abi:'core',features:['compact-imports'],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
-  const contractSha256=workloadContract(w),capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256,phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
-  const failures=['preflight_failed','error'].map(status=>({engine,workload:w.id,phase:'first-call',status,reason:`${status==='preflight_failed'?'sacrificial check check-0-0: ':''}error: compile: Validation error: invalid leading byte 0x7F with compact imports proposal disabled (at offset 0x1e)`}));
-  const evidence=classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures});
-  assert.equal(evidence?.status,'unsupported',engine);
-  const wrong=structuredClone(failures);wrong[1].reason='error: trap: unreachable';
-  assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures:wrong}),null);
+  for(const [feature,reason] of [
+   ['compact-imports','invalid leading byte 0x7F with compact imports proposal disabled'],
+   ['custom-page-sizes',"the custom page sizes proposal must be enabled to customize a memory's page size"],
+   ['half-precision','unknown 0xfd subopcode: 0x120'],
+   ['stringref','unknown 0xfb subopcode: 0xa9'],
+   ['acquire-release-atomics','atomic instructions must always specify maximum alignment'],
+   ['memory-control','memory control support is not enabled'],
+  ]){
+   const w={id:`features/${feature}/case/1`,sha256:'a'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+   const contractSha256=workloadContract(w),capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256,phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+   const failures=['preflight_failed','error'].map(status=>({engine,workload:w.id,phase:'first-call',status,reason:`${status==='preflight_failed'?'sacrificial check check-0-0: ':''}error: compile: Validation error: ${reason} (at offset 0x1e)`}));
+   const evidence=classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures});
+   assert.equal(evidence?.status,'unsupported',`${engine} ${feature}`);
+   const wrong=structuredClone(failures);wrong[1].reason='error: trap: unreachable';
+   assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures:wrong}),null);
+  }
  }
 });
