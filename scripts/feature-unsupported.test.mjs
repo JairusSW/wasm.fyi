@@ -153,6 +153,7 @@ test('Wizard V3 classifies only proposals absent from its pinned support table',
  for(const [feature,reason] of [
   ['compact-imports','invalid import kind 0x7F'],
   ['shared-everything-threads','expected type decl code, got 101'],
+  ['shared-everything-threads','invalid global flags 0x03'],
   ['memory-control','unsupported opcode 0x00 0xFF (<invalid>)'],
   ['half-precision','unsupported opcode 0x00 0xFF (<invalid>)'],
   ['stringref','unsupported opcode 0x00 0xFF (<invalid>)'],

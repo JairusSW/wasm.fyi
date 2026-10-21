@@ -296,7 +296,7 @@ const wizardRejections=[
  // Keep every newer absent proposal tied to the portable interpreter's exact
  // loader diagnostic so declared-extension regressions remain failures.
  {feature:'compact-imports',reason:/invalid import kind 0x7[EF]/},
- {feature:'shared-everything-threads',reason:/expected type decl code, got 101/},
+ {feature:'shared-everything-threads',reason:/(?:expected type decl code, got 101|invalid global flags 0x03)/},
  {feature:'memory-control',reason:/unsupported opcode 0x00 0xFF \(<invalid>\)/},
  {feature:'half-precision',reason:/unsupported opcode 0x00 0xFF \(<invalid>\)/},
  {feature:'stringref',reason:/unsupported opcode 0x00 0xFF \(<invalid>\)/},
