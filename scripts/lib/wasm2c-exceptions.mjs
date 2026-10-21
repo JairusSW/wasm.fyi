@@ -2,6 +2,10 @@ import {readFile,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 
 export function withWasm2cExceptions(source) {
+ const translation='            vec!["wb.wasm", "-n", "wb", "-o", "wb.c"]';
+ const featureTranslation='            vec!["wb.wasm", "--enable-custom-page-sizes", "-n", "wb", "-o", "wb.c"]';
+ if(source.includes(translation))source=source.replace(translation,featureTranslation);
+ else if(!source.includes(featureTranslation))throw Error('Wasm2c translation feature seam absent');
  const flags='                "-DWASM_RT_MEMCHECK_SIGNAL_HANDLER=0".into(),';
  if(!source.includes('"-D_POSIX_C_SOURCE=200809L".into()')) {
   if(!source.includes(flags))throw Error('Wasm2c POSIX runtime flags seam absent');

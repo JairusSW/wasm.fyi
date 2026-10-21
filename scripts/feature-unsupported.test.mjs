@@ -332,3 +332,31 @@ test('w2c2 classifies only exact gaps outside its pinned declared feature set',(
  for(const reason of ['error: incorrect result: scalar oracle mismatch','error: guest trap: unreachable','error: unsupported instruction'])assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures:[{engine,workload:w.id,phase:'first-call',status:'error',reason}]}),null,reason);
  assert.equal(classifyFeatureRuntimeRejection({source:{...source,repository:'other/w2c2'},engine,workload:w,capture:{...capture,source:{...source,repository:'other/w2c2'}},failures:[{engine,workload:w.id,phase:'first-call',status:'error',reason:'unsupported opcode unknown (0xFD)'}]}),null);
 });
+
+test('wasm2c classifies exact documented gaps but keeps declared custom pages repairable',()=>{
+ const source={repository:'WebAssembly/wabt',revision:'f'.repeat(40)},engine='wasm2c-gcc';
+ for(const [feature,reason] of [
+  ['compact-imports','module uses compact imports, but feature not enabled'],
+  ['gc','unexpected type form (got 0x5e)'],
+  ['typed-function-references','unexpected opcode: 0x14'],
+  ['relaxed-simd',''],
+  ['shared-everything-threads','global mutability must be 0 or 1'],
+  ['stack-switching','unexpected type form (got 0x5d)'],
+  ['memory-control','unexpected opcode: 0xfc 0x12'],
+  ['half-precision','unexpected opcode: 0xfd 0xa0 0x2'],
+  ['stringref','unexpected opcode: 0xfb'],
+  ['acquire-release-atomics','memory may not be shared: threads not allowed'],
+  ['custom-descriptors','unexpected type form (got 0x4e)'],
+  ['wide-arithmetic',''],
+  ['extended-name-section','unexpected type form (got 0x5f)'],
+ ]){
+  const w={id:`features/${feature}/case/1`,sha256:'a'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+  const capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'compile',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+  const failures=[{engine,workload:w.id,phase:'compile',status:'error',reason:`adaptive phase compile: error: translation failed: ${reason}`}];
+  assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures})?.status,'unsupported',feature);
+ }
+ const w={id:'features/custom-page-sizes/case/1',sha256:'a'.repeat(64),abi:'core',features:['custom-page-sizes'],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+ const capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'compile',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+ const failures=[{engine,workload:w.id,phase:'compile',status:'error',reason:'error: translation failed: custom page sizes not allowed'}];
+ assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures}),null);
+});

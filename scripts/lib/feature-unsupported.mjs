@@ -183,6 +183,25 @@ const w2c2Rejections=[
  {feature:'extended-const',reason:/invalid global section init expression/},
  {feature:'extended-name-section',reason:/invalid function type indicator/},
 ];
+const wasm2cRejections=[
+ // The pinned WABT README marks these proposals unsupported by wasm2c. Keep
+ // classification bound to its exact translator diagnostics. Custom page
+ // sizes are deliberately absent: wasm2c declares them supported and the
+ // adapter enables that feature during translation.
+ {feature:'compact-imports',reason:/module uses compact imports, but feature not enabled/},
+ {feature:'gc',reason:/(?:unexpected type form \(got 0x(?:50|5e|5f)\)|unexpected opcode: 0xfb)/},
+ {feature:'typed-function-references',reason:/(?:unexpected opcode: 0x14|expected valid (?:local|select result) type|table elem type must be a reference type)/},
+ {feature:'relaxed-simd',reason:/translation failed:\s*$/},
+ {feature:'shared-everything-threads',reason:/(?:unexpected type form \(got 0x65\)|global mutability must be 0 or 1)/},
+ {feature:'stack-switching',reason:/unexpected type form \(got 0x5d\)/},
+ {feature:'memory-control',reason:/unexpected opcode: 0xfc 0x12/},
+ {feature:'half-precision',reason:/unexpected opcode: 0xfd 0xa0 0x2/},
+ {feature:'stringref',reason:/unexpected opcode: 0xfb/},
+ {feature:'acquire-release-atomics',reason:/memory may not be shared: threads not allowed/},
+ {feature:'custom-descriptors',reason:/unexpected type form \(got 0x4e\)/},
+ {feature:'wide-arithmetic',reason:/translation failed:\s*$/},
+ {feature:'extended-name-section',reason:/unexpected type form \(got 0x5f\)/},
+];
 
 // Wasmtime's validator knows encodings for some proposals which the compiler
 // deliberately does not implement. Bind that distinction to the exact source,
@@ -200,14 +219,15 @@ export function classifyFeatureRuntimeRejection({source,engine,workload,capture,
  const wamr=source?.repository==='bytecodealliance/wasm-micro-runtime'&&['wamr','wamr-fast-jit','wamr-llvm-jit'].includes(engine);
  const wasm3=source?.repository==='wasm3/wasm3'&&engine==='wasm3';
  const w2c2=source?.repository==='turbolent/w2c2'&&engine==='w2c2-gcc';
- if((!wasmtime&&!wasmer&&!wazero&&!v8&&!wavm&&!spiderMonkey&&!jsc&&!wasmi&&!wamr&&!wasm3&&!w2c2)||!/^[a-f0-9]{40}$/.test(source.revision||'')||!workload?.id?.startsWith('features/')||!sha(workload.sha256)||!capture?.results?.length)return null;
+ const wasm2c=source?.repository==='WebAssembly/wabt'&&engine==='wasm2c-gcc';
+ if((!wasmtime&&!wasmer&&!wazero&&!v8&&!wavm&&!spiderMonkey&&!jsc&&!wasmi&&!wamr&&!wasm3&&!w2c2&&!wasm2c)||!/^[a-f0-9]{40}$/.test(source.revision||'')||!workload?.id?.startsWith('features/')||!sha(workload.sha256)||!capture?.results?.length)return null;
  if(capture.source?.revision!==source.revision||capture.source?.repository!==source.repository)return null;
  const contractSha256=workloadContract(workload),failed=capture.results.filter(row=>row.latencyStatus==='failed');
  if(failed.length!==capture.results.length||failed.some(row=>row.engine!==engine||row.workload!==workload.id||row.artifactSha256!==workload.sha256||row.contractSha256!==contractSha256||(row.timingSamples||0)!==0||(row.samplesNs?.length||0)!==0))return null;
- const rejection=(wasmtime?wasmtimeRejections:wasmer?wasmerRejections:wazero?wazeroRejections:v8?v8Rejections:wavm?wavmRejections:spiderMonkey?spiderMonkeyRejections:jsc?jscRejections:wasmi?wasmiRejections:wamr?wamrRejections:wasm3?wasm3Rejections:w2c2Rejections).find(candidate=>(!candidate.engine||candidate.engine===engine)&&workload.features?.includes(candidate.feature));
+ const rejection=(wasmtime?wasmtimeRejections:wasmer?wasmerRejections:wazero?wazeroRejections:v8?v8Rejections:wavm?wavmRejections:spiderMonkey?spiderMonkeyRejections:jsc?jscRejections:wasmi?wasmiRejections:wamr?wamrRejections:wasm3?wasm3Rejections:w2c2?w2c2Rejections:wasm2cRejections).find(candidate=>(!candidate.engine||candidate.engine===engine)&&workload.features?.includes(candidate.feature));
  if(!rejection||!failures?.length||failures.some(failure=>failure.engine!==engine||failure.workload!==workload.id||(!['error','preflight_failed'].includes(failure.status)&&!(failure.status==='unsupported'&&failure.reason==='scenario not advertised'))||(failure.samples?.length||0)!==0))return null;
  const sourceBound=failures.filter(failure=>rejection.reason.test(failure.reason||''));
  if(!sourceBound.length||failures.some(failure=>!sourceBound.includes(failure)&&failure.reason!=='scenario not advertised'))return null;
- const runtime=wasmtime?`Wasmtime ${engine==='wasmtime-winch'?'Winch':'Cranelift'}`:wasmer?`Wasmer ${engine.slice('wasmer-'.length)}`:wazero?`Wazero ${engine==='wazero'?'compiler':'interpreter'}`:v8?'V8 Turboshaft':wavm?'WAVM LLVM':spiderMonkey?'SpiderMonkey Ion':jsc?'JSC OMG':wasmi?'Wasmi':wasm3?'wasm3':w2c2?'w2c2 GCC':`WAMR ${engine==='wamr-llvm-jit'?'LLVM JIT':engine==='wamr-fast-jit'?'Fast JIT':'interpreter'}`;
+ const runtime=wasmtime?`Wasmtime ${engine==='wasmtime-winch'?'Winch':'Cranelift'}`:wasmer?`Wasmer ${engine.slice('wasmer-'.length)}`:wazero?`Wazero ${engine==='wazero'?'compiler':'interpreter'}`:v8?'V8 Turboshaft':wavm?'WAVM LLVM':spiderMonkey?'SpiderMonkey Ion':jsc?'JSC OMG':wasmi?'Wasmi':wasm3?'wasm3':w2c2?'w2c2 GCC':wasm2c?'wasm2c GCC':`WAMR ${engine==='wamr-llvm-jit'?'LLVM JIT':engine==='wamr-fast-jit'?'Fast JIT':'interpreter'}`;
  return {engine,workload:workload.id,status:'unsupported',reason:`Source-bound ${runtime} compiler rejects ${rejection.feature}`,sourceRevision:source.revision,artifactSha256:workload.sha256,contractSha256,rawFailures:failures.map(({phase,reason})=>({phase,reason}))};
 }
