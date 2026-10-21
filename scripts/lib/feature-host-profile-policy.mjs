@@ -24,6 +24,13 @@ export function withSignedWireValues(source){
  if(!source.includes(old))throw Error('Signed wire-value admission anchor absent');
  return source.replace(old,next);
 }
+export function withCurrentAnalyzerIdentity(source){
+ if(source.includes('Version: "0.258.3"')&&source.includes('a.Version != "0.258.3"'))return source;
+ const pinned='Version: "0.251.0"';
+ const validated='a.Version != "0.251.0"';
+ if(!source.includes(pinned)||!source.includes(validated))throw Error('Analyzer identity migration anchors absent');
+ return source.replace(pinned,'Version: "0.258.3"').replace(validated,'a.Version != "0.258.3"');
+}
 export async function withProposalSourceAdmission(analyzer,runner){
  const helper=await readFile(new URL('../patches/proposal-source-evidence.go.inc',import.meta.url),'utf8');
  if(!analyzer.includes('func sourceValidatedProposalEvidence(')){
@@ -48,8 +55,14 @@ export async function withProposalSourceAdmission(analyzer,runner){
 export async function upgradeFeatureHostProfileController({root,controller,env}){
  const file=join(root,'experiment/runner.go'),valuesFile=join(root,'protocol/types.go'),analyzerFile=join(root,'experiment/analyzer.go');
  const before=await readFile(file,'utf8'),valuesBefore=await readFile(valuesFile,'utf8'),analyzerBefore=await readFile(analyzerFile,'utf8');
- let after=withFeatureHostProfileAdmission(before),analyzerAfter;({runner:after,analyzer:analyzerAfter}=await withProposalSourceAdmission(analyzerBefore,after));const valuesAfter=withSignedWireValues(valuesBefore);
- if(before===after&&valuesBefore===valuesAfter&&analyzerBefore===analyzerAfter)return;
+ let after=withFeatureHostProfileAdmission(before),analyzerAfter=withCurrentAnalyzerIdentity(analyzerBefore);({runner:after,analyzer:analyzerAfter}=await withProposalSourceAdmission(analyzerAfter,after));const valuesAfter=withSignedWireValues(valuesBefore);
+ const policy='declared-feature-host-profile-signed-values-proposal-source-and-analyzer-identity-v4';
+ if(before===after&&valuesBefore===valuesAfter&&analyzerBefore===analyzerAfter){
+  try{
+   const receipt=JSON.parse(await readFile(join(root,'feature-host-profile-controller.json'),'utf8'));
+   if(receipt.policy===policy&&receipt.controllerSha256===hash(await readFile(controller))&&receipt.sourceSha256===hash(after)&&receipt.valuesSourceSha256===hash(valuesAfter)&&receipt.analyzerSourceSha256===hash(analyzerAfter))return;
+  }catch{}
+ }
  const oldController=hash(await readFile(controller));
  if(before!==after){await writeFile(file+'.before-feature-host-profile',before);await writeFile(file,after)}
  if(valuesBefore!==valuesAfter){await writeFile(valuesFile+'.before-signed-wire-values',valuesBefore);await writeFile(valuesFile,valuesAfter)}
@@ -59,5 +72,5 @@ export async function upgradeFeatureHostProfileController({root,controller,env})
  await runCommand('git',['add','experiment/runner.go','protocol/types.go','experiment/analyzer.go'],{cwd:root,env,log});
  await runCommand('git',['-c','user.name=wasmfyi benchmark harness','-c','user.email=benchmark@localhost','commit','--allow-empty','-m','Admit optional feature profiles and signed wire values'],{cwd:root,env,log});
  await runCommand('go',['build','-trimpath','-o',controller,'./cmd/wasmbench'],{cwd:root,env:{...env,GOMAXPROCS:undefined},log});
- await atomicJSON(join(root,'feature-host-profile-controller.json'),{policy:'declared-feature-host-profile-signed-values-and-proposal-source-v3',oldControllerSha256:oldController,controllerSha256:hash(await readFile(controller)),sourceSha256:hash(await readFile(file)),valuesSourceSha256:hash(await readFile(valuesFile)),analyzerSourceSha256:hash(await readFile(analyzerFile)),runtimeSDKRebuilt:false,at:new Date().toISOString()});
+ await atomicJSON(join(root,'feature-host-profile-controller.json'),{policy,oldControllerSha256:oldController,controllerSha256:hash(await readFile(controller)),sourceSha256:hash(await readFile(file)),valuesSourceSha256:hash(await readFile(valuesFile)),analyzerSourceSha256:hash(await readFile(analyzerFile)),runtimeSDKRebuilt:false,at:new Date().toISOString()});
 }
