@@ -6,6 +6,7 @@ import {historyLanes} from './lib/history-lanes.mjs';
 import {wasmerRelease,assertWasmerReceipt} from './lib/wasmer-release.mjs';
 import {performanceHistoryQueue,performanceCorpusIdentity} from './lib/performance-history.mjs';
 import {engineVersion,assertHistoricalRuntime,pendingBindingReason} from './lib/historical-binding.mjs';
+import {samplePolicy} from './lib/sample-stability.mjs';
 test('historical runtime evidence rejects current-SDK fallback and cached wazero compilation',()=>{
  const binding={engine:'wazero',version:'1.9.0',configuration:'wazero'};
  const runtime={id:'wazero',description:{runtime_version:'1.9.0',effective_configuration:{compile_policy:'fresh uncached module per operation; verification outside timer'}}};
@@ -128,8 +129,8 @@ test('reuse identity includes source, host, corpus, recipe, options and configur
 });
 test('all release-capable benchmark configurations have explicit release sources',()=>{
  const configurations=Object.values(engineSources).flatMap(source=>source.configurations);
- assert.equal(new Set(configurations).size,23);
- assert.equal(configurations.length,23);
+ assert.equal(new Set(configurations).size,36);
+ assert.equal(configurations.length,36);
  for(const configuration of ['wamr-fast-jit','wamr-llvm-jit','wasmedge-jit','wasmtime-winch','wasmer-llvm','wasm2go','libwasm'])assert(configurations.includes(configuration));
  for(const excluded of ['deno','wasm2js','wasm2rs'])assert(!configurations.includes(excluded));
   for(const source of Object.values(engineSources)){assert(source.repository.includes('/'));assert(!source.branch);assert(source.configurations.length);}
@@ -139,13 +140,12 @@ test('both measured hosts retain the eight supported configurations',()=>{
  const expected=['wasmtime','v8','wasmer-singlepass','wazero','wavm','wago','wasm2c-gcc','w2c2-gcc'].sort();
  for(const platform of ['darwin','linux'])assert.deepEqual(featureConfigurations(settings,platform).sort(),expected);
 });
-test('default collection sample counts prioritize compile, instantiate and steady latency',()=>{
+test('default collection uses five-sample groups with phase-specific caps and no warmup',()=>{
  const settings=JSON.parse(readFileSync(new URL('../wasmbench.config.json',import.meta.url)));
- assert.equal(settings.collection.scenarioSamples.compile,3);
- assert.equal(settings.collection.scenarioSamples.instantiate,3);
- assert.equal(settings.collection.scenarioSamples['first-call'],1);
- assert.equal(settings.collection.scenarioSamples.steady,3);
- assert.equal(settings.collection.scenarioSamples['*'],1);
+ assert.equal(settings.collection.scenarioSamples['*'],5);
+ assert.equal(samplePolicy.groupSize,5);
+ assert.equal(samplePolicy.warmup,0);
+ assert.deepEqual(samplePolicy.phaseSampleCaps,{compile:10,instantiate:10,'first-call':25,steady:25});
 });
 test('the four-month history window includes every Saturday and catches up weekly',()=>{
  const dates=saturdays(new Date('2026-10-04T19:00:00Z'),18);
