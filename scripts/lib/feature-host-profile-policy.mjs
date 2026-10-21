@@ -1,4 +1,4 @@
-import {readFile,writeFile} from 'node:fs/promises';
+import {readFile,writeFile,rm} from 'node:fs/promises';
 import {join} from 'node:path';
 import {createHash} from 'node:crypto';
 import {atomicJSON} from './benchmark-plan.mjs';
@@ -24,12 +24,28 @@ export function withSignedWireValues(source){
  if(!source.includes(old))throw Error('Signed wire-value admission anchor absent');
  return source.replace(old,next);
 }
-export function withCurrentAnalyzerIdentity(source){
- if(source.includes('Version: "0.258.3"')&&source.includes('a.Version != "0.258.3"'))return source;
- const pinned='Version: "0.251.0"';
- const validated='a.Version != "0.251.0"';
- if(!source.includes(pinned)||!source.includes(validated))throw Error('Analyzer identity migration anchors absent');
- return source.replace(pinned,'Version: "0.258.3"').replace(validated,'a.Version != "0.258.3"');
+export function pinnedAnalyzerIdentity(analyzerSource,controllerSource){
+ const emitted=analyzerSource.match(/"analyzer_version":"([0-9]+\.[0-9]+\.[0-9]+)"/g)?.map(value=>value.match(/[0-9]+\.[0-9]+\.[0-9]+/)[0]);
+ if(!emitted?.length||new Set(emitted).size!==1)throw Error('Pinned analyzer source identity is absent or ambiguous');
+ const version=emitted[0],pin=controllerSource.match(/Version: "([0-9]+\.[0-9]+\.[0-9]+)"/),check=controllerSource.match(/a\.Version != "([0-9]+\.[0-9]+\.[0-9]+)"/);
+ if(!pin||!check)throw Error('Controller analyzer identity anchors absent');
+ return {version,source:controllerSource.replace(pin[0],`Version: "${version}"`).replace(check[0],`a.Version != "${version}"`)};
+}
+async function ensurePinnedAnalyzer({root,version,env,log}){
+ const executable=join(root,'adapters/wasmtime/target/release/wasm-analyze'),smoke=join(root,'.feature-analyzer-smoke.wasm');
+ const inspect=async()=>{
+  await writeFile(smoke,Buffer.from([0,97,115,109,1,0,0,0]));
+  try{return JSON.parse((await runCommand(executable,[smoke,'all'],{cwd:root,env,log})).output).analyzer_version}
+  finally{await rm(smoke,{force:true})}
+ };
+ let actual;try{actual=await inspect()}catch{}
+ if(actual!==version){
+  const target=join(root,'adapters/wasmtime/target');
+  await runCommand('cargo',['build','--release','--locked','--bin','wasm-analyze','--manifest-path',join(root,'adapters/wasmtime/Cargo.toml'),'--target-dir',target],{cwd:root,env:{...env,CARGO_TARGET_DIR:target},log});
+  actual=await inspect();
+ }
+ if(actual!==version)throw Error(`Analyzer executable identity mismatch: expected ${version}, got ${actual||'unavailable'}`);
+ return {version,sha256:hash(await readFile(executable))};
 }
 export async function withProposalSourceAdmission(analyzer,runner){
  const helper=await readFile(new URL('../patches/proposal-source-evidence.go.inc',import.meta.url),'utf8');
@@ -55,22 +71,24 @@ export async function withProposalSourceAdmission(analyzer,runner){
 export async function upgradeFeatureHostProfileController({root,controller,env}){
  const file=join(root,'experiment/runner.go'),valuesFile=join(root,'protocol/types.go'),analyzerFile=join(root,'experiment/analyzer.go');
  const before=await readFile(file,'utf8'),valuesBefore=await readFile(valuesFile,'utf8'),analyzerBefore=await readFile(analyzerFile,'utf8');
- let after=withFeatureHostProfileAdmission(before),analyzerAfter=withCurrentAnalyzerIdentity(analyzerBefore);({runner:after,analyzer:analyzerAfter}=await withProposalSourceAdmission(analyzerAfter,after));const valuesAfter=withSignedWireValues(valuesBefore);
- const policy='declared-feature-host-profile-signed-values-proposal-source-and-analyzer-identity-v4';
+ const analyzerProgram=await readFile(join(root,'adapters/wasmtime/src/bin/wasm-analyze.rs'),'utf8');
+ const identity=pinnedAnalyzerIdentity(analyzerProgram,analyzerBefore);
+ let after=withFeatureHostProfileAdmission(before),analyzerAfter=identity.source;({runner:after,analyzer:analyzerAfter}=await withProposalSourceAdmission(analyzerAfter,after));const valuesAfter=withSignedWireValues(valuesBefore);
+ const policy='declared-feature-host-profile-signed-values-proposal-source-and-analyzer-build-v5',log=join(root,'feature-host-profile-controller.log');
+ const analyzerExecutable=await ensurePinnedAnalyzer({root,version:identity.version,env,log});
  if(before===after&&valuesBefore===valuesAfter&&analyzerBefore===analyzerAfter){
   try{
    const receipt=JSON.parse(await readFile(join(root,'feature-host-profile-controller.json'),'utf8'));
-   if(receipt.policy===policy&&receipt.controllerSha256===hash(await readFile(controller))&&receipt.sourceSha256===hash(after)&&receipt.valuesSourceSha256===hash(valuesAfter)&&receipt.analyzerSourceSha256===hash(analyzerAfter))return;
+   if(receipt.policy===policy&&receipt.controllerSha256===hash(await readFile(controller))&&receipt.sourceSha256===hash(after)&&receipt.valuesSourceSha256===hash(valuesAfter)&&receipt.analyzerSourceSha256===hash(analyzerAfter)&&receipt.analyzerExecutableSha256===analyzerExecutable.sha256&&receipt.analyzerVersion===analyzerExecutable.version)return;
   }catch{}
  }
  const oldController=hash(await readFile(controller));
  if(before!==after){await writeFile(file+'.before-feature-host-profile',before);await writeFile(file,after)}
  if(valuesBefore!==valuesAfter){await writeFile(valuesFile+'.before-signed-wire-values',valuesBefore);await writeFile(valuesFile,valuesAfter)}
  if(analyzerBefore!==analyzerAfter){await writeFile(analyzerFile+'.before-proposal-source-admission',analyzerBefore);await writeFile(analyzerFile,analyzerAfter)}
- const log=join(root,'feature-host-profile-controller.log');
  await runCommand('gofmt',['-w',file,valuesFile,analyzerFile],{cwd:root,env,log});
  await runCommand('git',['add','experiment/runner.go','protocol/types.go','experiment/analyzer.go'],{cwd:root,env,log});
  await runCommand('git',['-c','user.name=wasmfyi benchmark harness','-c','user.email=benchmark@localhost','commit','--allow-empty','-m','Admit optional feature profiles and signed wire values'],{cwd:root,env,log});
  await runCommand('go',['build','-trimpath','-o',controller,'./cmd/wasmbench'],{cwd:root,env:{...env,GOMAXPROCS:undefined},log});
- await atomicJSON(join(root,'feature-host-profile-controller.json'),{policy,oldControllerSha256:oldController,controllerSha256:hash(await readFile(controller)),sourceSha256:hash(await readFile(file)),valuesSourceSha256:hash(await readFile(valuesFile)),analyzerSourceSha256:hash(await readFile(analyzerFile)),runtimeSDKRebuilt:false,at:new Date().toISOString()});
+ await atomicJSON(join(root,'feature-host-profile-controller.json'),{policy,oldControllerSha256:oldController,controllerSha256:hash(await readFile(controller)),sourceSha256:hash(await readFile(file)),valuesSourceSha256:hash(await readFile(valuesFile)),analyzerSourceSha256:hash(await readFile(analyzerFile)),analyzerExecutableSha256:analyzerExecutable.sha256,analyzerVersion:analyzerExecutable.version,runtimeSDKRebuilt:false,at:new Date().toISOString()});
 }
