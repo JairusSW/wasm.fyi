@@ -35,10 +35,14 @@ export function featureFailureRecords(note,{engine,workload,capture}){
  if(note?.kind!=='capture-error'||typeof note.reason!=='string'||!note.reason)return [];
  return (capture?.results||[]).filter(row=>row.latencyStatus==='failed').map(row=>({engine,workload:workload.id,phase:row.phase,status:'error',reason:note.reason}));
 }
-// Wago beta.13's exact FeatureInfos registry exposes Core 1-3 plus threads,
-// compact imports and wide arithmetic. These newer proposals are absent from
-// that registry, and the decoder/validator rejects their concrete encodings.
+// Wago's exact FeatureInfos registry exposes Core 1-3 plus threads. beta.12
+// also advertised compact imports, but implemented the earlier draft whose
+// import-section count was the expanded import count. The phase-4 proposal and
+// wasm-tools 1.260 encode a list of import groups instead. Keep that mismatch
+// and beta.12's explicitly documented wide-arithmetic gap revision-bound.
 const wagoRejections=[
+ {revision:'a3c9d5b2097640899eb37cd5cc68b7bfc348de47',feature:'compact-imports',reason:/decode: wasm decode: (?:invalid import|index out of bounds) at offset/},
+ {revision:'a3c9d5b2097640899eb37cd5cc68b7bfc348de47',feature:'wide-arithmetic',reason:/decode: wasm decode: invalid instruction at offset/},
  {feature:'custom-page-sizes',reason:/decode: wasm decode: invalid limits at offset/},
  {feature:'shared-everything-threads',reason:/decode: wasm decode: invalid type at offset/},
  {feature:'memory-control',reason:/decode: wasm decode: invalid instruction at offset/},
@@ -391,7 +395,7 @@ export function classifyFeatureRuntimeRejection({source,engine,workload,capture,
  if(capture.source?.revision!==source.revision||capture.source?.repository!==source.repository)return null;
  const contractSha256=workloadContract(workload),failed=capture.results.filter(row=>row.latencyStatus==='failed');
  if(failed.length!==capture.results.length||failed.some(row=>row.engine!==engine||row.workload!==workload.id||row.artifactSha256!==workload.sha256||row.contractSha256!==contractSha256||(row.timingSamples||0)!==0||(row.samplesNs?.length||0)!==0))return null;
- const rejection=(wasmtime?wasmtimeRejections:wago?wagoRejections:wasmer?wasmerRejections:wazero?wazeroRejections:v8?v8Rejections:wavm?wavmRejections:spiderMonkey?spiderMonkeyRejections:jsc?jscRejections:wasmi?wasmiRejections:wamr?wamrRejections:wasm3?wasm3Rejections:w2c2?w2c2Rejections:wasm2c?wasm2cRejections:wazy?wazyRejections:wasmedge?wasmedgeRejections:chicory?chicoryRejections:chasm?chasmRejections:wizard?wizardRejections:zwasm?zwasmRejections:endive?endiveRejections:graalWasmRejections).find(candidate=>(!candidate.engine||candidate.engine===engine)&&workload.features?.includes(candidate.feature));
+ const rejection=(wasmtime?wasmtimeRejections:wago?wagoRejections:wasmer?wasmerRejections:wazero?wazeroRejections:v8?v8Rejections:wavm?wavmRejections:spiderMonkey?spiderMonkeyRejections:jsc?jscRejections:wasmi?wasmiRejections:wamr?wamrRejections:wasm3?wasm3Rejections:w2c2?w2c2Rejections:wasm2c?wasm2cRejections:wazy?wazyRejections:wasmedge?wasmedgeRejections:chicory?chicoryRejections:chasm?chasmRejections:wizard?wizardRejections:zwasm?zwasmRejections:endive?endiveRejections:graalWasmRejections).find(candidate=>(!candidate.engine||candidate.engine===engine)&&(!candidate.revision||candidate.revision===source.revision)&&workload.features?.includes(candidate.feature));
  if(!rejection||!failures?.length||failures.some(failure=>failure.engine!==engine||failure.workload!==workload.id||(!['error','preflight_failed'].includes(failure.status)&&!(failure.status==='unsupported'&&failure.reason==='scenario not advertised'))||(failure.samples?.length||0)!==0))return null;
  const sourceBound=failures.filter(failure=>rejection.reason.test(failure.reason||''));
  if(!sourceBound.length||failures.some(failure=>!sourceBound.includes(failure)&&failure.reason!=='scenario not advertised'))return null;

@@ -546,6 +546,7 @@ test('wasm2c classifies exact documented gaps but keeps declared custom pages re
 });
 
 test('Wago classifies only proposal encodings absent from its beta feature registry',()=>{
+ const beta12='a3c9d5b2097640899eb37cd5cc68b7bfc348de47';
  const source={repository:'wago-org/wago',revision:'a'.repeat(40)};
  const runtimeCase=({source,engine,feature,reason})=>{
   const w={id:`features/${feature}/case/1`,sha256:'b'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
@@ -554,6 +555,11 @@ test('Wago classifies only proposal encodings absent from its beta feature regis
  };
  const unsupported=runtimeCase({source,engine:'wago',feature:'custom-page-sizes',reason:'error: decode: wasm decode: invalid limits at offset 23 in section 5 [22,31)'});
  assert.equal(unsupported?.status,'unsupported');
+ assert.equal(runtimeCase({source:{...source,revision:beta12},engine:'wago',feature:'compact-imports',reason:'error: decode: wasm decode: invalid import at offset 14 in section 2 [18,120)'})?.status,'unsupported');
+ assert.equal(runtimeCase({source:{...source,revision:beta12},engine:'wago',feature:'compact-imports',reason:'error: decode: wasm decode: index out of bounds at offset 25 in section 2 [18,106)'})?.status,'unsupported');
+ assert.equal(runtimeCase({source:{...source,revision:beta12},engine:'wago',feature:'wide-arithmetic',reason:'error: decode: wasm decode: invalid instruction at offset 76 in section 10 [37,160)'})?.status,'unsupported');
+ assert.equal(runtimeCase({source,engine:'wago',feature:'compact-imports',reason:'error: decode: wasm decode: invalid import at offset 14 in section 2 [18,120)'}),null);
+ assert.equal(runtimeCase({source,engine:'wago',feature:'wide-arithmetic',reason:'error: decode: wasm decode: invalid instruction at offset 76 in section 10 [37,160)'}),null);
  assert.equal(runtimeCase({source,engine:'wago',feature:'threads',reason:'error: validate: wasm validate: invalid alignment in function 0'}),null);
  assert.equal(runtimeCase({source,engine:'wago',feature:'custom-page-sizes',reason:'guest returned wrong result'}),null);
 });
