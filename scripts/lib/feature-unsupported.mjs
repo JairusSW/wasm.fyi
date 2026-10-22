@@ -245,6 +245,9 @@ const wazyRejections=[
  {feature:'wide-arithmetic',reason:/unknown misc opcode 0x1[3-6]/},
 ];
 const wasmedgeRejections=[
+ // bee78fc loader/ast/description.cpp accepts only Function/Table/Memory/Global/Tag;
+ // include/common/enum.inc exposes no compact-import proposal switch.
+ {revision:'bee78fc2e2fec55eb9e88f3d63463a3ba7eef0bb',feature:'compact-imports',reason:/malformed import kind/},
  // The exact SDK proposal enum is the source of truth for these gaps. The
  // adapter enables every proposal exposed by that enum before validation.
  {feature:'shared-everything-threads',reason:/(?:integer representation too long|malformed mutability)/},

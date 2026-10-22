@@ -575,14 +575,18 @@ test('Wago classifies only proposal encodings absent from its beta feature regis
 });
 
 test('WasmEdge classifies exact SDK proposal gaps without hiding traps',()=>{
- const source={repository:'WasmEdge/WasmEdge',revision:'c'.repeat(40)},engine='wasmedge-jit';
- const classify=(feature,reason)=>{
+ const source={repository:'WasmEdge/WasmEdge',revision:'bee78fc2e2fec55eb9e88f3d63463a3ba7eef0bb'},engine='wasmedge-jit';
+ const classify=(feature,reason,revision=source.revision)=>{
+  const actualSource={...source,revision};
   const w={id:`features/${feature}/case/1`,sha256:'d'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
-  const capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
-  return classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures:[{engine,workload:w.id,phase:'first-call',status:'error',reason}]});
+  const capture={source:actualSource,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+  return classifyFeatureRuntimeRejection({source:actualSource,engine,workload:w,capture,failures:[{engine,workload:w.id,phase:'first-call',status:'error',reason}]});
  };
  assert.equal(classify('wide-arithmetic','error: illegal opcode')?.status,'unsupported');
  assert.equal(classify('custom-page-sizes','error: malformed limits flags')?.status,'unsupported');
+ assert.equal(classify('compact-imports','error: malformed import kind')?.status,'unsupported');
+ assert.equal(classify('compact-imports','error: malformed import kind','c'.repeat(40)),null);
+ assert.equal(classify('compact-imports','error: guest trap: unreachable'),null);
  assert.equal(classify('threads','error: guest trap: unreachable'),null);
 });
 
