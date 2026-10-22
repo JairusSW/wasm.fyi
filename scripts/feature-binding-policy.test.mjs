@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {featureBindingForWorkload,featureBindingsForEngine,featureProfileForBinding} from './lib/feature-binding-policy.mjs';
+import {featureBindingForWorkload,featureBindingsForEngine,featureProfileForBinding,missingFeatureBindingProfiles} from './lib/feature-binding-policy.mjs';
 
 const pin={revision:'a'.repeat(40),targetWeek:'2026-10-15T00:00:00.000Z'};
 const binding=(engine,profile,path)=>({engine,job:{engine,featureProfile:profile,controller:path,harness:path,source:{revision:pin.revision,asOf:pin.targetWeek}},plan:{}});
@@ -15,6 +15,9 @@ test('WAMR uses its mutually exclusive fast and classic feature profiles by work
  assert.equal(featureBindingForWorkload(candidates,'wamr',{features:['core-num']}),classic);
  assert.equal(featureProfileForBinding(fast,'wamr'),'fast');
  assert.equal(featureProfileForBinding(classic,'wamr'),'classic');
+ assert.deepEqual(missingFeatureBindingProfiles(candidates,'wamr',[{features:['simd']},{features:['gc']}]),[]);
+ assert.deepEqual(missingFeatureBindingProfiles([fast],'wamr',[{features:['simd']},{features:['gc']}]),['classic']);
+ assert.deepEqual(missingFeatureBindingProfiles([classic],'wamr',[{features:['simd']}]),['fast']);
 });
 
 test('binding candidates are exact-pin and exact-path deduplicated',()=>{
@@ -27,4 +30,5 @@ test('other engines retain their single exact binding',()=>{
  const first=binding('wasmtime',undefined,'first'),second=binding('wasmtime','other','second');
  assert.equal(featureBindingForWorkload([first,second],'wasmtime',{features:['simd']}),first);
  assert.equal(featureProfileForBinding(first,'wasmtime'),null);
+ assert.deepEqual(missingFeatureBindingProfiles([],'wasmtime',[{features:['simd']}]),[]);
 });

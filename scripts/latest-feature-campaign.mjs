@@ -26,7 +26,7 @@ import {applyWasm3FeaturePolicy,wasm3FeatureCMakeFlags} from './lib/wasm3-featur
 import {terminalFeatureRuntimeFailure} from './lib/feature-terminal-failure.mjs';
 import {applyWasm2GoFeaturePolicy} from './lib/wasm2go-feature-policy.mjs';
 import {featureFailureForOutcomes,normalizeRepairedFeatureItem,repairedFeatureOutcomes} from './lib/feature-repair-ledger.mjs';
-import {featureBindingForWorkload,featureBindingsForEngine,featureProfileForBinding} from './lib/feature-binding-policy.mjs';
+import {featureBindingForWorkload,featureBindingsForEngine,featureProfileForBinding,missingFeatureBindingProfiles} from './lib/feature-binding-policy.mjs';
 const [campaignArg,rootArg,inputsArg,bindingsArg]=process.argv.slice(2);
 if(!campaignArg||!rootArg||!inputsArg)throw Error('Usage: latest-feature-campaign CAMPAIGN FEATURE_ROOT INPUTS [BINDINGS_JSON]');
 const campaign=resolve(campaignArg),root=resolve(rootArg),inputs=resolve(inputsArg);
@@ -94,6 +94,9 @@ campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
  if(selectedEngines.length&&!selectedEngines.includes(engine))continue;
  if(repairEngines.length&&!repairEngines.includes(engine))continue;
  const engineBindings=featureBindingsForEngine(bindings,engine,pin);
+ const selectedWorkloads=Object.values(suites).flat().filter(workload=>!repairWorkloads.length||repairWorkloads.includes(workload.id));
+ const missingProfiles=missingFeatureBindingProfiles(engineBindings,engine,selectedWorkloads);
+ if(missingProfiles.length){state.errors.push({engine,kind:'adapter-binding-missing',revision:pin.revision,featureProfiles:missingProfiles});state.completed++;await save();continue}
  const binding=featureBindingForWorkload(engineBindings,engine,null);
  if(!binding){state.errors.push({engine,kind:'adapter-binding-missing',revision:pin.revision});state.completed++;await save();continue}
  let {job,plan}=binding;

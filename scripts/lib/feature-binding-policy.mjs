@@ -26,3 +26,14 @@ export function featureProfileForBinding(binding, engine) {
   if (binding?.job?.featureProfile) return binding.job.featureProfile;
   return engine === 'wamr' ? 'fast' : null;
 }
+
+export function missingFeatureBindingProfiles(candidates, engine, workloads) {
+  if (engine !== 'wamr') return [];
+  const available = new Set(candidates.map(binding => featureProfileForBinding(binding, engine)));
+  const required = new Set();
+  for (const workload of workloads) {
+    if (workload.features?.some(feature => feature === 'simd' || feature === 'relaxed-simd')) required.add('fast');
+    else required.add('classic');
+  }
+  return [...required].filter(profile => !available.has(profile)).sort();
+}

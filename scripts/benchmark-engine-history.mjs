@@ -118,6 +118,7 @@ for(const pin of plan.pins.filter(p=>historyPinAllowed(p,template)&&historyWeekM
    const collection=engine==='zwasm'?{...template.collection,callBatchOperations:10000}:template.collection;
    await atomicJSON(join(directory,'plan.json'),{...template,collection,anchor:plan.anchor,cutoff:plan.cutoff,captureDirectory:join(root,'captures'),jobs:[job]});
    if(prepareOnly){
+    if(engine==='wamr'&&configuration==='wamr'&&pin.targetType==='main')await run(process.execPath,['scripts/prepare-history-sdk.mjs',root,'wamr','wamr','classic']);
     status.completed.push({pinKey,engine,configuration,asOf:pin.targetWeek,ref:job.source.ref,prepared:true,captures:0});
     status.errors=status.errors.filter(error=>error.pinKey!==pinKey);
     await atomicJSON(statusPath,status);continue;
