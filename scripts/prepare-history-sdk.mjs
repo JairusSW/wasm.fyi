@@ -14,7 +14,7 @@ if(!pin)throw Error('No planned snapshot for '+configuration);
 const baseDirectory=await historyBuildDirectory(root,pin,configuration);
 const directory=profile?baseDirectory+'-'+profile:baseDirectory;
 await mkdir(directory,{recursive:true});
-const env={...process.env,...template.env,GOWORK:'off',GOFLAGS:'-buildvcs=false'};
+const env={...process.env,...template.env,PATH:[process.env.PATH,template.env?.PATH].filter(Boolean).join(':'),GOWORK:'off',GOFLAGS:'-buildvcs=false'};
 if(engine==='wamr'&&['fast','classic'].includes(profile))env.WASMFYI_WAMR_INTERPRETER_PROFILE=profile;
 if(engine==='wamr'&&profile==='features')env.WASMFYI_WAMR_FEATURE_PROPOSALS='1';
 if(engine==='wamr'&&profile&&!['fast','classic','features'].includes(profile))throw Error('Unknown WAMR SDK profile '+profile);

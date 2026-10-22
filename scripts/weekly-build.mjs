@@ -1,3 +1,4 @@
+import {withWamrRuntimeAliases} from './lib/wamr-runtime-aliases.mjs';
 import {applyWazeroSampling,restoreHistoricalWazeroSources} from './lib/wazero-sampling.mjs';
 import {applyWazeroFeaturePolicy} from './lib/wazero-feature-policy.mjs';
 import {applyW2c2Bridge} from './lib/w2c2-bridge.mjs';
@@ -65,10 +66,7 @@ if(['jsc','spidermonkey','chicory'].includes(engine)) {
 }
 if(engine==='wamr'){
  const path=join(root,'experiment/extra_runtimes.go');let text=await readFile(path,'utf8');
- const base='"wasmi", "wavm", "wamr", "wasm3"',aliases='"wasmi", "wavm", "wamr", "wamr-fast-jit", "wamr-llvm-jit", "wasm3"';
- const occurrences=text.split(base).length-1,adapted=text.split(aliases).length-1;
- if(occurrences===3)text=text.replaceAll(base,aliases).replace('strings.ReplaceAll(id, "-", "_")','func() string { if strings.HasPrefix(id, "wamr-") { return "wamr" }; return strings.ReplaceAll(id, "-", "_") }()');
- else if(adapted!==3)throw Error('WAMR runtime alias anchors changed');
+ text=withWamrRuntimeAliases(text);
  await writeFile(path,text);
  const embeddingPath=join(root,'adapters/native/src/wamr.cpp');let embedding=await readFile(embeddingPath,'utf8');
  const oldEngine='struct Engine { wasm_engine_t* value=wasm_engine_new(); Engine(){wasm_runtime_set_log_level(WASM_LOG_LEVEL_FATAL);if(!wasm_runtime_register_natives("wasmbench",host_symbols,1))throw std::runtime_error("identity host function registration failed");} ~Engine(){if(value)wasm_engine_delete(value);} };';

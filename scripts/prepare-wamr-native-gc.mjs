@@ -22,7 +22,7 @@ if(!prior){
  const after=before.replace('"standalone Rust/C embedding"','"WAMR native wasm_runtime API"').replace(/"C-API store allocation[^"\n]*"/,JSON.stringify(policy)).replace(' || cfg!(feature="wamr")','');
  if(!after.includes(policy))throw Error('Native adapter compile policy seam changed');
  await writeFile(main,after);
- const env={...process.env,...receipt.env,GOWORK:'off',GOFLAGS:'-buildvcs=false'};
+ const env={...process.env,...receipt.env,PATH:[process.env.PATH,receipt.env?.PATH].filter(Boolean).join(':'),GOWORK:'off',GOFLAGS:'-buildvcs=false'};
  for(const key of ['GOMAXPROCS','OMP_NUM_THREADS','RAYON_NUM_THREADS','CARGO_BUILD_JOBS','CMAKE_BUILD_PARALLEL_LEVEL','MAKEFLAGS','UV_THREADPOOL_SIZE'])delete env[key];
  const target=join(output,'target');
  await runCommand('cargo',['build','--release','--locked','--no-default-features','--features','wamr','--target-dir',target],{cwd:join(harness,'adapters/native'),env,log:join(output,'build.log')});
