@@ -31,3 +31,9 @@ test('pre-engine capture admission errors cannot count as completed runtime test
  }
  assert.equal(historyIntegrationFailure({kind:'failed-trials',reason:'error: unknown 0xfd subopcode'}),false);
 });
+
+test('capture wrappers do not turn bounded workload timeouts into infrastructure failures',()=>{
+ const reason='Error: Capture infrastructure failure: The operation was aborted due to timeout; producer output incomplete: The operation was aborted due to timeout';
+ assert.equal(historyIntegrationFailure({kind:'timeout',budgetMs:300000,reason}),false);
+ assert.equal(historyIntegrationFailure({reason}),false);
+});
