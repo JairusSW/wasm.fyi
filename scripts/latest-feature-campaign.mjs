@@ -216,7 +216,7 @@ campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
    // Explicit source-backed Wasmi proposal activation can repair old admission
    // outcomes too. It never selects unrelated GC/EH or an already OK phase.
    const repairPhases=featureRepairPhases({engine,workload,prior,repairEngines,repairWorkloads,wasmiProposals:process.env.WASMFYI_FEATURE_REPAIR_WASMI_PROPOSALS==='1',documentedProposals:process.env.WASMFYI_FEATURE_REPAIR_DOCUMENTED_PROPOSALS==='1',retryCompleted:process.env.WASMFYI_FEATURE_REPAIR_RETRY_COMPLETED==='1',forceAll:process.env.WASMFYI_FEATURE_REPAIR_ALL==='1',repairPolicy});
-   if(repairEngines.length&&prior&&!repairPhases.length)continue;
+   if(repairEngines.length&&prior&&!repairPhases.length){if(prior.failure)state.errors.push(prior.failure);continue;}
    if(!repairPhases.length&&ledger.items[key]?.status==='completed'){if(ledger.items[key].failure)state.errors.push(ledger.items[key].failure);continue;}
    state.current={engine,stage:kind,workload:workload.id,revision:job.source.revision};await save();
    if(engine==='v8')env.WASMBENCH_V8_FEATURE_FLAGS=v8FlagsForWorkload(workload).join(' ');
