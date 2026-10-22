@@ -58,6 +58,13 @@ with latency in the lowest bits. Each field is 0=not-measured, 1=ok, 2=failed,
 a zero-resolution latency scalar; otherwise null. Policies, complete statistics
 and ordered samples load through `/api/observation` when a cell opens.
 
+Feature tables require source/configuration evidence for ignorable metadata and
+host-specific integration. A binary semantic control cannot establish WAT source
+syntax support or JavaScript BigInt integration through a native integer API.
+Unverified claims project as unavailable with null comparison values; failed
+controls remain failed. The original observations and samples remain unchanged
+in storage and `/api/observation`.
+
 Optional `phases=compile,steady` limits phase detail while including the last
 available phase per engine/workload for correctness and native-code provenance.
 `delta=1` returns strictly the requested phases for merging into an existing

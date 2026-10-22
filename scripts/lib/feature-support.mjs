@@ -7,7 +7,7 @@ import { digest, config } from './wasmbench.mjs';
 // declarations: ordinary binary compilation/execution can pass without either.
 // Require the pinned adapter configuration to declare the capability before
 // publishing support; retain the original semantic-control observations.
-export const declarationRequiredFeatures = new Set(['branch-hinting','compilation-hints','instrument-and-tracing-technology','big-int']);
+export const declarationRequiredFeatures = new Set(['branch-hinting','compilation-hints','instrument-and-tracing-technology','big-int','extended-name-section','custom-annotation-syntax-in-the-text-format','numeric-values-in-wat']);
 const declarationKeys={'branch-hinting':'BRANCH_HINTING','compilation-hints':'COMPILATION_HINTS','instrument-and-tracing-technology':'INSTRUCTION_TRACING'};
 export function runtimeDeclaresFeature(description,feature) {
   // The numeric oracle exercises JS BigInt only through these JS adapters.

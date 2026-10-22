@@ -117,3 +117,26 @@ func TestBigIntRequiresJavaScriptBoundary(t *testing.T) {
 		}
 	}
 }
+
+func TestSourceFormatAndExtendedNameDeclarations(t *testing.T) {
+	for _, tc := range []struct {
+		feature, engine, backend, revision string
+		declared                           bool
+	}{
+		{"extended-name-section", "v8", "turboshaft", "f14cd3aa7bf9ca8df2cc5b8bb14beb0f335b1d93", true},
+		{"extended-name-section", "v8", "turboshaft", "unknown", false},
+		{"extended-name-section", "wasmtime", "cranelift", "f96eabaa11a06086e4fb779ed1c1688481067ab9", false},
+		{"custom-annotation-syntax-in-the-text-format", "v8", "turboshaft", "f14cd3aa7bf9ca8df2cc5b8bb14beb0f335b1d93", false},
+		{"numeric-values-in-wat", "v8", "turboshaft", "f14cd3aa7bf9ca8df2cc5b8bb14beb0f335b1d93", false},
+		{"numeric-values-in-wat", "wasmtime", "cranelift", "f96eabaa11a06086e4fb779ed1c1688481067ab9", false},
+	} {
+		row := sqldb.Cell{Result: benchdb.Result{Row: benchdb.Row{Engine: tc.engine, Backend: tc.backend, Version: tc.revision, Workload: "features/" + tc.feature + "/case/64", Status: "ok"}}}
+		if got := featureDeclarationProjection(row); (got.Status == "ok") != tc.declared {
+			t.Fatalf("unexpected %s claim for %s %s", tc.feature, tc.engine, tc.revision)
+		}
+		row.Status = "failed"
+		if featureDeclarationProjection(row).Status != "failed" {
+			t.Fatal("projection hid a failed semantic control")
+		}
+	}
+}
