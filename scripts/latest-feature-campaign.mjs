@@ -25,6 +25,7 @@ import {buildWavmSDK} from './lib/wavm-sdk.mjs';
 import {applyWasm3FeaturePolicy,wasm3FeatureCMakeFlags} from './lib/wasm3-feature-policy.mjs';
 import {terminalFeatureRuntimeFailure} from './lib/feature-terminal-failure.mjs';
 import {applyWasm2GoFeaturePolicy} from './lib/wasm2go-feature-policy.mjs';
+import {featureFailureForOutcomes,normalizeRepairedFeatureItem,repairedFeatureOutcomes} from './lib/feature-repair-ledger.mjs';
 const [campaignArg,rootArg,inputsArg,bindingsArg]=process.argv.slice(2);
 if(!campaignArg||!rootArg||!inputsArg)throw Error('Usage: latest-feature-campaign CAMPAIGN FEATURE_ROOT INPUTS [BINDINGS_JSON]');
 const campaign=resolve(campaignArg),root=resolve(rootArg),inputs=resolve(inputsArg);
@@ -192,6 +193,7 @@ campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
    if(repairEngines.length&&repairWorkloads.length&&!repairWorkloads.includes(workload.id))continue;
    const key=featureLedgerKey(hostKey,engine,job.source,kind,workload,inputIdentity);
    let prior=ledger.items[key];
+   if(prior?.status==='completed'&&normalizeRepairedFeatureItem(prior))await save();
    // A newly audited source-bound rejection can be applied to retained raw
    // evidence without executing the workload again. Preserve the original
    // capture and failure record as the classification receipt.
@@ -249,7 +251,10 @@ campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
    if(note){await atomicJSON(join(root,'failure-notes',name),note);await atomicJSON(join(campaign,'failure-notes',name),note);state.errors.push({...state.current,...note});}
    const engineQualified=Object.values(ledger.items).some(item=>item.engine===engine&&item.outcomes?.some(([,status])=>status==='ok'));
    const integration=note&&historyIntegrationFailure(note)&&!terminalFeatureRuntimeFailure(note,{engineQualified});
-   ledger.items[key]={...(kind==='compatibility'?{compatibilityScenarioPolicy:repairPhases.length?'retained-original-repair-phases':'scope-aware-v2'}:{}),status:integration?'repair-pending':'completed',engine,stage:kind,workload:workload.id,source:job.source,capture:name,artifactSha256:workload.sha256,contractSha256:workloadContract(workload),outcomes:repairPhases.length?prior.outcomes.map(([phase,status])=>[phase,capture.results.find(r=>r.phase===phase)?.latencyStatus||status]):capture.results.map(r=>[r.phase,r.latencyStatus]),...(repairPhases.length?{repairOf:prior.capture,repairPhases,repairPolicy}:{}),...(note?{failure:note}:{}),finished:new Date().toISOString()};await save();
+   const outcomes=repairPhases.length?repairedFeatureOutcomes(prior,capture,repairPhases):capture.results.map(r=>[r.phase,r.latencyStatus]);
+   const failure=featureFailureForOutcomes(prior,outcomes,note);
+   const {failure:_oldFailure,...priorWithoutFailure}=prior||{};
+   ledger.items[key]={...priorWithoutFailure,...(kind==='compatibility'?{compatibilityScenarioPolicy:repairPhases.length?'retained-original-repair-phases':'scope-aware-v2'}:{}),status:integration?'repair-pending':'completed',engine,stage:kind,workload:workload.id,source:job.source,capture:name,artifactSha256:workload.sha256,contractSha256:workloadContract(workload),outcomes,...(repairPhases.length?{repairOf:prior.capture,repairPhases,repairPolicy}:{}),...(failure?{failure}:{}),finished:new Date().toISOString()};await save();
    if(integration){held=true;break}
   }
   if(process.exitCode)break;
