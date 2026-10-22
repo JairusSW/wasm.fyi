@@ -48,7 +48,12 @@ func featureDeclarationProjection(row sqldb.Cell) sqldb.Cell {
 	case "chasm":
 		// Old captures used ModuleConfig's decodeNameSection=false default.
 		// Only the repaired profile explicitly enables the extended decoder.
-		declared = feature == "extended-name-section" && row.FeatureProfile == "extended-names" && row.Backend == "jvm-interpreter" && revision == "02033f247459790dd46da3d5b104c0c11bc36bd7"
+		if feature == "extended-name-section" && row.FeatureProfile == "extended-names" && row.Backend == "jvm-interpreter" && revision == "02033f247459790dd46da3d5b104c0c11bc36bd7" {
+			// NameDataDecoder has no element/data subsection representation.
+			for _, subsection := range []string{"label", "type", "table", "memory", "global", "field", "tag"} {
+				declared = declared || strings.HasPrefix(row.Workload, "features/extended-name-section/"+subsection+"-name/")
+			}
+		}
 	}
 	if !declared {
 		row.Status, row.MemoryStatus, row.CodeStatus = "unavailable", "unavailable", "unavailable"

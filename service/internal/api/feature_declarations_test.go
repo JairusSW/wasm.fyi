@@ -145,7 +145,7 @@ func TestSourceFormatAndExtendedNameDeclarations(t *testing.T) {
 }
 
 func TestChasmExtendedNamesDeclarationRequiresRepairedProfile(t *testing.T) {
-	row := sqldb.Cell{Result: benchdb.Result{Row: benchdb.Row{Engine: "chasm", Backend: "jvm-interpreter", Version: "02033f247459790dd46da3d5b104c0c11bc36bd7", Workload: "features/extended-name-section/case/1", Status: "ok"}}}
+	row := sqldb.Cell{Result: benchdb.Result{Row: benchdb.Row{Engine: "chasm", Backend: "jvm-interpreter", Version: "02033f247459790dd46da3d5b104c0c11bc36bd7", Workload: "features/extended-name-section/type-name/4096", Status: "ok"}}}
 	if featureDeclarationProjection(row).Status != "unavailable" {
 		t.Fatal("old default-decoder capture inherited support")
 	}
@@ -153,6 +153,13 @@ func TestChasmExtendedNamesDeclarationRequiresRepairedProfile(t *testing.T) {
 	if featureDeclarationProjection(row).Status != "ok" {
 		t.Fatal("repaired decoder profile was not admitted")
 	}
+	for _, name := range []string{"element", "data"} {
+		row.Workload = "features/extended-name-section/" + name + "-name/4096"
+		if featureDeclarationProjection(row).Status != "unavailable" {
+			t.Fatal("ignored subsection inherited decoder support")
+		}
+	}
+	row.Workload = "features/extended-name-section/type-name/4096"
 	row.Source = &benchdb.Source{Revision: "unverified"}
 	if featureDeclarationProjection(row).Status != "unavailable" {
 		t.Fatal("unverified source inherited support")

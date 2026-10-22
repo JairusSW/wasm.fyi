@@ -9,7 +9,13 @@ import { digest, config } from './wasmbench.mjs';
 // publishing support; retain the original semantic-control observations.
 export const declarationRequiredFeatures = new Set(['branch-hinting','compilation-hints','instrument-and-tracing-technology','big-int','extended-name-section','custom-annotation-syntax-in-the-text-format','numeric-values-in-wat']);
 const declarationKeys={'branch-hinting':'BRANCH_HINTING','compilation-hints':'COMPILATION_HINTS','instrument-and-tracing-technology':'INSTRUCTION_TRACING'};
-export function runtimeDeclaresFeature(description,feature) {
+export function runtimeDeclaresFeature(description,feature,workload='') {
+  // The pinned Chasm decoder omits element/data names. Its general feature
+  // declaration is partial; admit only the source-audited subsection probes.
+  if(feature==='extended-name-section'&&description?.runtime==='chasm')return description.backend==='jvm-interpreter'
+    &&description.runtime_version==='02033f247459790dd46da3d5b104c0c11bc36bd7'
+    &&description.features?.includes(feature)===true
+    &&/^features\/extended-name-section\/(?:label|type|table|memory|global|field|tag)-name\//.test(workload);
   // The numeric oracle exercises JS BigInt only through these JS adapters.
   if(feature==='big-int')return ['v8','spidermonkey','jsc'].includes(description?.runtime);
   // This pinned OMG source parses branch metadata and consumes it when
@@ -87,7 +93,7 @@ export async function featureSupport(directory, reports) {
         const executed=cases.some(t=>t.status==='ok' && ['first-call','steady'].includes(t.scenario));
         const compiled=cases.some(t=>t.status==='ok' && t.scenario==='compile');
         const required=(workload.features || []).filter(feature=>declarationRequiredFeatures.has(feature));
-        const missing=required.filter(feature=>!runtimeDeclaresFeature(runtime.description,feature));
+        const missing=required.filter(feature=>!runtimeDeclaresFeature(runtime.description,feature,workload.id));
         const status=errors.length?'failed':missing.length?'unsupported':executed?'executed':compiled?'compile-only':'unsupported';
         configuration.cases.set(workload.id,{workload:workload.id,artifactSha256:workload.sha256,scope:workload.provenance?.scope,status,
           scenarios:[...new Set(cases.filter(t=>t.status==='ok').map(t=>t.scenario))],
