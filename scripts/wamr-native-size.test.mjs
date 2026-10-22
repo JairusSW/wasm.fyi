@@ -9,6 +9,15 @@ test('instruments exact Fast JIT extents and LLVM text sections idempotently',as
   assert.equal(await instrumentWamrNativeSize(root,'wamr'),null);
   const fast=await instrumentWamrNativeSize(root,'wamr-fast-jit');assert.deepEqual(await instrumentWamrNativeSize(root,'wamr-fast-jit'),fast);
   const llvm=await instrumentWamrNativeSize(root,'wamr-llvm-jit');assert.deepEqual(await instrumentWamrNativeSize(root,'wamr-llvm-jit'),llvm);
+  const common=join(root,'core/iwasm/common/wasm_c_api.c'),current=await readFile(common,'utf8');
+  assert.match(current,/bool wasmbench_wamr_native_module_size\(const void \*module/);
+  assert.match(current,/return wasmbench_wamr_native_module_size\(module_to_module_ext/);
+  const rawPrefix='bool wasmbench_wamr_native_module_size(const void *module, uint64 *size) {\n    if (!module || !size || ((const WASMModuleCommon *)module)->module_type != Wasm_Module_Bytecode) return false;\n    const WASMModule *m = (const WASMModule *)module;';
+  const oldPrefix='bool wasmbench_wamr_module_native_size(const wasm_module_t *module, uint64 *size) {\n    if (!module || !size || (*module)->module_type != Wasm_Module_Bytecode) return false;\n    WASMModule *m = (WASMModule *)module_to_module_ext((wasm_module_t *)module)->module_comm_rt;';
+  const legacy=current.replace(/bool wasmbench_wamr_module_native_size\(const wasm_module_t \*module, uint64 \*size\) \{[\s\S]*?\n\}/,'').replace(rawPrefix,oldPrefix);
+  assert.notEqual(legacy,current);await writeFile(common,legacy);
+  await instrumentWamrNativeSize(root,'wamr-llvm-jit');
+  const upgraded=await readFile(common,'utf8');assert.match(upgraded,/bool wasmbench_wamr_native_module_size/);assert.match(upgraded,/return wasmbench_wamr_native_module_size\(module_to_module_ext/);
   const code=await readFile(join(root,'core/iwasm/compilation/aot_orc_extra.cpp'),'utf8');assert.match(code,/section\.isText\(\)/);assert.match(code,/return std::move\(buffer\)/);
   const init=await readFile(join(root,'core/iwasm/compilation/aot_llvm.c'),'utf8');assert.match(init,/if \(__atomic_load_n\(&wasmfyi_native_size_capture_enabled/);
   const registration=await readFile(join(root,'core/iwasm/fast-jit/jit_codecache.c'),'utf8');assert.match(registration,/jitted_addr_end-\(uint8 \*\)cc->jitted_addr_begin/);

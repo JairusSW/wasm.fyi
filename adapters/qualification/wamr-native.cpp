@@ -5,6 +5,13 @@
 #include <memory>
 #include <limits>
 #include <cstdlib>
+#include <dlfcn.h>
+
+using NativeSizeGetter=bool(*)(const void*,uint64_t*);
+using NativeSizeCapture=void(*)(bool);
+static NativeSizeGetter native_size_getter(){return reinterpret_cast<NativeSizeGetter>(dlsym(RTLD_DEFAULT,"wasmbench_wamr_native_module_size"));}
+static NativeSizeCapture native_size_capture(){return reinterpret_cast<NativeSizeCapture>(dlsym(RTLD_DEFAULT,"wasmbench_wamr_native_size_capture"));}
+static bool capture_native_size=false;
 
 struct Engine {
     RunningMode mode=Mode_Interp;
@@ -48,11 +55,21 @@ void wb_engine_delete(void* e){delete static_cast<Engine*>(e);}
 void* wb_module_new(void*,const uint8_t* bytes,size_t n){WB_TRY{
     if(n>std::numeric_limits<uint32_t>::max())throw std::runtime_error("module too large");
     auto m=std::make_unique<Module>();m->bytes.assign(bytes,bytes+n);char error[512]{};
+    auto capture=native_size_capture();if(capture)capture(capture_native_size);
     m->value=wasm_runtime_load(m->bytes.data(),static_cast<uint32_t>(n),error,sizeof(error));
+    if(capture)capture(false);
     if(!m->value)throw std::runtime_error(error);
     return m.release();
 }WB_CATCH(nullptr)}
 void wb_module_delete(void* m){delete static_cast<Module*>(m);}
+bool wb_can_native_size(){return native_size_getter()&&native_size_capture();}
+void wb_native_size_enable(){capture_native_size=true;}
+int wb_native_size(void* ptr,size_t* size){WB_TRY{
+    auto getter=native_size_getter();uint64_t bytes=0;
+    if(!ptr||!size||!getter||!getter(static_cast<Module*>(ptr)->value,&bytes))throw std::runtime_error("unsupported: native WAMR code extents unavailable");
+    if(bytes>std::numeric_limits<size_t>::max())throw std::runtime_error("native WAMR code size overflow");
+    *size=static_cast<size_t>(bytes);return 0;
+}WB_CATCH(-1)}
 void* wb_instance_new(void* engine,void* m){WB_TRY{
     auto i=std::make_unique<Instance>();char error[512]{};
     i->value=wasm_runtime_instantiate(static_cast<Module*>(m)->value,1<<20,0,error,sizeof(error));

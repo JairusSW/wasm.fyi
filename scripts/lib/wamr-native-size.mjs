@@ -18,9 +18,9 @@ bool wasmfyi_native_size_capture_enabled = false;
 void wasmbench_wamr_native_size_capture(bool enable) {
     __atomic_store_n(&wasmfyi_native_size_capture_enabled, enable, __ATOMIC_RELAXED);
 }
-bool wasmbench_wamr_module_native_size(const wasm_module_t *module, uint64 *size) {
-    if (!module || !size || (*module)->module_type != Wasm_Module_Bytecode) return false;
-    WASMModule *m = (WASMModule *)module_to_module_ext((wasm_module_t *)module)->module_comm_rt;
+bool wasmbench_wamr_native_module_size(const void *module, uint64 *size) {
+    if (!module || !size || ((const WASMModuleCommon *)module)->module_type != Wasm_Module_Bytecode) return false;
+    const WASMModule *m = (const WASMModule *)module;
     uint64 total = 0;
 #if WASM_ENABLE_FAST_JIT != 0
     for (uint32 i=0;i<m->function_count;i++) {
@@ -39,8 +39,19 @@ bool wasmbench_wamr_module_native_size(const wasm_module_t *module, uint64 *size
 #endif
     *size=total; return true;
 }
+bool wasmbench_wamr_module_native_size(const wasm_module_t *module, uint64 *size) {
+    if (!module || !size || (*module)->module_type != Wasm_Module_Bytecode) return false;
+    return wasmbench_wamr_native_module_size(module_to_module_ext((wasm_module_t *)module)->module_comm_rt, size);
+}
 `;
- const file=join(source,common);let text=await readFile(file,'utf8');if(!text.includes('wasmfyi_native_size_capture_enabled')){text+=getter;await writeFile(file,text);}files[common]=digest(Buffer.from(text));
+ const file=join(source,common);let text=await readFile(file,'utf8');
+ if(!text.includes('wasmfyi_native_size_capture_enabled'))text+=getter;
+ else if(!text.includes('bool wasmbench_wamr_native_module_size(')){
+  const oldPrefix='bool wasmbench_wamr_module_native_size(const wasm_module_t *module, uint64 *size) {\n    if (!module || !size || (*module)->module_type != Wasm_Module_Bytecode) return false;\n    WASMModule *m = (WASMModule *)module_to_module_ext((wasm_module_t *)module)->module_comm_rt;',newPrefix='bool wasmbench_wamr_native_module_size(const void *module, uint64 *size) {\n    if (!module || !size || ((const WASMModuleCommon *)module)->module_type != Wasm_Module_Bytecode) return false;\n    const WASMModule *m = (const WASMModule *)module;';
+  if(!text.includes(oldPrefix))throw Error('Pinned WAMR native-module size seam changed');
+  text=text.replace(oldPrefix,newPrefix)+'bool wasmbench_wamr_module_native_size(const wasm_module_t *module, uint64 *size) {\n    if (!module || !size || (*module)->module_type != Wasm_Module_Bytecode) return false;\n    return wasmbench_wamr_native_module_size(module_to_module_ext((wasm_module_t *)module)->module_comm_rt, size);\n}\n';
+ }
+ await writeFile(file,text);files[common]=digest(Buffer.from(text));
  if(configuration==='wamr-fast-jit') {
   await patch('core/iwasm/interpreter/wasm.h','    void *fast_jit_jitted_code;','    void *fast_jit_jitted_code;\n    uint64 wasmfyi_native_size_bytes;');
   await patch('core/iwasm/fast-jit/jit_codecache.c','    module->fast_jit_func_ptrs[jit_func_idx] = func->fast_jit_jitted_code =',`    /* wasmfyi_native_size: exact emitted function block, not cache capacity. */
