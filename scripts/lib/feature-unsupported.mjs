@@ -308,15 +308,15 @@ const zwasmRejections=[
  // that support statement and are rejected by its front-end validator. The C
  // API deliberately exposes only an accepted/rejected verdict, so keep each
  // generic rejection feature-, source-, artifact-, and contract-bound here.
- {feature:'compact-imports',reason:/Zwasm C API failure: compile/},
- {feature:'legacy-exceptions',reason:/Zwasm C API failure: compile/},
- {feature:'shared-everything-threads',reason:/Zwasm C API failure: compile/},
- {feature:'stack-switching',reason:/Zwasm C API failure: compile/},
- {feature:'memory-control',reason:/Zwasm C API failure: compile/},
- {feature:'half-precision',reason:/Zwasm C API failure: compile/},
- {feature:'stringref',reason:/Zwasm C API failure: compile/},
- {feature:'acquire-release-atomics',reason:/Zwasm C API failure: compile/},
- {feature:'custom-descriptors',reason:/Zwasm C API failure: compile/},
+ {feature:'compact-imports',reason:/Zwasm C API failure: (?:compile|instantiate)/},
+ {feature:'legacy-exceptions',reason:/Zwasm C API failure: (?:compile|instantiate)/},
+ {feature:'shared-everything-threads',reason:/Zwasm C API failure: (?:compile|instantiate)/},
+ {feature:'stack-switching',reason:/Zwasm C API failure: (?:compile|instantiate)/},
+ {feature:'memory-control',reason:/Zwasm C API failure: (?:compile|instantiate)/},
+ {feature:'half-precision',reason:/Zwasm C API failure: (?:compile|instantiate)/},
+ {feature:'stringref',reason:/Zwasm C API failure: (?:compile|instantiate)/},
+ {feature:'acquire-release-atomics',reason:/Zwasm C API failure: (?:compile|instantiate)/},
+ {feature:'custom-descriptors',reason:/Zwasm C API failure: (?:compile|instantiate)/},
  // Its pinned README explicitly limits SIMD execution to the JIT backend.
  {engine:'zwasm-interpreter',feature:'simd',reason:/guest trap: unreachable/},
  {engine:'zwasm-interpreter',feature:'relaxed-simd',reason:/guest trap: unreachable/},

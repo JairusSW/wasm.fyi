@@ -423,6 +423,7 @@ test('Zwasm classifies source-declared gaps and interpreter-only SIMD absence',(
  const source={repository:'zwasm/zwasm',revision:'5'.repeat(40)};
  for(const [engine,feature,reason] of [
   ['zwasm-interpreter','compact-imports','error: Zwasm C API failure: compile'],
+  ['zwasm-jit','compact-imports','error: Zwasm C API failure: instantiate'],
   ['zwasm-jit','custom-descriptors','sacrificial check check-0-0: error: Zwasm C API failure: compile'],
   ['zwasm-interpreter','simd','error: guest trap: unreachable'],
   ['zwasm-interpreter','relaxed-simd','sacrificial check check-0-0: error: guest trap: unreachable'],
