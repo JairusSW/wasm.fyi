@@ -421,18 +421,25 @@ test('Wazy classifies exact post-3.0 gaps but preserves declared feature failure
 
 test('Zwasm classifies source-declared gaps and interpreter-only SIMD absence',()=>{
  const source={repository:'zwasm/zwasm',revision:'5'.repeat(40)};
- for(const [engine,feature,reason] of [
+ for(const [engine,feature,reason,revision] of [
   ['zwasm-interpreter','compact-imports','error: Zwasm C API failure: compile'],
   ['zwasm-jit','compact-imports','error: Zwasm C API failure: instantiate'],
   ['zwasm-jit','custom-descriptors','sacrificial check check-0-0: error: Zwasm C API failure: compile'],
   ['zwasm-interpreter','simd','error: guest trap: unreachable'],
   ['zwasm-interpreter','relaxed-simd','sacrificial check check-0-0: error: guest trap: unreachable'],
-  ['zwasm-jit','multi-memory','error: Zwasm JIT compile: MultipleMemories'],
+  ['zwasm-jit','multi-memory','error: Zwasm JIT compile: MultipleMemories','51634833f70a90ae605feb8c3227897b8ba4c9a1'],
  ]){
+  const caseSource=revision?{...source,revision}:source;
+  const w={id:`features/${feature}/case/1`,sha256:'5'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+  const capture={source:caseSource,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+  const failures=[{engine,workload:w.id,phase:'first-call',status:'error',reason}];
+  assert.equal(classifyFeatureRuntimeRejection({source:caseSource,engine,workload:w,capture,failures})?.status,'unsupported',`${engine} ${feature}`);
+ }
+ {
+  const engine='zwasm-jit',feature='multi-memory',reason='error: Zwasm JIT compile: MultipleMemories';
   const w={id:`features/${feature}/case/1`,sha256:'5'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
   const capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
-  const failures=[{engine,workload:w.id,phase:'first-call',status:'error',reason}];
-  assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures})?.status,'unsupported',`${engine} ${feature}`);
+  assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures:[{engine,workload:w.id,phase:'first-call',status:'error',reason}]}),null);
  }
  for(const [engine,feature,reason] of [
   ['zwasm-jit','simd','error: guest trap: unreachable'],
@@ -449,10 +456,10 @@ test('Zwasm classifies source-declared gaps and interpreter-only SIMD absence',(
 
 test('Endive classifies parser gaps while preserving README-declared features',()=>{
  const source={repository:'bytecodealliance/endive',revision:'6'.repeat(40)};
- const classify=(engine,feature,reason,status='error')=>{
+ const classify=(engine,feature,reason,status='error',caseSource=source)=>{
   const w={id:`features/${feature}/case/1`,sha256:'6'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
-  const capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
-  return classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures:[{engine,workload:w.id,phase:'first-call',status,reason:`error: ${reason}`}]});
+  const capture={source:caseSource,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+  return classifyFeatureRuntimeRejection({source:caseSource,engine,workload:w,capture,failures:[{engine,workload:w.id,phase:'first-call',status,reason:`error: ${reason}`}]});
  };
  for(const [feature,reason] of [
   ['compact-imports','malformed import kind'],
@@ -487,7 +494,8 @@ test('Endive classifies parser gaps while preserving README-declared features',(
   assert.equal(classify('endive-redline',feature,reason)?.status,'unsupported',`redline ${feature}`);
   assert.equal(classify('endive-jit',feature,reason),null,`jit ${feature}`);
  }
- assert.equal(classify('endive-redline','multi-memory','incorrect result: scalar oracle mismatch','incorrect_result')?.status,'unsupported');
+ assert.equal(classify('endive-redline','multi-memory','incorrect result: scalar oracle mismatch','incorrect_result',{...source,revision:'46a882af3be60293a9beb2b92e0b1734723a6e44'})?.status,'unsupported');
+ assert.equal(classify('endive-redline','multi-memory','incorrect result: scalar oracle mismatch','incorrect_result'),null);
  assert.equal(classify('endive-jit','multi-memory','incorrect result: scalar oracle mismatch','incorrect_result'),null);
 });
 

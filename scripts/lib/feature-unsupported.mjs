@@ -326,7 +326,7 @@ const zwasmRejections=[
  {engine:'zwasm-interpreter',feature:'relaxed-simd',reason:/guest trap: unreachable/},
  // The pinned JIT lowering reads and discards SIMD memory indices and its
  // instantiation gate explicitly rejects modules with multiple memories.
- {engine:'zwasm-jit',feature:'multi-memory',reason:/Zwasm JIT compile: MultipleMemories/},
+ {revision:'51634833f70a90ae605feb8c3227897b8ba4c9a1',engine:'zwasm-jit',feature:'multi-memory',reason:/Zwasm JIT compile: MultipleMemories/},
 ];
 const endiveRejections=[
  // The pinned README declares SIMD, tail calls, exception handling, threads,
@@ -342,7 +342,7 @@ const endiveRejections=[
  // Redline documents the base specification plus threads. Its native compiler
  // materializes memory zero only, so multi-memory modules can parse but execute
  // with the wrong memory selected instead of producing an admission error.
- {engine:'endive-redline',feature:'multi-memory',reason:/incorrect result: scalar oracle mismatch/,allowIncorrectResult:true},
+ {revision:'46a882af3be60293a9beb2b92e0b1734723a6e44',engine:'endive-redline',feature:'multi-memory',reason:/incorrect result: scalar oracle mismatch/,allowIncorrectResult:true},
  {feature:'compact-imports',reason:/malformed import kind/},
  {feature:'custom-page-sizes',reason:/invalid memory limit: 9/},
  {feature:'legacy-exceptions',reason:/illegal opcode, op value 06/},
