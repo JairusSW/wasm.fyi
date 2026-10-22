@@ -14,6 +14,44 @@ spec = importlib.util.spec_from_file_location('publisher', Path(__file__).with_n
 publisher = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(publisher)
 
+class EmptyCapturePublicationTests(unittest.TestCase):
+    def test_empty_synced_capture_waits_for_change_without_repeated_reads(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            campaign = root / 'test-campaign'
+            captures = campaign / 'captures'
+            captures.mkdir(parents=True)
+            revision, week = 'a' * 40, '2026-10-15T07:33:48.082Z'
+            (campaign / 'source-plan.json').write_text(json.dumps({'pins': [{'revision': revision, 'targetWeek': week, 'configurations': ['test'], 'status': 'planned'}]}))
+            capture = captures / 'pending.json'
+            capture.write_bytes(b'')
+            payload = {'source': {'revision': revision, 'asOf': week, 'kind': 'snapshot'}, 'results': [{'engine': 'test', 'latencyStatus': 'unsupported'}]}
+            original_read = Path.read_bytes
+            empty_reads, loops = [], []
+            def read(path):
+                if path == capture and path.stat().st_size == 0:
+                    empty_reads.append(path)
+                return original_read(path)
+            def sleep(seconds):
+                if seconds != 60:
+                    return
+                loops.append(1)
+                if len(loops) == 2:
+                    capture.write_text(json.dumps(payload))
+                if len(loops) == 3:
+                    raise KeyboardInterrupt()
+            import io
+            class Receipt(io.BytesIO):
+                status = 200
+            args = ['publisher', '--root', str(root), '--state', str(root / 'state'), '--campaign', 'test-campaign']
+            with patch.object(sys, 'argv', args), patch.dict(os.environ, {'WASMFYI_ADMIN_TOKEN': 't' * 32}), patch.object(Path, 'read_bytes', read), patch.object(publisher.time, 'sleep', sleep), patch.object(publisher.urllib.request, 'urlopen', return_value=Receipt(json.dumps({'id': 'b' * 64}).encode())) as publish, patch('builtins.print'):
+                with self.assertRaises(KeyboardInterrupt):
+                    publisher.main()
+            self.assertEqual(empty_reads, [])
+            publish.assert_called_once()
+            self.assertEqual(len(publisher.publication_ledger(root / 'state/published.json')), 1)
+
+
 class PublicationLedgerTests(unittest.TestCase):
     def test_journal_recovers_receipts_before_snapshot(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -288,6 +288,12 @@ def main():
                 signature = (before.st_mtime_ns, before.st_size)
                 if unchanged.get(str(path)) == signature:
                     continue
+                if before.st_size == 0:
+                    # Synced placeholders are not captures or publication receipts.
+                    # Reconsider them as soon as a writer replaces or fills them.
+                    print("Awaiting nonempty capture:", path.name, flush=True)
+                    unchanged[str(path)] = signature
+                    continue
                 body = path.read_bytes()
                 if signature != (path.stat().st_mtime_ns, path.stat().st_size):
                     continue
