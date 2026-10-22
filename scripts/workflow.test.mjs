@@ -265,7 +265,7 @@ test('feature support excludes scalar baselines and distinguishes failures and c
 });
 
 test('ignorable hint metadata requires an explicit pinned runtime declaration', async () => {
-  const { featureSupport } = await import('./lib/feature-support.mjs');
+  const { featureSupport,runtimeDeclaresFeature } = await import('./lib/feature-support.mjs');
   const directory = await mkdtemp(join(tmpdir(), 'wasm-fyi-feature-declaration-'));
   try {
     const workload={id:'features/branch-hinting/mostly-taken/64',sha256:'a'.repeat(64),features:['branch-hinting'],provenance:{scope:'execution'}};
@@ -284,6 +284,20 @@ test('ignorable hint metadata requires an explicit pinned runtime declaration', 
     structured.runtimes[0].description.validator_features={branch_hinting:true,supported:{}};
     const dedicated=await featureSupport(directory,[structured]);
     assert.equal(dedicated.hosts[0].configurations[0].features.find(f=>f.id==='branch-hinting').cases[0].status,'executed');
+    const flags=report(['mvp']);
+    flags.runtimes[0].description.effective_configuration={flags:'["--experimental-wasm-branch-hinting","--experimental-wasm-compilation-hints"]'};
+    assert.equal(runtimeDeclaresFeature(flags.runtimes[0].description,'compilation-hints'),true);
+    const flagged=await featureSupport(directory,[flags]);
+    assert.equal(flagged.hosts[0].configurations[0].features.find(f=>f.id==='branch-hinting').cases[0].status,'executed');
+    const cranelift=report(['mvp']);
+    cranelift.runtimes[0].description.backend='cranelift';
+    cranelift.runtimes[0].description.effective_configuration={validator_feature_policy:'wasmtime-default-subset-v1'};
+    cranelift.runtimes[0].description.validator_features={evidence:'Cranelift explicitly enables branch hints'};
+    const declaredCranelift=await featureSupport(directory,[cranelift]);
+    assert.equal(declaredCranelift.hosts[0].configurations[0].features.find(f=>f.id==='branch-hinting').cases[0].status,'executed');
+    cranelift.runtimes[0].description.backend='winch';
+    const parsedOnly=await featureSupport(directory,[cranelift]);
+    assert.equal(parsedOnly.hosts[0].configurations[0].features.find(f=>f.id==='branch-hinting').cases[0].status,'unsupported');
   } finally {await rm(directory,{recursive:true,force:true});}
 });
 

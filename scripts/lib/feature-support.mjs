@@ -12,7 +12,17 @@ const declarationKeys={'branch-hinting':'BRANCH_HINTING','compilation-hints':'CO
 export function runtimeDeclaresFeature(description,feature) {
   if(description?.features?.includes(feature))return true;
   if(description?.validator_features?.[feature.replaceAll('-','_')]===true)return true;
-  return description?.validator_features?.supported?.[declarationKeys[feature]]===true;
+  if(description?.validator_features?.supported?.[declarationKeys[feature]]===true)return true;
+  const effective=description?.effective_configuration||{},flags=String(effective.flags||'');
+  if(feature==='branch-hinting'&&flags.includes('"--experimental-wasm-branch-hinting"'))return true;
+  if(feature==='compilation-hints'&&flags.includes('"--experimental-wasm-compilation-hints"'))return true;
+  // Wasmtime's pinned validator receipt predates the structured branch-hint
+  // key. Its evidence names the enabled Cranelift implementation explicitly;
+  // Winch parses the ignorable section but does not consume its code-layout
+  // hint, so keep this backend-specific.
+  return feature==='branch-hinting'&&description?.backend==='cranelift'
+    &&effective.validator_feature_policy==='wasmtime-default-subset-v1'
+    &&String(description?.validator_features?.evidence||'').includes('explicitly enables branch hints');
 }
 
 export function runtimeIdentity(runtime) {
