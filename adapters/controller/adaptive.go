@@ -21,7 +21,7 @@ func adaptiveStable(samples []protocol.Sample) bool {
  start:=0;if n>10{start=n-10}
  values:=make([]float64,n-start)
  mean:=0.0
- for i,s:=range samples[start:]{values[i]=float64(s.ElapsedNS)/float64(s.Operations);mean+=values[i]}
+ for i,s:=range samples[start:]{values[i]=adaptiveSampleValue(s);mean+=values[i]}
  mean/=float64(len(values))
  variance:=0.0;for _,v:=range values{variance+=(v-mean)*(v-mean)}
  sd:=math.Sqrt(variance/float64(len(values)-1))
@@ -48,4 +48,27 @@ func collectAdaptiveSamples(call func(protocol.RunRequest)(protocol.Response,err
   if adaptiveStable(output.Samples){break}
  }
  return output,nil
+}
+
+// Use the complete C-AOT pipeline for the stopping rule, matching publication.
+// Preserve the original timer and stage observations in the recorded samples.
+func adaptiveSampleValue(sample protocol.Sample) float64 {
+	stages := map[string]float64{}
+	for _, observation := range sample.Observations {
+		if observation.Status == "available" && observation.Value != nil && *observation.Value >= 0 && !math.IsInf(*observation.Value, 0) && !math.IsNaN(*observation.Value) {
+			stages[observation.Metric] += *observation.Value
+		}
+	}
+	translation, hasTranslation := stages["aot.translation.elapsed"]
+	if !hasTranslation {
+		translation, hasTranslation = stages["aot.transpile.elapsed"]
+	}
+	compiled, hasCompiled := stages["aot.native_compile.elapsed"]
+	if !hasCompiled {
+		compiled, hasCompiled = stages["aot.pipeline.elapsed"]
+	}
+	if hasTranslation && hasCompiled {
+		return (translation + compiled) / float64(sample.Operations)
+	}
+	return float64(sample.ElapsedNS) / float64(sample.Operations)
 }

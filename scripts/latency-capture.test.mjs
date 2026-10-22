@@ -271,3 +271,11 @@ test('phase-specific caps survive normalization and preserve legacy records',()=
   assert.equal(row.sampling.maxSamples,cap);assert.equal(row.sampling.stopReason,'sample-cap');assert.equal(row.timingSamples,cap);
  }
 });
+
+
+test('adaptive C-AOT summary rejects an unfinished full-pipeline sample group',()=>{
+ const selected=structuredClone(manifest);selected.lock.runtime_configurations[0].id='wasm2c-gcc';
+ const measured={...trial(0,[100,100,100,100,100]),runtime_configuration:'wasm2c-gcc',scenario:'compile',sampling:{method:'same-process-stability-v1',maxSamples:10}};
+ measured.samples.forEach((sample,i)=>{sample.operations=1;sample.observations=[{metric:'aot.translation.elapsed',status:'available',value:100+i%2*500},{metric:'aot.native_compile.elapsed',status:'available',value:100}]});
+ assert.throws(()=>summarizeLatencies({manifest:selected,trials:[measured],workloads:[workload],engines:['wasm2c-gcc'],scenarios:['compile']}),/incomplete adaptive sample sequence/);
+});

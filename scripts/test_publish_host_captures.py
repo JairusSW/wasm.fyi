@@ -159,7 +159,7 @@ time.sleep(30)
 class SampleCountTests(unittest.TestCase):
     def row(self, phase, cap, n):
         return {"phase": phase, "timingSamples": n, "samplesNs": [1] * n,
-                "sampling": {"method": "same-process-stability-v1", "groupSize": 5, "maxSamples": cap, "warmup": 0}}
+                "sampling": {"method": "same-process-stability-v1", "groupSize": 5, "maxSamples": cap, "warmup": 0, "stopReason": "stable"}}
 
     def test_phase_caps_and_legacy_records_publish_without_recollection(self):
         for phase in ("compile", "instantiate", "first-call", "steady"):
@@ -173,6 +173,15 @@ class SampleCountTests(unittest.TestCase):
         self.assertFalse(publisher.valid_sample_count(self.row("steady", 10, 5), 5, True))
         self.assertFalse(publisher.valid_sample_count(self.row("compile", 10, 15), 5, True))
         self.assertFalse(publisher.valid_sample_count(self.row("steady", 25, 7), 5, True))
+
+    def test_unfinished_stopping_policy_is_not_publishable(self):
+        row = self.row("compile", 10, 5)
+        for reason in (None, "collect-next-group", "incomplete-group", "sample-cap"):
+            row["sampling"]["stopReason"] = reason
+            self.assertFalse(publisher.valid_sample_count(row, 5, True))
+        row = self.row("compile", 10, 10)
+        row["sampling"]["stopReason"] = "sample-cap"
+        self.assertTrue(publisher.valid_sample_count(row, 5, True))
 
     def test_boolean_adaptive_policy_requires_ordered_sample_metadata(self):
         row = {"timingSamples": 5, "samplesNs": [1] * 5}

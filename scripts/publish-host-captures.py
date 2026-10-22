@@ -150,7 +150,9 @@ def valid_sample_count(row, expected, adaptive=None, retain_recorded=False):
         return (isinstance(cap, int) and not isinstance(cap, bool)
                 and cap in (phase_cap, 35) and row.get("phase") in ("compile", "instantiate", "first-call", "steady")
                 and 5 <= n <= cap and n % 5 == 0
-                and policy.get("groupSize") == 5 and policy.get("warmup") == 0)
+                and policy.get("groupSize") == 5 and policy.get("warmup") == 0
+                and policy.get("stopReason") in ("stable", "sample-cap")
+                and (policy.get("stopReason") != "sample-cap" or n == cap))
     if retain_recorded:
         # Older DB captures keep their original vector count and absent policy;
         # never manufacture current adaptive metadata or admit correctness probes.

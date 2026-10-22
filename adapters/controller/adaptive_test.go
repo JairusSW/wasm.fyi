@@ -40,3 +40,27 @@ func TestAdaptivePhaseCaps(t *testing.T){
   })
  }
 }
+
+func TestAdaptiveTranspilerPipelineStopping(t *testing.T) {
+	calls := 0
+	out, err := collectAdaptiveSamples(func(r protocol.RunRequest) (protocol.Response, error) {
+		calls++
+		response := protocol.Response{Status: "ok"}
+		for i := 0; i < 5; i++ {
+			response.Samples = append(response.Samples, protocol.Sample{Index: i, ElapsedNS: 100, Operations: 1, Verified: true, SampleType: "individual_operation", Observations: []protocol.Observation{
+				{Metric: "aot.translation.elapsed", Status: "available", Value: protocol.Value(float64(100 + i%2*500))},
+				{Metric: "aot.native_compile.elapsed", Status: "available", Value: protocol.Value(100)},
+			}})
+		}
+		return response, nil
+	}, protocol.RunRequest{Scenario: "compile", Operations: 1})
+	if err != nil || calls != 2 || len(out.Samples) != 10 {
+		t.Fatal("stopped on partial compile timer", calls, err)
+	}
+	if out.Samples[0].ElapsedNS != 100 {
+		t.Fatal("raw timer mutated")
+	}
+	if value := adaptiveSampleValue(out.Samples[1]); value != 700 {
+		t.Fatal("pipeline total", value)
+	}
+}

@@ -50,6 +50,7 @@ export function summarizeLatencies({manifest,trials,workloads,engines,scenarios=
   const display={group:workload.provenance?.category||workload.family||workload.id.split('/')[1]||'Other workloads',purpose:workload.original_contract?.desc||workload.provenance?.description||'',tags:[...new Set([...(workload.features||[]),...(workload.original_contract?.tags||[]),...(workload.provenance?.baseline?['baseline']:[])])],abi:workload.abi||'',bytes:workload.bytes||0,source:workload.source||'',reset:workload.reset||''};
   const timingSamples=status==='ok'?samplesNs.length:0;
   const adaptive=status==='ok'&&measured.some(t=>t.sampling?.method==='same-process-stability-v1')?sampleStability(samplesNs,measured.find(t=>t.sampling?.maxSamples)?.sampling.maxSamples||35):null;
+  if(adaptive&&!adaptive.stop)throw Error('Producer returned an incomplete adaptive sample sequence for '+engine+' '+workload.id+' '+phase);
   results.push({display,timingSamples,...(status==='ok'?{samplesNs:samplesNs.map(value=>value/divisor),...(adaptive?{sampling:{method:'same-process-stability-v1',groupSize:5,maxSamples:measured.find(t=>t.sampling?.maxSamples)?.sampling.maxSamples||35,warmup:0,retainedStart:adaptive.retainedStart,stopReason:adaptive.reason}}:{})}:{}),workload:workload.id,wasm:workload.artifactName||basename(workload.artifact),artifactSha256:workload.sha256,contractSha256:workloadContract(workload),engine,version:cfg.description?.runtime_version||cfg.version||'unknown',backend:cfg.description?.backend||cfg.backend||engine,phase,latencyStatus:status,latencyNs:status==='ok'?(adaptive?adaptive.medianNs:median(launches))/divisor:null,...summarizeResources(matching,phase)});
  }
  return {capturedAt:new Date().toISOString(),...(process.env.WASMBENCH_SOURCE_JSON?{source:JSON.parse(process.env.WASMBENCH_SOURCE_JSON)}:{}),platform:{os:platform.os,arch:platform.arch,cpu:platform.cpu_description||'unknown',cores:platform.logical_cpus,kernel:platform.kernel||'',...(platform.memory_bytes?{memoryBytes:platform.memory_bytes}:{})},results};
@@ -156,7 +157,7 @@ export async function collectLatencies({directory,workloads,engines,collection,r
     await collect(scenarios,collection.operations,timing,calls?callBatchOperations(workloads[0],collection,engines):featurePerformance?collection.steadyOperations:undefined);
    }
    for(const trial of trials.filter(t=>t.profile==='timing'&&t.block>=0&&t.status==='ok')){
-    const values=(trial.samples||[]).filter(s=>!s.warmup&&s.verified).map(s=>s.elapsed_ns/s.operations);
+    const values=(trial.samples||[]).filter(s=>!s.warmup&&s.verified).map(s=>timingValue(trial,s)).filter(Number.isFinite);
     const decision=sampleStability(values,trial.sampling?.maxSamples||35);
     if(!decision.stop)throw Error('Producer returned an incomplete adaptive sample sequence');
     diagnostics.phases.push({engine:trial.runtime_configuration,workload:trial.workload,phase:trial.scenario,...decision});
