@@ -99,13 +99,14 @@ func (s *Store) observation(ctx context.Context, tx *sql.Tx, pid int64, r benchd
 	var oldWasm string
 	var oldArt []byte
 	e = tx.QueryRowContext(ctx, "SELECT id,workload_id,wasm,artifact FROM contracts WHERE digest=?", con).Scan(&contractID, &oldWork, &oldWasm, &oldArt)
-	if e == nil && (oldWork != b.workload || oldWasm != r.Wasm || !bytes.Equal(oldArt, art)) {
+	if e == nil && (oldWork != b.workload || !bytes.Equal(oldArt, art)) {
 		return b, wire.Invalid("contract identity has conflicting metadata")
 	}
 	if e != nil && !errors.Is(e, sql.ErrNoRows) {
 		return b, e
 	}
 	if errors.Is(e, sql.ErrNoRows) {
+		oldWasm = r.Wasm
 		contractID, e = id(ctx, tx, "INSERT INTO contracts(digest,workload_id,wasm,artifact) VALUES(?,?,?,?)", "SELECT id FROM contracts WHERE digest=?", []any{con, b.workload, r.Wasm, art}, []any{con})
 		if e != nil {
 			return b, e
@@ -158,6 +159,13 @@ func (s *Store) observation(ctx context.Context, tx *sql.Tx, pid int64, r benchd
 	}
 	if e == nil {
 		e = putFeatureProfile(ctx, tx, b.observation, r.FeatureProfile)
+	}
+	if e == nil && oldWasm != r.Wasm {
+		var nameID int64
+		nameID, e = id(ctx, tx, "INSERT OR IGNORE INTO wasm_names(name) VALUES(?)", "SELECT id FROM wasm_names WHERE name=?", []any{r.Wasm}, []any{r.Wasm})
+		if e == nil {
+			_, e = tx.ExecContext(ctx, "INSERT OR IGNORE INTO observation_wasm_names(observation_id,name_id) VALUES(?,?)", b.observation, nameID)
+		}
 	}
 	return b, e
 }

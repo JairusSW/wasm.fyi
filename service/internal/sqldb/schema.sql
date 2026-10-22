@@ -228,3 +228,10 @@ CREATE TABLE IF NOT EXISTS observation_profiles (
  observation_id INTEGER PRIMARY KEY REFERENCES observations(id) ON DELETE CASCADE,
  profile_id INTEGER NOT NULL REFERENCES feature_profiles(id)
 );
+
+-- Filenames are capture labels, not contract identity. Store only alternate labels.
+CREATE TABLE IF NOT EXISTS wasm_names (id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE);
+CREATE TABLE IF NOT EXISTS observation_wasm_names (
+ observation_id INTEGER PRIMARY KEY REFERENCES observations(id) ON DELETE CASCADE,
+ name_id INTEGER NOT NULL REFERENCES wasm_names(id)
+);

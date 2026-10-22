@@ -44,6 +44,7 @@ type contract struct {
 	Artifact string
 }
 type measurement struct {
+	WasmName       string `json:"wn,omitempty"`
 	FeatureProfile string `json:"fp,omitempty"`
 
 	Sampling      *Sampling `json:"sp,omitempty"`
@@ -262,9 +263,17 @@ func (s *Store) Put(ctx context.Context, c Capture) (string, error) {
 		value := measurement{FeatureProfile: r.FeatureProfile, Sampling: r.Sampling, Source: r.Source, Display: r.Display, TimingSamples: r.TimingSamples, SamplesNs: r.SamplesNs, Contract: r.Contract, Engine: cfgID, CapturedAt: c.CapturedAt, Status: r.Status, Latency: r.Value, PeakRSS: r.PeakRSS, Code: r.CodeBytes, CodeKind: r.CodeKind, MemoryStatus: r.MemoryStatus, CodeStatus: r.CodeStatus}
 		recipeCheck := contract{r.Workload, r.Wasm, r.Artifact}
 		if prior, err := get(b, "contracts/"+r.Contract); err == nil {
-			if !bytes.Equal(prior, encode(recipeCheck)) {
+			var canonical contract
+			if err = json.Unmarshal(prior, &canonical); err != nil {
+				return "", err
+			}
+			if canonical.Workload != r.Workload || canonical.Artifact != r.Artifact {
 				return "", wire.Invalid("contract identity has conflicting metadata")
 			}
+			if canonical.Wasm != r.Wasm {
+				value.WasmName = r.Wasm
+			}
+			recipeCheck = canonical
 		} else if !errors.Is(err, pebble.ErrNotFound) {
 			return "", err
 		}
@@ -305,7 +314,7 @@ func (s *Store) Put(ctx context.Context, c Capture) (string, error) {
 						return "", e
 					}
 				}
-				recipe := contract{r.Workload, r.Wasm, r.Artifact}
+				recipe := recipeCheck
 				if e = b.Set([]byte("contracts/"+r.Contract), encode(recipe), nil); e != nil {
 					return "", e
 				}
@@ -371,7 +380,7 @@ func (s *Store) Put(ctx context.Context, c Capture) (string, error) {
 				return "", err
 			}
 		}
-		recipe := contract{r.Workload, r.Wasm, r.Artifact}
+		recipe := recipeCheck
 		if previous, err := get(b, "contracts/"+r.Contract); err == nil {
 			if !bytes.Equal(previous, encode(recipe)) {
 				return "", wire.Invalid("contract identity has conflicting metadata")
@@ -643,7 +652,11 @@ func (s *Store) Page(ctx context.Context, q Query) (Page, error) {
 			kind := "unknown"
 			m.CodeKind = &kind
 		}
-		item := Result{Row: Row{FeatureProfile: m.FeatureProfile, Sampling: m.Sampling, Source: m.Source, Display: m.Display, TimingSamples: m.TimingSamples, SamplesNs: m.SamplesNs, Workload: recipe.Workload, Wasm: recipe.Wasm, Artifact: recipe.Artifact, Contract: m.Contract, Engine: cfg.ID, Version: cfg.Version, Backend: cfg.Backend, Phase: q.Phase, Status: m.Status, Value: m.Latency, PeakRSS: m.PeakRSS, CodeBytes: m.Code, CodeKind: m.CodeKind, MemoryStatus: m.MemoryStatus, CodeStatus: m.CodeStatus}, CapturedAt: m.CapturedAt}
+		wasmName := recipe.Wasm
+		if m.WasmName != "" {
+			wasmName = m.WasmName
+		}
+		item := Result{Row: Row{FeatureProfile: m.FeatureProfile, Sampling: m.Sampling, Source: m.Source, Display: m.Display, TimingSamples: m.TimingSamples, SamplesNs: m.SamplesNs, Workload: recipe.Workload, Wasm: wasmName, Artifact: recipe.Artifact, Contract: m.Contract, Engine: cfg.ID, Version: cfg.Version, Backend: cfg.Backend, Phase: q.Phase, Status: m.Status, Value: m.Latency, PeakRSS: m.PeakRSS, CodeBytes: m.Code, CodeKind: m.CodeKind, MemoryStatus: m.MemoryStatus, CodeStatus: m.CodeStatus}, CapturedAt: m.CapturedAt}
 		itemBytes := len(encode(item)) + 1
 		// Reserve space for page metadata and the signed continuation cursor.
 		if len(page.Items) > 0 && responseBytes+itemBytes > wire.ResponseBytes-(32<<10) {

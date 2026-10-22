@@ -82,7 +82,7 @@ func TestAtomicValidationAndPlatformPhaseIsolation(t *testing.T) {
 	c := fixture("2026-10-08T00:00:00Z", 1)
 	c.Results = append(c.Results, c.Results[0])
 	c.Results[1].Phase = "compile"
-	c.Results[1].Wasm = "different.wasm"
+	c.Results[1].Artifact = strings.Repeat("f", 64)
 	if _, e = s.Put(ctx, c); e == nil {
 		t.Fatal("conflicting contract metadata accepted")
 	}
@@ -90,7 +90,7 @@ func TestAtomicValidationAndPlatformPhaseIsolation(t *testing.T) {
 	if e != nil || len(empty.Items) != 0 {
 		t.Fatal("partial transaction visible", empty, e)
 	}
-	c.Results[1].Wasm = "test.wasm"
+	c.Results[1].Artifact = c.Results[0].Artifact
 	if _, e = s.Put(ctx, c); e != nil {
 		t.Fatal(e)
 	}

@@ -58,6 +58,11 @@ with latency in the lowest bits. Each field is 0=not-measured, 1=ok, 2=failed,
 a zero-resolution latency scalar; otherwise null. Policies, complete statistics
 and ordered samples load through `/api/observation` when a cell opens.
 
+The `wasm` filename is a capture label, not part of contract identity. Identical
+contracts from different machines may use different filenames; reads and exports
+preserve each observation's original label. A shared contract digest must still
+identify the same workload and artifact.
+
 Captures may supply an optional `featureProfile` label (up to 32 lowercase
 letters, digits, or hyphens, beginning with a letter). It defaults rows that do
 not specify their own label. SQLite interns profile names separately from

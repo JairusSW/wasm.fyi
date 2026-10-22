@@ -22,8 +22,8 @@ type queryer interface {
 	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
 }
 
-const projection = `o.id,w.name,c.wasm,c.artifact,c.digest,e.name,cfg.version,cfg.backend,o.phase,o.captured_at,o.metric_bits,o.latency_status,o.memory_status,o.code_status,o.code_kind,o.timing_samples,d.data,sp.data,s.repository,s.revision,s.ref,s.kind,s.date_basis,snap.as_of`
-const joins = ` JOIN observations o ON o.id=b.observation_id JOIN contracts c ON c.id=o.contract_id JOIN workloads w ON w.id=c.workload_id JOIN configurations cfg ON cfg.id=o.configuration_id JOIN engines e ON e.id=cfg.engine_id LEFT JOIN displays d ON d.id=o.display_id LEFT JOIN sampling_policies sp ON sp.id=o.sampling_id LEFT JOIN sources s ON s.id=o.source_id LEFT JOIN snapshots snap ON snap.id=b.snapshot_id `
+const projection = `o.id,w.name,COALESCE(wn.name,c.wasm),c.artifact,c.digest,e.name,cfg.version,cfg.backend,o.phase,o.captured_at,o.metric_bits,o.latency_status,o.memory_status,o.code_status,o.code_kind,o.timing_samples,d.data,sp.data,s.repository,s.revision,s.ref,s.kind,s.date_basis,snap.as_of`
+const joins = ` JOIN observations o ON o.id=b.observation_id LEFT JOIN observation_wasm_names own ON own.observation_id=o.id LEFT JOIN wasm_names wn ON wn.id=own.name_id JOIN contracts c ON c.id=o.contract_id JOIN workloads w ON w.id=c.workload_id JOIN configurations cfg ON cfg.id=o.configuration_id JOIN engines e ON e.id=cfg.engine_id LEFT JOIN displays d ON d.id=o.display_id LEFT JOIN sampling_policies sp ON sp.id=o.sampling_id LEFT JOIN sources s ON s.id=o.source_id LEFT JOIN snapshots snap ON snap.id=b.snapshot_id `
 
 type scanner interface{ Scan(...any) error }
 
