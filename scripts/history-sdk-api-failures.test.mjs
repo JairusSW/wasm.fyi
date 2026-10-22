@@ -13,3 +13,10 @@ test('historical SDK API failures hold completion without hiding genuine workloa
  assert.equal(held.length,1);assert.equal(held[0].workload,'tiny');assert.equal(held[0].configuration,'endive-redline');
  assert.equal(completedHistoryIntegrationFailures(status,'endive','2026-09-27T10:00:00.000Z').length,0);
 });
+
+test('missing adapter executable holds an engine instead of completing every corpus as failed',()=>{
+ const reason='Capture infrastructure failure: wasmbench: build adapter wasmer-singlepass first: open /sdk/bin/adapter-wasmer-singlepass: no such file or directory';
+ assert.equal(historyIntegrationFailure({kind:'capture-error',reason}),true);
+ assert.equal(historyIntegrationFailure({reason:'wasmbench: open /sdk/bin/adapter-wasmer-cranelift: no such file or directory'}),true);
+ assert.equal(historyIntegrationFailure({reason:'error: guest failed to open input: no such file or directory'}),false);
+});

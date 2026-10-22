@@ -8,6 +8,8 @@ export function historyIntegrationFailure(error) {
  // Keep them pending until the adapter works or an engine-specific limitation
  // is proved; a generic "unsupported" prefix does not settle that question.
  if (/unsupported: extended workload contract host_profile|ordered vector timing capability\/profile not supported/i.test(text)) return true;
+ if (/build adapter [a-z0-9_-]+ first:.*(?:no such file or directory|cannot find)/i.test(text)) return true;
+ if (/wasmbench: open [^\n]*\/adapter-[^:\n]+: no such file or directory/i.test(text)) return true;
  return /SDK API unavailable|java\.lang\.(?:NoSuchMethodException|NoSuchMethodError|NoClassDefFoundError)|ERR_MODULE_NOT_FOUND|Cannot find module ['"]|Missing resumed failure (?:note|details)|protocol version or request identity mismatch|Invalid request JSON|Invalid ordered latency samples|Producer returned an incomplete adaptive sample sequence|Invalid sample cap|adapter startup|SDK startup qualification failed|invalid control response|adapter terminated before response|missing.*(?:header|shared librar)|fatal error:.*No such file or directory/i.test(text);
 }
 export function completedHistoryIntegrationFailures(status,engine,week,root) {
