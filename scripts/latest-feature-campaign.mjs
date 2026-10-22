@@ -1,3 +1,4 @@
+import {upgradeWizardFeatureCommand} from './lib/wizard-feature-policy.mjs';
 import {featureScenarios} from './lib/feature-scenario-policy.mjs';
 import {chicoryVectorOptions} from './lib/chicory-simd.mjs';
 import {rebuildWazeroSampling,assertWazeroInterruptsDisabled} from './lib/wazero-sampling.mjs';
@@ -103,6 +104,13 @@ campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
  let {job,plan}=binding;
  try{if(engine==='v8'){for(const name of await readdir(join(campaign,'sdk-builds')).catch(()=>[])){const dir=join(campaign,'sdk-builds',name),receipt=await readJSON(join(dir,'v8-build.json')).catch(()=>null);if(receipt?.pin?.revision===pin.revision){const release=await acquireFeatureProjectLock();let upgraded;try{upgraded=await ensureV8BindingPolicy(campaign,dir,receipt,{reserved:true,env:{...template.env,...plan.env,...job.env},featureJspi:true})}finally{await release()};job={...job,controller:upgraded.controller,harness:upgraded.root,env:{...job.env,...upgraded.env},backend:'turboshaft'};break;}}}}catch(error){if(error.code==='FEATURE_PROJECT_OCCUPIED')throw error;state.errors.push({engine,kind:'adapter-binding-migration',error:String(error),source:job.source});await atomicJSON(join(root,'binding-repairs',engine+'.json'),{status:'repair-pending',source:job.source,error:String(error)});state.completed++;await save();continue;}
  const controller=job.controller||plan.controller,harness=job.harness||plan.harness;
+ if(engine.startsWith('wizard-')){
+  const release=await acquireFeatureProjectLock();
+  try{await upgradeWizardFeatureCommand(harness,engine,job.source.revision)}
+  catch(error){state.errors.push({engine,kind:'adapter-binding-migration',error:String(error),source:job.source});state.completed++;await save();continue}
+  finally{await release()}
+ }
+
  let bindingMigrationFailed=false;
  for(const candidate of engineBindings){
   const candidateJob=candidate.job,candidatePlan=candidate.plan,candidateController=candidateJob.controller||candidatePlan.controller,candidateHarness=candidateJob.harness||candidatePlan.harness;
