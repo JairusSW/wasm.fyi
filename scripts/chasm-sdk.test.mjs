@@ -42,3 +42,12 @@ test('unknown historical callback type aliases fail before Gradle compilation',a
  await assert.rejects(buildChasmSDK({...f,version:'unknown'}),/Unsupported Chasm host callback API/);
  assert.equal(f.calls.length,1);
 }));
+
+test('Chasm enables extended-name decoding in both fresh and cached module paths',async()=>fixture(25,async f=>{
+ await buildChasmSDK({...f,version:'source-hash'});
+ const adapter=await readFile(join(f.source,'wasmfyi-adapter/src/main/kotlin/ChasmAdapter.kt'),'utf8');
+ assert(adapter.includes('ModuleConfig(decodeNameSection=true)'));
+ assert.equal(adapter.match(/module\(bytes,config\)/g)?.length,2);
+ assert(adapter.includes('.put("features",JSONArray(listOf("extended-name-section")))'));
+ assert(!adapter.includes('module(bytes).expect'));
+}));

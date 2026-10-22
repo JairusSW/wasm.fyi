@@ -53,12 +53,16 @@ The proposal inventory and names come from [webassembly.org/features](https://we
 | Wasmi | Crate `simd` and `memory64`; runtime custom page sizes, SIMD, relaxed SIMD, Memory64, and wide arithmetic enabled. |
 | wazero compiler/interpreter | Core v2 plus its public experimental threads, tail-call, extended-const, exception-handling, and typed-function-reference bits. |
 | Wizard V3/fast/SPC | CLI custom-page-size, stack-switching, threads, and wide-arithmetic extensions. |
-| WAMR interpreter/Fast JIT/LLVM JIT | Extended constants, Memory64, shared memory, SIMD, and tail calls are explicitly enabled. Multi-memory is interpreter-only. GC stays disabled for Fast JIT and final exception handling stays disabled because upstream documents only legacy exceptions; executable probes decide the remaining backend combinations. |
+| WAMR interpreter/Fast JIT/LLVM JIT | Enable proposals per backend. The pinned Fast JIT build permits extended constants, shared memory, and tail calls, but rejects GC, typed function references, SIMD, Memory64, multi-memory, and exceptions. Interpreter and LLVM GC probes use the native C API profile where available; final exception handling remains disabled. |
 | GraalWasm | Discovers the exact installed `wasm.*` option set and enables every available proposal option; absent options are not invented for older releases. |
 | V8, SpiderMonkey, JavaScriptCore | Stable engine defaults plus adapter probes for flag-gated proposals. A declaration is published only when a probe module validates and executes under the same command. |
 | Wasmer Cranelift/LLVM/Singlepass, WAVM, WasmEdge interpreter/JIT | Backend-specific feature policies follow actual lowering support. Known parser/backend mismatches stay disabled. |
 | wasm2c, w2c2, wasm2go, Wazy | Translation flags, generated runtime support, and the native compiler are treated as one configuration; a successful translation alone is insufficient. |
 | Wasm3, Chicory interpreter/JIT, libwasm, Chasm, zwasm interpreter/JIT, Endive interpreter/JIT/Redline | Features are admitted only where the pinned revision and selected backend expose an executable implementation. No switches from newer upstream versions are applied to older pins. |
+
+Metadata-only declarations also require implementation evidence. At JavaScriptCore `f3e56c5b480ab4dc6bb6412abdfc35c2536467ec`, [WasmSectionParser](https://github.com/WebKit/WebKit/blob/f3e56c5b480ab4dc6bb6412abdfc35c2536467ec/Source/JavaScriptCore/wasm/WasmSectionParser.cpp#L1494) unconditionally parses branch hints and [WasmOMGIRGenerator](https://github.com/WebKit/WebKit/blob/f3e56c5b480ab4dc6bb6412abdfc35c2536467ec/Source/JavaScriptCore/wasm/WasmOMGIRGenerator.cpp#L5025) uses them to assign block frequencies. The declaration applies only to that revision with the forced OMG adapter. Passing an ignorable custom-section workload alone does not establish support.
+
+Chasm `02033f247459790dd46da3d5b104c0c11bc36bd7` implements extended-name subsections, but its `ModuleConfig` disables name decoding by default. The repaired adapter enables `decodeNameSection` for every fresh decode. Only new captures explicitly labeled with the `extended-names` profile establish this configuration; earlier captures retain their original interpretation.
 
 This audit controls future captures. Existing published outcomes do not change until a fresh latest-version feature compatibility and performance capture executes the affected adapter.
 

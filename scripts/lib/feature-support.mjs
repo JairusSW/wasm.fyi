@@ -12,6 +12,11 @@ const declarationKeys={'branch-hinting':'BRANCH_HINTING','compilation-hints':'CO
 export function runtimeDeclaresFeature(description,feature) {
   // The numeric oracle exercises JS BigInt only through these JS adapters.
   if(feature==='big-int')return ['v8','spidermonkey','jsc'].includes(description?.runtime);
+  // This pinned OMG source parses branch metadata and consumes it when
+  // weighting branches. Other tiers/revisions need their own source audit.
+  if(feature==='branch-hinting'&&description?.runtime==='jsc'
+    &&description?.backend==='OMG (forced tier-up)'
+    &&description?.runtime_version==='f3e56c5b480ab4dc6bb6412abdfc35c2536467ec')return true;
   if(description?.features?.includes(feature))return true;
   if(description?.validator_features?.[feature.replaceAll('-','_')]===true)return true;
   if(description?.validator_features?.supported?.[declarationKeys[feature]]===true)return true;

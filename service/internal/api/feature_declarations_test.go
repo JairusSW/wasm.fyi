@@ -59,6 +59,9 @@ func TestHintDeclarationPinsAndBackends(t *testing.T) {
 		{"v8", "turboshaft", "f14cd3aa7bf9ca8df2cc5b8bb14beb0f335b1d93", "branch-hinting", true},
 		{"v8", "optimizing-only", "f14cd3aa7bf9ca8df2cc5b8bb14beb0f335b1d93", "compilation-hints", true},
 		{"v8", "liftoff", "f14cd3aa7bf9ca8df2cc5b8bb14beb0f335b1d93", "compilation-hints", false},
+		{"jsc", "OMG (forced tier-up)", "f3e56c5b480ab4dc6bb6412abdfc35c2536467ec", "branch-hinting", true},
+		{"jsc", "BBQ", "f3e56c5b480ab4dc6bb6412abdfc35c2536467ec", "branch-hinting", false},
+		{"jsc", "OMG (forced tier-up)", "f3e56c5b480ab4dc6bb6412abdfc35c2536467ec", "compilation-hints", false},
 	} {
 		row := sqldb.Cell{Result: benchdb.Result{Row: benchdb.Row{Engine: tc.engine, Backend: tc.backend, Version: "release label", Source: &benchdb.Source{Revision: tc.revision}, Workload: "features/" + tc.feature + "/case/1", Status: "ok"}}}
 		if got := featureDeclarationProjection(row); (got.Status == "ok") != tc.declared {
@@ -138,5 +141,24 @@ func TestSourceFormatAndExtendedNameDeclarations(t *testing.T) {
 		if featureDeclarationProjection(row).Status != "failed" {
 			t.Fatal("projection hid a failed semantic control")
 		}
+	}
+}
+
+func TestChasmExtendedNamesDeclarationRequiresRepairedProfile(t *testing.T) {
+	row := sqldb.Cell{Result: benchdb.Result{Row: benchdb.Row{Engine: "chasm", Backend: "jvm-interpreter", Version: "02033f247459790dd46da3d5b104c0c11bc36bd7", Workload: "features/extended-name-section/case/1", Status: "ok"}}}
+	if featureDeclarationProjection(row).Status != "unavailable" {
+		t.Fatal("old default-decoder capture inherited support")
+	}
+	row.FeatureProfile = "extended-names"
+	if featureDeclarationProjection(row).Status != "ok" {
+		t.Fatal("repaired decoder profile was not admitted")
+	}
+	row.Source = &benchdb.Source{Revision: "unverified"}
+	if featureDeclarationProjection(row).Status != "unavailable" {
+		t.Fatal("unverified source inherited support")
+	}
+	row.Status = "failed"
+	if featureDeclarationProjection(row).Status != "failed" {
+		t.Fatal("projection hid decoder failure")
 	}
 }

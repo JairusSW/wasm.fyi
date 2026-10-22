@@ -1,4 +1,5 @@
 import io.github.charlietap.chasm.embedding.*
+import io.github.charlietap.chasm.config.ModuleConfig
 import io.github.charlietap.chasm.embedding.dsl.*
 import io.github.charlietap.chasm.embedding.memory.*
 import io.github.charlietap.chasm.embedding.shapes.*
@@ -34,7 +35,8 @@ private class ChasmAdapter {
     // Decode a fresh module for destructive reset fixtures outside non-compile
     // clocks, so every fresh instance starts from the original memory limits.
     val freshModule=w.getString("reset")=="fresh_instance_per_sample"
-    val module=if(phase=="compile"||freshModule) module(bytes).expect("module decode failed") else cachedModule ?: module(bytes).expect("module decode failed").also{cachedModule=it}
+    val config=ModuleConfig(decodeNameSection=true)
+    val module=if(phase=="compile"||freshModule) module(bytes,config).expect("module decode failed") else cachedModule ?: module(bytes,config).expect("module decode failed").also{cachedModule=it}
     if(phase=="compile")elapsed=System.nanoTime()-decodeStart
     val reuse=phase=="steady"&&w.getString("reset")=="stateless"&&cachedInstance!=null
     val store=if(reuse)requireNotNull(cachedStore) else store()
@@ -87,7 +89,7 @@ private class ChasmAdapter {
 
  fun handle(q: JSONObject): JSONObject {
   when(q.getString("method")){
-   "describe"->return JSONObject().put("description",JSONObject().put("runtime","chasm").put("runtime_version","source-main-2.2.0-SNAPSHOT").put("build","wasm-fyi Chasm adapter v1; source source-main-2.2.0-SNAPSHOT; Java "+System.getProperty("java.runtime.version")).put("backend","jvm-interpreter").put("embedding","Chasm Kotlin JVM embedding").put("abis",JSONArray(listOf("core"))).put("scenarios",JSONArray(listOf("compile","instantiate","first-call","steady"))).put("effective_configuration",JSONObject().put("purpose","phase-separated interpreter timings; module and stateless instance cached across sample groups").put("fresh_reset_policy","fresh decoded module for destructive fixtures; decode outside instantiate/first-call/steady clock; public Module has no clone; prevents mutable memory limits crossing instances")))
+   "describe"->return JSONObject().put("description",JSONObject().put("runtime","chasm").put("runtime_version","source-main-2.2.0-SNAPSHOT").put("build","wasm-fyi Chasm adapter v1; source source-main-2.2.0-SNAPSHOT; Java "+System.getProperty("java.runtime.version")).put("backend","jvm-interpreter").put("embedding","Chasm Kotlin JVM embedding").put("features",JSONArray(listOf("extended-name-section"))).put("abis",JSONArray(listOf("core"))).put("scenarios",JSONArray(listOf("compile","instantiate","first-call","steady"))).put("effective_configuration",JSONObject().put("purpose","phase-separated interpreter timings; module and stateless instance cached across sample groups").put("fresh_reset_policy","fresh decoded module for destructive fixtures; decode outside instantiate/first-call/steady clock; public Module has no clone; prevents mutable memory limits crossing instances")))
    "close"->{preparation=null;bytes=byteArrayOf();cachedModule=null;cachedStore=null;cachedInstance=null;System.gc();return JSONObject()}
    "prepare"->{
     val p=q.getJSONObject("prepare");val w=p.getJSONObject("workload")

@@ -40,9 +40,15 @@ func featureDeclarationProjection(row sqldb.Cell) sqldb.Cell {
 	case "spidermonkey":
 		declared = feature == "big-int" && row.Backend == "ion-only" && revision == "dff12f8eda3dd87cda2a19a6d096a51334a2afe1"
 	case "jsc":
-		declared = feature == "big-int" && row.Backend == "OMG (forced tier-up)" && revision == "f3e56c5b480ab4dc6bb6412abdfc35c2536467ec"
+		// WasmSectionParser reads metadata.code.branch_hint unconditionally;
+		// WasmOMGIRGenerator uses it for taken/continuation block frequency.
+		declared = (feature == "big-int" || feature == "branch-hinting") && row.Backend == "OMG (forced tier-up)" && revision == "f3e56c5b480ab4dc6bb6412abdfc35c2536467ec"
 	case "graalwasm":
 		declared = feature == "branch-hinting" && row.Backend == "truffle-graal" && revision == "f1dce3f84de778485d0ba8d6ddfd4d260b230d0a"
+	case "chasm":
+		// Old captures used ModuleConfig's decodeNameSection=false default.
+		// Only the repaired profile explicitly enables the extended decoder.
+		declared = feature == "extended-name-section" && row.FeatureProfile == "extended-names" && row.Backend == "jvm-interpreter" && revision == "02033f247459790dd46da3d5b104c0c11bc36bd7"
 	}
 	if !declared {
 		row.Status, row.MemoryStatus, row.CodeStatus = "unavailable", "unavailable", "unavailable"
