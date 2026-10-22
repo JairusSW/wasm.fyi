@@ -219,6 +219,17 @@ test('WAVM exact source decoder gaps are source and artifact bound',()=>{
  }
 });
 
+test('WAVM acquire-release alignment rejection is limited to the audited revision',()=>{
+ const engine='wavm',source={repository:'WAVM/WAVM',revision:'4e82bb9fecf9c1bdb4d00f96fa89063ee4382d09'};
+ const workload={id:'features/acquire-release-atomics/rmw-add/1',sha256:'8'.repeat(64),abi:'core',features:['acquire-release-atomics'],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+ const capture={source,results:[{engine,workload:workload.id,artifactSha256:workload.sha256,contractSha256:workloadContract(workload),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+ const failures=[{engine,workload:workload.id,phase:'first-call',status:'error',reason:'error: module compilation failed: Module was invalid: atomic memory operators must have natural alignment: imm.alignmentLog2 != naturalAlignmentLog2'}];
+ assert.equal(classifyFeatureRuntimeRejection({source,engine,workload,capture,failures})?.status,'unsupported');
+ const other={...source,revision:'7'.repeat(40)};
+ assert.equal(classifyFeatureRuntimeRejection({source:other,engine,workload,capture:{...capture,source:other},failures}),null);
+ assert.equal(classifyFeatureRuntimeRejection({source,engine,workload,capture,failures:[{...failures[0],reason:'incorrect result: scalar oracle mismatch'}]}),null);
+});
+
 test('SpiderMonkey ESR exact decoder gaps are source and artifact bound',()=>{
  const source={repository:'mozilla-firefox/firefox',revision:'9'.repeat(40)},engine='spidermonkey';
  for(const [feature,reason] of [

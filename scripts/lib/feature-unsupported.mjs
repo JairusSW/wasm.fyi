@@ -80,6 +80,9 @@ const v8Rejections=[
  {feature:'custom-descriptors',reason:/invalid gc opcode: fb2[01]/},
 ];
 const wavmRejections=[
+ // This validator compares the whole decoded alignment field against the
+ // natural alignment; its feature registry has no acquire-release switch.
+ {revision:'4e82bb9fecf9c1bdb4d00f96fa89063ee4382d09',feature:'acquire-release-atomics',reason:/atomic memory operators must have natural alignment: imm\.alignmentLog2 != naturalAlignmentLog2/},
  {feature:'gc',reason:/(?:unknown function type tag \((?:80|94|95)\)|unknown opcode \(64284\))/},
  {feature:'exceptions',reason:/unknown section ID \(13/},
  {feature:'legacy-exceptions',reason:/unknown section ID \(13/},
