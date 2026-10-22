@@ -26,6 +26,7 @@ import {applyWasm3FeaturePolicy,wasm3FeatureCMakeFlags} from './lib/wasm3-featur
 import {terminalFeatureRuntimeFailure} from './lib/feature-terminal-failure.mjs';
 import {applyWasm2GoFeaturePolicy} from './lib/wasm2go-feature-policy.mjs';
 import {featureFailureForOutcomes,normalizeRepairedFeatureItem,repairedFeatureOutcomes} from './lib/feature-repair-ledger.mjs';
+import {featureBindingForWorkload,featureBindingsForEngine,featureProfileForBinding} from './lib/feature-binding-policy.mjs';
 const [campaignArg,rootArg,inputsArg,bindingsArg]=process.argv.slice(2);
 if(!campaignArg||!rootArg||!inputsArg)throw Error('Usage: latest-feature-campaign CAMPAIGN FEATURE_ROOT INPUTS [BINDINGS_JSON]');
 const campaign=resolve(campaignArg),root=resolve(rootArg),inputs=resolve(inputsArg);
@@ -55,9 +56,9 @@ if(!bindingsArg){
   else if(e.isDirectory()&&!['scratch','harness','sources','sdk-builds','captures','node_modules','target','data'].includes(e.name))await scan(join(path,e.name),depth+1);
  }}
  for(const name of ['sdk-builds','engine-builds','go-builds','libwasm-builds','builds'])await scan(join(campaign,name));
+ const discovered=plans.flatMap(plan=>plan.jobs.map(job=>({engine:job.engine,job,plan})));
  for(const pin of latest)for(const engine of pin.configurations){
-  const match=plans.flatMap(plan=>plan.jobs.map(job=>({engine:job.engine,job,plan}))).find(b=>b.engine===engine&&b.job.source?.revision===pin.revision&&b.job.source?.asOf===pin.targetWeek);
-  if(match)bindings.push(match);
+  bindings.push(...discovered.filter(b=>b.engine===engine&&b.job.source?.revision===pin.revision&&b.job.source?.asOf===pin.targetWeek));
  }
 }
 const suites={};
@@ -92,20 +93,25 @@ const upgradedHostProfileControllers=new Set();
 campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
  if(selectedEngines.length&&!selectedEngines.includes(engine))continue;
  if(repairEngines.length&&!repairEngines.includes(engine))continue;
- const binding=bindings.find(b=>b.engine===engine&&b.job?.source?.revision===pin.revision&&b.job?.source?.asOf===pin.targetWeek);
+ const engineBindings=featureBindingsForEngine(bindings,engine,pin);
+ const binding=featureBindingForWorkload(engineBindings,engine,null);
  if(!binding){state.errors.push({engine,kind:'adapter-binding-missing',revision:pin.revision});state.completed++;await save();continue}
  let {job,plan}=binding;
  try{if(engine==='v8'){for(const name of await readdir(join(campaign,'sdk-builds')).catch(()=>[])){const dir=join(campaign,'sdk-builds',name),receipt=await readJSON(join(dir,'v8-build.json')).catch(()=>null);if(receipt?.pin?.revision===pin.revision){const release=await acquireFeatureProjectLock();let upgraded;try{upgraded=await ensureV8BindingPolicy(campaign,dir,receipt,{reserved:true,env:{...template.env,...plan.env,...job.env},featureJspi:true})}finally{await release()};job={...job,controller:upgraded.controller,harness:upgraded.root,env:{...job.env,...upgraded.env},backend:'turboshaft'};break;}}}}catch(error){if(error.code==='FEATURE_PROJECT_OCCUPIED')throw error;state.errors.push({engine,kind:'adapter-binding-migration',error:String(error),source:job.source});await atomicJSON(join(root,'binding-repairs',engine+'.json'),{status:'repair-pending',source:job.source,error:String(error)});state.completed++;await save();continue;}
  const controller=job.controller||plan.controller,harness=job.harness||plan.harness;
- if(!job.unavailableReason&&!upgradedHostProfileControllers.has(controller)){
+ let bindingMigrationFailed=false;
+ for(const candidate of engineBindings){
+  const candidateJob=candidate.job,candidatePlan=candidate.plan,candidateController=candidateJob.controller||candidatePlan.controller,candidateHarness=candidateJob.harness||candidatePlan.harness;
+  if(candidateJob.unavailableReason||upgradedHostProfileControllers.has(candidateController))continue;
   const release=await acquireFeatureProjectLock();
   try{
-   const buildEnv={...process.env,...template.env,...plan.env,...job.env,GOWORK:'off',GOFLAGS:'-buildvcs=false'};
+   const buildEnv={...process.env,...template.env,...candidatePlan.env,...candidateJob.env,GOWORK:'off',GOFLAGS:'-buildvcs=false'};
    for(const k of ['GOMAXPROCS','OMP_NUM_THREADS','RAYON_NUM_THREADS','CARGO_BUILD_JOBS','CMAKE_BUILD_PARALLEL_LEVEL','MAKEFLAGS','UV_THREADPOOL_SIZE'])delete buildEnv[k];
-   await upgradeFeatureHostProfileController({root:harness,controller,env:buildEnv});
-   upgradedHostProfileControllers.add(controller);
-  }catch(error){state.errors.push({engine,kind:'adapter-binding-migration',error:String(error),source:job.source});await atomicJSON(join(root,'binding-repairs',engine+'.json'),{status:'repair-pending',source:job.source,error:String(error)});state.completed++;await save();continue}finally{await release()}
+   await upgradeFeatureHostProfileController({root:candidateHarness,controller:candidateController,env:buildEnv});
+   upgradedHostProfileControllers.add(candidateController);
+  }catch(error){state.errors.push({engine,kind:'adapter-binding-migration',error:String(error),source:candidateJob.source});await atomicJSON(join(root,'binding-repairs',engine+'.json'),{status:'repair-pending',source:candidateJob.source,error:String(error)});state.completed++;await save();bindingMigrationFailed=true;break}finally{await release()}
  }
+ if(bindingMigrationFailed)continue;
  if(['wazero','wazero-interpreter'].includes(engine))assertWazeroInterruptsDisabled(await readFile(join(harness,'adapters/wazero/main.go'),'utf8'));
  if(repairEngines.includes(engine)&&['wazero','wazero-interpreter'].includes(engine)){
   const release=await acquireFeatureProjectLock();
@@ -191,7 +197,12 @@ campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
   for(const workload of suites[kind]){
    if(abort.signal.aborted||performance.now()+360000>deadline){state.status=abort.signal.aborted?'paused':'yielded';await save();process.exitCode=abort.signal.aborted?130:76;break}
    if(repairEngines.length&&repairWorkloads.length&&!repairWorkloads.includes(workload.id))continue;
-   const key=featureLedgerKey(hostKey,engine,job.source,kind,workload,inputIdentity);
+   const workloadBinding=featureBindingForWorkload(engineBindings,engine,workload)||binding;
+   const workloadJob=workloadBinding.job,workloadPlan=workloadBinding.plan;
+   const workloadFeatureProfile=featureProfileForBinding(workloadBinding,engine);
+   const workloadController=workloadJob.controller||workloadPlan.controller,workloadHarness=workloadJob.harness||workloadPlan.harness;
+   const workloadEnv=workloadBinding===binding?{...env}:{...process.env,...template.env,...workloadPlan.env,...workloadJob.env,GOWORK:'off',GOFLAGS:'-buildvcs=false',GOMAXPROCS:'1',OMP_NUM_THREADS:'1',RAYON_NUM_THREADS:'1',UV_THREADPOOL_SIZE:'1',WASMBENCH_SINGLE_CORE:'1',WASMBENCH_RECORD_FAILURES:'1',WASMBENCH_CODE_SIZE_ONLY:'1',WASMBENCH_SOURCE_JSON:JSON.stringify(workloadJob.source)};
+   const key=featureLedgerKey(hostKey,engine,workloadJob.source,kind,workload,inputIdentity);
    let prior=ledger.items[key];
    if(prior?.status==='completed'&&normalizeRepairedFeatureItem(prior))await save();
    // A newly audited source-bound rejection can be applied to retained raw
@@ -199,7 +210,7 @@ campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
    // capture and failure record as the classification receipt.
    if(prior?.status==='completed'&&prior.failure&&prior.outcomes?.some(([,status])=>status==='failed')){
     const retained=await readJSON(join(root,'captures',prior.capture)).catch(()=>null);
-    const disposition=retained&&classifyFeatureRuntimeRejection({source:job.source,engine,workload,capture:retained,failures:featureFailureRecords(prior.failure,{engine,workload,capture:retained})});
+    const disposition=retained&&classifyFeatureRuntimeRejection({source:workloadJob.source,engine,workload,capture:retained,failures:featureFailureRecords(prior.failure,{engine,workload,capture:retained})});
     const classified=disposition&&classifyFeatureCapture(retained,disposition);
     if(classified){
      const classifiedName='feature-classified-'+engine+'-'+key+'.json';
@@ -218,32 +229,33 @@ campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
    const repairPhases=featureRepairPhases({engine,workload,prior,repairEngines,repairWorkloads,wasmiProposals:process.env.WASMFYI_FEATURE_REPAIR_WASMI_PROPOSALS==='1',documentedProposals:process.env.WASMFYI_FEATURE_REPAIR_DOCUMENTED_PROPOSALS==='1',retryCompleted:process.env.WASMFYI_FEATURE_REPAIR_RETRY_COMPLETED==='1',forceAll:process.env.WASMFYI_FEATURE_REPAIR_ALL==='1',repairPolicy});
    if(repairEngines.length&&prior&&!repairPhases.length){if(prior.failure)state.errors.push(prior.failure);continue;}
    if(!repairPhases.length&&ledger.items[key]?.status==='completed'){if(ledger.items[key].failure)state.errors.push(ledger.items[key].failure);continue;}
-   state.current={engine,stage:kind,workload:workload.id,revision:job.source.revision};await save();
-   if(engine==='v8')env.WASMBENCH_V8_FEATURE_FLAGS=v8FlagsForWorkload(workload).join(' ');
+   state.current={engine,stage:kind,workload:workload.id,revision:workloadJob.source.revision,...(workloadFeatureProfile?{featureProfile:workloadFeatureProfile}:{})};await save();
+   if(engine==='v8')workloadEnv.WASMBENCH_V8_FEATURE_FLAGS=v8FlagsForWorkload(workload).join(' ');
    const release=await acquireFeatureProjectLock();
    const scratch=join(root,'scratch',key);if(repairPhases.length&&await stat(scratch).catch(()=>null))await cp(scratch,scratch+'.before-repair-'+Date.now(),{recursive:true});await mkdir(scratch,{recursive:true});
    const producerDirectory=join(root,'compatibility',engine,key,repairPhases.length?'producer-repair-'+Date.now():'producer');await atomicJSON(join(scratch,'wago-suite.json'),[workload]);
-   process.env.WASMBENCH_SOURCE_JSON=env.WASMBENCH_SOURCE_JSON;
+   process.env.WASMBENCH_SOURCE_JSON=workloadEnv.WASMBENCH_SOURCE_JSON;
    const signal=AbortSignal.any([abort.signal,AbortSignal.timeout(300000)]);
    const scenarios=featureScenarios(kind,workload,repairPhases);
    const collection=kind==='compatibility'?{scenarios,timeout:'5m',launches:1,samples:1,operations:1,warmup:0,memory:false,code:false,supportsSteadyOperations:true}:latencyCollection({scenarios,timeout:'5m',launches:1,samples:5,operations:1,warmup:0,phaseSampleCaps:{compile:10,instantiate:10,'first-call':25,steady:25},supportsSteadyOperations:true});
    let capture,note;
    try{
-    if(job.unavailableReason)capture={capturedAt:new Date().toISOString(),source:job.source,platform:{...platform},results:scenarios.split(',').map(phase=>({workload:workload.id,wasm:workload.artifactName,artifactSha256:workload.sha256,contractSha256:workloadContract(workload),engine,version:job.source.revision,backend:job.backend||engine,phase,timingSamples:0,latencyStatus:'unsupported',latencyNs:null,memoryStatus:'unsupported',peakRssBytes:null,codeStatus:'unsupported',codeBytes:null,codeKind:null}))};
+    if(workloadJob.unavailableReason)capture={capturedAt:new Date().toISOString(),source:workloadJob.source,platform:{...platform},results:scenarios.split(',').map(phase=>({workload:workload.id,wasm:workload.artifactName,artifactSha256:workload.sha256,contractSha256:workloadContract(workload),engine,version:workloadJob.source.revision,backend:workloadJob.backend||engine,phase,timingSamples:0,latencyStatus:'unsupported',latencyNs:null,memoryStatus:'unsupported',peakRssBytes:null,codeStatus:'unsupported',codeBytes:null,codeKind:null}))};
     else capture=await collectLatencies({directory:scratch,workloads:[workload],engines:[engine],collection,run:async(...args)=>{
-     try{return await runBenchmarkProcess(process.platform==='linux'?'taskset':controller,process.platform==='linux'?['-c',String(template.cpu??2),controller,...args]:args,{cwd:harness,env,signal});}
+     try{return await runBenchmarkProcess(process.platform==='linux'?'taskset':workloadController,process.platform==='linux'?['-c',String(template.cpu??2),workloadController,...args]:args,{cwd:workloadHarness,env:workloadEnv,signal});}
      finally{if(kind==='compatibility'&&args.includes('--out')){const out=args[args.indexOf('--out')+1];if(await stat(join(out,'manifest.json')).catch(()=>null))await cp(out,producerDirectory,{recursive:true,force:true});}}
     }});
     if(kind==='compatibility'){
      for(const row of capture.results)if(row.latencyStatus==='ok')row.sampling={method:'feature-compatibility-v1',groupSize:1,maxSamples:1,warmup:0,retainedStart:0,stopReason:'fixed-sample'};
     }
     const failures=await readJSON(join(scratch,'failures.json')).catch(()=>[]);
-    const unsupported=classifyFeatureRuntimeRejection({source:job.source,engine,workload,capture,failures});
+    const unsupported=classifyFeatureRuntimeRejection({source:workloadJob.source,engine,workload,capture,failures});
     if(unsupported){capture=classifyFeatureCapture(capture,unsupported);await atomicJSON(join(root,'source-dispositions',key+'.json'),unsupported)}
-    if(capture.results.some(row=>row.latencyStatus==='failed'))note={source:job.source,engine,workload:workload.id,kind:'failed-trials',failures,reason:failures.map(f=>f.reason).join('; '),phases:capture.results.filter(r=>r.latencyStatus==='failed').map(r=>r.phase)};
-   }catch(error){({capture,note}=historyWorkloadFailure({workload,job,platform,error,signal}));capture.results=capture.results.filter(row=>scenarios.split(',').includes(row.phase));}
+    if(capture.results.some(row=>row.latencyStatus==='failed'))note={source:workloadJob.source,engine,workload:workload.id,kind:'failed-trials',failures,reason:failures.map(f=>f.reason).join('; '),phases:capture.results.filter(r=>r.latencyStatus==='failed').map(r=>r.phase)};
+   }catch(error){({capture,note}=historyWorkloadFailure({workload,job:workloadJob,platform,error,signal}));capture.results=capture.results.filter(row=>scenarios.split(',').includes(row.phase));}
    finally{await release()}
    if(repairPhases.length)capture.results=capture.results.filter(row=>repairPhases.includes(row.phase));
+   if(workloadFeatureProfile)capture.featureProfile=workloadFeatureProfile;
    capture.platform.memoryBytes=platform.memoryBytes;
    if(template.platformSpecs?.cores)capture.platform.cores=template.platformSpecs.cores;
    const name='feature-'+(repairPhases.length?'repair-'+Date.now()+'-':'')+(kind==='compatibility'?'compat':'perf')+'-'+engine+'-'+key+'.json';
@@ -254,7 +266,7 @@ campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
    const outcomes=repairPhases.length?repairedFeatureOutcomes(prior,capture,repairPhases):capture.results.map(r=>[r.phase,r.latencyStatus]);
    const failure=featureFailureForOutcomes(prior,outcomes,note);
    const {failure:_oldFailure,...priorWithoutFailure}=prior||{};
-   ledger.items[key]={...priorWithoutFailure,...(kind==='compatibility'?{compatibilityScenarioPolicy:repairPhases.length?'retained-original-repair-phases':'scope-aware-v2'}:{}),status:integration?'repair-pending':'completed',engine,stage:kind,workload:workload.id,source:job.source,capture:name,artifactSha256:workload.sha256,contractSha256:workloadContract(workload),outcomes,...(repairPhases.length?{repairOf:prior.capture,repairPhases,repairPolicy}:{}),...(failure?{failure}:{}),finished:new Date().toISOString()};await save();
+   ledger.items[key]={...priorWithoutFailure,...(kind==='compatibility'?{compatibilityScenarioPolicy:repairPhases.length?'retained-original-repair-phases':'scope-aware-v2'}:{}),status:integration?'repair-pending':'completed',engine,stage:kind,workload:workload.id,source:workloadJob.source,...(workloadFeatureProfile?{featureProfile:workloadFeatureProfile}:{}),capture:name,artifactSha256:workload.sha256,contractSha256:workloadContract(workload),outcomes,...(repairPhases.length?{repairOf:prior.capture,repairPhases,repairPolicy}:{}),...(failure?{failure}:{}),finished:new Date().toISOString()};await save();
    if(integration){held=true;break}
   }
   if(process.exitCode)break;
