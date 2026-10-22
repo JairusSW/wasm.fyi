@@ -26,3 +26,15 @@ test('unknown disconnects, diagnostics from other engines and invalid log paths 
  const [mixed]=await identifyEngineFatals([trial],async()=>fatal+'\nTraceback: adapter bug');
  assert.equal(mixed.reason,reason);
 });
+
+const wagoLog='SIGSEGV: segmentation violation\nPC=0x1234 m=0 sigcode=1 addr=0x8\n\ngoroutine 1 [syscall]:\ngithub.com/wago-org/wago/src/core/runtime.enterNative(0x1234)\n\tsrc/core/runtime/native_scheduler.go:21\ngithub.com/wago-org/wago/src/core/runtime.(*Engine).CallPrepared(0x1234)\n';
+test('Wago guest native entry crash stays failed without holding unrelated features',async()=>{
+ const row={...trial,runtime_configuration:'wago'};
+ const [result]=await identifyEngineFatals([row],async()=>wagoLog);
+ assert.equal(result.status,'error');assert.equal(result.originalReason,reason);assert.equal(historyIntegrationFailure(result),false);assert.match(result.reason,/Wago engine fatal signal/);
+});
+test('Wago startup faults and generic segmentation messages stay pending',async()=>{
+ for(const log of ['segmentation fault',wagoLog.replace('runtime.enterNative','runtime.notGuest'),wagoLog.replace('runtime.(*Engine).CallPrepared','runtime.main'),wagoLog.replace('SIGSEGV: segmentation violation','adapter startup failed')]){
+  const [result]=await identifyEngineFatals([{...trial,runtime_configuration:'wago'}],async()=>log);assert.equal(result.reason,reason);assert.equal(historyIntegrationFailure(result),true);
+ }
+});

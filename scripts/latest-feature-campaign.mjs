@@ -1,3 +1,4 @@
+import {retainedFeatureGuestFatal} from './lib/feature-guest-fatal.mjs';
 import {upgradeWizardFeatureCommand} from './lib/wizard-feature-policy.mjs';
 import {featureScenarios} from './lib/feature-scenario-policy.mjs';
 import {chicoryVectorOptions} from './lib/chicory-simd.mjs';
@@ -232,6 +233,13 @@ campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
      const classifiedName='feature-classified-'+engine+'-'+key+'.json';
      await atomicJSON(join(root,'captures',classifiedName),classified);await atomicJSON(join(campaign,'captures',classifiedName),classified);await atomicJSON(join(root,'source-dispositions',key+'.json'),disposition);
      prior=ledger.items[key]={...prior,capture:classifiedName,outcomes:classified.results.map(row=>[row.phase,row.latencyStatus]),classifiedFrom:prior.capture,classification:disposition};delete prior.failure;await save();
+    }
+   }
+   if(prior?.status==='repair-pending'){
+    const fatal=await retainedFeatureGuestFatal({root,key,engine,workload,prior});
+    if(fatal){
+     const evidence=join(root,'engine-fatals',key+'.json');await atomicJSON(evidence,fatal.evidence);
+     prior.failure=fatal.failure;prior.status='completed';prior.terminalRuntimeFailure=true;prior.guestFatalEvidence=evidence;await save();
     }
    }
    // Adapter failures are retried only by an explicit repair owner.
