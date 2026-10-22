@@ -7,6 +7,8 @@ export function historyIntegrationFailure(error) {
  // These messages describe absent harness support, not an engine rejection.
  // Keep them pending until the adapter works or an engine-specific limitation
  // is proved; a generic "unsupported" prefix does not settle that question.
+ // The controller never admitted these inputs, so no runtime outcome exists.
+ if (/Capture infrastructure failure:/i.test(text)) return true;
  if (/unsupported: extended workload contract host_profile|ordered vector timing capability\/profile not supported/i.test(text)) return true;
  if (/build adapter [a-z0-9_-]+ first:.*(?:no such file or directory|cannot find)/i.test(text)) return true;
  if (/wasmbench: open [^\n]*\/adapter-[^:\n]+: no such file or directory/i.test(text)) return true;

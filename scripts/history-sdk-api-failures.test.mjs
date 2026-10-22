@@ -20,3 +20,14 @@ test('missing adapter executable holds an engine instead of completing every cor
  assert.equal(historyIntegrationFailure({reason:'wasmbench: open /sdk/bin/adapter-wasmer-cranelift: no such file or directory'}),true);
  assert.equal(historyIntegrationFailure({reason:'error: guest failed to open input: no such file or directory'}),false);
 });
+
+test('pre-engine capture admission errors cannot count as completed runtime tests',()=>{
+ const signed='Error: Capture infrastructure failure: wasmbench: suite must be core or a workload JSON array: invalid unsigned result "-1152921504606846977"';
+ const proposal='Error: Capture infrastructure failure: wasmbench: workload features/half-precision/lane-add/1 admission: independent validation (all): unknown 0xfd subopcode';
+ for(const reason of [signed,proposal]){
+  assert.equal(historyIntegrationFailure({kind:'capture-error',reason}),true);
+  const status={completed:[{engine:'graalwasm',workloadErrors:[{reason}]}]};
+  assert.equal(completedHistoryIntegrationFailures(status,'graalwasm').length,1);
+ }
+ assert.equal(historyIntegrationFailure({kind:'failed-trials',reason:'error: unknown 0xfd subopcode'}),false);
+});
