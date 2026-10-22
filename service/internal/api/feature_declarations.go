@@ -11,7 +11,7 @@ import (
 // Raw observations and their samples remain unchanged in storage and detail.
 func featureDeclarationProjection(row sqldb.Cell) sqldb.Cell {
 	feature := ""
-	for _, name := range []string{"branch-hinting", "compilation-hints"} {
+	for _, name := range []string{"branch-hinting", "compilation-hints", "instrument-and-tracing-technology"} {
 		if strings.HasPrefix(row.Workload, "features/"+name+"/") {
 			feature = name
 			break
@@ -29,7 +29,8 @@ func featureDeclarationProjection(row sqldb.Cell) sqldb.Cell {
 	case "wasmtime":
 		declared = feature == "branch-hinting" && row.Backend == "cranelift" && revision == "f96eabaa11a06086e4fb779ed1c1688481067ab9"
 	case "v8":
-		// The pinned adapter enables both experimental metadata flags.
+		// The pinned adapter enables the branch, compilation, and instruction-tracing flags.
+		// module-decoder-impl.h consumes metadata.code.trace_inst only with tracing enabled.
 		declared = (row.Backend == "turboshaft" || row.Backend == "optimizing-only") && revision == "f14cd3aa7bf9ca8df2cc5b8bb14beb0f335b1d93"
 	case "graalwasm":
 		declared = feature == "branch-hinting" && row.Backend == "truffle-graal" && revision == "f1dce3f84de778485d0ba8d6ddfd4d260b230d0a"

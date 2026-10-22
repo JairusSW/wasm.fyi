@@ -7,8 +7,8 @@ import { digest, config } from './wasmbench.mjs';
 // execution therefore proves only that the module still behaves correctly; it
 // does not prove that the engine consumed the hint. Require the pinned adapter
 // configuration to declare the feature as enabled before publishing support.
-export const declarationRequiredFeatures = new Set(['branch-hinting','compilation-hints']);
-const declarationKeys={'branch-hinting':'BRANCH_HINTING','compilation-hints':'COMPILATION_HINTS'};
+export const declarationRequiredFeatures = new Set(['branch-hinting','compilation-hints','instrument-and-tracing-technology']);
+const declarationKeys={'branch-hinting':'BRANCH_HINTING','compilation-hints':'COMPILATION_HINTS','instrument-and-tracing-technology':'INSTRUCTION_TRACING'};
 export function runtimeDeclaresFeature(description,feature) {
   if(description?.features?.includes(feature))return true;
   if(description?.validator_features?.[feature.replaceAll('-','_')]===true)return true;
@@ -16,6 +16,7 @@ export function runtimeDeclaresFeature(description,feature) {
   const effective=description?.effective_configuration||{},flags=String(effective.flags||'');
   if(feature==='branch-hinting'&&flags.includes('"--experimental-wasm-branch-hinting"'))return true;
   if(feature==='compilation-hints'&&flags.includes('"--experimental-wasm-compilation-hints"'))return true;
+  if(feature==='instrument-and-tracing-technology'&&flags.includes('"--experimental-wasm-instruction-tracing"'))return true;
   // Pinned Graal source: BinaryParser consumes metadata.code.branch_hint;
   // RuntimeBytecodeGen seeds branch profiles consumed by WasmFunctionNode.
   // This revision enables it unconditionally; do not infer it for other SDKs.
