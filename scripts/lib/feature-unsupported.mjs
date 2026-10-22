@@ -352,7 +352,7 @@ const graalWasmRejections=[
  // artifact and workload contract below.
  {feature:'compact-imports',reason:/Invalid import type identifier: 0x7[ef]/i},
  {feature:'custom-page-sizes',reason:/Invalid limits prefix \(expected 0x00-0x07, got 0x09\)/},
- {feature:'shared-everything-threads',reason:/Only function types are supported in the type section/},
+ {feature:'shared-everything-threads',reason:/(?:Only function types are supported in the type section|Invalid mutability flag: 0x03)/},
  {feature:'stack-switching',reason:/Only function types are supported in the type section/},
  {feature:'memory-control',reason:/Unknown opcode: 0xFC 0x12/i},
  {feature:'half-precision',reason:/Unknown opcode: 0xFD 0x120/i},

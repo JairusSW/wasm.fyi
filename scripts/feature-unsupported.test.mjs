@@ -500,6 +500,7 @@ test('GraalWasm classifies only proposals absent from exact SDK descriptors',()=
   ['compact-imports','Invalid import type identifier: 0x7f'],
   ['custom-page-sizes','Invalid limits prefix (expected 0x00-0x07, got 0x09)'],
   ['shared-everything-threads','Only function types are supported in the type section'],
+  ['shared-everything-threads','Invalid mutability flag: 0x03'],
   ['stack-switching','Only function types are supported in the type section'],
   ['memory-control','Unknown opcode: 0xFC 0x12'],
   ['half-precision','Unknown opcode: 0xFD 0x120'],
