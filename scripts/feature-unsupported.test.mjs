@@ -427,6 +427,7 @@ test('Zwasm classifies source-declared gaps and interpreter-only SIMD absence',(
   ['zwasm-jit','custom-descriptors','sacrificial check check-0-0: error: Zwasm C API failure: compile'],
   ['zwasm-interpreter','simd','error: guest trap: unreachable'],
   ['zwasm-interpreter','relaxed-simd','sacrificial check check-0-0: error: guest trap: unreachable'],
+  ['zwasm-jit','multi-memory','error: Zwasm JIT compile: MultipleMemories'],
  ]){
   const w={id:`features/${feature}/case/1`,sha256:'5'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
   const capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
@@ -448,10 +449,10 @@ test('Zwasm classifies source-declared gaps and interpreter-only SIMD absence',(
 
 test('Endive classifies parser gaps while preserving README-declared features',()=>{
  const source={repository:'bytecodealliance/endive',revision:'6'.repeat(40)};
- const classify=(engine,feature,reason)=>{
+ const classify=(engine,feature,reason,status='error')=>{
   const w={id:`features/${feature}/case/1`,sha256:'6'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
   const capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
-  return classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures:[{engine,workload:w.id,phase:'first-call',status:'error',reason:`error: ${reason}`}]});
+  return classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures:[{engine,workload:w.id,phase:'first-call',status,reason:`error: ${reason}`}]});
  };
  for(const [feature,reason] of [
   ['compact-imports','malformed import kind'],
@@ -486,7 +487,8 @@ test('Endive classifies parser gaps while preserving README-declared features',(
   assert.equal(classify('endive-redline',feature,reason)?.status,'unsupported',`redline ${feature}`);
   assert.equal(classify('endive-jit',feature,reason),null,`jit ${feature}`);
  }
- assert.equal(classify('endive-redline','multi-memory','incorrect result: scalar oracle mismatch'),null);
+ assert.equal(classify('endive-redline','multi-memory','incorrect result: scalar oracle mismatch','incorrect_result')?.status,'unsupported');
+ assert.equal(classify('endive-jit','multi-memory','incorrect result: scalar oracle mismatch','incorrect_result'),null);
 });
 
 test('GraalWasm classifies only proposals absent from exact SDK descriptors',()=>{

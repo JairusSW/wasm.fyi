@@ -324,6 +324,9 @@ const zwasmRejections=[
  // Its pinned README explicitly limits SIMD execution to the JIT backend.
  {engine:'zwasm-interpreter',feature:'simd',reason:/guest trap: unreachable/},
  {engine:'zwasm-interpreter',feature:'relaxed-simd',reason:/guest trap: unreachable/},
+ // The pinned JIT lowering reads and discards SIMD memory indices and its
+ // instantiation gate explicitly rejects modules with multiple memories.
+ {engine:'zwasm-jit',feature:'multi-memory',reason:/Zwasm JIT compile: MultipleMemories/},
 ];
 const endiveRejections=[
  // The pinned README declares SIMD, tail calls, exception handling, threads,
@@ -336,6 +339,10 @@ const endiveRejections=[
  {engine:'endive-redline',feature:'gc',reason:/Opcode not yet supported: (?:STRUCT_NEW|ARRAY_NEW|ARRAY_GET|ARRAY_LEN|REF_I31)/},
  {engine:'endive-redline',feature:'exceptions',reason:/Opcode not yet supported: TRY_TABLE/},
  {engine:'endive-redline',feature:'typed-function-references',reason:/Opcode not yet supported: (?:CALL_REF|REF_AS_NON_NULL)/},
+ // Redline documents the base specification plus threads. Its native compiler
+ // materializes memory zero only, so multi-memory modules can parse but execute
+ // with the wrong memory selected instead of producing an admission error.
+ {engine:'endive-redline',feature:'multi-memory',reason:/incorrect result: scalar oracle mismatch/,allowIncorrectResult:true},
  {feature:'compact-imports',reason:/malformed import kind/},
  {feature:'custom-page-sizes',reason:/invalid memory limit: 9/},
  {feature:'legacy-exceptions',reason:/illegal opcode, op value 06/},
@@ -396,7 +403,7 @@ export function classifyFeatureRuntimeRejection({source,engine,workload,capture,
  const contractSha256=workloadContract(workload),failed=capture.results.filter(row=>row.latencyStatus==='failed');
  if(failed.length!==capture.results.length||failed.some(row=>row.engine!==engine||row.workload!==workload.id||row.artifactSha256!==workload.sha256||row.contractSha256!==contractSha256||(row.timingSamples||0)!==0||(row.samplesNs?.length||0)!==0))return null;
  const rejection=(wasmtime?wasmtimeRejections:wago?wagoRejections:wasmer?wasmerRejections:wazero?wazeroRejections:v8?v8Rejections:wavm?wavmRejections:spiderMonkey?spiderMonkeyRejections:jsc?jscRejections:wasmi?wasmiRejections:wamr?wamrRejections:wasm3?wasm3Rejections:w2c2?w2c2Rejections:wasm2c?wasm2cRejections:wazy?wazyRejections:wasmedge?wasmedgeRejections:chicory?chicoryRejections:chasm?chasmRejections:wizard?wizardRejections:zwasm?zwasmRejections:endive?endiveRejections:graalWasmRejections).find(candidate=>(!candidate.engine||candidate.engine===engine)&&(!candidate.revision||candidate.revision===source.revision)&&workload.features?.includes(candidate.feature));
- if(!rejection||!failures?.length||failures.some(failure=>failure.engine!==engine||failure.workload!==workload.id||(!['error','preflight_failed'].includes(failure.status)&&!(failure.status==='unsupported'&&failure.reason==='scenario not advertised'))||(failure.samples?.length||0)!==0))return null;
+ if(!rejection||!failures?.length||failures.some(failure=>failure.engine!==engine||failure.workload!==workload.id||(!['error','preflight_failed'].includes(failure.status)&&!(rejection.allowIncorrectResult&&failure.status==='incorrect_result')&&!(failure.status==='unsupported'&&failure.reason==='scenario not advertised'))||(failure.samples?.length||0)!==0))return null;
  const sourceBound=failures.filter(failure=>rejection.reason.test(failure.reason||''));
  if(!sourceBound.length||failures.some(failure=>!sourceBound.includes(failure)&&failure.reason!=='scenario not advertised'))return null;
  const runtime=wasmtime?`Wasmtime ${engine==='wasmtime-winch'?'Winch':'Cranelift'}`:wago?'Wago Railshot':wasmer?`Wasmer ${engine.slice('wasmer-'.length)}`:wazero?`Wazero ${engine==='wazero'?'compiler':'interpreter'}`:v8?'V8 Turboshaft':wavm?'WAVM LLVM':spiderMonkey?'SpiderMonkey Ion':jsc?'JSC OMG':wasmi?'Wasmi':wasm3?'wasm3':w2c2?'w2c2 GCC':wasm2c?'wasm2c GCC':wazy?'Wazy':wasmedge?`WasmEdge ${engine==='wasmedge-jit'?'JIT':'interpreter'}`:chicory?`Chicory ${engine==='chicory-jit'?'compiler':'interpreter'}`:chasm?'Chasm':wizard?'Wizard V3 interpreter':zwasm?`Zwasm ${engine==='zwasm-jit'?'JIT':'interpreter'}`:endive?`Endive ${engine.slice('endive-'.length)}`:graalwasm?'GraalWasm Truffle':`WAMR ${engine==='wamr-llvm-jit'?'LLVM JIT':engine==='wamr-fast-jit'?'Fast JIT':'interpreter'}`;
