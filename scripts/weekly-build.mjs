@@ -315,5 +315,5 @@ const planned=join(directory,engine+'-preflight-'+randomUUID().slice(0,8)+'.json
 const preflight=startupLaunchCommand([controller,'plan','--suite',join(directory,'suite.json'),'--runtimes',configuration,'--profile','timing','--out',planned],runtimeEnv.WASMFYI_STARTUP_CPU);
 await run(preflight[0],preflight.slice(1),{env:runtimeEnv});
 const runtime=JSON.parse(await readFile(planned)).runtime_configurations[0];
-await atomicJSON(receiptPath,{schema:1,root,controller,harnessRevision,controllerSha256:digest(await readFile(controller)),analyzerSha256:digest(await readFile(join(root,'adapters/wasmtime/target/release/wasm-analyze'))),pin,provenance,runtime,env:Object.fromEntries(Object.entries(env).filter(([k])=>k.startsWith('WASMBENCH_'))),builtAt:new Date().toISOString()});
+await atomicJSON(receiptPath,{schema:1,root,controller,harnessRevision,controllerSha256:digest(await readFile(controller)),analyzerSha256:digest(await readFile(join(root,'adapters/wasmtime/target/release/wasm-analyze'))),pin,provenance,runtime,env:Object.fromEntries(Object.entries(env).filter(([k])=>k.startsWith('WASMBENCH_')||k==='JAVA_TOOL_OPTIONS')),builtAt:new Date().toISOString()});
 console.log(engine,'historical source build complete');

@@ -32,8 +32,20 @@ test('upgrades an already patched V1 adapter without duplicating proposal calls'
  const result=wasmedgeProposalPolicy(old,headers,{jit:true});
  assert.equal(result.source.match(/WasmEdge_Proposal_TailCall/g)?.length,1);
  assert.equal(result.source.match(/WasmEdge_Proposal_GC/g)?.length,1);
- assert.match(result.source,/WASMFYI_WASMEDGE_PROPOSALS_V2/);
+ assert.match(result.source,/WASMFYI_WASMEDGE_PROPOSALS_V3/);
  assert.doesNotMatch(result.source,/WASMFYI_WASMEDGE_PROPOSALS_V1/);
+});
+
+test('JIT excludes annotations that invalidate even MVP compilation, migrating V2',()=>{
+ const extended=headers+'\nWasmEdge_Proposal_Annotations';
+ const interpreter=wasmedgeProposalPolicy(source,extended);
+ assert.ok(interpreter.enabled.includes('custom-annotation-syntax-in-the-text-format'));
+ const old=interpreter.source.replace('WASMFYI_WASMEDGE_PROPOSALS_V3','WASMFYI_WASMEDGE_PROPOSALS_V2');
+ const jit=wasmedgeProposalPolicy(old,extended,{jit:true});
+ assert.deepEqual(jit.backendExcluded,['custom-annotation-syntax-in-the-text-format']);
+ assert.doesNotMatch(jit.source,/AddProposal\(config,WasmEdge_Proposal_Annotations\)/);
+ assert.equal(jit.source.match(/AddProposal\(config,WasmEdge_Proposal_GC\)/g)?.length,1);
+ assert.equal(wasmedgeProposalPolicy(jit.source,extended,{jit:true}).source,jit.source);
 });
 
 test('keeps WasmEdge and JIT diagnostics off the JSON protocol stream',()=>{

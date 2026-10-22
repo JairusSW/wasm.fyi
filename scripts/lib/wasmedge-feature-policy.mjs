@@ -2,8 +2,7 @@ import {readFile,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import {digest} from './wasmbench.mjs';
 
-const marker='WASMFYI_WASMEDGE_PROPOSALS_V2';
-const oldMarker='WASMFYI_WASMEDGE_PROPOSALS_V1';
+const marker='WASMFYI_WASMEDGE_PROPOSALS_V3';
 const protocolOutputMarker='WASMFYI_WASMEDGE_PROTOCOL_STDOUT_V1';
 const proposals=[
  ['TailCall','tail-call'],
@@ -22,17 +21,20 @@ const proposals=[
 export function wasmedgeProposalPolicy(source,headers,{jit=false}={}) {
  if(source.includes(marker))return {source,enabled:[],alreadyApplied:true};
  const available=proposals.filter(([name])=>headers.includes('WasmEdge_Proposal_'+name)||new RegExp(`(?:^|\\n)P\\(${name},`).test(headers));
- const enabled=available;
+ // The pinned LLVM compiler rejects Annotations in checkConfigure before
+ // compiling any module, including MVP. Its interpreter accepts the option.
+ const backendExcluded=jit?available.filter(([name])=>name==='Annotations'):[];
+ const enabled=available.filter(proposal=>!backendExcluded.includes(proposal));
  const anchor='if(!config)throw std::runtime_error("configuration creation failed");';
  if(source.split(anchor).length!==2)throw Error('WasmEdge feature-policy seam changed');
  const calls=enabled.map(([name])=>`        WasmEdge_ConfigureAddProposal(config,WasmEdge_Proposal_${name});`).join('\n');
- const oldBlock=new RegExp(`[ \\t]*// ${oldMarker}:[^\\n]*\\n(?:[ \\t]*WasmEdge_ConfigureAddProposal\\(config,WasmEdge_Proposal_[A-Za-z0-9_]+\\);\\n)*`);
+ const oldBlock=/[ \t]*\/\/ WASMFYI_WASMEDGE_PROPOSALS_V[12]:[^\n]*\n(?:[ \t]*WasmEdge_ConfigureAddProposal\(config,WasmEdge_Proposal_[A-Za-z0-9_]+\);\n)*/;
  const cleanSource=source.replace(oldBlock,'');
  return {
   source:cleanSource.replace(anchor,`${anchor}\n        WasmEdge_LogOff();\n        // ${marker}: opt-in proposals exposed by this exact SDK.\n${calls}`),
   enabled:enabled.map(([,id])=>id),
   unavailable:proposals.filter(([name])=>!available.some(([candidate])=>candidate===name)).map(([,id])=>id),
-  backendExcluded:[],
+  backendExcluded:backendExcluded.map(([,id])=>id),
   alreadyApplied:false
  };
 }

@@ -1,4 +1,5 @@
 import {featureScenarios} from './lib/feature-scenario-policy.mjs';
+import {chicoryVectorOptions} from './lib/chicory-simd.mjs';
 import {rebuildWazeroSampling,assertWazeroInterruptsDisabled} from './lib/wazero-sampling.mjs';
 import {applyWasmEdgeFeaturePolicy} from './lib/wasmedge-feature-policy.mjs';
 import {applyWasmerCraneliftAdapter} from './lib/wasmer-cranelift-adapter.mjs';
@@ -193,7 +194,11 @@ campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
 
  if(!await stat(controller).catch(()=>null)||!await stat(harness).catch(()=>null)){state.errors.push({engine,kind:'adapter-binding-path-missing'});state.completed++;await save();continue}
  const env={...process.env,...template.env,...plan.env,...job.env,GOWORK:'off',GOFLAGS:'-buildvcs=false',GOMAXPROCS:'1',OMP_NUM_THREADS:'1',RAYON_NUM_THREADS:'1',UV_THREADPOOL_SIZE:'1',WASMBENCH_SINGLE_CORE:'1',WASMBENCH_RECORD_FAILURES:'1',WASMBENCH_CODE_SIZE_ONLY:'1',WASMBENCH_SOURCE_JSON:JSON.stringify(job.source)};
- if(engine==='chicory'){const simd=await readJSON(join(root,'chicory-simd-repair.json')).catch(()=>null);if(simd?.status==='adapter-rebuilt'&&simd.sourceRevision===job.source.revision)env.JAVA_TOOL_OPTIONS=[env.JAVA_TOOL_OPTIONS||'','--add-modules=jdk.incubator.vector'].filter(Boolean).join(' ');}
+ if(engine==='chicory'){
+  const simd=await readJSON(join(root,'chicory-simd-repair.json')).catch(()=>null);
+  const receipt=await readJSON(join(dirname(controller),'chicory-build.json')).catch(()=>null);
+  env.JAVA_TOOL_OPTIONS=chicoryVectorOptions(env.JAVA_TOOL_OPTIONS,{revision:job.source.revision,receipt,repair:simd});
+ }
  let held=false;
  for(const kind of ['compatibility','performance','compile','lifecycle']){
   if(held)break;
