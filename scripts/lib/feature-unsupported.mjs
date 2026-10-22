@@ -145,6 +145,10 @@ const wasmiRejections=[
  {feature:'extended-name-section',reason:/(?:struct indexed types not supported without the gc feature|exceptions proposal not enabled)/},
 ];
 const wamrRejections=[
+ // The exact source CMake checks forbid these Fast JIT combinations. Typed
+ // function references share the GC-gated loader. Tail calls and threads are
+ // intentionally excluded: their implementations must be enabled and tested.
+ ...['gc','typed-function-references','simd','legacy-exceptions','memory64','multi-memory'].map(feature=>({engine:'wamr-fast-jit',revision:'ea5dd88e9ca40a44b6a5d9ffeb87a20833b13b8a',feature,reason:/module validation\/loading rejected input/})),
  // WAMR's pinned build rules restrict these proposals to the classic
  // interpreter; the LLVM JIT deliberately builds them out.
  {engine:'wamr-llvm-jit',feature:'memory64',reason:/module validation\/loading rejected input/},

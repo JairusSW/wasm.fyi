@@ -636,3 +636,15 @@ test('audited Wizard native modes share exact loader rejections, without masking
   assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture:{source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0}]},failures:[{engine,workload:w.id,phase:'first-call',status:'error',reason:'error: expected type decl code, got 77'}]}),null);
  }
 });
+
+test('WAMR Fast JIT exact source build exclusions do not hide enableable tail calls or threads',()=>{
+ const source={repository:'bytecodealliance/wasm-micro-runtime',revision:'ea5dd88e9ca40a44b6a5d9ffeb87a20833b13b8a'},engine='wamr-fast-jit';
+ for(const feature of ['gc','typed-function-references','simd','legacy-exceptions','memory64','multi-memory','tail-call','threads']){
+  const w={id:`features/${feature}/case/1`,sha256:'4'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+  const capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0}]};
+  const failures=[{engine,workload:w.id,phase:'first-call',status:'error',reason:'error: module validation/loading rejected input'}];
+  const input={source,engine,workload:w,capture,failures};
+  assert.equal(classifyFeatureRuntimeRejection(input)?.status,['tail-call','threads'].includes(feature)?undefined:'unsupported');
+  assert.equal(classifyFeatureRuntimeRejection({...input,source:{...source,revision:'9'.repeat(40)},capture:{...capture,source:{...source,revision:'9'.repeat(40)}}}),null);
+ }
+});
