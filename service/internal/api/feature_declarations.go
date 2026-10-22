@@ -6,12 +6,13 @@ import (
 	"github.com/JairusSW/wasm.fyi/service/internal/sqldb"
 )
 
-// Ignorable custom sections cannot prove hint consumption by execution alone.
+// Feature declarations include metadata consumption and the host API boundary.
+// Successful binary execution alone cannot prove either capability.
 // These exact campaign SDKs were audited at their source/configuration pins.
 // Raw observations and their samples remain unchanged in storage and detail.
 func featureDeclarationProjection(row sqldb.Cell) sqldb.Cell {
 	feature := ""
-	for _, name := range []string{"branch-hinting", "compilation-hints", "instrument-and-tracing-technology"} {
+	for _, name := range []string{"branch-hinting", "compilation-hints", "instrument-and-tracing-technology", "big-int"} {
 		if strings.HasPrefix(row.Workload, "features/"+name+"/") {
 			feature = name
 			break
@@ -32,6 +33,10 @@ func featureDeclarationProjection(row sqldb.Cell) sqldb.Cell {
 		// The pinned adapter enables the branch, compilation, and instruction-tracing flags.
 		// module-decoder-impl.h consumes metadata.code.trace_inst only with tracing enabled.
 		declared = (row.Backend == "turboshaft" || row.Backend == "optimizing-only") && revision == "f14cd3aa7bf9ca8df2cc5b8bb14beb0f335b1d93"
+	case "spidermonkey":
+		declared = feature == "big-int" && row.Backend == "ion-only" && revision == "dff12f8eda3dd87cda2a19a6d096a51334a2afe1"
+	case "jsc":
+		declared = feature == "big-int" && row.Backend == "OMG (forced tier-up)" && revision == "f3e56c5b480ab4dc6bb6412abdfc35c2536467ec"
 	case "graalwasm":
 		declared = feature == "branch-hinting" && row.Backend == "truffle-graal" && revision == "f1dce3f84de778485d0ba8d6ddfd4d260b230d0a"
 	}

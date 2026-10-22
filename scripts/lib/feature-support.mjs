@@ -3,13 +3,15 @@ import { join } from 'node:path';
 import { featureIds } from '../../corpora/features/generator.mjs';
 import { digest, config } from './wasmbench.mjs';
 
-// These proposals are encoded as ignorable metadata. A successful compile or
-// execution therefore proves only that the module still behaves correctly; it
-// does not prove that the engine consumed the hint. Require the pinned adapter
-// configuration to declare the feature as enabled before publishing support.
-export const declarationRequiredFeatures = new Set(['branch-hinting','compilation-hints','instrument-and-tracing-technology']);
+// Metadata consumption and JS-specific host integration need applicable
+// declarations: ordinary binary compilation/execution can pass without either.
+// Require the pinned adapter configuration to declare the capability before
+// publishing support; retain the original semantic-control observations.
+export const declarationRequiredFeatures = new Set(['branch-hinting','compilation-hints','instrument-and-tracing-technology','big-int']);
 const declarationKeys={'branch-hinting':'BRANCH_HINTING','compilation-hints':'COMPILATION_HINTS','instrument-and-tracing-technology':'INSTRUCTION_TRACING'};
 export function runtimeDeclaresFeature(description,feature) {
+  // The numeric oracle exercises JS BigInt only through these JS adapters.
+  if(feature==='big-int')return ['v8','spidermonkey','jsc'].includes(description?.runtime);
   if(description?.features?.includes(feature))return true;
   if(description?.validator_features?.[feature.replaceAll('-','_')]===true)return true;
   if(description?.validator_features?.supported?.[declarationKeys[feature]]===true)return true;

@@ -93,3 +93,27 @@ func TestInstructionTraceDeclarationProjection(t *testing.T) {
 		}
 	}
 }
+
+func TestBigIntRequiresJavaScriptBoundary(t *testing.T) {
+	for _, tc := range []struct {
+		engine, backend, revision string
+		declared                  bool
+	}{
+		{"v8", "turboshaft", "f14cd3aa7bf9ca8df2cc5b8bb14beb0f335b1d93", true},
+		{"spidermonkey", "ion-only", "dff12f8eda3dd87cda2a19a6d096a51334a2afe1", true},
+		{"jsc", "OMG (forced tier-up)", "f3e56c5b480ab4dc6bb6412abdfc35c2536467ec", true},
+		{"wasmtime", "cranelift", "f96eabaa11a06086e4fb779ed1c1688481067ab9", false},
+		{"wazero", "compiler", "e234f6fe6ecd4589dd0c643b641bd38f6d826ee5", false},
+		{"spidermonkey", "native", "dff12f8eda3dd87cda2a19a6d096a51334a2afe1", false},
+		{"jsc", "OMG (forced tier-up)", "unknown", false},
+	} {
+		row := sqldb.Cell{Result: benchdb.Result{Row: benchdb.Row{Engine: tc.engine, Backend: tc.backend, Version: tc.revision, Workload: "features/big-int/high-bit-identity/64", Status: "ok"}}}
+		if got := featureDeclarationProjection(row); (got.Status == "ok") != tc.declared {
+			t.Fatalf("unexpected JS BigInt claim for %s %s", tc.engine, tc.backend)
+		}
+		row.Status = "failed"
+		if featureDeclarationProjection(row).Status != "failed" {
+			t.Fatal("projection hid a failed boundary probe")
+		}
+	}
+}
