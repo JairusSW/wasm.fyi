@@ -31,6 +31,7 @@ public final class ChicoryAdapter {
     require(type.params().size()==args.length,"argument count mismatch");
     require(type.params().stream().allMatch(t->t.equals(ValType.I32)||t.equals(ValType.I64)) && type.returns().stream().allMatch(t->t.equals(ValType.I32)||t.equals(ValType.I64)),"unsupported: i32/i64 signatures only");
     long[] result=i.export(name).apply(args);
+    if(result==null&&type.returns().isEmpty())result=new long[0];
     require(result.length==type.returns().size(),"result arity mismatch");
     for(int k=0;k<result.length;k++)if(type.returns().get(k).equals(ValType.I32))result[k]=Integer.toUnsignedLong((int)result[k]);
     return result;

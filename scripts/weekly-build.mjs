@@ -63,7 +63,7 @@ const sdkBudget=createSDKBuildBudget(env);
 const run=async(program,args,options={})=>{console.log(engine,program,args.join(' '));return withBuildReserve(directory,engine,env,signal=>sdkBudget.run(combined=>runCommand(program,args,{cwd:root,env,log,...options,signal:combined}),signal&&options.signal?AbortSignal.any([signal,options.signal]):signal||options.signal));};
 if(!(await stat(root).catch(()=>null)))await copyHistoricalHarness(base,root);
 if(['jsc','spidermonkey','chicory'].includes(engine)) {
- for(const path of ['adapters/js-shell/adapter.js','adapters/js-shell/jsc-host.cpp','experiment/extra_runtimes.go','experiment/extra_runtimes_test.go','experiment/runner.go'])await cp(join(base,path),join(root,path));
+ for(const path of ['adapters/js-shell/adapter.js','adapters/js-shell/jsc-host.cpp','experiment/aot.go','experiment/extra_runtimes.go','experiment/extra_runtimes_test.go','experiment/runner.go'])await cp(join(base,path),join(root,path));
 }
 if(engine==='wamr'){
  const path=join(root,'experiment/extra_runtimes.go');let text=await readFile(path,'utf8');
