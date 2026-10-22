@@ -299,9 +299,9 @@ const chasmRejections=[
 ];
 const wizardRejections=[
  // The pinned Wizard support matrix declares Wasm 3.0 plus stack switching,
- // custom page sizes, wide arithmetic, legacy EH and threads for v3-int.
- // Keep every newer absent proposal tied to the portable interpreter's exact
- // loader diagnostic so declared-extension regressions remain failures.
+ // custom page sizes, wide arithmetic, legacy EH and threads. All execution
+ // modes share this loader. Keep absent proposals tied to exact decoder
+ // diagnostics; native modes additionally require the audited source pin.
  {feature:'compact-imports',reason:/invalid import kind 0x7[EF]/},
  {feature:'shared-everything-threads',reason:/(?:expected type decl code, got 101|invalid global flags 0x03)/},
  {feature:'memory-control',reason:/unsupported opcode 0x00 0xFF \(<invalid>\)/},
@@ -397,7 +397,7 @@ export function classifyFeatureRuntimeRejection({source,engine,workload,capture,
  const wasmedge=source?.repository==='WasmEdge/WasmEdge'&&['wasmedge','wasmedge-jit'].includes(engine);
  const chicory=source?.repository==='dylibso/chicory'&&['chicory','chicory-jit'].includes(engine);
  const chasm=source?.repository==='CharlieTap/chasm'&&engine==='chasm';
- const wizard=source?.repository==='titzer/wizard-engine'&&engine==='wizard-v3-int';
+ const wizard=source?.repository==='titzer/wizard-engine'&&(engine==='wizard-v3-int'||source.revision==='399357ce20b8330ddc1888a93cceb0d4cf3762de'&&['wizard-fast-int','wizard-spc'].includes(engine));
  const zwasm=source?.repository==='zwasm/zwasm'&&['zwasm-interpreter','zwasm-jit'].includes(engine);
  const endive=source?.repository==='bytecodealliance/endive'&&['endive-interpreter','endive-jit','endive-redline'].includes(engine);
  const graalwasm=source?.repository==='oracle/graal'&&engine==='graalwasm';
@@ -409,6 +409,6 @@ export function classifyFeatureRuntimeRejection({source,engine,workload,capture,
  if(!rejection||!failures?.length||failures.some(failure=>failure.engine!==engine||failure.workload!==workload.id||(!['error','preflight_failed'].includes(failure.status)&&!(rejection.allowIncorrectResult&&failure.status==='incorrect_result')&&!(failure.status==='unsupported'&&failure.reason==='scenario not advertised'))||(failure.samples?.length||0)!==0))return null;
  const sourceBound=failures.filter(failure=>rejection.reason.test(failure.reason||''));
  if(!sourceBound.length||failures.some(failure=>!sourceBound.includes(failure)&&failure.reason!=='scenario not advertised'))return null;
- const runtime=wasmtime?`Wasmtime ${engine==='wasmtime-winch'?'Winch':'Cranelift'}`:wago?'Wago Railshot':wasmer?`Wasmer ${engine.slice('wasmer-'.length)}`:wazero?`Wazero ${engine==='wazero'?'compiler':'interpreter'}`:v8?'V8 Turboshaft':wavm?'WAVM LLVM':spiderMonkey?'SpiderMonkey Ion':jsc?'JSC OMG':wasmi?'Wasmi':wasm3?'wasm3':w2c2?'w2c2 GCC':wasm2c?'wasm2c GCC':wazy?'Wazy':wasmedge?`WasmEdge ${engine==='wasmedge-jit'?'JIT':'interpreter'}`:chicory?`Chicory ${engine==='chicory-jit'?'compiler':'interpreter'}`:chasm?'Chasm':wizard?'Wizard V3 interpreter':zwasm?`Zwasm ${engine==='zwasm-jit'?'JIT':'interpreter'}`:endive?`Endive ${engine.slice('endive-'.length)}`:graalwasm?'GraalWasm Truffle':`WAMR ${engine==='wamr-llvm-jit'?'LLVM JIT':engine==='wamr-fast-jit'?'Fast JIT':'interpreter'}`;
+ const runtime=wasmtime?`Wasmtime ${engine==='wasmtime-winch'?'Winch':'Cranelift'}`:wago?'Wago Railshot':wasmer?`Wasmer ${engine.slice('wasmer-'.length)}`:wazero?`Wazero ${engine==='wazero'?'compiler':'interpreter'}`:v8?'V8 Turboshaft':wavm?'WAVM LLVM':spiderMonkey?'SpiderMonkey Ion':jsc?'JSC OMG':wasmi?'Wasmi':wasm3?'wasm3':w2c2?'w2c2 GCC':wasm2c?'wasm2c GCC':wazy?'Wazy':wasmedge?`WasmEdge ${engine==='wasmedge-jit'?'JIT':'interpreter'}`:chicory?`Chicory ${engine==='chicory-jit'?'compiler':'interpreter'}`:chasm?'Chasm':wizard?`Wizard ${engine==='wizard-v3-int'?'V3 interpreter':engine==='wizard-fast-int'?'fast interpreter':'Singlepass'}`:zwasm?`Zwasm ${engine==='zwasm-jit'?'JIT':'interpreter'}`:endive?`Endive ${engine.slice('endive-'.length)}`:graalwasm?'GraalWasm Truffle':`WAMR ${engine==='wamr-llvm-jit'?'LLVM JIT':engine==='wamr-fast-jit'?'Fast JIT':'interpreter'}`;
  return {engine,workload:workload.id,status:'unsupported',reason:`Source-bound ${runtime} compiler rejects ${rejection.feature}`,sourceRevision:source.revision,artifactSha256:workload.sha256,contractSha256,rawFailures:failures.map(({phase,reason})=>({phase,reason}))};
 }

@@ -620,3 +620,19 @@ test('Chicory classifies only exact source-absent proposal encodings',()=>{
   ['threads','guest trap: unreachable'],
  ])assert.equal(classify('chicory',feature,reason),null,feature);
 });
+
+test('audited Wizard native modes share exact loader rejections, without masking declared features or wrong results',()=>{
+ const source={repository:'titzer/wizard-engine',revision:'399357ce20b8330ddc1888a93cceb0d4cf3762de'};
+ for(const engine of ['wizard-fast-int','wizard-spc']){
+  for(const [feature,reason] of [['compact-imports','invalid import kind 0x7F'],['half-precision','unsupported opcode 0x00 0xFF (<invalid>)'],['acquire-release-atomics','expected max alignment 4, got 34']]){
+   const w={id:`features/${feature}/case/1`,sha256:'4'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+   const capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+   const failures=[{engine,workload:w.id,phase:'first-call',status:'error',reason:`error: ${reason}`}];
+   const input={source,engine,workload:w,capture,failures};assert.equal(classifyFeatureRuntimeRejection(input)?.status,'unsupported');
+   assert.equal(classifyFeatureRuntimeRejection({...input,source:{...source,revision:'5'.repeat(40)},capture:{...capture,source:{...source,revision:'5'.repeat(40)}}}),null);
+   assert.equal(classifyFeatureRuntimeRejection({...input,failures:[{...failures[0],status:'incorrect_result',reason:'incorrect result: scalar oracle mismatch'}]}),null);
+  }
+  const w={id:'features/gc/case/1',sha256:'4'.repeat(64),abi:'core',features:['gc'],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+  assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture:{source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0}]},failures:[{engine,workload:w.id,phase:'first-call',status:'error',reason:'error: expected type decl code, got 77'}]}),null);
+ }
+});
