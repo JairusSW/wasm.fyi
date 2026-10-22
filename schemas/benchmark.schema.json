@@ -120,6 +120,11 @@
         },
         "sampling": {
           "$ref": "#/$defs/Sampling"
+        },
+        "featureProfile": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^([a-z][a-z0-9-]{0,31})?$"
         }
       },
       "required": [
@@ -232,6 +237,11 @@
         },
         "source": {
           "$ref": "#/$defs/Source"
+        },
+        "featureProfile": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^([a-z][a-z0-9-]{0,31})?$"
         }
       },
       "required": [
@@ -449,6 +459,11 @@
         },
         "sampling": {
           "$ref": "#/$defs/Sampling"
+        },
+        "featureProfile": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^([a-z][a-z0-9-]{0,31})?$"
         }
       },
       "required": [

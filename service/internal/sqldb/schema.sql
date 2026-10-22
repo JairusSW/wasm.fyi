@@ -217,3 +217,14 @@ CREATE INDEX IF NOT EXISTS latest_observation ON latest(observation_id);
 CREATE INDEX IF NOT EXISTS history_observation ON history(observation_id);
 CREATE INDEX IF NOT EXISTS platform_observation_reverse ON platform_observations(observation_id);
 CREATE INDEX IF NOT EXISTS observations_samples ON observations(samples_id);
+
+-- Optional execution configuration labels are interned once and omitted for
+-- ordinary captures. Detail/export reads retain them without widening tables.
+CREATE TABLE IF NOT EXISTS feature_profiles (
+ id INTEGER PRIMARY KEY,
+ name TEXT NOT NULL UNIQUE CHECK(length(name) BETWEEN 1 AND 32)
+);
+CREATE TABLE IF NOT EXISTS observation_profiles (
+ observation_id INTEGER PRIMARY KEY REFERENCES observations(id) ON DELETE CASCADE,
+ profile_id INTEGER NOT NULL REFERENCES feature_profiles(id)
+);

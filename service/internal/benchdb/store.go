@@ -44,6 +44,8 @@ type contract struct {
 	Artifact string
 }
 type measurement struct {
+	FeatureProfile string `json:"fp,omitempty"`
+
 	Sampling      *Sampling `json:"sp,omitempty"`
 	Source        *Source   `json:"o,omitempty"`
 	Display       *Display  `json:"d,omitempty"`
@@ -252,9 +254,12 @@ func (s *Store) Put(ctx context.Context, c Capture) (string, error) {
 		if r.Source == nil {
 			r.Source = c.Source
 		}
+		if r.FeatureProfile == "" {
+			r.FeatureProfile = c.FeatureProfile
+		}
 		cfg := engine{r.Engine, r.Version, r.Backend}
 		cfgID := identifier(cfg)
-		value := measurement{Sampling: r.Sampling, Source: r.Source, Display: r.Display, TimingSamples: r.TimingSamples, SamplesNs: r.SamplesNs, Contract: r.Contract, Engine: cfgID, CapturedAt: c.CapturedAt, Status: r.Status, Latency: r.Value, PeakRSS: r.PeakRSS, Code: r.CodeBytes, CodeKind: r.CodeKind, MemoryStatus: r.MemoryStatus, CodeStatus: r.CodeStatus}
+		value := measurement{FeatureProfile: r.FeatureProfile, Sampling: r.Sampling, Source: r.Source, Display: r.Display, TimingSamples: r.TimingSamples, SamplesNs: r.SamplesNs, Contract: r.Contract, Engine: cfgID, CapturedAt: c.CapturedAt, Status: r.Status, Latency: r.Value, PeakRSS: r.PeakRSS, Code: r.CodeBytes, CodeKind: r.CodeKind, MemoryStatus: r.MemoryStatus, CodeStatus: r.CodeStatus}
 		recipeCheck := contract{r.Workload, r.Wasm, r.Artifact}
 		if prior, err := get(b, "contracts/"+r.Contract); err == nil {
 			if !bytes.Equal(prior, encode(recipeCheck)) {
@@ -638,7 +643,7 @@ func (s *Store) Page(ctx context.Context, q Query) (Page, error) {
 			kind := "unknown"
 			m.CodeKind = &kind
 		}
-		item := Result{Row: Row{Sampling: m.Sampling, Source: m.Source, Display: m.Display, TimingSamples: m.TimingSamples, SamplesNs: m.SamplesNs, Workload: recipe.Workload, Wasm: recipe.Wasm, Artifact: recipe.Artifact, Contract: m.Contract, Engine: cfg.ID, Version: cfg.Version, Backend: cfg.Backend, Phase: q.Phase, Status: m.Status, Value: m.Latency, PeakRSS: m.PeakRSS, CodeBytes: m.Code, CodeKind: m.CodeKind, MemoryStatus: m.MemoryStatus, CodeStatus: m.CodeStatus}, CapturedAt: m.CapturedAt}
+		item := Result{Row: Row{FeatureProfile: m.FeatureProfile, Sampling: m.Sampling, Source: m.Source, Display: m.Display, TimingSamples: m.TimingSamples, SamplesNs: m.SamplesNs, Workload: recipe.Workload, Wasm: recipe.Wasm, Artifact: recipe.Artifact, Contract: m.Contract, Engine: cfg.ID, Version: cfg.Version, Backend: cfg.Backend, Phase: q.Phase, Status: m.Status, Value: m.Latency, PeakRSS: m.PeakRSS, CodeBytes: m.Code, CodeKind: m.CodeKind, MemoryStatus: m.MemoryStatus, CodeStatus: m.CodeStatus}, CapturedAt: m.CapturedAt}
 		itemBytes := len(encode(item)) + 1
 		// Reserve space for page metadata and the signed continuation cursor.
 		if len(page.Items) > 0 && responseBytes+itemBytes > wire.ResponseBytes-(32<<10) {

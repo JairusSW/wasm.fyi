@@ -73,7 +73,7 @@ func (s *Store) ExportBindings(ctx context.Context, emit func(string, Platform, 
 			}
 			engines[value.Engine] = e
 		}
-		result := Result{Row: Row{Sampling: value.Sampling, Source: value.Source, Display: value.Display, TimingSamples: value.TimingSamples, SamplesNs: value.SamplesNs, Workload: c.Workload, Wasm: c.Wasm, Artifact: c.Artifact, Contract: value.Contract, Engine: e.ID, Version: e.Version, Backend: e.Backend, Phase: phase, Status: value.Status, Value: value.Latency, PeakRSS: value.PeakRSS, CodeBytes: value.Code, CodeKind: value.CodeKind, MemoryStatus: value.MemoryStatus, CodeStatus: value.CodeStatus}, CapturedAt: value.CapturedAt}
+		result := Result{Row: Row{FeatureProfile: value.FeatureProfile, Sampling: value.Sampling, Source: value.Source, Display: value.Display, TimingSamples: value.TimingSamples, SamplesNs: value.SamplesNs, Workload: c.Workload, Wasm: c.Wasm, Artifact: c.Artifact, Contract: value.Contract, Engine: e.ID, Version: e.Version, Backend: e.Backend, Phase: phase, Status: value.Status, Value: value.Latency, PeakRSS: value.PeakRSS, CodeBytes: value.Code, CodeKind: value.CodeKind, MemoryStatus: value.MemoryStatus, CodeStatus: value.CodeStatus}, CapturedAt: value.CapturedAt}
 		if err = emit(scope, platform, result); err != nil {
 			return err
 		}

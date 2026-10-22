@@ -58,6 +58,12 @@ with latency in the lowest bits. Each field is 0=not-measured, 1=ok, 2=failed,
 a zero-resolution latency scalar; otherwise null. Policies, complete statistics
 and ordered samples load through `/api/observation` when a cell opens.
 
+Captures may supply an optional `featureProfile` label (up to 32 lowercase
+letters, digits, or hyphens, beginning with a letter). It defaults rows that do
+not specify their own label. SQLite interns profile names separately from
+samples; detail and lossless exports retain the label. Compact table requests
+remain unchanged.
+
 Feature tables require source/configuration evidence for ignorable metadata and
 host-specific integration. A binary semantic control cannot establish WAT source
 syntax support or JavaScript BigInt integration through a native integer API.

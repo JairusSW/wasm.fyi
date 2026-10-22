@@ -156,6 +156,9 @@ func (s *Store) observation(ctx context.Context, tx *sql.Tx, pid int64, r benchd
 	if e == nil {
 		e = putSampleStats(ctx, tx, b.observation, r.SamplesNs, r.Sampling)
 	}
+	if e == nil {
+		e = putFeatureProfile(ctx, tx, b.observation, r.FeatureProfile)
+	}
 	return b, e
 }
 func (s *Store) Put(ctx context.Context, c benchdb.Capture) (string, error) {
@@ -196,6 +199,9 @@ func (s *Store) Put(ctx context.Context, c benchdb.Capture) (string, error) {
 	for _, row := range c.Results {
 		if row.Source == nil {
 			row.Source = c.Source
+		}
+		if row.FeatureProfile == "" {
+			row.FeatureProfile = c.FeatureProfile
 		}
 		blocked, err := revisionBlocked(ctx, tx, row.Engine, row.Source)
 		if err != nil {

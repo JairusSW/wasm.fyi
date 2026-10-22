@@ -74,7 +74,10 @@ func loadBinding(ctx context.Context, q queryer, history bool, pid int64, worklo
 		where += " AND b.as_of=? AND b.configuration_id=?"
 		args = append(args, asOf, cfg)
 	}
-	id, r, e := scanResult(q.QueryRowContext(ctx, "SELECT "+projection+" FROM "+table+" b"+joins+"WHERE "+where, args...))
+	var profile sql.NullString
+	profileColumn := ", (SELECT p.name FROM observation_profiles op JOIN feature_profiles p ON p.id=op.profile_id WHERE op.observation_id=o.id)"
+	id, r, e := scanResult(&extraScanner{rows: q.QueryRowContext(ctx, "SELECT "+projection+profileColumn+" FROM "+table+" b"+joins+"WHERE "+where, args...), extra: []any{&profile}})
+	r.FeatureProfile = profile.String
 	if e == nil && samples {
 		r.SamplesNs, e = loadSamples(ctx, q, id)
 	}
@@ -290,6 +293,9 @@ func (s *Store) Detail(ctx context.Context, platform string, observationID int64
 		return r, e
 	}
 	r.SamplesNs, e = loadSamples(ctx, tx, id)
+	if e == nil {
+		r.FeatureProfile, e = loadFeatureProfile(ctx, tx, id)
+	}
 	return r, e
 }
 func (s *Store) initialize(ctx context.Context) error {
@@ -305,8 +311,17 @@ func (s *Store) initialize(ctx context.Context) error {
 
 // Export visits each binding with full lossless sample vectors; callback must not write to this Store.
 func (s *Store) Export(ctx context.Context, visit func(string, benchdb.Platform, benchdb.Result) error) error {
+	tx, err := s.reader.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	profiles, err := featureProfiles(ctx, tx)
+	if err != nil {
+		return err
+	}
 	for _, scope := range []string{"latest", "history"} {
-		rows, e := s.reader.QueryContext(ctx, "SELECT "+projection+",p.os,p.arch,p.cpu,p.cores,p.kernel,p.memory_bytes FROM "+scope+" b"+joins+"JOIN platforms p ON p.id=b.platform_id ORDER BY b.platform_id,o.id")
+		rows, e := tx.QueryContext(ctx, "SELECT "+projection+",p.os,p.arch,p.cpu,p.cores,p.kernel,p.memory_bytes FROM "+scope+" b"+joins+"JOIN platforms p ON p.id=b.platform_id ORDER BY b.platform_id,o.id")
 		if e != nil {
 			return e
 		}
@@ -314,8 +329,9 @@ func (s *Store) Export(ctx context.Context, visit func(string, benchdb.Platform,
 			var p benchdb.Platform
 			h := &extraScanner{rows: rows, extra: []any{&p.OS, &p.Arch, &p.CPU, &p.Cores, &p.Kernel, &p.MemoryBytes}}
 			id, r, e := scanResult(h)
+			r.FeatureProfile = profiles[id]
 			if e == nil {
-				r.SamplesNs, e = loadSamples(ctx, s.reader, id)
+				r.SamplesNs, e = loadSamples(ctx, tx, id)
 			}
 			if e == nil {
 				e = visit(scope, p, r)
@@ -335,7 +351,7 @@ func (s *Store) Export(ctx context.Context, visit func(string, benchdb.Platform,
 }
 
 type extraScanner struct {
-	rows  *sql.Rows
+	rows  scanner
 	extra []any
 }
 

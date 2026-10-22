@@ -44,6 +44,8 @@ type Sampling struct {
 	StopReason    string `json:"stopReason"`
 }
 type Row struct {
+	FeatureProfile string `json:"featureProfile,omitempty"`
+
 	Sampling      *Sampling `json:"sampling,omitempty"`
 	Source        *Source   `json:"source,omitempty"`
 	Display       *Display  `json:"display,omitempty"`
@@ -70,6 +72,8 @@ type Result struct {
 	CapturedAt string `json:"capturedAt"`
 }
 type Capture struct {
+	FeatureProfile string `json:"featureProfile,omitempty"`
+
 	Source     *Source  `json:"source,omitempty"`
 	CapturedAt string   `json:"capturedAt"`
 	Platform   Platform `json:"platform"`
@@ -77,6 +81,9 @@ type Capture struct {
 }
 
 func Validate(c Capture) error {
+	if !validFeatureProfile(c.FeatureProfile) {
+		return wire.Invalid("invalid feature profile")
+	}
 	if len(c.Results) == 0 || len(c.Results) > 4096 {
 		return wire.Invalid("invalid capture")
 	}
@@ -93,6 +100,9 @@ func Validate(c Capture) error {
 	}
 	seen := map[string]bool{}
 	for _, r := range c.Results {
+		if !validFeatureProfile(r.FeatureProfile) {
+			return wire.Invalid("invalid feature profile")
+		}
 		if r.Source != nil {
 			if err := validateSource(r.Source); err != nil {
 				return err
@@ -190,4 +200,21 @@ func validateSource(s *Source) error {
 		return wire.Invalid("invalid source date")
 	}
 	return nil
+}
+
+// Profiles are short configuration labels, never flags or filesystem paths.
+func validFeatureProfile(profile string) bool {
+	if len(profile) > 32 {
+		return false
+	}
+	for i, c := range []byte(profile) {
+		if c >= 'a' && c <= 'z' {
+			continue
+		}
+		if i > 0 && ((c >= '0' && c <= '9') || c == '-') {
+			continue
+		}
+		return false
+	}
+	return true
 }
