@@ -53,6 +53,7 @@ func packMatrix(v sqldb.Matrix) compactMatrix {
 	out := compactMatrix{DataRevision: v.DataRevision, Schema: 2, Revision: v.Revision, Platform: v.Platform, Phase: v.Phase, Total: v.Total, NextOffset: v.NextOffset, Contracts: []matrixContract{}, Configurations: []matrixConfiguration{}, Sources: []*benchdb.Source{}, Sampling: []*benchdb.Sampling{}, CapturedAt: []string{}, Rows: [][]any{}}
 	contracts, configs, sources, sampling, captured := map[string]int{}, map[string]int{}, map[string]int{}, map[string]int{}, map[string]int{}
 	for _, r := range v.Items {
+		r = featureDeclarationProjection(r)
 		c := dictionaryIndex(&out.Contracts, contracts, matrixContract{r.Workload, r.Wasm, r.Artifact, r.Contract, r.Display})
 		cfg := dictionaryIndex(&out.Configurations, configs, matrixConfiguration{r.Engine, r.Version, r.Backend})
 		src := dictionaryIndex(&out.Sources, sources, r.Source)
@@ -91,6 +92,7 @@ func packTable(v sqldb.Matrix) compactTable {
 	out := compactTable{compactMatrix: compactMatrix{DataRevision: v.DataRevision, Schema: 4, Revision: v.Revision, Platform: v.Platform, Phase: v.Phase, Total: v.Total, NextOffset: v.NextOffset, Contracts: []matrixContract{}, Configurations: []matrixConfiguration{}, Sources: []*benchdb.Source{}, Sampling: []*benchdb.Sampling{nil}, CapturedAt: []string{}, Rows: make([][]any, 0, len(v.Items))}, CodeKinds: []*string{}}
 	contracts, configs, sources, captured, kinds := map[string]int{}, map[string]int{}, map[string]int{}, map[string]int{}, map[string]int{}
 	for _, r := range v.Items {
+		r = featureDeclarationProjection(r)
 		contract := dictionaryIndex(&out.Contracts, contracts, matrixContract{r.Workload, r.Wasm, r.Artifact, r.Contract, r.Display})
 		config := dictionaryIndex(&out.Configurations, configs, matrixConfiguration{r.Engine, r.Version, r.Backend})
 		source := dictionaryIndex(&out.Sources, sources, r.Source)

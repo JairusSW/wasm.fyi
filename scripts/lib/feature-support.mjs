@@ -16,6 +16,12 @@ export function runtimeDeclaresFeature(description,feature) {
   const effective=description?.effective_configuration||{},flags=String(effective.flags||'');
   if(feature==='branch-hinting'&&flags.includes('"--experimental-wasm-branch-hinting"'))return true;
   if(feature==='compilation-hints'&&flags.includes('"--experimental-wasm-compilation-hints"'))return true;
+  // Pinned Graal source: BinaryParser consumes metadata.code.branch_hint;
+  // RuntimeBytecodeGen seeds branch profiles consumed by WasmFunctionNode.
+  // This revision enables it unconditionally; do not infer it for other SDKs.
+  if(feature==='branch-hinting'&&description?.runtime==='graalwasm'
+    &&description?.backend==='truffle-graal'
+    &&description?.runtime_version==='f1dce3f84de778485d0ba8d6ddfd4d260b230d0a')return true;
   // Wasmtime's pinned validator receipt predates the structured branch-hint
   // key. Its evidence names the enabled Cranelift implementation explicitly;
   // Winch parses the ignorable section but does not consume its code-layout
