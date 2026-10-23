@@ -62,11 +62,12 @@ diff --git a/adapters/wasmtime/src/features.rs b/adapters/wasmtime/src/features.
 -        flags.push(("GC_TYPES", WasmFeatures::GC_TYPES, false));
          flags.push(("STACK_SWITCHING", WasmFeatures::STACK_SWITCHING, false));
          if cfg!(target_arch = "aarch64") {
-@@ -36,5 +36,12 @@ pub fn configure(config: &mut Config, winch: bool) {
+@@ -36,5 +36,13 @@ pub fn configure(config: &mut Config, winch: bool) {
      for (_, flag, enabled) in policy(winch) {
          config.wasm_features(flag, enabled);
      }
 +    config.wasm_branch_hinting(!winch);
++    config.wasm_compact_imports(!winch);
 +    if !winch {
 +        config.gc_support(true);
 +    }
@@ -75,7 +76,7 @@ diff --git a/adapters/wasmtime/src/features.rs b/adapters/wasmtime/src/features.
 +    }
      #[cfg(feature = "component-async-probes")]
      if std::env::args().any(|arg| arg == "--component-async") {
-@@ -57,7 +61,8 @@ pub fn describe(winch: bool) -> Value {
+@@ -57,7 +62,8 @@ pub fn describe(winch: bool) -> Value {
      }
      json!({
          "namespace": "wasmparser/0.251.0",
@@ -85,7 +86,7 @@ diff --git a/adapters/wasmtime/src/features.rs b/adapters/wasmtime/src/features.
          "supported": supported
      })
  }
-@@ -81,5 +87,10 @@ mod tests {
+@@ -81,5 +88,10 @@ mod tests {
              };
              let engine = adapter.engine().unwrap();
              assert_eq!(describe(winch)["supported"]["TAIL_CALL"], json!(!winch));
