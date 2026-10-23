@@ -28,7 +28,7 @@ for(const f of fixtures().filter(f=>!families||families.includes(f.feature))){
  else command(compiler,['parse',source,'-o',artifact]);
  await validateProposalArtifact(compiler,artifact,f);
  const sha256=digest(await readFile(artifact));
- const expected=(component||f.hostBoundary)?String(f.expected(n)):repeatedFeatureExpected(f.expected(n));
+ const expected=(component||f.hostBoundary)?String(f.expected(n)):repeatedFeatureExpected(f.expected(n),repeats);
  const recipe={source,sourceSha256:digest(await readFile(source)),artifact,sha256,compiler:f.nativeValidation?original.provenance.recipe.compiler:version,
   ...(f.nativeValidation?{validator:original.provenance.recipe.validator}:{}),originalArtifactSha256:original.sha256,repeats,retainedGcRoots:sourceInfo.retained};recipes.push(recipe);
  workloads.push({...original,id:`features/${f.feature}/${f.name}/performance-${n}x${repeats}`,artifact,sha256,source,export:(component||f.hostBoundary)?'benchmark':'performance',args:f.args?f.args(n):[component?String(n):n],oracle:{kind:'exact_u64',expected:[expected]},size:n,units_per_invocation:(f.units||n)*repeats,
