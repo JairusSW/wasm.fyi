@@ -58,8 +58,13 @@ func (p *adaptiveSessionPool) complete(r Runtime,w protocol.Workload,block int,s
  }
  phases:=adaptivePhaseOrder(o.Scenarios)
  last:=len(phases)>0&&scenario==phases[len(phases)-1]
+ unadvertised:=t.Status=="unsupported"&&t.Reason=="scenario not advertised"
  if t.Status=="ok"&&!last{return}
- if t.Status!="ok"{session.failureStatus=t.Status;session.failure=fmt.Sprintf("adaptive phase %s: %s",scenario,t.Reason)}
+ // A requested phase absent from this runtime's advertised scenario set does
+ // not invalidate the live module state. Keep it for later advertised phases
+ // (for example wasm3 has first-call and steady, but no separate instantiate).
+ if unadvertised&&!last{return}
+ if t.Status!="ok"&&!unadvertised{session.failureStatus=t.Status;session.failure=fmt.Sprintf("adaptive phase %s: %s",scenario,t.Reason)}
  session.closed=true;session.cancel()
  if err:=session.client.Close();err!=nil{
   t.Status="error";t.Reason+="; shared phase-session cleanup: "+err.Error()

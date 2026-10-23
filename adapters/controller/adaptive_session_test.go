@@ -102,6 +102,18 @@ func TestAdaptiveSessionFailureClosesProcessWithoutLaunchingAgain(t *testing.T){
  }
 }
 
+func TestAdaptiveSessionSkipsUnadvertisedMiddlePhaseWithoutPoisoningSteady(t *testing.T){
+ root,options,runtime,workload,trace:=adaptiveSessionFixture(t,"ok",2*time.Second)
+ runtime.Description.Scenarios=[]string{"compile","first-call","steady"}
+ for _,phase:=range []string{"compile","first-call","instantiate","steady"}{
+  result:=runTrial(context.Background(),root,options,runtime,workload,phase,0,"phase-"+phase)
+  if phase=="instantiate"{if result.Status!="unsupported"||result.Reason!="scenario not advertised"{t.Fatalf("instantiate: %+v",result)};continue}
+  if result.Status!="ok"{t.Fatalf("%s: %s %s",phase,result.Status,result.Reason)}
+ }
+ data,err:=os.ReadFile(trace);if err!=nil{t.Fatal(err)}
+ if strings.Count(string(data),`"method":"prepare"`)!=1||strings.Count(string(data),`"method":"run"`)!=8{t.Fatalf("unexpected session trace: %s",data)}
+}
+
 func TestAdaptiveSessionKernelRSSIsResetAndReadForEachLivePhase(t *testing.T){
  if goruntime.GOOS!="linux"{t.Skip("Linux resettable RSS high-water mark")}
  root,options,runtime,workload,_:=adaptiveSessionFixture(t,"ok",2*time.Second)
