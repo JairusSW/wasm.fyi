@@ -43,6 +43,16 @@ export function featureFailureRecords(note,{engine,workload,capture}){
 const wagoRejections=[
  {revision:'a3c9d5b2097640899eb37cd5cc68b7bfc348de47',feature:'compact-imports',reason:/decode: wasm decode: (?:invalid import|index out of bounds) at offset/},
  {revision:'a3c9d5b2097640899eb37cd5cc68b7bfc348de47',feature:'wide-arithmetic',reason:/decode: wasm decode: invalid instruction at offset/},
+ // beta.12 documents a bounded thread product: exactly one imported shared
+ // memory32. Keep these exclusions pinned to that release so beta.13+'s
+ // broader defined-memory support remains visible and required to pass.
+ {revision:'a3c9d5b2097640899eb37cd5cc68b7bfc348de47',feature:'threads',reason:/threads currently require shared memory to be imported/},
+ {revision:'a3c9d5b2097640899eb37cd5cc68b7bfc348de47',feature:'threads',reason:/threads currently require exactly one memory, shared or unshared/},
+ {revision:'a3c9d5b2097640899eb37cd5cc68b7bfc348de47',feature:'threads',reason:/threads currently do not support shared memory64/},
+ // The beta.12 runner can terminate while probing atomics on an unshared
+ // memory. Those exact corpus cases are outside its documented shared-import
+ // product; do not generalize the fatal-signal diagnostic to supported cases.
+ {revision:'a3c9d5b2097640899eb37cd5cc68b7bfc348de47',feature:'threads',workload:/^features\/threads\/unshared-(?:atomic-load-store|atomic-rmw-add)\//,reason:/Wago engine fatal signal during (?:compile|first-call)/},
  {feature:'custom-page-sizes',reason:/decode: wasm decode: invalid limits at offset/},
  {feature:'shared-everything-threads',reason:/decode: wasm decode: invalid type at offset/},
  {feature:'memory-control',reason:/decode: wasm decode: invalid instruction at offset/},
@@ -414,7 +424,7 @@ export function classifyFeatureRuntimeRejection({source,engine,workload,capture,
  if(capture.source?.revision!==source.revision||capture.source?.repository!==source.repository)return null;
  const contractSha256=workloadContract(workload),failed=capture.results.filter(row=>row.latencyStatus==='failed');
  if(failed.length!==capture.results.length||failed.some(row=>row.engine!==engine||row.workload!==workload.id||row.artifactSha256!==workload.sha256||row.contractSha256!==contractSha256||(row.timingSamples||0)!==0||(row.samplesNs?.length||0)!==0))return null;
- const rejection=(wasmtime?wasmtimeRejections:wago?wagoRejections:wasmer?wasmerRejections:wazero?wazeroRejections:v8?v8Rejections:wavm?wavmRejections:spiderMonkey?spiderMonkeyRejections:jsc?jscRejections:wasmi?wasmiRejections:wamr?wamrRejections:wasm3?wasm3Rejections:w2c2?w2c2Rejections:wasm2c?wasm2cRejections:wazy?wazyRejections:wasmedge?wasmedgeRejections:chicory?chicoryRejections:chasm?chasmRejections:wizard?wizardRejections:zwasm?zwasmRejections:endive?endiveRejections:graalWasmRejections).find(candidate=>(!candidate.engine||candidate.engine===engine)&&(!candidate.revision||candidate.revision===source.revision)&&workload.features?.includes(candidate.feature));
+ const rejection=(wasmtime?wasmtimeRejections:wago?wagoRejections:wasmer?wasmerRejections:wazero?wazeroRejections:v8?v8Rejections:wavm?wavmRejections:spiderMonkey?spiderMonkeyRejections:jsc?jscRejections:wasmi?wasmiRejections:wamr?wamrRejections:wasm3?wasm3Rejections:w2c2?w2c2Rejections:wasm2c?wasm2cRejections:wazy?wazyRejections:wasmedge?wasmedgeRejections:chicory?chicoryRejections:chasm?chasmRejections:wizard?wizardRejections:zwasm?zwasmRejections:endive?endiveRejections:graalWasmRejections).find(candidate=>(!candidate.engine||candidate.engine===engine)&&(!candidate.revision||candidate.revision===source.revision)&&(!candidate.workload||candidate.workload.test(workload.id))&&workload.features?.includes(candidate.feature)&&failures?.some(failure=>candidate.reason.test(failure.reason||'')));
  if(!rejection||!failures?.length||failures.some(failure=>failure.engine!==engine||failure.workload!==workload.id||(!['error','preflight_failed'].includes(failure.status)&&!(rejection.allowIncorrectResult&&failure.status==='incorrect_result')&&!(failure.status==='unsupported'&&failure.reason==='scenario not advertised'))||(failure.samples?.length||0)!==0))return null;
  const sourceBound=failures.filter(failure=>rejection.reason.test(failure.reason||''));
  if(!sourceBound.length||failures.some(failure=>!sourceBound.includes(failure)&&failure.reason!=='scenario not advertised'))return null;

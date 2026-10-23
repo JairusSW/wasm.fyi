@@ -38,3 +38,16 @@ test('later infrastructure capture cannot supersede completed runtime evidence',
  const ledger=JSON.parse(await readFile(join(ledgerDirectory,'ledger.json')));assert.notEqual(ledger.items[key].capture,good);assert.deepEqual(ledger.items[key].outcomes,[['first-call','ok']]);
  const replay=JSON.parse(await readFile(join(root,'captures',ledger.items[key].capture)));assert.equal(replay.capturedAt,'2026-10-22T00:00:00.000Z');assert.equal(replay.results[0].latencyStatus,'ok');
 });
+
+test('selected replay reuses its embedded ledger failure for later classification',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'feature-reconcile-ledger-note-')),ledgerDirectory=join(root,'latest'),inputs=join(root,'inputs');await mkdir(join(root,'captures'));await mkdir(join(root,'failure-notes'));await mkdir(join(ledgerDirectory,'captures'),{recursive:true});await mkdir(inputs);
+ const sha256='2'.repeat(64),workload={id:'features/threads/ordinary-load-store/1',artifact:'probe.wasm',sha256,abi:'core',features:['threads'],export:'benchmark',args:[1],reset:'stateless',oracle:{kind:'exact_u64',expected:[1]}},contractSha256=workloadContract(workload);
+ for(const stage of ['compatibility','performance','compile','lifecycle'])await writeFile(join(inputs,stage+'.json'),JSON.stringify(stage==='compatibility'?[workload]:[]));
+ const source={repository:'wago-org/wago',revision:'a3c9d5b2097640899eb37cd5cc68b7bfc348de47',asOf:'2026-10-09T00:00:00Z'},engine='wago',key='d'.repeat(64),capture='feature-replay-wago-'+key+'.json';
+ const failure={kind:'reconciled-latest-failures',failures:[{engine,workload:workload.id,phase:'first-call',status:'error',reason:'error: compile: threads currently require shared memory to be imported'}]};
+ await writeFile(join(root,'captures',capture),JSON.stringify({capturedAt:'2026-10-21T00:00:00Z',source,results:[{engine,workload:workload.id,artifactSha256:sha256,contractSha256,phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]}));
+ await writeFile(join(root,'failure-notes',capture),JSON.stringify({kind:'failed-trials',failures:[{engine,workload:workload.id,phase:'first-call',status:'error',reason:'adapter terminated before response'}]}));
+ await writeFile(join(ledgerDirectory,'ledger.json'),JSON.stringify({items:{[key]:{status:'completed',engine,stage:'compatibility',workload:workload.id,source,capture,artifactSha256:sha256,contractSha256,outcomes:[['first-call','failed']],failure}}}));
+ const result=await reconcileFeatureClassifications({campaign:root,ledgerDirectory,inputs,write:true,clock:()=>new Date('2026-10-22T00:00:00Z')});assert.equal(result.reclassified,1);
+ const ledger=JSON.parse(await readFile(join(ledgerDirectory,'ledger.json')));assert.deepEqual(ledger.items[key].outcomes,[['first-call','unsupported']]);assert.equal(ledger.items[key].failure,undefined);
+});

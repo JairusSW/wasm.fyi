@@ -579,10 +579,23 @@ test('Wago classifies only proposal encodings absent from its beta feature regis
  assert.equal(runtimeCase({source:{...source,revision:beta12},engine:'wago',feature:'compact-imports',reason:'error: decode: wasm decode: invalid import at offset 14 in section 2 [18,120)'})?.status,'unsupported');
  assert.equal(runtimeCase({source:{...source,revision:beta12},engine:'wago',feature:'compact-imports',reason:'error: decode: wasm decode: index out of bounds at offset 25 in section 2 [18,106)'})?.status,'unsupported');
  assert.equal(runtimeCase({source:{...source,revision:beta12},engine:'wago',feature:'wide-arithmetic',reason:'error: decode: wasm decode: invalid instruction at offset 76 in section 10 [37,160)'})?.status,'unsupported');
+ for(const reason of [
+  'error: compile: threads currently require shared memory to be imported',
+  'error: compile: threads currently require exactly one memory, shared or unshared',
+  'error: compile: threads currently do not support shared memory64',
+ ])assert.equal(runtimeCase({source:{...source,revision:beta12},engine:'wago',feature:'threads',reason})?.status,'unsupported');
  assert.equal(runtimeCase({source,engine:'wago',feature:'compact-imports',reason:'error: decode: wasm decode: invalid import at offset 14 in section 2 [18,120)'}),null);
  assert.equal(runtimeCase({source,engine:'wago',feature:'wide-arithmetic',reason:'error: decode: wasm decode: invalid instruction at offset 76 in section 10 [37,160)'}),null);
  assert.equal(runtimeCase({source,engine:'wago',feature:'threads',reason:'error: validate: wasm validate: invalid alignment in function 0'}),null);
  assert.equal(runtimeCase({source,engine:'wago',feature:'custom-page-sizes',reason:'guest returned wrong result'}),null);
+
+ const unshared={id:'features/threads/unshared-atomic-load-store/1',sha256:'b'.repeat(64),abi:'core',features:['threads'],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+ const fatalCapture={source:{...source,revision:beta12},results:[{engine:'wago',workload:unshared.id,artifactSha256:unshared.sha256,contractSha256:workloadContract(unshared),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+ const fatal='Wago engine fatal signal during first-call (see logs/trial-000000.log)';
+ assert.equal(classifyFeatureRuntimeRejection({source:fatalCapture.source,engine:'wago',workload:unshared,capture:fatalCapture,failures:[{engine:'wago',workload:unshared.id,phase:'first-call',status:'error',reason:fatal}]})?.status,'unsupported');
+ const supported={...unshared,id:'features/threads/atomic-load-store/1'};
+ const supportedCapture={...fatalCapture,results:[{...fatalCapture.results[0],workload:supported.id,contractSha256:workloadContract(supported)}]};
+ assert.equal(classifyFeatureRuntimeRejection({source:supportedCapture.source,engine:'wago',workload:supported,capture:supportedCapture,failures:[{engine:'wago',workload:supported.id,phase:'first-call',status:'error',reason:fatal}]}),null);
 });
 
 test('WasmEdge classifies exact SDK proposal gaps without hiding traps',()=>{

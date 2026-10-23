@@ -26,6 +26,10 @@ export async function reconcileFeatureClassifications({campaign,ledgerDirectory,
    const {name,path}=entry,capture=await read(path).catch(()=>null);if(!capture?.results?.length||!sameSource(capture.source,item.source))continue;
    if(capture.results.some(row=>row.engine!==item.engine||row.workload!==item.workload||row.artifactSha256!==item.artifactSha256||row.contractSha256!==item.contractSha256))continue;
    let note=await read(join(campaign,'failure-notes',name)).catch(()=>read(join(ledgerDirectory,'failure-notes',name)).catch(()=>null));
+   // Reaffirmation replays intentionally do not duplicate sidecar failure
+   // notes. The selected ledger item retains the exact paired diagnostic, so
+   // use it when revisiting that capture under newer source-bound rules.
+   if(name===item.capture&&item.failure)note=item.failure;
    if(note?.capturedAt&&note.capturedAt!==capture.capturedAt)note=null;
    const disposition=note&&classifyFeatureRuntimeRejection({source:item.source,engine:item.engine,workload,capture,failures:featureFailureRecords(note,{engine:item.engine,workload,capture})});
    // A controller/admission failure is not a runtime observation and must not
@@ -41,7 +45,8 @@ export async function reconcileFeatureClassifications({campaign,ledgerDirectory,
   const desired=new Map(item.outcomes||[]),newestValid=[...new Set([...latest.values()])].sort((a,b)=>a.capture.capturedAt.localeCompare(b.capture.capturedAt)).at(-1);
   const ambiguous=candidates.some(candidate=>candidate.capture.results.some(row=>desired.has(row.phase)&&row.latencyStatus!==desired.get(row.phase)&&candidate.capture.capturedAt>=latest.get(row.phase).capture.capturedAt));
   const needsReaffirm=ambiguous||ignored.some(candidate=>candidate.capture.capturedAt>=newestValid.capture.capturedAt);
-  if(equal(ordered,item.outcomes)&&!needsReaffirm)continue;
+  const hasClassifiableFailure=(item.outcomes||[]).some(([,status])=>status==='failed')&&candidates.some(candidate=>candidate.disposition);
+  if(equal(ordered,item.outcomes)&&!needsReaffirm&&!hasClassifiableFailure)continue;
   const newest=newestValid,used=[...new Set([...latest.values()])];
   const combined={...newest.capture,results:(item.outcomes||[]).map(([phase])=>latest.get(phase)?.capture.results.find(row=>row.phase===phase)).filter(Boolean)};
   const notes=used.map(candidate=>candidate.note).filter(Boolean);
