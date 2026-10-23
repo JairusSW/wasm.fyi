@@ -20,14 +20,14 @@ for(const f of fixtures().filter(f=>!families||families.includes(f.feature))){
  if(digest(await readFile(join(root,original.artifact)))!==original.sha256||await readFile(join(root,original.source),'utf8')!==f.wat.trim()+'\n')throw Error('Stale source-built feature '+f.name);
  if(['compile-only','compile-and-instantiate'].includes(f.scope)){probes.push(original.id);probeWorkloads.push({...original,artifact:join(root,original.artifact)});continue;}
  if(f.reset!=='stateless'&&f.abi!=='component'){lifecycle.push(original.id);lifecycleWorkloads.push({...original,artifact:join(root,original.artifact)});continue;}
- const component=f.abi==='component',n=component?size*16:size;
- const sourceInfo=performanceSource(f),wat=(component||f.hostBoundary)?sourceInfo.wat:f.performanceWat?f.performanceWat():repeatedFeatureSource(sourceInfo.wat,FEATURE_PERFORMANCE_REPEATS,f.export??'benchmark'),stem=f.feature+'-'+f.name;
+ const component=f.abi==='component',n=component?size*16:size,repeats=(component||f.hostBoundary)?1:(f.performanceRepeats??FEATURE_PERFORMANCE_REPEATS);
+ const sourceInfo=performanceSource(f),wat=(component||f.hostBoundary)?sourceInfo.wat:f.performanceWat?f.performanceWat():repeatedFeatureSource(sourceInfo.wat,repeats,f.export??'benchmark'),stem=f.feature+'-'+f.name;
  const source=join(output,'sources',stem+'.wat'),artifact=join(output,'artifacts',stem+'.wasm');
  await writeFile(source,wat.trim()+'\n');
  if(f.nativeValidation)await writeFile(artifact,proposalBinaryBytes(wat));
  else command(compiler,['parse',source,'-o',artifact]);
  await validateProposalArtifact(compiler,artifact,f);
- const sha256=digest(await readFile(artifact)),repeats=(component||f.hostBoundary)?1:FEATURE_PERFORMANCE_REPEATS;
+ const sha256=digest(await readFile(artifact));
  const expected=(component||f.hostBoundary)?String(f.expected(n)):repeatedFeatureExpected(f.expected(n));
  const recipe={source,sourceSha256:digest(await readFile(source)),artifact,sha256,compiler:f.nativeValidation?original.provenance.recipe.compiler:version,
   ...(f.nativeValidation?{validator:original.provenance.recipe.validator}:{}),originalArtifactSha256:original.sha256,repeats,retainedGcRoots:sourceInfo.retained};recipes.push(recipe);

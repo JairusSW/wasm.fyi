@@ -13,6 +13,10 @@ test('repetition wraps a curated kernel through its declared export',()=>{
  assert.match(repeated,/\$performance_kernel \(export "named-kernel"\)/);
  assert.match(repeated,/\(export "performance"\)/);
 });
+test('expensive exception kernels use duration calibration instead of a pathological fixed batch',()=>{
+ const expensive=new Set(['throw-catch-tag','throw-ref-recatch','mixed-exception-path']);
+ for(const fixture of fixtures().filter(f=>f.feature==='exceptions'&&expensive.has(f.name)))assert.equal(fixture.performanceRepeats,4,fixture.name);
+});
 test('source-built allocation kernels retain distinct observable objects across repeated calls',async t=>{
  const root=process.env.WASMFYI_FEATURE_PERFORMANCE_ROOT;
  if(!root){t.skip('Build feature performance artifacts and set WASMFYI_FEATURE_PERFORMANCE_ROOT');return;}
