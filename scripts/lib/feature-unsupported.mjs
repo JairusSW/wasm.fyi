@@ -321,6 +321,8 @@ const wizardRejections=[
  // modes additionally require the audited source pin.
  {engine:'wizard-fast-int',feature:'custom-page-sizes',reason:/invalid memory flags 0x09/},
  {engine:'wizard-spc',feature:'custom-page-sizes',reason:/invalid memory flags 0x09/},
+ {revision:'399357ce20b8330ddc1888a93cceb0d4cf3762de',engine:'wizard-fast-int',feature:'legacy-exceptions',reason:/SDK guest call failed: trap\[INVALID_OPCODE\]/},
+ {revision:'399357ce20b8330ddc1888a93cceb0d4cf3762de',engine:'wizard-spc',feature:'legacy-exceptions',reason:/unsupported opcode: RETHROW/},
  {feature:'compact-imports',reason:/invalid import kind 0x7[EF]/},
  {feature:'shared-everything-threads',reason:/(?:expected type decl code, got 101|invalid global flags 0x03)/},
  {feature:'memory-control',reason:/unsupported opcode 0x00 0xFF \(<invalid>\)/},

@@ -656,6 +656,10 @@ test('audited Wizard native modes share exact loader rejections, without masking
    assert.equal(classifyFeatureRuntimeRejection({...input,source:{...source,revision:'5'.repeat(40)},capture:{...capture,source:{...source,revision:'5'.repeat(40)}}}),null);
    assert.equal(classifyFeatureRuntimeRejection({...input,failures:[{...failures[0],status:'incorrect_result',reason:'incorrect result: scalar oracle mismatch'}]}),null);
   }
+  const legacy={id:'features/legacy-exceptions/rethrow/1',sha256:'4'.repeat(64),abi:'core',features:['legacy-exceptions'],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+  const legacyReason=engine==='wizard-fast-int'?'error: SDK guest call failed: trap[INVALID_OPCODE]':'error: bailed out compiling function #0: unsupported opcode: RETHROW';
+  const legacyCapture={source,results:[{engine,workload:legacy.id,artifactSha256:legacy.sha256,contractSha256:workloadContract(legacy),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+  assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:legacy,capture:legacyCapture,failures:[{engine,workload:legacy.id,phase:'first-call',status:'error',reason:legacyReason}]})?.status,'unsupported');
   const w={id:'features/gc/case/1',sha256:'4'.repeat(64),abi:'core',features:['gc'],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
   assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture:{source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0}]},failures:[{engine,workload:w.id,phase:'first-call',status:'error',reason:'error: expected type decl code, got 77'}]}),null);
  }
