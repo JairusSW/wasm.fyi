@@ -635,7 +635,7 @@ test('Chicory classifies only exact source-absent proposal encodings',()=>{
 test('audited Wizard native modes share exact loader rejections, without masking declared features or wrong results',()=>{
  const source={repository:'titzer/wizard-engine',revision:'399357ce20b8330ddc1888a93cceb0d4cf3762de'};
  for(const engine of ['wizard-fast-int','wizard-spc']){
-  for(const [feature,reason] of [['compact-imports','invalid import kind 0x7F'],['half-precision','unsupported opcode 0x00 0xFF (<invalid>)'],['acquire-release-atomics','expected max alignment 4, got 34']]){
+  for(const [feature,reason] of [['compact-imports','invalid import kind 0x7F'],['custom-page-sizes','invalid memory flags 0x09'],['half-precision','unsupported opcode 0x00 0xFF (<invalid>)'],['acquire-release-atomics','expected max alignment 4, got 34']]){
    const w={id:`features/${feature}/case/1`,sha256:'4'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
    const capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
    const failures=[{engine,workload:w.id,phase:'first-call',status:'error',reason:`error: ${reason}`}];

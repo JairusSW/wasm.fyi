@@ -305,10 +305,12 @@ const chasmRejections=[
  {feature:'custom-descriptors',reason:/InvalidCompositeType\(encoded=77\)/},
 ];
 const wizardRejections=[
- // The pinned Wizard support matrix declares Wasm 3.0 plus stack switching,
- // custom page sizes, wide arithmetic, legacy EH and threads. All execution
- // modes share this loader. Keep absent proposals tied to exact decoder
- // diagnostics; native modes additionally require the audited source pin.
+ // The pinned Wizard support matrix is backend-specific. V3 supports custom
+ // page sizes, while fast-int and SPC reject their memory flag in the shared
+ // loader. Keep absent proposals tied to exact decoder diagnostics; native
+ // modes additionally require the audited source pin.
+ {engine:'wizard-fast-int',feature:'custom-page-sizes',reason:/invalid memory flags 0x09/},
+ {engine:'wizard-spc',feature:'custom-page-sizes',reason:/invalid memory flags 0x09/},
  {feature:'compact-imports',reason:/invalid import kind 0x7[EF]/},
  {feature:'shared-everything-threads',reason:/(?:expected type decl code, got 101|invalid global flags 0x03)/},
  {feature:'memory-control',reason:/unsupported opcode 0x00 0xFF \(<invalid>\)/},
