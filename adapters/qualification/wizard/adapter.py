@@ -12,7 +12,11 @@ from driver import build_driver, inspect
 binary, backend = sys.argv[1:3]
 mode = {'v3-interpreter': 'v3-int', 'fast-interpreter': 'int', 'spc': 'spc'}[backend]
 runtime = {'v3-interpreter': 'wizard-v3-int', 'fast-interpreter': 'wizard-fast-int', 'spc': 'wizard-spc'}[backend]
-feature_flags = ['--ext:custom-page-sizes', '--ext:stack-switching', '--ext:threads', '--ext:wide-arithmetic']
+feature_flags = {
+    'v3-interpreter': ['--ext:custom-page-sizes', '--ext:legacy-eh', '--ext:stack-switching', '--ext:threads', '--ext:wide-arithmetic'],
+    'fast-interpreter': ['--ext:legacy-eh', '--ext:stack-switching', '--ext:threads', '--ext:wide-arithmetic'],
+    'spc': ['--ext:legacy-eh', '--ext:stack-switching', '--ext:wide-arithmetic'],
+}[backend]
 prepared = directory = driver = expected_words = result_types = None
 
 

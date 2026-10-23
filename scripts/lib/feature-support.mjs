@@ -23,6 +23,12 @@ export function runtimeDeclaresFeature(description,feature,workload='') {
   if(feature==='branch-hinting'&&description?.runtime==='jsc'
     &&description?.backend==='OMG (forced tier-up)'
     &&description?.runtime_version==='f3e56c5b480ab4dc6bb6412abdfc35c2536467ec')return true;
+  // Wasmtime's adapter records the exact configured option. Keep consumption
+  // scoped to Cranelift: Winch may parse the ignorable section without using
+  // it to influence code layout.
+  if(feature==='branch-hinting'&&description?.runtime==='wasmtime')return description?.backend==='cranelift'
+    &&description?.effective_configuration?.validator_feature_policy==='wasmtime-default-subset-v1'
+    &&description?.validator_features?.branch_hinting===true;
   if(description?.features?.includes(feature))return true;
   if(description?.validator_features?.[feature.replaceAll('-','_')]===true)return true;
   if(description?.validator_features?.supported?.[declarationKeys[feature]]===true)return true;
@@ -36,13 +42,7 @@ export function runtimeDeclaresFeature(description,feature,workload='') {
   if(feature==='branch-hinting'&&description?.runtime==='graalwasm'
     &&description?.backend==='truffle-graal'
     &&description?.runtime_version==='f1dce3f84de778485d0ba8d6ddfd4d260b230d0a')return true;
-  // Wasmtime's pinned validator receipt predates the structured branch-hint
-  // key. Its evidence names the enabled Cranelift implementation explicitly;
-  // Winch parses the ignorable section but does not consume its code-layout
-  // hint, so keep this backend-specific.
-  return feature==='branch-hinting'&&description?.backend==='cranelift'
-    &&effective.validator_feature_policy==='wasmtime-default-subset-v1'
-    &&String(description?.validator_features?.evidence||'').includes('explicitly enables branch hints');
+  return false;
 }
 
 export function runtimeIdentity(runtime) {

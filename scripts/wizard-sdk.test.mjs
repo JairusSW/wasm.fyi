@@ -38,6 +38,9 @@ test('Wizard source targets expose portable interpretation and reject unavailabl
  for(const configuration of ['wizard-v3-int','wizard-fast-int','wizard-spc'])assert.equal(wizardArchitectureUnavailable(configuration,{platform:'linux',architecture:'x64'}),null);
  assert.throws(()=>wizardArchitectureUnavailable('wizard-other'),/Unknown/);
 });
-test('Wizard opts into every extension exposed by the pinned CLI',()=>{
- assert.deepEqual(wizardFeatureFlags,['--ext:custom-page-sizes','--ext:legacy-eh','--ext:stack-switching','--ext:threads','--ext:wide-arithmetic']);
+test('Wizard opts into only the extensions implemented by each backend',()=>{
+ assert.deepEqual(wizardFeatureFlags('wizard-v3-int'),['--ext:custom-page-sizes','--ext:legacy-eh','--ext:stack-switching','--ext:threads','--ext:wide-arithmetic']);
+ assert.deepEqual(wizardFeatureFlags('wizard-fast-int'),['--ext:legacy-eh','--ext:stack-switching','--ext:threads','--ext:wide-arithmetic']);
+ assert.deepEqual(wizardFeatureFlags('wizard-spc'),['--ext:legacy-eh','--ext:stack-switching','--ext:wide-arithmetic']);
+ assert.throws(()=>wizardFeatureFlags('wizard-other'),/Unknown/);
 });

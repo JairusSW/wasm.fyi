@@ -10,7 +10,16 @@ export const wizardVirgilRevision='7cf038fc13a5474836bec8b14c7a3e796fd07fa5';
 // These extensions are implemented by the pinned Wizard engine but remain
 // opt-in at its CLI. Keep the list beside command construction so SDK and
 // qualification executions cannot silently test different feature sets.
-export const wizardFeatureFlags=['--ext:custom-page-sizes','--ext:legacy-eh','--ext:stack-switching','--ext:threads','--ext:wide-arithmetic'];
+const wizardFeatureFlagsByConfiguration=Object.freeze({
+ 'wizard-v3-int':Object.freeze(['--ext:custom-page-sizes','--ext:legacy-eh','--ext:stack-switching','--ext:threads','--ext:wide-arithmetic']),
+ 'wizard-fast-int':Object.freeze(['--ext:legacy-eh','--ext:stack-switching','--ext:threads','--ext:wide-arithmetic']),
+ 'wizard-spc':Object.freeze(['--ext:legacy-eh','--ext:stack-switching','--ext:wide-arithmetic']),
+});
+export function wizardFeatureFlags(configuration) {
+ const flags=wizardFeatureFlagsByConfiguration[configuration];
+ if(!flags)throw Error('Unknown Wizard configuration');
+ return flags;
+}
 export async function ensureWizardCompiler({virgil,external=false,run}) {
  const initialized=await stat(join(virgil,'.git')).catch(()=>null);
  if(!initialized){
@@ -58,15 +67,14 @@ export async function buildWizardSDK({source,root,version,configuration,env,run}
  const artifact=join(source,'bin',target==='jvm'?'wizeng.jvm.jar':'wizeng.x86-64-linux');
  if(!await stat(artifact).catch(()=>null))throw Error('Pinned Wizard source did not produce its selected SDK target');
  const mode=configuration==='wizard-spc'?'spc':configuration==='wizard-fast-int'?'int':'v3-int';
- const command=target==='jvm'?[env.WASMBENCH_JAVA||'java','-XX:ActiveProcessorCount=1','-XX:+UseSerialGC','-Xbatch','-jar',artifact,'--mode='+mode,...wizardFeatureFlags,'--invoke=wasmfyi-bench']:[artifact,'--mode='+mode,...wizardFeatureFlags,'--invoke=wasmfyi-bench'];
- // SDK CLI routing token: the RPC entrypoint intercepts it before file loading.
- command.push('wasmfyi-bench.wasm');
+ const commandPrefix=target==='jvm'?[env.WASMBENCH_JAVA||'java','-XX:ActiveProcessorCount=1','-XX:+UseSerialGC','-Xbatch','-jar',artifact]:[artifact];
  await mkdir(join(root,'bin'),{recursive:true});
  const files={[artifact]:digest(await readFile(artifact))};
  const configurations=target==='jvm'?['wizard-v3-int']:['wizard-fast-int','wizard-spc'];
  for(const selected of configurations){
   const selectedMode=selected==='wizard-spc'?'spc':selected==='wizard-fast-int'?'int':'v3-int';
-  const selectedCommand=wizardSPCGlobalCommand(command.map(argument=>argument.startsWith('--mode=')?'--mode='+selectedMode:argument),selected);
+  // SDK CLI routing token: the RPC entrypoint intercepts it before file loading.
+  const selectedCommand=wizardSPCGlobalCommand([...commandPrefix,'--mode='+selectedMode,...wizardFeatureFlags(selected),'--invoke=wasmfyi-bench','wasmfyi-bench.wasm'],selected);
   await writeFile(join(root,'bin',selected+'-command.json'),JSON.stringify({configuration:selected,revision:version,command:selectedCommand,files})+'\n');
  }
  const commandFile=join(root,'bin',configuration+'-command.json');

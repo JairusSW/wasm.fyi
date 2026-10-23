@@ -290,9 +290,13 @@ test('ignorable hint metadata requires an explicit pinned runtime declaration', 
     const flagged=await featureSupport(directory,[flags]);
     assert.equal(flagged.hosts[0].configurations[0].features.find(f=>f.id==='branch-hinting').cases[0].status,'executed');
     const cranelift=report(['mvp']);
+    cranelift.runtimes[0].description.runtime='wasmtime';
     cranelift.runtimes[0].description.backend='cranelift';
     cranelift.runtimes[0].description.effective_configuration={validator_feature_policy:'wasmtime-default-subset-v1'};
     cranelift.runtimes[0].description.validator_features={evidence:'Cranelift explicitly enables branch hints'};
+    const proseOnly=await featureSupport(directory,[cranelift]);
+    assert.equal(proseOnly.hosts[0].configurations[0].features.find(f=>f.id==='branch-hinting').cases[0].status,'unsupported');
+    cranelift.runtimes[0].description.validator_features.branch_hinting=true;
     const declaredCranelift=await featureSupport(directory,[cranelift]);
     assert.equal(declaredCranelift.hosts[0].configurations[0].features.find(f=>f.id==='branch-hinting').cases[0].status,'executed');
     cranelift.runtimes[0].description.backend='winch';
