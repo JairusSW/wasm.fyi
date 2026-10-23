@@ -21,6 +21,7 @@
 	import { familyCohort } from '$lib/feature-values';
 	import { ui } from '$lib/state.svelte';
 	import { engineFeatureVersions, runtimeFeatureTrack, pluginSupportEvidence } from '$lib/support';
+	import { featureTrackCoverage } from '$lib/feature-track-coverage';
 
 
   const channels=['stable','development'] as const;
@@ -81,8 +82,9 @@
 		const track = rel.configurations.length ? rel : main.configurations.length ? main : null;
 		if (!track) return none(rel.text === 'not collected' ? 'No release or main-branch results collected.' : `Release: ${rel.text}.`);
 		const best = track.configurations.filter((c) => c.pass === track.pass).sort((a, b) => a.failed - b.failed)[0];
-		const frac = track.expected ? track.pass / track.expected : 0;
-		const text = `${track.pass}/${track.expected}`;
+		const coverage = featureTrackCoverage(track);
+		const frac = coverage.fraction;
+		const text = coverage.text;
 		const mainDiffers = track === rel && main.configurations.length > 0 && main.pass !== rel.pass;
 		const flagged = track.text === 'corpus passed · flag';
 		// Nothing passed: show a plain dash rather than a red 0/n; details stay in the tooltip.
@@ -90,12 +92,12 @@
 		// Failed means the engine accepted the module but got it wrong: it claims the feature without
 		// passing. Rejected or adapter-unsupported tests are not failures and stay a plain dash.
 		const claimed = nonePassed && (best?.failed ?? 0) > 0;
-		const bg = nonePassed ? 'transparent' : heatCorrectness(track.pass,track.expected);
+		const bg = nonePassed ? 'transparent' : heatCorrectness(track.pass,coverage.total);
 		const reasons = track.detail.split('\n').filter((l) => l && !/ passed, /.test(l)).slice(0, 3);
 		return {
-			text: claimed ? ST.failed[0] : nonePassed ? ((best?.skipped||0)===track.expected?ST.unsupported[0]:ST.nm[0]) : text,
+			text: claimed ? ST.failed[0] : nonePassed ? ((best?.skipped||0)===coverage.total?ST.unsupported[0]:ST.nm[0]) : text,
 			// Columns with no release are labelled main in the header; flag main-only cells only where a release exists.
-			sub: track === main ? (e.release ? 'main only' : '') : mainDiffers ? `main ${main.pass}/${main.expected}` : flagged ? '⚑ flag' : '',
+			sub: coverage.missing ? `${coverage.missing} not run` : track === main ? (e.release ? 'main only' : '') : mainDiffers ? `main ${featureTrackCoverage(main).text}` : flagged ? '⚑ flag' : '',
 			bg,
 			color: claimed ? ST.failed[2] : nonePassed ? 'var(--fg3)' : 'var(--fg)',
 			full: frac === 1,
