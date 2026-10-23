@@ -27,8 +27,9 @@ export function proposalGapFixtures() {
   (func $scale (type $unary) (i32.mul (local.get 0) (i32.const 5)))
   (elem declare func $inc $scale)`;
  add('typed-function-references', 'call-ref', `(call_ref $unary ${i} (ref.func $inc))`, x=>x+3, functions);
- add('typed-function-references', 'selected-target', `(call_ref $unary ${i}
-  (select (result (ref $unary)) (ref.func $inc) (ref.func $scale) (i32.and ${i} (i32.const 1))))`, x=>x%2?x+3:5*x, functions);
+ add('typed-function-references', 'selected-target', `(if (result i32) (i32.and ${i} (i32.const 1))
+  (then (call_ref $unary ${i} (ref.func $inc)))
+  (else (call_ref $unary ${i} (ref.func $scale))))`, x=>x%2?x+3:5*x, functions);
  add('typed-function-references', 'reference-composition', `(call_ref $unary (call_ref $unary ${i} (ref.func $inc)) (ref.func $scale))`, x=>5*(x+3), functions);
  add('typed-function-references', 'typed-table', `(call_ref $unary ${i} (table.get $t (i32.and ${i} (i32.const 1))))`, x=>x%2?5*x:x+3,
   functions+' (table $t 2 (ref $unary) (ref.func $inc)) (elem (table $t) (i32.const 1) (ref $unary) (ref.func $scale))');

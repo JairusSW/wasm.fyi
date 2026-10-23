@@ -3916,9 +3916,9 @@
     },
     {
       "source": "sources/typed-function-references-selected-target.wat",
-      "sourceSha256": "c0f0fe03c93c406fae0b05eb1246669b484a05d88343bb89598a44e30593a7e8",
+      "sourceSha256": "0f74b707774d2240a9fc319cb1dd8c6ac843344257aa7ae150f5940a2b94cdd4",
       "artifact": "artifacts/typed-function-references-selected-target.wasm",
-      "sha256": "389d7bea0ddff22257280458fb70baaf8d22e4c4ac83b44476a46e97a284c9a4",
+      "sha256": "c02a22e3c557f8d6947ef9b2ce54b6babbef18289a5108f10aa586b9020962ce",
       "compiler": "wasm-tools 1.260.0",
       "argv": [
         [

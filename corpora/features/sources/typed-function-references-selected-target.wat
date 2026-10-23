@@ -6,7 +6,8 @@
   (local $i i32) (local $sum i32)  
   (block $done (br_if $done (i32.eqz (local.get $n)))
    (loop $again
-    (local.set $sum (i32.add (local.get $sum) (call_ref $unary (local.get $i)
-  (select (result (ref $unary)) (ref.func $inc) (ref.func $scale) (i32.and (local.get $i) (i32.const 1))))))
+    (local.set $sum (i32.add (local.get $sum) (if (result i32) (i32.and (local.get $i) (i32.const 1))
+  (then (call_ref $unary (local.get $i) (ref.func $inc)))
+  (else (call_ref $unary (local.get $i) (ref.func $scale))))))
     (local.set $i (i32.add (local.get $i) (i32.const 1)))
     (br_if $again (i32.lt_u (local.get $i) (local.get $n))))) (local.get $sum)))

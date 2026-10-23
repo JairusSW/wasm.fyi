@@ -42,6 +42,15 @@ test('native validation rejects wrong results, wrong artifact digests and wrong 
  await assert.rejects(nativeProposalCheck({...roots,args:[64],oracle:{kind:'exact_u64',expected:[f.expected(64)]},retainedRoots:{multiplier:999}}),/Incorrect retained root value/);
 });
 
+test('typed function target selection isolates call_ref from typed select',()=>{
+ const selected=fixtures().find(f=>f.feature==='typed-function-references'&&f.name==='selected-target');
+ assert.ok(selected);
+ assert.match(selected.wat,/if \(result i32\)/);
+ assert.match(selected.wat,/then \(call_ref \$unary/);
+ assert.match(selected.wat,/else \(call_ref \$unary/);
+ assert.doesNotMatch(selected.wat,/select \(result \(ref/);
+});
+
 test('metadata checker rejects a hint referencing a non-branch byte',async()=>{
  const f=fixtures().find(f=>f.feature==='branch-hinting');
  const w=row(f.feature,f.name),bytes=await readFile(w.artifact);
