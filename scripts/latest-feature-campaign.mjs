@@ -92,12 +92,15 @@ const repairPolicy=process.env.WASMFYI_FEATURE_REPAIR_POLICY||'declared-feature-
 const repairWorkloads=process.env.WASMFYI_FEATURE_REPAIR_WORKLOADS_FILE
  ?await readJSON(resolve(process.env.WASMFYI_FEATURE_REPAIR_WORKLOADS_FILE))
  :JSON.parse(process.env.WASMFYI_FEATURE_REPAIR_WORKLOADS||'[]');
+const selectedWorkloadIDs=process.env.WASMFYI_FEATURE_WORKLOADS_FILE
+ ?await readJSON(resolve(process.env.WASMFYI_FEATURE_WORKLOADS_FILE))
+ :JSON.parse(process.env.WASMFYI_FEATURE_WORKLOADS||'[]');
 const upgradedHostProfileControllers=new Set();
 campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
  if(selectedEngines.length&&!selectedEngines.includes(engine))continue;
  if(repairEngines.length&&!repairEngines.includes(engine))continue;
  const engineBindings=featureBindingsForEngine(bindings,engine,pin);
- const selectedWorkloads=Object.values(suites).flat().filter(workload=>!repairWorkloads.length||repairWorkloads.includes(workload.id));
+ const selectedWorkloads=Object.values(suites).flat().filter(workload=>!selectedWorkloadIDs.length||selectedWorkloadIDs.includes(workload.id));
  const missingProfiles=missingFeatureBindingProfiles(engineBindings,engine,selectedWorkloads);
  if(missingProfiles.length){state.errors.push({engine,kind:'adapter-binding-missing',revision:pin.revision,featureProfiles:missingProfiles});state.completed++;await save();continue}
  const binding=featureBindingForWorkload(engineBindings,engine,null);
@@ -212,6 +215,7 @@ campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
  for(const kind of ['compatibility','performance','compile','lifecycle']){
   if(held)break;
   for(const workload of suites[kind]){
+   if(selectedWorkloadIDs.length&&!selectedWorkloadIDs.includes(workload.id))continue;
    if(abort.signal.aborted||performance.now()+360000>deadline){state.status=abort.signal.aborted?'paused':'yielded';await save();process.exitCode=abort.signal.aborted?130:76;break}
    if(repairEngines.length&&repairWorkloads.length&&!repairWorkloads.includes(workload.id))continue;
    const workloadBinding=featureBindingForWorkload(engineBindings,engine,workload)||binding;

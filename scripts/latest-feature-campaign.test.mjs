@@ -17,7 +17,8 @@ for(const [scope,phase] of [['execution','first-call'],['compile-only','compile'
   const artifact=Buffer.from([0,97,115,109,1,0,0,0]),sha256=createHash('sha256').update(artifact).digest('hex');
   await writeFile(join(inputs,'empty.wasm'),artifact);
   const workload={id:'features/core-num/probe/1',artifact:'empty.wasm',sha256,abi:'core',export:'benchmark',args:[1],oracle:{kind:'exact_u64',expected:[0]},reset:'stateless',provenance:{scope}};
-  for(const kind of ['compatibility','performance','compile','lifecycle'])await writeFile(join(inputs,kind+'.json'),JSON.stringify(kind==='compatibility'?[workload]:[]));
+  const ignored={...workload,id:'features/core-num/ignored/1'};
+  for(const kind of ['compatibility','performance','compile','lifecycle'])await writeFile(join(inputs,kind+'.json'),JSON.stringify(kind==='compatibility'?[workload,ignored]:[]));
   const engine='unavailable-fixture',revision='a'.repeat(40),anchor='2026-10-15T07:33:48.082Z';
   await writeFile(join(root,'source-plan.json'),JSON.stringify({anchor,pins:[{engine,targetType:'main',repository:'fixture/fixture',targetWeek:anchor,status:'planned',revision,configurations:[engine]}]}));
   await writeFile(join(root,'collection-template.json'),JSON.stringify({env:{},platformSpecs:{cores:8,memoryBytes:1024}}));
@@ -29,7 +30,8 @@ for(const [scope,phase] of [['execution','first-call'],['compile-only','compile'
   await writeFile(controller,'#!/bin/sh\ntouch "'+called+'"\nexit 1\n',{mode:0o755});
   const bindings=join(root,'bindings.json');
   await writeFile(bindings,JSON.stringify([{engine,plan:{env:{}},job:{engine,harness,controller,source:{revision,asOf:anchor,repository:'fixture/fixture',ref:'main@aaaaaaaa',kind:'snapshot'},unavailableReason:'Pinned backend supports another architecture only'}}]));
-  await execute(process.execPath,[new URL('./latest-feature-campaign.mjs',import.meta.url).pathname,root,output,inputs,bindings],{env:{...process.env,WASMFYI_FEATURE_ENGINES:engine}});
+  const selected=join(root,'selected-workloads.json');await writeFile(selected,JSON.stringify([workload.id]));
+  await execute(process.execPath,[new URL('./latest-feature-campaign.mjs',import.meta.url).pathname,root,output,inputs,bindings],{env:{...process.env,WASMFYI_FEATURE_ENGINES:engine,WASMFYI_FEATURE_WORKLOADS_FILE:selected}});
   assert.equal(await stat(called).catch(()=>null),null);
   const files=await readdir(join(root,'captures'));assert.equal(files.length,1);
   assert.ok(files[0].includes(expected.targets[0].keys[0]),'Exporter and running feature worker disagree on capture identity');
