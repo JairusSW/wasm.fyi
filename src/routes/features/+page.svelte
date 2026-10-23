@@ -69,7 +69,7 @@
 				bg: plugin.official && plugin.total ? heatCorrectness(plugin.passed,plugin.total) : 'transparent',
 				color: plugin.official ? 'var(--fg)' : 'var(--fg3)',
 				full: plugin.official && plugin.total > 0 && plugin.passed === plugin.total,
-				href: plugin.official ? plugin.evidence : '/api/v1/conformance',
+				href: plugin.official ? plugin.evidence : undefined,
 				tip: tipCard({ kicker: 'Feature compatibility · plugin', title: f.name, who: { rt: e.rt, be: 'plugin', col: e.col, hollow: e.hollow, ver: plugin.version }, value: plugin.official ? `${plugin.passed}/${plugin.total}` : 'unmeasured', sub: plugin.official ? `${plugin.failed} failed · ${plugin.skipped} skipped` : '', note: plugin.official ? `${plugin.scope || 'Official upstream suite'}; skips count toward the total. Performance remains unmeasured.` : 'Official suite not collected for this feature on this host.', action: 'open the suite evidence' })
 			};
 		}
@@ -280,7 +280,7 @@
 	</div>
  <StatusLegend note="n/n = passed / total contracts" />
 	<div class="note">
-		Representative corpus tests with independent oracles, not full specification conformance. Adapter-unsupported results do not establish that an engine lacks a feature. Browser builds and plugin performance are unmeasured. <a href={'/api/v1/features'}>Full evidence</a>.
+		Representative corpus tests with independent oracles, not full specification conformance. Adapter-unsupported results do not establish that an engine lacks a feature. Browser builds and plugin performance are unmeasured. See the <a href={'/api/summary'}>dataset summary</a>.
 		<details><summary>Measurement scope</summary><p>The latest measured release is shown for each engine, with the pinned main commit in the tooltip and beneath the count when it differs. Compilation and execution contracts use their declared oracles. Wago provides optional WASI and Component Model plugins; their cells show official suite cases passed / total, including failed and skipped cases. Feature workloads never enter application averages.</p></details>
 	</div>
 {:else}
