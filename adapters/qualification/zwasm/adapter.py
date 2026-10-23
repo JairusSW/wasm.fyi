@@ -231,10 +231,20 @@ class Session:
         check_rss_budget(rss_budget)
         w = self.preparation['workload']; cold = phase == 'compile'
         engine = module = instance = None
+        transient_module = False
         try:
             if cold:
                 engine = lib.wb_engine_new(); check(engine)
                 start = time.monotonic_ns(); module = lib.wb_module_new(engine, self.binary, len(self.data)); elapsed = time.monotonic_ns() - start; check(module)
+            # Zwasm JIT cannot safely create multiple exception-capable
+            # instances from one compiled module. Prepare a module per fresh
+            # instance outside the measured instantiate/call window.
+            elif phase in ('instantiate', 'first-call'):
+                if not self.engine:
+                    self.engine = lib.wb_engine_new(); check(self.engine)
+                engine = self.engine
+                module = lib.wb_module_new(engine, self.binary, len(self.data)); check(module)
+                transient_module = True
             else: engine, module = self.compiled()
             if phase == 'steady' and w['reset'] == 'stateless':
                 if not self.retained:
@@ -249,6 +259,7 @@ class Session:
             return {'warmup': False, 'verified': True, 'operations': operations if phase == 'steady' else 1, 'elapsed_ns': elapsed, 'result': result, 'sample_type': 'sequence_call_sum' if self.vectors else 'individual_operation' if operations == 1 else 'batch_average'}
         finally:
             if instance and instance != self.retained: lib.wb_instance_delete(instance)
+            if transient_module and module: lib.wb_module_delete(module)
             if cold:
                 if module: lib.wb_module_delete(module)
                 if engine: lib.wb_engine_delete(engine)
