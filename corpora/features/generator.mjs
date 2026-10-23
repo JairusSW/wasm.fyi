@@ -179,12 +179,12 @@ export function fixtures() {
   baseline('memory64', 'addressing', x => x);
 
   const caught = `(block $out (result i32) (try_table (catch $t $out) (throw $t ${i})) unreachable)`;
-  // Exception implementations vary by orders of magnitude. Keep a small
-  // in-Wasm batch and let the existing per-engine duration calibration select
-  // enough invocations to exceed the 50 ms measurement floor.
-  loop('exceptions', 'throw-catch-tag', caught, x => x, '(tag $t (param i32))', '', '', { performanceRepeats: 4 });
-  loop('exceptions', 'throw-ref-recatch', `(block $out (result i32) (try_table (catch $t $out) (block $caught (result exnref) (try_table (catch_all_ref $caught) (throw $t ${i})) unreachable) throw_ref) unreachable)`, x => x, '(tag $t (param i32))', '', '', { performanceRepeats: 4 });
-  loop('exceptions', 'mixed-exception-path', `(block $out (result i32) (try_table (catch $t $out) (if (i32.and ${i} (i32.const 1)) (then (throw $t ${i}))) (br $out ${i})) unreachable)`, x => x, '(tag $t (param i32))', '', '', { performanceRepeats: 4 });
+  // Exception implementations vary by orders of magnitude. One full 4096-item
+  // traversal is already a useful invocation; the ordered stability sampler
+  // supplies additional invocations without making one call uninterruptible.
+  loop('exceptions', 'throw-catch-tag', caught, x => x, '(tag $t (param i32))', '', '', { performanceRepeats: 1 });
+  loop('exceptions', 'throw-ref-recatch', `(block $out (result i32) (try_table (catch $t $out) (block $caught (result exnref) (try_table (catch_all_ref $caught) (throw $t ${i})) unreachable) throw_ref) unreachable)`, x => x, '(tag $t (param i32))', '', '', { performanceRepeats: 1 });
+  loop('exceptions', 'mixed-exception-path', `(block $out (result i32) (try_table (catch $t $out) (if (i32.and ${i} (i32.const 1)) (then (throw $t ${i}))) (br $out ${i})) unreachable)`, x => x, '(tag $t (param i32))', '', '', { performanceRepeats: 1 });
   baseline('exceptions', 'normal-control', x => x);
   for (const indirectCall of [false, true]) {
     const recurse = indirectCall ? '(return_call_indirect (type $t) (i32.sub (local.get $n) (i32.const 1)) (i32.add (local.get $a) (i32.sub (local.get $n) (i32.const 1))) (i32.const 0))' : '(return_call $f (i32.sub (local.get $n) (i32.const 1)) (i32.add (local.get $a) (i32.sub (local.get $n) (i32.const 1))))';

@@ -13,10 +13,10 @@ test('repetition wraps a curated kernel through its declared export',()=>{
  assert.match(repeated,/\$performance_kernel \(export "named-kernel"\)/);
  assert.match(repeated,/\(export "performance"\)/);
 });
-test('expensive exception kernels use duration calibration instead of a pathological fixed batch',()=>{
+test('expensive exception kernels keep each adaptive sample interruptible',()=>{
  const expensive=new Set(['throw-catch-tag','throw-ref-recatch','mixed-exception-path']);
  for(const fixture of fixtures().filter(f=>f.feature==='exceptions'&&expensive.has(f.name))){
-  assert.equal(fixture.performanceRepeats,4,fixture.name);
+  assert.equal(fixture.performanceRepeats,1,fixture.name);
   assert.notEqual(repeatedFeatureExpected(fixture.expected(Math.max(...fixture.sizes)),fixture.performanceRepeats),repeatedFeatureExpected(fixture.expected(Math.max(...fixture.sizes))),fixture.name+' oracle must change with the batch size');
  }
 });
