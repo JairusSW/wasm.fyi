@@ -13,28 +13,23 @@ not change policy or reinterpret existing measurements.
 
 ## Actionable mismatches
 
-### 1. Wasmtime compact imports are disabled despite upstream support
+### 1. Wasmtime compact imports remain unavailable in the pinned release
 
-**Confidence: high.**
+**Confidence: high after execution and pinned-source qualification.**
 
-`patches/harness-wasmtime-shipped-features.patch` explicitly sets
-`WasmFeatures::COMPACT_IMPORTS` to `false` for both Cranelift and Winch. Current
-Wasmtime documentation lists compact imports as implemented, tested, finished,
-and exposed through both Rust and C APIs. It is disabled by default and must be
-enabled through `Config::wasm_compact_imports`; this is precisely the kind of
-opt-in proposal the feature adapter is intended to enable. See the official
-[Wasmtime proposal matrix](https://docs.wasmtime.dev/stability-wasm-proposals.html#tier-3-webassembly-proposals)
-and the versioned
-[`Config` API](https://docs.rs/wasmtime/46.0.1/wasmtime/struct.Config.html#method.wasm_compact_imports).
+Wasmtime's moving documentation links to the compact-import proposal, but the
+exact v49.0.3 source used for the latest snapshot has no compact-import `Config`
+method or compiler implementation. Enabling only wasmparser's validator bit
+causes Cranelift to reject ordinary modules with `the wasm_compact_imports
+feature is not supported on this compiler configuration`; attempting the
+documented method fails to compile because it is absent from `Config`.
 
-Recommended change: enable `WasmFeatures::COMPACT_IMPORTS` for the latest
-Wasmtime Cranelift configuration, then run the complete compact-import corpus.
-Enable it for Winch only after checking the exact v46.0.1 backend source or an
-execution probe, because Wasmtime's top-level matrix primarily guarantees the
-Cranelift tier. Record the explicit config bit in `validator_features`.
-
-This affects future latest-version captures. It does not justify rewriting old
-unsupported or unmeasured cells.
+The pinned adapter must therefore keep `WasmFeatures::COMPACT_IMPORTS` disabled
+for both Cranelift and Winch. This is a source-bound unavailable result, not a
+runtime failure and not evidence about a future Wasmtime revision. See the
+exact release's
+[proposal table](https://github.com/bytecodealliance/wasmtime/blob/v49.0.3/docs/stability-wasm-proposals.md),
+which links the still-open implementation issue rather than claiming support.
 
 ### 2. Wizard opt-in flags are not backend-scoped
 
@@ -158,8 +153,8 @@ break when explanatory prose changes.
 
 ## Capture order implied by this audit
 
-1. Repair and recapture Wasmtime compact imports on Cranelift, then qualify
-   Winch separately.
+1. Keep compact imports unavailable for Wasmtime v49.0.3; re-audit a later
+   release only when its exact source exposes compiler support.
 2. Split Wizard feature flags by backend and recapture only the affected
    proposal rows.
 3. Replace Wasmtime's prose match for branch hints with structured receipt data;
