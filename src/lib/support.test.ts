@@ -93,9 +93,8 @@ describe('combined compatibility and corpus counts',()=>{
 		expect(track.configurations.every(c=>c.id==='v8-optimizing-only')).toBe(true);
 		if(track.configurations.length)expect(track.configurations.some(c=>c.backend.includes('optimizing'))).toBe(true);
     for(const c of track.configurations){
-      expect(c.pass+c.failed+c.skipped).toBe(c.total);
-      expect(c.contracts).toHaveLength(c.total);
-      expect(c.total+c.missing).toBe(track.expected);
+      expect(c.pass+c.failed+c.skipped+c.missing).toBe(c.total);
+      expect(c.contracts).toHaveLength(c.total-c.missing);
       expect(c.contracts.filter(x=>x.status==='passed')).toHaveLength(c.pass);
     }
     const missing=runtimeFeatureTrack('uncollected-engine',feature,scope,'stable');

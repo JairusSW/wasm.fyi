@@ -76,7 +76,7 @@ export function engineFeatureVersions(rid:string,scope:Scope,channel:'stable'|'d
 }
 /** Feature support for a runtime across its backends, or for a single configuration when `cid` is given. */
 export function runtimeFeatureTrack(rid:string,f:FeatureRow,scope:Scope,channel:'stable'|'development',version?:string,cid?:CfgId) {
-  if(rid==='v8' && f.id==='wasi-p1')return {...supportCell('?'),text:'Node host API · unmeasured',detail:'Node.js provides a WASI Preview 1 host for V8 modules, and the benchmark adapter now exposes wasi-command. A sealed V8/Node WASI corpus run has not been collected yet.',version:'',channel,expected:featureContracts(f.id).length,measured:0,pass:0,configurations:[]};
+  if(rid==='v8' && f.id==='wasi-p1')return {...supportCell('?'),text:'Node host API · unmeasured',detail:'Node.js provides a WASI Preview 1 host for V8 modules, and the benchmark adapter now exposes wasi-command. A sealed V8/Node WASI corpus run has not been collected yet.',version:'',channel,expected:featureContracts(f.id).length,pass:0,configurations:[]};
   const selected=version || engineFeatureVersions(rid,scope,channel,cid)[0];
   const ids=FEATURE_CFG.filter(c=>c.rt===rid && (!cid || c.id===cid)).map(c=>viewData.configurations[c.id]);
   // One pinned identity supplies a complete family; older identities and other
@@ -89,15 +89,14 @@ export function runtimeFeatureTrack(rid:string,f:FeatureRow,scope:Scope,channel:
   const complete=counts.filter(x=>x.f.total===expected && x.f.pass===expected);
   const code:SupportCode=complete.length?'y':counts.some(x=>x.f.pass>0)?'p':'?';
   const failed=counts.some(x=>x.f.failed>0);
-  const detail=counts.map(({v,f})=>`${v.description.backend} · ${v.version}: ${f.pass}/${f.total} passed, ${f.failed} failed, ${f.unsupported} unsupported${expected>f.total?`, ${expected-f.total} not run`:''}\n${f.reasons.join('\n')}`).join('\n');
+  const detail=counts.map(({v,f})=>`${v.description.backend} · ${v.version}: ${f.pass}/${expected} passed, ${f.failed} failed, ${f.unsupported} unsupported\n${f.reasons.join('\n')}`).join('\n');
   const best=complete[0] || [...counts].sort((a,b)=>b.f.pass-a.f.pass || a.f.failed-b.f.failed)[0];
   return {...supportCell(code),glyph:code==='?'&&failed?'✕':supportCell(code).glyph,
     color:code==='?'&&failed?'var(--st-fail)':supportCell(code).color,
     text:!counts.length?'not collected':code==='y'?'corpus passed':code==='p'?'partial corpus':failed?'rejected / failed':'adapter unsupported',detail,
-    version:selected || '',channel,expected,measured:best?.f.total || 0,pass:best?.f.pass || 0,
-    configurations:counts.map(({v,f})=>({id:v.id,backend:v.description.backend,version:v.version,collectedAt:v.collectedAt,source:v.source,pass:f.pass,total:f.total,failed:f.failed,skipped:f.total-f.pass-f.failed,missing:Math.max(0,expected-f.total),contracts:f.contracts}))};
+    version:selected || '',channel,expected,pass:best?.f.pass || 0,
+    configurations:counts.map(({v,f})=>({id:v.id,backend:v.description.backend,version:v.version,collectedAt:v.collectedAt,source:v.source,pass:f.pass,total:expected,failed:f.failed,skipped:f.total-f.pass-f.failed,missing:expected-f.total,contracts:f.contracts}))};
 }
-
 
 export type FeatureTrack = ReturnType<typeof runtimeFeatureTrack>;
 

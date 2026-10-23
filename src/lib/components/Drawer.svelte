@@ -10,7 +10,6 @@
 	import { siteHref } from '$lib/links';
 	import { COMPAT, CORPUS_FEATS, FEATURE_ROWS, FLAGS, FT } from '$lib/data/features';
 	import { runtimeFeatureTrack } from '$lib/support';
-	import { featureTrackCoverage } from '$lib/feature-track-coverage';
 	import { CB, CFG, MACH, runtimeRegistry, langOf } from '$lib/data/runtimes';
 	import { heatCount } from '$lib/heat';
 	import { familyCohort } from '$lib/feature-values';
@@ -438,9 +437,8 @@
 		const col = cfg.col;
 		const configs = track.configurations;
 		const active = configs.find((c) => supportPick?.for === d && c.id === supportPick.id) ?? configs[0];
-		const coverage = featureTrackCoverage(track);
-		const expected = coverage.total;
-		const frac = coverage.fraction;
+		const expected = track.expected;
+		const frac = expected ? track.pass / expected : 0;
 		const status= !configs.length?ST.nm:frac===1?ST.ok:active?.failed?ST.failed:active?.skipped?ST.unsupported:ST.nm;
 		// Rank against the other configurations in the table on the same channel.
 		const peers = d.peers.filter((id) => CB[id]).map((id) => ({ id, pass: runtimeFeatureTrack(CB[id].rt, f, s, d.channel, undefined, id) })).filter((p) => p.pass.configurations.length);
@@ -494,7 +492,7 @@
 			channelLabel,
 			status,
 			measured: configs.length > 0,
-			value: configs.length ? coverage.text.replace('/', ' / ') : '—',
+			value: configs.length ? `${track.pass} / ${expected}` : '—',
 			heat: configs.length ? heatCount(1 - frac) : 'transparent',
 			sub: active ? [`${active.failed} failed`, `${active.skipped} unsupported`, ...(active.missing ? [`${active.missing} uncollected`] : [])] : [],
 			flagged: track.text === 'corpus passed · flag',
