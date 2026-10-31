@@ -225,3 +225,9 @@ The `baked-pages.json` build marker tells the Go host which pages contain result
 HTML. Dashboard and dynamically discovered workload pages continue using the
 application shell. Benchmark HTML includes all workload rows; after hydration,
 the table mounts rows near the viewport to keep scrolling responsive.
+
+Features and History also publish a startup snapshot for each machine under
+`/data/startup/`. Opening the Mac or second AMD64 machine reuses these results
+without downloading the full measurement tables. History snapshots include the
+initial chart. Changed captures, custom history filters and detailed evidence
+continue using the API; startup snapshots are checked against current revisions.

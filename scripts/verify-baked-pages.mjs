@@ -27,5 +27,19 @@ export async function verifyBakedPages(directory){
    assert(html.includes(path),`Workload missing from baked HTML: ${workload.id}`);
   }
  }
+ for(const view of ['features','history'])for(const machine of ['m1','m2','m3']){
+  const encoded=JSON.parse(await readFile(resolve(root,`data/startup/${view}/${machine}.json`),'utf8'));
+  const seed=decodeBakedSeed(encoded);
+  assert.equal(seed.machine,machine,`Invalid startup machine: ${view}/${machine}`);
+  assert.equal(seed.path,`/${view}/`,`Invalid startup view: ${view}/${machine}`);
+  assert(seed.revision&&seed.revision===seed.summary.revision,`Invalid startup revision: ${view}/${machine}`);
+  if(view==='history'){
+   assert(seed.history,`Missing initial history: ${machine}`);
+   const query=new URLSearchParams(seed.history.query);
+   const hosts=query.get('platforms').split(',').map(id=>seed.summary.platforms.find(p=>p.id===id));
+   assert(hosts.every(host=>host&&['os','arch','cpu','cores'].every(key=>host[key]===hosts[0][key])),`Incompatible history hosts: ${machine}`);
+  }
+ }
  console.log(`Verified baked HTML and snapshots for ${routes.length} public routes.`);
+ console.log('Verified Features and History startup snapshots for all three machines.');
 }

@@ -208,7 +208,7 @@ class UiState {
 			const raw = sp.get(f.codec.param);
 			const parsed = raw == null ? undefined : (f.codec.parse as (s: string) => unknown)(raw);
 			if (parsed !== undefined) (this as any)[key] = parsed;
-			else if (!global) (this as any)[key] = structuredClone(f.codec.def);
+			else if (!global) (this as any)[key] = key === 'histTo' ? Math.max(0, viewData.history[this.machine].points.length - 1) : structuredClone(f.codec.def);
 			else if (raw != null) (this as any)[key] = structuredClone(f.codec.def);
 		}
 		if (['roundTrip','hostWasm','wasmHostLoop'].includes(sp.get('ot')||'')) this.otMetric = 'callTotal';

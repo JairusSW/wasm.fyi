@@ -6,6 +6,10 @@ import type {MachineId} from '../data/types';
 // environments available for merged tables and history.
 type CapturedPlatform = PlatformChoice & {capturedAt?:string};
 const captureTime=(p:CapturedPlatform)=>Date.parse(p.capturedAt||'')||0;
+export function historyPlatforms(platforms:PlatformChoice[]){
+ const host=platforms[0];
+ return platforms.filter(p=>p.os===host.os&&p.arch===host.arch&&p.cpu===host.cpu&&p.cores===host.cores);
+}
 export function platformGroups(platforms:CapturedPlatform[]) {
  const groups=new Map<MachineId,CapturedPlatform[]>();
  for(const platform of platforms) {

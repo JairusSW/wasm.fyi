@@ -10,4 +10,5 @@ export type BakedPageSeed={schema:2;revision:string;machine:MachineId;path:strin
  summary:{revision:string;platforms:import('./benchmark-types').PlatformChoice[]};
  view:import('./view-contract').ViewData;slots:[string,CfgId][];
  precomputed:Record<string,import('./compact-matrix').CompactAggregate>;
- loaded:[MachineId,string][];phases:[MachineId,string[]][];metadata:[MachineId,string][]};
+ loaded:[MachineId,string][];phases:[MachineId,string[]][];metadata:[MachineId,string][];
+ history?:{query:string;summary:import('./compact-history').HistoricalSummary}};

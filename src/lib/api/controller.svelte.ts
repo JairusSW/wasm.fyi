@@ -1,4 +1,8 @@
 import {isLocalComparison} from '../local-comparison';
+import {base} from '$app/paths';
+import {decodeBakedSeed} from './baked-codec';
+import {comparisonBaseline} from '../comparison-baseline';
+import {localDate} from './calendar-date';
 import {CompactClient} from './compact-client';
 import {apiHistory,historyKey,type Timeline} from './history.svelte';
 import {historyFactor,scaledChange,type HistoricalSummary,type HistoricalComparison,type HistoricalReport} from './compact-history';
@@ -17,7 +21,7 @@ import type {Result,PlatformChoice,BenchmarkPage,PlatformList} from './benchmark
 import type {ViewCell} from './view-contract';
 import {shortVersion} from '../version-identity';
 import {selectPlatformEngineVersions} from '../latency';
-import {platformGroups} from './platform-groups';
+import {platformGroups,historyPlatforms} from './platform-groups';
 import {machineLabel} from './machine-label';
 import {featureResults} from './feature-results';
 export type PageScope={machine:MachineId;snapshot:'s1'|'s2';metric:MetricKey;hide:Partial<Record<CfgId,boolean>>;baseline:CfgId;weighting:'corpus'|'workload';cohortMode?:'shared'|'per-engine';average?:'geo'|'mean';search?:string;tag?:string|null;sortBy?:{id:CfgId;dir:1|-1}|null;workload?:string};
@@ -74,6 +78,7 @@ let summaryCheckedAt=0;
 const metadataMachines=new Map<MachineId,string>();
 const bakedMachines=new Set<MachineId>();
 const machineRevision=(machine:MachineId,value=summary)=>JSON.stringify(platformTargets.find(target=>target.machine===machine)?.platforms.map(id=>{const p=value?.platforms.find(p=>p.id===id);return p?.latestRevision||p?.revision||value?.revision}));
+const machineHistoryRevision=(machine:MachineId,value=summary)=>JSON.stringify(platformTargets.find(target=>target.machine===machine)?.platforms.map(id=>{const p=value?.platforms.find(p=>p.id===id);return [p?.latestRevision||p?.revision||value?.revision,p?.historyRevision||p?.revision||value?.revision]}));
 const loadedMachines=new Map<MachineId,string>();
 const loadedPhases=new Map<MachineId,Set<string>>();
 const phaseNames=['compile','instantiate','first-call','steady'];
@@ -93,10 +98,11 @@ function wantedMainPhases(){
 let platformTargets:{platforms:string[];machine:MachineId}[]=[];
 let historyAbort:AbortController|undefined;
 let historyScope='';
-function historicalQuery(scope:PageScope,metric:OtMetricKey,workload=''){
+function historicalQuery(scope:PageScope,metric:OtMetricKey,workload='',source=datasetView.current){
  const target=platformTargets.find(target=>target.machine===scope.machine);if(!target)return null;
- const engines=[...slots].filter(([,id])=>!scope.hide[id]&&!!viewData.hosts[scope.machine].configurations[id]).map(([engine])=>engine);
- return new URLSearchParams({platform:target.platforms[0],platforms:target.platforms.join(','),metric,engines:engines.join(','),baseline:trackId(scope.baseline)||'',weighting:scope.weighting,cohort:scope.cohortMode||'shared',average:scope.average||'geo',from:apiHistory.from,to:apiHistory.until,...(workload?{workload}:{})});
+ const engines=Object.entries(source.configurations).filter(([id])=>!scope.hide[id as CfgId]&&!!source.hosts[scope.machine].configurations[id as CfgId]).map(([,engine])=>engine);
+ const compatible=historyPlatforms(target.platforms.map(id=>summary!.platforms.find(p=>p.id===id)!));
+ return new URLSearchParams({platform:compatible[0].id,platforms:compatible.map(p=>p.id).join(','),metric,engines:engines.join(','),baseline:source.configurations[scope.baseline]||'',weighting:scope.weighting,cohort:scope.cohortMode||'shared',average:scope.average||'geo',from:apiHistory.from,to:apiHistory.until,...(workload?{workload}:{})});
 }
 function rememberHistoryChange(key:string,change:import('./compact-history').HistoricalChange,metric:OtMetricKey){
  const value=scaledChange(change,metric);if(!value||!change.fromDate||!change.toDate)return;
@@ -185,6 +191,9 @@ export async function connectSite(_origin='',_revision?:string,retry=0){
   datasetView.current.statistics.timingSamples=fresh.platforms.reduce((n,p)=>n+(p.latestTimingSamples||0),0);
   datasetView.current.statistics.allTimingSamples=fresh.platforms.reduce((n,p)=>n+(p.allTimingSamples||0),0);
   for(const target of platformTargets){const p=fresh.platforms.find(p=>p.id===target.platforms[0]);if(p){const host=datasetView.current.hosts[target.machine];host.capturedAt=p.capturedAt;host.importedAt=p.importedAt;host.latestRows=p.latestRows}}
+  const startupPage=pathname==='/features'?'features':pathname==='/history'?'history':null;
+  const needsStartup=startupPage==='features'?loadedMachines.get(ui.machine)!==captureRevision:metadataMachines.get(ui.machine)!==selectedRevision||!apiView.historyLoaded[ui.machine];
+  if(buildPath===undefined&&startupPage&&needsStartup&&!ui.drawer&&await loadStartupSnapshot(startupPage,ui.machine,signal))return;
   if(light){
    if(metadataMachines.get(ui.machine)===selectedRevision){apiView.ready=true;return}
    const view={...datasetView.current,hosts:{...datasetView.current.hosts},reports:{...datasetView.current.reports},statistics:{...datasetView.current.statistics}};
@@ -274,18 +283,24 @@ export async function loadCellSamples(machine:MachineId,snapshot:'s1'|'s2',workl
 }
 export function firstMachine(){return machines[0]}
 /** Build uses the same conversion and ranking code as live API loads. */
-export async function bakePageSeed(origin:string,path:string):Promise<BakedPageSeed>{
+export async function bakePageSeed(origin:string,path:string,machine:MachineId='m1'):Promise<BakedPageSeed>{
  closeSite();
  compactClient=new CompactClient((resource,options)=>fetch(new URL(String(resource),origin),options));
  summary=undefined;summaryCheckedAt=0;bakedMachines.clear();loadedMachines.clear();loadedPhases.clear();metadataMachines.clear();
  apiView.precomputed={};apiView.aggregateErrors={};datasetView.current=emptyView();
- ui.machine='m1';ui.hide={};ui.weighting='workload';ui.snap='s1';ui.cohortMode='shared';ui.average='geo';ui.metric='steady';ui.drawer=null;
+ ui.machine=machine;ui.hide={};ui.weighting='workload';ui.snap='s1';ui.cohortMode='shared';ui.average='geo';ui.metric='steady';ui.drawer=null;
  buildPath=path;
  try{
   await connectSite();
   const capturedSummary=summary as Summary|undefined;
   if(apiView.error||!capturedSummary||!apiView.ready)throw Error(apiView.error||'No measurement snapshot available');
   if(Object.keys(apiView.aggregateErrors).length)throw Error('Could not bake averages: '+JSON.stringify(apiView.aggregateErrors));
+  let history:BakedPageSeed['history'];
+  if(path.replace(/\/$/,'')==='/history'){
+   const query=historicalQuery({...ui.scope,machine:ui.machine,snapshot:ui.snap,metric:ui.metric},'exec')!;
+   const result=await get<HistoricalSummary>('/api/history/summary?'+query,new AbortController().signal);
+   history={query:query.toString(),summary:result};
+  }
   // Retain display values; provenance and samples are retrieved when opened.
   const proposal=['simd','gc','memory64','threads'].find(id=>path.replace(/\/$/,'')==='/'+id);
   const view=datasetView.current;
@@ -302,24 +317,71 @@ export async function bakePageSeed(origin:string,path:string):Promise<BakedPageS
    for(const feature of version.features){feature.reports=[];for(const contract of feature.contracts){contract.report='';contract.reasons=[]}}
   }
   view.reports=Object.fromEntries(Object.entries(view.reports).filter(([id])=>reports.has(id)||Object.values(apiView.precomputed).some(result=>result.cards.some(card=>(card.latestCreated||'')+'|'+card.engine===id))));
-  return JSON.parse(JSON.stringify({schema:2,revision:capturedSummary.revision,machine:ui.machine,path,summary:capturedSummary,view:datasetView.current,slots:[...slots],precomputed:apiView.precomputed,loaded:[...loadedMachines],phases:[...loadedPhases].map(([m,p])=>[m,[...p]]),metadata:[...metadataMachines]}));
+  return JSON.parse(JSON.stringify({schema:2,revision:capturedSummary.revision,machine:ui.machine,path,summary:capturedSummary,history,view:datasetView.current,slots:[...slots],precomputed:apiView.precomputed,loaded:[...loadedMachines],phases:[...loadedPhases].map(([m,p])=>[m,[...p]]),metadata:[...metadataMachines]}));
  }finally{buildPath=undefined;closeSite()}
 }
-export function activatePageSeed(seed:PageSeed|BakedPageSeed){
- if(seed.schema!==2)return;
- // Client navigation must preserve filters and already loaded machines.
- if(typeof window!=='undefined'&&apiView.ready)return;
- summary=seed.summary;summaryCheckedAt=0;
- platformTargets=platformGroups(summary.platforms).map(group=>({machine:group.machine,platforms:group.platforms.map(p=>p.id)}));
- machines=platformTargets.map(group=>group.machine);
- for(const [engine,id] of seed.slots){if(!slots.has(engine)){slot(engine)}if(slots.get(engine)!==id)throw Error('Snapshot engine slots changed')}
- datasetView.current=seed.view;datasetView.machine=seed.machine;datasetView.generation++;
- ui.machine=seed.machine;bakedMachines.add(seed.machine);
- apiView.precomputed=seed.precomputed;apiView.historyRevision=seed.revision;apiView.serverAggregates=seed.path.replace(/\/$/,'')==='/benchmarks';
- loadedMachines.clear();for(const [m,r] of seed.loaded)loadedMachines.set(m,r);
- loadedPhases.clear();for(const [m,p] of seed.phases)loadedPhases.set(m,new Set(p));
- metadataMachines.clear();for(const [m,r] of seed.metadata)metadataMachines.set(m,r);
+const startupSnapshots=new Map<string,BakedPageSeed|null>();
+async function loadStartupSnapshot(page:'features'|'history',machine:MachineId,signal:AbortSignal){
+ const key=page+'|'+machine;
+ try{
+  let seed=startupSnapshots.get(key);
+  if(seed===undefined){
+   const response=await fetch(`${base}/data/startup/${page}/${machine}.json`,{signal:AbortSignal.any([signal,AbortSignal.timeout(10000)])});
+   signal.throwIfAborted();
+   seed=response.ok?decodeBakedSeed(await response.json()):null;
+   startupSnapshots.set(key,seed);
+  }
+  if(!seed||seed.machine!==machine||machineRevision(machine,seed.summary)!==machineRevision(machine))return false;
+  if(page==='history'&&(!seed.history||!canRestoreHistory(seed)||machineHistoryRevision(machine,seed.summary)!==machineHistoryRevision(machine)))return false;
+  applyPageSeed(seed,true);
+  return true;
+ }catch(error){signal.throwIfAborted();startupSnapshots.set(key,null);return false}
+}
+function historyQueryIdentity(query:URLSearchParams){
+ const normalized=new URLSearchParams(query);normalized.delete('from');normalized.delete('to');
+ normalized.set('engines',(normalized.get('engines')||'').split(',').sort().join(','));normalized.sort();return normalized.toString();
+}
+function canRestoreHistory(seed:BakedPageSeed){
+ if(!seed.history||apiHistory.from!=='2024-10-01'||![localDate(),new URLSearchParams(seed.history.query).get('to')].includes(apiHistory.until))return false;
+ const source={...datasetView.current,hosts:{...datasetView.current.hosts,[seed.machine]:seed.view.hosts[seed.machine]},configurations:{...datasetView.current.configurations,...seed.view.configurations}};
+ const baseline=comparisonBaseline('A',Object.keys(source.hosts[seed.machine].configurations) as CfgId[]);
+ const scope={...ui.scope,baseline,machine:seed.machine,snapshot:ui.snap,metric:ui.metric};
+ return historyQueryIdentity(historicalQuery(scope,'exec','',source)!)===historyQueryIdentity(new URLSearchParams(seed.history.query));
+}
+function applyPageSeed(seed:BakedPageSeed,merge=false){
+ if(!merge){
+  summary=seed.summary;summaryCheckedAt=0;
+  platformTargets=platformGroups(summary.platforms).map(group=>({machine:group.machine,platforms:group.platforms.map(p=>p.id)}));
+  machines=platformTargets.map(group=>group.machine);
+ }
+ for(const [engine,id] of seed.slots){if(!slots.has(engine))slot(engine);if(slots.get(engine)!==id)throw Error('Snapshot engine slots changed')}
+ const current=datasetView.current;
+ datasetView.current=merge?{...current,catalogue:[...new Map([...current.catalogue,...seed.view.catalogue].map(row=>[row.id,row])).values()],applicationConfigurations:[...new Set([...current.applicationConfigurations,...seed.view.applicationConfigurations])],configurations:{...current.configurations,...seed.view.configurations},reports:{...current.reports,...seed.view.reports},hosts:{...current.hosts,[seed.machine]:seed.view.hosts[seed.machine]},featureVersions:{...current.featureVersions,[seed.machine]:seed.view.featureVersions[seed.machine]}}:seed.view;
+ datasetView.machine=seed.machine;datasetView.generation++;
+ if(!merge)ui.machine=seed.machine;
+ bakedMachines.add(seed.machine);
+ apiView.precomputed={...apiView.precomputed,...seed.precomputed};apiView.historyRevision=summary!.revision;apiView.serverAggregates=seed.path.replace(/\/$/,'')==='/benchmarks';
+ if(!merge){loadedMachines.clear();loadedPhases.clear();metadataMachines.clear()}
+ for(const [m,r] of seed.loaded)loadedMachines.set(m,r);
+ for(const [m,p] of seed.phases)loadedPhases.set(m,new Set(p));
+ for(const [m,r] of seed.metadata)metadataMachines.set(m,r);
+ if(seed.history&&canRestoreHistory(seed)){
+  historyAbort?.abort();apiHistory.error='';apiView.historyLoading=false;apiHistory.loading=false;
+  const scope={...ui.scope,machine:seed.machine,snapshot:ui.snap,metric:ui.metric};
+  const query=new URLSearchParams(seed.history.query);apiHistory.from=query.get('from')!;apiHistory.until=query.get('to')!;
+  const history=registerHistoricalSummary(scope,seed.history.summary);
+  const previousEnd=Math.max(0,datasetView.current.history[seed.machine].points.length-1),followEnd=ui.histTo<0||ui.histTo>=previousEnd;
+  datasetView.current={...datasetView.current,history:{...datasetView.current.history,[seed.machine]:history}};
+  apiHistory.compact=true;apiView.historyLoaded[seed.machine]=true;
+  const currentQuery=historicalQuery(scope,'exec')!,key=historyKey(scope,'exec');
+  historyScope=JSON.stringify([key,currentQuery.get('platforms'),currentQuery.get('platforms')!.split(',').map(id=>{const p=summary?.platforms.find(p=>p.id===id);return [p?.latestRevision,p?.historyRevision]})]);
+  const end=Math.max(0,history.points.length-1);ui.histTo=followEnd?end:Math.min(ui.histTo,end);ui.histFrom=Math.min(ui.histFrom,ui.histTo);
+ }
  apiView.baked=true;apiView.ready=true;apiView.error='';
+}
+export function activatePageSeed(seed:PageSeed|BakedPageSeed){
+ if(seed.schema!==2||typeof window!=='undefined'&&apiView.ready)return;
+ applyPageSeed(seed);
 }
 export async function loadPage(_scope:PageScope,_index=0,_append=false){}
 export async function loadCalls(_scope:PageScope){}
