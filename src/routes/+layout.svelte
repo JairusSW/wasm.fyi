@@ -66,9 +66,17 @@
  $effect(()=>{
   if(!browser||!synced||!architectureReady||page.route.id==='/dashboard')return;
   const machine=ui.machine;const route=page.route.id;const drawer=ui.drawer;ui.metric;ui.runtimeFilters.rules;
-  void connectSite();
   if(apiView.ready)apiView.historyRevision;
-  if(route==='/history')void loadHistory({...ui.scope,machine,snapshot:ui.snap,metric:ui.metric},ui.otMetric);
+  const scope={...ui.scope,machine,snapshot:ui.snap,metric:ui.metric},historyMetric=ui.otMetric;
+  let active=true;
+  // Resolve machine startup data before forming a history request. Deferring
+  // also keeps the controller's internal state reads outside this effect.
+  void Promise.resolve().then(async()=>{
+   if(!active)return;
+   await connectSite();
+   if(active&&apiView.ready&&route==='/history')void loadHistory({...scope,baseline:ui.baseline,hide:{...ui.scope.hide}},historyMetric);
+  });
+  return ()=>{active=false};
  });
 
  $effect(()=>{
