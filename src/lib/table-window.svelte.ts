@@ -8,6 +8,7 @@ export function tableRange(heights: readonly number[], offset: number, viewport:
 }
 export class TableWindow {
  range=$state.raw({start:0,end:24,top:0,bottom:0});
+ constructor(allRows=false){if(allRows)this.range={start:0,end:Number.MAX_SAFE_INTEGER,top:0,bottom:0}}
  private keys:string[]=[];
  private heights=new Map<string,number>();
  private node:HTMLElement|undefined;

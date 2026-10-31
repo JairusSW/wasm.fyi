@@ -24,9 +24,13 @@
 	import { onMount } from 'svelte';
 	import { preferredMachine } from '$lib/preferred-machine';
 	import { animateFavicon } from '$lib/favicon';
-	import {connectSite,closeSite,apiView,aggregateKey,loadHistory,loadOverview,loadOverviews} from '$lib/api/controller.svelte';
+	import {decodeBakedSeed} from '$lib/api/baked-codec';
+ import {connectSite,closeSite,activatePageSeed,apiView,aggregateKey,loadHistory,loadOverview,loadOverviews} from '$lib/api/controller.svelte';
 
-	let { children } = $props();
+	let { children, data } = $props();
+ // Run before rendering children, on both prerender and hydration.
+ function activateInitialSeed(){if(data.pageSeed)activatePageSeed(decodeBakedSeed(data.pageSeed))}
+ activateInitialSeed();
 
 	// Share-card text and image for this page (see src/lib/og.ts).
 	const og = $derived(ogFor(page.route.id, page.params));

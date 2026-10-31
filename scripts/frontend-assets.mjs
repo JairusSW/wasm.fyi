@@ -1,4 +1,4 @@
-import {mkdir,copyFile,cp,writeFile} from 'node:fs/promises';
+import {mkdir,copyFile,cp,writeFile,rm} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {siteUrl} from './lib/ai-metadata.mjs';
 const publicRoot=siteUrl('',process.env.BASE_PATH||'');
@@ -15,3 +15,8 @@ await writeFile(resolve(output,'llms.txt'),`# wasm.fyi\n\nGET /api/platforms dis
 await copyFile(resolve(output,'llms.txt'),resolve(output,'llms-full.txt'));
 
 await writeFile(resolve(output,'sitemap.xml'),'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'+['','benchmarks/','history/','features/','simd/','gc/','memory64/','threads/'].map(path=>'<url><loc>'+publicRoot+path+'</loc></url>').join('')+'</urlset>');
+
+// The host serves result HTML only for builds that explicitly baked live data.
+const marker=resolve(output,'baked-pages.json');
+if(process.env.WASMFYI_PRERENDER_API_ORIGIN)await writeFile(marker,JSON.stringify({schema:1,routes:['/','/benchmarks','/features','/history','/health','/compare','/simd','/gc','/memory64','/threads']}));
+else await rm(marker,{force:true});

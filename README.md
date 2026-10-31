@@ -205,3 +205,23 @@ Pushes to `main` run the same current-application CI used for pull requests: fro
 `Deploy Remote` uploads the tested frontend and Linux API binary using the production environment's `REMOTE_HOST`, `REMOTE_USER`, `REMOTE_DEPLOY_KEY`, and pinned `REMOTE_KNOWN_HOSTS` secrets. Remote activates an immutable release, restarts the service, and rolls back if its health check fails. The SQLite benchmark and analytics databases and OAuth configuration stay on Remote and are never part of the release artifact.
 
 Use `just deploy-ci` to retry the committed `main` release, and `just deploy-status` to inspect delivery runs. Local credentials (`prod.env`, `local.env`), captures, databases, and generated caches are ignored by Git. Retired JSON sample dumps have been removed from the current tree; existing Git history remains available.
+
+### Bake results into the frontend
+
+`pnpm build:production` reads the public API
+at build time and renders the default machine's current results into each public
+page. Every push to `main` and manual `Deploy Remote` run automatically rebuilds
+these snapshots and verifies all ten public pages before uploading the release.
+No separate bake command is needed when deploying through CI. The embedded snapshot also hydrates
+the interactive UI, including every benchmark phase; samples, other machines,
+history ranges and newer captures are loaded from the API as needed. A small
+revision check keeps baked results fresh after hydration. Rebuild to update the
+HTML snapshot itself. Snapshot API failures fail the build rather than publishing
+empty results. An ordinary `pnpm build` remains an API-backed shell build for
+local/offline development. Set `WASMFYI_PRERENDER_API_ORIGIN` to bake from another
+API instance. For a direct SSH deployment, run `pnpm build:production` first.
+
+The `baked-pages.json` build marker tells the Go host which pages contain result
+HTML. Dashboard and dynamically discovered workload pages continue using the
+application shell. Benchmark HTML includes all workload rows; after hydration,
+the table mounts rows near the viewport to keep scrolling responsive.

@@ -40,14 +40,15 @@ jobs:
           go-version-file: service/go.mod
           cache-dependency-path: service/go.sum
       - run: pnpm install --frozen-lockfile
-      - name: Build production frontend and static API
+      - name: Bake and verify latest results in production HTML
+        run: pnpm build:production
+        env:
+          BASE_PATH: ''
+      - name: Package frontend and build static API
         run: |
-          pnpm build
           mkdir -p release/frontend
           cp -a build/. release/frontend/
           (cd service && CGO_ENABLED=1 GOWORK=off GOFLAGS=-mod=readonly go build -tags sqlite_omit_load_extension,netgo,osusergo -trimpath -ldflags='-s -w -linkmode external -extldflags -static' -o ../release/wasmfyi ./cmd/wasmfyi)
-        env:
-          BASE_PATH: ''
       - uses: actions/upload-artifact@v4
         with:
           name: production-release

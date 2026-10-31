@@ -19,6 +19,7 @@ import (
 
 const MaxAssetBytes = 64 << 20
 const MaxShellBytes = 2 << 20
+const MaxPreparedPageBytes = 32 << 20
 
 type WorkloadLookup func(context.Context, string) (bool, error)
 
@@ -28,6 +29,7 @@ type Host struct {
 	etag          string
 	workload      WorkloadLookup
 	preparedPages bool
+	bakedRoutes   map[string]bool
 	bootstrap     func(context.Context) ([]byte, error)
 	meta          *headMeta
 }
@@ -116,8 +118,8 @@ func (h *Host) SetBootstrap(read func(context.Context) ([]byte, error)) { h.boot
 // generation at publication/startup. Ordinary shell hosting keeps its behavior.
 func (h *Host) EnablePreparedPages() { h.preparedPages = true }
 
-// Open requires adapter-static's application shell. Prerendered HTML is never
-// used for application routes: data publication must not serve old measurements.
+// Open requires adapter-static's application shell. Builds with a checked baked
+// route manifest serve their result HTML; other builds retain shell hosting.
 func Open(directory string, workload WorkloadLookup) (*Host, error) {
 	if workload == nil {
 		return nil, fmt.Errorf("frontend requires workload lookup")
@@ -137,6 +139,28 @@ func Open(directory string, workload WorkloadLookup) (*Host, error) {
 	if e != nil || len(h.shell) == 0 || len(h.shell) > MaxShellBytes {
 		root.Close()
 		return nil, fmt.Errorf("frontend application shell unreadable or outside byte limit")
+	}
+	if f, err := h.openFile("baked-pages.json", 4096); err == nil {
+		var manifest struct {
+			Schema int      `json:"schema"`
+			Routes []string `json:"routes"`
+		}
+		err = json.NewDecoder(f).Decode(&manifest)
+		f.Close()
+		if err != nil || manifest.Schema != 1 {
+			root.Close()
+			return nil, fmt.Errorf("invalid baked page manifest")
+		}
+		h.bakedRoutes = make(map[string]bool)
+		for _, route := range manifest.Routes {
+			switch route {
+			case "/", "/benchmarks", "/features", "/history", "/health", "/compare", "/simd", "/gc", "/memory64", "/threads":
+				h.bakedRoutes[strings.TrimSuffix(route, "/")] = true
+			default:
+				root.Close()
+				return nil, fmt.Errorf("invalid baked route %q", route)
+			}
+		}
 	}
 	h.etag = fmt.Sprintf("\"%x\"", sha256.Sum256(h.shell))
 	// Head metadata is optional: without it the shell is served unchanged.
@@ -238,20 +262,10 @@ func (h *Host) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.NotFound(w, r)
 			return
 		}
-		f, err := h.openFile("history/__data.json", 1024)
-		if err != nil {
-			http.NotFound(w, r)
-			return
-		}
-		defer f.Close()
-		info, err := f.Stat()
-		if err != nil {
-			http.Error(w, "route data unavailable", 503)
-			return
-		}
+		// Dynamic workloads have no baked layout; do not copy history's seed.
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Cache-Control", "no-cache")
-		http.ServeContent(w, r, "__data.json", info.ModTime(), io.NewSectionReader(f, 0, info.Size()))
+		http.ServeContent(w, r, "__data.json", time.Time{}, strings.NewReader(`{"type":"data","nodes":[{"type":"data","data":[{"pageSeed":1},null],"uses":{"route":1}},null]}`))
 		return
 	}
 	navigation := strings.TrimSuffix(p, "/")
@@ -283,12 +297,12 @@ func (h *Host) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if app {
-		if h.preparedPages && (navigation == "" || navigation == "/benchmarks") {
+		if h.bakedRoutes[navigation] || h.preparedPages && (navigation == "" || navigation == "/benchmarks") {
 			name := "index.html"
-			if navigation == "/benchmarks" {
-				name = "benchmarks/index.html"
+			if navigation != "" {
+				name = strings.TrimPrefix(navigation, "/") + "/index.html"
 			}
-			f, err := h.openFile(name, MaxShellBytes)
+			f, err := h.openFile(name, MaxPreparedPageBytes)
 			if err != nil {
 				http.Error(w, "prepared page unavailable", 503)
 				return

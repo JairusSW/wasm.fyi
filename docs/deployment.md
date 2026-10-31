@@ -6,9 +6,10 @@ The Go API serves the static frontend and benchmark database on `127.0.0.1:8090`
 
 ## Redeploy
 
-After preparing `build/`, run:
+Prepare a fresh result snapshot and deploy it:
 
 ```sh
+pnpm build:production
 just deploy
 ```
 
@@ -20,7 +21,8 @@ releases remain in `/opt/wasmfyi/releases`.
 
 `just deploy` uses the existing `build/` directory and leaves local benchmark
 work paused. After frontend changes, prepare a fresh build with `just build`
-when this device is free. An alternate SSH destination can be supplied as
+when this device is free for preview builds, or `pnpm build:production` for a
+production build with baked results. An alternate SSH destination can be supplied as
 `just deploy root@another-host`. The original Pages command is now
 `just deploy-pages`.
 
@@ -28,7 +30,11 @@ when this device is free. An alternate SSH destination can be supplied as
 
 `deploy-remote.yml` automatically deploys pushes to `main`. It checks and tests
 the frontend, tests the Go service and activation command, and builds both
-production artifacts on GitHub. Deployments are serialized. Pages is now a
+production artifacts on GitHub. Each push or manual deployment runs
+`pnpm build:production`, reads the latest public API results, and verifies that
+all ten public routes contain valid snapshots and complete benchmark links.
+API, prerender, or snapshot validation failures stop the release before upload.
+Deployments are serialized. Pages is now a
 manual preview workflow.
 
 The GitHub `production` environment permits only `main` and holds

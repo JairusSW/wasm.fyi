@@ -166,7 +166,7 @@
 		else ui.tag = ui.tag === t ? null : t;
 	};
 
- const windowed=new TableWindow();
+ const windowed=new TableWindow(apiView.baked);
  const rowKey=(row:Row)=>row.kind==='group'?`group:${row.name}`:`item:${row.b.id}:${row.name}`;
  $effect(()=>windowed.setRows(view.rows.map(rowKey)));
  const visibleRows=$derived(view.rows.slice(windowed.range.start,windowed.range.end));

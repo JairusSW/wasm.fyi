@@ -255,3 +255,31 @@ func TestHomeRedirectsToRoot(t *testing.T) {
 		}
 	}
 }
+
+func TestBakedRouteManifest(t *testing.T) {
+	dir := fixture(t)
+	if err := os.WriteFile(filepath.Join(dir, "baked-pages.json"), []byte(`{"schema":1,"routes":["/","/benchmarks","/features"]}`), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(dir, "features"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "features/index.html"), []byte("baked feature results"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	h, err := Open(dir, func(context.Context, string) (bool, error) { return true, nil })
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer h.Close()
+	for route, content := range map[string]string{"/": "stale homepage", "/benchmarks/": "stale measurements", "/features": "baked feature results", "/dashboard": "application shell", "/history": "application shell"} {
+		w := request(h, "GET", route)
+		if w.Code != 200 || !strings.Contains(w.Body.String(), content) {
+			t.Fatal(route, w.Code, w.Body.String())
+		}
+	}
+	w := request(h, "GET", "/bench/new-workload/__data.json")
+	if w.Code != 200 || !strings.Contains(w.Body.String(), `"pageSeed":1},null`) {
+		t.Fatal(w.Code, w.Body.String())
+	}
+}
