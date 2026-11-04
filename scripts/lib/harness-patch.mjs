@@ -1,3 +1,4 @@
+import {readFileSync} from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { command, site } from './wasmbench.mjs';
@@ -56,10 +57,23 @@ function patchBase(root) {
   if(!featureCheck(['--reverse','--check']))throw new Error('Feature engine patch does not match its complete recorded state');
 }
 
+// Recognize only the exact previous shipped-feature patch, including its
+// configuration hunk; unrelated harness edits must still fail closed.
+export function peelLegacyWasmiFeatures(root,patch) {
+  const legacy=patch.replace(/^(\+[^\n]*)"auto-dispatch"/m,'$1"portable-dispatch"');
+  if(legacy===patch)return null;
+  const check=spawnSync('git',['apply','--reverse','--check','-'],{cwd:root,input:legacy,stdio:['pipe','ignore','ignore']});
+  if(check.status!==0)return null;
+  const result=spawnSync('git',['apply','--reverse','-'],{cwd:root,input:legacy,encoding:'utf8'});
+  if(result.status!==0)throw Error('Could not migrate previous Wasmi feature patch: '+result.stderr);
+  return legacy;
+}
+
 export function patchHarness(root) {
   const names=['harness-wasmtime-shipped-features.patch','harness-wasmi-shipped-features.patch','harness-wazero-shipped-features.patch','harness-wazero-compile-freshness.patch','harness-finder-metadata.patch'];
   const check=(name,args)=>spawnSync('git',['apply',...args,join(site,'patches',name)],{cwd:root,stdio:'ignore'}).status===0;
-  const peeled=[];
+  const legacyWasmi=peelLegacyWasmiFeatures(root,readFileSync(join(site,'patches/harness-wasmi-shipped-features.patch'),'utf8'));
+  const peeled=legacyWasmi?['harness-wasmi-shipped-features.patch']:[];
   for(const name of [...names].reverse())if(check(name,['--reverse','--check'])) {
     command('git',['apply','--reverse',join(site,'patches',name)],{cwd:root});peeled.push(name);
   }
@@ -67,6 +81,11 @@ export function patchHarness(root) {
   try {patchBase(root);success=true;}
   finally {
     for(const name of names)if(success || peeled.includes(name)) {
+      if(!success&&legacyWasmi&&name==='harness-wasmi-shipped-features.patch') {
+        const restored=spawnSync('git',['apply','-'],{cwd:root,input:legacyWasmi,encoding:'utf8'});
+        if(restored.status!==0)throw Error('Could not restore previous Wasmi feature patch: '+restored.stderr);
+        continue;
+      }
       if(check(name,['--reverse','--check']))continue;
       if(!check(name,['--check']))throw Error(name+' does not match');
       command('git',['apply',join(site,'patches',name)],{cwd:root});
