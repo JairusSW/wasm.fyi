@@ -50,3 +50,16 @@ test('rejects a partially patched WasmEdge adapter set',()=>{
   /Partial WasmEdge coverage patch/
  );
 });
+
+test('modern AOT/libwasm registry preserves other transports and sets the final core profile only',()=>{
+ let modern=main.replace('    feature = "wavm"\n))]\nmod vectors;','    feature = "wavm",\n    feature = "aot",\n    feature = "libwasm"\n))]\nmod vectors;');
+ modern=modern.replaceAll(cfgGroup,'feature = "wavm",\n                    feature = "aot", feature = "libwasm"\n                ))]');
+ modern=modern.replace('|| cfg!(feature = "wavm"))\n                    && w["oracle"]["kind"]','|| cfg!(feature = "wavm") || cfg!(feature = "aot") || cfg!(feature = "libwasm"))\n                    && w["oracle"]["kind"]');
+ modern=modern.replace('|| cfg!(feature = "wavm"))\n                    && w["host_profile"]','|| cfg!(feature = "wavm") || cfg!(feature = "aot"))\n                    && w["host_profile"]');
+ modern='fn earlier_command_prepare() {\n                self.bytes = bytes;\n                self.prep = Some(p.clone());\n}\n'+modern;
+ const result=wasmedgeWorkloadCoverageSources({main:modern,ffi,cpp});
+ assert.equal(result.main.split('embedding::set_assemblyscript_profile(assemblyscript)').length-1,1);
+ assert(result.main.indexOf('embedding::set_assemblyscript_profile(assemblyscript)')>result.main.indexOf('fn prepare(assemblyscript: bool)'));
+ assert(result.main.includes('feature = "aot", feature = "libwasm", feature = "wasmedge"'));
+ assert.deepEqual(wasmedgeWorkloadCoverageSources(result),result);
+});

@@ -629,6 +629,53 @@ func computeHistoricalSummary(d *historicalDataset, q HistoricalQuery, rev strin
 	}
 	return out
 }
+
+// Legacy captures can lack a CPU name. Resolve those only against an exact
+// environment match; an unknown CPU must never bridge two named machines.
+type historyHostIdentity struct {
+	OS, Arch, CPU string
+	Cores         int
+	Kernel        string
+	MemoryBytes   int64
+}
+
+func sameHistoryHost(environments []historyHostIdentity) bool {
+	if len(environments) == 0 {
+		return false
+	}
+	unknown := func(cpu string) bool {
+		return strings.TrimSpace(cpu) == "" || strings.EqualFold(strings.TrimSpace(cpu), "unknown")
+	}
+	reference := environments[0]
+	for _, current := range environments {
+		if !unknown(current.CPU) {
+			reference = current
+			break
+		}
+	}
+	for _, current := range environments {
+		if current.OS != reference.OS || current.Arch != reference.Arch || current.Cores != reference.Cores {
+			return false
+		}
+		if current.CPU == reference.CPU {
+			continue
+		}
+		if !unknown(current.CPU) || unknown(reference.CPU) {
+			return false
+		}
+		matched := false
+		for _, named := range environments {
+			if named.CPU == reference.CPU && named.OS == current.OS && named.Arch == current.Arch && named.Cores == current.Cores && current.Kernel != "" && current.MemoryBytes > 0 && named.Kernel == current.Kernel && named.MemoryBytes == current.MemoryBytes {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			return false
+		}
+	}
+	return true
+}
 func (s *Store) historical(ctx context.Context, q HistoricalQuery) (HistoricalSummaryResult, *historicalDataset, error) {
 	q, e := normalizeHistory(q)
 	if e != nil {
@@ -648,26 +695,24 @@ func (s *Store) historical(ctx context.Context, q HistoricalQuery) (HistoricalSu
 	pids := make([]int64, 0, len(platforms))
 	revisions := make([][]string, 0, len(platforms))
 	snapshots := make([]*aggregateSnapshot, 0, len(platforms))
-	type hostIdentity struct {
-		OS, Arch, CPU string
-		Cores         int
-	}
-	var host hostIdentity
-	for i, platform := range platforms {
+	identities := make([]historyHostIdentity, 0, len(platforms))
+	for _, platform := range platforms {
 		pid, err := platformLookup(ctx, tx, platform)
 		if err != nil {
 			return HistoricalSummaryResult{}, nil, err
 		}
-		var current hostIdentity
-		if err = tx.QueryRowContext(ctx, "SELECT os,arch,cpu,cores FROM platforms WHERE id=?", pid).Scan(&current.OS, &current.Arch, &current.CPU, &current.Cores); err != nil {
+		var current historyHostIdentity
+		if err = tx.QueryRowContext(ctx, "SELECT os,arch,cpu,cores,kernel,memory_bytes FROM platforms WHERE id=?", pid).Scan(&current.OS, &current.Arch, &current.CPU, &current.Cores, &current.Kernel, &current.MemoryBytes); err != nil {
 			return HistoricalSummaryResult{}, nil, err
 		}
-		if i == 0 {
-			host = current
-		} else if current != host {
-			return HistoricalSummaryResult{}, nil, wire.Invalid("history environments must belong to the same host")
-		}
+		identities = append(identities, current)
 		pids = append(pids, pid)
+	}
+	if !sameHistoryHost(identities) {
+		return HistoricalSummaryResult{}, nil, wire.Invalid("history environments must belong to the same host")
+	}
+	for i, pid := range pids {
+		platform := platforms[i]
 		hr, err := revision(ctx, tx, fmt.Sprint("history-revision/", pid))
 		if err != nil {
 			return HistoricalSummaryResult{}, nil, err

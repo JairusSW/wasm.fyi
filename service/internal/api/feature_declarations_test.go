@@ -58,8 +58,19 @@ func TestHintDeclarationPinsAndBackends(t *testing.T) {
 		{"wasmtime", "cranelift", "f96eabaa11a06086e4fb779ed1c1688481067ab9", "compilation-hints", false},
 		{"v8", "turboshaft", "f14cd3aa7bf9ca8df2cc5b8bb14beb0f335b1d93", "branch-hinting", true},
 		{"v8", "optimizing-only", "f14cd3aa7bf9ca8df2cc5b8bb14beb0f335b1d93", "compilation-hints", true},
+		{"v8", "optimizing-only", "bc2e01dcf6acd5cf7d169b5f26cf89abaaeb41f1", "branch-hinting", true},
+		{"v8", "optimizing-only", "bc2e01dcf6acd5cf7d169b5f26cf89abaaeb41f1", "compilation-hints", true},
+		{"v8", "optimizing-only", "bc2e01dcf6acd5cf7d169b5f26cf89abaaeb41f1", "instrument-and-tracing-technology", true},
+		{"v8", "liftoff", "bc2e01dcf6acd5cf7d169b5f26cf89abaaeb41f1", "branch-hinting", false},
+		{"spidermonkey", "ion-only", "9378fbc58660847fbc02c3486a0ecd6049978e25", "big-int", true},
+		{"spidermonkey", "baseline", "9378fbc58660847fbc02c3486a0ecd6049978e25", "big-int", false},
+		{"graalwasm", "truffle-graal", "092eca6772a74d4ce501d5656f61cfb26745ce73", "branch-hinting", true},
+		{"graalwasm", "other", "092eca6772a74d4ce501d5656f61cfb26745ce73", "branch-hinting", false},
 		{"v8", "liftoff", "f14cd3aa7bf9ca8df2cc5b8bb14beb0f335b1d93", "compilation-hints", false},
 		{"jsc", "OMG (forced tier-up)", "f3e56c5b480ab4dc6bb6412abdfc35c2536467ec", "branch-hinting", true},
+		{"jsc", "OMG (forced tier-up)", "b95c91b1c0ee43cc86d25ff7af73038f67a88e04", "branch-hinting", true},
+		{"jsc", "OMG (forced tier-up)", "b95c91b1c0ee43cc86d25ff7af73038f67a88e04", "big-int", true},
+		{"jsc", "BBQ", "b95c91b1c0ee43cc86d25ff7af73038f67a88e04", "branch-hinting", false},
 		{"jsc", "BBQ", "f3e56c5b480ab4dc6bb6412abdfc35c2536467ec", "branch-hinting", false},
 		{"jsc", "OMG (forced tier-up)", "f3e56c5b480ab4dc6bb6412abdfc35c2536467ec", "compilation-hints", false},
 	} {
@@ -145,27 +156,45 @@ func TestSourceFormatAndExtendedNameDeclarations(t *testing.T) {
 }
 
 func TestChasmExtendedNamesDeclarationRequiresRepairedProfile(t *testing.T) {
-	row := sqldb.Cell{Result: benchdb.Result{Row: benchdb.Row{Engine: "chasm", Backend: "jvm-interpreter", Version: "02033f247459790dd46da3d5b104c0c11bc36bd7", Workload: "features/extended-name-section/type-name/4096", Status: "ok"}}}
-	if featureDeclarationProjection(row).Status != "unavailable" {
-		t.Fatal("old default-decoder capture inherited support")
-	}
-	row.FeatureProfile = "extended-names"
-	if featureDeclarationProjection(row).Status != "ok" {
-		t.Fatal("repaired decoder profile was not admitted")
-	}
-	for _, name := range []string{"element", "data"} {
-		row.Workload = "features/extended-name-section/" + name + "-name/4096"
+	for _, revision := range []string{"02033f247459790dd46da3d5b104c0c11bc36bd7", "79e96f65101c256d96a8eb82ccdc8a53e79c8b32"} {
+		row := sqldb.Cell{Result: benchdb.Result{Row: benchdb.Row{Engine: "chasm", Backend: "jvm-interpreter", Version: revision, Workload: "features/extended-name-section/type-name/4096", Status: "ok"}}}
+		if got := featureDeclarationProjection(row); (got.Status == "ok") != (revision == "79e96f65101c256d96a8eb82ccdc8a53e79c8b32") {
+			t.Fatal("default-decoder declaration did not match the pinned adapter")
+		}
+		row.FeatureProfile = "extended-names"
+		if featureDeclarationProjection(row).Status != "ok" {
+			t.Fatal("repaired decoder profile was not admitted")
+		}
+		for _, name := range []string{"element", "data"} {
+			row.Workload = "features/extended-name-section/" + name + "-name/4096"
+			if featureDeclarationProjection(row).Status != "unavailable" {
+				t.Fatal("ignored subsection inherited decoder support")
+			}
+		}
+		row.Workload = "features/extended-name-section/type-name/4096"
+		row.Source = &benchdb.Source{Revision: "unverified"}
 		if featureDeclarationProjection(row).Status != "unavailable" {
-			t.Fatal("ignored subsection inherited decoder support")
+			t.Fatal("unverified source inherited support")
+		}
+		row.Status = "failed"
+		if featureDeclarationProjection(row).Status != "failed" {
+			t.Fatal("projection hid decoder failure")
 		}
 	}
-	row.Workload = "features/extended-name-section/type-name/4096"
-	row.Source = &benchdb.Source{Revision: "unverified"}
-	if featureDeclarationProjection(row).Status != "unavailable" {
-		t.Fatal("unverified source inherited support")
+}
+
+func TestWasmtimeCoreProposalDeclarationRequiresQualifiedProfile(t *testing.T) {
+	row := sqldb.Cell{Result: benchdb.Result{Row: benchdb.Row{Engine: "wasmtime", Backend: "cranelift", Version: "ebe5e8df1f4e12c5fc2f5954926881d8d61367d8", FeatureProfile: "core-proposals", Workload: "features/branch-hinting/mostly-taken/64", Status: "ok"}}}
+	if featureDeclarationProjection(row).Status != "ok" {
+		t.Fatal("qualified feature profile lost branch hint consumption")
 	}
-	row.Status = "failed"
-	if featureDeclarationProjection(row).Status != "failed" {
-		t.Fatal("projection hid decoder failure")
+	row.FeatureProfile = ""
+	if featureDeclarationProjection(row).Status != "unavailable" {
+		t.Fatal("old disabled configuration claimed branch metadata consumption")
+	}
+	row.FeatureProfile = "core-proposals"
+	row.Backend = "winch"
+	if featureDeclarationProjection(row).Status != "unavailable" {
+		t.Fatal("Winch parsing was counted as hint consumption")
 	}
 }

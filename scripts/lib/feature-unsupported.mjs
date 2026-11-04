@@ -82,10 +82,13 @@ const wazeroRejections=[
  {feature:'shared-everything-threads',reason:/invalid byte for mutability: 0x3 != 0x00 or 0x01/},
 ];
 const v8Rejections=[
+ // This pinned decoder requires a zero high nibble for every memory order.
+ // Current RMW encodings carry matching read/write acqrel orders as 0x11.
+ {revision:'bc2e01dcf6acd5cf7d169b5f26cf89abaaeb41f1',feature:'acquire-release-atomics',reason:/invalid memory ordering immediate 0x11/},
  {feature:'stack-switching',reason:/Invalid opcode 0xe[0-3]/},
  {feature:'custom-page-sizes',reason:/invalid memory limits flags 0x9/},
  {feature:'acquire-release-atomics',reason:/(?:invalid alignment; expected maximum alignment is 2|shared memories are not supported with --experimental-wasm-shared yet)/},
- {feature:'shared-everything-threads',reason:/(?:invalid atomic opcode: 0xfe[0-9a-f]+|shared memories are not supported with --experimental-wasm-shared yet)/},
+ {feature:'shared-everything-threads',reason:/(?:invalid atomic opcode: 0xfe[0-9a-f]+|shared memories are not supported with --experimental-wasm-shared yet|shared (?:globals|tables|functions\/continuations|element segments|data segments) are not supported yet)/},
  {feature:'memory-control',reason:/invalid numeric opcode: 0xfc12/},
  {feature:'custom-descriptors',reason:/invalid gc opcode: fb2[01]/},
 ];
@@ -132,6 +135,9 @@ const spiderMonkeyRejections=[
  {feature:'multi-memory',reason:/the number of memories must be at most one/},
 ];
 const jscRejections=[
+ // This revision's UnifiedWebPreferences declares Memory64 IPInt-only.
+ // Keep the requested OMG backend rather than silently switching tiers.
+ {revision:'b95c91b1c0ee43cc86d25ff7af73038f67a88e04',feature:'memory64',reason:/Memory64 is not enabled/},
  {feature:'compact-imports',reason:/can't get \d+(?:th|st|nd|rd) Import's kind in module 'wasmbench' field ''/},
  {feature:'custom-page-sizes',reason:/resizable limits flag are not valid 09/},
  {feature:'shared-everything-threads',reason:/(?:Type is non-Func, non-Struct, and non-Array -27|invalid Global's mutability: 0x03)/},
@@ -161,7 +167,7 @@ const wamrRejections=[
  // The exact source CMake checks forbid these Fast JIT combinations. Typed
  // function references share the GC-gated loader. Tail calls and threads are
  // intentionally excluded: their implementations must be enabled and tested.
- ...['gc','typed-function-references','simd','legacy-exceptions','memory64','multi-memory'].map(feature=>({engine:'wamr-fast-jit',revision:'ea5dd88e9ca40a44b6a5d9ffeb87a20833b13b8a',feature,reason:/module validation\/loading rejected input/})),
+ ...['ea5dd88e9ca40a44b6a5d9ffeb87a20833b13b8a','f5324c182fae0a6eaa14aa23ec886f0ba40d40e1'].flatMap(revision=>['gc','typed-function-references','simd','legacy-exceptions','memory64','multi-memory'].map(feature=>({engine:'wamr-fast-jit',revision,feature,reason:/module validation\/loading rejected input/}))),
  // WAMR's pinned build rules restrict these proposals to the classic
  // interpreter; the LLVM JIT deliberately builds them out.
  {engine:'wamr-llvm-jit',feature:'memory64',reason:/module validation\/loading rejected input/},
@@ -204,6 +210,8 @@ const w2c2Rejections=[
  {feature:'reference-types',reason:/(?:unsupported opcode unknown \(0x25\)|invalid element section offset expression|invalid table section table type)/},
  {feature:'multi-value',reason:/(?:unsupported function type \d+ with \d+ result values|invalid block instruction: expected block type)/},
  {feature:'simd',reason:/unsupported opcode unknown \(0xFD\)/},
+ // This exact upstream decoder's value-type switch has no v128 (0x7b).
+ {revision:'700f556539ea7c7995e6645b9b80e3edf9c9b271',feature:'simd',reason:/invalid code section local declarations/},
  {feature:'relaxed-simd',reason:/(?:unsupported opcode unknown \(0xFD\)|invalid code section local declarations)/},
  {feature:'gc',reason:/(?:invalid function type indicator|unsupported opcode unknown \(0xFB\))/},
  {feature:'exceptions',reason:/(?:unsupported section 13[\s\S]*unsupported opcode unknown \(0x1F\)|unsupported section 13[\s\S]*invalid block instruction: expected block type)/},
@@ -234,6 +242,7 @@ const wasm2cRejections=[
  {feature:'gc',reason:/(?:unexpected type form \(got 0x(?:50|5e|5f)\)|unexpected opcode: 0xfb)/},
  {feature:'typed-function-references',reason:/(?:unexpected opcode: 0x14|expected valid (?:local|select result) type|table elem type must be a reference type)/},
  {feature:'relaxed-simd',reason:/translation failed: (?:unimplemented: \.\.\.\s*)?$/},
+ {revision:'a57679e479efa17f536691e9949a81d877869579',feature:'relaxed-simd',reason:/wasm2c does not support the (?:i\d+x\d+|f\d+x\d+)\.relaxed_[a-z0-9_]+ instruction/},
  {feature:'shared-everything-threads',reason:/(?:unexpected type form \(got 0x65\)|global mutability must be 0 or 1)/},
  {feature:'stack-switching',reason:/unexpected type form \(got 0x5d\)/},
  {feature:'memory-control',reason:/unexpected opcode: 0xfc 0x12/},
@@ -242,6 +251,7 @@ const wasm2cRejections=[
  {feature:'acquire-release-atomics',reason:/memory may not be shared: threads not allowed/},
  {feature:'custom-descriptors',reason:/unexpected type form \(got 0x4e\)/},
  {feature:'wide-arithmetic',reason:/translation failed: (?:unimplemented: \.\.\.\s*)?$/},
+ {revision:'a57679e479efa17f536691e9949a81d877869579',feature:'wide-arithmetic',reason:/wasm2c does not support the i64\.(?:mul_wide_[su]|add128|sub128) instruction/},
  {feature:'extended-name-section',reason:/unexpected type form \(got 0x5f\)/},
 ];
 const wazyRejections=[
@@ -265,6 +275,8 @@ const wasmedgeRejections=[
  // bee78fc loader/ast/description.cpp accepts only Function/Table/Memory/Global/Tag;
  // include/common/enum.inc exposes no compact-import proposal switch.
  {revision:'bee78fc2e2fec55eb9e88f3d63463a3ba7eef0bb',feature:'compact-imports',reason:/malformed import kind/},
+ // 0.18.1 retains the same five-kind loader and has no compact-import flag.
+ {revision:'b2e483553ea7a1826be117180125c71e5d0b8958',feature:'compact-imports',reason:/malformed import kind/},
  // The exact SDK proposal enum is the source of truth for these gaps. The
  // adapter enables every proposal exposed by that enum before validation.
  {feature:'shared-everything-threads',reason:/(?:integer representation too long|malformed mutability)/},
@@ -346,11 +358,19 @@ const zwasmRejections=[
  {feature:'acquire-release-atomics',reason:/Zwasm C API failure: (?:compile|instantiate)/},
  {feature:'custom-descriptors',reason:/Zwasm C API failure: (?:compile|instantiate)/},
  // Its pinned README explicitly limits SIMD execution to the JIT backend.
+ // 80fce146: README's forced-interpreter contract refuses SIMD modules at
+ // instantiate; instanceNewWithEngine's interp instantiateRuntime catch
+ // returns null, which this C binding reports as the diagnostic below.
+ // Do not extend this generic C API error to JIT or other proposals/pins.
+ {revision:'80fce146e984af27935a4c59e7ebcb080628232d',engine:'zwasm-interpreter',feature:'simd',reason:/Zwasm C API failure: instantiate/},
+ {revision:'80fce146e984af27935a4c59e7ebcb080628232d',engine:'zwasm-interpreter',feature:'relaxed-simd',reason:/Zwasm C API failure: instantiate/},
  {engine:'zwasm-interpreter',feature:'simd',reason:/guest trap: unreachable/},
  {engine:'zwasm-interpreter',feature:'relaxed-simd',reason:/guest trap: unreachable/},
  // The pinned JIT lowering reads and discards SIMD memory indices and its
  // instantiation gate explicitly rejects modules with multiple memories.
  {revision:'51634833f70a90ae605feb8c3227897b8ba4c9a1',engine:'zwasm-jit',feature:'multi-memory',reason:/Zwasm JIT compile: MultipleMemories/},
+ // 80fce146 engine/compile.zig:199 retains the explicit one-memory JIT gate.
+ {revision:'80fce146e984af27935a4c59e7ebcb080628232d',engine:'zwasm-jit',feature:'multi-memory',reason:/Zwasm JIT compile: MultipleMemories/},
 ];
 const endiveRejections=[
  // The pinned README declares SIMD, tail calls, exception handling, threads,
@@ -396,6 +416,22 @@ const graalWasmRejections=[
  {feature:'custom-descriptors',reason:/Only function types are supported in the type section/},
 ];
 
+// LibWasm Module/src/lib.rs exposes compile(bytes), with no feature switches.
+// At this revision parser.rs accepts import kinds 0..4 and memory flags 0x07;
+// validator.rs/instruction_tables.rs have no entries for these proposal opcodes.
+const libwasmRejections=[
+ {feature:'wide-arithmetic',reason:/LibWasm compilation failed: Malformed\("illegal opcode 0xfc 0x1[3-6]"\)/},
+ {feature:'compact-imports',reason:/LibWasm compilation failed: Malformed\("malformed import kind"\)/},
+ {feature:'custom-page-sizes',reason:/LibWasm compilation failed: Malformed\("malformed memory limits flags"\)/},
+ {feature:'shared-everything-threads',reason:/LibWasm compilation failed: Malformed\("(?:malformed mutability|integer representation too long)"\)/},
+ {feature:'stack-switching',reason:/LibWasm compilation failed: Malformed\("integer representation too long"\)/},
+ {feature:'memory-control',reason:/LibWasm compilation failed: Malformed\("illegal opcode 0xfc 0x12"\)/},
+ {feature:'half-precision',reason:/LibWasm compilation failed: Malformed\("illegal opcode 0xfd 0x120"\)/},
+ {feature:'stringref',reason:/LibWasm compilation failed: Malformed\("illegal opcode 0xfb 0xa9"\)/},
+ {feature:'acquire-release-atomics',reason:/LibWasm compilation failed: Invalid\("atomic memory op alignment must be equal to natural"\)/},
+ {feature:'custom-descriptors',reason:/LibWasm compilation failed: Malformed\("integer representation too long"\)/},
+];
+
 // Wasmtime's validator knows encodings for some proposals which the compiler
 // deliberately does not implement. Bind that distinction to the exact source,
 // artifact and contract so traps, wrong results and generic compiler errors
@@ -418,18 +454,22 @@ export function classifyFeatureRuntimeRejection({source,engine,workload,capture,
  const wasmedge=source?.repository==='WasmEdge/WasmEdge'&&['wasmedge','wasmedge-jit'].includes(engine);
  const chicory=source?.repository==='dylibso/chicory'&&['chicory','chicory-jit'].includes(engine);
  const chasm=source?.repository==='CharlieTap/chasm'&&engine==='chasm';
- const wizard=source?.repository==='titzer/wizard-engine'&&(engine==='wizard-v3-int'||source.revision==='399357ce20b8330ddc1888a93cceb0d4cf3762de'&&['wizard-fast-int','wizard-spc'].includes(engine));
+ // a87e5639 BinParser.readImportDecl still accepts only the five ordinary
+ // import kinds; Extension.v3 has no switches for the other proposals below.
+ // Only their exact loader diagnostics qualify, never traps or wrong answers.
+ const wizard=source?.repository==='titzer/wizard-engine'&&(engine==='wizard-v3-int'||['wizard-fast-int','wizard-spc'].includes(engine)&&(source.revision==='399357ce20b8330ddc1888a93cceb0d4cf3762de'||source.revision==='a87e56395fcf685747e489020cc7be208a9d710b'&&workload?.features?.some(feature=>['compact-imports','shared-everything-threads','memory-control','half-precision','stringref','acquire-release-atomics','custom-descriptors'].includes(feature))));
  const zwasm=source?.repository==='zwasm/zwasm'&&['zwasm-interpreter','zwasm-jit'].includes(engine);
  const endive=source?.repository==='bytecodealliance/endive'&&['endive-interpreter','endive-jit','endive-redline'].includes(engine);
  const graalwasm=source?.repository==='oracle/graal'&&engine==='graalwasm';
- if((!wasmtime&&!wago&&!wasmer&&!wazero&&!v8&&!wavm&&!spiderMonkey&&!jsc&&!wasmi&&!wamr&&!wasm3&&!w2c2&&!wasm2c&&!wazy&&!wasmedge&&!chicory&&!chasm&&!wizard&&!zwasm&&!endive&&!graalwasm)||!/^[a-f0-9]{40}$/.test(source.revision||'')||!workload?.id?.startsWith('features/')||!sha(workload.sha256)||!capture?.results?.length)return null;
+ const libwasm=source?.repository==='LadybirdBrowser/ladybird'&&source.revision==='0203ab20ca96c7f91cead4794053ee2d92df52c6'&&['libwasm','libwasm-jit'].includes(engine);
+ if((!wasmtime&&!wago&&!wasmer&&!wazero&&!v8&&!wavm&&!spiderMonkey&&!jsc&&!wasmi&&!wamr&&!wasm3&&!w2c2&&!wasm2c&&!wazy&&!wasmedge&&!chicory&&!chasm&&!wizard&&!zwasm&&!endive&&!graalwasm&&!libwasm)||!/^[a-f0-9]{40}$/.test(source.revision||'')||!workload?.id?.startsWith('features/')||!sha(workload.sha256)||!capture?.results?.length)return null;
  if(capture.source?.revision!==source.revision||capture.source?.repository!==source.repository)return null;
  const contractSha256=workloadContract(workload),failed=capture.results.filter(row=>row.latencyStatus==='failed');
  if(failed.length!==capture.results.length||failed.some(row=>row.engine!==engine||row.workload!==workload.id||row.artifactSha256!==workload.sha256||row.contractSha256!==contractSha256||(row.timingSamples||0)!==0||(row.samplesNs?.length||0)!==0))return null;
- const rejection=(wasmtime?wasmtimeRejections:wago?wagoRejections:wasmer?wasmerRejections:wazero?wazeroRejections:v8?v8Rejections:wavm?wavmRejections:spiderMonkey?spiderMonkeyRejections:jsc?jscRejections:wasmi?wasmiRejections:wamr?wamrRejections:wasm3?wasm3Rejections:w2c2?w2c2Rejections:wasm2c?wasm2cRejections:wazy?wazyRejections:wasmedge?wasmedgeRejections:chicory?chicoryRejections:chasm?chasmRejections:wizard?wizardRejections:zwasm?zwasmRejections:endive?endiveRejections:graalWasmRejections).find(candidate=>(!candidate.engine||candidate.engine===engine)&&(!candidate.revision||candidate.revision===source.revision)&&(!candidate.workload||candidate.workload.test(workload.id))&&workload.features?.includes(candidate.feature)&&failures?.some(failure=>candidate.reason.test(failure.reason||'')));
+ const rejection=(libwasm?libwasmRejections:wasmtime?wasmtimeRejections:wago?wagoRejections:wasmer?wasmerRejections:wazero?wazeroRejections:v8?v8Rejections:wavm?wavmRejections:spiderMonkey?spiderMonkeyRejections:jsc?jscRejections:wasmi?wasmiRejections:wamr?wamrRejections:wasm3?wasm3Rejections:w2c2?w2c2Rejections:wasm2c?wasm2cRejections:wazy?wazyRejections:wasmedge?wasmedgeRejections:chicory?chicoryRejections:chasm?chasmRejections:wizard?wizardRejections:zwasm?zwasmRejections:endive?endiveRejections:graalWasmRejections).find(candidate=>(!candidate.engine||candidate.engine===engine)&&(!candidate.revision||candidate.revision===source.revision)&&(!candidate.workload||candidate.workload.test(workload.id))&&workload.features?.includes(candidate.feature)&&failures?.some(failure=>candidate.reason.test(failure.reason||'')));
  if(!rejection||!failures?.length||failures.some(failure=>failure.engine!==engine||failure.workload!==workload.id||(!['error','preflight_failed'].includes(failure.status)&&!(rejection.allowIncorrectResult&&failure.status==='incorrect_result')&&!(failure.status==='unsupported'&&failure.reason==='scenario not advertised'))||(failure.samples?.length||0)!==0))return null;
  const sourceBound=failures.filter(failure=>rejection.reason.test(failure.reason||''));
  if(!sourceBound.length||failures.some(failure=>!sourceBound.includes(failure)&&failure.reason!=='scenario not advertised'))return null;
- const runtime=wasmtime?`Wasmtime ${engine==='wasmtime-winch'?'Winch':'Cranelift'}`:wago?'Wago Railshot':wasmer?`Wasmer ${engine.slice('wasmer-'.length)}`:wazero?`Wazero ${engine==='wazero'?'compiler':'interpreter'}`:v8?'V8 Turboshaft':wavm?'WAVM LLVM':spiderMonkey?'SpiderMonkey Ion':jsc?'JSC OMG':wasmi?'Wasmi':wasm3?'wasm3':w2c2?'w2c2 GCC':wasm2c?'wasm2c GCC':wazy?'Wazy':wasmedge?`WasmEdge ${engine==='wasmedge-jit'?'JIT':'interpreter'}`:chicory?`Chicory ${engine==='chicory-jit'?'compiler':'interpreter'}`:chasm?'Chasm':wizard?`Wizard ${engine==='wizard-v3-int'?'V3 interpreter':engine==='wizard-fast-int'?'fast interpreter':'Singlepass'}`:zwasm?`Zwasm ${engine==='zwasm-jit'?'JIT':'interpreter'}`:endive?`Endive ${engine.slice('endive-'.length)}`:graalwasm?'GraalWasm Truffle':`WAMR ${engine==='wamr-llvm-jit'?'LLVM JIT':engine==='wamr-fast-jit'?'Fast JIT':'interpreter'}`;
+ const runtime=libwasm?`LibWasm ${engine==='libwasm-jit'?'JIT':'interpreter'}`:wasmtime?`Wasmtime ${engine==='wasmtime-winch'?'Winch':'Cranelift'}`:wago?'Wago Railshot':wasmer?`Wasmer ${engine.slice('wasmer-'.length)}`:wazero?`Wazero ${engine==='wazero'?'compiler':'interpreter'}`:v8?'V8 Turboshaft':wavm?'WAVM LLVM':spiderMonkey?'SpiderMonkey Ion':jsc?'JSC OMG':wasmi?'Wasmi':wasm3?'wasm3':w2c2?'w2c2 GCC':wasm2c?'wasm2c GCC':wazy?'Wazy':wasmedge?`WasmEdge ${engine==='wasmedge-jit'?'JIT':'interpreter'}`:chicory?`Chicory ${engine==='chicory-jit'?'compiler':'interpreter'}`:chasm?'Chasm':wizard?`Wizard ${engine==='wizard-v3-int'?'V3 interpreter':engine==='wizard-fast-int'?'fast interpreter':'Singlepass'}`:zwasm?`Zwasm ${engine==='zwasm-jit'?'JIT':'interpreter'}`:endive?`Endive ${engine.slice('endive-'.length)}`:graalwasm?'GraalWasm Truffle':`WAMR ${engine==='wamr-llvm-jit'?'LLVM JIT':engine==='wamr-fast-jit'?'Fast JIT':'interpreter'}`;
  return {engine,workload:workload.id,status:'unsupported',reason:`Source-bound ${runtime} compiler rejects ${rejection.feature}`,sourceRevision:source.revision,artifactSha256:workload.sha256,contractSha256,rawFailures:failures.map(({phase,reason})=>({phase,reason}))};
 }

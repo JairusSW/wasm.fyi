@@ -29,3 +29,13 @@ test('advertises wasm2go documented features and supported thread host profiles'
  assert.match(result,/append\(translateArgs, "-unsafe"\)/);
  assert.equal(wasm2goFeaturePolicySource(result),result);
 });
+
+test('recognizes promoted owned memory and pointer-backed imported memory without changing legacy access',()=>{
+ const discovery='memory := "return nil"; for _, f := range fields.Fields.List { for _, n := range f.Names { if n.Name == "memory" { memory = "return m.memory" } } }';
+ const result=wasm2goFeaturePolicySource(source+'\n'+discovery);
+ assert.match(result,/embedded.Name == "wasmMemory"/);
+ assert.match(result,/memory = "return \*m.memory"/);
+ assert.match(result,/n.Name == "memory" && memory != "return \*m.memory"/);
+ assert.equal(wasm2goFeaturePolicySource(result),result);
+ assert.throws(()=>wasm2goFeaturePolicySource(source+'\nmemory := "return nil"'),/discovery seam changed/);
+});

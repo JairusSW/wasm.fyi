@@ -27,3 +27,10 @@ test('aliases to the same commit are measured once per backend set',()=>{
  const rows=deduplicateSweep([{...pin,targetWeek:'new'},{...pin,targetWeek:'old'}]);
  assert.equal(rows[1].status,'reused');assert.equal(rows[1].reuseTargetWeek,'new');
 });
+test('same-day browser releases prefer the newest stable branch over legacy ESR',()=>{
+ const week={start:'2026-10-18T10:00:00Z',end:'2026-10-24T05:47:27Z'};
+ const rows=['115.43.1esr','153.5.1esr','158.0.1'].map(tag_name=>({tag_name,published_at:'2026-10-20T00:00:00Z',prerelease:false}));
+ assert.equal(releaseInWeek('spidermonkey',rows,week).tag_name,'158.0.1');
+ const betas=['v0.1.0-beta.9','v0.1.0-beta.10'].map(tag_name=>({tag_name,published_at:'2026-10-20T00:00:00Z',prerelease:true}));
+ assert.equal(releaseInWeek('wago',betas,week).tag_name,'v0.1.0-beta.10');
+});

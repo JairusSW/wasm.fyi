@@ -2,10 +2,10 @@
 // Instance setup uses the SDK's original linker and host binding machinery.
 import {readFile,writeFile} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
-const root=resolve(process.argv[2]);
-const runnerPath=join(root,'src/engine/runner.zig'),apiPath=join(root,'src/api/instance.zig');
-let runner=await readFile(runnerPath,'utf8'),api=await readFile(apiPath,'utf8');
+import {pathToFileURL} from 'node:url';
 function patch(text,old,next){if(!text.includes(old))throw Error('Pinned Zwasm compile-cache seam changed: '+old);return text.replace(old,next);}
+export function withZwasmCompileCache(runner,api){
+const borrowed=runner.includes('compiled_borrowed: bool = false,')&&api.includes('shared_jit: ?*const anyopaque = null,');
 if(!runner.includes('pub const WasmfyiSharedCompiled = struct')){
  runner=patch(runner,'pub const JitInstance = struct {',`pub const WasmfyiSharedCompiled = struct {
     compiled: CompiledWasm,
@@ -22,8 +22,9 @@ if(!runner.includes('pub const WasmfyiSharedCompiled = struct')){
 pub const JitInstance = struct {
     wasmfyi_shared: ?*WasmfyiSharedCompiled = null,`);
  const start=runner.indexOf('pub const JitInstance = struct {');
- runner=runner.slice(0,start)+patch(runner.slice(start),'        self.compiled.deinit(allocator);','        if (self.wasmfyi_shared) |shared| shared.release(allocator) else self.compiled.deinit(allocator);');
- runner=patch(runner,'    pub fn fromCompiled(allocator: Allocator, compiled: CompiledWasm, wasm_bytes: []const u8) Error!JitInstance {',`    pub fn wasmfyiFromSharedLinked(
+ const cleanup=borrowed?'        if (!self.compiled_borrowed) self.compiled.deinit(allocator);':'        self.compiled.deinit(allocator);';
+ runner=runner.slice(0,start)+patch(runner.slice(start),cleanup,'        if (self.wasmfyi_shared) |shared| shared.release(allocator) else '+cleanup.trim());
+ if(!borrowed)runner=patch(runner,'    pub fn fromCompiled(allocator: Allocator, compiled: CompiledWasm, wasm_bytes: []const u8) Error!JitInstance {',`    pub fn wasmfyiFromSharedLinked(
         allocator: Allocator, shared: *WasmfyiSharedCompiled, wasm_bytes: []const u8,
         imported_global_vals: []const u64, func_import_targets: []const setup_mod.FuncImportTarget,
         tag_import_targets: []const setup_mod.TagImportTarget, host_func_targets: []const setup_mod.HostFuncTarget,
@@ -39,7 +40,16 @@ pub const JitInstance = struct {
 if(!api.includes('wasmfyi_compiled: ?*runner.WasmfyiSharedCompiled')){
  api=patch(api,'    jit_borrowers: u32 = 0,','    jit_borrowers: u32 = 0,\n    wasmfyi_compiled: ?*runner.WasmfyiSharedCompiled = null,');
  api=patch(api,'    if (handle.ref_view) |rv| alloc.destroy(rv); // object-identity as_ref view (ADR-0158)','    if (handle.wasmfyi_compiled) |compiled| compiled.release(alloc);\n    handle.wasmfyi_compiled = null;\n    if (handle.ref_view) |rv| alloc.destroy(rv); // object-identity as_ref view (ADR-0158)');
- api=patch(api,'jit.* = runner.JitInstance.initLinked(alloc, bytes, &.{}, func_imports.cross, &.{}, func_imports.host) catch |err| {',`jit.* = (if (module.wasmfyi_compiled) |shared|
+ if(borrowed){
+  // Newer SDKs already implement borrowed compiled images. Use their linker
+  // and only add ownership accounting for this benchmark-owned lender.
+  api=patch(api,'    // #426 — the instance\'s address is final',`    if (module.wasmfyi_compiled) |shared| {
+        std.debug.assert(jit.compiled_borrowed);
+        shared.references += 1;
+        jit.wasmfyi_shared = shared;
+    }
+    // #426 — the instance's address is final`);
+ }else api=patch(api,'jit.* = runner.JitInstance.initLinked(alloc, bytes, &.{}, func_imports.cross, &.{}, func_imports.host) catch |err| {',`jit.* = (if (module.wasmfyi_compiled) |shared|
         runner.JitInstance.wasmfyiFromSharedLinked(alloc, shared, bytes, &.{}, func_imports.cross, &.{}, func_imports.host)
         else runner.JitInstance.initLinked(alloc, bytes, &.{}, func_imports.cross, &.{}, func_imports.host)) catch |err| {`);
  api+=`
@@ -57,9 +67,17 @@ pub export fn wasmfyi_zwasm_compile_module(value: ?*Module) callconv(.c) ?[*:0]c
     };
     shared.* = .{ .compiled = compiled };
     module.wasmfyi_compiled = shared;
+${borrowed?'    module.shared_jit = @ptrCast(&shared.compiled);':''}
     return null;
 }
 `;
 }
-await writeFile(runnerPath,runner);await writeFile(apiPath,api);
+return {runner,api};
+}
+if(process.argv[1]&&pathToFileURL(resolve(process.argv[1])).href===import.meta.url){
+const root=resolve(process.argv[2]);
+const runnerPath=join(root,'src/engine/runner.zig'),apiPath=join(root,'src/api/instance.zig');
+const result=withZwasmCompileCache(await readFile(runnerPath,'utf8'),await readFile(apiPath,'utf8'));
+await writeFile(runnerPath,result.runner);await writeFile(apiPath,result.api);
 console.log('Installed Zwasm module-owned native compilation cache');
+}

@@ -5,7 +5,9 @@ import {runCommand} from './lib/benchmark-process.mjs';
 import {readCache,atomicJSON} from './lib/benchmark-plan.mjs';
 import {historyBuildDirectory} from './lib/history-build-cache.mjs';
 import {prepareHistoryPin} from './lib/prepare-history-pin.mjs';
+import {withBuildLock} from './lib/measurement-lock.mjs';
 const [rootArg,engine,configuration,profile]=process.argv.slice(2),root=resolve(rootArg);
+async function prepare(){
 const plan=JSON.parse(await readFile(join(root,'source-plan.json')));
 const template=JSON.parse(await readFile(join(root,'collection-template.json')));
 const requestedWeek=process.env.WASMFYI_HISTORY_WEEK;
@@ -13,6 +15,13 @@ const pin=prepareHistoryPin(plan.pins,{engine,configuration,week:requestedWeek})
 if(!pin)throw Error('No planned snapshot for '+configuration);
 const baseDirectory=await historyBuildDirectory(root,pin,configuration);
 const directory=profile?baseDirectory+'-'+profile:baseDirectory;
+const existing=await readFile(join(directory,'plan.json'),'utf8').then(JSON.parse,()=>null);
+if(existing?.jobs?.some(job=>job.engine===configuration&&job.featureProfile===profile&&job.source?.revision===pin.revision&&job.source?.asOf===pin.targetWeek&&job.controller&&job.harness)){
+ const job=existing.jobs.find(job=>job.engine===configuration&&job.featureProfile===profile);
+ if(await stat(job.controller).catch(()=>null)&&await stat(join(job.harness,'bin','adapter-'+configuration)).catch(()=>null)){
+  console.log(JSON.stringify({engine,configuration,revision:pin.revision,directory,status:'cached'}));return;
+ }
+}
 await mkdir(directory,{recursive:true});
 const env={...process.env,...template.env,PATH:[process.env.PATH,template.env?.PATH].filter(Boolean).join(':'),GOWORK:'off',GOFLAGS:'-buildvcs=false'};
 if(engine==='wamr'&&['fast','classic'].includes(profile))env.WASMFYI_WAMR_INTERPRETER_PROFILE=profile;
@@ -55,3 +64,5 @@ const jobSource={repository:pin.repository,revision:pin.revision,ref:pin.tag||'m
 const job={id:'prepared-'+configuration+(profile?'-'+profile:'')+'-'+pin.revision.slice(0,12),engine:configuration,harness:receipt.root,controller:receipt.controller,env:receipt.env||{},historical:true,source:jobSource,...(profile?{featureProfile:profile}:{}),...(engine==='jsc'?{backend:'OMG (forced tier-up)'}:{})};
 await atomicJSON(join(directory,'plan.json'),{...template,captureDirectory:join(root,'captures'),jobs:[job]});
 console.log(JSON.stringify({engine,configuration,revision:pin.revision,directory,status:'prepared'}));
+}
+if(process.env.WASMBENCH_PROJECT_RESERVED==='1')await prepare();else await withBuildLock(root,prepare);

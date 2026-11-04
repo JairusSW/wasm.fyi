@@ -301,3 +301,43 @@ func TestHistoryMergesHostEnvironmentsWithoutAveragingDuplicates(t *testing.T) {
 		t.Fatal("mixed machines accepted")
 	}
 }
+
+func TestHistoryAcceptsLegacyUnknownCPUOnlyWithExactEnvironmentMatch(t *testing.T) {
+	ctx := context.Background()
+	s, err := Open(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	old := historyFixture("a", "2026-09-01", 1, []float64{12})
+	old.Platform = benchdb.Platform{OS: "darwin", Arch: "arm64", CPU: "unknown", Cores: 16, Kernel: "Darwin fixture", MemoryBytes: 68719476736}
+	putHistory(t, s, old)
+	current := historyFixture("a", "2026-10-15", 2, []float64{6})
+	current.Platform = old.Platform
+	current.Platform.CPU = "Apple M4 Max"
+	putHistory(t, s, current)
+	for _, platforms := range [][]string{{hash(old.Platform), hash(current.Platform)}, {hash(current.Platform), hash(old.Platform)}} {
+		out, err := s.HistoricalSummary(ctx, HistoricalQuery{Platform: hash(current.Platform), Platforms: platforms, Metric: "exec", Engines: []string{"a"}})
+		if err != nil || len(out.Items) != 2 {
+			t.Fatalf("legacy CPU should retain both weeks: %+v %v", out, err)
+		}
+	}
+	for _, change := range []struct {
+		name  string
+		apply func(*benchdb.Platform)
+	}{
+		{"different named CPU", func(p *benchdb.Platform) { p.CPU = "Apple M5 Max" }},
+		{"unknown CPU different RAM", func(p *benchdb.Platform) { p.CPU = "unknown"; p.MemoryBytes /= 2 }},
+		{"unknown CPU different kernel", func(p *benchdb.Platform) { p.CPU = "unknown"; p.Kernel = "different kernel" }},
+	} {
+		t.Run(change.name, func(t *testing.T) {
+			other := current
+			change.apply(&other.Platform)
+			putHistory(t, s, other)
+			_, err := s.HistoricalSummary(ctx, HistoricalQuery{Platform: hash(current.Platform), Platforms: []string{hash(old.Platform), hash(other.Platform), hash(current.Platform)}, Metric: "exec", Engines: []string{"a"}})
+			if err == nil {
+				t.Fatal("incompatible host environments accepted")
+			}
+		})
+	}
+}

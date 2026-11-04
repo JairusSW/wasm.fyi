@@ -180,6 +180,9 @@ test('V8 exact flagged proposal gaps are source and artifact bound',()=>{
   ['acquire-release-atomics','WebAssembly.Module(): invalid alignment; expected maximum alignment is 2, actual alignment is 34 @+82'],
   ['shared-everything-threads','WebAssembly.Module(): Compiling function #0 failed: invalid atomic opcode: 0xfe5f @+74'],
   ['shared-everything-threads','WebAssembly.Module(): Compiling function #0 failed: invalid atomic opcode: 0xfe50 @+65'],
+  ['shared-everything-threads','WebAssembly.Module(): shared globals are not supported yet @+24'],
+  ['shared-everything-threads','WebAssembly.Module(): shared tables are not supported yet @+29'],
+  ['shared-everything-threads','WebAssembly.Module(): shared functions/continuations are not supported yet @+12'],
   ['memory-control','WebAssembly.Module(): Compiling function #0 failed: invalid numeric opcode: 0xfc12 @+77'],
   ['custom-descriptors','WebAssembly.Module(): Compiling function #3 failed: invalid gc opcode: fb20 @+189'],
   ['custom-descriptors','WebAssembly.Module(): Compiling function #3 failed: invalid gc opcode: fb21 @+187'],
@@ -188,7 +191,19 @@ test('V8 exact flagged proposal gaps are source and artifact bound',()=>{
   const capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
   const failures=['preflight_failed','error'].map(status=>({engine,workload:w.id,phase:'first-call',status,reason:`${status==='preflight_failed'?'sacrificial check check-0-0: ':''}error: ${reason}`}));
   assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures})?.status,'unsupported',feature);
+  const mixed=structuredClone(failures);mixed[1].reason='error: incorrect result: scalar oracle mismatch';
+  assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures:mixed}),null);
  }
+});
+
+test('V8 older acquire-release RMW dialect is limited to the audited source revision',()=>{
+ const source={repository:'nodejs/node',revision:'bc2e01dcf6acd5cf7d169b5f26cf89abaaeb41f1'},engine='v8';
+ const w={id:'features/acquire-release-atomics/rmw-add/1',sha256:'6'.repeat(64),abi:'core',features:['acquire-release-atomics'],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['7']}};
+ const capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+ const failures=[{engine,workload:w.id,phase:'first-call',status:'error',reason:'error: WebAssembly.Module(): invalid memory ordering immediate 0x11 @+83'}];
+ assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures})?.status,'unsupported');
+ assert.equal(classifyFeatureRuntimeRejection({source:{...source,revision:'a'.repeat(40)},engine,workload:w,capture,failures}),null);
+ assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures:[{...failures[0],reason:'error: incorrect result: scalar oracle mismatch'}]}),null);
 });
 
 test('WAVM exact source decoder gaps are source and artifact bound',()=>{
@@ -436,9 +451,12 @@ test('Zwasm classifies source-declared gaps and interpreter-only SIMD absence',(
   ['zwasm-interpreter','compact-imports','error: Zwasm C API failure: compile'],
   ['zwasm-jit','compact-imports','error: Zwasm C API failure: instantiate'],
   ['zwasm-jit','custom-descriptors','sacrificial check check-0-0: error: Zwasm C API failure: compile'],
+  ['zwasm-interpreter','simd','error: Zwasm C API failure: instantiate','80fce146e984af27935a4c59e7ebcb080628232d'],
+  ['zwasm-interpreter','relaxed-simd','error: Zwasm C API failure: instantiate','80fce146e984af27935a4c59e7ebcb080628232d'],
   ['zwasm-interpreter','simd','error: guest trap: unreachable'],
   ['zwasm-interpreter','relaxed-simd','sacrificial check check-0-0: error: guest trap: unreachable'],
   ['zwasm-jit','multi-memory','error: Zwasm JIT compile: MultipleMemories','51634833f70a90ae605feb8c3227897b8ba4c9a1'],
+  ['zwasm-jit','multi-memory','error: Zwasm JIT compile: MultipleMemories','80fce146e984af27935a4c59e7ebcb080628232d'],
  ]){
   const caseSource=revision?{...source,revision}:source;
   const w={id:`features/${feature}/case/1`,sha256:'5'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
@@ -454,6 +472,8 @@ test('Zwasm classifies source-declared gaps and interpreter-only SIMD absence',(
  }
  for(const [engine,feature,reason] of [
   ['zwasm-jit','simd','error: guest trap: unreachable'],
+  ['zwasm-jit','simd','error: Zwasm C API failure: instantiate'],
+  ['zwasm-interpreter','simd','error: Zwasm C API failure: instantiate'],
   ['zwasm-interpreter','typed-function-references','error: Zwasm C API failure: compile'],
   ['zwasm-interpreter','gc','error: resource budget exceeded'],
   ['zwasm-interpreter','multi-value','error: guest trap: unreachable'],
@@ -666,7 +686,8 @@ test('audited Wizard native modes share exact loader rejections, without masking
 });
 
 test('WAMR Fast JIT exact source build exclusions do not hide enableable tail calls or threads',()=>{
- const source={repository:'bytecodealliance/wasm-micro-runtime',revision:'ea5dd88e9ca40a44b6a5d9ffeb87a20833b13b8a'},engine='wamr-fast-jit';
+ for(const revision of ['ea5dd88e9ca40a44b6a5d9ffeb87a20833b13b8a','f5324c182fae0a6eaa14aa23ec886f0ba40d40e1']){
+ const source={repository:'bytecodealliance/wasm-micro-runtime',revision},engine='wamr-fast-jit';
  for(const feature of ['gc','typed-function-references','simd','legacy-exceptions','memory64','multi-memory','tail-call','threads']){
   const w={id:`features/${feature}/case/1`,sha256:'4'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
   const capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0}]};
@@ -674,5 +695,130 @@ test('WAMR Fast JIT exact source build exclusions do not hide enableable tail ca
   const input={source,engine,workload:w,capture,failures};
   assert.equal(classifyFeatureRuntimeRejection(input)?.status,['tail-call','threads'].includes(feature)?undefined:'unsupported');
   assert.equal(classifyFeatureRuntimeRejection({...input,source:{...source,revision:'9'.repeat(40)},capture:{...capture,source:{...source,revision:'9'.repeat(40)}}}),null);
+ }
+ }
+});
+
+test('JSC IPInt-only Memory64 rejection stays revision-bound and never hides an oracle failure',()=>{
+ const source={repository:'WebKit/WebKit',revision:'b95c91b1c0ee43cc86d25ff7af73038f67a88e04'},engine='jsc';
+ const workload={id:'features/memory64/load-store/1',sha256:'f'.repeat(64),abi:'core',features:['memory64'],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+ const capture={source,results:[{engine,workload:workload.id,artifactSha256:workload.sha256,contractSha256:workloadContract(workload),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+ const failure={engine,workload:workload.id,phase:'first-call',status:'error',reason:"error: WebAssembly.Module doesn't parse at byte 24: Memory64 is not enabled"};
+ const input={source,engine,workload,capture,failures:[failure]};
+ assert.equal(classifyFeatureRuntimeRejection(input)?.status,'unsupported');
+ assert.equal(classifyFeatureRuntimeRejection({...input,source:{...source,revision:'a'.repeat(40)}}),null);
+ assert.equal(classifyFeatureRuntimeRejection({...input,failures:[{...failure,reason:'error: incorrect result'}]}),null);
+});
+
+test('WasmEdge 0.18.1 compact-import decoder gap stays source-bound for interpreter and JIT',()=>{
+ const source={repository:'WasmEdge/WasmEdge',revision:'b2e483553ea7a1826be117180125c71e5d0b8958'};
+ const workload={id:'features/compact-imports/module-group-1024/1',sha256:'f'.repeat(64),abi:'core',features:['compact-imports'],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+ for(const engine of ['wasmedge','wasmedge-jit']){
+  const capture={source,results:[{engine,workload:workload.id,artifactSha256:workload.sha256,contractSha256:workloadContract(workload),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+  const failure={engine,workload:workload.id,phase:'first-call',status:'error',reason:'error: malformed import kind'};
+  const input={source,engine,workload,capture,failures:[failure]};
+  assert.equal(classifyFeatureRuntimeRejection(input)?.status,'unsupported');
+  assert.equal(classifyFeatureRuntimeRejection({...input,source:{...source,revision:'a'.repeat(40)}}),null);
+  assert.equal(classifyFeatureRuntimeRejection({...input,failures:[{...failure,reason:'error: incorrect result'}]}),null);
+ }
+});
+
+test('current wasm2c explicit unsupported instruction diagnostics stay revision and proposal bound',()=>{
+ const source={repository:'WebAssembly/wabt',revision:'a57679e479efa17f536691e9949a81d877869579'},engine='wasm2c-gcc';
+ for(const [feature,opcode] of [['relaxed-simd','i8x16.relaxed_swizzle'],['relaxed-simd','i32x4.relaxed_trunc_f64x2_s_zero'],['wide-arithmetic','i64.mul_wide_s'],['wide-arithmetic','i64.add128']]){
+  const workload={id:`features/${feature}/case/1`,sha256:'f'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+  const capture={source,results:[{engine,workload:workload.id,artifactSha256:workload.sha256,contractSha256:workloadContract(workload),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+  const failure={engine,workload:workload.id,phase:'first-call',status:'error',reason:`error: translation failed: error: wasm2c does not support the ${opcode} instruction\n`};
+  const input={source,engine,workload,capture,failures:[failure]};
+  assert.equal(classifyFeatureRuntimeRejection(input)?.status,'unsupported');
+  assert.equal(classifyFeatureRuntimeRejection({...input,source:{...source,revision:'a'.repeat(40)}}),null);
+  assert.equal(classifyFeatureRuntimeRejection({...input,failures:[{...failure,reason:'error: incorrect result'}]}),null);
+ }
+});
+
+test('upstream w2c2 v128 local decoder rejection is limited to its scalar-only revision',()=>{
+ const source={repository:'turbolent/w2c2',revision:'700f556539ea7c7995e6645b9b80e3edf9c9b271'},engine='w2c2-gcc';
+ const workload={id:'features/simd/i32x4-add-multiply/1',sha256:'f'.repeat(64),abi:'core',features:['simd'],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+ const capture={source,results:[{engine,workload:workload.id,artifactSha256:workload.sha256,contractSha256:workloadContract(workload),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+ const failure={engine,workload:workload.id,phase:'first-call',status:'error',reason:'error: translation failed: invalid code section local declarations'};
+ const input={source,engine,workload,capture,failures:[failure]};
+ assert.equal(classifyFeatureRuntimeRejection(input)?.status,'unsupported');
+ assert.equal(classifyFeatureRuntimeRejection({...input,source:{...source,revision:'a'.repeat(40)}}),null);
+ assert.equal(classifyFeatureRuntimeRejection({...input,failures:[{...failure,reason:'error: incorrect result'}]}),null);
+});
+
+test('pinned LibWasm decoder gaps are proposal-bound in both modes and preserve measured or incorrect outcomes',()=>{
+ const source={repository:'LadybirdBrowser/ladybird',revision:'0203ab20ca96c7f91cead4794053ee2d92df52c6'};
+ const diagnostics=[
+  ['wide-arithmetic','Malformed("illegal opcode 0xfc 0x13")'],
+  ['compact-imports','Malformed("malformed import kind")'],
+  ['custom-page-sizes','Malformed("malformed memory limits flags")'],
+  ['shared-everything-threads','Malformed("malformed mutability")'],
+  ['shared-everything-threads','Malformed("integer representation too long")'],
+  ['stack-switching','Malformed("integer representation too long")'],
+  ['memory-control','Malformed("illegal opcode 0xfc 0x12")'],
+  ['half-precision','Malformed("illegal opcode 0xfd 0x120")'],
+  ['stringref','Malformed("illegal opcode 0xfb 0xa9")'],
+  ['acquire-release-atomics','Invalid("atomic memory op alignment must be equal to natural")'],
+  ['custom-descriptors','Malformed("integer representation too long")'],
+ ];
+ for(const engine of ['libwasm','libwasm-jit'])for(const [feature,diagnostic] of diagnostics){
+  const workload={id:`features/${feature}/case/1`,sha256:'f'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+  const row={engine,workload:workload.id,artifactSha256:workload.sha256,contractSha256:workloadContract(workload),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]};
+  const capture={source,results:[row]};
+  const failure={engine,workload:workload.id,phase:'first-call',status:'error',reason:`error: LibWasm compilation failed: ${diagnostic}`};
+  const input={source,engine,workload,capture,failures:[failure]};
+  assert.equal(classifyFeatureRuntimeRejection(input)?.status,'unsupported',`${engine} ${feature}`);
+  for(const changedSource of [{...source,revision:'a'.repeat(40)},{...source,repository:'another/runtime'}])assert.equal(classifyFeatureRuntimeRejection({...input,source:changedSource,capture:{...capture,source:changedSource}}),null);
+  for(const reason of ['error: incorrect result: scalar oracle mismatch','error: guest trap: unreachable','error: LibWasm compilation failed: Malformed("unexpected end")'])assert.equal(classifyFeatureRuntimeRejection({...input,failures:[{...failure,reason}]}),null);
+  assert.equal(classifyFeatureRuntimeRejection({...input,capture:{...capture,results:[{...row,timingSamples:1,samplesNs:[1]}]}}),null);
+  assert.equal(classifyFeatureRuntimeRejection({...input,engine:'other-engine'}),null);
+ }
+});
+
+test('current Zwasm interpreter SIMD instantiation refusal never conceals JIT or other proposal failures',()=>{
+ const revision='80fce146e984af27935a4c59e7ebcb080628232d';
+ for(const [engine,feature,pin,expected] of [['zwasm-interpreter','simd',revision,'unsupported'],['zwasm-interpreter','relaxed-simd',revision,'unsupported'],['zwasm-jit','simd',revision,undefined],['zwasm-interpreter','gc',revision,undefined],['zwasm-interpreter','simd','5'.repeat(40),undefined]]){
+  const source={repository:'zwasm/zwasm',revision:pin};
+  const w={id:`features/${feature}/case/1`,sha256:'5'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+  const capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'instantiate',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+  const failures=[{engine,workload:w.id,phase:'instantiate',status:'error',reason:'error: Zwasm C API failure: instantiate'}];
+  assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures})?.status,expected,`${engine} ${feature} ${pin}`);
+ }
+});
+
+
+test('current Wizard native compact-import decoder rejection is source-bound and preserves wrong answers',()=>{
+ const source={repository:'titzer/wizard-engine',revision:'a87e56395fcf685747e489020cc7be208a9d710b'};
+ for(const engine of ['wizard-fast-int','wizard-spc']){
+  const workload={id:'features/compact-imports/type-group-1024/64',sha256:'4'.repeat(64),abi:'core',features:['compact-imports'],export:'benchmark',args:['64'],reset:'stateless',oracle:{kind:'exact_u64',expected:['64']}};
+  const capture={source,results:[{engine,workload:workload.id,artifactSha256:workload.sha256,contractSha256:workloadContract(workload),phase:'first-call',latencyStatus:'failed',timingSamples:0}]};
+  const failures=[{engine,workload:workload.id,phase:'first-call',status:'error',reason:'error: invalid import kind 0x7E'}];
+  const input={source,engine,workload,capture,failures};
+  assert.equal(classifyFeatureRuntimeRejection(input)?.status,'unsupported');
+  assert.equal(classifyFeatureRuntimeRejection({...input,failures:[{...failures[0],status:'incorrect_result',reason:'scalar oracle mismatch'}]}),null);
+  const other={...source,revision:'8'.repeat(40)};
+  assert.equal(classifyFeatureRuntimeRejection({...input,source:other,capture:{...capture,source:other}}),null);
+ }
+});
+
+
+test('current Wizard native absent proposal decoders never hide oracle failures or enableable custom pages',()=>{
+ const source={repository:'titzer/wizard-engine',revision:'a87e56395fcf685747e489020cc7be208a9d710b'};
+ for(const engine of ['wizard-fast-int','wizard-spc'])for(const [feature,reason] of [
+  ['shared-everything-threads','invalid global flags 0x03'],
+  ['memory-control','unsupported opcode 0x00 0xFF (<invalid>)'],
+  ['half-precision','unsupported opcode 0x00 0xFF (<invalid>)'],
+  ['stringref','unsupported opcode 0x00 0xFF (<invalid>)'],
+  ['acquire-release-atomics','expected max alignment 4, got 34'],
+  ['custom-descriptors','expected type decl code, got 77'],
+  ['custom-page-sizes','invalid memory flags 0x09'],
+ ]){
+  const workload={id:`features/${feature}/case/64`,sha256:'4'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['64'],reset:'stateless',oracle:{kind:'exact_u64',expected:['64']}};
+  const capture={source,results:[{engine,workload:workload.id,artifactSha256:workload.sha256,contractSha256:workloadContract(workload),phase:'first-call',latencyStatus:'failed',timingSamples:0}]};
+  const failures=[{engine,workload:workload.id,phase:'first-call',status:'error',reason}];
+  const input={source,engine,workload,capture,failures};
+  assert.equal(classifyFeatureRuntimeRejection(input)?.status,feature==='custom-page-sizes'?undefined:'unsupported');
+  assert.equal(classifyFeatureRuntimeRejection({...input,failures:[{...failures[0],status:'incorrect_result',reason:'scalar oracle mismatch'}]}),null);
  }
 });

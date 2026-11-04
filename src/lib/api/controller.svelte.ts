@@ -32,7 +32,7 @@ export const aggregateKey=(scope:Scope,metric:string)=>JSON.stringify([scope.mac
 let abort:AbortController|undefined;
 let machines:MachineId[]=[];
 const slots=new Map<string,CfgId>();
-const plannedBackends:Record<string,string>={'wasmtime-winch':'winch','wasmer-llvm':'llvm-jit','wasmer-singlepass':'singlepass-jit','wasmer-cranelift':'cranelift-jit','chicory-jit':'jvm-bytecode-compiler','endive-interpreter':'jvm-interpreter','endive-jit':'jvm-bytecode-compiler','endive-redline':'cranelift-aot','wazy':'native-jit','chasm':'jvm-interpreter','wizard-v3-int':'v3-interpreter','wizard-fast-int':'fast-interpreter','wizard-spc':'spc','graalwasm':'truffle-graal','zwasm-interpreter':'interpreter','zwasm-jit':'jit','wazero-interpreter':'interpreter','wamr':'interpreter','wamr-fast-jit':'fast-jit','wamr-llvm-jit':'llvm-jit','wasmedge':'interpreter','wasmedge-jit':'jit','wasmi':'interpreter','wasm3':'interpreter','chicory':'interpreter','wasm2c-gcc':'GCC','w2c2-gcc':'GCC','wasm2go':'native-go-aot','jsc':'OMG (forced tier-up)','libwasm':'interpreter','spidermonkey':'ion-only'};
+const plannedBackends:Record<string,string>={'wasmtime-winch':'winch','wasmer-llvm':'llvm-jit','wasmer-singlepass':'singlepass-jit','wasmer-cranelift':'cranelift-jit','chicory-jit':'jvm-bytecode-compiler','endive-interpreter':'jvm-interpreter','endive-jit':'jvm-bytecode-compiler','wazy':'native-jit','chasm':'jvm-interpreter','wizard-v3-int':'v3-interpreter','wizard-fast-int':'fast-interpreter','wizard-spc':'spc','graalwasm':'truffle-graal','zwasm-interpreter':'interpreter','zwasm-jit':'jit','wazero-interpreter':'interpreter','wamr':'interpreter','wamr-fast-jit':'fast-jit','wamr-llvm-jit':'llvm-jit','wasmedge':'interpreter','wasmedge-jit':'jit','wasmi':'interpreter','wasm3':'interpreter','chicory':'interpreter','wasm2c-gcc':'GCC','w2c2-gcc':'GCC','wasm2go':'native-go-aot','jsc':'OMG (forced tier-up)','libwasm':'interpreter','libwasm-jit':'optimizing-jit-tiered','spidermonkey':'ion-only'};
 const status=(s:string):ViewCell['st']=>s==='not-measured'?'nm':s==='unavailable'?'unavail':s as ViewCell['st'];
 function engineColor(engine:string){let hash=0;for(const c of engine)hash=(Math.imul(hash,31)+c.charCodeAt(0))>>>0;return `hsl(${hash%360} 65% 60%)`;}
 function slot(engine:string):CfgId{
@@ -54,7 +54,7 @@ function slot(engine:string):CfgId{
  }
  WF[id]=1;slots.set(engine,id);return id;
 }
-for(const engine of ['wago','wasmtime','wasmtime-winch','wasmer-singlepass','wasmer-llvm','wazero','wazero-interpreter','v8','wavm','spidermonkey','jsc','wasmi','wamr','wamr-fast-jit','wamr-llvm-jit','wasm3','wasmedge','wasmedge-jit','chicory','wasm2go','wasm2c-gcc','w2c2-gcc','libwasm','wasmer-cranelift','chicory-jit','endive-interpreter','endive-jit','endive-redline','wazy','chasm','wizard-v3-int','wizard-fast-int','wizard-spc','graalwasm','zwasm-interpreter','zwasm-jit'])slot(engine);
+for(const engine of ['wago','wasmtime','wasmtime-winch','wasmer-singlepass','wasmer-llvm','wazero','wazero-interpreter','v8','wavm','spidermonkey','jsc','wasmi','wamr','wamr-fast-jit','wamr-llvm-jit','wasm3','wasmedge','wasmedge-jit','chicory','wasm2go','wasm2c-gcc','w2c2-gcc','libwasm','libwasm-jit','wasmer-cranelift','chicory-jit','endive-interpreter','endive-jit','wazy','chasm','wizard-v3-int','wizard-fast-int','wizard-spc','graalwasm','zwasm-interpreter','zwasm-jit'])slot(engine);
 let compactClient=new CompactClient();
 let buildPath:string|undefined;
 async function get<T>(path:string,signal:AbortSignal,revalidate=false):Promise<T>{return compactClient.load<T>(path,signal,revalidate)}
@@ -68,7 +68,7 @@ async function rows(platform:string,phase:string,signal:AbortSignal,history=fals
    if(dataRevision&&page.dataRevision&&dataRevision!==page.dataRevision)throw Object.assign(Error('Data changed during loading'),{status:409});dataRevision=page.dataRevision;activeVersions=activeVersions&&page.schema===4;
    all.push(...await unpackMatrixAsync(page,signal));revision=page.revision;offset=page.nextOffset??0;
    if(all.length>1000000)throw Error('Measurement scope exceeds display limit');
-  }while(offset);return Object.assign(all.filter(row=>!['wasm2js','deno','wasm2rs'].includes(row.engine)),{dataRevision,activeVersions});
+  }while(offset);return Object.assign(all.filter(row=>!['wasm2js','deno','wasm2rs','endive-redline'].includes(row.engine)),{dataRevision,activeVersions});
   }catch(error){if((error as {status?:number}).status===422&&phase==='*'&&limit>256){limit=Math.floor(limit/2);signal.throwIfAborted();continue;}if((error as {status?:number}).status!==409||attempt>=3)throw error;compactClient.invalidate();signal.throwIfAborted();}
  }
 }

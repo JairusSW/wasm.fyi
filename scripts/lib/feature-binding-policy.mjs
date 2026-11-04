@@ -15,6 +15,11 @@ export function featureBindingsForEngine(bindings, engine, pin) {
 
 export function featureBindingForWorkload(candidates, engine, workload) {
   if (!candidates.length) return null;
+  if (engine === 'wamr-llvm-jit') {
+    const base = candidates.find(binding => !binding.job?.featureProfile);
+    const features = candidates.find(binding => binding.job?.featureProfile === 'features');
+    return workload?.features?.includes('tail-call') ? features || base || candidates[0] : base || candidates[0];
+  }
   if (engine !== 'wamr') return candidates[0];
   const fast = candidates.find(binding => ['fast', undefined, null, ''].includes(binding.job?.featureProfile));
   const classic = candidates.find(binding => binding.job?.featureProfile === 'classic');

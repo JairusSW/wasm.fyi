@@ -131,8 +131,8 @@ test('all release-capable benchmark configurations have explicit release sources
  const configurations=Object.values(engineSources).flatMap(source=>source.configurations);
  assert.equal(new Set(configurations).size,36);
  assert.equal(configurations.length,36);
- for(const configuration of ['wamr-fast-jit','wamr-llvm-jit','wasmedge-jit','wasmtime-winch','wasmer-llvm','wasm2go','libwasm'])assert(configurations.includes(configuration));
- for(const excluded of ['deno','wasm2js','wasm2rs'])assert(!configurations.includes(excluded));
+ for(const configuration of ['wamr-fast-jit','wamr-llvm-jit','wasmedge-jit','wasmtime-winch','wasmer-llvm','wasm2go','libwasm','libwasm-jit'])assert(configurations.includes(configuration));
+ for(const excluded of ['deno','wasm2js','wasm2rs','endive-redline'])assert(!configurations.includes(excluded));
   for(const source of Object.values(engineSources)){assert(source.repository.includes('/'));assert(!source.branch);assert(source.configurations.length);}
 });
 test('both measured hosts retain the eight supported configurations',()=>{

@@ -12,6 +12,13 @@ export function wasmEdgeHostLinkFlags(env,platform=process.platform) {
  // Permit those labels only, while requiring every actual import to resolve.
  const linker=['-Wl,--undefined-version','-Wl,--no-undefined'];
  const flags=[];
+ if(env.WASMFYI_WASMEDGE_SYSTEM_CXX==='1'){
+  // Explicit values also migrate an existing CMake cache away from a private SDK.
+  flags.push('-DCMAKE_C_COMPILER=/usr/bin/cc','-DCMAKE_CXX_COMPILER=/usr/bin/c++','-DCMAKE_CXX_FLAGS=');
+  // Clear archive tools retained from Clang too: LLVM ar cannot index GCC LTO.
+  for(const key of ['CMAKE_AR','CMAKE_C_COMPILER_AR','CMAKE_CXX_COMPILER_AR'])flags.push('-D'+key+'=/usr/bin/gcc-ar');
+  for(const key of ['CMAKE_RANLIB','CMAKE_C_COMPILER_RANLIB','CMAKE_CXX_COMPILER_RANLIB'])flags.push('-D'+key+'=/usr/bin/gcc-ranlib');
+ }
  if(prefix){
   if(!prefix.startsWith('/')||/[\s"'`$]/.test(prefix))throw Error('Unsafe WasmEdge compiler SDK prefix');
   const library=join(prefix,'lib/x86_64-unknown-linux-gnu');

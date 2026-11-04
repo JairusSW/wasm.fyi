@@ -84,6 +84,8 @@ jobs:
           tar -xJf /tmp/wasmtime.tar.xz -C /tmp
           sudo install /tmp/wasmtime-v46.0.1-x86_64-linux/wasmtime /usr/local/bin/wasmtime
       - name: Build every corpus from source and check execution
+        env:
+          GOTOOLCHAIN: auto
         run: |
           corpus_tool_bin=$(dirname "$WASMBENCH_WASM_TOOLS")
           export PATH="$corpus_tool_bin:$PATH"

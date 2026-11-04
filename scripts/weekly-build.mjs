@@ -1,5 +1,8 @@
 import {withWamrRunningMode,withWamrBackendDescription} from './lib/wamr-running-mode.mjs';
 import {withWamrRuntimeAliases} from './lib/wamr-runtime-aliases.mjs';
+import {withWasmEdgeRuntimeAliases} from './lib/wasmedge-runtime-aliases.mjs';
+import {applyWasm2GoFeaturePolicy} from './lib/wasm2go-feature-policy.mjs';
+import {applyWasm2GoSession} from './lib/wasm2go-session.mjs';
 import {applyWazeroSampling,restoreHistoricalWazeroSources} from './lib/wazero-sampling.mjs';
 import {applyWazeroFeaturePolicy} from './lib/wazero-feature-policy.mjs';
 import {applyW2c2Bridge} from './lib/w2c2-bridge.mjs';
@@ -81,11 +84,7 @@ if(engine==='wamr'){
 }
 if(engine==='wasmedge'){
  const path=join(root,'experiment/extra_runtimes.go');let text=await readFile(path,'utf8');
- const base='"wasmi", "wavm", "wamr", "wasm3", "wasmedge", "wasmer-llvm", "wasmer-singlepass"';
- const aliases='"wasmi", "wavm", "wamr", "wasm3", "wasmedge", "wasmedge-jit", "wasmer-llvm", "wasmer-singlepass"';
- const occurrences=text.split(base).length-1,adapted=text.split(aliases).length-1;
- if(occurrences===3)text=text.replaceAll(base,aliases);
- else if(adapted!==3)throw Error('WasmEdge runtime alias anchors changed');
+ text=withWasmEdgeRuntimeAliases(text);
  await writeFile(path,text);
 }
 const harnessRevision=(await run('git',['-C',base,'rev-parse','HEAD'])).output.trim();
@@ -140,6 +139,13 @@ if(engine==='wago') {
 	 provenance.featurePolicy=await applyWazeroFeaturePolicy(root);
  await run('go',['build','-mod=mod','-modfile='+mod,'-trimpath','-o',join(root,'bin/adapter-wazero'),'./adapters/wazero']);
  provenance.module=download;runtimeVersion=download.Version;
+} else if(engine==='wasm2go') {
+ const translator=join(directory,'wasm2go');
+ await run('go',['build','-trimpath','-o',translator,'.'],{cwd:source});
+ env.WASMBENCH_WASM2GO=translator;
+ await applyWasm2GoFeaturePolicy(root);await applyWasm2GoSession(root);
+ await run('go',['build','-trimpath','-o',join(root,'bin/adapter-wasm2go'),'./adapters/wasm2go']);
+ provenance.translatorSha256=digest(await readFile(translator));
 } else if(engine==='wasmtime') {
  const workspace=await readFile(join(source,'Cargo.toml'),'utf8');
  const minimum=workspace.match(/^rust-version\s*=\s*"(\d+\.\d+(?:\.\d+)?)"/m)?.[1];

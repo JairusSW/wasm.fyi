@@ -8,7 +8,7 @@ const execFileAsync=promisify(execFile);
 export const engineSources={
   wasmedge:{repository:"WasmEdge/WasmEdge",configurations:["wasmedge","wasmedge-jit"]},
   chicory:{repository:"dylibso/chicory",configurations:["chicory","chicory-jit"]},
-  endive:{repository:'bytecodealliance/endive',configurations:['endive-interpreter','endive-jit','endive-redline']},
+  endive:{repository:'bytecodealliance/endive',configurations:['endive-interpreter','endive-jit']},
   wazy:{repository:'samyfodil/wazy',configurations:['wazy']},
   chasm:{repository:'CharlieTap/chasm',configurations:['chasm']},
   wizard:{repository:'titzer/wizard-engine',configurations:['wizard-v3-int','wizard-fast-int','wizard-spc']},
@@ -17,7 +17,7 @@ export const engineSources={
   wasm2c:{repository:"WebAssembly/wabt",configurations:["wasm2c-gcc"]},
   w2c2:{repository:"turbolent/w2c2",configurations:["w2c2-gcc"]},
   wasm2go:{repository:'ncruces/wasm2go',configurations:['wasm2go']},
-  libwasm:{repository:'LadybirdBrowser/ladybird',configurations:['libwasm']},
+  libwasm:{repository:'LadybirdBrowser/ladybird',configurations:['libwasm','libwasm-jit']},
   wago:{repository:'wago-org/wago',configurations:['wago']},
   wazero:{repository:'tetratelabs/wazero',configurations:['wazero','wazero-interpreter']},
   wasmtime:{repository:'bytecodealliance/wasmtime',configurations:['wasmtime','wasmtime-winch']},

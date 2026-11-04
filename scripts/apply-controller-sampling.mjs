@@ -1,3 +1,4 @@
+import {applyAgentStartupRetry} from './lib/agent-startup-retry.mjs';
 import {applyV8Turboshaft} from './lib/v8-turboshaft.mjs';
 import {applyControllerPreflightPolicy} from './lib/controller-preflight-policy.mjs';
 // Install the site's hardcoded same-process collector in an isolated harness.
@@ -27,6 +28,7 @@ await applyV8CacheFlag(root);
 await applyV8NativeSizePolicy(root);
 await applyV8Turboshaft(root);
 await applyControllerPreflightPolicy(root);
+await applyAgentStartupRetry(root);
 await applyPrivateELFInterpreter(root);
 const files=new Map();
 for(const relative of ['experiment/types.go','experiment/runner.go','cmd/wasmbench/main.go'])files.set(relative,await readFile(join(root,relative),'utf8'));

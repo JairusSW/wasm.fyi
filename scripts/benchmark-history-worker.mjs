@@ -1,9 +1,9 @@
-import {restoredWorkloadFailure} from './lib/resumed-workload-failure.mjs';
+import {restoredWorkloadFailure,retryInfrastructureCapture} from './lib/resumed-workload-failure.mjs';
 import {selectRepairPhases,mergePhaseRepair} from './lib/phase-repair.mjs';
 import {workloadContract} from './lib/workload-contract.mjs';
 import {historyWorkloadFailure,workloadBudgetMs} from './lib/history-workload-failure.mjs';
 // Compact native collection for current builds and source-pinned historical jobs.
-import {readFile,writeFile,mkdir,stat} from 'node:fs/promises';
+import {readFile,writeFile,mkdir,stat,rm} from 'node:fs/promises';
 import {join,basename} from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {runBenchmarkProcess} from './lib/benchmark-process.mjs';
@@ -56,9 +56,12 @@ for(const job of plan.jobs){
   if(process.platform==='darwin'&&performance.now()>=sliceDeadline){status.status='yielded';abort.abort();break;}
   const key=job.id+'-'+digest(Buffer.from(workload.id)).slice(0,16),file=join(output,key+'.json');
   const existing=await readFile(file,'utf8').then(JSON.parse,()=>null);
+  let infrastructureNote;
+  if(job.retryInfrastructureFailurePolicy&&existing?.results.some(row=>row.latencyStatus==='failed'))for(const notes of [join(directory,'failure-notes'),join(output,'..','failure-notes')]){infrastructureNote=await readFile(join(notes,key+'.json'),'utf8').then(JSON.parse,()=>null);if(infrastructureNote)break;}
+  const recoverInfrastructure=retryInfrastructureCapture(existing,infrastructureNote,job,workload);
   const repairPhases=selectRepairPhases(existing,workload,job);
   if(repairPhases&&job.unavailableReason)throw Error('Cannot repair phases without a runnable adapter');
-  if(repairPhases?.length===0||!repairPhases&&!job.forceCapture&&reusableCapture(existing,workload,job.source,plan.collection.samples,plan.collection.adaptiveSampling,job.historical&&plan.collection.retainRecordedSamples===true)){
+  if(repairPhases?.length===0||!repairPhases&&!job.forceCapture&&!recoverInfrastructure&&reusableCapture(existing,workload,job.source,plan.collection.samples,plan.collection.adaptiveSampling,job.historical&&plan.collection.retainRecordedSamples===true)){
    if(existing?.results.some(row=>row.latencyStatus==='failed')){
     let note=null;
     for(const notes of [join(directory,'failure-notes'),join(output,'..','failure-notes')]){
@@ -70,6 +73,7 @@ for(const job of plan.jobs){
    recordResources(existing);status.completed++;continue;
   }
   if(repairPhases){const originals=join(directory,'phase-repair-originals');await mkdir(originals,{recursive:true});const backup=join(originals,key+'.json');if(!await stat(backup).catch(()=>null))await atomicJSON(backup,existing);}
+  if(recoverInfrastructure){const originals=join(directory,'infrastructure-repair-originals');await mkdir(originals,{recursive:true});if(!await stat(join(originals,key+'.json')).catch(()=>null)){await atomicJSON(join(originals,key+'.json'),existing);await atomicJSON(join(originals,key+'.note.json'),infrastructureNote);}}
   const scratch=join(directory,'scratch',key);await mkdir(scratch,{recursive:true});await atomicJSON(join(scratch,'wago-suite.json'),[workload]);
   status.current={engine:job.engine,source:job.source.ref,asOf:job.source.asOf,workload:workload.id};await save();console.log(JSON.stringify({event:'start',...status.current}));
   // The collector reads only this source descriptor; the controller pins actual adapter identities.
@@ -93,6 +97,7 @@ for(const job of plan.jobs){
    // Producers can return verified run records containing failed trials rather
    // than throw. Keep those failures visible to the campaign completion audit.
    const failedPhases=capture.results.filter(row=>row.latencyStatus==='failed').map(row=>row.phase);
+   if(recoverInfrastructure&&!failedPhases.length)for(const notes of [join(directory,'failure-notes'),join(output,'..','failure-notes')])await rm(join(notes,key+'.json'),{force:true});
    if(failedPhases.length){
     const failures=await readFile(join(scratch,'failures.json'),'utf8').then(JSON.parse,()=>[]);
     const note={capturedAt:capture.capturedAt,source:job.source,engine:job.displayEngine||job.engine,workload:workload.id,kind:'failed-trials',phases:failedPhases,failures,reason:failures.map(f=>f.reason).filter(Boolean).join('; ')||'Producer returned failed latency trials'};
@@ -102,6 +107,7 @@ for(const job of plan.jobs){
    console.log(JSON.stringify({event:'captured',...status.current,statuses:capture.results.map(r=>[r.phase,r.latencyStatus]),resources:capture.results.map(r=>({phase:r.phase,memory:r.memoryStatus,code:r.codeStatus}))}));
   }catch(error){if(!abort.signal.aborted){
    const {capture,note}=historyWorkloadFailure({workload,job,error,signal:workloadSignal,platform:{os:process.platform,arch:process.arch==='x64'?'amd64':'arm64',cpu:cpus()[0].model,cores:plan.platformSpecs.cores,kernel:execFileSync('uname',['-srv']).toString().trim(),memoryBytes:plan.platformSpecs.memoryBytes}});
+   if(job.retryInfrastructureFailurePolicy)note.recoveryPolicy=job.retryInfrastructureFailurePolicy;
    status.errors.push({...status.current,error:note.reason,kind:note.kind,budgetMs:note.budgetMs});console.error(error);
    // Persist a failed outcome so resume cannot retry a timed-out/crashed
    // workload forever. The separate status record retains its actual reason.

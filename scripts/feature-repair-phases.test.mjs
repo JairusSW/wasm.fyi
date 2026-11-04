@@ -10,6 +10,7 @@ test('completed audited repairs are terminal across device slices',()=>{
  assert.deepEqual(featureRepairPhases({...input,prior:{...input.prior,status:'repair-pending',repairOf:'older-capture.json'}}),['compile','instantiate']);
 });
 test('source-bound reclassification is terminal without rerunning retained evidence',()=>assert.deepEqual(featureRepairPhases({...input,prior:{...input.prior,status:'completed',classifiedFrom:'raw.json'}}),[]));
+test('an explicit new adapter policy may reconsider a selected classified rejection',()=>assert.deepEqual(featureRepairPhases({...input,prior:{...input.prior,status:'completed',classifiedFrom:'raw.json'},retryCompleted:true,documentedProposals:true}),['compile','instantiate']));
 test('an explicit adapter upgrade may retry a completed failed repair',()=>assert.deepEqual(featureRepairPhases({...input,prior:{...input.prior,status:'completed',repairOf:'older.json'},retryCompleted:true}),['compile','instantiate']));
 test('the current repair policy is terminal across shared-device restarts',()=>{
  const repairPolicy='declared-feature-repair-v1';

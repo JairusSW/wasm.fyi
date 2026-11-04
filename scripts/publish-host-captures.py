@@ -235,6 +235,8 @@ def main():
     parser.add_argument("--hub")
     parser.add_argument("--api-url", default="http://127.0.0.1:8090")
     parser.add_argument("--interval", type=int, default=60)
+    parser.add_argument("--once", action="store_true", help="publish one staged inventory and exit")
+    parser.add_argument("--publish-delay", type=float, default=0.02, help="minimum delay between acknowledged writes")
     parser.add_argument("--campaign", default="release-five-20261008")
     parser.add_argument("--capture-directory", action="append", type=pathlib.Path, default=[],
                         help="additional synced capture directory; may be repeated")
@@ -242,6 +244,8 @@ def main():
     parser.add_argument("--extra-source-plan", action="append", type=pathlib.Path, default=[],
                         help="additional explicit publication pins; collection plan stays frozen")
     args = parser.parse_args()
+    if not math.isfinite(args.publish_delay) or args.publish_delay < 0.01:
+        parser.error("publish delay must be at least 0.01 seconds")
     args.state.mkdir(parents=True, exist_ok=True)
     ledger = args.state / "published.json"
     seen = publication_ledger(ledger)
@@ -321,7 +325,7 @@ def main():
                     # capture needs no more JSON reads until its file changes.
                     unchanged[str(path)] = signature
                     continue
-                if any(row["engine"] in ("deno", "wasm2js", "wasm2rs") for row in rows):
+                if any(row["engine"] in ("deno", "wasm2js", "wasm2rs", "endive-redline") for row in rows):
                     continue
                 # Frozen fixed-sample plans retain their recipe. New adaptive
                 # main runs retain ordered same-process groups under their declared phase cap.
@@ -345,7 +349,7 @@ def main():
                 unchanged[str(path)] = signature
                 published += 1
                 # Leave room in the authenticated write budget for other hosts.
-                time.sleep(0.02)
+                time.sleep(args.publish_delay)
 
             except urllib.error.HTTPError as error:
                 print("Publication will retry:", path.name, str(error), flush=True)
@@ -360,6 +364,8 @@ def main():
         if published:
             compact_publication_ledger(ledger, seen)
         print(json.dumps({"published": published, "total": len(seen), "updated": time.time()}), flush=True)
+        if args.once:
+            break
         time.sleep(args.interval)
 
 

@@ -24,6 +24,27 @@ const documentedFeatures=[
 
 export function wasm2goFeaturePolicySource(source) {
  let result=source;
+ if(!result.includes('// wasm-fyi: embedded wasm2go memory')){
+  const anchor='for _, f := range fields.Fields.List {';
+  if(result.includes('memory := "return nil"')){
+   if(!result.includes(anchor))throw Error('Wasm2go module-memory discovery seam changed');
+   result=result.replace(anchor,anchor+`
+                        // wasm-fyi: embedded wasm2go memory
+                        if embedded, ok := f.Type.(*ast.Ident); ok && len(f.Names) == 0 && embedded.Name == "wasmMemory" {
+                            memory = "return m.memory"
+                        }
+                        if pointer, ok := f.Type.(*ast.StarExpr); ok {
+                            if slice, ok := pointer.X.(*ast.ArrayType); ok && slice.Len == nil {
+                                if element, ok := slice.Elt.(*ast.Ident); ok && element.Name == "byte" {
+                                    for _, name := range f.Names { if name.Name == "memory" { memory = "return *m.memory" } }
+                                }
+                            }
+                        }`);
+   // Preserve pointer-backed imported memory rather than replacing its access
+   // with the historical direct []byte field expression below.
+   result=result.replace('if n.Name == "memory" {','if n.Name == "memory" && memory != "return *m.memory" {');
+  }
+ }
  for(const profile of threadProfiles){
   const capability=`"can_host_profile_${profile}": true`;
   if(!result.includes(capability))result=result.replace('Capabilities: map[string]bool{',`Capabilities: map[string]bool{${capability}, `);
@@ -83,5 +104,5 @@ export async function applyWasm2GoFeaturePolicy(root) {
  const before=await readFile(path,'utf8');
  const after=wasm2goFeaturePolicySource(before);
  if(after!==before)await writeFile(path,after);
- return {policy:'documented-features-export-names-and-thread-flags-v1',mainSha256:digest(Buffer.from(after))};
+ return {policy:'documented-features-export-names-thread-flags-and-embedded-memory-v2',mainSha256:digest(Buffer.from(after))};
 }

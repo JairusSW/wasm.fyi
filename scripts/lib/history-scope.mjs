@@ -1,5 +1,5 @@
 import {workloadContract} from './workload-contract.mjs';
-export const excludedHistoryEngines=new Set(['deno','wasm2js','wasm2rs']);
+export const excludedHistoryEngines=new Set(['deno','wasm2js','wasm2rs','endive-redline']);
 export const historyEngineOrder=['wago','wasmtime','wasmer','wazero','v8','wavm','spidermonkey','jsc','wasmi','wamr','wasm3','wasmedge','chicory','wasm2go','wasm2c','w2c2','libwasm','wazy','chasm','wizard','graalwasm','zwasm','endive'];
 export function validateHistoricalScope(plan,workloads){
  const historical=(plan.jobs||[]).filter(job=>job.historical);

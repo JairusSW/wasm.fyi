@@ -5,6 +5,14 @@ import {featureBindingForWorkload,featureBindingsForEngine,featureProfileForBind
 const pin={revision:'a'.repeat(40),targetWeek:'2026-10-15T00:00:00.000Z'};
 const binding=(engine,profile,path)=>({engine,job:{engine,featureProfile:profile,controller:path,harness:path,source:{revision:pin.revision,asOf:pin.targetWeek}},plan:{}});
 
+test('WAMR LLVM tail calls select the opt-in feature SDK without changing other workloads',()=>{
+ const base=binding('wamr-llvm-jit',undefined,'base'),features=binding('wamr-llvm-jit','features','features');
+ assert.equal(featureBindingForWorkload([base,features],'wamr-llvm-jit',{features:['tail-call']}),features);
+ assert.equal(featureBindingForWorkload([base,features],'wamr-llvm-jit',{features:['simd']}),base);
+ assert.equal(featureBindingForWorkload([features,base],'wamr-llvm-jit',{features:['simd']}),base);
+ assert.equal(featureBindingForWorkload([base],'wamr-llvm-jit',{features:['tail-call']}),base);
+});
+
 test('WAMR uses its mutually exclusive fast and classic feature profiles by workload',()=>{
  const fast=binding('wamr',undefined,'fast'),classic=binding('wamr','classic','classic');
  const candidates=featureBindingsForEngine([fast,classic],'wamr',pin);

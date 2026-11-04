@@ -97,10 +97,11 @@ export async function repairSpiderMonkeyLinuxSingleThreadedWrapper(source,platfo
  const corrected=current.replace(header,'');await writeFile(path,corrected);
  return {path,originalSha256:digest(Buffer.from(current)),compiledSha256:digest(Buffer.from(corrected)),policy:'Let the selected Linux sysroot answer __has_include directly; a generated wrapper makes missing sys/single_threaded.h look present and then fail include_next'};
 }
-export async function buildSpiderMonkeySDK({source,target,env,run}) {
+export async function buildSpiderMonkeySDK({source,target,env,run,maximumFeatures=false}) {
  await mkdir(target,{recursive:true});
  const object=join(target,'obj'),mozconfig=join(target,'mozconfig');
  const flags=['--enable-project=js','--enable-optimize','--disable-debug','--enable-release','--disable-tests'];
+ if(maximumFeatures){const configure=await readFile(join(source,'js/moz.configure'),'utf8');if(configure.includes('"--enable-wasm-memory-control"'))flags.push('--enable-wasm-memory-control');}
  for(const [name,value]of [['--with-libclang-path',env.WASMFYI_SPIDERMONKEY_LIBCLANG],['--with-clang-path',env.WASMFYI_SPIDERMONKEY_BINDGEN_CLANG]]){if(value){if(!value.startsWith('/')||/[\n\r\"$`\s]/.test(value))throw Error('Unsafe SpiderMonkey bindgen tool path');flags.push(name+'='+value);}}
  if(/[\n\r"$`]/.test(object))throw Error('Unsafe SpiderMonkey build path');
  await writeFile(mozconfig,['mk_add_options MOZ_OBJDIR="'+object+'"',...flags.map(flag=>'ac_add_options '+flag),''].join('\n'));

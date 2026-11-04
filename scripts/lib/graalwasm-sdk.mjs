@@ -11,7 +11,10 @@ export function graalOptionDiscoveryArguments(runtimeArguments) {
 }
 export function configureGraalFeatureOptions(adapter,names,engineNames=[]) {
  if(!Array.isArray(names)||names.some(name=>typeof name!=='string'||!name.startsWith('wasm.')||name.length===5))throw Error('Invalid Graal Wasm option descriptors');
- if(!Array.isArray(engineNames)||engineNames.some(name=>typeof name!=='string'||!name.startsWith('engine.')||name.length===7))throw Error('Invalid Graal engine option descriptors');
+ // Current Truffle returns compiler.* descriptors alongside engine.*. They
+ // are valid discovery output, but only explicitly requested engine controls
+ // below are applied to the adapter.
+ if(!Array.isArray(engineNames)||engineNames.some(name=>typeof name!=='string'||!/^(?:engine|compiler)\.[A-Za-z][A-Za-z0-9_.]*$/.test(name)))throw Error('Invalid Graal engine option descriptors');
  const available=new Set(names);
  for(const required of ['wasm.EvalReturnsInstance','wasm.UseUnsafeMemory','wasm.AsyncParsingBinarySize'])if(!available.has(required))throw Error('Graal SDK lacks required measurement option '+required);
  const declaration=/static final List<String> FEATURE_OPTIONS=List\.of\(([^\n]*)\);/g;

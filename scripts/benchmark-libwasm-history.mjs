@@ -14,7 +14,7 @@ import {availableParallelism} from 'node:os';
 import {acquireMeasurementLock} from './lib/measurement-lock.mjs';
 import {prepareLibWasmAdapter} from './lib/libwasm-adapter.mjs';
 import {readFile,writeFile,mkdir,stat,cp,symlink} from 'node:fs/promises';
-import {join,resolve} from 'node:path';
+import {dirname,join,resolve} from 'node:path';
 import {command as rawCommand,digest} from './lib/wasmbench.mjs';
 import {reservedBuildCommand} from './lib/shared-device-build.mjs';
 function command(program,args,options={}){
@@ -32,6 +32,21 @@ if(!await stat(join(nativeBase,'adapters/native/Cargo.toml')).catch(()=>null))th
 const prepareOnly=process.argv.includes('--prepare-only'),selectedRefs=new Set(process.argv.slice(4).filter(value=>value!=='--prepare-only'));
 const source=join(tools,'libwasm-source'),project=join(tools,'libwasm-build-project'),deps=join(tools,'libwasm-deps');
 const env=libwasmLinkerEnvironment({...process.env,...template.env,GOWORK:'off',GOFLAGS:'-buildvcs=false',...(template.env?.WASMFYI_BUILD_JOBS?{CARGO_BUILD_JOBS:template.env.WASMFYI_BUILD_JOBS}:{}),WASMBENCH_LIBWASM_DEPS:deps,WASMBENCH_LIBWASM_FASTFLOAT:join(tools,'libwasm-fastfloat/include')});
+const rustConfigurations={
+ 'libwasm':{feature:'libwasm_runtime',jit:'off',backend:'interpreter'},
+ 'libwasm-jit':{feature:'libwasm_jit',jit:'on,threads=1',backend:'optimizing-jit-tiered'},
+};
+async function registerLibWasmJIT(root){
+ const path=join(root,'experiment/extra_runtimes.go');
+ let source=await readFile(path,'utf8');
+ if(source.includes('case "libwasm-jit":'))return;
+ const commandNeedle='case "wasmi", "wavm", "libwasm", "wamr", "wasm3", "wasmedge", "wasmer-llvm", "wasmer-singlepass":';
+ const buildNeedle='"wasmedge-jit", "wasmi", "wavm", "wamr", "wasm3", "wasmedge", "wasmer-llvm", "wasmer-singlepass"';
+ if(!source.includes(commandNeedle)||!source.includes(buildNeedle))throw Error('LibWasm JIT controller registration anchors changed');
+ source=source.replace(commandNeedle,'case "libwasm-jit":\n\t\treturn []string{NativeExecutable(filepath.Join(root, "bin", "adapter-libwasm-jit"))}, true, nil\n\t'+commandNeedle);
+ source=source.replace(buildNeedle,'"wasmedge-jit", "libwasm-jit", "wasmi", "wavm", "wamr", "wasm3", "wasmedge", "wasmer-llvm", "wasmer-singlepass"');
+ await writeFile(path,source);
+}
 if(process.platform==='linux'){const llvm=join(tools,'toolchains/llvm22');env.CC=env.WASMFYI_LIBWASM_CC||join(llvm,'usr/lib/llvm-22/bin/clang');env.CXX=env.WASMFYI_LIBWASM_CXX||join(llvm,'usr/lib/llvm-22/bin/clang++');if(!env.WASMFYI_LIBWASM_CC)env.LD_LIBRARY_PATH=join(llvm,'usr/lib/x86_64-linux-gnu');else delete env.LD_LIBRARY_PATH}else{env.CXX='/opt/homebrew/opt/llvm/bin/clang++';env.CC='/opt/homebrew/opt/llvm/bin/clang'}
 const statusPath=join(root,prepareOnly?'libwasm-qualification-status.json':'libwasm-status.json');
 const status=await readFile(statusPath,'utf8').then(JSON.parse,()=>({started:new Date().toISOString(),completed:[],errors:[]}));
@@ -49,19 +64,43 @@ for(const pin of plan.pins.filter(p=>historyPinAllowed(p,template)&&historyWeekM
   const actualRevision=command('git',['-C',checkout,'rev-parse','HEAD'],{env}).toString().trim();
   if(actualRevision!==pin.revision)throw Error('Libwasm checkout differs from source pin');
   await preparePinnedSparseWorktree(checkout,pin.revision,command,env);
-  command('git',['-C',checkout,'sparse-checkout','set','AK','Libraries/LibWasm','Libraries/LibMain','Libraries/LibCore','Libraries/LibGC','Libraries/LibThreading','Libraries/LibFileSystem','Libraries/LibSync','Libraries/LibUnicode','Libraries/LibTextCodec','Meta','Docs'],{env,stdio:'inherit'});
+  command('git',['-C',checkout,'sparse-checkout','set','AK','Libraries/LibWasm','Libraries/LibJS/Flap','Libraries/LibJS/JIT','Libraries/LibJS/Rust','Libraries/LibMain','Libraries/LibCore','Libraries/LibGC','Libraries/LibThreading','Libraries/LibFileSystem','Libraries/LibSync','Libraries/LibUnicode','Libraries/LibTextCodec','Libraries/RustAllocator','Meta','Docs'],{env,stdio:'inherit'});
   command('git',['-C',checkout,'reset','--hard',pin.revision],{env,stdio:'inherit'});
-  command('cmake',['-S',project,'-B',build,'-DSRC='+checkout,'-DFASTFLOAT='+join(tools,'libwasm-fastfloat'),'-DMIMALLOC='+join(tools,'libwasm-mimalloc'),'-DCMAKE_PREFIX_PATH='+deps,'-DCMAKE_CXX_FLAGS=-Wno-invalid-constexpr','-DCMAKE_C_COMPILER='+env.CC,'-DCMAKE_CXX_COMPILER='+env.CXX],{env,stdio:'inherit'});
-  command('cmake',['--build',build,'--parallel',String(template.env?.WASMFYI_BUILD_JOBS||availableParallelism())],{env,stdio:'inherit',timeout:90*60*1000});
-  const adapter=await prepareLibWasmAdapter(join(nativeBase,'adapters/native'),dir,await readFile(join(checkout,'Libraries/LibWasm/AbstractMachine/AbstractMachine.h'),'utf8'));
+  // These Rust modules are top-level files rather than directories. Older Git
+  // versions cannot add individual files to a cone-mode sparse checkout, so
+  // materialize their exact pinned bytes without widening the checkout.
+  for(const file of ['Cargo.toml','Cargo.lock','rust-toolchain.toml','Libraries/RustDemangle.rs','Libraries/RustPanic.rs']){
+   const target=join(checkout,file);await mkdir(dirname(target),{recursive:true});
+   await writeFile(target,command('git',['-C',checkout,'show',pin.revision+':'+file],{env}));
+  }
+  const runtimeHeader=join(checkout,'Libraries/LibWasm/Runtime.h'),rustRuntime=Boolean(await stat(runtimeHeader).catch(()=>null));
+  if(!rustRuntime){
+   command('cmake',['-S',project,'-B',build,'-DSRC='+checkout,'-DFASTFLOAT='+join(tools,'libwasm-fastfloat'),'-DMIMALLOC='+join(tools,'libwasm-mimalloc'),'-DCMAKE_PREFIX_PATH='+deps,'-DCMAKE_CXX_FLAGS=-Wno-invalid-constexpr','-DCMAKE_C_COMPILER='+env.CC,'-DCMAKE_CXX_COMPILER='+env.CXX],{env,stdio:'inherit'});
+   command('cmake',['--build',build,'--parallel',String(template.env?.WASMFYI_BUILD_JOBS||availableParallelism())],{env,stdio:'inherit',timeout:90*60*1000});
+  }
+  const apiHeader=rustRuntime?runtimeHeader:join(checkout,'Libraries/LibWasm/AbstractMachine/AbstractMachine.h');
+  const adapter=await prepareLibWasmAdapter(join(nativeBase,'adapters/native'),dir,await readFile(apiHeader,'utf8'),checkout);
   const libSyncArchive=join(build,'Libraries/LibSync/libLibSync.a');
   const adapterEnv={...env,WASMBENCH_LIBWASM_SOURCE:checkout,WASMBENCH_LIBWASM_BUILD:build,WASMBENCH_LIBWASM_VERSION:pin.revision};
+  // The Rust engine does not link the legacy C++ SDK. In particular, do not
+  // route its proc-macro dylibs through the private newer-glibc linker: rustc
+  // must be able to load them on the benchmark host while compiling.
+  if(rustRuntime){
+   delete adapterEnv.RUSTFLAGS;
+   if(process.platform==='linux')adapterEnv['CARGO_TARGET_'+(process.arch==='arm64'?'AARCH64':'X86_64')+'_UNKNOWN_LINUX_GNU_LINKER']='/usr/bin/cc';
+  }
   // LibSync became a separate static library inside the historical window.
   // The frozen adapter predates that split, so append the exact pinned
   // archive when it exists rather than changing the measured embedding.
   if(await stat(libSyncArchive).catch(()=>null))adapterEnv.RUSTFLAGS=[env.RUSTFLAGS,`-C link-arg=${libSyncArchive}`].filter(Boolean).join(' ');
-  command('cargo',['build','--manifest-path',join(adapter.root,'Cargo.toml'),'--release','--no-default-features','--features','libwasm','--target-dir',join(dir,'native')],{env:adapterEnv,stdio:'inherit',timeout:90*60*1000});
-  await mkdir(join(harness,'bin'),{recursive:true});await cp(join(dir,'native/release/adapter-native'),join(harness,'bin/adapter-libwasm'));
+  const configurations=rustRuntime?pin.configurations.filter(configuration=>rustConfigurations[configuration]):['libwasm'];
+  await mkdir(join(harness,'bin'),{recursive:true});
+  for(const configuration of configurations){
+   const mode=rustRuntime?rustConfigurations[configuration]:{feature:'libwasm',jit:'off'};
+   const target=join(dir,'native-'+configuration);
+   command('cargo',['build','--manifest-path',join(adapter.root,'Cargo.toml'),'--release','--no-default-features','--features',mode.feature,'--target-dir',target],{env:{...adapterEnv,LIBWASM_JIT:mode.jit},stdio:'inherit',timeout:90*60*1000});
+   await cp(join(target,'release/adapter-native'),join(harness,'bin/adapter-'+configuration));
+  }
   await mkdir(join(harness,'adapters/wasmtime/target/release'),{recursive:true});const analyzer=join(harness,'adapters/wasmtime/target/release/wasm-analyze');if(!await stat(analyzer).catch(()=>null))await symlink(join(nativeBase,'adapters/wasmtime/target/release/wasm-analyze'),analyzer);
   // Bind collector/controller sampling together without mutating the frozen source.
   const controllerSource=join(dir,'controller-source');
@@ -71,27 +110,30 @@ for(const pin of plan.pins.filter(p=>historyPinAllowed(p,template)&&historyWeekM
    command('git',['-C',controllerSource,'add','.'],{env,stdio:'inherit'});
    command('git',['-C',controllerSource,'-c','user.name=wasmfyi benchmark harness','-c','user.email=benchmark@localhost','commit','-m','Freeze LibWasm benchmark harness'],{env,stdio:'inherit'});
   }
-  await mkdir(join(controllerSource,'bin'),{recursive:true});await cp(join(harness,'bin/adapter-libwasm'),join(controllerSource,'bin/adapter-libwasm'));
+  await mkdir(join(controllerSource,'bin'),{recursive:true});for(const configuration of configurations)await cp(join(harness,'bin/adapter-'+configuration),join(controllerSource,'bin/adapter-'+configuration));
+  if(configurations.includes('libwasm-jit'))await registerLibWasmJIT(controllerSource);
   command(process.execPath,[join(process.cwd(),'scripts/apply-controller-sampling.mjs'),controllerSource],{env,stdio:'inherit'});
   command('go',['build','-trimpath','-o',controller,'./cmd/wasmbench'],{cwd:controllerSource,env,stdio:'inherit'});
   await writeFile(join(dir,'controller-build.json'),JSON.stringify({source:controllerSource,controller,controllerSha256:digest(await readFile(controller)),adaptiveSourceSha256:digest(await readFile(join(controllerSource,'experiment/adaptive.go'))),phaseSampleCaps:template.collection.phaseSampleCaps,builtAt:new Date().toISOString()},null,2));
-  const job={id:'libwasm-'+pin.revision.slice(0,12)+'-'+pin.targetWeek.replace(/[^0-9]/g,''),engine:'libwasm',harness:controllerSource,controller,historical:true,source:{repository:pin.repository,revision:pin.revision,ref:'main@'+pin.revision.slice(0,12),asOf:pin.targetWeek,kind:'snapshot'}};
-  const bindingPlan={...template,anchor:plan.anchor,cutoff:plan.cutoff,captureDirectory:join(root,'captures'),jobs:[job]};
+  const sourceIdentity={repository:pin.repository,revision:pin.revision,ref:'main@'+pin.revision.slice(0,12),asOf:pin.targetWeek,kind:'snapshot'};
+  const jobs=configurations.map(configuration=>{const mode=rustRuntime?rustConfigurations[configuration]:{jit:'off',backend:'interpreter'};return {id:configuration+'-'+pin.revision.slice(0,12)+'-'+pin.targetWeek.replace(/[^0-9]/g,''),engine:configuration,harness:controllerSource,controller,historical:true,source:sourceIdentity,env:{LIBWASM_JIT:mode.jit},backend:mode.backend}});
+  const bindingPlan={...template,anchor:plan.anchor,cutoff:plan.cutoff,captureDirectory:join(root,'captures'),jobs};
   // Latest feature qualification discovers exact source bindings from plans.
   // Preserve that binding even when preparation intentionally stops before a
   // main-corpus collection.
   if(prepareOnly){await writeFile(join(dir,'plan.json'),JSON.stringify(bindingPlan));await writeFile(join(dir,'qualification-build.json'),JSON.stringify({revision:pin.revision,harness:controllerSource,controller,builtAt:new Date().toISOString()},null,2));break;}
-  const runDirectory=join(dir,'runs',job.id);await mkdir(runDirectory,{recursive:true});
-  if(JSON.parse(env.WASMFYI_GUEST_QUALIFY_CONFIGS||'[]').includes('libwasm')){
+  const runDirectory=join(dir,'runs',jobs.map(job=>job.engine).join('+')+'-'+pin.revision.slice(0,12));await mkdir(runDirectory,{recursive:true});
+  if(configurations.some(configuration=>JSON.parse(env.WASMFYI_GUEST_QUALIFY_CONFIGS||'[]').includes(configuration))){
    const inventory=new Map(template.workloads.map(w=>[w.id,w.sha256]));
    const suite=(await readCache(template.corpusRoot)).filter(w=>inventory.has(w.id));
    if(suite.length!==inventory.size||suite.some(w=>w.sha256!==inventory.get(w.id)))throw Error('Libwasm qualification corpus differs from frozen inventory');
-   if(env.WASMFYI_HISTORY_FAST!=='1')await qualifyHistoryStartup({directory:runDirectory,configuration:'libwasm',suite,harness:controllerSource,controller,source:job.source,env,run:async(program,args,options)=>command(program,args,{...options,stdio:'inherit'})});
+   if(env.WASMFYI_HISTORY_FAST!=='1')for(const job of jobs)await qualifyHistoryStartup({directory:runDirectory,configuration:job.engine,suite,harness:controllerSource,controller,source:job.source,env:{...env,...job.env},run:async(program,args,options)=>command(program,args,{...options,stdio:'inherit'})});
   }
   await writeFile(join(runDirectory,'plan.json'),JSON.stringify(bindingPlan));
   await releaseBuild();
   command(process.execPath,[join(process.cwd(),'scripts/benchmark-history-worker.mjs'),runDirectory],{env:{...process.env,...template.env},cwd:process.cwd(),stdio:'inherit',timeout:48*60*60*1000});const result=JSON.parse(await readFile(join(runDirectory,'status.json'),'utf8'));
-  if(!completedHistoryJob(result,template.workloads.length))throw Error('Incomplete Libwasm collection: '+result.status+'; '+result.errors.length+' errors');
+  if(result.errors.some(error=>error.kind==='capture-error'))throw Error('Libwasm collection contains capture infrastructure errors');
+  if(!completedHistoryJob(result,template.workloads.length*jobs.length))throw Error('Incomplete Libwasm collection: '+result.status+'; '+result.errors.length+' errors');
   status.completed.push({pinKey,revision:pin.revision,asOf:pin.targetWeek,captures:result.completed,workloadErrors:result.errors});
  }catch(error){status.errors.push({pinKey,revision:pin.revision,asOf:pin.targetWeek,error:String(error)});console.error(error);if(prepareOnly){await writeFile(statusPath,JSON.stringify(status,null,2));throw error;}}
  finally {await releaseBuild();}

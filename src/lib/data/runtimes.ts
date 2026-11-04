@@ -6,7 +6,7 @@ import { viewData } from '../view-data';
 import type { Cfg, CfgId, Machine, MachineId, Runtime } from './types';
 
 export const runtimeRegistry: Runtime[] = [
-  {"id":"endive","name":"Endive","lang":"Java","exec":["Interpreter","Compiler","AOT"],"tiers":"Interpreter \u00b7 JVM bytecode compiler \u00b7 experimental Redline/Cranelift","arch":["AMD64","ARM64"],"wasi":"not measured","cm":"?","repo":"github.com/bytecodealliance/endive","lic":"not reviewed","rel":"not collected","size":"not measured","embed":["Java"],"notes":[]},
+  {"id":"endive","name":"Endive","lang":"Java","exec":["Interpreter","Compiler"],"tiers":"Interpreter \u00b7 JVM bytecode compiler","arch":["AMD64","ARM64"],"wasi":"not measured","cm":"?","repo":"github.com/bytecodealliance/endive","lic":"not reviewed","rel":"not collected","size":"not measured","embed":["Java"],"notes":[]},
   {"id":"wazy","name":"Wazy","lang":"Go","exec":["Compiler"],"tiers":"Native compiler","arch":["AMD64","ARM64"],"wasi":"not measured","cm":"?","repo":"github.com/samyfodil/wazy","lic":"not reviewed","rel":"not collected","size":"not measured","embed":["Go"],"notes":[]},
   {"id":"chasm","name":"Chasm","lang":"Kotlin","exec":["Interpreter"],"tiers":"JVM interpreter","arch":["AMD64","ARM64"],"wasi":"not measured","cm":"?","repo":"github.com/CharlieTap/chasm","lic":"not reviewed","rel":"not collected","size":"not measured","embed":["Kotlin"],"notes":[]},
   {"id":"wizard","name":"Wizard","lang":"Virgil","exec":["Interpreter","JIT"],"tiers":"V3 interpreter \u00b7 fast interpreter \u00b7 SPC","arch":["AMD64","ARM64"],"wasi":"not measured","cm":"?","repo":"github.com/titzer/wizard-engine","lic":"not reviewed","rel":"not collected","size":"not measured","embed":["Virgil"],"notes":[]},
@@ -34,7 +34,8 @@ runtimeRegistry.push(
 );
 runtimeRegistry.push(
  {id:'wasm2go',name:'wasm2go',lang:'Go',exec:['AOT'],tiers:'Wasm to Go · native Go compiler',arch:['x86-64','AArch64'],wasi:'not measured',cm:'?',repo:'github.com/ncruces/wasm2go',lic:'MIT',rel:'not collected',size:'not measured',embed:['Go'],notes:['Native compilation is included in compilation latency. Code size includes the Go runtime and bridge.']},
- {id:'libwasm',name:'LibWasm',lang:'C++',exec:['Interpreter'],tiers:'Bytecode interpreter',arch:['x86-64','AArch64'],wasi:'not measured',cm:'?',repo:'github.com/LadybirdBrowser/ladybird',lic:'BSD-2-Clause',rel:'not collected',size:'not measured',embed:['C++'],notes:['Ladybird LibWasm, identified by its exact source revision.']}
+ {id:'libwasm',name:'LibWasm',lang:'Rust / C++',exec:['Interpreter'],tiers:'In-place interpreter',arch:['x86-64','AArch64'],wasi:'not measured',cm:'?',repo:'github.com/LadybirdBrowser/ladybird',lic:'BSD-2-Clause',rel:'not collected',size:'not measured',embed:['Rust','C++'],notes:['Ladybird LibWasm with LIBWASM_JIT=off, identified by its exact source revision.']},
+ {id:'libwasm-jit',name:'LibWasm',lang:'Rust',exec:['Interpreter','JIT'],tiers:'Hot-function optimizing JIT',arch:['x86-64','AArch64'],wasi:'not measured',cm:'?',repo:'github.com/LadybirdBrowser/ladybird',lic:'BSD-2-Clause',rel:'not collected',size:'not measured',embed:['Rust'],notes:['Normal LibWasm tiering (LIBWASM_JIT=on,threads=1). Compilation occurs after the default hotness threshold.']}
 );
 export const RTS = runtimeRegistry.filter(r=>['wasmtime','v8','wasmer','wazero','wavm','wago','wasm2c','w2c2'].includes(r.id));
 export const RTB: Record<string, Runtime> = Object.fromEntries(RTS.map(r => [r.id, r]));

@@ -13,7 +13,7 @@ export function runtimeDeclaresFeature(description,feature,workload='') {
   // The pinned Chasm decoder omits element/data names. Its general feature
   // declaration is partial; admit only the source-audited subsection probes.
   if(feature==='extended-name-section'&&description?.runtime==='chasm')return description.backend==='jvm-interpreter'
-    &&description.runtime_version==='02033f247459790dd46da3d5b104c0c11bc36bd7'
+    &&['02033f247459790dd46da3d5b104c0c11bc36bd7','79e96f65101c256d96a8eb82ccdc8a53e79c8b32'].includes(description.runtime_version)
     &&description.features?.includes(feature)===true
     &&/^features\/extended-name-section\/(?:label|type|table|memory|global|field|tag)-name\//.test(workload);
   // The numeric oracle exercises JS BigInt only through these JS adapters.
@@ -22,12 +22,12 @@ export function runtimeDeclaresFeature(description,feature,workload='') {
   // weighting branches. Other tiers/revisions need their own source audit.
   if(feature==='branch-hinting'&&description?.runtime==='jsc'
     &&description?.backend==='OMG (forced tier-up)'
-    &&description?.runtime_version==='f3e56c5b480ab4dc6bb6412abdfc35c2536467ec')return true;
+    &&['f3e56c5b480ab4dc6bb6412abdfc35c2536467ec','b95c91b1c0ee43cc86d25ff7af73038f67a88e04'].includes(description.runtime_version))return true;
   // Wasmtime's adapter records the exact configured option. Keep consumption
   // scoped to Cranelift: Winch may parse the ignorable section without using
   // it to influence code layout.
   if(feature==='branch-hinting'&&description?.runtime==='wasmtime')return description?.backend==='cranelift'
-    &&description?.effective_configuration?.validator_feature_policy==='wasmtime-default-subset-v1'
+    &&['wasmtime-default-subset-v1','wasmtime-core-proposals-v2'].includes(description?.effective_configuration?.validator_feature_policy)
     &&description?.validator_features?.branch_hinting===true;
   if(description?.features?.includes(feature))return true;
   if(description?.validator_features?.[feature.replaceAll('-','_')]===true)return true;
@@ -41,7 +41,7 @@ export function runtimeDeclaresFeature(description,feature,workload='') {
   // This revision enables it unconditionally; do not infer it for other SDKs.
   if(feature==='branch-hinting'&&description?.runtime==='graalwasm'
     &&description?.backend==='truffle-graal'
-    &&description?.runtime_version==='f1dce3f84de778485d0ba8d6ddfd4d260b230d0a')return true;
+    &&['f1dce3f84de778485d0ba8d6ddfd4d260b230d0a','092eca6772a74d4ce501d5656f61cfb26745ce73'].includes(description?.runtime_version))return true;
   return false;
 }
 

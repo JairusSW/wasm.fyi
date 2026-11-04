@@ -11,7 +11,7 @@ export function featureRepairPhases({engine,workload,prior,repairEngines,repairW
  // Retrying it after every shared-device slice can prevent later engines from
  // ever running. Integration defects remain `repair-pending` and retryable.
  if(prior.repairOf&&prior.status==='completed'&&!retryCompleted)return [];
- if(prior.classifiedFrom&&prior.status==='completed')return [];
+ if(prior.classifiedFrom&&prior.status==='completed'&&!retryCompleted)return [];
  if(forceAll)return (prior.outcomes||[]).map(([phase])=>phase);
  const unsupported=documentedProposals||(wasmiProposals&&engine==='wasmi'&&repairWorkloads.includes(workload.id)&&workload.features?.some(f=>['memory64','simd','relaxed-simd'].includes(f)));
  return (prior.outcomes||[]).filter(([,status])=>status==='failed'||(unsupported&&status==='unsupported')).map(([phase])=>phase);

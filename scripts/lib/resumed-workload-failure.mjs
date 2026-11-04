@@ -1,4 +1,7 @@
 // Reusing a capture must preserve unresolved failures without rerunning it.
+export function retryInfrastructureCapture(capture,note,job,workload){
+ return Boolean(job.retryInfrastructureFailurePolicy&&note?.kind==='capture-error'&&note.recoveryPolicy!==job.retryInfrastructureFailurePolicy&&note.engine===(job.displayEngine||job.engine)&&note.workload===workload.id&&note.source?.revision===job.source.revision&&note.source?.asOf===job.source.asOf&&capture?.results?.length&&capture.results.every(row=>row.latencyStatus==='failed'&&!row.timingSamples&&!row.samplesNs?.length&&row.latencyNs==null));
+}
 export function restoredWorkloadFailure(capture,note,job,workload) {
  const phases=[...new Set((capture?.results||[]).filter(row=>row.latencyStatus==='failed').map(row=>row.phase))];
  if(!phases.length)return null;

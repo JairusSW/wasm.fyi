@@ -82,7 +82,8 @@ export async function buildWamrSDK({source,sdk,target,configuration,version,env,
  if(env.WASMFYI_WAMR_CMAKE_CACHE)flags.push('-DFETCHCONTENT_BASE_DIR='+resolve(env.WASMFYI_WAMR_CMAKE_CACHE));
  // Official Linux LLVM archives use libc++, including their C++ API ABI.
  // Keep compiler, headers, library ABI and bitcode-capable linker together.
- const compilerPrefix=configuration==='wamr-llvm-jit'&&process.platform==='linux'?(env.WASMFYI_WAMR_CXX_SDK||env.WASMFYI_WAVM_CXX_SDK):null;
+ // An explicit empty WAMR override selects the distro compiler and LLVM ABI.
+ const compilerPrefix=configuration==='wamr-llvm-jit'&&process.platform==='linux'?(env.WASMFYI_WAMR_CXX_SDK??env.WASMFYI_WAVM_CXX_SDK):null;
  if(compilerPrefix){
   for(const file of ['bin/clang','bin/clang++','bin/ld.lld','include/c++/v1/vector'])if(!await stat(join(compilerPrefix,file)).catch(()=>null))throw Error('WAMR LLVM compiler SDK lacks '+file);
   flags.push(...wamrLLVMCompilerFlags(resolve(compilerPrefix),env));

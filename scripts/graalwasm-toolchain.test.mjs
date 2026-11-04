@@ -31,6 +31,12 @@ test('Graal feature options keep required measurement controls strict',()=>{
  assert.throws(()=>configureGraalFeatureOptions(adapter,required,[42]),/Invalid Graal engine option descriptors/);
  assert.throws(()=>configureGraalFeatureOptions(adapter.replace('ENGINE_OPTIONS=','RENAMED_ENGINE_OPTIONS='),required),/engine option declaration changed/);
 });
+test('Graal accepts mixed modern compiler descriptors without enabling unrequested compiler options',()=>{
+ const result=configureGraalFeatureOptions(adapter,required,['engine.BackgroundCompilation','engine.CompileImmediately','engine.MultiTier','compiler.CompilationTimeout','compiler.Inlining']);
+ assert.deepEqual(result.engineOptions,{BackgroundCompilation:'false',CompileImmediately:'true',MultiTier:'false'});
+ assert(!result.adapter.includes('compiler.Inlining'));assert(!result.adapter.includes('CompilationTimeout'));
+ for(const name of ['compiler.','wasm.GC','engine.','engine.Bad Option'])assert.throws(()=>configureGraalFeatureOptions(adapter,required,[name]),/Invalid Graal engine option descriptors/);
+});
 
 test('Graal launcher avoids synchronous JVMCI bootstrap on Darwin while retaining Linux policy',()=>{
  const original='def wasmfyi_runtime_configuration(args):\n    vm_args = ["--enable-native-access=ALL-UNNAMED", "-XX:ActiveProcessorCount=1", "-XX:+UseSerialGC", "-Xbatch"]\n    return vm_args\n';

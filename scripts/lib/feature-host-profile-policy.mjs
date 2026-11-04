@@ -1,3 +1,4 @@
+import {applyAgentStartupRetry} from './agent-startup-retry.mjs';
 import {readFile,writeFile,rm} from 'node:fs/promises';
 import {join} from 'node:path';
 import {createHash} from 'node:crypto';
@@ -68,18 +69,22 @@ export async function withProposalSourceAdmission(analyzer,runner){
  return {analyzer,runner};
 }
 // Caller owns both the host/project reservation; only the cached Go controller changes.
-export async function upgradeFeatureHostProfileController({root,controller,env}){
+export async function upgradeFeatureHostProfileController({root,controller,env,runtime}){
+ if(['jsc','spidermonkey'].includes(runtime))await (await import('./js-shell-signature.mjs')).applyShellCompoundSignature(root);
  const file=join(root,'experiment/runner.go'),valuesFile=join(root,'protocol/types.go'),analyzerFile=join(root,'experiment/analyzer.go');
  const before=await readFile(file,'utf8'),valuesBefore=await readFile(valuesFile,'utf8'),analyzerBefore=await readFile(analyzerFile,'utf8');
  const analyzerProgram=await readFile(join(root,'adapters/wasmtime/src/bin/wasm-analyze.rs'),'utf8');
  const identity=pinnedAnalyzerIdentity(analyzerProgram,analyzerBefore);
  let after=withFeatureHostProfileAdmission(before),analyzerAfter=identity.source;({runner:after,analyzer:analyzerAfter}=await withProposalSourceAdmission(analyzerAfter,after));const valuesAfter=withSignedWireValues(valuesBefore);
- const policy='declared-feature-host-profile-signed-values-proposal-source-and-analyzer-build-v5',log=join(root,'feature-host-profile-controller.log');
+ const startupRetry=['chicory','chicory-jit','chasm','graalwasm','endive-interpreter','endive-jit','endive-redline'].includes(runtime);
+ if(startupRetry)await applyAgentStartupRetry(root);
+ const agentStartupSha256=startupRetry?hash(Buffer.concat([await readFile(join(root,'agent/client.go')),await readFile(join(root,'agent/startup_retry.go'))])):null;
+ const policy='declared-feature-host-profile-signed-values-proposal-source-and-analyzer-build-v5'+(startupRetry?(runtime==='chasm'?'-chasm':runtime==='graalwasm'?'-graalwasm':runtime.startsWith('endive-')?'-endive':'-chicory')+'-metadata-startup-retry-v1':''),log=join(root,'feature-host-profile-controller.log');
  const analyzerExecutable=await ensurePinnedAnalyzer({root,version:identity.version,env,log});
  if(before===after&&valuesBefore===valuesAfter&&analyzerBefore===analyzerAfter){
   try{
    const receipt=JSON.parse(await readFile(join(root,'feature-host-profile-controller.json'),'utf8'));
-   if(receipt.policy===policy&&receipt.controllerSha256===hash(await readFile(controller))&&receipt.sourceSha256===hash(after)&&receipt.valuesSourceSha256===hash(valuesAfter)&&receipt.analyzerSourceSha256===hash(analyzerAfter)&&receipt.analyzerExecutableSha256===analyzerExecutable.sha256&&receipt.analyzerVersion===analyzerExecutable.version)return;
+   if(receipt.policy===policy&&receipt.controllerSha256===hash(await readFile(controller))&&receipt.sourceSha256===hash(after)&&receipt.valuesSourceSha256===hash(valuesAfter)&&receipt.analyzerSourceSha256===hash(analyzerAfter)&&receipt.analyzerExecutableSha256===analyzerExecutable.sha256&&receipt.analyzerVersion===analyzerExecutable.version&&(!startupRetry||receipt.agentStartupSha256===agentStartupSha256))return;
   }catch{}
  }
  const oldController=hash(await readFile(controller));
@@ -87,8 +92,8 @@ export async function upgradeFeatureHostProfileController({root,controller,env})
  if(valuesBefore!==valuesAfter){await writeFile(valuesFile+'.before-signed-wire-values',valuesBefore);await writeFile(valuesFile,valuesAfter)}
  if(analyzerBefore!==analyzerAfter){await writeFile(analyzerFile+'.before-proposal-source-admission',analyzerBefore);await writeFile(analyzerFile,analyzerAfter)}
  await runCommand('gofmt',['-w',file,valuesFile,analyzerFile],{cwd:root,env,log});
- await runCommand('git',['add','experiment/runner.go','protocol/types.go','experiment/analyzer.go'],{cwd:root,env,log});
+ await runCommand('git',['add','experiment/runner.go','protocol/types.go','experiment/analyzer.go',...(startupRetry?['agent/client.go','agent/startup_retry.go','agent/startup_retry_test.go']:[])],{cwd:root,env,log});
  await runCommand('git',['-c','user.name=wasmfyi benchmark harness','-c','user.email=benchmark@localhost','commit','--allow-empty','-m','Admit optional feature profiles and signed wire values'],{cwd:root,env,log});
  await runCommand('go',['build','-trimpath','-o',controller,'./cmd/wasmbench'],{cwd:root,env:{...env,GOMAXPROCS:undefined},log});
- await atomicJSON(join(root,'feature-host-profile-controller.json'),{policy,oldControllerSha256:oldController,controllerSha256:hash(await readFile(controller)),sourceSha256:hash(await readFile(file)),valuesSourceSha256:hash(await readFile(valuesFile)),analyzerSourceSha256:hash(await readFile(analyzerFile)),analyzerExecutableSha256:analyzerExecutable.sha256,analyzerVersion:analyzerExecutable.version,runtimeSDKRebuilt:false,at:new Date().toISOString()});
+ await atomicJSON(join(root,'feature-host-profile-controller.json'),{policy,oldControllerSha256:oldController,controllerSha256:hash(await readFile(controller)),sourceSha256:hash(await readFile(file)),valuesSourceSha256:hash(await readFile(valuesFile)),analyzerSourceSha256:hash(await readFile(analyzerFile)),analyzerExecutableSha256:analyzerExecutable.sha256,analyzerVersion:analyzerExecutable.version,...(startupRetry?{agentStartupSha256,startupRetry:{scope:'metadata describe only, before prepare/run',attempts:3,attemptTimeoutMs:12000,compilerChanged:false}}:{}),runtimeSDKRebuilt:false,at:new Date().toISOString()});
 }

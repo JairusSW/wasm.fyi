@@ -72,6 +72,10 @@ export async function copyHistoricalHarness(base,root) {
     await mkdir(dirname(join(root,path)),{recursive:true});
     await cp(join(base,path),join(root,path),{dereference:true});
   }
+  // Some frozen checkouts ignore directories named bin, including this Rust
+  // source directory. Feature admission needs the analyzer's source identity.
+  const analyzerSources='adapters/wasmtime/src/bin';
+  if(await exists(join(base,analyzerSources)))await cp(join(base,analyzerSources),join(root,analyzerSources),{recursive:true,dereference:true});
   // Keep independent artifact admission fixed while changing the measured SDK.
   const analyzer='adapters/wasmtime/target/release/wasm-analyze';
   if(!await exists(join(base,analyzer))) {

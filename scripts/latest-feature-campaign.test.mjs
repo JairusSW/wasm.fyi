@@ -7,8 +7,7 @@ import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {createHash} from 'node:crypto';
 const execute=promisify(execFile);
-// Darwin wraps the entire worker in a real device reservation. This fixture
-// exercises the Linux orchestration path and never launches a runtime.
+// These fixtures exercise Linux orchestration without launching a runtime.
 for(const [scope,phase] of [['execution','first-call'],['compile-only','compile'],['compile-and-instantiate','instantiate']])test('platform-unavailable '+scope+' binding records unsupported without invoking its controller',{skip:process.platform!=='linux'},async()=>{
  const root=await mkdtemp(join(tmpdir(),'feature-unavailable-'));
  try{

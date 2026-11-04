@@ -38,7 +38,10 @@ export function releaseInWeek(engine,releases,{start,end}) {
  const eligible=releases.filter(r=>!r.draft&&Date.parse(r.published_at)>Date.parse(start)&&Date.parse(r.published_at)<=Date.parse(end));
  const selected=engine==='wago'?eligible.filter(r=>/beta/i.test(r.tag_name)):
   engine==='wavm'?eligible:eligible.filter(r=>!r.prerelease&&!/nightly|snapshot|canary|(?:^|[-/])dev(?:[-/]|$)/i.test(r.tag_name));
- return selected.sort((a,b)=>Date.parse(b.published_at)-Date.parse(a.published_at)||a.tag_name.localeCompare(b.tag_name))[0]||null;
+ // Day-precision ledgers can publish several supported branches together.
+ // Prefer the newest version on a date tie, rather than the alphabetically
+ // first legacy ESR branch (or beta.9 over beta.10).
+ return selected.sort((a,b)=>Date.parse(b.published_at)-Date.parse(a.published_at)||b.tag_name.localeCompare(a.tag_name,'en',{numeric:true}))[0]||null;
 }
 
 export function deduplicateSweep(pins) {

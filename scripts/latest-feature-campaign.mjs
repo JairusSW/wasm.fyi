@@ -17,12 +17,16 @@ import {workloadContract} from './lib/workload-contract.mjs';
 import {collectLatencies,latencyCollection} from './lib/latency-capture.mjs';
 import {acquireMeasurementLock} from './lib/measurement-lock.mjs';
 import {runBenchmarkProcess,runCommand} from './lib/benchmark-process.mjs';
+import {measurementLaunch} from './lib/measurement-launch.mjs';
+import {ensureSpiderMonkeyFeatureBinding} from './lib/spidermonkey-feature-policy.mjs';
+import {ensureJSCFeatureBinding} from './lib/jsc-feature-policy.mjs';
+import {ensureWasmtimeFeatureBinding} from './lib/wasmtime-feature-policy.mjs';
 import {historyWorkloadFailure} from './lib/history-workload-failure.mjs';
 import {ensureV8BindingPolicy} from './lib/v8-binding-policy.mjs';
 import {historyIntegrationFailure} from './lib/history-completion-audit.mjs';
 import {classifyFeatureRuntimeRejection,classifyFeatureCapture,featureFailureRecords} from './lib/feature-unsupported.mjs';
 import {latestFeaturePins} from './lib/latest-feature-pins.mjs';
-import {v8FlagsForWorkload} from './lib/v8-feature-flags.mjs';
+import {v8FlagsForWorkload,availableV8FeatureFlags} from './lib/v8-feature-flags.mjs';
 import {applyWavmFeaturePolicy} from './lib/wavm-feature-policy.mjs';
 import {buildWavmSDK} from './lib/wavm-sdk.mjs';
 import {applyWasm3FeaturePolicy,wasm3FeatureCMakeFlags} from './lib/wasm3-feature-policy.mjs';
@@ -99,6 +103,10 @@ const upgradedHostProfileControllers=new Set();
 campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
  if(selectedEngines.length&&!selectedEngines.includes(engine))continue;
  if(repairEngines.length&&!repairEngines.includes(engine))continue;
+ if(repairEngines.includes(engine)){
+  ledger.completedEngines=ledger.completedEngines.filter(marker=>marker!==engine+'|'+pin.revision+'|'+inputIdentity);
+  await save();
+ }
  const engineBindings=featureBindingsForEngine(bindings,engine,pin);
  const selectedWorkloads=Object.values(suites).flat().filter(workload=>!selectedWorkloadIDs.length||selectedWorkloadIDs.includes(workload.id));
  const missingProfiles=missingFeatureBindingProfiles(engineBindings,engine,selectedWorkloads);
@@ -106,7 +114,24 @@ campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
  const binding=featureBindingForWorkload(engineBindings,engine,null);
  if(!binding){state.errors.push({engine,kind:'adapter-binding-missing',revision:pin.revision});state.completed++;await save();continue}
  let {job,plan}=binding;
- try{if(engine==='v8'){for(const name of await readdir(join(campaign,'sdk-builds')).catch(()=>[])){const dir=join(campaign,'sdk-builds',name),receipt=await readJSON(join(dir,'v8-build.json')).catch(()=>null);if(receipt?.pin?.revision===pin.revision){const release=await acquireFeatureProjectLock();let upgraded;try{upgraded=await ensureV8BindingPolicy(campaign,dir,receipt,{reserved:true,env:{...template.env,...plan.env,...job.env},featureJspi:true})}finally{await release()};job={...job,controller:upgraded.controller,harness:upgraded.root,env:{...job.env,...upgraded.env},backend:'turboshaft'};break;}}}}catch(error){if(error.code==='FEATURE_PROJECT_OCCUPIED')throw error;state.errors.push({engine,kind:'adapter-binding-migration',error:String(error),source:job.source});await atomicJSON(join(root,'binding-repairs',engine+'.json'),{status:'repair-pending',source:job.source,error:String(error)});state.completed++;await save();continue;}
+ let v8AvailableFlags;
+ let jscWideArithmetic=false;
+ if(['wasmtime','wasmtime-winch'].includes(engine)){
+  const release=await acquireFeatureProjectLock();
+  try{
+   let found=false;
+   for(const name of await readdir(join(campaign,'sdk-builds'))){
+    const directory=join(campaign,'sdk-builds',name),receipt=await readJSON(join(directory,'wasmtime-build.json')).catch(()=>null);
+    if(receipt?.pin?.revision!==pin.revision)continue;
+    const prepared=await ensureWasmtimeFeatureBinding(directory,receipt,{...template.env,...plan.env,...job.env},{inputs});
+    Object.assign(job,{controller:prepared.controller,harness:prepared.root,featureProfile:'core-proposals',env:{...job.env,...prepared.env}});
+    found=true;break;
+   }
+   if(!found)throw Error('Source-bound Wasmtime SDK receipt absent');
+  }catch(error){state.errors.push({engine,kind:'adapter-binding-migration',error:String(error),source:job.source});state.completed++;await save();continue}
+  finally{await release()}
+ }
+ try{if(engine==='v8'){for(const name of await readdir(join(campaign,'sdk-builds')).catch(()=>[])){const dir=join(campaign,'sdk-builds',name),receipt=await readJSON(join(dir,'v8-build.json')).catch(()=>null);if(receipt?.pin?.revision===pin.revision){const release=await acquireFeatureProjectLock();let upgraded;try{upgraded=await ensureV8BindingPolicy(campaign,dir,receipt,{reserved:true,env:{...template.env,...plan.env,...job.env},featureJspi:true});const options=await runCommand(upgraded.env.WASMBENCH_NODE,['--v8-options'],{cwd:upgraded.root,env:{...process.env,...template.env,...upgraded.env,NODE_OPTIONS:''}});v8AvailableFlags=availableV8FeatureFlags(options.output);await atomicJSON(join(root,'binding-repairs/v8-available-feature-flags.json'),{revision:pin.revision,nodeSha256:upgraded.provenance.nodeSha256,flags:v8AvailableFlags,checkedAt:new Date().toISOString()})}finally{await release()};job={...job,controller:upgraded.controller,harness:upgraded.root,env:{...job.env,...upgraded.env},backend:'turboshaft'};break;}}}}catch(error){if(error.code==='FEATURE_PROJECT_OCCUPIED')throw error;state.errors.push({engine,kind:'adapter-binding-migration',error:String(error),source:job.source});await atomicJSON(join(root,'binding-repairs',engine+'.json'),{status:'repair-pending',source:job.source,error:String(error)});state.completed++;await save();continue;}
  const controller=job.controller||plan.controller,harness=job.harness||plan.harness;
  if(engine.startsWith('wizard-')){
   const release=await acquireFeatureProjectLock();
@@ -123,11 +148,28 @@ campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
   try{
    const buildEnv={...process.env,...template.env,...candidatePlan.env,...candidateJob.env,GOWORK:'off',GOFLAGS:'-buildvcs=false'};
    for(const k of ['GOMAXPROCS','OMP_NUM_THREADS','RAYON_NUM_THREADS','CARGO_BUILD_JOBS','CMAKE_BUILD_PARALLEL_LEVEL','MAKEFLAGS','UV_THREADPOOL_SIZE'])delete buildEnv[k];
-   await upgradeFeatureHostProfileController({root:candidateHarness,controller:candidateController,env:buildEnv});
+   await upgradeFeatureHostProfileController({root:candidateHarness,controller:candidateController,env:buildEnv,runtime:engine});
    upgradedHostProfileControllers.add(candidateController);
   }catch(error){state.errors.push({engine,kind:'adapter-binding-migration',error:String(error),source:candidateJob.source});await atomicJSON(join(root,'binding-repairs',engine+'.json'),{status:'repair-pending',source:candidateJob.source,error:String(error)});state.completed++;await save();bindingMigrationFailed=true;break}finally{await release()}
  }
  if(bindingMigrationFailed)continue;
+ if(engine==='jsc'){
+  const release=await acquireFeatureProjectLock();
+  try{
+   const directory=dirname(dirname(harness)),receipt=await readJSON(join(directory,'jsc-build.json'));
+   const upgraded=await ensureJSCFeatureBinding(directory,receipt,{...template.env,...plan.env,...job.env},abort.signal);
+   jscWideArithmetic=upgraded.wideArithmetic;
+   for(const candidate of engineBindings)candidate.job.controller=upgraded.controller;
+  }catch(error){state.errors.push({engine,kind:'adapter-binding-migration',error:String(error),source:job.source});state.completed++;await save();continue}finally{await release()}
+ }
+ if(engine==='spidermonkey'){
+  const release=await acquireFeatureProjectLock();
+  try{
+   const directory=dirname(dirname(harness)),receipt=await readJSON(join(directory,'spidermonkey-build.json'));
+   const upgraded=await ensureSpiderMonkeyFeatureBinding(directory,receipt,{...template.env,...plan.env,...job.env},{signal:abort.signal});
+   for(const candidate of engineBindings)Object.assign(candidate.job,{controller:upgraded.controller,env:{...candidate.job.env,...upgraded.env}});
+  }catch(error){state.errors.push({engine,kind:'adapter-binding-migration',error:String(error),source:job.source});state.completed++;await save();continue}finally{await release()}
+ }
  if(['wazero','wazero-interpreter'].includes(engine))assertWazeroInterruptsDisabled(await readFile(join(harness,'adapters/wazero/main.go'),'utf8'));
  if(repairEngines.includes(engine)&&['wazero','wazero-interpreter'].includes(engine)){
   const release=await acquireFeatureProjectLock();
@@ -258,7 +300,8 @@ campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
    if(repairEngines.length&&prior&&!repairPhases.length){if(prior.failure)state.errors.push(prior.failure);continue;}
    if(!repairPhases.length&&ledger.items[key]?.status==='completed'){if(ledger.items[key].failure)state.errors.push(ledger.items[key].failure);continue;}
    state.current={engine,stage:kind,workload:workload.id,revision:workloadJob.source.revision,...(workloadFeatureProfile?{featureProfile:workloadFeatureProfile}:{})};await save();
-   if(engine==='v8')workloadEnv.WASMBENCH_V8_FEATURE_FLAGS=v8FlagsForWorkload(workload).join(' ');
+   if(engine==='v8'){if(!v8AvailableFlags)throw Error('Pinned V8 flag inventory absent');workloadEnv.WASMBENCH_V8_FEATURE_FLAGS=v8FlagsForWorkload(workload,v8AvailableFlags).join(' ');}
+   if(engine==='jsc'&&workload.id.startsWith('features/wide-arithmetic/')&&jscWideArithmetic)workloadEnv.WASMBENCH_JSC_WIDE_ARITHMETIC='1';
    const release=await acquireFeatureProjectLock();
    const scratch=join(root,'scratch',key);if(repairPhases.length&&await stat(scratch).catch(()=>null))await cp(scratch,scratch+'.before-repair-'+Date.now(),{recursive:true});await mkdir(scratch,{recursive:true});
    const producerDirectory=join(root,'compatibility',engine,key,repairPhases.length?'producer-repair-'+Date.now():'producer');await atomicJSON(join(scratch,'wago-suite.json'),[workload]);
@@ -270,7 +313,7 @@ campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
    try{
     if(workloadJob.unavailableReason)capture={capturedAt:new Date().toISOString(),source:workloadJob.source,platform:{...platform},results:scenarios.split(',').map(phase=>({workload:workload.id,wasm:workload.artifactName,artifactSha256:workload.sha256,contractSha256:workloadContract(workload),engine,version:workloadJob.source.revision,backend:workloadJob.backend||engine,phase,timingSamples:0,latencyStatus:'unsupported',latencyNs:null,memoryStatus:'unsupported',peakRssBytes:null,codeStatus:'unsupported',codeBytes:null,codeKind:null}))};
     else capture=await collectLatencies({directory:scratch,workloads:[workload],engines:[engine],collection,run:async(...args)=>{
-     try{return await runBenchmarkProcess(process.platform==='linux'?'taskset':workloadController,process.platform==='linux'?['-c',String(template.cpu??2),workloadController,...args]:args,{cwd:workloadHarness,env:workloadEnv,signal});}
+     try{const launch=measurementLaunch(workloadController,args,{cpu:template.cpu??2});return await runBenchmarkProcess(launch.program,launch.args,{cwd:workloadHarness,env:workloadEnv,signal});}
      finally{if(kind==='compatibility'&&args.includes('--out')){const out=args[args.indexOf('--out')+1];if(await stat(join(out,'manifest.json')).catch(()=>null))await cp(out,producerDirectory,{recursive:true,force:true});}}
     }});
     if(kind==='compatibility'){
