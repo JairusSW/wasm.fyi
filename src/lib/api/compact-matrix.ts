@@ -39,4 +39,4 @@ export async function unpackMatrixAsync(page:CompactMatrix,signal:AbortSignal):P
  signal.throwIfAborted();return all;
 }
 
-export type CompactAggregate={average?:'geo'|'mean';revision:string;platform:string;metric:string;workloads?:string[];participants:string[];cards:{engine:string;version:string;backend:string;source?:Source;value:number|null;ratio:number|null;count:number;latestCreated?:string;unavailableReason?:string}[]};
+export type CompactAggregate={policy?:string;average?:'geo'|'mean';revision:string;platform:string;metric:string;workloads?:string[];participants:string[];cards:{engine:string;version:string;backend:string;source?:Source;value:number|null;ratio:number|null;count:number;latestCreated?:string;unavailableReason?:string}[]};

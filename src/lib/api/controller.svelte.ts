@@ -360,7 +360,7 @@ function applyPageSeed(seed:BakedPageSeed,merge=false){
  datasetView.machine=seed.machine;datasetView.generation++;
  if(!merge)ui.machine=seed.machine;
  bakedMachines.add(seed.machine);
- apiView.precomputed={...apiView.precomputed,...seed.precomputed};apiView.historyRevision=summary!.revision;apiView.serverAggregates=seed.path.replace(/\/$/,'')==='/benchmarks';
+ apiView.precomputed={...apiView.precomputed,...Object.fromEntries(Object.entries(seed.precomputed).filter(([,result])=>result.policy==='common-passes-v1'))};apiView.historyRevision=summary!.revision;apiView.serverAggregates=seed.path.replace(/\/$/,'')==='/benchmarks';
  if(!merge){loadedMachines.clear();loadedPhases.clear();metadataMachines.clear()}
  for(const [m,r] of seed.loaded)loadedMachines.set(m,r);
  for(const [m,p] of seed.phases)loadedPhases.set(m,new Set(p));

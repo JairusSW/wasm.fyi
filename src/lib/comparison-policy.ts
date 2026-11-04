@@ -23,12 +23,13 @@ export function nativeCodeParticipants<T extends {id:string}, C extends string>(
  });
 }
 
-/** The least-covered measured engine supplies the reference, rather than an intersection. */
+/** Seed with the least-covered measured engine, then retain only shared passes. */
 export function leastCoveredReference<T,C>(workloads:readonly T[],engines:readonly C[],passed:(workload:T,engine:C)=>boolean,identity:(engine:C)=>string=String):T[] {
- let reference:T[]=[];
+ let reference:T[]=[];const participants:C[]=[];
  for(const engine of [...engines].sort((a,b)=>identity(a).localeCompare(identity(b)))){
   const rows=workloads.filter(workload=>passed(workload,engine));
+  if(rows.length)participants.push(engine);
   if(rows.length&&(!reference.length||rows.length<reference.length))reference=rows;
  }
- return reference;
+ return reference.filter(workload=>participants.every(engine=>passed(workload,engine)));
 }

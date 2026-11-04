@@ -28,6 +28,7 @@ type AggregateCard struct {
 	UnavailableReason string          `json:"unavailableReason,omitempty"`
 }
 type AggregateResult struct {
+	Policy       string          `json:"policy"`
 	Revision     string          `json:"revision"`
 	Platform     string          `json:"platform"`
 	Metric       string          `json:"metric"`
@@ -347,7 +348,7 @@ func (s *Store) Aggregate(ctx context.Context, q AggregateQuery) (AggregateResul
 	return cloneAggregate(result), nil
 }
 func computeAggregate(data *aggregateSnapshot, q AggregateQuery) AggregateResult {
-	out := AggregateResult{Participants: []string{}, Cards: []AggregateCard{}}
+	out := AggregateResult{Policy: "common-passes-v1", Participants: []string{}, Cards: []AggregateCard{}}
 	workloads := map[string]bool{}
 	for _, r := range data.rows {
 		workloads[r.workload] = true
@@ -429,14 +430,26 @@ func computeAggregate(data *aggregateSnapshot, q AggregateQuery) AggregateResult
 		if anchor == "" {
 			anchor = leastCoveredEngine(participants, availability)
 			for key, rows := range availability {
-				if rows[anchor] {
+				common := rows[anchor]
+				for _, engine := range participants {
+					common = common && rows[engine]
+				}
+				if common {
 					reference[key] = true
 				}
 			}
 		} else {
 			for key, rows := range cells {
 				for _, row := range rows {
-					if passing[row.workload+"|"+row.contract][anchor] && (phase != "*" || availability[key][anchor]) {
+					support := passing[row.workload+"|"+row.contract]
+					sharedPass := true
+					for _, engine := range participants {
+						if !support[engine] {
+							sharedPass = false
+							break
+						}
+					}
+					if sharedPass && (phase != "*" || availability[key][anchor]) {
 						reference[key] = true
 					}
 					break

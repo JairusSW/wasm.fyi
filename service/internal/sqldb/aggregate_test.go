@@ -78,7 +78,7 @@ func TestAggregateWeightedSharedPerEngineAndCodeNA(t *testing.T) {
 	q.Weighting = "corpus"
 	q.Cohort = "shared"
 	r = computeAggregate(data, q)
-	if card(r, "a").Count != 2 || card(r, "b").Value != nil {
+	if card(r, "a").Count != 1 || card(r, "b").Value == nil || *card(r, "a").Value != 64 || *card(r, "b").Value != 128 {
 		t.Fatal(r)
 	}
 }
@@ -255,7 +255,7 @@ func TestHistoryOnlyImportsKeepLatestMatrixAndAggregateRevision(t *testing.T) {
 	}
 }
 
-func TestSharedUsesLeastCoveredReferenceWithoutShrinkingForOtherFailures(t *testing.T) {
+func TestSharedFiltersLeastCoveredReferenceForOtherFailures(t *testing.T) {
 	data := aggregateFixture()
 	// a passes workloads 0,1; b passes 0,2. Add a third b workload so a is the minimum.
 	data.rows[4].latOK = false
@@ -266,11 +266,11 @@ func TestSharedUsesLeastCoveredReferenceWithoutShrinkingForOtherFailures(t *test
 	data.rows = append(data.rows, extra)
 	q := AggregateQuery{Metric: "steady", Engines: []string{"a", "b"}, Cohort: "shared", Average: "mean", Weighting: "workload"}
 	r := computeAggregate(data, q)
-	if card(r, "a").Count != 2 || card(r, "a").Value == nil || *card(r, "a").Value != 10 {
+	if card(r, "a").Count != 1 || card(r, "a").Value == nil || *card(r, "a").Value != 4 {
 		t.Fatal(r)
 	}
-	if card(r, "b").Count != 1 || card(r, "b").Value != nil {
-		t.Fatal("incomplete engine was averaged over a different set", r)
+	if card(r, "b").Count != 1 || card(r, "b").Value == nil || *card(r, "b").Value != 8 {
+		t.Fatal("engines must share the same passing set", r)
 	}
 }
 
@@ -309,5 +309,27 @@ func TestAllZeroRetainedSamplesAreValidForArithmeticOnly(t *testing.T) {
 	r = computeAggregate(data, q)
 	if card(r, "a").Value != nil {
 		t.Fatal(r)
+	}
+}
+
+func TestSharedGoRuntimeNonNestedPassSets(t *testing.T) {
+	data := &aggregateSnapshot{engines: map[string]*aggregateConfiguration{}}
+	for _, engine := range []string{"wago", "wazero", "wasm2go", "wazy"} {
+		cfg := &aggregateConfiguration{engine: engine, version: "snapshot", backend: "compiler"}
+		data.engines[engine] = cfg
+		for i := 0; i < 145; i++ {
+			pass := !(engine == "wasm2go" && i < 2) && !(engine == "wazy" && i == 2)
+			for _, phase := range []string{"compile", "instantiate", "first-call", "steady"} {
+				data.rows = append(data.rows, aggregateScalar{cfg: cfg, workload: fmt.Sprint("applications/", i), contract: fmt.Sprint(i), group: "apps", phase: phase, latency: float64(i + 1), latOK: pass, passed: pass})
+			}
+		}
+	}
+	for _, metric := range []string{"compile", "inst", "first", "steady"} {
+		r := computeAggregate(data, AggregateQuery{Metric: metric, Engines: []string{"wago", "wazero", "wasm2go", "wazy"}, Cohort: "shared", Average: "mean", Weighting: "workload"})
+		for _, c := range r.Cards {
+			if c.Value == nil || c.Count != 142 || !closeFloat(*c.Value, 74.5) {
+				t.Fatalf("%s: blank or mismatched shared average: %+v", metric, c)
+			}
+		}
 	}
 }

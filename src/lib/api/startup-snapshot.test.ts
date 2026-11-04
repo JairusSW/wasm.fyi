@@ -77,3 +77,14 @@ it('restores the initial history chart from its machine snapshot without a histo
  expect(new URL(request.mock.calls[2][0],'https://wasm.fyi').searchParams.get('average')).toBe('mean');
  closeSite();
 });
+it('does not restore averages baked with an obsolete cohort policy',async()=>{
+ const {emptyView}=await import('./view.svelte');
+ const {activatePageSeed,apiView,closeSite}=await import('./controller.svelte');
+ closeSite();apiView.precomputed={};
+ const value={revision:'r',platform:'apple',metric:'steady',participants:[],cards:[]};
+ const seed={schema:2 as const,revision:'r',machine:'m2' as const,path:'/benchmarks/',summary:{revision:'r',platforms:[platform]},view:emptyView(),slots:[],precomputed:{old:value,current:{...value,policy:'common-passes-v1'}},loaded:[],phases:[],metadata:[]} as import('./page-seed').BakedPageSeed;
+ activatePageSeed(seed);
+ expect(apiView.precomputed.old).toBeUndefined();
+ expect(apiView.precomputed.current).toEqual({...value,policy:'common-passes-v1'});
+ closeSite();
+});

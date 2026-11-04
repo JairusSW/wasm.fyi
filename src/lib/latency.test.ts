@@ -8,7 +8,7 @@ describe('latency-only corpus averages',()=>{
   const shared=latencyAverages(rows,['a','b'],'shared');expect(shared.map(a=>a.count)).toEqual([1,1]);expect(shared[0].value).toBe(1);expect(shared[1].value).toBeCloseTo(9);
  });
  it('leaves engines with changed inputs or no reference passes unavailable',()=>{
-  expect(latencyAverages([row('shared','a',1,'old'),row('shared','b',9,'new')],['a','b'],'shared').map(a=>a.value)).toEqual([1,null]);
+  expect(latencyAverages([row('shared','a',1,'old'),row('shared','b',9,'new')],['a','b'],'shared').map(a=>a.value)).toEqual([null,null]);
   expect(latencyAverages([row('shared','a',1)],['a','b'],'shared').map(a=>a.value)).toEqual([1,null]);
  });
 });

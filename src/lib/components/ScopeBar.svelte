@@ -140,7 +140,7 @@
 	const advItems = $derived([
 		{ k: 'OS', v: MACH[ui.machine].os },
 		{ k: 'Runtimes', v: Object.values(viewData.hosts[ui.machine].configurations).map(c=>c!.runtime+' '+shortVersion(c!.version)).join(' · ') },
-		{ k: 'Aggregation', v: (ui.average==='mean'?'mean':'geomean')+', every workload weighted equally · '+(ui.cohortMode==='shared'?(featureComparison?'passed by every selected engine':'least-covered engine reference'):'passed per engine') },
+		{ k: 'Aggregation', v: (ui.average==='mean'?'mean':'geomean')+', every workload weighted equally · '+(ui.cohortMode==='shared'?'passed by every measured engine':'passed per engine') },
 		{ k: 'Cache state', v: 'cold — no on-disk artifact cache' },
 		{ k: 'Compilation workers', v: 'Per-runtime configuration; CPU affinity uncontrolled' },
 		{ k: 'Warmup & sampling', v: 'Per-cell sealed report records launches, samples and warmups' },

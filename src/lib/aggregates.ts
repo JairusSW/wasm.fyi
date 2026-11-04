@@ -34,12 +34,12 @@ export function aggregateCohort(s:Scope,group:PerfGroup,cid:CfgId,col:number) {
  const workloads=viewData.catalogue.filter(w=>!w.id.startsWith('features/'));
  const cell=(w:string,c:CfgId)=>viewCell(s.machine,s.snapshot || 's1',w,c,metric || '');
  const applicable=group==='code'?nativeCodeParticipants(workloads,selected,cell):selected;
- // Shared: the least-covered measured engine supplies the reference. Engines without
+ // Shared: retain common passes from the measured engines. Engines without
  // any measurements cannot supply a reference.
  const result=measuredCohort(workloads,metric?(s.cohortMode==='per-engine'?[cid]:applicable):[],cid,cell,false,c=>viewData.configurations[c]||c);
  if(s.cohortMode==='shared'&&selected.includes(cid)){
   const passed=leastCoveredReference(workloads,result.participants,(w,c)=>viewCell(s.machine,s.snapshot||'s1',w.id,c,'steady').st==='ok',c=>viewData.configurations[c]||c);
-  if(passed.length)result.cohort=passed;
+  if(result.participants.some(c=>workloads.some(w=>viewCell(s.machine,s.snapshot||'s1',w.id,c,'steady').st==='ok')))result.cohort=passed;
  }
  if(cohortCache.size>=256)cohortCache.clear();cohortCache.set(cacheKey,result);return result;
 }
@@ -81,7 +81,8 @@ export function aggregate(s:Scope,group:PerfGroup,cid:CfgId,col:number):Aggregat
   const workloads=viewData.catalogue.filter(w=>!w.id.startsWith('features/'));
   const passed=leastCoveredReference(workloads,metricEngines,(w,c)=>viewCell(s.machine,s.snapshot||'s1',w.id,c,'steady').st==='ok',c=>viewData.configurations[c]||c);
   const fallback=leastCoveredReference(entries,metricEngines,valid,c=>viewData.configurations[c]||c);
-  const supportAnchor=metricEngines.slice().sort((a,b)=>(viewData.configurations[a]||a).localeCompare(viewData.configurations[b]||b)).find(c=>passed.length>0&&workloads.filter(w=>viewCell(s.machine,s.snapshot||'s1',w.id,c,'steady').st==='ok').length===passed.length);
+  const counts=new Map(metricEngines.map(c=>[c,workloads.filter(w=>viewCell(s.machine,s.snapshot||'s1',w.id,c,'steady').st==='ok').length]));
+  const supportAnchor=metricEngines.filter(c=>counts.get(c)!>0).sort((a,b)=>counts.get(a)!-counts.get(b)!||(viewData.configurations[a]||a).localeCompare(viewData.configurations[b]||b))[0];
   const passedIds=new Set(passed.map(w=>w.id));
   const reference=s.cohortMode==='shared'?(supportAnchor?entries.filter(entry=>passedIds.has(entry.id)&&valid(entry,supportAnchor)):fallback):entries;
   const average=(configuration:CfgId)=>{
