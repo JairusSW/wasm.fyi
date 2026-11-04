@@ -1,5 +1,4 @@
 import {leastCoveredReference} from './comparison-policy';
-import {compilationCandidate} from './ranking-policy';
 import {apiView} from './api/controller.svelte';
 import {datasetView} from './api/view.svelte';
 import { historySeries } from './history-values';
@@ -24,9 +23,9 @@ export interface Scope {
 	exec?: Exec;
 }
 
-/** Interpreter translation is not compilation: keep interpreters out of compile metrics unless the scope selects interpreters. */
+/** Compiler-only views omit interpreter phases; mixed selections retain every selected engine. */
 export const compileExcluded = (s: Scope, c: Cfg, metric: string) =>
-	(metric === 'compile' || metric === 'rssCompile') && (s.exec ?? 'compiler') !== 'interpreter' && execOf(c) === 'interpreter';
+	(metric === 'compile' || metric === 'rssCompile') && s.exec === 'compiler' && execOf(c) === 'interpreter';
 
 export type PerfGroup = 'lat' | 'mem' | 'code';
 
@@ -154,9 +153,9 @@ export function seriesFmt(key: OtMetricKey, format: DeltaFormat = 'percent') {
 
 /** Headline leader for one aggregate: clear only when the 95% intervals do not overlap. */
 export function leader(s: Scope, label: string, group: PerfGroup, col: number, metric: MetricKey) {
-	const list = CFG.filter(c => viewData.applicationConfigurations.includes(c.id) && compilationCandidate(c.rt,metric) && !compileExcluded(s,c,metric))
+	const list = CFG.filter(c => viewData.applicationConfigurations.includes(c.id) && isVisible(s,c))
 		.map((c) => ({ c, x: aggregate(s, group, c.id, col) }))
-		.filter((e): e is { c: Cfg; x: NonNullable<ReturnType<typeof aggregate>> } => e.x != null && Number.isFinite(e.x.v) && e.x.v>0 && isVisible(s, e.c))
+		.filter((e): e is { c: Cfg; x: NonNullable<ReturnType<typeof aggregate>> } => e.x != null && Number.isFinite(e.x.v) && e.x.v>0)
 		.sort((a, b) => a.x.v - b.x.v);
 	const top=list;
 	const topValues=fmtUGroup(top.map(({c})=>absOf(s,group,c.id,col)?.v ?? null),UNIT[group]);

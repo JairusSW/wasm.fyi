@@ -5,8 +5,7 @@
 	import type { CfgId } from '$lib/data/types';
 	import { familyCohort,featureAverage } from '$lib/feature-values';
 	import { fmtAverage } from '$lib/format';
-	import {compilationCandidate} from '$lib/ranking-policy';
-	import { compileExcluded, featureContracts } from '$lib/model';
+	import { featureContracts } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
 	import { apiView } from '$lib/api/controller.svelte';
 	import { engineFeatureVersions, runtimeFeatureTrack } from '$lib/support';
@@ -62,7 +61,7 @@
 		// Performance in time units. Absolute times only compare over the same features, so each card
 		// ranks runtimes on the features measured by every ranked runtime.
 		const perfCard = (label: string, metric: 'steady' | 'compile', perfMetric: 'exec' | 'compile'): LeaderCard => {
-			const ids = cols.filter((id) => CB[id] && !compileExcluded(s, CB[id], metric) && compilationCandidate(CB[id].rt,metric));
+			const ids = cols.filter((id) => CB[id]);
 			const fams = COMPAT.flatMap((sec) => sec.fams)
 				.map((f) => {
 					const comparison=familyCohort(s,f.id,cols,metric);

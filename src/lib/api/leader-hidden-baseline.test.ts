@@ -15,7 +15,8 @@ it('populates fastest cards from absolute values when the baseline is hidden',()
  for(const [label,group,col,metric] of [['Compilation','lat',0,'compile'],['Instantiation','lat',1,'inst'],['Memory','mem',3,'rss'],['Execution','lat',3,'steady']] as const){
   const result=leader(scope,label,group,col,metric);
   expect(result.places.length,label).toBeGreaterThan(0);
-  expect(result.places[0].cfg.id).toBe(metric==='compile'?'G':'U');
+  expect(result.places[0].cfg.id).toBe('U');
+  expect(result.places.map(place=>place.cfg.id)).toEqual(['U','G']);
  }
  const e2e=endToEndLeader(scope);
  expect(e2e.places[0].cfg.id).toBe('U');

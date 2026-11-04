@@ -12,7 +12,7 @@
 
 	const rankingNote = 'Places rank measured means; overlapping uncertainty is not a clear lead';
 	const leaders = $derived([
-		{ ...leader(ui.scope, 'Fastest compilation', 'lat', 0, 'compile'), overview: null, points: [rankingNote, 'Transpiler pipelines are excluded from fastest compilation; their full translate + compile times remain in the table.'] },
+		{ ...leader(ui.scope, 'Fastest compilation', 'lat', 0, 'compile'), overview: null, points: [rankingNote, 'Ranks the selected engines. Transpiler timings include translation and native compilation.'] },
 		{ ...leader(ui.scope, 'Fastest instantiation', 'lat', 1, 'inst'), overview: null, points: [rankingNote] },
 		{ ...endToEndLeader(ui.scope), overview: null, points: [rankingNote, 'Compile + instantiate + first call + one steady call; runtimes need all four measurements.'] },
 		{ ...leader(ui.scope, 'Lowest average peak RSS', 'mem', 3, 'rss'), overview: 'mem' as OvKey,

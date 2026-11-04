@@ -5,7 +5,7 @@ vi.mock('./view-data',()=>({viewData:{},viewCell:()=>({st:'ok',v:1})}));
 vi.mock('./state.svelte',()=>({ui}));
 vi.mock('./data/features',()=>({FEATURE_ROWS:[{id:'a'},{id:'b'},{id:'c'}],COMPAT:[{fams:[{id:'a'},{id:'b'},{id:'c'}]}]}));
 vi.mock('./data/runtimes',()=>({FEATURE_CFG:configs,CB:Object.fromEntries(configs.map(c=>[c.id,c]))}));
-vi.mock('./model',()=>({featureContracts:()=>[{}],compileExcluded:()=>false}));
+vi.mock('./model',()=>({featureContracts:()=>[{}]}));
 vi.mock('./support',()=>({engineFeatureVersions:(_rt:string,_s:unknown,channel:string,id:string)=>channel===(['G','H'].includes(id)?'stable':'development')?['snapshot']:[],runtimeFeatureTrack:(rt:string)=>({expected:6,pass:Number(rt.slice(-1))+1})}));
 vi.mock('./api/controller.svelte',()=>({apiView:{ready:true}}));
 vi.mock('./tip',()=>({tipCard:()=>''}));
@@ -15,6 +15,15 @@ describe('feature leader cards',()=>{
  it('includes measured main snapshots in support rankings',()=>{
   const html=render(FeatureLeaders,{props:{cols:configs.map(c=>c.id) as never[]}}).body;
   expect(html).toContain('runtime5');expect(html).toContain('runtime4');
+ });
+ it('keeps selected transpilers and interpreters in feature compilation rankings',()=>{
+  const old=configs.map(c=>({...c}));
+  try{
+   configs[0].rt='wasm2c';configs[1].rt='wasmi';configs[1].be='interpreter';
+   const html=render(FeatureLeaders,{props:{cols:configs.map(c=>c.id) as never[]}}).body;
+   const compilation=html.split('Fastest feature compilation')[1].split('</button>')[0];
+   expect(compilation).toContain('wasm2c');expect(compilation).toContain('wasmi');
+  }finally{configs.forEach((c,index)=>Object.assign(c,old[index]))}
  });
  it('shows actual compilation time and applies mean selection to both performance cards',()=>{
   ui.scope.average='geo';const geo=render(FeatureLeaders,{props:{cols:configs.map(c=>c.id) as never[]}}).body;
