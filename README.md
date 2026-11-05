@@ -29,6 +29,10 @@ behind each result.
 > checks establish correctness for their specific contracts; official test
 > suites have separate coverage and results.
 
+If you want to see your own runtime listed here, please open an issue!
+
+If you'd like to help out with funding, you can [sponsor](https://github.com/sponsors/JairusSW) me or [email me](mailto:me@jairus.dev) to lend a machine for compute
+
 ## Why wasm.fyi?
 
 - **Workload-specific comparisons.** Compare execution, compilation and memory
