@@ -3,15 +3,6 @@
 ╚╩╝╩ ╩╚═╝╩ ╩  ╚   ╩ ╩</pre></h1>
 
 <p align="center">
-  webassembly runtimes, measured and explained
-</p>
-
-<p align="center">
-  <a href="https://github.com/JairusSW/wasm.fyi/actions/workflows/check.yml"><img src="https://github.com/JairusSW/wasm.fyi/actions/workflows/check.yml/badge.svg" alt="Website checks"></a>
-  <a href="https://github.com/JairusSW/wasm.fyi/actions/workflows/corpus.yml"><img src="https://github.com/JairusSW/wasm.fyi/actions/workflows/corpus.yml/badge.svg" alt="Corpus source builds and correctness"></a>
-</p>
-
-<p align="center">
   <a href="https://wasm.fyi">website</a> ·
   <a href="corpora/README.md">corpus sources</a> ·
   <a href="docs/updating.md">updating results</a> ·
@@ -21,17 +12,16 @@
 </p>
 
 wasm.fyi compares WebAssembly runtimes across real workloads, feature support,
-and release history. Pick a workload, compare engines, and inspect the evidence
-behind each result.
+and release history. It's built for the entire wasm community :)
 
 > [!NOTE]
 > Missing, unsupported, failed and unmeasured results stay visible. Corpus
 > checks establish correctness for their specific contracts; official test
 > suites have separate coverage and results.
 
-If you want to see your own runtime listed here, please open an issue!
+**If you want to see your own runtime listed here, please open an issue!**
 
-If you'd like to help out with funding, you can [sponsor](https://github.com/sponsors/JairusSW) me or [email me](mailto:me@jairus.dev) to lend a machine for compute
+I'd also appreciate help with funding (i'm just a college student). If you would be willing to [sponsor](https://github.com/sponsors/JairusSW) me, i'd be in your debt!
 
 ## Why wasm.fyi?
 
