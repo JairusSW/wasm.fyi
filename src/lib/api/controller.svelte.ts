@@ -50,7 +50,7 @@ function slot(engine:string):CfgId{
   const cfg={...template,id,rt:runtime,ver:'not collected',be:plannedBackends[engine]||'',kind:'',col:engineColor(engine),hollow:engine==='wago-beta.11',interp:/interpreter/.test(plannedBackends[engine]||''),label:plannedBackends[engine]||''} as Cfg;
   Object.defineProperty(cfg,'ver',{enumerable:true,get:()=> (viewData.hosts.m1.configurations[cfg.id]||viewData.hosts.m2.configurations[cfg.id]||viewData.hosts.m3.configurations[cfg.id])?.version?shortVersion((viewData.hosts.m1.configurations[cfg.id]||viewData.hosts.m2.configurations[cfg.id]||viewData.hosts.m3.configurations[cfg.id])!.version):'not collected'});
   Object.defineProperty(cfg,'be',{enumerable:true,get:()=> (viewData.hosts.m1.configurations[cfg.id]||viewData.hosts.m2.configurations[cfg.id]||viewData.hosts.m3.configurations[cfg.id])?.backend||plannedBackends[engine]||''});
-  CFG.push(cfg);sortCFG();
+  CFG.push(cfg);CB[id]=cfg;sortCFG();
  }
  WF[id]=1;slots.set(engine,id);return id;
 }
