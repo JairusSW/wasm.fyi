@@ -1,0 +1,11 @@
+[Unit]
+Description=Check published benchmark revision for static homepage
+
+[Timer]
+OnBootSec=30s
+OnUnitInactiveSec=30s
+AccuracySec=1s
+Unit=wasmfyi-homepage.service
+
+[Install]
+WantedBy=timers.target

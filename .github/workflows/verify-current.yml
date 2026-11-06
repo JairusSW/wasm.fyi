@@ -84,6 +84,7 @@ jobs:
       - name: Test release activation and history boundaries
         run: |
           python3 scripts/activate-remote.test.py
+          python3 scripts/watch-homepage.test.py
           node --test scripts/history-scope.test.mjs scripts/audit-history-corpus-captures.test.mjs
       - name: Test capture failure handling and SDK policy
         run: |

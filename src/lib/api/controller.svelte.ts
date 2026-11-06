@@ -292,6 +292,7 @@ export async function bakePageSeed(origin:string,path:string,machine:MachineId='
  buildPath=path;
  try{
   await connectSite();
+  if(path==='/')await loadOverviews({...ui.scope,snapshot:ui.snap,metric:'steady'},['compile','inst','first','steady','rssAverage']);
   const capturedSummary=summary as Summary|undefined;
   if(apiView.error||!capturedSummary||!apiView.ready)throw Error(apiView.error||'No measurement snapshot available');
   if(Object.keys(apiView.aggregateErrors).length)throw Error('Could not bake averages: '+JSON.stringify(apiView.aggregateErrors));

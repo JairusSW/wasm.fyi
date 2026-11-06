@@ -1,0 +1,13 @@
+import {build} from 'vite';
+import {readFile,writeFile} from 'node:fs/promises';
+import {resolve} from 'node:path';
+import {pathToFileURL} from 'node:url';
+const full=resolve('.svelte-kit/output/server/manifest-full.js');
+const {manifest}=await import(pathToFileURL(full));
+const page=manifest._.routes.find(r=>r.id==='/');
+const files=[...(await readFile(full,'utf8')).matchAll(/__memo\(\(\) => import\('(.+?)'\)\)/g)].map(m=>m[1]);
+const indexes=[...new Set([...page.page.layouts,...page.page.errors,page.page.leaf].filter(n=>n!=null))];
+const remap=n=>n==null?null:indexes.indexOf(n);
+const source=`export const manifest={appDir:${JSON.stringify(manifest.appDir)},appPath:${JSON.stringify(manifest.appPath)},assets:new Set(${JSON.stringify([...manifest.assets])}),mimeTypes:${JSON.stringify(manifest.mimeTypes)},_:{client:${JSON.stringify(manifest._.client)},nodes:[${indexes.map(i=>`()=>import(${JSON.stringify(files[i])})`).join(',')}],remotes:{},routes:[{id:'/',pattern:${page.pattern},params:[],page:${JSON.stringify({layouts:page.page.layouts.map(remap),errors:page.page.errors.map(remap),leaf:remap(page.page.leaf)})},endpoint:null}],prerendered_routes:new Set(),matchers:async()=>({}),server_assets:{}}};`;
+await writeFile(resolve('.svelte-kit/output/server/manifest-homepage.js'),source);
+await build({configFile:false,publicDir:false,logLevel:'warn',ssr:{noExternal:true},build:{ssr:resolve('scripts/render-homepage-entry.mjs'),outDir:resolve('.wasmfyi/homepage-renderer'),emptyOutDir:true,minify:true,rolldownOptions:{output:{entryFileNames:'homepage-baker.mjs',codeSplitting:false}}}});

@@ -64,7 +64,7 @@
 	});
 
  $effect(()=>{
-  if(!browser||!synced||!architectureReady||(page.route.id==='/dashboard'||page.route.id==='/runs/[id]'))return;
+  if(!browser||!synced||!architectureReady||(page.route.id==='/'||page.route.id==='/dashboard'||page.route.id==='/runs/[id]'))return;
   const machine=ui.machine;const route=page.route.id;const drawer=ui.drawer;ui.metric;ui.runtimeFilters.rules;
   if(apiView.ready)apiView.historyRevision;
   const scope={...ui.scope,machine,snapshot:ui.snap,metric:ui.metric},historyMetric=ui.otMetric;
@@ -80,9 +80,9 @@
  });
 
  $effect(()=>{
-  if(!browser||!apiView.ready||(page.route.id==='/dashboard'||page.route.id==='/runs/[id]'))return;
+  if(!browser||!apiView.ready||(page.route.id==='/'||page.route.id==='/dashboard'||page.route.id==='/runs/[id]'))return;
   const route=page.route.id,scope={...ui.scope,machine:ui.machine,snapshot:ui.snap,metric:ui.metric};
-  const metrics=route==='/'?['compile','inst','first','steady','rssAverage']:route==='/benchmarks'?['compile','inst','first','steady','rssCompile','rssInst','rss','rssAverage','code']:[];
+  const metrics=route==='/benchmarks'?['compile','inst','first','steady','rssCompile','rssInst','rss','rssAverage','code']:[];
   const abort=new AbortController();const timer=setTimeout(()=>{void loadOverviews(scope,metrics as (import('$lib/data/types').MetricKey|'rssAverage')[],abort.signal).catch(error=>{if(!abort.signal.aborted)for(const metric of metrics)apiView.aggregateErrors[aggregateKey(scope,metric)]=String(error)})},80);
   return ()=>{clearTimeout(timer);abort.abort()};
  });
@@ -125,7 +125,7 @@
 			}
 			if(mounted)architectureReady=true;
 		})();
-		const refresh=setInterval(()=>{if(page.route.id!=='/dashboard'&&page.route.id!=='/runs/[id]'&&document.visibilityState==='visible')void connectSite()},30000);
+		const refresh=setInterval(()=>{if(page.route.id!=='/'&&page.route.id!=='/dashboard'&&page.route.id!=='/runs/[id]'&&document.visibilityState==='visible')void connectSite()},30000);
 		// Prototype links used hash routes (#/benchmarks, #/bench/<id>, …).
 		const h = location.hash;
 		if (h.startsWith('#/')) {

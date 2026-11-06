@@ -1,0 +1,12 @@
+[Unit]
+Description=Regenerate static wasm.fyi homepage after data publication
+After=wasmfyi.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /opt/wasmfyi/current/frontend/.homepage-watch.py
+Environment=HOME=/root
+TimeoutStartSec=infinity
+NoNewPrivileges=true
+ProtectSystem=full
+PrivateTmp=false

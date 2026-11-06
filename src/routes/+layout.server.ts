@@ -6,6 +6,6 @@ import {bakePageSeed} from '$lib/api/controller.svelte';
 
 export const load:LayoutServerLoad=async({url,route})=>{
  const origin=env.WASMFYI_PRERENDER_API_ORIGIN;
- if(!building||!origin||route.id==='/dashboard'||route.id==='/bench/[...id]')return {pageSeed:null};
+ if(!building||!origin||route.id==='/'||route.id==='/dashboard'||route.id==='/bench/[...id]')return {pageSeed:null};
  return {pageSeed:encodeBakedSeed(await bakePageSeed(origin,url.pathname))};
 };

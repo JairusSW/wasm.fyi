@@ -1,58 +1,24 @@
 <script lang="ts">
 	import Brand from '$lib/components/Brand.svelte';
 	import Swatch from '$lib/components/Swatch.svelte';
-	import { CFG } from '$lib/data/runtimes';
 	import { UNIT } from '$lib/data/snapshot';
-	import type { Cfg } from '$lib/data/types';
 	import { fmtU, n0 } from '$lib/format';
 	import { href, siteHref } from '$lib/links';
-	import { absOf, combinedLatency, compileExcluded, isVisible, totalWorkloads, type PerfGroup } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
-	import { viewData } from '$lib/view-data';
-
-	type MetricId = 'steady' | 'compile' | 'inst' | 'rss' | 'e2e';
-	// `col` indexes the aggregate column; end-to-end sums all four latency phases instead.
-	const METRICS: Record<MetricId, { label: string; group: PerfGroup; col: number }> = {
-		steady: { label: 'Execution', group: 'lat', col: 3 },
-		compile: { label: 'Compile', group: 'lat', col: 0 },
-		inst: { label: 'Instantiate', group: 'lat', col: 1 },
-		rss: { label: 'Memory', group: 'mem', col: 3 },
-		e2e: { label: 'End-to-end', group: 'lat', col: -1 }
-	};
+	import { HOME_METRICS as METRICS, type HomeMetric as MetricId } from '$lib/homepage';
 	const IDS = Object.keys(METRICS) as MetricId[];
-
-	let sortBy = $state<MetricId>('steady');
 	const TOP = 10;
-
-	/** One metric's aggregate for a runtime, or null when it was not measured. */
-	function value(c: Cfg, id: MetricId): number | null {
-		const s = ui.scope;
-		if (id === 'e2e') return combinedLatency(s, c, [0, 1, 2, 3])?.total ?? null;
-		if (id === 'compile' && compileExcluded(s, c, 'compile')) return null;
-		const v = absOf(s, METRICS[id].group, c.id, METRICS[id].col)?.v;
-		return v != null && Number.isFinite(v) && v > 0 ? v : null;
-	}
-
-	const ranked = $derived.by(() => {
-		const list = CFG.filter((c) => viewData.applicationConfigurations.includes(c.id) && isVisible(ui.scope, c))
-			.map((c) => ({ c, v: value(c, sortBy) }))
-			.filter((r): r is { c: Cfg; v: number } => r.v != null)
-			.sort((a, b) => a.v - b.v);
-		// Bars show relative speed (or leanness): the leader fills the track.
-		return list.map((r) => ({ ...r, bar: (list[0].v / r.v) * 100 }));
-	});
-
+	let sortBy = $state<MetricId>('steady');
+	let { data } = $props();
+	const machine = $derived(data.home?.machines[ui.machine]);
+	const ranked = $derived(machine?.metrics[sortBy].rows ?? []);
+	const rankedCount = $derived(machine?.metrics[sortBy].total ?? 0);
 	const benchHref = $derived(siteHref(href('/benchmarks', { metric: sortBy === 'e2e' ? 'steady' : sortBy })));
 	const fmt = (v: number) => fmtU(v, UNIT[METRICS[sortBy].group]);
-	const updated = $derived.by(() => {
-		const dates = ranked.map((r) => viewData.reports[absOf(ui.scope, 'lat', r.c.id, 3)?.report ?? '']?.created.slice(0, 10)).filter(Boolean) as string[];
-		return dates.sort().at(-1) ?? null;
-	});
-	const host = $derived(viewData.hosts[ui.machine]?.label ?? '');
-
-	const samples = $derived({ all: viewData.statistics.allTimingSamples ?? 0, latest: viewData.statistics.timingSamples ?? 0 });
-	let { data } = $props();
-	const feat = $derived(data.features?.[ui.machine]);
+	const updated = $derived(machine?.updated);
+	const host = $derived(machine?.host ?? '');
+	const samples = $derived(data.home?.samples ?? {all:0,latest:0});
+	const feat = $derived(machine?.features);
 </script>
 
 <svelte:head>
@@ -84,7 +50,7 @@
 	<section aria-labelledby="lb-title">
 		<div class="lb-head">
 			<h2 id="lb-title">Leaderboard</h2>
-			<span class="meta">{[host, `${totalWorkloads()} workloads`, updated && `updated ${updated}`].filter(Boolean).join(' · ')}</span>
+			<span class="meta">{[host, `${machine?.workloads ?? 0} workloads`, updated && `updated ${updated}`].filter(Boolean).join(' · ')}</span>
 		</div>
 
 		<div class="seg" role="tablist" aria-label="Rank by">
@@ -113,7 +79,7 @@
 				{/each}
 			</ol>
 			<a class="all" href={benchHref}>
-				<span>{ranked.length > TOP ? `See all ${ranked.length} runtimes` : 'See every workload'} on Benchmarks</span>
+				<span>{rankedCount > TOP ? `See all ${rankedCount} runtimes` : 'See every workload'} on Benchmarks</span>
 				<span aria-hidden="true">→</span>
 			</a>
 		</div>
@@ -141,7 +107,7 @@
 								</a>
 							</li>
 					{:else}
-						<li class="empty">{data.features ? 'Not collected on this machine' : 'Loading…'}</li>
+						<li class="empty">{data.home ? 'Not collected on this machine' : 'Loading…'}</li>
 					{/each}
 				</ol>
 				<a class="all" href={siteHref('/features')}><span>Support matrix</span><span aria-hidden="true">→</span></a>
@@ -162,7 +128,7 @@
 								</a>
 							</li>
 					{:else}
-						<li class="empty">{data.features ? 'Not measured on this machine' : 'Loading…'}</li>
+						<li class="empty">{data.home ? 'Not measured on this machine' : 'Loading…'}</li>
 					{/each}
 				</ol>
 				<a class="all" href={siteHref('/features?view=perf')}><span>Feature performance</span><span aria-hidden="true">→</span></a>

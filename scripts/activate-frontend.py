@@ -53,6 +53,8 @@ def activate(frontend, expected):
         release = old.parent / (time.strftime("%Y%m%dT%H%M%SZ", time.gmtime()) + "-frontend")
         release.mkdir()
         os.link(binary, release / "wasmfyi")
+        if (old / "commit").is_file():
+            shutil.copyfile(old / "commit", release / "commit")
         shutil.copytree(frontend, release / "frontend")
         try:
             switch(current, release)

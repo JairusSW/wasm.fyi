@@ -153,7 +153,14 @@ def main():
     os.sched_setaffinity(0, {0, 1})
     with open('/run/lock/wasmfyi-deployment.lock', 'a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
-        activate(stage(revision))
+        target = stage(revision)
+        activate(target)
+        # Trusted release files only; the public host rejects dotfile paths.
+        if (target / 'frontend' / '.homepage-baker.mjs').is_file():
+            for name in ('service', 'timer'):
+                shutil.copyfile(target / 'frontend' / ('.homepage.' + name), pathlib.Path('/etc/systemd/system') / ('wasmfyi-homepage.' + name))
+            subprocess.run(['systemctl', 'daemon-reload'], check=True)
+            subprocess.run(['systemctl', 'enable', '--now', 'wasmfyi-homepage.timer'], check=True)
     print('Deployed ' + revision)
 
 
