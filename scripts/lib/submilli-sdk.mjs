@@ -10,6 +10,7 @@ export async function buildSubmilliSDK({source,root,version,env,run}) {
  main=main.replace('env!("WB_RUNTIME")','"submilli"').replace(/"(?:portable|auto|indirect)-dispatch; eager bytecode; no fuel[^"]*"/g,'"Submilli stack interpreter; SIMD enabled; no fuel or epoch interruption"').replaceAll('"wasmi_dispatch"','"interpreter_policy"');
  main=main.replace('let assemblyscript = (cfg!(feature = "wasmer_llvm")','let assemblyscript = (cfg!(feature = "wasmi") || cfg!(feature = "wasmer_llvm")');
  main=main.replaceAll('#[cfg(any(\n    feature = "wasmer_llvm",','#[cfg(any(\n    feature = "wasmi",\n    feature = "wasmer_llvm",').replaceAll('#[cfg(any(\n                    feature = "wasmer_llvm",','#[cfg(any(\n                    feature = "wasmi",\n                    feature = "wasmer_llvm",').replace('let vector_contract = (cfg!(feature = "wasmer_llvm")','let vector_contract = (cfg!(feature = "wasmi") || cfg!(feature = "wasmer_llvm")');
+ main=main.replace('if cfg!(feature = "wasmer_llvm")\n                    || cfg!(feature = "wasmer_singlepass")','if cfg!(feature = "wasmi") || cfg!(feature = "wasmer_llvm")\n                    || cfg!(feature = "wasmer_singlepass")');
  await copyFile(join(root,'adapters/native/src/vectors.rs'),join(dir,'src/vectors.rs'));
  await writeFile(join(dir,'src/main.rs'),main);
  await copyFile(join(site,'adapters/qualification/submilli.rs'),join(dir,'src/wasmi.rs'));
