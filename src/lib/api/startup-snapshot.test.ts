@@ -88,3 +88,27 @@ it('does not restore averages baked with an obsolete cohort policy',async()=>{
  expect(apiView.precomputed.current).toEqual({...value,policy:'common-passes-v1'});
  closeSite();
 });
+it('refreshes the static startup payload when a new publication changes its revision',async()=>{
+ const {emptyView}=await import('./view.svelte');const {encodeBakedSeed}=await import('./baked-codec');
+ let revision='old',now=1000;vi.spyOn(Date,'now').mockImplementation(()=>now);
+ const summary=()=>({revision,platforms:[{...platform,latestRevision:revision}]});
+ const request=vi.fn(async(path:string)=>{
+  if(path==='/api/summary')return Response.json(summary());
+  if(path==='/data/startup/features/m2.json'){
+   const view=emptyView();view.configurations.G='wago';view.hosts.m2.configurations.G={runtime:'wago',version:revision,backend:'jit'};
+   view.hosts.m2.snapshots.s1['features/simd/add/1|G|steady']={st:'ok',v:revision==='old'?1:2,report:''};
+   return Response.json(encodeBakedSeed({schema:2,revision,machine:'m2',path:'/features/',summary:summary(),view,slots:[],precomputed:{},loaded:[['m2',JSON.stringify([revision])+'|features']],phases:[['m2',['compile','instantiate','first-call','steady']]],metadata:[]}));
+  }
+  throw Error('Static startup data should replace the bulk request: '+path);
+ });
+ vi.stubGlobal('fetch',request);vi.stubGlobal('location',{pathname:'/features/',href:'https://wasm.fyi/features/?m=m2'});
+ const {ui}=await import('../state.svelte');ui.machine='m2';
+ const {connectSite,apiView,closeSite}=await import('./controller.svelte');
+ const {datasetView}=await import('./view.svelte');
+ try{
+  await connectSite();expect(apiView.error).toBe('');
+  revision='new';now+=16000;await connectSite();
+  expect(apiView.error).toBe('');expect(datasetView.current.hosts.m2.snapshots.s1['features/simd/add/1|G|steady'].v).toBe(2);
+  expect(request.mock.calls.filter(([path])=>path.startsWith('/data/'))).toHaveLength(2);
+ }finally{closeSite();vi.restoreAllMocks()}
+});

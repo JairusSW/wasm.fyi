@@ -38,8 +38,10 @@ runtimeRegistry.push(
  {id:'libwasm',name:'LibWasm',lang:'Rust / C++',exec:['Interpreter'],tiers:'In-place interpreter',arch:['x86-64','AArch64'],wasi:'not measured',cm:'?',repo:'github.com/LadybirdBrowser/ladybird',lic:'BSD-2-Clause',rel:'not collected',size:'not measured',embed:['Rust','C++'],notes:['Ladybird LibWasm with LIBWASM_JIT=off, identified by its exact source revision.']},
  {id:'libwasm-jit',name:'LibWasm',lang:'Rust',exec:['Interpreter','JIT'],tiers:'Hot-function optimizing JIT',arch:['x86-64','AArch64'],wasi:'not measured',cm:'?',repo:'github.com/LadybirdBrowser/ladybird',lic:'BSD-2-Clause',rel:'not collected',size:'not measured',embed:['Rust'],notes:['Normal LibWasm tiering (LIBWASM_JIT=on,threads=1). Compilation occurs after the default hotness threshold.']}
 );
-export const RTS = runtimeRegistry.filter(r=>['wasmtime','v8','wasmer','wazero','wavm','wago','wasm2c','w2c2'].includes(r.id));
-export const RTB: Record<string, Runtime> = Object.fromEntries(RTS.map(r => [r.id, r]));
+const runtimes = runtimeRegistry.filter(r=>['wasmtime','v8','wasmer','wazero','wavm','wago','wasm2c','w2c2'].includes(r.id));
+const runtimesById: Record<string, Runtime> = Object.fromEntries(runtimes.map(r => [r.id, r]));
+export const RTS: readonly Runtime[] = runtimes;
+export const RTB: Readonly<Record<string, Runtime>> = runtimesById;
 export const SA = ['wasmtime', 'wasmer', 'wazero', 'wago', 'wavm'];
 const applicationCFG: Cfg[] = [
   { id: 'A', rt: 'wasmtime', ver: '37.0.1', be: 'cranelift', kind: 'optimizing JIT', col: 'var(--rt-wasmtime)', hollow: false },
@@ -57,8 +59,8 @@ const aotCFG: Cfg[] = [
  {id:'U',rt:'w2c2',be:'GCC',ver:'not collected',kind:'C AOT · GCC',col:'var(--rt-w2c2)',hollow:false}
 ];
 const configurations: Cfg[] = [...applicationCFG,...additionalCFG,...aotCFG];
-export const CFG: Cfg[] = new Proxy(configurations,{get:(target,key)=>{datasetView.generation;const value=Reflect.get(target,key);return typeof value==='function'?value.bind(target):value}});
-export const FEATURE_CFG: Cfg[] = CFG;
+export const CFG: readonly Cfg[] = new Proxy(configurations,{get:(target,key)=>{datasetView.generation;const value=Reflect.get(target,key);return typeof value==='function'?value.bind(target):value}});
+export const FEATURE_CFG = CFG;
 /** Alphanumeric order with letters before digits, so wasm2go follows wasmtime and w2c2 follows wizard. */
 const alnum=(a:string,b:string)=>{
   const key=(s:string)=>[...s.toLowerCase()].map(ch=>/[0-9]/.test(ch)?'{'+ch:ch).join('');
@@ -99,7 +101,17 @@ export const MACH: Record<MachineId,Machine> = new Proxy({} as Record<MachineId,
  ownKeys:()=>Object.keys(viewData.hosts),getOwnPropertyDescriptor:()=>({enumerable:true,configurable:true})
 });
 
-export const CB = Object.fromEntries(FEATURE_CFG.map((c) => [c.id, c])) as Record<CfgId, Cfg>;
+const configurationsById = Object.fromEntries(configurations.map(c => [c.id, c])) as Record<CfgId, Cfg>;
+export const CB: Readonly<Record<CfgId, Cfg>> = configurationsById;
+/** Register once: tables, cards and runtime metadata share the same configuration. */
+export function registerConfiguration(cfg: Cfg): Cfg {
+  const previous = configurationsById[cfg.id];
+  if (previous) return previous;
+  const runtime = runtimeRegistry.find(r => r.id === cfg.rt);
+  if (runtime && !runtimesById[runtime.id]) { runtimes.push(runtime); runtimesById[runtime.id] = runtime; }
+  configurations.push(cfg);configurationsById[cfg.id] = cfg;sortCFG();
+  return cfg;
+}
 
 export function configVersion(machine:MachineId,id:CfgId){
   const version=viewData.hosts[machine].configurations[id]?.version;

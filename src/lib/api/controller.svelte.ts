@@ -10,7 +10,7 @@ import {unpackMatrixAsync,type CompactMatrix,type ScalarResult,type CompactAggre
 import {computationCheckpoint} from '../computation';
 import {datasetView,emptyView,viewData} from './view.svelte';
 import {ui} from '../state.svelte';
-import {CFG,CB,RTS,RTB,runtimeRegistry,WF,sortCFG} from '../data/runtimes';
+import {CFG,CB,WF,sortCFG,registerConfiguration} from '../data/runtimes';
 import {legacySlots} from './catalog';
 import type {CfgId,MachineId,MetricKey,OtMetricKey,Cfg,Bench} from '../data/types';
 import type {Scope} from '../model';
@@ -46,11 +46,10 @@ function slot(engine:string):CfgId{
  if(!CFG.some(c=>c.id===id)){
   const runtime=engine.startsWith('wago-')?'wago':engine.startsWith('wasmtime-')?'wasmtime':engine.startsWith('wasmer-')?'wasmer':engine.startsWith('wazero-')?'wazero':engine.startsWith('wamr-')?'wamr':engine.startsWith('wasmedge-')?'wasmedge':engine.startsWith('chicory-')?'chicory':engine.startsWith('endive-')?'endive':engine.startsWith('wizard-')?'wizard':engine.startsWith('zwasm-')?'zwasm':engine.endsWith('-gcc')?engine.slice(0,-4):engine;
   const template=CFG.find(c=>c.rt===runtime);
-  const known=runtimeRegistry.find(r=>r.id===runtime);if(known&&!RTB[runtime]){RTS.push(known);RTB[runtime]=known}
   const cfg={...template,id,rt:runtime,ver:'not collected',be:plannedBackends[engine]||'',kind:'',col:engineColor(engine),hollow:engine==='wago-beta.11',interp:/interpreter/.test(plannedBackends[engine]||''),label:plannedBackends[engine]||''} as Cfg;
   Object.defineProperty(cfg,'ver',{enumerable:true,get:()=> (viewData.hosts.m1.configurations[cfg.id]||viewData.hosts.m2.configurations[cfg.id]||viewData.hosts.m3.configurations[cfg.id])?.version?shortVersion((viewData.hosts.m1.configurations[cfg.id]||viewData.hosts.m2.configurations[cfg.id]||viewData.hosts.m3.configurations[cfg.id])!.version):'not collected'});
   Object.defineProperty(cfg,'be',{enumerable:true,get:()=> (viewData.hosts.m1.configurations[cfg.id]||viewData.hosts.m2.configurations[cfg.id]||viewData.hosts.m3.configurations[cfg.id])?.backend||plannedBackends[engine]||''});
-  CFG.push(cfg);CB[id]=cfg;sortCFG();
+  registerConfiguration(cfg);
  }
  WF[id]=1;slots.set(engine,id);return id;
 }
@@ -203,7 +202,7 @@ export async function connectSite(_origin='',_revision?:string,retry=0){
    const platform=platformTargets.find(target=>target.machine===ui.machine)!.platforms[0];
    const metadata=await get<CompactAggregate>('/api/aggregates?'+new URLSearchParams({platform,metric:'steady'}),signal);
    const host=view.hosts[ui.machine];host.configurations={};
-   for(const card of metadata.cards){const cid=slot(card.engine),cfg=CFG.find(cfg=>cfg.id===cid)!;CB[cid]=cfg;view.configurations[cid]=card.engine;host.configurations[cid]={runtime:cfg.rt,version:card.version,backend:card.backend,source:card.source};if(card.latestCreated){const report=card.latestCreated+'|'+card.engine;view.reports[report]={runId:report,created:card.latestCreated,evidence:'',sha256:'',options:{},codeRecords:[],configurations:[card.engine],host:ui.machine}}}
+   for(const card of metadata.cards){const cid=slot(card.engine),cfg=CB[cid];view.configurations[cid]=card.engine;host.configurations[cid]={runtime:cfg.rt,version:card.version,backend:card.backend,source:card.source};if(card.latestCreated){const report=card.latestCreated+'|'+card.engine;view.reports[report]={runId:report,created:card.latestCreated,evidence:'',sha256:'',options:{},codeRecords:[],configurations:[card.engine],host:ui.machine}}}
    view.applicationConfigurations=[...slots.values()];view.statistics={...view.statistics,machines:platformTargets.length,measuredWorkloads:metadata.workloads?.length,timingSamples:fresh.platforms.reduce((n,p)=>n+(p.latestTimingSamples||0),0),allTimingSamples:fresh.platforms.reduce((n,p)=>n+(p.allTimingSamples||0),0)};
    signal.throwIfAborted();datasetView.current=view;datasetView.generation++;metadataMachines.set(ui.machine,selectedRevision);apiView.ready=true;
    if(!pagePath.startsWith('/history'))await loadOverview({...ui.scope,machine:ui.machine,snapshot:ui.snap,metric:ui.metric},'steady','',signal);return;
@@ -236,7 +235,7 @@ export async function connectSite(_origin='',_revision?:string,retry=0){
    for(const row of all){
     const pause=checkpoint();if(pause)await pause;
     if(row.latencyStatus==='ok'){if(row.samplesNs?.length||row.timingSamples)timingSamples+=row.samplesNs?.length||row.timingSamples||0;else timingSamplesComplete=false;}
-    const cid=slot(row.engine);const cfg=CFG.find(c=>c.id===cid)!;CB[cid]=cfg;if(!host.configurations[cid]||!reuse&&!row.workload.startsWith('features/'))host.configurations[cid]={runtime:cfg.rt,version:row.engine.startsWith('wago-')&&!isLocalComparison(row.engine)?row.engine.slice(5)+' · '+row.version:row.version,backend:row.backend,source:row.source};view.configurations[cid]=row.engine;
+    const cid=slot(row.engine);const cfg=CB[cid];if(!host.configurations[cid]||!reuse&&!row.workload.startsWith('features/'))host.configurations[cid]={runtime:cfg.rt,version:row.engine.startsWith('wago-')&&!isLocalComparison(row.engine)?row.engine.slice(5)+' · '+row.version:row.version,backend:row.backend,source:row.source};view.configurations[cid]=row.engine;
     const report=row.capturedAt+'|'+row.engine;view.reports[report]={runId:report,created:row.capturedAt,evidence:'',sha256:'',options:{},codeRecords:[],configurations:[row.engine],host:machine};
     // Host-call mechanism workloads feed the call-latency view only; they are not listed as workloads.
     if(!row.workload.startsWith('mechanisms/')&&!catalogue.has(row.workload))catalogue.set(row.workload,{id:row.workload,artifactSha256:row.artifactSha256,baseline:row.display?.tags?.includes('baseline'),tags:row.display?.tags||[],kb:row.display?.bytes?row.display.bytes/1024:null,ms:null,group:row.display?.group||(row.workload.startsWith('mechanisms/')?'Host calls':row.workload.split('/')[1]||'Other workloads'),purpose:row.display?.purpose||row.wasm,abi:row.display?.abi||'',src:row.display?.source,reset:row.display?.reset,evidenceScope:phases.get(JSON.stringify([row.engine,row.workload]))?.has('steady')?'execution':phases.get(JSON.stringify([row.engine,row.workload]))?.has('instantiate')?'compile-and-instantiate':'compile-only'});
@@ -321,22 +320,24 @@ export async function bakePageSeed(origin:string,path:string,machine:MachineId='
   return JSON.parse(JSON.stringify({schema:2,revision:capturedSummary.revision,machine:ui.machine,path,summary:capturedSummary,history,view:datasetView.current,slots:[...slots],precomputed:apiView.precomputed,loaded:[...loadedMachines],phases:[...loadedPhases].map(([m,p])=>[m,[...p]]),metadata:[...metadataMachines]}));
  }finally{buildPath=undefined;closeSite()}
 }
-const startupSnapshots=new Map<string,BakedPageSeed|null>();
+const startupSnapshots=new Map<string,{revision:string;seed:BakedPageSeed|null}>();
 async function loadStartupSnapshot(page:'features'|'history',machine:MachineId,signal:AbortSignal){
  const key=page+'|'+machine;
+ const revision=JSON.stringify([machineRevision(machine),page==='history'?machineHistoryRevision(machine):'']);
  try{
-  let seed=startupSnapshots.get(key);
-  if(seed===undefined){
-   const response=await fetch(`${base}/data/startup/${page}/${machine}.json`,{signal:AbortSignal.any([signal,AbortSignal.timeout(10000)])});
+  let cached=startupSnapshots.get(key);
+  if(cached?.revision!==revision){
+   const response=await fetch(`${base}/data/startup/${page}/${machine}.json`,{cache:'no-cache',signal:AbortSignal.any([signal,AbortSignal.timeout(10000)])});
    signal.throwIfAborted();
-   seed=response.ok?decodeBakedSeed(await response.json()):null;
-   startupSnapshots.set(key,seed);
+   cached={revision,seed:response.ok?decodeBakedSeed(await response.json()):null};
+   startupSnapshots.set(key,cached);
   }
+  const seed=cached.seed;
   if(!seed||seed.machine!==machine||machineRevision(machine,seed.summary)!==machineRevision(machine))return false;
   if(page==='history'&&(!seed.history||!canRestoreHistory(seed)||machineHistoryRevision(machine,seed.summary)!==machineHistoryRevision(machine)))return false;
   applyPageSeed(seed,true);
   return true;
- }catch(error){signal.throwIfAborted();startupSnapshots.set(key,null);return false}
+ }catch(error){signal.throwIfAborted();startupSnapshots.set(key,{revision,seed:null});return false}
 }
 function historyQueryIdentity(query:URLSearchParams){
  const normalized=new URLSearchParams(query);normalized.delete('from');normalized.delete('to');

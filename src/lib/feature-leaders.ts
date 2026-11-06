@@ -9,12 +9,12 @@ import { shortVersion } from './version-identity';
 
 /** Configurations with a collected feature run on the selected machine, as the Features page lists them. */
 export const featureColumns = (s: Scope) =>
-	FEATURE_CFG.filter((c) => !s.hide[c.id] && (['stable', 'development'] as const).some((channel) => engineFeatureVersions(c.rt, s, channel).length > 0));
+	FEATURE_CFG.filter((c) => !s.hide[c.id] && (['stable', 'development'] as const).some((channel) => engineFeatureVersions(c.rt, s, channel, c.id).length > 0));
 
 /** One entry per configuration (backend): fully passed families and the corpus pass rate. */
 export function featureSupport(s: Scope) {
 	const fams = FEATURE_ROWS.filter((f) => featureContracts(f.id).length > 0);
-	const engines = FEATURE_CFG.filter((c) => !s.hide[c.id] && (['stable', 'development'] as const).some((channel) => engineFeatureVersions(c.rt, s, channel, c.id).length > 0)).map((c) => {
+	const engines = featureColumns(s).map((c) => {
 		const channel = engineFeatureVersions(c.rt, s, 'stable', c.id).length ? 'stable' : 'development';
 		const tracks = fams.map((f) => ({ f, t: runtimeFeatureTrack(c.rt, f, s, channel, undefined, c.id) }));
 		const full = tracks.filter(({ t }) => t.expected > 0 && t.pass === t.expected);

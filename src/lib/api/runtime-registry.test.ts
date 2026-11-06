@@ -14,3 +14,11 @@ it.each(['compile','steady'] as const)('includes the baked-only WasmEdge JIT con
  const result=featureSpeed(ui.scope,[...selected],metric);
  expect(result.ranked.map(row=>row.c.id)).toEqual([...selected]);
 });
+it('registers a newly discovered backend once for both tables and cards',async()=>{
+ const {registerConfiguration}=await import('../data/runtimes');
+ const cfg={...CFG[0],id:'engine:registry-regression' as const,rt:'wasmedge',be:'new-backend'};
+ expect(registerConfiguration(cfg)).toBe(cfg);
+ expect(registerConfiguration({...cfg})).toBe(cfg);
+ expect(CFG.filter(c=>c.id===cfg.id)).toEqual([cfg]);
+ expect(CB[cfg.id]).toBe(cfg);
+});
