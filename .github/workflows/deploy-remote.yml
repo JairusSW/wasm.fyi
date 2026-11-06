@@ -54,6 +54,7 @@ jobs:
         with:
           name: production-release
           path: release/
+          include-hidden-files: true
           retention-days: 7
   deploy:
     needs: [verify, build]
@@ -67,6 +68,11 @@ jobs:
         with:
           name: production-release
           path: release
+      - name: Verify homepage regeneration artifacts
+        run: |
+          for file in .homepage-baker.mjs .homepage-watch.py .homepage.service .homepage.timer; do
+            test -f "release/frontend/$file"
+          done
       - name: Upload and activate release
         env:
           REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
