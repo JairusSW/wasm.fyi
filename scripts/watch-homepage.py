@@ -11,7 +11,8 @@ import urllib.request
 
 
 def revision(api):
-    with urllib.request.urlopen(api.rstrip('/') + '/api/summary', timeout=10) as response:
+    request = urllib.request.Request(api.rstrip('/') + '/api/summary', headers={'X-Real-IP': '127.0.0.1'})
+    with urllib.request.urlopen(request, timeout=10) as response:
         return json.load(response)['revision']
 
 

@@ -6,6 +6,17 @@ import {readFile,writeFile,rename,rm} from 'node:fs/promises';
 import {resolve,join} from 'node:path';
 const directory=resolve(process.argv[2]||'build');
 const api=process.env.WASMFYI_PRERENDER_API_ORIGIN||'http://127.0.0.1:8090';
+const nativeFetch=globalThis.fetch;
+// Direct loopback API traffic must satisfy the same trusted-proxy contract as Caddy.
+globalThis.fetch=(input,init)=>{
+ const url=new URL(input instanceof Request?input.url:String(input));
+ if(url.origin===new URL(api).origin&&['127.0.0.1','localhost','[::1]'].includes(url.hostname)){
+  const headers=new Headers(input instanceof Request?input.headers:undefined);
+  new Headers(init?.headers).forEach((value,key)=>headers.set(key,value));headers.set('X-Real-IP','127.0.0.1');
+  return nativeFetch(input,{...init,headers});
+ }
+ return nativeFetch(input,init);
+};
 const initial=await fetch(new URL('/api/summary',api));if(!initial.ok)throw Error('Homepage summary unavailable');
 const revision=(await initial.json()).revision;
 manifest._.prerendered_routes.clear();
