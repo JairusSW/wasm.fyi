@@ -1,493 +1,472 @@
 <script lang="ts">
 	import Brand from '$lib/components/Brand.svelte';
- import { configVersion } from '$lib/data/runtimes';
-	import { siteHref } from '$lib/links';
 	import Swatch from '$lib/components/Swatch.svelte';
-	import { FEATS, PROPS } from '$lib/data/features';
-	import { CFG, RTS } from '$lib/data/runtimes';
-	import { viewData } from '$lib/view-data';
-	import { EVENTS, SNAPS } from '$lib/data/snapshot';
-	import { PROPOSAL_IDS, href } from '$lib/links';
-	import { totalWorkloads, disp, isOff, isVisible, ratio } from '$lib/model';
+	import { CFG } from '$lib/data/runtimes';
+	import { UNIT } from '$lib/data/snapshot';
+	import type { Cfg } from '$lib/data/types';
+	import { fmtU, n0 } from '$lib/format';
+	import { href, siteHref } from '$lib/links';
+	import { absOf, combinedLatency, compileExcluded, isVisible, totalWorkloads, type PerfGroup } from '$lib/model';
 	import { ui } from '$lib/state.svelte';
-	import { shortCount, n0 } from '$lib/format';
+	import { viewData } from '$lib/view-data';
 
-	const board = $derived.by(() => {
+	type MetricId = 'steady' | 'compile' | 'inst' | 'rss' | 'e2e';
+	// `col` indexes the aggregate column; end-to-end sums all four latency phases instead.
+	const METRICS: Record<MetricId, { label: string; group: PerfGroup; col: number }> = {
+		steady: { label: 'Execution', group: 'lat', col: 3 },
+		compile: { label: 'Compile', group: 'lat', col: 0 },
+		inst: { label: 'Instantiate', group: 'lat', col: 1 },
+		rss: { label: 'Memory', group: 'mem', col: 3 },
+		e2e: { label: 'End-to-end', group: 'lat', col: -1 }
+	};
+	const IDS = Object.keys(METRICS) as MetricId[];
+
+	let sortBy = $state<MetricId>('steady');
+	const TOP = 10;
+
+	/** One metric's aggregate for a runtime, or null when it was not measured. */
+	function value(c: Cfg, id: MetricId): number | null {
 		const s = ui.scope;
-		const lb = CFG.filter((c) => isVisible(s, c))
-			.map((c) => ({ c, r: ratio(s, 'lat', c.id, 3) }))
-			.filter((x) => x.r)
-			.sort((a, b) => a.r!.r - b.r!.r)
-			.slice(0, 5);
-		const r0 = lb[0]?.r!.r ?? 1;
-		const rMax = lb.length ? lb[lb.length - 1].r!.r : 1;
-		return lb.map((x, i) => ({
-			c: x.c,
-			rank: i + 1,
-            report:x.r!.report,
-			backend:viewData.hosts[s.machine].configurations[x.c.id]?.backend||x.c.be,
-			w: Math.max(4, (Math.log(x.r!.r / r0 + 1) / Math.log(rMax / r0 + 1)) * 100).toFixed(1) + '%',
-			val: disp(s, 'lat', x.c.id, 3)!.t
-		}));
+		if (id === 'e2e') return combinedLatency(s, c, [0, 1, 2, 3])?.total ?? null;
+		if (id === 'compile' && compileExcluded(s, c, 'compile')) return null;
+		const v = absOf(s, METRICS[id].group, c.id, METRICS[id].col)?.v;
+		return v != null && Number.isFinite(v) && v > 0 ? v : null;
+	}
+
+	const ranked = $derived.by(() => {
+		const list = CFG.filter((c) => viewData.applicationConfigurations.includes(c.id) && isVisible(ui.scope, c))
+			.map((c) => ({ c, v: value(c, sortBy) }))
+			.filter((r): r is { c: Cfg; v: number } => r.v != null)
+			.sort((a, b) => a.v - b.v);
+		// Bars show relative speed (or leanness): the leader fills the track.
+		return list.map((r) => ({ ...r, bar: (list[0].v / r.v) * 100 }));
 	});
 
-	const tiles: [number|null, string][] = $derived([
-		[RTS.length, 'runtimes & engines tracked'],
-		[totalWorkloads(), 'measured contracts'],
-		[viewData.statistics.timingSamples, 'latest-version timing samples · all machines'],
-		[viewData.statistics.allTimingSamples ?? null, 'all-version timing samples · all machines'],
-		[FEATS.length, 'features tracked'],
-		[viewData.statistics.machines??0, 'machines']
-	]);
+	const benchHref = $derived(siteHref(href('/benchmarks', { metric: sortBy === 'e2e' ? 'steady' : sortBy })));
+	const fmt = (v: number) => fmtU(v, UNIT[METRICS[sortBy].group]);
+	const updated = $derived.by(() => {
+		const dates = ranked.map((r) => viewData.reports[absOf(ui.scope, 'lat', r.c.id, 3)?.report ?? '']?.created.slice(0, 10)).filter(Boolean) as string[];
+		return dates.sort().at(-1) ?? null;
+	});
+	const host = $derived(viewData.hosts[ui.machine]?.label ?? '');
 
-	const areas = [
-		{
-			t: 'Benchmarks',
-			d: 'Compilation, instantiation, execution, memory and machine code across real programs and microbenchmarks.',
-			href: '/benchmarks',
-			links: [
-				['Fastest execution', href('/benchmarks', { metric: 'steady' }) + '#workloads'],
-				['Startup cost', href('/benchmarks', { metric: 'compile' }) + '#workloads'],
-				['Memory', href('/benchmarks', { metric: 'rss' }) + '#workloads']
-			]
-		},
-		{
-			t: 'History',
-			d: 'Every metric over time, with source revisions, recorded gaps and a fixed comparison-engine baseline.',
-			href: '/history',
-			links: [
-				['Execution trend', '/history'],
-				['Machine code size', href('/history', { ot: 'code' })],
-				['Correctness', href('/history', { ot: 'cov' })]
-			]
-		},
-		{
-			t: 'Features',
-			d: 'Released engine compatibility, official suite results and feature performance.',
-			href: '/features',
-			links: [
-				['SIMD', '/simd'],
-				['WasmGC', '/gc'],
-				['Threads', '/threads']
-			]
-		}
-	];
-
-	const props = PROPOSAL_IDS.map((id) => ({
-		id,
-		title: PROPS[id].title,
-		q: PROPS[id].q,
-		phase: FEATS.find((f) => f.id === id)!.phase
-	}));
-	const events = [...EVENTS].reverse().map((e) => ({ date: SNAPS[e.i].date, label: e.label }));
+	const samples = $derived({ all: viewData.statistics.allTimingSamples ?? 0, latest: viewData.statistics.timingSamples ?? 0 });
+	let { data } = $props();
+	const feat = $derived(data.features?.[ui.machine]);
 </script>
 
 <svelte:head>
 	<title>wasm.fyi — The reference for WebAssembly runtimes</title>
 </svelte:head>
 
-<section class="hero">
-	<div class="intro">
-		<Brand width={204} />
-		<h1>The reference for WebAssembly runtimes.</h1>
-		<p class="lead">
-			Independent benchmarks, feature support and proposal performance. Every number links to the run that produced it.
-		</p>
+<div class="home">
+	<header class="hero">
+		<div class="mark">
+			<h1><Brand width={440} /></h1>
+		</div>
+		{#if samples.all}
+			<div class="captures">
+				<span class="big mono">{n0(samples.all)}</span>
+				<span class="cap">timing samples captured</span>
+				{#if samples.latest}<span class="cap sub mono">{n0(samples.latest)} in the current results</span>{/if}
+			</div>
+		{/if}
+	</header>
+
+	<div class="pitch">
+		<p>Measuring WebAssembly runtimes on real programs: compile, startup, execution and memory</p>
 		<div class="ctas">
-			<a class="btn-primary" href={siteHref(`/benchmarks`)}>Explore benchmarks</a>
-			<a class="btn-outline" href={siteHref(`/features`)}>Feature status</a>
+			<a class="btn solid" href={siteHref('/benchmarks')}>Explore benchmarks <span aria-hidden="true">→</span></a>
+			<a class="btn" href={siteHref('/features')}>Feature support</a>
 		</div>
 	</div>
-	<div class="panel board">
-		<div class="board-head">
-			<span class="w6">Fastest execution</span>
-			<span class="mono small fg3">{board[0]?viewData.reports[board[0].report].created.slice(0,10):'not measured'} · per invocation</span>
+
+	<section aria-labelledby="lb-title">
+		<div class="lb-head">
+			<h2 id="lb-title">Leaderboard</h2>
+			<span class="meta">{[host, `${totalWorkloads()} workloads`, updated && `updated ${updated}`].filter(Boolean).join(' · ')}</span>
 		</div>
-		<div class="board-rows">
-			{#each board as b (b.c.id)}
-				<button
-					class="board-row"
-					onclick={() => ui.openProfile(b.c.rt, b.c.id)}
-					data-tip={`${b.c.rt} ${configVersion(ui.machine,b.c.id)} · ${b.backend}\n${b.c.kind}\nClick to open runtime profile`}
-				>
-					<span class="mono small fg3">{b.rank}</span>
-					<span class="rtname">
-						<Swatch color={b.c.col} bg={b.c.hollow ? 'transparent' : b.c.col} />{b.c.rt}
-						<span class="small fg3">{b.backend}</span>
-					</span>
-					<span class="bar" style:width={b.w} style:background={b.c.col}></span>
-					<span class="mono r s12">{b.val}</span>
-				</button>
+
+		<div class="seg" role="tablist" aria-label="Rank by">
+			{#each IDS as id (id)}
+				<button role="tab" aria-selected={sortBy === id} class:on={sortBy === id} onclick={() => (sortBy = id)}>{METRICS[id].label}</button>
 			{/each}
 		</div>
-	<div class="board-foot small fg3">Geometric mean over measured application workloads · {viewData.hosts[ui.machine].label}</div>
-	</div>
-</section>
 
-<section class="tiles-row">
-	{#each tiles as [v, l] (l)}
-		<div class="tile"><span class="mono tv" title={v==null?undefined:shortCount(v) === n0(v) ? undefined : n0(v)}>{v==null?'not collected':shortCount(v)}</span> <span class="fg3">{l}</span></div>
-	{/each}
-</section>
-
-<section class="block">
-	<div class="heading">
-		<span class="eyebrow">What's inside</span>
-		<h2>One place to answer “which runtime, and why?”</h2>
-	</div>
-	<div class="areas">
-		{#each areas as a (a.t)}
-			<div class="area">
-				<a class="area-title" href={siteHref(a.href)}>{a.t} →</a>
-				<p class="fg2">{a.d}</p>
-				<div class="area-links">
-					{#each a.links as [label, to] (label)}<a class="link" href={siteHref(to)}>{label}</a>{/each}
-				</div>
-			</div>
-		{/each}
-	</div>
-</section>
-
-<section class="block">
-	<div class="heading">
-		<span class="eyebrow">Proposals</span>
-		<h2>Beyond the checkbox.</h2>
-		<p class="fg2 s14">Each major proposal has a permanent page combining status, adoption and measured performance.</p>
-	</div>
-	<div class="props">
-		{#each props as p (p.id)}
-			<a class="prop panel" href={siteHref(`/${p.id}`)} data-tip="Open the {p.title} page: status, adoption & performance">
-				<span class="prop-head"><span class="s18 w6">{p.title}</span><span class="mono micro fg3">{p.phase}</span></span>
-				<span class="fg2">{p.q}</span>
+		<div class="box">
+			<ol class="lb">
+				{#each ranked.slice(0, TOP) as r, i (r.c.id)}
+					<li>
+						<a href={benchHref}>
+							<span class="rank mono">{i + 1}</span>
+							<span class="name">
+								<Swatch color={r.c.col} bg={r.c.hollow ? 'transparent' : r.c.col} size={10} />
+								<span class="rt">{r.c.rt}</span>
+								<span class="be">{r.c.be}</span>
+							</span>
+							<span class="track"><span class="bar" style:width="{r.bar}%" style:background={r.c.col}></span></span>
+							<span class="val mono">{fmt(r.v)}</span>
+						</a>
+					</li>
+				{:else}
+					<li class="empty">Loading…</li>
+				{/each}
+			</ol>
+			<a class="all" href={benchHref}>
+				<span>{ranked.length > TOP ? `See all ${ranked.length} runtimes` : 'See every workload'} on Benchmarks</span>
+				<span aria-hidden="true">→</span>
 			</a>
-		{/each}
-	</div>
-</section>
+		</div>
+	</section>
 
-<section class="block split">
-	<div class="col">
-		<div class="heading">
-			<span class="eyebrow">Methodology</span>
-			<h2>Built to be checked.</h2>
+	<section aria-labelledby="prop-title">
+		<div class="lb-head">
+			<h2 id="prop-title">Proposals</h2>
+			{#if feat}<span class="meta">{feat.support.families} features · spec corpus tests</span>{/if}
 		</div>
-		<div class="points">
-			<div>
-				<div class="w6 s14">Every number is reproducible</div>
-				<div class="fg2">Each result resolves to a run record with versions, flags, machine, harness revision and the exact command.</div>
+		<div class="panels">
+			<div class="box panel">
+				<div class="panel-head">
+					<span class="pt">Support</span>
+					<span class="pd">Features where every corpus test passes</span>
+				</div>
+				<ol class="lb">
+					{#each feat?.support.top ?? [] as { who: c, full } (c.id)}
+							<li>
+								<a href={siteHref('/features')}>
+									<span class="rank mono">{feat!.support.top.findIndex((x) => x.full === full) + 1}</span>
+									<span class="name"><Swatch color={c.col} bg={c.hollow ? 'transparent' : c.col} size={10} /><span class="rt">{c.rt}</span><span class="be">{c.be}</span></span>
+									<span class="track"><span class="bar" style:width="{(full / feat!.support.families) * 100}%" style:background={c.col}></span></span>
+									<span class="val mono">{full} / {feat!.support.families}</span>
+								</a>
+							</li>
+					{:else}
+						<li class="empty">{data.features ? 'Not collected on this machine' : 'Loading…'}</li>
+					{/each}
+				</ol>
+				<a class="all" href={siteHref('/features')}><span>Support matrix</span><span aria-hidden="true">→</span></a>
 			</div>
-			<div>
-				<div class="w6 s14">Scope is always visible</div>
-				<div class="fg2">Hardware, snapshot and workload set travel with every comparison, chart and export.</div>
+			<div class="box panel">
+				<div class="panel-head">
+					<span class="pt">Speed</span>
+					<span class="pd">{feat?.speed.shared ? `Average execution time per feature, over the contracts all ${feat.speed.top.length} pass · ${feat.speed.shared} features` : 'Average execution time per feature'}</span>
+				</div>
+				<ol class="lb">
+					{#each feat?.speed.top ?? [] as { who: c, ms }, i (c.id)}
+							<li>
+								<a href={siteHref('/features?view=perf')}>
+									<span class="rank mono">{i + 1}</span>
+									<span class="name"><Swatch color={c.col} bg={c.hollow ? 'transparent' : c.col} size={10} /><span class="rt">{c.rt}</span><span class="be">{c.be}</span></span>
+									<span class="track"><span class="bar" style:width="{(ms / feat!.speed.top.at(-1)!.ms) * 100}%" style:background={c.col}></span></span>
+									<span class="val mono">{fmtU(ms, 'ms')}</span>
+								</a>
+							</li>
+					{:else}
+						<li class="empty">{data.features ? 'Not measured on this machine' : 'Loading…'}</li>
+					{/each}
+				</ol>
+				<a class="all" href={siteHref('/features?view=perf')}><span>Feature performance</span><span aria-hidden="true">→</span></a>
 			</div>
-			<div>
-				<div class="w6 s14">Missing is never zero</div>
-				<div class="fg2">Unsupported, failed, crashed and not-measured stay distinct. Incorrect results get no performance credit.</div>
-			</div>
 		</div>
-	</div>
-	<div class="col">
-		<div class="heading">
-			<span class="eyebrow">Recent changes</span>
-			<h2>What moved this quarter.</h2>
-		</div>
-		<div>
-			{#each events as e (e.label)}
-				<div class="event"><span class="mono s12 fg3">{e.date}</span><span>{e.label}</span></div>
-			{/each}
-		</div>
-		<a class="link" href={siteHref(`/history`)}>All history and change reports</a>
-	</div>
-</section>
-
-<section class="panel cta">
-	<div class="cta-text">
-		<h2 class="s22">Missing a runtime or a program?</h2>
-		<p class="fg2 s14">wasm.fyi is open. Submit a runtime adapter, add a workload, or reproduce a result on your own hardware.</p>
-	</div>
-	<a class="btn-primary" href="https://github.com/JairusSW/wasm.fyi">Contribute on GitHub</a>
-</section>
+	</section>
+</div>
 
 <style>
-	.s12 {
-		font-size: 12px;
-	}
-	.s14 {
-		font-size: 14px;
-	}
-	.s18 {
-		font-size: 18px;
-	}
-	.s22 {
-		font-size: 22px;
-		font-weight: 600;
-	}
-	.w6 {
-		font-weight: 600;
-	}
-	.hero {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr));
-		gap: 40px;
-		align-items: center;
-		padding: 48px 0 40px;
-	}
-	.intro {
+	.home {
+		width: 100%;
+		max-width: 1040px;
+		margin: 0 auto;
 		display: flex;
 		flex-direction: column;
-		gap: 18px;
-		max-width: 600px;
+		padding: 56px 0 24px;
+	}
+
+	/* Hero */
+	.hero {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-end;
+		gap: 24px 48px;
+		flex-wrap: wrap;
+		padding-bottom: 40px;
+		border-bottom: 1px solid var(--line);
 	}
 	h1 {
-		font-size: 46px;
-		line-height: 1.05;
-		font-weight: 600;
-		letter-spacing: -0.025em;
-		text-wrap: balance;
+		margin: 0;
+		line-height: 0;
 	}
-	.lead {
-		font-size: 16px;
-		line-height: 1.55;
+	.captures {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 2px;
+		text-align: right;
+	}
+	.big {
+		font-size: 34px;
+		font-weight: 500;
+		letter-spacing: -0.03em;
+		line-height: 1.1;
+		font-variant-numeric: tabular-nums;
+	}
+	.cap {
+		font-size: 13px;
 		color: var(--fg2);
-		text-wrap: pretty;
+	}
+	.cap.sub {
+		margin-top: 6px;
+		font-size: 11px;
+		color: var(--fg3);
+	}
+	.pitch {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 20px 40px;
+		padding: 32px 0 0;
+	}
+	.pitch p {
+		margin: 0;
+		max-width: 30ch;
+		font-size: 20px;
+		line-height: 1.4;
+		color: var(--fg2);
+		text-wrap: balance;
 	}
 	.ctas {
 		display: flex;
+		gap: 8px;
 		flex-wrap: wrap;
-		gap: 10px;
 	}
-	.board {
-		display: flex;
-		flex-direction: column;
-	}
-	.board-head {
-		display: flex;
-		justify-content: space-between;
-		align-items: baseline;
-		gap: 8px;
-		padding: 12px 16px;
-		border-bottom: 1px solid var(--line);
-	}
-	.board-rows {
-		padding: 10px 16px;
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-	}
-	.board-row {
-		display: grid;
-		grid-template-columns: 16px 150px 1fr 70px;
-		gap: 10px;
+	.btn {
+		display: inline-flex;
 		align-items: center;
-		font-size: 13px;
-	}
-	.rtname {
-		display: flex;
-		align-items: center;
-		gap: 7px;
-		white-space: nowrap;
-	}
-	.bar {
-		height: 8px;
-		opacity: 0.85;
-	}
-	.board-foot {
-		padding: 10px 16px;
-		border-top: 1px solid var(--line);
-	}
-	@media (max-width: 600px) {
-		.board-head { align-items: flex-start; flex-direction: column; }
-	}
-	.tiles-row {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-		border-top: 1px solid var(--line);
-		border-bottom: 1px solid var(--line);
-	}
-	.tile {
-		padding: 22px 4px;
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-	}
-	.tv {
-		font-size: 28px;
+		gap: 8px;
+		padding: 11px 18px;
+		border: 1px solid var(--line2);
+		font-size: 14px;
 		font-weight: 500;
-		letter-spacing: -0.02em;
-	}
-	.block {
-		display: flex;
-		flex-direction: column;
-		gap: 20px;
-		padding: 40px 0 12px;
-	}
-	.heading {
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-	}
-	.heading p {
-		max-width: 640px;
-	}
-	.eyebrow {
-		font-size: 11px;
-		color: var(--fg3);
-		text-transform: uppercase;
-		letter-spacing: 0.08em;
-	}
-	h2 {
-		font-size: 26px;
-		font-weight: 600;
-		letter-spacing: -0.015em;
-	}
-	.areas {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
-		gap: 1px;
-		background: var(--line);
-		border: 1px solid var(--line);
-	}
-	.area {
-		background: var(--bg2);
-		padding: 20px 22px;
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-	}
-	.area-title {
-		font-size: 18px;
-		font-weight: 600;
 		text-decoration: none;
+		transition: background 0.15s;
 	}
-	.area p {
-		line-height: 1.5;
-		text-wrap: pretty;
+	.btn:hover {
+		background: var(--hover);
 	}
-	.area-links {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 6px 14px;
-		margin-top: auto;
+	.btn.solid {
+		background: var(--fg);
+		border-color: var(--fg);
+		color: var(--bg);
 	}
-	.props {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-		gap: 14px;
+	.btn.solid:hover {
+		opacity: 0.88;
 	}
-	.prop {
-		padding: 18px;
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-		text-decoration: none;
-		line-height: 1.45;
-	}
-	.prop:hover {
-		border-color: var(--fg3);
-	}
-	.prop-head {
-		display: flex;
-		justify-content: space-between;
-		align-items: baseline;
-		gap: 8px;
-	}
-	.split {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
-		gap: 40px;
-	}
-	.col {
+
+	/* Sections */
+	section {
 		display: flex;
 		flex-direction: column;
 		gap: 16px;
+		padding-top: 88px;
 	}
-	.col > .link {
-		align-self: flex-start;
+	h2 {
+		margin: 0 0 8px;
+		font-size: 30px;
+		font-weight: 600;
+		letter-spacing: -0.02em;
 	}
-	.points {
+	.lb-head {
 		display: flex;
-		flex-direction: column;
-		gap: 14px;
-		line-height: 1.5;
-	}
-	.event {
-		display: grid;
-		grid-template-columns: 100px 1fr;
-		gap: 10px;
-		border-bottom: 1px solid var(--line);
-		padding: 8px 0;
-	}
-	.cta {
-		margin: 40px 0 8px;
-		padding: 28px;
-		display: flex;
-		flex-wrap: wrap;
-		gap: 16px 32px;
-		align-items: center;
 		justify-content: space-between;
+		align-items: baseline;
+		flex-wrap: wrap;
+		gap: 4px 16px;
 	}
-	.cta-text {
+	.lb-head h2 {
+		margin: 0;
+	}
+	.seg {
+		display: inline-flex;
+		align-self: flex-start;
+		max-width: 100%;
+		overflow-x: auto;
+		scrollbar-width: none;
+		border: 1px solid var(--line2);
+	}
+	.seg button {
+		padding: 6px 12px;
+		font-size: 13px;
+		color: var(--fg2);
+		white-space: nowrap;
+	}
+	.seg button + button {
+		border-left: 1px solid var(--line);
+	}
+	.seg button:hover {
+		color: var(--fg);
+	}
+	.seg button.on {
+		background: var(--fg);
+		color: var(--bg);
+	}
+	.meta {
+		font-size: 13px;
+		color: var(--fg3);
+		text-decoration: none;
+	}
+	.box {
+		border: 1px solid var(--line);
+		background: var(--bg2);
+	}
+	/* Leaderboard */
+	.lb {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+	.lb a {
+		display: grid;
+		grid-template-columns: 20px minmax(0, 15rem) 1fr 6rem;
+		gap: 16px;
+		align-items: center;
+		padding: 11px 18px;
+		border-bottom: 1px solid var(--line);
+		font-size: 13px;
+		text-decoration: none;
+	}
+	.lb a:hover {
+		background: var(--hover);
+	}
+	.rank {
+		font-size: 11px;
+		color: var(--fg3);
+	}
+	.name {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		min-width: 0;
+		white-space: nowrap;
+	}
+	.rt {
+		font-weight: 500;
+	}
+	.be {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		color: var(--fg3);
+	}
+	.track {
+		position: relative;
+		display: block;
+		height: 10px;
+		background: var(--bg3);
+	}
+	.bar {
+		position: absolute;
+		inset: 0 auto 0 0;
+	}
+	.val {
+		font-size: 12px;
+		font-weight: 600;
+		text-align: right;
+		white-space: nowrap;
+	}
+	.empty {
+		padding: 40px 18px;
+		color: var(--fg3);
+		text-align: center;
+	}
+	.all {
+		display: flex;
+		justify-content: space-between;
+		padding: 14px 18px;
+		font-size: 13px;
+		font-weight: 500;
+		text-decoration: none;
+		transition: background 0.15s;
+	}
+	.all:hover {
+		background: var(--hover);
+	}
+
+	/* Proposal panels */
+	.panels {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 12px;
+	}
+	.panel {
 		display: flex;
 		flex-direction: column;
-		gap: 6px;
-		max-width: 620px;
 	}
-	@media (max-width: 720px) {
-		.hero {
-			padding: 20px 0 8px;
-			gap: 28px;
+	.panel .lb {
+		flex: 1;
+	}
+	.panel-head {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		padding: 16px 18px 12px;
+		border-bottom: 1px solid var(--line);
+	}
+	.pt {
+		font-size: 15px;
+		font-weight: 600;
+	}
+	.pd {
+		font-size: 12px;
+		color: var(--fg3);
+	}
+	.panel .lb a {
+		grid-template-columns: 14px minmax(0, 10rem) 1fr 4.5rem;
+		gap: 12px;
+	}
+
+	@media (max-width: 760px) {
+		.home {
+			padding-top: 32px;
 		}
-		h1 {
-			font-size: clamp(32px, 9.5vw, 40px);
+		.hero :global(.logo) {
+			width: 100% !important;
 		}
-		.lead {
-			font-size: 15px;
+		.mark {
+			flex: 1 1 100%;
 		}
-		.ctas > :global(a) {
-			flex: 1 1 auto;
+		.captures {
+			align-items: flex-start;
+			text-align: left;
 		}
-		.board-head,
-		.board-rows,
-		.board-foot {
-			padding-left: 14px;
-			padding-right: 14px;
+		.big {
+			font-size: 28px;
 		}
-		.tiles-row {
-			grid-template-columns: 1fr 1fr;
+		.pitch p {
+			font-size: 17px;
 		}
-		.tile {
-			padding: 16px 4px;
-		}
-		.tile:last-child:nth-child(odd) {
-			grid-column: 1 / -1;
-		}
-		.tv {
-			font-size: 24px;
-		}
-		.block {
-			padding: 28px 0 4px;
-			gap: 16px;
+		section {
+			padding-top: 64px;
 		}
 		h2 {
-			font-size: 22px;
+			font-size: 24px;
 		}
-		.area {
-			padding: 16px;
+		.panels {
+			grid-template-columns: minmax(0, 1fr);
 		}
-		.prop {
-			padding: 16px;
+	}
+	@media (max-width: 520px) {
+		.lb a {
+			grid-template-columns: 14px minmax(0, 1fr) auto;
+			gap: 10px;
+			padding: 11px 14px;
 		}
-		.split {
-			gap: 28px;
+		.lb .track {
+			display: none;
 		}
-		.event {
-			grid-template-columns: 88px 1fr;
+		.panel .lb a {
+			grid-template-columns: 14px minmax(0, 1fr) auto;
 		}
-		.cta {
-			margin-top: 28px;
-			padding: 20px 16px;
-		}
-		.cta > :global(.btn-primary) {
-			flex: 1 1 100%;
+		.all {
+			padding: 14px;
 		}
 	}
 </style>

@@ -22,6 +22,9 @@ import (
 )
 
 func run(ctx context.Context, args []string) error {
+	if handled, err := localCLI(ctx, args); handled {
+		return err
+	}
 	action := "serve"
 	if len(args) > 0 && args[0] == "" {
 		return fmt.Errorf("empty command")
@@ -252,6 +255,10 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 	if e := run(ctx, os.Args[1:]); e != nil {
-		log.Fatal(e)
+		fmt.Fprintln(os.Stderr, "wasmfyi:", e)
+		if errors.Is(e, context.Canceled) {
+			os.Exit(130)
+		}
+		os.Exit(1)
 	}
 }

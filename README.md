@@ -192,6 +192,62 @@ For GitHub Pages, `just pages-build` builds with the project path and
 
 Capture, resume, SSH workers, cached corpus builds and deployment: [benchmark commands](docs/benchmark-workflow.md).
 
+## Local CLI
+
+On macOS or Linux, install from this checkout with `pnpm install --frozen-lockfile` followed by
+`just install-cli` (requires Node 22+, Go, Git, and pnpm). Add `~/.local/bin` to
+`PATH`. Runtime builds also need their native toolchains; `wasmfyi doctor`
+shows what is installed. First builds download pinned sources and dependencies;
+subsequent runs reuse source, SDK, controller, and corpus artifacts.
+
+```sh
+wasmfyi engines
+wasmfyi corpora applications
+wasmfyi bench -e wago-railshot,wazero-wazevo,wasmtime-cranelift -c applications/image-blur
+wasmfyi serve -p 8788
+```
+
+The benchmark command saves to a private local SQLite database and starts a
+loopback website with a link to that exact run. It never uploads to wasm.fyi or
+imports production data. Use `--no-serve` to capture without a preview, or `-p 0`
+to choose an available port. `wasmfyi serve stop` stops a CLI-managed preview.
+
+For runtime development, snapshot your local checkout, including uncommitted
+source edits, without changing it:
+
+```sh
+wasmfyi bench -e wago-railshot --source wago-railshot=../../Wago/wago -c applications/image-blur --id before
+# Edit your runtime, then capture again.
+wasmfyi bench -e wago-railshot --source wago-railshot=../../Wago/wago -c applications/image-blur --id after --baseline before
+wasmfyi compare before after
+```
+
+Matching source/build/input/host/sample-policy results are linked instead of
+repeated. Use `--rerun` for fresh measurements. Comparisons match engine,
+host, artifact, workload contract, and phase; percentage increases indicate
+slower execution. Ordered samples remain in SQLite. `runs`, `resume <id>` and
+`stop <id>` support interrupted work. `cache prune` removes abandoned scratch
+without deleting results or resumable SDK builds. `--data` and `--cache` select
+independent locations; `cache` and `doctor` show their defaults.
+
+`wasmfyi test -e wasmtime-cranelift -c features/core-num` checks compatibility;
+`bench -c features/core-num` runs feature performance after its compatibility prerequisites pass. Default captures use ordered
+groups of five, no warmups, and stop at ≤5% relative standard deviation and
+≤3% drift, capped at 10 compile/instantiate samples and 25 execution samples.
+`--samples 1` is useful for adapter smoke checks. Workloads time out after five
+minutes. Builds can use multiple cores; measurement processes use the host's
+single-core scheduling policy. On macOS this requests performance scheduling;
+macOS does not expose strict CPU affinity. If `~/benchmark-lock.py` is present,
+measurements acquire that shared device lock automatically.
+
+Website result drawers and corpus pages offer **Run locally**. Result commands
+pin the recorded runtime commit and validate artifact/contract digests. A
+missing historical corpus revision causes an explicit mismatch error instead
+of silently measuring different inputs. Local dirty-source commands require
+the original checkout and matching snapshot digest.
+
+CLI interface notes: [local CLI design](docs/local-cli-design.md).
+
 ## Production delivery
 
 Pushes to `main` run the same current-application CI used for pull requests: frontend type checks and UI/API-client regression tests, Go race tests and vet, release activation tests, and history-boundary checks. The production build and deployment depend on those checks passing. Failed checks leave production unchanged.

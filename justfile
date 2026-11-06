@@ -366,3 +366,7 @@ bench-history-status:
 
 bench-history-stop:
     node scripts/weekly-background.mjs stop
+
+# Install the contributor CLI and website assets (default: ~/.local).
+install-cli prefix="":
+    node scripts/install-cli.mjs {{quote(prefix)}}

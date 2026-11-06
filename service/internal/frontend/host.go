@@ -251,9 +251,12 @@ func (h *Host) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Imported workload routes have no prerendered route-data file. Serve the
 	// build's empty layout data for those known application routes, so SvelteKit
 	// can hydrate/navigate and then request the selected corpus from the API.
-	if strings.HasPrefix(p, "/bench/") && strings.HasSuffix(p, "/__data.json") {
+	if (strings.HasPrefix(p, "/bench/") || strings.HasPrefix(p, "/runs/")) && strings.HasSuffix(p, "/__data.json") {
 		workload := strings.TrimSuffix(strings.TrimPrefix(p, "/bench/"), "/__data.json")
-		known, err := h.workload(r.Context(), workload)
+		known, err := true, error(nil)
+		if !strings.HasPrefix(p, "/runs/") {
+			known, err = h.workload(r.Context(), workload)
+		}
 		if err != nil {
 			http.Error(w, "workload catalog unavailable", 503)
 			return
@@ -279,6 +282,9 @@ func (h *Host) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	app := false
+	if strings.HasPrefix(navigation, "/runs/") && !strings.Contains(strings.TrimPrefix(navigation, "/runs/"), "/") {
+		app = true
+	}
 	switch navigation {
 	case "", "/benchmarks", "/dashboard", "/compare", "/history", "/features", "/health", "/simd", "/gc", "/memory64", "/threads":
 		app = true
@@ -367,3 +373,6 @@ func (h *Host) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	http.ServeContent(w, r, name, info.ModTime(), io.NewSectionReader(f, 0, info.Size()))
 }
+
+// UseShellOnly keeps local datasets independent of production baked page seeds.
+func (h *Host) UseShellOnly() { h.bakedRoutes = nil; h.preparedPages = false }

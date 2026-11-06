@@ -1,0 +1,39 @@
+--- a/corpus/calls.go
++++ b/corpus/calls.go
+@@ -27,8 +27,23 @@
+ 	return b, nil
+ }
+ 
++// HostCallbackLoopModule performs N callbacks inside one exported invocation.
++// Each callback result feeds the next call. The host timer's entry/return is
++// amortized over N; guest loop control remains part of the recorded per-cycle cost.
++func HostCallbackLoopModule() []byte {
++	b := []byte{0, 97, 115, 109, 1, 0, 0, 0}
++	b = append(b, section(1, []byte{2, 0x60, 1, 0x7f, 1, 0x7f, 0x60, 2, 0x7f, 0x7f, 1, 0x7f})...)
++	b = append(b, section(2, []byte{1, 9, 'w', 'a', 's', 'm', 'b', 'e', 'n', 'c', 'h', 8, 'i', 'd', 'e', 'n', 't', 'i', 't', 'y', 0, 0})...)
++	b = append(b, section(3, []byte{1, 1})...)
++	b = append(b, section(7, []byte{1, 9, 'b', 'e', 'n', 'c', 'h', 'm', 'a', 'r', 'k', 0, 1})...)
++	body := []byte{0, 0x02, 0x40, 0x20, 1, 0x45, 0x0d, 0, 0x03, 0x40, 0x20, 0, 0x10, 0, 0x21, 0, 0x20, 1, 0x41, 1, 0x6b, 0x22, 1, 0x0d, 0, 0x0b, 0x0b, 0x20, 0, 0x0b}
++	code := append([]byte{1}, uleb(len(body))...)
++	code = append(code, body...)
++	return append(b, section(10, code)...)
++}
++
+ func generateCalls(root string) ([]protocol.Workload, error) {
+-	workloads := make([]protocol.Workload, 0, 2)
++	workloads := make([]protocol.Workload, 0, 3)
+ 	for _, direction := range []string{"host-to-wasm", "wasm-to-host"} {
+ 		b, err := HostCallModule(direction)
+ 		if err != nil {
+@@ -47,5 +62,11 @@
+ 		}
+ 		workloads = append(workloads, w)
+ 	}
++	b := HostCallbackLoopModule()
++	path := filepath.Join(root, "calls", "wasm-host-wasm-loop.wasm")
++	if err := os.WriteFile(path, b, 0644); err != nil {
++		return nil, err
++	}
++	workloads = append(workloads, protocol.Workload{Schema: 1, ID: "mechanisms/wasm-host-wasm-loop", Family: "mechanisms", Artifact: path, SHA256: Hash(b), ABI: "core", HostProfile: "identity-v1", Features: []string{"mvp"}, Export: "benchmark", Args: protocol.Values{7, 1000000}, WorkUnit: "wasm-host-wasm_cycle", Units: 1000000, Reset: "stateless", Oracle: protocol.Oracle{Kind: "exact_u64", Expected: protocol.Values{7}}, License: "MIT", Source: "corpus/calls.go", Generator: "wasmbench-callback-loop-v1"})
+ 	return workloads, nil
+ }

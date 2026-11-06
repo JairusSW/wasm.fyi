@@ -170,6 +170,10 @@ func (s *Store) observation(ctx context.Context, tx *sql.Tx, pid int64, r benchd
 	return b, e
 }
 func (s *Store) Put(ctx context.Context, c benchdb.Capture) (string, error) {
+	return s.put(ctx, c, nil)
+}
+
+func (s *Store) put(ctx context.Context, c benchdb.Capture, stored func(*sql.Tx, benchdb.Capture, int64) error) (string, error) {
 	if e := benchdb.Validate(c); e != nil {
 		return "", e
 	}
@@ -295,6 +299,11 @@ func (s *Store) Put(ctx context.Context, c benchdb.Capture) (string, error) {
 			return "", e
 		}
 		if e = bump(ctx, tx, pid, encode(c)); e != nil {
+			return "", e
+		}
+	}
+	if stored != nil {
+		if e = stored(tx, c, pid); e != nil {
 			return "", e
 		}
 	}

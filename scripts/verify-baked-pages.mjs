@@ -22,6 +22,11 @@ export async function verifyBakedPages(directory){
   assert(seed.revision&&seed.revision===seed.summary.revision,`Invalid snapshot revision: ${route}`);
   assert.equal(seed.path.replace(/\/$/,'')||'/',route,`Snapshot belongs to a different route: ${route}`);
   assert(seed.view.hosts[seed.machine],`Missing snapshot machine: ${route}`);
+  if(route==='/'){
+   assert(html.includes('Leaderboard')&&html.includes('Proposals'),'Homepage sections were not pregenerated');
+   assert(!html.includes('<li class="empty">Loading'),'Homepage contains an unbaked loading placeholder');
+   assert(html.includes('timing samples captured'),'Homepage sample totals were not pregenerated');
+  }
   if(route==='/benchmarks')for(const workload of seed.view.catalogue.filter(row=>!row.id.startsWith('features/'))){
    const path='/bench/'+encodeURI(workload.id).replace(/[?#]/g,encodeURIComponent);
    assert(html.includes(path),`Workload missing from baked HTML: ${workload.id}`);

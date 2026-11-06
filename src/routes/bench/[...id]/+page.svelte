@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { apiView,loadHistory,loadHistoryComparison } from '$lib/api/controller.svelte';
 	import ReportFiles from '$lib/components/ReportFiles.svelte';
+ import RunLocally from '$lib/components/RunLocally.svelte';
  import ArtifactInspection from '$lib/components/ArtifactInspection.svelte';
  let inspected=$state<string|null>(null);
  import { tipCard, tipWho } from '$lib/tip';
@@ -162,6 +163,7 @@ import { RangeSelect } from '$lib/range-select.svelte';
 	<div class="stack6" aria-busy={!apiView.ready}>
 		<div class="crumbs s12 fg3"><a class="link-quiet" href={siteHref(`/benchmarks`)}>Benchmarks</a></div>
 		<h1 class="mono">{workloadName(data.workload)}</h1>
+ <RunLocally workloads={[b.id]} engines={vis.map(c=>({engine:viewData.configurations[c.id]||c.rt,version:viewData.hosts[ui.machine].configurations[c.id]?.version,source:viewData.hosts[ui.machine].configurations[c.id]?.source}))} artifact={b.artifactSha256||undefined} />
 		{#if apiView.ready}
 			<p class="fg3 s12">This workload isn’t in the current dataset. <a class="link-quiet" href={siteHref(`/benchmarks`)}>Browse all workloads</a>.</p>
 		{:else}

@@ -24,6 +24,7 @@ jobs:
             /*
             !/*/
             /src/
+            /schemas/
             /service/
             /scripts/
             /corpora/catalog.json

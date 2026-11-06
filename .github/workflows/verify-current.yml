@@ -15,6 +15,7 @@ jobs:
             /*
             !/*/
             /src/
+            /schemas/
             /scripts/
             /service/
             /corpora/catalog.json
@@ -43,6 +44,7 @@ jobs:
           src/lib/runtime-filters.test.ts src/lib/runtime-filter-data.test.ts
           src/lib/state-engine-filter.test.ts
           src/lib/measured.test.ts src/lib/overview.test.ts src/lib/og.test.ts
+          src/lib/reproduce.test.ts
   backend:
     runs-on: ubuntu-latest
     timeout-minutes: 35

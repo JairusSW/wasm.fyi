@@ -32,7 +32,7 @@ export const aggregateKey=(scope:Scope,metric:string)=>JSON.stringify([scope.mac
 let abort:AbortController|undefined;
 let machines:MachineId[]=[];
 const slots=new Map<string,CfgId>();
-const plannedBackends:Record<string,string>={'wasmtime-winch':'winch','wasmer-llvm':'llvm-jit','wasmer-singlepass':'singlepass-jit','wasmer-cranelift':'cranelift-jit','chicory-jit':'jvm-bytecode-compiler','endive-interpreter':'jvm-interpreter','endive-jit':'jvm-bytecode-compiler','wazy':'native-jit','chasm':'jvm-interpreter','wizard-v3-int':'v3-interpreter','wizard-fast-int':'fast-interpreter','wizard-spc':'spc','graalwasm':'truffle-graal','zwasm-interpreter':'interpreter','zwasm-jit':'jit','wazero-interpreter':'interpreter','wamr':'interpreter','wamr-fast-jit':'fast-jit','wamr-llvm-jit':'llvm-jit','wasmedge':'interpreter','wasmedge-jit':'jit','wasmi':'interpreter','wasm3':'interpreter','chicory':'interpreter','wasm2c-gcc':'GCC','w2c2-gcc':'GCC','wasm2go':'native-go-aot','jsc':'OMG (forced tier-up)','libwasm':'interpreter','libwasm-jit':'optimizing-jit-tiered','spidermonkey':'ion-only'};
+const plannedBackends:Record<string,string>={'submilli':'interpreter','wasmtime-winch':'winch','wasmer-llvm':'llvm-jit','wasmer-singlepass':'singlepass-jit','wasmer-cranelift':'cranelift-jit','chicory-jit':'jvm-bytecode-compiler','endive-interpreter':'jvm-interpreter','endive-jit':'jvm-bytecode-compiler','wazy':'native-jit','chasm':'jvm-interpreter','wizard-v3-int':'v3-interpreter','wizard-fast-int':'fast-interpreter','wizard-spc':'spc','graalwasm':'truffle-graal','zwasm-interpreter':'interpreter','zwasm-jit':'jit','wazero-interpreter':'interpreter','wamr':'interpreter','wamr-fast-jit':'fast-jit','wamr-llvm-jit':'llvm-jit','wasmedge':'interpreter','wasmedge-jit':'jit','wasmi':'interpreter','wasm3':'interpreter','chicory':'interpreter','wasm2c-gcc':'GCC','w2c2-gcc':'GCC','wasm2go':'native-go-aot','jsc':'OMG (forced tier-up)','libwasm':'interpreter','libwasm-jit':'optimizing-jit-tiered','spidermonkey':'ion-only'};
 const status=(s:string):ViewCell['st']=>s==='not-measured'?'nm':s==='unavailable'?'unavail':s as ViewCell['st'];
 function engineColor(engine:string){let hash=0;for(const c of engine)hash=(Math.imul(hash,31)+c.charCodeAt(0))>>>0;return `hsl(${hash%360} 65% 60%)`;}
 function slot(engine:string):CfgId{
@@ -54,7 +54,7 @@ function slot(engine:string):CfgId{
  }
  WF[id]=1;slots.set(engine,id);return id;
 }
-for(const engine of ['wago','wasmtime','wasmtime-winch','wasmer-singlepass','wasmer-llvm','wazero','wazero-interpreter','v8','wavm','spidermonkey','jsc','wasmi','wamr','wamr-fast-jit','wamr-llvm-jit','wasm3','wasmedge','wasmedge-jit','chicory','wasm2go','wasm2c-gcc','w2c2-gcc','libwasm','libwasm-jit','wasmer-cranelift','chicory-jit','endive-interpreter','endive-jit','wazy','chasm','wizard-v3-int','wizard-fast-int','wizard-spc','graalwasm','zwasm-interpreter','zwasm-jit'])slot(engine);
+for(const engine of ['submilli','wago','wasmtime','wasmtime-winch','wasmer-singlepass','wasmer-llvm','wazero','wazero-interpreter','v8','wavm','spidermonkey','jsc','wasmi','wamr','wamr-fast-jit','wamr-llvm-jit','wasm3','wasmedge','wasmedge-jit','chicory','wasm2go','wasm2c-gcc','w2c2-gcc','libwasm','libwasm-jit','wasmer-cranelift','chicory-jit','endive-interpreter','endive-jit','wazy','chasm','wizard-v3-int','wizard-fast-int','wizard-spc','graalwasm','zwasm-interpreter','zwasm-jit'])slot(engine);
 let compactClient=new CompactClient();
 let buildPath:string|undefined;
 async function get<T>(path:string,signal:AbortSignal,revalidate=false):Promise<T>{return compactClient.load<T>(path,signal,revalidate)}
@@ -272,13 +272,13 @@ export async function connectSite(_origin='',_revision?:string,retry=0){
 }
 export async function loadCellSamples(machine:MachineId,snapshot:'s1'|'s2',workload:string,cid:CfgId,metric:MetricKey,signal:AbortSignal){
  const cell=datasetView.current.hosts[machine].snapshots[snapshot][`${workload}|${cid}|${metric}`];
- if(!cell?.observationId||!cell.platformId||cell.samples||!['compile','inst','first','steady'].includes(metric))return;
+ if(!cell?.observationId||!cell.platformId||cell.reproduction)return;
  const query=new URLSearchParams({platform:cell.platformId,id:String(cell.observationId),...(cell.asOf?{asOf:cell.asOf}:{})});
  const result=await get<Result>('/api/observation?'+query,signal);
  signal.throwIfAborted();
  const current=datasetView.current,host=current.hosts[machine],key=`${workload}|${cid}|${metric}`;
  if(host.snapshots[snapshot][key]?.observationId!==cell.observationId)return;
- const updated={...cell,samples:result.samplesNs?.map(value=>value/1e6),sampling:result.sampling};
+ const updated={...cell,samples:result.samplesNs?.map(value=>value/1e6),sampling:result.sampling,reproduction:{artifact:result.artifactSha256,contract:result.contractSha256,source:result.source}};
  datasetView.current={...current,hosts:{...current.hosts,[machine]:{...host,snapshots:{...host.snapshots,[snapshot]:{...host.snapshots[snapshot],[key]:updated}}}}};
 }
 export function firstMachine(){return machines[0]}

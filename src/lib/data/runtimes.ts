@@ -6,6 +6,7 @@ import { viewData } from '../view-data';
 import type { Cfg, CfgId, Machine, MachineId, Runtime } from './types';
 
 export const runtimeRegistry: Runtime[] = [
+  {id:'submilli',name:'Submilli',lang:'Rust',exec:['Interpreter'],tiers:'Stack interpreter',arch:['AMD64','ARM64'],wasi:'not measured',cm:'?',repo:'github.com/submilli/submilli-wasm',lic:'Apache-2.0',rel:'not collected',size:'not measured',embed:['Rust'],notes:[]},
   {"id":"endive","name":"Endive","lang":"Java","exec":["Interpreter","Compiler"],"tiers":"Interpreter \u00b7 JVM bytecode compiler","arch":["AMD64","ARM64"],"wasi":"not measured","cm":"?","repo":"github.com/bytecodealliance/endive","lic":"not reviewed","rel":"not collected","size":"not measured","embed":["Java"],"notes":[]},
   {"id":"wazy","name":"Wazy","lang":"Go","exec":["Compiler"],"tiers":"Native compiler","arch":["AMD64","ARM64"],"wasi":"not measured","cm":"?","repo":"github.com/samyfodil/wazy","lic":"not reviewed","rel":"not collected","size":"not measured","embed":["Go"],"notes":[]},
   {"id":"chasm","name":"Chasm","lang":"Kotlin","exec":["Interpreter"],"tiers":"JVM interpreter","arch":["AMD64","ARM64"],"wasi":"not measured","cm":"?","repo":"github.com/CharlieTap/chasm","lic":"not reviewed","rel":"not collected","size":"not measured","embed":["Kotlin"],"notes":[]},
@@ -120,7 +121,7 @@ export const execOf = (c: Cfg): Exclude<Exec, 'all'> =>
 	c.interp || /interp/i.test(c.label ?? c.be) || (!(c.label ?? c.be) && runtimeRegistry.find((r) => r.id === c.rt)?.exec.join() === 'Interpreter') ? 'interpreter' : 'compiler';
 
 /** Implementation language of a runtime, for the scope filter. C and C++ form one group. */
-const EXTRA_LANG: Record<string, string> = { endive: 'Java', chasm: 'Kotlin', wazy: 'Go', wizard: 'Virgil', graalwasm: 'Java', zwasm: 'Zig' };
+const EXTRA_LANG: Record<string, string> = { submilli: 'Rust', endive: 'Java', chasm: 'Kotlin', wazy: 'Go', wizard: 'Virgil', graalwasm: 'Java', zwasm: 'Zig' };
 export const langOf = (c: Pick<Cfg, 'rt'>): string => {
 	const lang = runtimeRegistry.find((r) => r.id === c.rt)?.lang ?? EXTRA_LANG[c.rt] ?? 'Other';
 	return /^C(\+\+)?(\s*\/\s*C(\+\+)?)?$/.test(lang.replace(/\s+/g, '')) ? 'C/C++' : lang;

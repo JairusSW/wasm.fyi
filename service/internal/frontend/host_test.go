@@ -283,3 +283,26 @@ func TestBakedRouteManifest(t *testing.T) {
 		t.Fatal(w.Code, w.Body.String())
 	}
 }
+
+func TestLocalRunRoutesAndShellOnlyPreview(t *testing.T) {
+	dir := fixture(t)
+	if err := os.WriteFile(filepath.Join(dir, "baked-pages.json"), []byte(`{"schema":1,"routes":["/","/benchmarks"]}`), 0644); err != nil {
+		t.Fatal(err)
+	}
+	h, err := Open(dir, func(context.Context, string) (bool, error) { return false, nil })
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer h.Close()
+	h.UseShellOnly()
+	for _, route := range []string{"/", "/benchmarks/", "/runs/author-edit/"} {
+		w := request(h, "GET", route)
+		if w.Code != 200 || !strings.Contains(w.Body.String(), "application shell") {
+			t.Fatal(route, w.Code, w.Body.String())
+		}
+	}
+	w := request(h, "GET", "/runs/author-edit/__data.json")
+	if w.Code != 200 || !strings.Contains(w.Body.String(), `"pageSeed":1},null`) {
+		t.Fatal(w.Code, w.Body.String())
+	}
+}

@@ -1,6 +1,6 @@
 import type { Bench, CfgId, MachineId, Status } from '../data/types';
 export interface ViewCell {
-	observationId?:number;platformId?:string;asOf?:string;st: Status; v?: number; interval?: [number,number]; reason?: number;reasonText?:string;
+	reproduction?:{artifact:string;contract:string;source?:import('./benchmark-types').Source};observationId?:number;platformId?:string;asOf?:string;st: Status; v?: number; interval?: [number,number]; reason?: number;reasonText?:string;
 	result?:string;created?:string;contract?:string;configuration?:string;artifact?:string;profile?:string;exactValue?:number|string;approximate?:boolean;
 	latencySummary?:'retained-mean';sampleStats?:import('./compact-matrix').SampleStats;sampling?:import('./benchmark-types').Sampling; report: string; launchMedians?: number[]; samples?:number[];
 }

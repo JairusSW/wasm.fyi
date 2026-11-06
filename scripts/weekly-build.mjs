@@ -1,3 +1,4 @@
+import {buildSubmilliSDK} from './lib/submilli-sdk.mjs';
 import {withWamrRunningMode,withWamrBackendDescription} from './lib/wamr-running-mode.mjs';
 import {withWamrRuntimeAliases} from './lib/wamr-runtime-aliases.mjs';
 import {withWasmEdgeRuntimeAliases} from './lib/wasmedge-runtime-aliases.mjs';
@@ -130,10 +131,13 @@ if(engine==='wago') {
  provenance.threads=await applyWagoThreads(root,api);
  await build('--runtimes','wago','--wago-source',wago);
 } else if(engine==='wazero') {
- const download=JSON.parse((await run('go',['mod','download','-json','github.com/tetratelabs/wazero@'+pin.revision])).output);
- if(!download.Version || !download.Sum || download.Origin?.Hash!==pin.revision)throw Error('Wazero module receipt differs from source pin');
+ const localSource=process.env.WEEKLY_WAZERO_SOURCE;
+ const localVersion=localSource?(await readFile(join(base,'adapters/wazero/go.mod'),'utf8')).match(/github\.com\/tetratelabs\/wazero\s+(v\S+)/)?.[1]:null;
+ const download=localSource?{Version:localVersion,Dir:localSource,Origin:{Hash:pin.revision}}:JSON.parse((await run('go',['mod','download','-json','github.com/tetratelabs/wazero@'+pin.revision])).output);
+ if(!download.Version || (!localSource&&!download.Sum) || download.Origin?.Hash!==pin.revision)throw Error('Wazero module receipt differs from source pin');
  const mod=join(root,'weekly-wazero.mod');await cp(join(root,'go.mod'),mod);await cp(join(root,'go.sum'),mod.replace(/\.mod$/,'.sum'));
  await run('go',['mod','edit','-modfile='+mod,'-require=github.com/tetratelabs/wazero@'+download.Version]);
+ if(localSource)await run('go',['mod','edit','-modfile='+mod,'-replace=github.com/tetratelabs/wazero='+localSource]);
  await restoreHistoricalWazeroSources(root,base,download.Version.replace(/^v/,''),{includeTests:env.WASMFYI_HISTORY_FAST!=='1'});
  await applyWazeroSampling(root);
 	 provenance.featurePolicy=await applyWazeroFeaturePolicy(root);
@@ -296,6 +300,8 @@ if(engine==='wago') {
  await run('go',['mod','edit','-modfile='+mod,'-require=github.com/samyfodil/wazy@v0.0.0','-replace=github.com/samyfodil/wazy='+source]);
  await run('go',['build','-mod=mod','-modfile='+mod,'-trimpath','-o',join(root,'bin/adapter-wazy'),'./adapters/wazy']);
  provenance.sdk={source,revision:pin.revision,coreFeaturePolicy,componentPolicy,measurement:'module-owned native code and entry preambles',adapterSha256:digest(await readFile(join(root,'bin/adapter-wazy')))};
+} else if(engine==='submilli') {
+ provenance.sdk=await buildSubmilliSDK({source,root,version:pin.revision,env,run});
 } else if(engine==='endive') {
  provenance.sdk=await buildEndiveSDK({source,root,version:pin.revision,configuration:pin.configurations[0],env,run});
 } else if(engine==='chasm') {

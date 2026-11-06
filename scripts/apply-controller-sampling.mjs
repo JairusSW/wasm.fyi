@@ -60,6 +60,12 @@ if(!files.get('experiment/runner.go').includes('case "wizard-v3-int", "wizard-fa
             r.Files[commandFile]=hash
             for path,want:=range manifest.Files { got,err:=DigestFile(path);if err!=nil{return nil,err};if got!=want{return nil,fmt.Errorf("Wizard SDK artifact digest differs: %s",path)};r.Files[path]=got }`));
 }
+if(!files.get('experiment/runner.go').includes('case "submilli":')){
+ const current=files.get('experiment/runner.go');
+ if(!current.includes('\t\tswitch id {'))throw Error('Runtime registration seam changed');
+ files.set('experiment/runner.go',current.replace('\t\tswitch id {','\t\tswitch id {\n\t\tcase "submilli":\n\t\t\tr.Command = []string{filepath.Join(root, "bin", "adapter-submilli")}'));
+ await writeFile(join(root,'experiment/runner.go'),files.get('experiment/runner.go'));
+}
 if(!files.get('experiment/runner.go').includes('case "wazy":')){
  const current=files.get('experiment/runner.go');
  if(!current.includes('\t\tswitch id {'))throw Error('Runtime registration seam changed');

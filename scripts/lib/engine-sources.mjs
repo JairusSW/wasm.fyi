@@ -6,6 +6,7 @@ import {firefoxReleases} from './firefox-releases.mjs';
 import {mergeGoModuleVersions} from './go-module-versions.mjs';
 const execFileAsync=promisify(execFile);
 export const engineSources={
+  submilli:{repository:"submilli/submilli-wasm",configurations:["submilli"]},
   wasmedge:{repository:"WasmEdge/WasmEdge",configurations:["wasmedge","wasmedge-jit"]},
   chicory:{repository:"dylibso/chicory",configurations:["chicory","chicory-jit"]},
   endive:{repository:'bytecodealliance/endive',configurations:['endive-interpreter','endive-jit']},

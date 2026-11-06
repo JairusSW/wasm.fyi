@@ -31,11 +31,21 @@ export function withWagoThreads(source){
 \t\t\t\t\tresp.Description.Features = append(resp.Description.Features, "threads")
 \t\t\t\t}
 \t\t\tcase "prepare":`);
+ if(source.includes('a.hostRuntime.NewHostFuncRef(')&&!source.includes('func identityImports(')){
+  // Modern adapters own typed callbacks. Retain that API and enable threads
+  // on the host runtime too; the legacy identityImports helper no longer exists.
+  replace('if a.prep.Workload.HostProfile == "identity-v1" {','if a.prep.Workload.HostProfile == "identity-v1" || a.prep.Workload.HostProfile == "threads-identity-v1" || a.prep.Workload.HostProfile == "threads-opaque-identity-v1" {');
+  replace('a.hostRuntime = wago.NewRuntime()\n\t\t\t\t\ta.hostIdentity, e = a.hostRuntime.NewHostFuncRef(func',`hostConfig := wago.NewRuntimeConfig().WithMaxModuleBytes(uint64(len(a.wasm)))
+                    if strings.HasPrefix(a.prep.Workload.HostProfile, "threads-") { hostConfig = hostConfig.WithFeature(wago.CoreFeatureThreads, true) }
+                    a.hostRuntime = wago.NewRuntime(wago.WithRuntimeConfig(hostConfig))
+                    a.hostIdentity, e = a.hostRuntime.NewHostFuncRef(func`);
+ }else{
  replace('if a.prep.Workload.HostProfile == "identity-v1" {',`if a.prep.Workload.HostProfile == "threads-identity-v1" || a.prep.Workload.HostProfile == "threads-opaque-identity-v1" {
 \t\t\t\t\ta.imports = identityImports()
 \t\t\t\t} else if a.prep.Workload.HostProfile == "threads-defined-v1" {
 \t\t\t\t\t// The module defines its shared memory; no host imports are needed.
 \t\t\t\t} else if a.prep.Workload.HostProfile == "identity-v1" {`);
+ }
  const config='a.compileConfig = wago.NewRuntimeConfig().WithMaxModuleBytes(uint64(len(a.wasm)))';
  replace(config,config+`
 \t\t\t\t\tif strings.HasPrefix(a.prep.Workload.ID, "features/threads/") || strings.HasPrefix(a.prep.Workload.HostProfile, "threads-") {

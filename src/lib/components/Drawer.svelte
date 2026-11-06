@@ -1,5 +1,6 @@
 <script lang="ts">
  import ReportFiles from './ReportFiles.svelte';
+ import RunLocally from './RunLocally.svelte';
  import {sourceNumber} from '$lib/api/presentation';
  import {currentClient,loadCellSamples} from '$lib/api/controller.svelte';
  import type {WireRecord,ResultData} from '$lib/api/types';
@@ -248,7 +249,8 @@
 		const artifactSha = String(detail?.workload.data.sha256 || b.artifactSha256);
 		// Builder-absolute paths (…/sources/x.wat) map onto the corpus's own sources/ directory.
 		const sourcePath = b.src?.includes('/sources/') ? 'sources/' + b.src.split('/sources/').pop() : b.src;
-        const cmd = report ? `just gather --rebuild /path/to/sealed/${report.runId}/report` : 'No sealed measurement for this cell';
+        const cmd = '';
+ const reproduce={engine:viewData.configurations[c.id]||c.rt,version:measured.observationId?undefined:config?.version,source:measured.reproduction?.source||(measured.observationId?undefined:viewData.hosts[s.machine].configurations[c.id]?.source)};
 		return {
 			kicker: `${b.group} · ${MET[d.m].l}`,
 			title: workloadName(b.id) + (d.caseLabel ? ' · ' + d.caseLabel : ''),
@@ -291,7 +293,7 @@
 					{ k: 'Source', v: sourcePath || 'unavailable', href: sourcePath ? corpusHref(b.id, sourcePath) : null, ext: true }
 				] }
 			] as RecordGroup[],
-			cmd
+			reproduce,artifact:measured.reproduction?.artifact||(typeof b.artifactSha256==='string'?b.artifactSha256:undefined),contract:measured.reproduction?.contract,cmd
 		};
 	});
 
@@ -352,6 +354,7 @@
 			title: f.name,
 			f,
 			c,
+   reproduce:{engine:viewData.configurations[c.id]||c.rt,version:config?.version,source:config?.source},
 			note: FEATURE_NOTE[metric],
 			eligible: contracts.length,
 			failures: failures.length,
@@ -484,6 +487,7 @@
 			f,
 			rt,
 			cid: cfg.id,
+   reproduce:{engine:viewData.configurations[cfg.id]||cfg.rt,version:track.version,source:viewData.featureVersions[s.machine].find(v=>v.id===(viewData.configurations[cfg.id]||cfg.rt)&&v.version===track.version)?.description.source},
 			be: cfg.be,
 			hollow: cfg.hollow,
 			name,
@@ -1365,19 +1369,22 @@
 			{@const sx = support}
 			<div class="foot">
 				{#if sx.f.page}<a class="primary" href={siteHref(`/${sx.f.page}`)}>Open feature page</a>{:else if sx.f.url}<a class="primary" href={sx.f.url} target="_blank" rel="noopener noreferrer">Specification ↗</a>{:else}<span></span>{/if}
-				<button class="outline" onclick={() => ui.openProfile(sx.rt, sx.cid)}>{sx.rt} profile</button>
+				<RunLocally workloads={['features/'+sx.f.id]} engines={[sx.reproduce]} compatibility pinned />
+    <button class="outline" onclick={() => ui.openProfile(sx.rt, sx.cid)}>{sx.rt} profile</button>
 			</div>
 		{/if}
 		{#if feature}
 			{@const fx = feature}
 			<div class="foot">
 				<button class="primary" onclick={() => d?.type === 'feature' && (ui.drawer = { type: 'support', fam: fx.f.id, c: fx.c.id, channel: 'stable', peers: d.peers })}>Test results</button>
-				<button class="outline" onclick={() => ui.openProfile(fx.c.rt, fx.c.id)}>{fx.c.rt} profile</button>
+				<RunLocally workloads={['features/'+fx.f.id]} engines={[fx.reproduce]} pinned />
+    <button class="outline" onclick={() => ui.openProfile(fx.c.rt, fx.c.id)}>{fx.c.rt} profile</button>
 			</div>
 		{/if}
 		{#if cell}
 			<div class="foot">
 				<a class="primary" href={siteHref(benchHref(cell.b.id))}>Open benchmark page</a>
+     <RunLocally workloads={[cell.b.id]} engines={[cell.reproduce]} artifact={cell.artifact} contract={cell.contract} pinned />
 				<button class="outline" onclick={() => ui.openProfile(cell.c.rt, cell.c.id)}>{cell.c.rt} profile</button>
 			</div>
 		{/if}

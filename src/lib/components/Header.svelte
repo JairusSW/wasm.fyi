@@ -85,7 +85,6 @@
 		<kbd class="mono" aria-hidden="true">/</kbd>
 	</form>
 	<div class="tools">
-		<span class="badge mono" data-tip="Every number on this site comes from sealed measurement reports">MEASURED DATA</span>
 		<button
 			class="icon search-toggle"
 			onclick={toggleSearch}
@@ -237,23 +236,6 @@
 	.search-toggle {
 		display: none;
 	}
-	.badge {
-		font-size: 11px;
-		color: var(--st-warn);
-		border: 1px solid var(--st-warn);
-		padding: 1px 6px;
-		letter-spacing: 0.04em;
-		margin-right: 4px;
-		white-space: nowrap;
-		cursor: help;
-	}
-
-	@media (max-width: 900px) {
-		.badge {
-			display: none;
-		}
-	}
-
 	/* Phones: brand + icons on one row, full-width nav tabs beneath, search folds behind a button. */
 	@media (max-width: 720px) {
 		header {
