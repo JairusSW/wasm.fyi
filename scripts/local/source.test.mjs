@@ -27,3 +27,11 @@ test('worker discovery runs through a symlink from outside the checkout',async()
   assert.equal(result.event,'result');assert.ok(result.engines.some(e=>e.id==='wago-railshot'));assert.ok(result.corpora.some(w=>w.id==='mechanisms/wasm-host-wasm-loop'));
  }finally{await rm(root,{recursive:true,force:true})}
 });
+test('custom input selection does not fall back to the default main corpus',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'wasmfyi-private-'));try{
+  const artifact=join(root,'input.wasm');await writeFile(artifact,Buffer.from('0061736d01000000','hex'));
+  const request=join(root,'request.json');await writeFile(request,JSON.stringify({cache:join(root,'cache'),mode:'bench',engines:['wago-railshot'],corpora:null,wasm:[artifact],export:'run',expected:'[]',dryRun:true}));
+  const output=execFileSync(process.execPath,[new URL('./worker.mjs',import.meta.url).pathname,'prepare',request],{cwd:root,encoding:'utf8',maxBuffer:4<<20});
+  const result=JSON.parse(output);assert.deepEqual(result.plan.workloads.map(w=>w.id),['custom/input']);
+ }finally{await rm(root,{recursive:true,force:true})}
+});

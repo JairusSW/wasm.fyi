@@ -8,6 +8,9 @@ import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
 import {engines,resolveEngine,selectCorpora} from './registry.mjs';
 import {snapshotSource,checkoutSource} from './source.mjs';
+import {customWorkloads} from './custom-workloads.mjs';
+import {ensureArtifacts,artifactCatalogue,artifactOrigin} from './artifacts.mjs';
+import {featureCompiler} from '../lib/feature-toolchain.mjs';
 import {site,config,digest} from '../lib/wasmbench.mjs';
 import {runCommand} from '../lib/benchmark-process.mjs';
 import {collectLatencies,latencyCollection} from '../lib/latency-capture.mjs';
@@ -63,7 +66,8 @@ function measurementCPU(){
 export async function prepare(options){
  const cache=resolve(options.cache);await mkdir(cache,{recursive:true});const policy=await policyHash();
  const selected=[...new Map(options.engines.map(resolveEngine).map(e=>[e.id+'@'+e.ref,e])).values()];
- const selectors=options.corpora.length?options.corpora:['main'];let inventory=await catalogue();
+ const custom=await customWorkloads(options,cache);
+ const selectors=options.corpora?.length?options.corpora:custom.length?[]:['main'];let inventory=await catalogue();
  if(options.dryRun)inventory.push(...callIds.map(id=>({id,generated:true})));
  const wantsCalls=selectors.some(s=>s==='main'||s.startsWith('mechanisms'));
  const base=options.dryRun?null:await harness(cache,options.offline,policy);
@@ -73,14 +77,68 @@ export async function prepare(options){
   inventory.push(...(await readCorpus(manifest)).map(w=>({...w,artifact:resolve(base,w.artifact)})));
  }
  let workloads=selectCorpora(inventory,selectors.map(s=>s.includes('/performance-')?s.split('/').slice(0,3).join('/'):s));
- const compatibility=options.mode==='bench'?workloads.filter(w=>w.id.startsWith('features/')):[];
+ workloads.push(...custom);
+ if(new Set(workloads.map(w=>w.id)).size!==workloads.length)throw Error('Custom workload IDs conflict with selected corpus');
+ let compatibility=options.mode==='bench'?workloads.filter(w=>w.id.startsWith('features/')):[];
  const expected=new Map((options.artifacts||[]).map(text=>{const split=text.lastIndexOf('=');if(split<1||!/^[a-f0-9]{64}$/.test(text.slice(split+1)))throw Error('Use --artifact workload=sha256');return [text.slice(0,split),text.slice(split+1)]}));
  const contracts=new Map((options.contracts||[]).map(text=>{const split=text.lastIndexOf('=');if(split<1||!/^[a-f0-9]{64}$/.test(text.slice(split+1)))throw Error('Use --contract workload=sha256');return [text.slice(0,split),text.slice(split+1)]}));
+ const artifactOptions={cache,origin:artifactOrigin(options.artifactOrigin),offline:options.offline,diagnostic:message=>emit({event:'diagnostic',message}),build:async w=>{
+  const output=join(cache,'artifacts','source-'+policy.slice(0,16));await mkdir(output,{recursive:true});
+  const target=join(output,w.sha256+'.wasm');
+  if(await exists(target))return {...w,artifact:target,sha256:digest(await readFile(target))};
+  if(w.id.startsWith('features/')){
+   const family=w.id.split('/')[1],directory=join(output,family);
+   if(!await exists(join(directory,'build.json'))){await rm(directory,{recursive:true,force:true});await runCommand(process.execPath,[join(site,'scripts/feature-corpus.mjs'),'build','--fresh','--out='+directory,'--family='+family],{cwd:site,quiet:true,log:join(cache,'prepare.log')})}
+   if(w.provenance?.performance){
+    const performance=join(directory,'performance');
+    if(!await exists(join(performance,'build.json')))await runCommand(process.execPath,[join(site,'scripts/feature-performance-suite.mjs'),performance,'--input='+directory,'--family='+family],{cwd:site,quiet:true,log:join(cache,'prepare.log')});
+    const rebuilt=(await readCorpus(join(performance,'manifest.json'))).find(row=>row.id===w.id);
+    if(!rebuilt)throw Error('Source builder did not produce '+w.id);return rebuilt;
+   }
+   const rebuilt=(await readCorpus(join(directory,'manifest.json'))).find(row=>row.id===w.id);if(!rebuilt)throw Error('Source builder did not produce '+w.id);
+   return {...rebuilt,artifact:resolve(directory,rebuilt.artifact),source:rebuilt.source?resolve(directory,rebuilt.source):undefined};
+  }
+  if(w.source?.endsWith('.c')&&Array.isArray(w.provenance?.recipe?.flags)){
+   const compiler=process.env.WASMBENCH_CLANG||(platform()==='darwin'?'/opt/homebrew/opt/llvm/bin/clang':'clang');
+   await runCommand(compiler,[...w.provenance.recipe.flags,w.source,'-o',target],{cwd:site,quiet:true,log:join(cache,'prepare.log')});
+  }else if(w.source?.endsWith('.wat'))await runCommand(await featureCompiler(),['parse',w.source,'-o',target],{cwd:site,quiet:true,log:join(cache,'prepare.log')});
+  else throw Error('No cached/downloadable artifact or source recipe: '+w.id);
+  return {...w,artifact:target,sha256:digest(await readFile(target))};
+ }};
+ if(!options.dryRun)workloads=await ensureArtifacts(workloads,artifactOptions);
+ if(!options.dryRun&&options.mode==='bench')compatibility=workloads.filter(w=>w.id.startsWith('features/'));
  if(options.mode==='bench'&&workloads.some(w=>w.id.startsWith('features/'))&&!options.dryRun){
   const selectedFamilies=[...new Set(compatibility.map(w=>w.id.split('/')[1]))].sort();
-  const output=join(cache,'artifacts','feature-perf-'+policy.slice(0,16)+'-'+digest(Buffer.from(selectedFamilies.join(','))).slice(0,12));
-  if(!await exists(join(output,'manifest.json')))await runCommand(process.execPath,[join(site,'scripts/feature-performance-suite.mjs'),output,'--family='+selectedFamilies.join(',')],{cwd:site,quiet:true,log:join(cache,'prepare.log')});
-  const performance=[...await readCorpus(join(output,'manifest.json')),...await readCorpus(join(output,'compile-probes.json')),...await readCorpus(join(output,'lifecycle-probes.json'))];
+  const output=join(cache,'artifacts','feature-perf-'+policy.slice(0,16)+'-'+digest(Buffer.from(JSON.stringify(compatibility.map(w=>[w.id,w.sha256]).sort()))).slice(0,12));
+  let published=[];
+  if(!options.offline&&!await exists(join(output,'manifest.json'))){
+   try{
+    const lists=await Promise.all((selectedFamilies.length>3?['features/']:selectedFamilies.map(family=>'features/'+family+'/')).map(prefix=>artifactCatalogue(prefix,artifactOptions)));
+    const byID=new Map();
+    for(const entry of lists.flat()){
+     const w=entry.workload,original=compatibility.find(c=>w?.id?.startsWith(c.id.split('/').slice(0,3).join('/')+'/')&&w.provenance?.recipe?.originalArtifactSha256===c.sha256);
+     if(!original||!w.provenance?.performance||w.provenance?.recipe?.originalArtifactSha256!==original.sha256)continue;
+     const previous=byID.get(w.id);if(!previous||entry.publishedAt>previous.publishedAt)byID.set(w.id,entry);
+    }
+    published=[...byID.values()].map(e=>({...e.workload,artifactName:basename(e.workload.artifact||e.sha256+'.wasm'),artifact:join(cache,'artifacts',e.sha256+'.wasm')}));
+    // Every selected compatibility fixture needs a perf or lifecycle counterpart.
+    const covered=compatibility.every(c=>published.some(w=>w.id.startsWith(c.id.split('/').slice(0,3).join('/')+'/'))||['compile-only','compile-and-instantiate'].includes(c.provenance?.scope)||c.reset!=='stateless');
+    if(!covered)published=[];
+   }catch(error){emit({event:'diagnostic',message:'Performance artifacts unavailable: '+error.message+'; building from source'})}
+  }
+  if(published.length){
+   const probes=compatibility.filter(c=>['compile-only','compile-and-instantiate'].includes(c.provenance?.scope)||c.reset!=='stateless');
+   const obtained=await ensureArtifacts([...published,...probes],artifactOptions);await mkdir(output,{recursive:true});
+   await writeFile(join(output,'manifest.json'),JSON.stringify(obtained));for(const name of ['compile-probes.json','lifecycle-probes.json'])await writeFile(join(output,name),'[]');
+  }else if(!await exists(join(output,'manifest.json'))) {
+   // Generator validates compatibility inputs beneath one private source tree.
+   const input=join(output,'input');await mkdir(join(input,'artifacts'),{recursive:true});await cp(join(site,'corpora/features/sources'),join(input,'sources'),{recursive:true});
+   const all=await ensureArtifacts(inventory.filter(w=>w.id.startsWith('features/')&&selectedFamilies.includes(w.id.split('/')[1])),artifactOptions),inputRows=[];
+   for(const w of all){const artifact='artifacts/'+w.sha256+'.wasm',source='sources/'+basename(w.source);await cp(w.artifact,join(input,artifact));await cp(w.source,join(input,source));inputRows.push({...w,artifact,source})}
+   await writeFile(join(input,'manifest.json'),JSON.stringify(inputRows));
+   if(!await exists(join(output,'manifest.json')))await runCommand(process.execPath,[join(site,'scripts/feature-performance-suite.mjs'),output,'--input='+input,'--family='+selectedFamilies.join(',')],{cwd:site,quiet:true,log:join(cache,'prepare.log')});
+  }
+  const performance=await ensureArtifacts([...await readCorpus(join(output,'manifest.json')),...await readCorpus(join(output,'compile-probes.json')),...await readCorpus(join(output,'lifecycle-probes.json'))],artifactOptions);
   const families=new Set(workloads.filter(w=>w.id.startsWith('features/')).map(w=>w.id.split('/')[1]));
   workloads=[...workloads.filter(w=>!w.id.startsWith('features/')),...performance.filter(w=>families.has(w.id.split('/')[1])&&selectors.some(s=>s==='features'||w.id===s||w.id.startsWith(s.replace(/\/$/,'')+'/')||s===w.id.split('/').slice(0,3).join('/')))];
  }

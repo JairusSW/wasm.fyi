@@ -1,6 +1,7 @@
+import {userPath} from './user-path.mjs';
 import {mkdir,readFile,stat,realpath} from 'node:fs/promises';
 import {join,dirname,relative} from 'node:path';
-import {homedir,availableParallelism} from 'node:os';
+import {availableParallelism} from 'node:os';
 import {digest} from './wasmbench.mjs';
 import {prepareJavaScriptCoreNativeSize} from './jsc-native-size.mjs';
 import {configureCMakeSource} from './cmake-source.mjs';
@@ -82,7 +83,7 @@ export async function buildJavaScriptCoreSDK({source,target,revision,env,run}) {
  target=join(target,mac&&port==='JSCOnly'?'native-build-jsc-only':'native-build');
  await mkdir(target,{recursive:true});
  let flags=['-S',source,'-B',target,'-G','Ninja','-DPORT='+port,'-DCMAKE_BUILD_TYPE=Release','-DENABLE_API_TESTS=OFF'];
- const localNinja=join(homedir(),'.cache/wasm-fyi/toolchains/ninja-local/usr/bin/ninja');
+ const localNinja=userPath('.cache/wasm-fyi/toolchains/ninja-local/usr/bin/ninja');
  if(!mac&&await stat(localNinja).catch(()=>null))flags.push('-DCMAKE_MAKE_PROGRAM='+localNinja);
  if(mac){
   const sdk=(await run('xcrun',['--sdk','macosx','--show-sdk-path'])).output.trim();
@@ -108,7 +109,7 @@ export async function buildJavaScriptCoreSDK({source,target,revision,env,run}) {
   for(const file of ['stdint.h','x86_64-linux-gnu/bits/stdint-least.h','x86_64-linux-gnu/gnu/stubs-64.h'])if(!await stat(join(include,file)).catch(()=>null))throw Error('JavaScriptCore private runtime headers lack '+file);
   flags=javaScriptCoreRuntimeLinkFlags(flags,env);
  }
- const buildEnv={...env},ruby=join(homedir(),'.cache/wasm-fyi/toolchains/ruby-3.2-local');
+ const buildEnv={...env},ruby=userPath('.cache/wasm-fyi/toolchains/ruby-3.2-local');
  const python=await javaScriptCoreBuildPython(env,run);
  flags.push(...javaScriptCorePythonFlags(python.program));
  if(python.program.startsWith('/'))buildEnv.PATH=dirname(python.program)+':'+buildEnv.PATH;

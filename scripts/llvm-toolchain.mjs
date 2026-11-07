@@ -1,8 +1,9 @@
+import {userPath} from './lib/user-path.mjs';
 // Isolated Linux prerequisite for the pinned Wasmer LLVM SDK.
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
-import { homedir, platform, arch } from 'node:os';
+import { platform, arch } from 'node:os';
 import { join } from 'node:path';
 import { command, exists, locked } from './lib/wasmbench.mjs';
 
@@ -12,7 +13,7 @@ await locked(async () => {
   const sha256 = 'df0e1ecf16caf3489a272a5eea4eec9b0d82878f6477fa309504f918a0006384';
   const name = `LLVM-${version}-Linux-X64.tar.xz`;
   const url = `https://github.com/llvm/llvm-project/releases/download/llvmorg-${version}/${name}`;
-  const root = join(homedir(), '.local/share/wasm-fyi/toolchains');
+  const root = userPath('.local/share/wasm-fyi/toolchains');
   const destination = join(root, 'llvm-22');
   const manifest = { schema: 1, version, url, sha256 };
   const marker = join(destination, 'wasm-fyi-build.json');

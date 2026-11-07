@@ -1,7 +1,7 @@
+import {userPath} from './user-path.mjs';
 import {withChicorySimd} from './chicory-simd.mjs';
 import {readFile,writeFile,mkdir,readdir,rm,stat,realpath} from 'node:fs/promises';
 import {join,dirname,isAbsolute} from 'node:path';
-import {homedir} from 'node:os';
 import {digest,site} from './wasmbench.mjs';
 export async function buildChicorySDK({source,root,version,configuration='chicory',env,run}) {
  const java=env.WASMFYI_CHICORY_JAVA||env.WASMBENCH_JAVA||'java';
@@ -21,7 +21,7 @@ export async function buildChicorySDK({source,root,version,configuration='chicor
   await run('bash',[join(source,'mvnw'),'-B','-pl','compiler','dependency:copy-dependencies','-DincludeScope=runtime','-DincludeGroupIds=org.ow2.asm','-DoutputDirectory='+dependencies],{cwd:source});
   for(const name of await readdir(dependencies))if(name.endsWith('.jar'))jars.push(join(dependencies,name));
  }
- const json=join(homedir(),'.cache/wasm-fyi/toolchains/json-20250517.jar');await mkdir(dirname(json),{recursive:true});
+ const json=userPath('.cache/wasm-fyi/toolchains/json-20250517.jar');await mkdir(dirname(json),{recursive:true});
  if(!await stat(json).catch(()=>null))await run('curl',['--fail','--location','--retry','3','--max-time','180','https://repo.maven.apache.org/maven2/org/json/json/20250517/json-20250517.jar','-o',json]);
  if(digest(await readFile(json))!=='3ea61b2a06e31edf1c91134fe9106b0ebb16628be169f3db75bc7a2b06b45796')throw Error('JSON protocol library checksum differs');
  jars.push(json);

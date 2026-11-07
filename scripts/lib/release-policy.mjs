@@ -1,6 +1,6 @@
+import {userPath} from './user-path.mjs';
 import {mkdir,readFile,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
-import {homedir} from 'node:os';
 import {command,exists} from './wasmbench.mjs';
 
 export const releasedBuild = release => !release.draft && !!release.published_at && !/^(main|master|HEAD|latest)$/i.test(release.tag_name) && !/nightly|snapshot|canary|(?:^|[-/])dev(?:[-/]|$)/i.test(release.tag_name);
@@ -31,7 +31,7 @@ export function githubRelease(repository,tag) {
   if(release.tag_name!==tag||release.draft||!release.published_at)throw Error('Requested published release metadata is missing or differs');
   return release;
 }
-export const releaseCache=()=>process.env.WASMBENCH_RELEASE_CACHE || join(homedir(),'.cache/wasm-fyi/releases');
+export const releaseCache=()=>process.env.WASMBENCH_RELEASE_CACHE || userPath('.cache/wasm-fyi/releases');
 export async function releaseSource(repository,{tag,asOf,taggedLibrary=false,betaPrerelease=false}={}) {
   let candidates;
   if(taggedLibrary){

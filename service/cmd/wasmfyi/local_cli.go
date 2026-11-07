@@ -49,28 +49,34 @@ func (s *localStrings) Set(value string) error {
 }
 
 type localOptions struct {
-	Engines      localStrings `json:"engines"`
-	Corpora      localStrings `json:"corpora"`
-	Sources      localStrings `json:"sources"`
-	Artifacts    localStrings `json:"artifacts"`
-	Contracts    localStrings `json:"contracts"`
-	Cache        string       `json:"cache"`
-	Mode         string       `json:"mode"`
-	Timeout      string       `json:"timeout"`
-	TimeoutMS    int64        `json:"timeoutMs"`
-	Samples      int          `json:"samples"`
-	Offline      bool         `json:"offline"`
-	DryRun       bool         `json:"dryRun"`
-	SourceDigest string       `json:"sourceDigest,omitempty"`
-	Data         string       `json:"-"`
-	Site         string       `json:"-"`
-	ID           string       `json:"-"`
-	Baseline     string       `json:"-"`
-	Port         int          `json:"-"`
-	Frontend     string       `json:"-"`
-	NoServe      bool         `json:"-"`
-	Rerun        bool         `json:"rerun"`
-	JSON         bool         `json:"-"`
+	Engines        localStrings `json:"engines"`
+	Corpora        localStrings `json:"corpora"`
+	Wasm           localStrings `json:"wasm"`
+	Manifests      localStrings `json:"manifests"`
+	Export         string       `json:"export"`
+	ArtifactOrigin string       `json:"artifactOrigin"`
+	WasmArgs       string       `json:"wasmArgs"`
+	Expected       string       `json:"expected"`
+	Sources        localStrings `json:"sources"`
+	Artifacts      localStrings `json:"artifacts"`
+	Contracts      localStrings `json:"contracts"`
+	Cache          string       `json:"cache"`
+	Mode           string       `json:"mode"`
+	Timeout        string       `json:"timeout"`
+	TimeoutMS      int64        `json:"timeoutMs"`
+	Samples        int          `json:"samples"`
+	Offline        bool         `json:"offline"`
+	DryRun         bool         `json:"dryRun"`
+	SourceDigest   string       `json:"sourceDigest,omitempty"`
+	Data           string       `json:"-"`
+	Site           string       `json:"-"`
+	ID             string       `json:"-"`
+	Baseline       string       `json:"-"`
+	Port           int          `json:"-"`
+	Frontend       string       `json:"-"`
+	NoServe        bool         `json:"-"`
+	Rerun          bool         `json:"rerun"`
+	JSON           bool         `json:"-"`
 }
 type localJob struct {
 	Key      string   `json:"key"`
@@ -112,10 +118,12 @@ type localEvent struct {
 	} `json:"builds,omitempty"`
 }
 
+var cliVersion = "local-cli/1"
+
 func localDefaults() (data, cache string) {
-	d, _ := os.UserConfigDir()
-	c, _ := os.UserCacheDir()
-	return filepath.Join(d, "wasmfyi"), filepath.Join(c, "wasmfyi")
+	home, _ := os.UserHomeDir()
+	root := filepath.Join(home, ".wasmfyi")
+	return filepath.Join(root, "data"), filepath.Join(root, "cache")
 }
 func localStyle(code, text string) string {
 	info, e := os.Stdout.Stat()
@@ -135,7 +143,7 @@ func localHelp(command string) {
 	}
 	fmt.Printf("%s wasmfyi %s [flags]\n\nFlags:\n", localStyle("1", "Usage:"), command)
 	if command == "bench" || command == "test" {
-		fmt.Print("  --engines, -e <ids>       comma-separated or repeated engine/backend selectors\n  --corpora, -c <ids>       workload IDs or prefixes (default: main)\n  --source <engine=path>    snapshot a local runtime checkout\n  --id <name>               name the run\n  --baseline <run>          compare against an earlier run when finished\n  --rerun                   capture fresh samples instead of linking a match\n  --samples <n>             fixed samples; compile/instantiate capped at 10\n  --timeout <duration>      workload deadline (default: 5m)\n  --artifact <id=sha256>     require the exact Wasm input from a copied command\n  --contract <id=sha256>     require the exact input/output contract\n  --source-digest <sha256>   require an exact local source snapshot\n  --offline                 require cached sources and tools\n  --dry-run                 print the selection without building or measuring\n  --no-serve                save results without starting the local website\n  --port, -p <port>          local preview port (default: 8788)\n  --help-sampling           describe the sampling policy\n")
+		fmt.Print("  --engines, -e <ids>       comma-separated or repeated engine/backend selectors\n  --corpora, -c <ids>       workload IDs or prefixes (default: main)\n  --wasm <file>             use your own module (repeatable; kept private)\n  --manifest <file>         use a custom workload manifest (repeatable)\n  --export <name>           custom module entry point (default: benchmark)\n  --args <JSON array>       unsigned 64-bit arguments (default: [])\n  --expected <JSON array>   expected unsigned 64-bit results; required for --wasm\n  --source <engine=path>    snapshot a local runtime checkout\n  --id <name>               name the run\n  --baseline <run>          compare against an earlier run when finished\n  --rerun                   capture fresh samples instead of linking a match\n  --samples <n>             fixed samples; compile/instantiate capped at 10\n  --timeout <duration>      workload deadline (default: 5m)\n  --artifact <id=sha256>     require the exact Wasm input from a copied command\n  --contract <id=sha256>     require the exact input/output contract\n  --source-digest <sha256>   require an exact local source snapshot\n  --artifact-origin <url>    corpus download server (default: https://wasm.fyi)\n  --offline                 require cached sources and tools\n  --dry-run                 print the selection without building or measuring\n  --no-serve                save results without starting the local website\n  --port, -p <port>          local preview port (default: 8788)\n  --help-sampling           describe the sampling policy\n")
 	}
 	if command == "serve" {
 		fmt.Print("  --port, -p <port>          loopback port (default: 8788; 0 chooses a free port)\n  --background              start a managed preview\n  --frontend <directory>    use an existing frontend build\n\n  wasmfyi serve stop        stop only a CLI-managed preview\n")
@@ -153,8 +161,12 @@ func localWorkspace(explicit string) (string, error) {
 		if e := os.Getenv("WASMFYI_ROOT"); e != "" {
 			candidates = append(candidates, e)
 		}
+		home, _ := os.UserHomeDir()
 		exe, _ := os.Executable()
-		candidates = append(candidates, filepath.Join(filepath.Dir(exe), "share", "wasmfyi"), filepath.Join(filepath.Dir(exe), "..", "share", "wasmfyi"))
+		if resolved, e := filepath.EvalSymlinks(exe); e == nil {
+			exe = resolved
+		}
+		candidates = append(candidates, filepath.Join(filepath.Dir(exe), "share", "wasmfyi"), filepath.Join(filepath.Dir(exe), "..", "share", "wasmfyi"), filepath.Join(home, ".wasmfyi", "share", "wasmfyi"))
 		cwd, _ := os.Getwd()
 		for p := cwd; ; p = filepath.Dir(p) {
 			candidates = append(candidates, p)
@@ -190,6 +202,14 @@ func localWorker(ctx context.Context, site string, args []string, locked bool, c
 	}
 	cmd := exec.CommandContext(ctx, program, arguments...)
 	cmd.Dir = site
+	home, _ := os.UserHomeDir()
+	root := filepath.Join(home, ".wasmfyi")
+	cache := filepath.Join(root, "cache")
+	temporary := filepath.Join(cache, "tmp")
+	if err := os.MkdirAll(temporary, 0700); err != nil {
+		return err
+	}
+	cmd.Env = append(os.Environ(), "WASMFYI_HOME="+root, "GOCACHE="+filepath.Join(cache, "go-build"), "GOMODCACHE="+filepath.Join(cache, "go-mod"), "CARGO_HOME="+filepath.Join(cache, "cargo"), "CCACHE_DIR="+filepath.Join(cache, "ccache"), "npm_config_cache="+filepath.Join(cache, "npm"), "XDG_CACHE_HOME="+filepath.Join(cache, "xdg"), "TMPDIR="+temporary, "MAVEN_OPTS="+os.Getenv("MAVEN_OPTS")+" -Dmaven.repo.local="+filepath.Join(cache, "maven"))
 	cmd.Stderr = os.Stderr
 	pipe, err := cmd.StdoutPipe()
 	if err != nil {
@@ -289,7 +309,7 @@ func localCLI(ctx context.Context, args []string) (bool, error) {
 		return true, nil
 	}
 	if args[0] == "version" || args[0] == "--version" || args[0] == "-v" {
-		fmt.Println("wasmfyi local-cli/1")
+		fmt.Println("wasmfyi " + cliVersion)
 		return true, nil
 	}
 	action := args[0]
@@ -325,6 +345,12 @@ func localCLI(ctx context.Context, args []string) (bool, error) {
 	fs.Var(&o.Corpora, "corpora", "")
 	fs.Var(&o.Corpora, "corpus", "")
 	fs.Var(&o.Corpora, "c", "")
+	fs.Var((*localRepeated)(&o.Wasm), "wasm", "")
+	fs.Var((*localRepeated)(&o.Manifests), "manifest", "")
+	fs.StringVar(&o.Export, "export", "benchmark", "")
+	fs.StringVar(&o.ArtifactOrigin, "artifact-origin", "https://wasm.fyi", "")
+	fs.StringVar(&o.WasmArgs, "args", "[]", "")
+	fs.StringVar(&o.Expected, "expected", "", "")
 	fs.Var((*localRepeated)(&o.Sources), "source", "")
 	fs.Var(&o.Artifacts, "artifact", "")
 	fs.Var(&o.Contracts, "contract", "")
@@ -350,6 +376,15 @@ func localCLI(ctx context.Context, args []string) (bool, error) {
 	}
 	if (action == "bench" || action == "test") && fs.NArg() != 0 {
 		return true, fmt.Errorf("unexpected positional selection; use --engines and --corpora")
+	}
+	for _, paths := range []*localStrings{&o.Wasm, &o.Manifests} {
+		for i, path := range *paths {
+			absolute, e := filepath.Abs(path)
+			if e != nil {
+				return true, e
+			}
+			(*paths)[i] = absolute
+		}
 	}
 	o.Data, _ = filepath.Abs(o.Data)
 	o.Cache, _ = filepath.Abs(o.Cache)
@@ -471,7 +506,7 @@ func localCLI(ctx context.Context, args []string) (bool, error) {
 			return true, err
 		}
 	}
-	if action == "test" && len(o.Corpora) == 0 {
+	if action == "test" && len(o.Corpora) == 0 && len(o.Wasm) == 0 && len(o.Manifests) == 0 {
 		o.Corpora = []string{"features"}
 	}
 	d, err := time.ParseDuration(o.Timeout)
@@ -491,6 +526,8 @@ func localCLI(ctx context.Context, args []string) (bool, error) {
 	err = localWorker(ctx, site, []string{"prepare", request}, false, func(e localEvent) error {
 		if e.Event == "result" {
 			plan = e.Plan
+		} else if e.Event == "diagnostic" {
+			fmt.Fprintln(os.Stderr, e.Message)
 		} else if e.Event == "preparing" {
 			localPrint(o.JSON, e, "Preparing %s…\n", e.Engine)
 		}

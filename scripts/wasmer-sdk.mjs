@@ -1,6 +1,7 @@
+import {userPath} from './lib/user-path.mjs';
 import { cp, mkdir, readFile, realpath, symlink, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
-import { homedir, platform } from 'node:os';
+import { platform } from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { command, config, digest, exists, locked, site } from './lib/wasmbench.mjs';
 import {wasmerRelease} from './lib/wasmer-release.mjs';
@@ -12,7 +13,7 @@ if (action === 'hub') {
   const host = hosts.hub;
   if (!/^[a-zA-Z0-9_.@-]+$/.test(host.ssh) || !/^[a-zA-Z0-9_./-]+$/.test(host.workspace) || host.workspace.startsWith('/') || host.workspace.includes('..')) throw new Error('Invalid Hub toolchain host settings');
   const quote = value => "'" + String(value).replaceAll("'", "'\\''") + "'";
-  const sockets = join(homedir(), '.cache/wasm-fyi/ssh'); await mkdir(sockets, { recursive: true });
+  const sockets = userPath('.cache/wasm-fyi/ssh'); await mkdir(sockets, { recursive: true });
   const options = ['-o','BatchMode=yes','-o','ConnectTimeout=15','-o','ServerAliveInterval=15','-o','ServerAliveCountMax=3','-o','ControlMaster=auto','-o','ControlPersist=86400','-o','ControlPath=' + join(sockets,digest(Buffer.from(site)).slice(0,12))];
   const remote = host.workspace + '/wasmer-sdk-' + randomUUID();
   const ssh = (script, timeout=120_000) => command('ssh',[...options,host.ssh,'bash -lc ' + quote(script)],{timeout,stdio:'inherit'});
@@ -22,10 +23,10 @@ if (action === 'hub') {
   copy([join(site,'scripts/lib/wasmbench.mjs'),join(site,'scripts/lib/wasmer-release.mjs')],'scripts/lib/');
   ssh(`export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$PATH"; export WASMBENCH_WASMER_VERSION=${quote(pin.version)}; set -eu; exec 9>"$HOME/${host.workspace}/measurement.lock"; flock -w 3600 9; cd ${quote(remote)}; node scripts/llvm-toolchain.mjs; node scripts/wasmer-sdk.mjs local`,150*60_000);
 } else if (action === 'local') await locked(async () => {
-  const root=join(homedir(),`.local/share/wasm-fyi/toolchains/wasmer-c-api-${pin.version}`);
+  const root=join(userPath(`.local/share/wasm-fyi/toolchains/wasmer-c-api-${pin.version}`));
   const source=join(root,'source');
   const {revision}=pin;
-  const llvm=resolve(process.env.WASMBENCH_LLVM_PREFIX || (platform()==='darwin'?'/opt/homebrew/opt/llvm@22':join(homedir(),'.local/share/wasm-fyi/toolchains/llvm-22')));
+  const llvm=resolve(process.env.WASMBENCH_LLVM_PREFIX || (platform()==='darwin'?'/opt/homebrew/opt/llvm@22':userPath('.local/share/wasm-fyi/toolchains/llvm-22')));
   const llvmVersion=command(join(llvm,'bin/llvm-config'),['--version']).toString().trim();
   if(!llvmVersion.startsWith(pin.llvm+'.'))throw new Error(`Wasmer ${pin.version} LLVM requires an LLVM ${pin.llvm} prefix; set WASMBENCH_LLVM_PREFIX`);
   await mkdir(root,{recursive:true});

@@ -30,3 +30,9 @@ test('harness source preparation failures prevent the final audit',async()=>{
   }),/source unavailable/);
   assert(!calls.includes('corpus-audit.mjs'));
 });
+test('configured public builders publish only after the final audit',async()=>{
+ const calls=[],env={WASMFYI_ARTIFACT_PUBLISH_URL:'https://wasm.fyi',WASMFYI_ADMIN_TOKEN:'private'};
+ await buildCorpusFromSource({env,loadSettings:async()=>({corpus:{applications:'apps.json',buildManifest:'upstream.json'}}),resolveHarness:async()=>'/harness',run:async(script,args)=>calls.push([script,args])});
+ assert.deepEqual(calls.at(-1),['publish-artifacts.mjs',['--origin=https://wasm.fyi','apps.json','corpora/features/manifest.json','upstream.json']]);
+ assert.equal(calls.at(-2)[0],'corpus-audit.mjs');
+});

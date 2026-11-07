@@ -5,7 +5,7 @@ import {homedir} from 'node:os';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
-const prefix=resolve(process.argv[2]||join(homedir(),'.local'));
+const prefix=resolve(process.argv[2]||join(homedir(),'.wasmfyi'));
 const assets=join(prefix,'share','wasmfyi'),stage=assets+'.install-'+process.pid;
 if(prefix===root||assets.startsWith(root+'/'))throw Error('Choose an installation prefix outside the checkout');
 try{

@@ -1,7 +1,7 @@
+import {userPath} from './user-path.mjs';
 import {wizardSPCGlobalCommand} from './wizard-spc-globals.mjs';
 import {readFile,writeFile,mkdir,stat} from 'node:fs/promises';
 import {join,dirname} from 'node:path';
-import {homedir} from 'node:os';
 import {digest,site} from './wasmbench.mjs';
 
 // This compiler revision supplied the SDK used by both architecture proofs.
@@ -52,7 +52,7 @@ export async function buildWizardSDK({source,root,version,configuration,env,run}
  const unavailable=wizardArchitectureUnavailable(configuration);
  if(unavailable)throw Object.assign(Error(unavailable.reason),{code:'UNSUPPORTED_PLATFORM',proof:unavailable});
  if(!/^[a-f0-9]{40}$/i.test(version))throw Error('Full pinned Wizard source commit required');
- const virgil=env.WASMFYI_VIRGIL||join(homedir(),'.cache/wasm-fyi/toolchains/virgil-'+wizardVirgilRevision);
+ const virgil=env.WASMFYI_VIRGIL||join(userPath('.cache/wasm-fyi/toolchains/virgil-')+wizardVirgilRevision);
  const compilerRevision=await ensureWizardCompiler({virgil,external:Boolean(env.WASMFYI_VIRGIL),run});
  if(env.WASMBENCH_JAVA)env.PATH=dirname(env.WASMBENCH_JAVA)+':'+env.PATH;
  // Upstream selects its source-pinned bootstrap binary for the build host.

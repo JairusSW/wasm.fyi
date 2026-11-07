@@ -12,7 +12,7 @@ import (
 	"github.com/JairusSW/wasm.fyi/service/internal/analytics"
 )
 
-var requestClasses = [...]string{"probe", "admin-import", "admin-upload", "admin-plan", "admin-progress", "admin-other", "summary", "evidence", "frontend", "other", "dashboard-analytics", "dashboard-auth", "page-event"}
+var requestClasses = [...]string{"probe", "admin-import", "admin-upload", "admin-plan", "admin-progress", "admin-other", "summary", "evidence", "frontend", "other", "dashboard-analytics", "dashboard-auth", "page-event", "artifacts"}
 var latencyBounds = [...]time.Duration{5 * time.Millisecond, 25 * time.Millisecond, 100 * time.Millisecond, 500 * time.Millisecond, 2500 * time.Millisecond, 15 * time.Second, 300 * time.Second}
 
 type requestCounters struct {
@@ -81,6 +81,9 @@ func (a *API) requestStats() RequestStats {
 }
 func requestClass(path string) int {
 	path = strings.TrimSuffix(path, "/")
+	if path == "/api/artifacts" || strings.HasPrefix(path, "/api/artifacts/") {
+		return 13
+	}
 	if strings.HasPrefix(path, "/api/admin/") {
 		return 10
 	}

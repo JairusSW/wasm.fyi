@@ -5,6 +5,7 @@ import (
 	"crypto/hmac"
 	"encoding/json"
 	"errors"
+	"github.com/JairusSW/wasm.fyi/service/internal/artifactdb"
 	"github.com/JairusSW/wasm.fyi/service/internal/benchdb"
 	"github.com/JairusSW/wasm.fyi/service/internal/wire"
 	"mime"
@@ -24,6 +25,9 @@ type BenchmarkStore interface {
 }
 
 type benchmarkAPI struct {
+	artifacts      *artifactdb.Store
+	artifactCancel context.CancelFunc
+	artifactDone   chan struct{}
 	responses      *publicResponseCache
 	observer       *API
 	db             BenchmarkStore
@@ -131,7 +135,17 @@ func (a *benchmarkAPI) EnableDashboard(directory, listenAddress string) error {
 	}
 	return nil
 }
-func (a *benchmarkAPI) Close() error { return a.observer.Close() }
+func (a *benchmarkAPI) Close() error {
+	if a.artifactCancel != nil {
+		a.artifactCancel()
+		<-a.artifactDone
+	}
+	var err error
+	if a.artifacts != nil {
+		err = a.artifacts.Close()
+	}
+	return errors.Join(err, a.observer.Close())
+}
 func (a *benchmarkAPI) serveRequest(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	if a.frontend != nil && !strings.HasPrefix(r.URL.Path, "/api") && !strings.HasPrefix(r.URL.Path, "/admin") && r.URL.Path != "/healthz" && r.URL.Path != "/readyz" {
@@ -145,7 +159,7 @@ func (a *benchmarkAPI) serveRequest(w http.ResponseWriter, r *http.Request) {
 		a.frontend.ServeHTTP(w, r)
 		return
 	}
-	publisher := r.URL.Path == "/api/captures" && r.Method == "POST" && hmac.Equal([]byte(r.Header.Get("Authorization")), []byte("Bearer "+a.token))
+	publisher := a.artifactPublisher(r) || (r.URL.Path == "/api/captures" && r.Method == "POST" && hmac.Equal([]byte(r.Header.Get("Authorization")), []byte("Bearer "+a.token)))
 	client, e := a.limiter.clientIdentity(r, publisher)
 	if e != nil {
 		benchmarkProblem(w, r, e)
@@ -171,7 +185,10 @@ func (a *benchmarkAPI) serveRequest(w http.ResponseWriter, r *http.Request) {
 func (a *benchmarkAPI) serveData(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	var e error
-	publisher := r.URL.Path == "/api/captures" && r.Method == "POST" && hmac.Equal([]byte(r.Header.Get("Authorization")), []byte("Bearer "+a.token))
+	publisher := a.artifactPublisher(r) || (r.URL.Path == "/api/captures" && r.Method == "POST" && hmac.Equal([]byte(r.Header.Get("Authorization")), []byte("Bearer "+a.token)))
+	if a.serveArtifacts(w, r) {
+		return
+	}
 	if a.serveSQL(w, r) {
 		return
 	}
@@ -256,7 +273,7 @@ func (a *benchmarkAPI) serveData(w http.ResponseWriter, r *http.Request) {
 // ReadOnlyBenchmarks disables capture publication with the same error contract.
 func ReadOnlyBenchmarks(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/api/captures" && r.Method == "POST" {
+		if (r.URL.Path == "/api/captures" && r.Method == "POST") || artifactWrite(r) {
 			benchmarkError(w, r, 403, "read_only", "capture publication is disabled")
 			return
 		}

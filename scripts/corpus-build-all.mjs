@@ -19,8 +19,16 @@ export async function buildCorpusFromSource({env=process.env,loadSettings=config
   ['corpus-v8.mjs',['--from-source']],
   ['corpus-components-check.mjs',[]],
  ])await run(script,args,env);
- const root=await resolveHarness(await loadSettings());
+ const settings=await loadSettings(),root=await resolveHarness(settings);
  await run('corpus-audit.mjs',[],{...env,WASMBENCH_ROOT:root});
+ // Publishing is explicitly configured for public corpus builders. Local CLI
+ // runs, including private --wasm inputs, never invoke this path.
+ if(env.WASMFYI_ARTIFACT_PUBLISH_URL)await run('publish-artifacts.mjs',[
+  '--origin='+env.WASMFYI_ARTIFACT_PUBLISH_URL,
+  settings.corpus?.applications||'corpora/applications/manifest.json',
+  'corpora/features/manifest.json',
+  ...(settings.corpus?.buildManifest?[settings.corpus.buildManifest]:[])
+ ],env);
 }
 
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){

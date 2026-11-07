@@ -1,6 +1,7 @@
+import {userPath} from './user-path.mjs';
 import {readFile,writeFile,mkdir,cp,readdir,stat} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
-import {homedir,availableParallelism} from 'node:os';
+import {availableParallelism} from 'node:os';
 import {digest} from './wasmbench.mjs';
 import {privateGlibcLinkFlags} from './private-glibc-link.mjs';
 export async function configureWavmSource(source,target,flags,run) {
@@ -17,13 +18,13 @@ export async function configureWavmSource(source,target,flags,run) {
  if(!await matches())throw Error('WAVM CMake cache discarded required compiler/link policy');
 }
 export async function buildWavmSDK({source,sdk,target,harness,env,run}) {
- const prefixes=[env.WASMBENCH_WAVM_LLVM_PREFIX,'/opt/homebrew/opt/llvm@20',join(homedir(),'.cache/wasm-fyi/toolchains/llvm-20.1.8'),'/usr/lib/llvm-20'].filter(Boolean);
+ const prefixes=[env.WASMBENCH_WAVM_LLVM_PREFIX,'/opt/homebrew/opt/llvm@20',userPath('.cache/wasm-fyi/toolchains/llvm-20.1.8'),'/usr/lib/llvm-20'].filter(Boolean);
  let llvmDirectory;
  for(const prefix of prefixes)if(await stat(join(prefix,'lib/cmake/llvm/LLVMConfig.cmake')).catch(()=>null)){llvmDirectory=join(prefix,'lib/cmake/llvm');break;}
  if(!llvmDirectory)throw Error('WAVM source build requires a qualified LLVM 20 or newer SDK');
- const dependencyPrefix=join(homedir(),'.cache/wasm-fyi/toolchains/lld-18/usr');
+ const dependencyPrefix=userPath('.cache/wasm-fyi/toolchains/lld-18/usr');
  const dependencyFlags=await stat(dependencyPrefix).catch(()=>null)?['-DCMAKE_PREFIX_PATH='+dependencyPrefix]:[];
- const zstdPrefix=join(homedir(),'.cache/wasm-fyi/toolchains/zstd-1.5.5-pic');
+ const zstdPrefix=userPath('.cache/wasm-fyi/toolchains/zstd-1.5.5-pic');
  const zstdFlags=await stat(join(zstdPrefix,'lib/libzstd.a')).catch(()=>null)?['-Dzstd_STATIC_LIBRARY='+join(zstdPrefix,'lib/libzstd.a'),'-Dzstd_INCLUDE_DIR='+join(zstdPrefix,'include')]:[];
  const flags=[...zstdFlags,...dependencyFlags,'-DCMAKE_BUILD_TYPE=Release','-DCMAKE_INSTALL_PREFIX='+sdk,'-DLLVM_DIR='+llvmDirectory,'-DWAVM_ENABLE_STATIC_LINKING=OFF','-DWAVM_ENABLE_FUZZ_TARGETS=OFF','-DWAVM_ENABLE_LTO=OFF'];
  // The official Linux LLVM SDK ships bitcode archives; use its matching

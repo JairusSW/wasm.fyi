@@ -1,6 +1,6 @@
+import {userPath} from './user-path.mjs';
 import {readFile,writeFile,mkdir,stat} from 'node:fs/promises';
 import {join,dirname} from 'node:path';
-import {homedir} from 'node:os';
 import {digest,site} from './wasmbench.mjs';
 // Source driver and JVMCI policy used by the successful AMD64 source build.
 export const graalMxRevision='6c9b38f3373eff9cc7dc9fc21ca4e116dd93786b';
@@ -67,7 +67,7 @@ export async function ensureGraalDriver(mxRoot,run){
 // Build the selected Graal source, including its optimized Truffle compiler.
 // Upstream workflow: wasm/docs/contributor/Building.md.
 export async function buildGraalWasmSDK({source,root,version,env,run}){
- const mxRoot=join(homedir(),'.cache/wasm-fyi/toolchains/mx');
+ const mxRoot=userPath('.cache/wasm-fyi/toolchains/mx');
  if(!await stat(join(mxRoot,'.git')).catch(()=>null)){
   await mkdir(dirname(mxRoot),{recursive:true});
   await run('git',['clone','--depth','1','https://github.com/graalvm/mx.git',mxRoot]);

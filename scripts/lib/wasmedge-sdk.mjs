@@ -1,6 +1,7 @@
+import {userPath} from './user-path.mjs';
 import {readFile,readdir,mkdir,cp,stat} from 'node:fs/promises';
 import {join} from 'node:path';
-import {homedir,availableParallelism} from 'node:os';
+import {availableParallelism} from 'node:os';
 import {configureCMakeSource} from './cmake-source.mjs';
 import {privateGlibcLinkFlags} from './private-glibc-link.mjs';
 import {instrumentWasmEdgeJIT} from './wasmedge-jit-bridge.mjs';
@@ -57,11 +58,11 @@ export async function buildWasmEdgeSDK({source,sdk,target,configuration,env,run}
  if(jit&&!llvmDirectory)for(const prefix of ['/opt/homebrew/opt/llvm@18','/usr/lib/llvm-18'])if(await stat(join(prefix,'lib/cmake/llvm/LLVMConfig.cmake')).catch(()=>null)){llvmDirectory=join(prefix,'lib/cmake/llvm');break;}
  if(jit&&!llvmDirectory)throw Error('WasmEdge JIT requires a qualified LLVM SDK');
  const measurementPatch=jit?await instrumentWasmEdgeJIT(source):null;
- const dependencyPrefix=join(homedir(),'.cache/wasm-fyi/toolchains/lld-18/usr');
+ const dependencyPrefix=userPath('.cache/wasm-fyi/toolchains/lld-18/usr');
  const dependencyFlags=await stat(dependencyPrefix).catch(()=>null)?['-DCMAKE_PREFIX_PATH='+dependencyPrefix]:[];
  const flags=[...dependencyFlags,'-DCMAKE_BUILD_TYPE=Release','-DWASMEDGE_BUILD_TESTS=OFF','-DWASMEDGE_BUILD_TOOLS=OFF','-DWASMEDGE_BUILD_PLUGINS=OFF','-DWASMEDGE_BUILD_SHARED_LIB=ON','-DWASMEDGE_BUILD_STATIC_LIB=OFF','-DWASMEDGE_USE_LLVM='+(jit?'ON':'OFF'),'-DCMAKE_INSTALL_PREFIX='+sdk];
  if(jit){flags.push('-DLLVM_DIR='+llvmDirectory);
-  const prefixes=[env.LLD_DIR,join(homedir(),'.cache/wasm-fyi/toolchains/lld-18/usr/lib/llvm-18/lib/cmake/lld'),'/usr/lib/llvm-18/lib/cmake/lld','/opt/homebrew/opt/llvm@18/lib/cmake/lld'].filter(Boolean);
+  const prefixes=[env.LLD_DIR,userPath('.cache/wasm-fyi/toolchains/lld-18/usr/lib/llvm-18/lib/cmake/lld'),'/usr/lib/llvm-18/lib/cmake/lld','/opt/homebrew/opt/llvm@18/lib/cmake/lld'].filter(Boolean);
   for(const directory of prefixes)if(await stat(join(directory,'LLDConfig.cmake')).catch(()=>null)){flags.push('-DLLD_DIR='+directory);break;}
  }
  flags.push(...wasmEdgeHostLinkFlags(env));

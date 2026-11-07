@@ -1,11 +1,11 @@
+import {userPath} from './lib/user-path.mjs';
 import { readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
-import { homedir } from 'node:os';
 import { command, digest, harness, locked } from './lib/wasmbench.mjs';
 import { patchHarness } from './lib/harness-patch.mjs';
 
 await locked(async () => {
-  const sdk=resolve(process.env.WASMBENCH_WASMER_SDK || join(homedir(),'.local/share/wasm-fyi/toolchains/wasmer-c-api-7.3.0/sdk'));
+  const sdk=resolve(process.env.WASMBENCH_WASMER_SDK || userPath('.local/share/wasm-fyi/toolchains/wasmer-c-api-7.3.0/sdk'));
   const manifest=JSON.parse(await readFile(join(sdk,'build.json')));
   if(manifest.version!=='7.3.0' || manifest.revision!=='35c10644f7b0aad6fd9458624ceb8429fe7413c4')throw new Error('Native adapters require the pinned managed Wasmer SDK');
   if(digest(await readFile(join(sdk,'lib',manifest.library)))!==manifest.librarySha256)throw new Error('SDK library differs from its build manifest');

@@ -301,7 +301,7 @@ exact `serve` command needed to recover.
 
 ## Local storage
 
-Default to the operating system's per-user application data/cache locations.
+Default to `~/.wasmfyi/data` and `~/.wasmfyi/cache`; install the CLI and its assets beneath the same `~/.wasmfyi` root.
 `--data` overrides the dataset location. An optional repository `wasmfyi.json`
 sets engine/corpus/port defaults; users need no configuration file for flag-based
 runs. Explicit flags override project settings, then per-user settings, then

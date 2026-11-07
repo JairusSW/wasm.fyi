@@ -154,12 +154,16 @@ func serveBenchmark(ctx context.Context, db api.BenchmarkStore, root, addr, asse
 	}
 	dashboardServer := handler.(interface {
 		EnableDashboard(string, string) error
+		EnableArtifacts(string) error
 		Close() error
 	})
+	defer dashboardServer.Close()
+	if e := dashboardServer.EnableArtifacts(root); e != nil {
+		return e
+	}
 	if e := dashboardServer.EnableDashboard(root, addr); e != nil {
 		return e
 	}
-	defer dashboardServer.Close()
 	if readOnly {
 		handler = api.ReadOnlyBenchmarks(handler)
 	}

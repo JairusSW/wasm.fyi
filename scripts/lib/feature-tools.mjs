@@ -1,6 +1,6 @@
+import {userPath} from './user-path.mjs';
 import { cp, mkdir, mkdtemp, readFile, readdir, realpath, readlink, rm, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
-import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { command, digest, exists, installDirectory, site } from './wasmbench.mjs';
 
@@ -22,7 +22,7 @@ export async function prepareFeatureTools(root,settings,ids) {
   if(!ids.some(id=>relevant.includes(id)))return;
   const platform=`${process.platform}-${process.arch}`,pins=settings.featureTools;
   if(!pins?.assets?.[platform])throw new Error('Feature toolchain is not pinned for '+platform);
-  const target=join(homedir(),'.local/share/wasm-fyi/toolchains/features-v1-'+platform);
+  const target=join(userPath('.local/share/wasm-fyi/toolchains/features-v1-')+platform);
   const identity=digest(JSON.stringify(pins)+await readFile(fileURLToPath(import.meta.url),'utf8'));
   const wamrFlags=['-DCMAKE_BUILD_TYPE=Release','-DWAMR_BUILD_AOT=0','-DWAMR_DISABLE_STACK_HW_BOUND_CHECK=1','-DWAMR_BUILD_FAST_INTERP=0','-DWAMR_BUILD_GC=1','-DWAMR_BUILD_EXCE_HANDLING=0','-DWAMR_BUILD_EXTENDED_CONST_EXPR=1','-DWAMR_BUILD_MEMORY64=1','-DWAMR_BUILD_SHARED_MEMORY=1','-DWAMR_BUILD_SIMD=1','-DWAMR_BUILD_TAIL_CALL=1','-DWAMR_BUILD_MULTI_MEMORY=1','-DWAMR_BUILD_LIBC_WASI=0','-DWAMR_BUILD_LIBC_BUILTIN=0','-DBUILD_SHARED_LIBS=ON'];
   const ready=await exists(join(target,'build.json')) && JSON.parse(await readFile(join(target,'build.json')));
@@ -88,7 +88,7 @@ export async function prepareFeatureTools(root,settings,ids) {
     }
   }
   if(ids.includes('wavm')) {
-    process.env.WASMBENCH_WAVM_SDK ||= join(homedir(),'.local/share/wasm-fyi/toolchains/wavm-nightly-2026-04-05/sdk');
+    process.env.WASMBENCH_WAVM_SDK ||= userPath('.local/share/wasm-fyi/toolchains/wavm-nightly-2026-04-05/sdk');
     process.env.WASMBENCH_WAVM_VERSION ||= 'nightly-2026-04-05-4e82bb9';
     if(!await exists(join(process.env.WASMBENCH_WAVM_SDK,'include/WAVM/wavm-c/wavm-c.h')))throw new Error('Install a WAVM SDK or set WASMBENCH_WAVM_SDK; no alternate engine will be substituted');
   }

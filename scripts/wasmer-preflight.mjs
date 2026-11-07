@@ -1,3 +1,4 @@
+import {userPath} from './lib/user-path.mjs';
 import { readFile, mkdir, writeFile, readdir } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import { homedir, hostname, platform, arch } from 'node:os';
@@ -11,7 +12,7 @@ const artifact = join(site, 'corpora/features/artifacts/core-num-integer-multipl
 const hashFile = async path => digest(await readFile(path));
 const quote = value => "'" + String(value).replaceAll("'", "'\\''") + "'";
 if (action === 'local') await locked(async () => {
-  const managed = join(homedir(), '.local/share/wasm-fyi/toolchains/wasmer-c-api-7.3.0/sdk');
+  const managed = userPath('.local/share/wasm-fyi/toolchains/wasmer-c-api-7.3.0/sdk');
   const sdk = resolve(process.env.WASMBENCH_WASMER_SDK || (await exists(join(managed,'build.json')) ? managed : join(homedir(), '.wasmer')));
   const library = join(sdk, 'lib', platform() === 'darwin' ? 'libwasmer.dylib' : 'libwasmer.so');
   const headers = {};
@@ -55,7 +56,7 @@ else if (action === 'hub') {
   const { hosts } = await config();
   const host = hosts.hub;
   if (!/^[a-zA-Z0-9_.@-]+$/.test(host.ssh) || !/^[a-zA-Z0-9_./-]+$/.test(host.workspace) || host.workspace.startsWith('/') || host.workspace.includes('..')) throw new Error('Invalid Hub preflight host settings');
-  const sockets = join(homedir(), '.cache/wasm-fyi/ssh'); await mkdir(sockets, { recursive: true });
+  const sockets = userPath('.cache/wasm-fyi/ssh'); await mkdir(sockets, { recursive: true });
   const options = ['-o','BatchMode=yes','-o','ConnectTimeout=15','-o','ServerAliveInterval=15','-o','ServerAliveCountMax=3','-o','ControlMaster=auto','-o','ControlPersist=600','-o', 'ControlPath=' + join(sockets,digest(Buffer.from(site)).slice(0,12))];
   const remote = host.workspace + '/wasmer-preflight-' + randomUUID();
   const ssh = (script, timeout=120_000) => command('ssh',[...options,host.ssh,'bash -lc ' + quote(script)],{timeout});

@@ -64,3 +64,14 @@ func TestLocalIdentityDoesNotAcceptRecycledPID(t *testing.T) {
 		}
 	}
 }
+
+func TestLocalDefaultsStayUnderHome(t *testing.T) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, cache := localDefaults()
+	if data != filepath.Join(home, ".wasmfyi", "data") || cache != filepath.Join(home, ".wasmfyi", "cache") {
+		t.Fatal(data, cache)
+	}
+}

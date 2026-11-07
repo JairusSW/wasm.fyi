@@ -194,8 +194,21 @@ Capture, resume, SSH workers, cached corpus builds and deployment: [benchmark co
 
 ## Local CLI
 
-On macOS or Linux, install from this checkout with `pnpm install --frozen-lockfile` followed by
-`just install-cli` (requires Node 22+, Go, Git, and pnpm). Add `~/.local/bin` to
+Install a prebuilt CLI on macOS or Linux (AMD64/ARM64):
+
+```sh
+curl -fsSL https://wasm.fyi/install.sh | sh
+export PATH="$HOME/.wasmfyi/bin:$PATH"
+wasmfyi doctor
+```
+
+The installer verifies SHA-256 checksums and installs the production build under
+`~/.wasmfyi`, preserving your results and caches. Re-run it to update. Installing
+requires neither Go nor pnpm; benchmarking needs Node.js 22+ and each selected
+runtime's build tools. No Go module release is published.
+
+For development, install from this checkout with `pnpm install --frozen-lockfile` followed by
+`just install-cli` (requires Node 22+, Go, Git, and pnpm). Add `~/.wasmfyi/bin` to
 `PATH`. Runtime builds also need their native toolchains; `wasmfyi doctor`
 shows what is installed. First builds download pinned sources and dependencies;
 subsequent runs reuse source, SDK, controller, and corpus artifacts.
@@ -211,6 +224,30 @@ The benchmark command saves to a private local SQLite database and starts a
 loopback website with a link to that exact run. It never uploads to wasm.fyi or
 imports production data. Use `--no-serve` to capture without a preview, or `-p 0`
 to choose an available port. `wasmfyi serve stop` stops a CLI-managed preview.
+
+All CLI-managed files live under `~/.wasmfyi`: `bin/` and `share/` contain the
+installation, `data/` contains SQLite results and preview state, and `cache/`
+contains downloaded modules, sources, SDKs, logs, and toolchain caches. Existing
+OS-wide Go/Rust installations are reused. `--data` and `--cache` remain explicit
+overrides; older CLI directories are left intact rather than deleting results.
+
+Public corpus modules are downloaded by exact SHA-256 and reused locally. If a
+module is missing, expired, or the server cannot be reached, the CLI builds it
+from source automatically using the native toolchain. `--offline` suppresses
+network access. Public binaries are retained for 90 days after publication.
+
+Use your own module without uploading it:
+
+```sh
+wasmfyi bench -e wago-railshot --wasm ./my-module.wasm --export benchmark --args '[192]' --expected '[3893430917]'
+```
+
+`--wasm` is repeatable; all modules use the supplied export/arguments/results.
+Arguments and results are unsigned 64-bit values (quote large integers); use
+`--expected '[]'` for a void result. For different entry points, floating-point,
+initialization, imports, or other oracle policies, use `--manifest ./workloads.json`
+with full workload contracts and artifact paths relative to that manifest.
+Custom inputs are frozen into the private local cache before capturing.
 
 For runtime development, snapshot your local checkout, including uncommitted
 source edits, without changing it:

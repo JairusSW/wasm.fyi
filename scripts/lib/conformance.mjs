@@ -1,7 +1,8 @@
+import {userPath} from './user-path.mjs';
 import {mkdir,readFile,readdir,writeFile} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {spawnSync} from 'node:child_process';
-import {homedir,hostname,platform,arch} from 'node:os';
+import {hostname,platform,arch} from 'node:os';
 import {command,digest,exists} from './wasmbench.mjs';
 import {releasedBuild,releaseSource,assertReleasedSource,githubReleases} from './release-policy.mjs';
 
@@ -10,7 +11,7 @@ export const suites={
   component:{repository:'WebAssembly/component-model',revision:'8b5c200fe8ef39d715849d4b9b5e03017c8ab62a',directory:'test',label:'Official Component Model WAST (including async)'},
   wasi:{repository:'WebAssembly/wasi-testsuite',revision:'e0aa527fab67f2f311882bcee4f62cc755433b73',directory:'tests',label:'Official WASI precompiled testsuite'}
 };
-export const conformanceCache=()=>process.env.WASMBENCH_CONFORMANCE_CACHE || join(homedir(),'.cache/wasm-fyi/conformance');
+export const conformanceCache=()=>process.env.WASMBENCH_CONFORMANCE_CACHE || userPath('.cache/wasm-fyi/conformance');
 export async function checkoutSuite(suite){
   const root=join(conformanceCache(),'sources',suite.repository.replace('/','-')+'-'+suite.revision);
   await mkdir(root,{recursive:true});

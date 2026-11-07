@@ -20,6 +20,7 @@ jobs:
             /service/
             /corpora/catalog.json
             /corpora/features/manifest.json
+            /static/install.sh
             /static/brand/
             /static/fonts/
           sparse-checkout-cone-mode: false
@@ -29,6 +30,11 @@ jobs:
       - uses: pnpm/action-setup@v4
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
+      - name: Test corpus downloads and private CLI inputs
+        run: >-
+          node --test scripts/local/artifacts.test.mjs
+          scripts/local/custom-workloads.test.mjs scripts/lib/user-path.test.mjs
+          scripts/corpus-build-all.test.mjs scripts/install-cli.test.mjs
       - name: Test live API clients and UI calculations
         run: >-
           pnpm exec vitest run src/lib/api
