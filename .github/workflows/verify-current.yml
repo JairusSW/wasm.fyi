@@ -34,6 +34,7 @@ jobs:
         run: >-
           node --test scripts/local/artifacts.test.mjs
           scripts/local/custom-workloads.test.mjs scripts/lib/user-path.test.mjs
+          scripts/lib/artifact-upload.test.mjs
           scripts/corpus-build-all.test.mjs scripts/install-cli.test.mjs
       - name: Test live API clients and UI calculations
         run: >-

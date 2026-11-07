@@ -1,5 +1,6 @@
 // Run after corpus generation, not during timing captures. No visitor can upload.
 import {readFile} from 'node:fs/promises';
+import {artifactUpload} from './lib/artifact-upload.mjs';
 import {resolve,dirname,basename} from 'node:path';
 import {parseCorpusJSON} from './lib/corpus.mjs';
 import {workloadContract} from './lib/workload-contract.mjs';
@@ -11,7 +12,7 @@ if(!manifests.length)throw Error('Usage: node scripts/publish-artifacts.mjs [--o
 const token=get('token-file')?(await readFile(get('token-file'),'utf8')).trim():process.env.WASMFYI_ADMIN_TOKEN;
 if(!token||token.length<32)throw Error('Set WASMFYI_ADMIN_TOKEN or --token-file (publishing token stays off the command line)');
 const headers={Authorization:'Bearer '+token,...(['localhost','127.0.0.1','[::1]'].includes(new URL(origin).hostname)?{'X-Real-IP':'127.0.0.1'}:{})};
-async function request(path,init){const response=await fetch(origin+path,{...init,headers:{...headers,...init?.headers},redirect:'error',signal:AbortSignal.timeout(60000)});if(!response.ok)throw Error('Artifact publication HTTP '+response.status+': '+(await response.text()).slice(0,512));await response.arrayBuffer()}
+async function request(path,init){await artifactUpload(origin+path,{...init,headers:{...headers,...init?.headers}})}
 const uploaded=new Set();let count=0;
 for(const file of manifests){
  const rows=parseCorpusJSON(await readFile(file,'utf8'));if(!Array.isArray(rows))throw Error('Manifest must contain workload contracts: '+file);
