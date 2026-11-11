@@ -159,7 +159,8 @@ class UiState {
 		this.filterRows.filter(c => !this.baseHide[c.id as CfgId] && !!viewData.hosts[this.machine].configurations[c.id as CfgId]),
 		{ ...this.runtimeFilters, rules: [...this.runtimeFilters.rules, ...(this.filterRows.some(c => c.values.pass != null) ? [{ metric: 'pass' as const, top: 100, limit: this.passRate }] : [])] }
 	));
-	shownHide: Partial<Record<CfgId,boolean>> = $derived({...this.baseHide,...Object.fromEntries(CFG.filter(c=>!this.filterMatches.has(c.id)).map(c=>[c.id,true]))});
+	runtimeFilterActive = $derived(!!this.runtimeFilters.name.trim() || this.runtimeFilters.rules.length > 0 || this.filterRows.some(c => c.values.pass != null));
+	shownHide: Partial<Record<CfgId,boolean>> = $derived(!this.runtimeFilterActive ? this.baseHide : {...this.baseHide,...Object.fromEntries(CFG.filter(c=>!this.filterMatches.has(c.id)).map(c=>[c.id,true]))});
 	baseline = $derived(comparisonBaseline(defaultConfig, CFG.filter(c => viewData.hosts[this.machine].configurations[c.id]).map(c => c.id)));
 	// Every workload counts equally in averages; no per-corpus weighting.
 	weighting = $state<'corpus' | 'workload'>('workload');
