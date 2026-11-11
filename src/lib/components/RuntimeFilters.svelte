@@ -7,7 +7,7 @@
  let search=$state(ui.runtimeFilters.name);
  let searchTimer:ReturnType<typeof setTimeout>|undefined;
  $effect(()=>{search=ui.runtimeFilters.name;clearTimeout(searchTimer)});
- onDestroy(()=>clearTimeout(searchTimer));
+ onDestroy(()=>{if(searchTimer)ui.runtimeFilters={...ui.runtimeFilters,name:search};clearTimeout(searchTimer)});
  function searchChanged(value:string){search=value;clearTimeout(searchTimer);searchTimer=setTimeout(()=>{ui.runtimeFilters={...ui.runtimeFilters,name:value}},250)}
  const count=$derived(ui.runtimeFilters.rules.length+(ui.runtimeFilters.name.trim()?1:0));
  function update(index:number,patch:Partial<RuntimeFilterRule>){ui.runtimeFilters={...ui.runtimeFilters,rules:ui.runtimeFilters.rules.map((r,i)=>i===index?{...r,...patch}:r)}}
@@ -15,10 +15,8 @@
 </script>
 <div class="filters">
  <div class="toolbar">
-  <button class="btn-small" aria-expanded={ui.filterOpen} aria-controls="runtime-filter-panel" onclick={()=>ui.filterOpen=!ui.filterOpen}>Runtime filters{count?` · ${count}`:''} <span aria-hidden="true">{ui.filterOpen?'▴':'▾'}</span></button>
   {#if count}<span class="small fg3" role="status">{ui.filterMatches.size} runtimes match</span><button class="clear" onclick={()=>ui.runtimeFilters=emptyRuntimeFilters()}>Clear filters</button>{/if}
  </div>
- {#if ui.filterOpen}
  <div id="runtime-filter-panel" class="panel">
   <label class="search">Runtime name, backend or version<input type="search" placeholder="e.g. wago, wasmtime, llvm" value={search} oninput={e=>searchChanged(e.currentTarget.value.slice(0,200))} maxlength="200" /></label>
   {#each ui.runtimeFilters.rules as rule,i (i)}
@@ -34,16 +32,14 @@
   <p class="small fg3">Ranks use latest {ui.filterFeatures?'feature':'main-corpus'} per-engine {ui.average==='mean'?'arithmetic means':'geometric means'} before runtime filtering. Shared-cohort comparisons are recalculated for the remaining engines. Pass rate always uses the full test set.</p>
   {#if count&&!ui.filterMatches.size}<p class="small">No runtimes match. Widen a rule or clear the filters.</p>{/if}
  </div>
- {/if}
 </div>
 <style>
- .filters{border-top:1px solid var(--line);padding-top:7px}
  .toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
  .panel{display:flex;flex-direction:column;gap:10px;padding:12px 0 4px;max-width:960px}
  label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--fg2);min-width:0}
  input,select{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line2);padding:6px 8px;min-width:0;border-radius:2px}
  input:focus-visible,select:focus-visible{outline:2px solid var(--fg3);outline-offset:2px}
- .search{max-width:440px}.rule{display:grid;grid-template-columns:2fr 1fr 1fr auto;align-items:end;gap:10px}
+ .search{max-width:none}.rule{display:grid;grid-template-columns:1fr 1fr;align-items:end;gap:10px}
  .clear{font-size:12px;text-decoration:underline;color:var(--fg2)}.remove{padding:7px 0}p{margin:0;line-height:1.5}
- @media(max-width:720px){.rule{grid-template-columns:1fr 1fr}.search{max-width:none}.remove{justify-self:start}}
+ @media(max-width:720px){.remove{justify-self:start}}
 </style>

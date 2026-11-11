@@ -96,6 +96,7 @@ const METRICS = ['compile', 'rssCompile', 'inst', 'rssInst', 'first', 'steady', 
 /** Each URL-backed field: its codec and the routes it belongs to (`*` = scope, every route). */
 const FIELDS = {
 	runtimeFilters: { codec: {param:'filter',def:emptyRuntimeFilters(),parse:parseRuntimeFilters,ser:JSON.stringify} as Codec<RuntimeFilters>, routes:'*' },
+	passRate: { codec: int('pass', 100, 0, 100), routes: '*' },
 	cohortMode: { codec: str('cohort', 'shared', ['shared', 'per-engine'] as const), routes: '*' },
 	average: { codec: str('avg', 'geo', ['geo', 'mean'] as const), routes: '*' },
 	deltaFormat: { codec: str('delta', 'percent', ['factor', 'percent'] as const), routes: '*' },
@@ -145,6 +146,8 @@ class UiState {
 	/** How workload results combine into one number. */
 	average = $state<'geo' | 'mean'>('geo');
 	runtimeFilters = $state<RuntimeFilters>(emptyRuntimeFilters());
+	/** Minimum measured workload pass rate required for a runtime to remain in the comparison. */
+	passRate = $state(100);
 	filterFeatures = $state(false);
 	filterOpen = $state(false);
 	filterRows = $derived(runtimeFilterRows(datasetView.current,this.machine,CFG,this.filterFeatures,this.average));
@@ -152,8 +155,8 @@ class UiState {
 		...this.hide,
 		...Object.fromEntries(CFG.filter((c) => (this.exec !== 'all' && execOf(c) !== this.exec) || (this.lang !== 'all' && langOf(c) !== this.lang)).map((c) => [c.id, true]))
 	});
-	filterMatches = $derived(filterRuntimes(this.filterRows.filter(c=>!this.baseHide[c.id as CfgId]&&!!viewData.hosts[this.machine].configurations[c.id as CfgId]),this.runtimeFilters));
-	shownHide: Partial<Record<CfgId,boolean>> = $derived(!this.runtimeFilters.name&&!this.runtimeFilters.rules.length?this.baseHide:{...this.baseHide,...Object.fromEntries(CFG.filter(c=>!this.filterMatches.has(c.id)).map(c=>[c.id,true]))});
+	filterMatches = $derived(filterRuntimes(this.filterRows.filter(c=>!this.baseHide[c.id as CfgId]&&!!viewData.hosts[this.machine].configurations[c.id as CfgId]),{...this.runtimeFilters,rules:[...this.runtimeFilters.rules,{metric:'pass',top:100,limit:this.passRate}]}));
+	shownHide: Partial<Record<CfgId,boolean>> = $derived({...this.baseHide,...Object.fromEntries(CFG.filter(c=>!this.filterMatches.has(c.id)).map(c=>[c.id,true]))});
 	baseline = $derived(comparisonBaseline(defaultConfig, CFG.filter(c => viewData.hosts[this.machine].configurations[c.id]).map(c => c.id)));
 	// Every workload counts equally in averages; no per-corpus weighting.
 	weighting = $state<'corpus' | 'workload'>('workload');

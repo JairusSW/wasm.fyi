@@ -15,10 +15,6 @@
 	import Select from './Select.svelte';
 	import { viewData } from '$lib/view-data';
 
-	const SNAP_OPTS = [
-		['s1', 'Latest snapshot'],
-	] as const;
-
 	$effect(() => {datasetView.machine=ui.machine;untrack(()=>{const count=viewData.history[ui.machine].points.length;ui.histTo=Math.max(0,count-1);ui.histFrom=Math.min(ui.histFrom,Math.max(0,count-1));});});
 	$effect(() => { if (ui.snap !== 's1') ui.snap = 's1'; });
 	const shown = $derived(CFG.filter((c) => !ui.scope.hide[c.id]));
@@ -39,6 +35,16 @@
 	// unfolded height in the page, so folding and unfolding never move the content below.
 	let sectionEl = $state<HTMLElement>();
 	let fullH = $state(0);
+	let filterToggle = $state<HTMLButtonElement>();
+	let filterClose = $state<HTMLButtonElement>();
+	let filterSidebar = $state<HTMLElement>();
+	let filterWasOpen = false;
+	const runtimeFilterCount = $derived(ui.runtimeFilters.rules.length + (ui.runtimeFilters.name.trim() ? 1 : 0));
+	$effect(() => {
+		if (ui.filterOpen && filterClose) filterClose.focus();
+		if (!ui.filterOpen && filterWasOpen) filterToggle?.focus();
+		filterWasOpen = ui.filterOpen;
+	});
 	$effect(() => {
 		if (!sentinel) return;
 		return observeSticky(sentinel,value=>{stuck=value});
@@ -136,6 +142,20 @@
 		ui.lang = 'all';
 		ui.hide = {};
 	}
+	function adjustPassRate(delta:number) { ui.passRate=Math.max(0,Math.min(100,ui.passRate+delta)); }
+	function setPassRate(value:string) {
+		const parsed=Number(value);
+		if(Number.isFinite(parsed))ui.passRate=Math.max(0,Math.min(100,Math.round(parsed)));
+	}
+	function filterKeydown(e:KeyboardEvent) {
+		if(e.key==='Escape'){ui.filterOpen=false;return;}
+		if(e.key!=='Tab'||!filterSidebar)return;
+		const focusable=[...filterSidebar.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),[tabindex]:not([tabindex="-1"])')];
+		if(!focusable.length){e.preventDefault();return;}
+		const first=focusable[0],last=focusable[focusable.length-1];
+		if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+		else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+	}
 
 	const advItems = $derived([
 		{ k: 'OS', v: MACH[ui.machine].os },
@@ -177,6 +197,9 @@
 	</button>
 	<div class="line" id="scope-controls">
 		<div class="main">
+			<button class="filter-toggle" bind:this={filterToggle} aria-expanded={ui.filterOpen} aria-controls={ui.filterOpen ? 'scope-filter-sidebar' : undefined} onclick={() => (ui.filterOpen = !ui.filterOpen)}>
+				<span aria-hidden="true">☷</span> Filters{runtimeFilterCount ? ` · ${runtimeFilterCount}` : ''}
+			</button>
 			<Select class="machine" label="Machine" options={Object.entries(MACH).map(([v, m]): [MachineId, string] => [v as MachineId, m.l])} value={ui.machine} onselect={(v) => (ui.machine = v)} />
 			<div class="exec" data-tip="Compilers: JIT, baseline & AOT">
 				<Seg options={[['all', 'All'], ['compiler', 'Compilers'], ['interpreter', 'Interpreters']]} value={ui.exec} onselect={setExec} disabled={execMissing} label="Execution model" />
@@ -186,7 +209,13 @@
 					<Seg options={[['all', 'All'], ...langs.map((l): [string, string] => [l, l])]} value={ui.lang} onselect={setLang} disabled={langMissing} label="Implementation language" />
 				</div>
 			{/if}
-			<Select class="snap" label="Snapshot" options={SNAP_OPTS.map(([v, l]) => [v, l] as [typeof ui.snap, string])} value={ui.snap} onselect={(v) => (ui.snap = v)} />
+			<div class="pass-rate" role="group" aria-label="Minimum pass rate">
+				<span class="small fg3">Pass rate</span>
+				<button class="pass-step" aria-label="Increase minimum pass rate" title="Increase minimum pass rate" onclick={() => adjustPassRate(1)} disabled={ui.passRate>=100}>↑</button>
+				<input aria-label="Minimum pass rate (%)" type="number" min="0" max="100" step="1" value={ui.passRate} oninput={e=>setPassRate(e.currentTarget.value)} />
+				<span class="small fg3" aria-hidden="true">%</span>
+				<button class="pass-step" aria-label="Decrease minimum pass rate" title="Decrease minimum pass rate" onclick={() => adjustPassRate(-1)} disabled={ui.passRate<=0}>↓</button>
+			</div>
 			<span class="mini" class:show={compact} aria-hidden={!compact} aria-label="{shown.length} of {CFG.length} runtimes shown">
 				<span class="swatches">{#each shown as c (c.id)}<Swatch color={c.col} bg={c.hollow ? 'transparent' : c.col} size={7} />{/each}</span>
 				<span class="small fg3">{shown.length}/{CFG.length}</span>
@@ -227,7 +256,6 @@
 			<button class="all" onclick={showAll} disabled={!someHidden}>Show all</button>
 			<button class="all" onclick={hideAll} disabled={!someShown}>Hide all</button>
 		</div>
-	<div class="runtime-filters" inert={compact}><RuntimeFilters /></div>
 		</div>
 	{#if ui.adv}
 		<div class="adv-grid">
@@ -237,11 +265,31 @@
 		</div>
 	{/if}
 </section>
+{#if ui.filterOpen}
+	<button class="filter-scrim" aria-label="Close filters" onclick={() => (ui.filterOpen = false)}></button>
+	<aside id="scope-filter-sidebar" class="filter-sidebar" bind:this={filterSidebar} role="dialog" aria-modal="true" aria-labelledby="scope-filter-title" onkeydown={filterKeydown}>
+		<header class="filter-header">
+			<h2 id="scope-filter-title">Filters</h2>
+			<button class="filter-close" bind:this={filterClose} aria-label="Close filters" onclick={() => (ui.filterOpen = false)}>×</button>
+		</header>
+		<div class="filter-body"><RuntimeFilters /></div>
+	</aside>
+{/if}
 </div>
 
 <style>
-	.runtime-filters{margin-top:8px}
-	@media(max-width:720px){section:not(.open) .runtime-filters{display:none}}
+	.filter-toggle,.filter-close {border:1px solid var(--line2);border-radius:2px;color:var(--fg);background:var(--bg);}
+	.filter-toggle{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;font-size:12px;white-space:nowrap}
+	.filter-toggle:hover,.filter-close:hover{border-color:var(--fg3)}
+	.filter-toggle:focus-visible,.filter-close:focus-visible,.filter-scrim:focus-visible{outline:2px solid var(--fg3);outline-offset:2px}
+	.filter-scrim{position:fixed;inset:0;z-index:39;background:rgb(0 0 0 / .42);border:0;animation:scrim-in .16s ease-out both}
+	.filter-sidebar{position:fixed;z-index:40;inset:0 0 0 auto;width:min(410px,92vw);height:100dvh;overflow:auto;background:var(--bg2);border-left:1px solid var(--line);box-shadow:-12px 0 36px rgb(0 0 0 / .28);padding:16px max(16px,env(safe-area-inset-right)) 24px 16px;animation:sidebar-in .2s cubic-bezier(.22,1,.36,1) both}
+	.filter-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+	.filter-header h2{margin:0;font-size:16px;font-weight:600}
+	.filter-close{width:30px;height:30px;font-size:22px;line-height:1}
+	.filter-body{padding-top:14px}
+	@keyframes sidebar-in{from{transform:translateX(24px);opacity:.8}to{transform:none;opacity:1}}
+	@keyframes scrim-in{from{opacity:0}to{opacity:1}}
 	section {
 		background: var(--bg2);
 		border-bottom: 1px solid var(--line);
@@ -362,6 +410,36 @@
 	.main :global(.machine) {
 		max-width: 100%;
 	}
+	.pass-rate {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		white-space: nowrap;
+	}
+	.pass-rate input {
+		width: 58px;
+		padding: 4px 5px;
+		text-align: right;
+		font: inherit;
+		font-variant-numeric: tabular-nums;
+		color: var(--fg);
+		background: var(--bg);
+		border: 1px solid var(--line2);
+		border-radius: 2px;
+	}
+	.pass-rate input::-webkit-inner-spin-button,.pass-rate input::-webkit-outer-spin-button {-webkit-appearance:none;margin:0}
+	.pass-rate input {appearance:textfield;-moz-appearance:textfield}
+	.pass-rate input:focus-visible,.pass-step:focus-visible {outline:2px solid var(--fg3);outline-offset:2px}
+	.pass-step {
+		width: 25px;
+		height: 25px;
+		border: 1px solid var(--line2);
+		border-radius: 2px;
+		color: var(--fg2);
+		font-size: 13px;
+		line-height: 1;
+	}
+	.pass-step:disabled {opacity:.4;cursor:default}
 	/* Runtime chips span the full bar width; each row stretches its chips to fill it. */
 	.chips {
 		display: flex;
@@ -511,10 +589,10 @@
 			align-items: stretch;
 			gap: 10px;
 		}
-		.main :global(.machine),
-		.main :global(.snap) {
+		.main :global(.machine) {
 			width: 100%;
 		}
+		.pass-rate {align-self:flex-start}
 		.chips {
 			gap: 6px;
 		}
