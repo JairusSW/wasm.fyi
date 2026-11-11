@@ -267,13 +267,13 @@
 </section>
 {#if ui.filterOpen}
 	<button class="filter-scrim" aria-label="Close filters" onclick={() => (ui.filterOpen = false)}></button>
-	<aside id="scope-filter-sidebar" class="filter-sidebar" bind:this={filterSidebar} role="dialog" aria-modal="true" aria-labelledby="scope-filter-title" onkeydown={filterKeydown}>
+	<div id="scope-filter-sidebar" class="filter-sidebar" bind:this={filterSidebar} role="dialog" aria-modal="true" aria-labelledby="scope-filter-title" onkeydown={filterKeydown}>
 		<header class="filter-header">
 			<h2 id="scope-filter-title">Filters</h2>
 			<button class="filter-close" bind:this={filterClose} aria-label="Close filters" onclick={() => (ui.filterOpen = false)}>×</button>
 		</header>
 		<div class="filter-body"><RuntimeFilters /></div>
-	</aside>
+	</div>
 {/if}
 </div>
 
