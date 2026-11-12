@@ -20,9 +20,14 @@ export function parseRuntimeFilters(raw: string): RuntimeFilters | undefined {
  }catch{return}
 }
 /** Top N% = ceil(N% × measured candidates), with every tie at the cutoff included. */
+/** Names match all typed words; commas separate alternatives. An empty query matches everything. */
+export function nameMatcher(query: string): (name: string) => boolean {
+ const alternatives=query.toLowerCase().split(',').map(part=>part.trim().split(/\s+/).filter(Boolean)).filter(words=>words.length);
+ return name=>!alternatives.length||alternatives.some(words=>words.every(word=>name.toLowerCase().includes(word)));
+}
 export function filterRuntimes(rows: readonly RuntimeFilterRow[], filters: RuntimeFilters): Set<string> {
- const alternatives=filters.name.toLowerCase().split(',').map(part=>part.trim().split(/\s+/).filter(Boolean)).filter(words=>words.length);
- const pool=rows.filter(row=>!alternatives.length||alternatives.some(words=>words.every(word=>row.name.toLowerCase().includes(word))));
+ const matches=nameMatcher(filters.name);
+ const pool=rows.filter(row=>matches(row.name));
  const valid=(v:number|null|undefined):v is number=>v!=null&&Number.isFinite(v)&&v>=0;
  const cutoffs=filters.rules.map(rule=>{
   const values=pool.map(row=>row.values[rule.metric]).filter(valid).sort((a,b)=>rule.metric==='pass'?b-a:a-b);

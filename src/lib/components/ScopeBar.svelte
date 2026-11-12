@@ -1,14 +1,17 @@
 <script lang="ts">
- import RuntimeFilters from './RuntimeFilters.svelte';
- import {emptyRuntimeFilters} from '$lib/runtime-filters';
- import {observeSticky} from '$lib/sticky';
- import {page} from '$app/state';
-	import {shortVersion} from '$lib/version-identity';
-	import { tipCard, tipWho } from '$lib/tip';
-	import { CFG, MACH, execOf, langOf, type Exec } from '$lib/data/runtimes';
+	/**
+	 * Comparison scope: one slim sticky bar. The host, a runtimes button that opens the filter
+	 * panel, the active constraints as removable pills, and the averaging choices. Everything that
+	 * narrows the runtime set lives in the panel; the bar only summarises it.
+	 */
+	import RuntimeFilters from './RuntimeFilters.svelte';
+	import { emptyRuntimeFilters, type FilterMetric } from '$lib/runtime-filters';
+	import { page } from '$app/state';
+	import { tipCard } from '$lib/tip';
+	import { CFG, MACH, execOf, langOf } from '$lib/data/runtimes';
 	import type { MachineId } from '$lib/data/types';
-	import {untrack} from 'svelte';
-	import {datasetView} from '$lib/api/view.svelte';
+	import { untrack } from 'svelte';
+	import { datasetView } from '$lib/api/view.svelte';
 	import { ui } from '$lib/state.svelte';
 	import Swatch from './Swatch.svelte';
 	import Seg from './Seg.svelte';
@@ -17,624 +20,561 @@
 
 	$effect(() => {datasetView.machine=ui.machine;untrack(()=>{const count=viewData.history[ui.machine].points.length;ui.histTo=Math.max(0,count-1);ui.histFrom=Math.min(ui.histFrom,Math.max(0,count-1));});});
 	$effect(() => { if (ui.snap !== 's1') ui.snap = 's1'; });
-	const shown = $derived(CFG.filter((c) => !ui.scope.hide[c.id]));
- const featureComparison=$derived(page.route.id==='/features');
- $effect(()=>{ui.filterFeatures=featureComparison});
-	// Phones collapse the scope controls behind a one-line summary.
-	let open = $state(false);
+	const featureComparison = $derived(page.route.id === '/features');
+	$effect(() => { ui.filterFeatures = featureComparison; });
 
-	// Desktop: the bar sticks to the top. Once scrolled past, the runtime chips fold into a
-	// swatch summary; hovering or focusing the bar, or scrolling back up, unfolds them.
-	let sentinel = $state<HTMLElement>();
-	let chipsEl = $state<HTMLElement>();
-	let stuck = $state(false);
-	let hovering = $state(false);
-	let focused = $state(false);
-	let chipsH = $state(0);
-	// Once the bar reaches the top it is pinned (position: fixed) and a placeholder keeps its full
-	// unfolded height in the page, so folding and unfolding never move the content below.
-	let sectionEl = $state<HTMLElement>();
-	let fullH = $state(0);
-	let filterToggle = $state<HTMLButtonElement>();
-	let filterClose = $state<HTMLButtonElement>();
-	let filterSidebar = $state<HTMLElement>();
-	let filterWasOpen = false;
-	const runtimeFilterCount = $derived(ui.runtimeFilters.rules.length + (ui.runtimeFilters.name.trim() ? 1 : 0));
-	$effect(() => {
-		if (ui.filterOpen && filterClose) filterClose.focus();
-		if (!ui.filterOpen && filterWasOpen) filterToggle?.focus();
-		filterWasOpen = ui.filterOpen;
-	});
-	$effect(() => {
-		if (!sentinel) return;
-		return observeSticky(sentinel,value=>{stuck=value});
-	});
-	const compact = $derived(stuck && !hovering && !focused && !ui.adv && !ui.filterOpen);
-	// Hover intent: unfold after a short rest, fold a moment after leaving, so brushing past
-	// the bar on the way to the page doesn't make it flicker.
-	let hoverTimer: ReturnType<typeof setTimeout> | undefined;
-	function enter() {
-		clearTimeout(hoverTimer);
-		hoverTimer = setTimeout(() => (hovering = true), 90);
-	}
-	function leave() {
-		clearTimeout(hoverTimer);
-		hoverTimer = setTimeout(() => (hovering = false), 320);
-	}
-	// Folding never changes layout: the bar keeps its height and only transforms and opacity
-	// animate (GPU-composited). The chips' height says how far the backdrop slides up.
-	$effect(() => {
-		if (!chipsEl || !sectionEl) return;
-		const ro = new ResizeObserver(entries => {
- for(const entry of entries){
-  const height=entry.borderBoxSize?.[0]?.blockSize??entry.contentRect.height;
-  if(entry.target===chipsEl)chipsH=height;
-  if(entry.target===sectionEl)fullH=height;
- }
-		});
-		ro.observe(chipsEl);
-		ro.observe(sectionEl);
-		return () => ro.disconnect();
-	});
-
-	// Filtered out by the execution-model or language switch rather than by its own chip.
-	const filteredOut = (c: (typeof CFG)[number]) => (ui.exec !== 'all' && execOf(c) !== ui.exec) || (ui.lang !== 'all' && langOf(c) !== ui.lang);
-	function toggle(id: (typeof CFG)[number]['id']) {
-		const c = CFG.find((x) => x.id === id)!;
-		// A chip outside the filters widens them to All and adds just that runtime.
-		if (filteredOut(c) || ((ui.runtimeFilters.name || ui.runtimeFilters.rules.length) && !ui.filterMatches.has(id))) {
-   ui.runtimeFilters=emptyRuntimeFilters();
-			ui.hide = { ...ui.scope.hide, [id]: false };
-			ui.exec = 'all';
-			ui.lang = 'all';
-			return;
-		}
-		ui.hide = { ...ui.hide, [id]: !ui.hide[id] };
-	}
-	function solo(e: MouseEvent, id: string) {
-  ui.runtimeFilters=emptyRuntimeFilters();
-		e.preventDefault();
-		const c = CFG.find((x) => x.id === id)!;
-		if (filteredOut(c)) {
-			ui.exec = 'all';
-			ui.lang = 'all';
-		}
-		ui.hide = Object.fromEntries(CFG.map((x) => [x.id, x.id !== id]));
-	}
-
-	// Execution filter: hides the other execution model on top of the per-runtime chips.
 	const onMachine = $derived(CFG.filter((c) => viewData.hosts[ui.machine].configurations[c.id]));
-	const execMissing = $derived((['compiler', 'interpreter'] as const).filter((k) => !onMachine.some((c) => execOf(c) === k)));
-	// Every chip counts, including runtimes with no results on this machine.
-	const someHidden = $derived(CFG.some((c) => ui.scope.hide[c.id]));
-	const someShown = $derived(CFG.some((c) => !ui.scope.hide[c.id]));
-	// A machine without the selected execution model would show an empty table.
+	const shown = $derived(onMachine.filter((c) => !ui.scope.hide[c.id]));
+
+	// A machine without the selected execution model or language would show an empty table.
 	$effect(() => {
-		// Wait for the machine's configurations to load; an empty list is not "missing".
-		if (onMachine.length && ui.exec !== 'all' && execMissing.includes(ui.exec)) untrack(() => (ui.exec = 'all'));
+		if (!onMachine.length) return;
+		untrack(() => {
+			if (ui.exec !== 'all' && !onMachine.some((c) => execOf(c) === ui.exec)) ui.exec = 'all';
+			if (ui.lang !== 'all' && !onMachine.some((c) => langOf(c) === ui.lang)) ui.lang = 'all';
+		});
 	});
-	function setExec(kind: Exec) {
-		ui.exec = kind;
-		ui.hide = {};
-	}
-	// Language filter: every implementation language among the runtimes, most runtimes first;
-	// languages with no results on this machine stay listed but disabled.
-	const langs = $derived.by(() => {
-		const counts = new Map<string, number>();
-		for (const c of CFG) counts.set(langOf(c), (counts.get(langOf(c)) ?? 0) + 1);
-		return [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([l]) => l);
+
+	const METRIC_SHORT: Record<FilterMetric, string> = { steady: 'execution', compile: 'compile', inst: 'instantiate', first: 'first call', rss: 'peak RSS', code: 'code size', pass: 'pass rate' };
+	const UNIT: Record<FilterMetric, string> = { steady: 'ms', compile: 'ms', inst: 'ms', first: 'ms', rss: 'MiB', code: 'KiB', pass: '%' };
+	const manualHidden = $derived(onMachine.filter((c) => ui.hide[c.id]).length);
+
+	/** Every constraint narrowing the comparison, each with its own undo. */
+	const pills = $derived.by(() => {
+		const out: { key: string; label: string; tip: string; clear: () => void }[] = [];
+		if (ui.exec !== 'all') out.push({ key: 'exec', label: ui.exec === 'compiler' ? 'Compilers' : 'Interpreters', tip: 'Execution model', clear: () => (ui.exec = 'all') });
+		if (ui.lang !== 'all') out.push({ key: 'lang', label: `Written in ${ui.lang}`, tip: 'Implementation language', clear: () => (ui.lang = 'all') });
+		if (ui.passRate > 0) out.push({ key: 'pass', label: ui.passRate === 100 ? 'Passes every workload' : `Passes ≥ ${ui.passRate}%`, tip: 'Minimum workload pass rate', clear: () => (ui.passRate = 0) });
+		const name = ui.runtimeFilters.name.trim();
+		if (name) out.push({ key: 'name', label: `“${name}”`, tip: 'Name, backend or version', clear: () => (ui.runtimeFilters = { ...ui.runtimeFilters, name: '' }) });
+		ui.runtimeFilters.rules.forEach((r, i) => {
+			const cap = r.limit == null ? '' : ` · ${r.metric === 'pass' ? '≥' : '≤'} ${r.limit} ${UNIT[r.metric]}`;
+			out.push({ key: `rule${i}`, label: `${r.top === 100 ? 'Any' : `Top ${r.top}%`} ${METRIC_SHORT[r.metric]}${cap}`, tip: 'Ranking rule', clear: () => (ui.runtimeFilters = { ...ui.runtimeFilters, rules: ui.runtimeFilters.rules.filter((_, k) => k !== i) }) });
+		});
+		if (manualHidden) out.push({ key: 'hidden', label: `${manualHidden} hidden by hand`, tip: 'Runtimes you switched off', clear: () => (ui.hide = {}) });
+		return out;
 	});
-	const langMissing = $derived(langs.filter((l) => !onMachine.some((c) => langOf(c) === l)));
-	$effect(() => {
-		if (onMachine.length && ui.lang !== 'all' && langMissing.includes(ui.lang)) untrack(() => (ui.lang = 'all'));
-	});
-	function setLang(lang: string) {
-		ui.lang = lang;
-		ui.hide = {};
-	}
-	// Hides every runtime so you can build a selection up chip by chip.
-	function hideAll() {
-		ui.hide = Object.fromEntries(CFG.map((x) => [x.id, true]));
-	}
-	function showAll() {
-  ui.runtimeFilters=emptyRuntimeFilters();
+	function resetAll() {
+		ui.runtimeFilters = emptyRuntimeFilters();
 		ui.exec = 'all';
 		ui.lang = 'all';
+		ui.passRate = 0;
 		ui.hide = {};
 	}
-	function adjustPassRate(delta:number) { ui.passRate=Math.max(0,Math.min(100,ui.passRate+delta)); }
-	function setPassRate(value:string) {
-		const parsed=Number(value);
-		if(Number.isFinite(parsed))ui.passRate=Math.max(0,Math.min(100,Math.round(parsed)));
+
+	// Filter panel: focus moves in on open and back to the trigger on close.
+	let trigger = $state<HTMLButtonElement>();
+	let panel = $state<HTMLElement>();
+	let wasOpen = false;
+	$effect(() => {
+		if (ui.filterOpen) queueMicrotask(() => panel?.querySelector<HTMLElement>('[data-autofocus]')?.focus());
+		if (!ui.filterOpen && wasOpen) trigger?.focus();
+		wasOpen = ui.filterOpen;
+	});
+	function panelKeydown(e: KeyboardEvent) {
+		if (e.key === 'Escape') { e.stopPropagation(); ui.filterOpen = false; return; }
+		if (e.key !== 'Tab' || !panel) return;
+		const focusable = [...panel.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),[tabindex]:not([tabindex="-1"])')];
+		if (!focusable.length) return;
+		const first = focusable[0], last = focusable[focusable.length - 1];
+		if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+		else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
 	}
-	function filterKeydown(e:KeyboardEvent) {
-		if(e.key==='Escape'){ui.filterOpen=false;return;}
-		if(e.key!=='Tab'||!filterSidebar)return;
-		const focusable=[...filterSidebar.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),[tabindex]:not([tabindex="-1"])')];
-		if(!focusable.length){e.preventDefault();return;}
-		const first=focusable[0],last=focusable[focusable.length-1];
-		if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
-		else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+	// "f" toggles the panel from anywhere outside a text field.
+	function globalKey(e: KeyboardEvent) {
+		const tag = (e.target as HTMLElement | null)?.tagName;
+		if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' || e.metaKey || e.ctrlKey || e.altKey) return;
+		if (e.key === 'f' || e.key === 'F') { e.preventDefault(); ui.filterOpen = !ui.filterOpen; }
+		if (e.key === 'Escape' && displayOpen) displayOpen = false;
 	}
 
-	const advItems = $derived([
-		{ k: 'OS', v: MACH[ui.machine].os },
-		{ k: 'Runtimes', v: Object.values(viewData.hosts[ui.machine].configurations).map(c=>c!.runtime+' '+shortVersion(c!.version)).join(' · ') },
-		{ k: 'Aggregation', v: (ui.average==='mean'?'mean':'geomean')+', every workload weighted equally · '+(ui.cohortMode==='shared'?'passed by every measured engine':'passed per engine') },
+	// Display menu: averaging, delta notation and the run settings behind every number.
+	let displayOpen = $state(false);
+	let displayEl = $state<HTMLElement>();
+	function outside(e: PointerEvent) {
+		if (displayOpen && displayEl && !displayEl.contains(e.target as Node)) displayOpen = false;
+	}
+	const runSettings = $derived([
+		{ k: 'OS', v: MACH[ui.machine]?.os ?? '—' },
 		{ k: 'Cache state', v: 'cold — no on-disk artifact cache' },
-		{ k: 'Compilation workers', v: 'Per-runtime configuration; CPU affinity uncontrolled' },
-		{ k: 'Warmup & sampling', v: 'Per-cell sealed report records launches, samples and warmups' },
-		{ k: 'Feature flags', v: 'Pinned adapter configuration in each sealed report; optional configurations separate' },
+		{ k: 'Compilation workers', v: 'per-runtime configuration; CPU affinity uncontrolled' },
+		{ k: 'Warmup & sampling', v: 'per-cell sealed report records launches, samples and warmups' },
+		{ k: 'Feature flags', v: 'pinned adapter configuration in each sealed report' },
 		{ k: 'Instrumentation', v: 'none in timing runs · memory from linked runs' },
-		{ k: 'Isolation', v: 'Scheduling, frequency and filesystem caches uncontrolled' }
+		{ k: 'Isolation', v: 'scheduling, frequency and filesystem caches uncontrolled' }
 	]);
+	let showRun = $state(false);
 </script>
 
-<div class="sentinel" bind:this={sentinel} aria-hidden="true"></div>
-<div class="slot" style:height={stuck ? `${fullH}px` : undefined}>
-<section
-	aria-label="Comparison scope"
-	class:open
-	class:compact
-	style:--chips-h="{chipsH}px"
-	bind:this={sectionEl}
-	class:stuck
-	onmouseenter={enter}
-	onmouseleave={leave}
-	onfocusin={() => (focused = true)}
-	onfocusout={(e) => (focused = e.currentTarget.contains(e.relatedTarget as Node))}
->
-	<div class="backdrop" aria-hidden="true"></div>
-	<button class="summary" aria-expanded={open} aria-controls="scope-controls" onclick={() => (open = !open)}>
-		<span class="swatches" aria-hidden="true">
-			{#each shown as c (c.id)}<Swatch color={c.col} bg={c.hollow ? 'transparent' : c.col} size={7} />{/each}
-		</span>
-		<span class="sum-text">
-			<span class="sum-machine">{MACH[ui.machine].l}</span>
-			<span class="sum-meta fg3">Latest snapshot · {shown.length}/{CFG.length} runtimes · Δ {ui.deltaFormat === 'factor' ? '×' : '%'}</span>
-		</span>
-		<span class="sum-action">{open ? 'Done' : 'Scope'}<span class="caret" aria-hidden="true">▾</span></span>
-	</button>
-	<div class="line" id="scope-controls">
-		<div class="main">
-			<button class="filter-toggle" bind:this={filterToggle} aria-expanded={ui.filterOpen} aria-controls={ui.filterOpen ? 'scope-filter-sidebar' : undefined} onclick={() => (ui.filterOpen = !ui.filterOpen)}>
-				<span aria-hidden="true">☷</span> Filters{runtimeFilterCount ? ` · ${runtimeFilterCount}` : ''}
-			</button>
+<svelte:window onkeydown={globalKey} onpointerdown={outside} />
+
+<section class="scope" aria-label="Comparison scope">
+	<div class="scope-row">
+		<div class="lead">
 			<Select class="machine" label="Machine" options={Object.entries(MACH).map(([v, m]): [MachineId, string] => [v as MachineId, m.l])} value={ui.machine} onselect={(v) => (ui.machine = v)} />
-			<div class="exec" data-tip="Compilers: JIT, baseline & AOT">
-				<Seg options={[['all', 'All'], ['compiler', 'Compilers'], ['interpreter', 'Interpreters']]} value={ui.exec} onselect={setExec} disabled={execMissing} label="Execution model" />
-			</div>
-			{#if langs.length > 1}
-				<div class="exec" data-tip="Language each runtime is implemented in">
-					<Seg options={[['all', 'All'], ...langs.map((l): [string, string] => [l, l])]} value={ui.lang} onselect={setLang} disabled={langMissing} label="Implementation language" />
-				</div>
-			{/if}
-			<div class="pass-rate" role="group" aria-label="Minimum pass rate">
-				<span class="small fg3">Pass rate</span>
-				<button class="pass-step" aria-label="Increase minimum pass rate" title="Increase minimum pass rate" onclick={() => adjustPassRate(1)} disabled={ui.passRate>=100}>↑</button>
-				<input aria-label="Minimum pass rate (%)" type="number" min="0" max="100" step="1" value={ui.passRate} oninput={e=>setPassRate(e.currentTarget.value)} />
-				<span class="small fg3" aria-hidden="true">%</span>
-				<button class="pass-step" aria-label="Decrease minimum pass rate" title="Decrease minimum pass rate" onclick={() => adjustPassRate(-1)} disabled={ui.passRate<=0}>↓</button>
-			</div>
-			<span class="mini" class:show={compact} aria-hidden={!compact} aria-label="{shown.length} of {CFG.length} runtimes shown">
-				<span class="swatches">{#each shown as c (c.id)}<Swatch color={c.col} bg={c.hollow ? 'transparent' : c.col} size={7} />{/each}</span>
-				<span class="small fg3">{shown.length}/{CFG.length}</span>
-			</span>
-		</div>
-		<div class="side">
-            <div class="delta-format">
-                <Seg options={[['per-engine', 'Passed per engine'], ['shared', 'Passed on all engines']]} value={ui.cohortMode} onselect={v=>ui.cohortMode=v as 'shared' | 'per-engine'} label="Average corpus selection" tips={[tipCard({ title: 'Each engine’s own passes', vis: 'cohort-each', note: 'green = averaged' }), tipCard({ title: featureComparison?'Passed by every selected engine':'Least-covered engine’s passing workloads', note: featureComparison?'Only contracts passed and measured by every selected engine enter feature comparisons. Dimmed, crossed-out cells are excluded.':'Use the smallest passing corpus set among shown engines. An average requires every workload in that reference set.' })]} />
-            </div>
-			<div class="delta-format">
-				<Seg options={[['geo', 'Geomean'], ['mean', 'Mean']]} value={ui.average} onselect={(v) => (ui.average = v as 'geo' | 'mean')} label="Average" tips={[tipCard({ title: 'Geometric mean', vis: 'avg-geo' }), tipCard({ title: 'Plain mean', vis: 'avg-mean' })]} />
-			</div>
-			<div class="delta-format">
-				<span class="small fg3">Deltas</span>
-				<Seg options={['factor', 'percent'].map(v=>[v as 'factor' | 'percent',v==='factor'?'×':'%'])} value={ui.deltaFormat} onselect={v=>ui.deltaFormat=v} label="Delta format" mono tips={[tipCard({ title: 'Deltas as factors', value: '1.30×' }), tipCard({ title: 'Deltas as percent', value: '+30%' })]} />
-			</div>
-			<button class="btn-small adv" aria-expanded={ui.adv} onclick={() => (ui.adv = !ui.adv)}>
-				{ui.adv ? 'Hide run settings' : 'Run settings'}
+			<button
+				class="runtimes"
+				class:none={onMachine.length > 0 && !shown.length}
+				bind:this={trigger}
+				aria-expanded={ui.filterOpen}
+				aria-controls="scope-filter-panel"
+				aria-keyshortcuts="f"
+				onclick={() => (ui.filterOpen = !ui.filterOpen)}
+				data-tip="Choose and filter runtimes · F"
+			>
+				<span class="strip" aria-hidden="true">
+					{#each onMachine as c (c.id)}
+						{@const on = !ui.scope.hide[c.id]}
+						<i class:off={!on} style:--c={c.col} class:hollow={c.hollow}></i>
+					{/each}
+				</span>
+				<span class="count"><b>{shown.length}</b><span class="fg3">/{onMachine.length}</span></span>
+				<span class="lbl">runtimes</span>
+				<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M4.5 8h7M7 12h2" /></svg>
 			</button>
+		</div>
+
+		<ul class="pills" aria-label="Active filters">
+			{#each pills as p (p.key)}
+				<li class="pill">
+					<button class="pill-body" onclick={() => (ui.filterOpen = true)} data-tip={p.tip}>{p.label}</button>
+					<button class="pill-x" aria-label="Remove filter: {p.label}" onclick={p.clear}>
+						<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 2l6 6M8 2l-6 6" /></svg>
+					</button>
+				</li>
+			{:else}
+				<li class="pill-none fg3">All runtimes on this host</li>
+			{/each}
+			{#if pills.length > 1}<li><button class="reset" onclick={resetAll}>Clear all</button></li>{/if}
+			{#if onMachine.length && !shown.length}<li class="empty" role="status">No runtime matches every filter</li>{/if}
+		</ul>
+
+		<div class="tail">
+			<div class="cohort">
+				<span class="cap fg3">Workloads</span>
+				<Seg
+					options={[['shared', 'Passed by all'], ['per-engine', 'Per engine']]}
+					value={ui.cohortMode}
+					onselect={(v) => (ui.cohortMode = v as 'shared' | 'per-engine')}
+					label="Workloads averaged"
+					tips={[
+						tipCard({ title: featureComparison ? 'Passed by every selected engine' : 'Workloads every shown engine passed', note: featureComparison ? 'Only contracts passed and measured by every selected engine enter feature comparisons. Dimmed, crossed-out cells are excluded.' : 'Every average covers the same workload set, so engines compare like for like.' }),
+						tipCard({ title: 'Each engine’s own passes', vis: 'cohort-each', note: 'green = averaged' })
+					]}
+				/>
+			</div>
+			<div class="display" bind:this={displayEl}>
+				<button class="disp-btn" aria-expanded={displayOpen} aria-haspopup="dialog" onclick={() => (displayOpen = !displayOpen)}>
+					<span>{ui.average === 'geo' ? 'Geomean' : 'Mean'}</span><span class="fg3 sep">·</span><span class="mono">{ui.deltaFormat === 'factor' ? '×' : '%'}</span>
+					<svg class="chev" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3.5l3 3 3-3" /></svg>
+				</button>
+				{#if displayOpen}
+					<div class="menu" role="dialog" aria-label="Display settings">
+						<div class="field">
+							<span class="cap">Average</span>
+							<Seg options={[['geo', 'Geometric'], ['mean', 'Arithmetic']]} value={ui.average} onselect={(v) => (ui.average = v as 'geo' | 'mean')} label="Average" tips={[tipCard({ title: 'Geometric mean', vis: 'avg-geo' }), tipCard({ title: 'Plain mean', vis: 'avg-mean' })]} />
+							<p class="hint">Every workload weighted equally.</p>
+						</div>
+						<div class="field">
+							<span class="cap">Differences</span>
+							<Seg options={[['percent', '+30%'], ['factor', '1.30×']]} value={ui.deltaFormat} onselect={(v) => (ui.deltaFormat = v as 'factor' | 'percent')} label="Delta format" mono />
+						</div>
+						<div class="field">
+							<button class="run-toggle" aria-expanded={showRun} onclick={() => (showRun = !showRun)}>
+								<svg class="chev" class:rot={showRun} viewBox="0 0 10 10" aria-hidden="true"><path d="M3.5 2l3 3-3 3" /></svg>
+								Run settings
+							</button>
+							{#if showRun}
+								<dl class="run">
+									{#each runSettings as a (a.k)}<dt>{a.k}</dt><dd>{a.v}</dd>{/each}
+								</dl>
+							{/if}
+						</div>
+					</div>
+				{/if}
+			</div>
 		</div>
 	</div>
-		<div class="chips-fold" aria-hidden={compact} bind:this={chipsEl}>
-		<div class="chips" id="scope-chips" role="group" aria-label="Runtimes shown" inert={compact}>
-			{#each CFG as c (c.id)}
-				{@const on = !ui.scope.hide[c.id]}
-				<button
-					class="chip"
-					class:off={!on}
-					aria-pressed={on}
-					onclick={() => toggle(c.id)}
-					ondblclick={(e) => solo(e, c.id)}
-					data-tip-card={tipCard({ who: tipWho(c, viewData.hosts[ui.machine].configurations[c.id]?.version || 'not collected'), note: c.kind, chips: on ? [] : ['hidden'], action: on ? 'hide · double-click to show only this' : 'show · double-click to solo' })}
-				>
-					<Swatch color={c.col} bg={c.hollow ? 'transparent' : c.col} />{c.rt}
-					<span class="be">{c.label ?? c.be}</span>
-				</button>
-			{/each}
-			<button class="all" onclick={showAll} disabled={!someHidden}>Show all</button>
-			<button class="all" onclick={hideAll} disabled={!someShown}>Hide all</button>
-		</div>
-		</div>
-	{#if ui.adv}
-		<div class="adv-grid">
-			{#each advItems as a (a.k)}
-				<div class="kv"><span class="small fg3">{a.k}</span><span class="mono">{a.v}</span></div>
-			{/each}
-		</div>
-	{/if}
 </section>
+
 {#if ui.filterOpen}
-	<button class="filter-scrim" aria-label="Close filters" onclick={() => (ui.filterOpen = false)}></button>
-	<div id="scope-filter-sidebar" class="filter-sidebar" bind:this={filterSidebar} role="dialog" aria-modal="true" aria-labelledby="scope-filter-title" onkeydown={filterKeydown}>
-		<header class="filter-header">
-			<h2 id="scope-filter-title">Filters</h2>
-			<button class="filter-close" bind:this={filterClose} aria-label="Close filters" onclick={() => (ui.filterOpen = false)}>×</button>
-		</header>
-		<div class="filter-body"><RuntimeFilters /></div>
+	<button class="scrim" tabindex="-1" aria-label="Close filters" onclick={() => (ui.filterOpen = false)}></button>
+	<div id="scope-filter-panel" class="fpanel" bind:this={panel} role="dialog" aria-modal="true" aria-labelledby="scope-filter-title" tabindex="-1" onkeydown={panelKeydown}>
+		<RuntimeFilters onclose={() => (ui.filterOpen = false)} />
 	</div>
 {/if}
-</div>
 
 <style>
-	.filter-toggle,.filter-close {border:1px solid var(--line2);border-radius:2px;color:var(--fg);background:var(--bg);}
-	.filter-toggle{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;font-size:12px;white-space:nowrap}
-	.filter-toggle:hover,.filter-close:hover{border-color:var(--fg3)}
-	.filter-toggle:focus-visible,.filter-close:focus-visible,.filter-scrim:focus-visible{outline:2px solid var(--fg3);outline-offset:2px}
-	.filter-scrim{position:fixed;inset:0;z-index:39;background:rgb(0 0 0 / .42);border:0;animation:scrim-in .16s ease-out both}
-	.filter-sidebar{position:fixed;z-index:40;inset:0 0 0 auto;width:min(410px,92vw);height:100dvh;overflow:auto;background:var(--bg2);border-left:1px solid var(--line);box-shadow:-12px 0 36px rgb(0 0 0 / .28);padding:16px max(16px,env(safe-area-inset-right)) 24px 16px;animation:sidebar-in .2s cubic-bezier(.22,1,.36,1) both}
-	.filter-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:14px;border-bottom:1px solid var(--line)}
-	.filter-header h2{margin:0;font-size:16px;font-weight:600}
-	.filter-close{width:30px;height:30px;font-size:22px;line-height:1}
-	.filter-body{padding-top:14px}
-	@keyframes sidebar-in{from{transform:translateX(24px);opacity:.8}to{transform:none;opacity:1}}
-	@keyframes scrim-in{from{opacity:0}to{opacity:1}}
-	section {
-		background: var(--bg2);
+	.scope {
+		position: sticky;
+		top: 0;
+		z-index: 20;
+		background: color-mix(in srgb, var(--bg2) 88%, transparent);
+		backdrop-filter: blur(10px) saturate(1.2);
+		-webkit-backdrop-filter: blur(10px) saturate(1.2);
 		border-bottom: 1px solid var(--line);
-		padding: 8px max(var(--gutter), env(safe-area-inset-right)) 8px max(var(--gutter), env(safe-area-inset-left));
+		padding: 0 max(var(--gutter), env(safe-area-inset-right)) 0 max(var(--gutter), env(safe-area-inset-left));
+	}
+	.scope-row {
 		display: flex;
-		flex-direction: column;
+		align-items: center;
+		gap: 12px;
+		min-height: 48px;
+	}
+	.lead,
+	.tail {
+		display: flex;
+		align-items: center;
 		gap: 8px;
-	}
-	.summary {
-		display: none;
-	}
-	.backdrop {
-		display: none;
-	}
-	@media (min-width: 721px) {
-		/* The backdrop (background, edge, shadow) is its own layer so it can slide; the section
-		   itself stays transparent and the same height whether folded or not. */
-		section {
-			position: relative;
-			z-index: 20;
-			background: transparent;
-			border-bottom: 0;
-			--ease: cubic-bezier(0.22, 1, 0.36, 1);
-			--fold: calc(var(--chips-h) + 8px);
-		}
-		section.stuck {
-			position: fixed;
-			top: 0;
-			left: 0;
-			right: 0;
-		}
-		.backdrop {
-			display: block;
-			position: absolute;
-			inset: 0;
-			z-index: -1;
-			background: var(--bg2);
-			border-bottom: 1px solid var(--line);
-			transition: transform 0.42s var(--ease), box-shadow 0.3s ease;
-			will-change: transform;
-		}
-		section.stuck .backdrop {
-			box-shadow: 0 6px 18px -10px rgb(0 0 0 / 0.55);
-		}
-		.chips-fold {
-			transition: opacity 0.28s var(--ease), transform 0.42s var(--ease);
-			will-change: transform, opacity;
-		}
-		/* Folded: the backdrop slides up to the controls line, the chips lift and fade, and the
-		   empty area lets the pointer through to the page. */
-		section.compact {
-			pointer-events: none;
-		}
-		section.compact .line {
-			pointer-events: auto;
-		}
-		section.compact .backdrop {
-			transform: translateY(calc(-1 * var(--fold)));
-		}
-		section.compact .chips-fold {
-			opacity: 0;
-			transform: translateY(-14px);
-		}
-	}
-	@media (prefers-reduced-motion: reduce) {
-		.backdrop,
-		.chips-fold,
-		.mini,
-		.chip {
-			transition: none !important;
-		}
-	}
-	.mini {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		cursor: default;
-		opacity: 0;
-		visibility: hidden;
-		transform: translateX(-8px);
-		transition: opacity 0.2s ease, transform 0.36s cubic-bezier(0.22, 1, 0.36, 1), visibility 0s linear 0.2s;
-	}
-	.mini.show {
-		opacity: 1;
-		visibility: visible;
-		transform: none;
-		transition: opacity 0.26s ease 0.08s, transform 0.36s cubic-bezier(0.22, 1, 0.36, 1) 0.08s, visibility 0s;
-	}
-	@media (max-width: 720px) {
-		.mini {
-			display: none;
-		}
-	}
-	.mini .swatches {
-		display: inline-flex;
-		gap: 2px;
-	}
-	.line {
-		display: flex;
-		gap: 8px 12px;
-		align-items: flex-start;
-	}
-	.main {
-		flex: 1;
-		min-width: 0;
-		display: flex;
-		flex-wrap: wrap;
-		gap: 8px 10px;
-		align-items: center;
-	}
-	.side {
 		flex: none;
-		display: flex;
-		gap: 10px;
-		align-items: center;
-		min-height: 26px;
 	}
-	.main :global(.machine) {
-		max-width: 100%;
+	.tail {
+		margin-left: auto;
+		gap: 12px;
 	}
-	.pass-rate {
+	.cap {
+		font-size: 11px;
+		letter-spacing: 0.02em;
+	}
+
+	/* Runtimes trigger: a strip of every runtime's colour, lit when shown. */
+	.runtimes {
 		display: inline-flex;
 		align-items: center;
-		gap: 5px;
-		white-space: nowrap;
-	}
-	.pass-rate input {
-		width: 58px;
-		padding: 4px 5px;
-		text-align: right;
-		font: inherit;
-		font-variant-numeric: tabular-nums;
-		color: var(--fg);
+		gap: 8px;
+		height: 30px;
+		padding: 0 10px;
+		border: 1px solid var(--line2);
 		background: var(--bg);
-		border: 1px solid var(--line2);
-		border-radius: 2px;
-	}
-	.pass-rate input::-webkit-inner-spin-button,.pass-rate input::-webkit-outer-spin-button {-webkit-appearance:none;margin:0}
-	.pass-rate input {appearance:textfield;-moz-appearance:textfield}
-	.pass-rate input:focus-visible,.pass-step:focus-visible {outline:2px solid var(--fg3);outline-offset:2px}
-	.pass-step {
-		width: 25px;
-		height: 25px;
-		border: 1px solid var(--line2);
-		border-radius: 2px;
-		color: var(--fg2);
-		font-size: 13px;
-		line-height: 1;
-	}
-	.pass-step:disabled {opacity:.4;cursor:default}
-	/* Runtime chips span the full bar width; each row stretches its chips to fill it. */
-	.chips {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 4px;
-		width: 100%;
-	}
-	/* Takes the spare space in the last row only, so a short last row keeps natural widths. */
-	.chips::after {
-		content: '';
-		flex: 1000 1 0;
-	}
-	.chip {
-		flex: 1 1 auto;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 5px;
-		border: 1px solid var(--line2);
-		padding: 2px 6px;
 		font-size: 12px;
-		transition: opacity 0.22s ease, border-color 0.22s ease, background-color 0.22s ease, transform 0.12s ease;
+		color: var(--fg);
+		transition: border-color 0.15s;
 	}
-	.chip:hover {
+	.runtimes:hover,
+	.runtimes[aria-expanded='true'] {
 		border-color: var(--fg3);
 	}
-	.chip:active {
-		transform: scale(0.97);
+	.strip {
+		display: inline-flex;
+		align-items: center;
+		gap: 1.5px;
+		max-width: 150px;
+		overflow: hidden;
 	}
-	.chip.off {
-		border-color: var(--line);
-		opacity: 0.4;
+	.strip i {
+		width: 4px;
+		height: 14px;
+		flex: none;
+		background: var(--c);
+		transition: height 0.2s ease, opacity 0.2s ease;
 	}
-	.be {
+	.strip i.hollow {
+		background: transparent;
+		box-shadow: inset 0 0 0 1px var(--c);
+	}
+	.strip i.off {
+		height: 4px;
+		opacity: 0.35;
+	}
+	.count {
+		font-family: var(--mono);
+		font-variant-numeric: tabular-nums;
+	}
+	.count b {
+		font-weight: 600;
+	}
+	.ico,
+	.chev {
+		width: 12px;
+		height: 12px;
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 1.5;
+		stroke-linecap: round;
 		color: var(--fg3);
-		font-size: 11px;
 	}
-	.all {
-		padding: 2px 4px;
-		font-size: 12px;
-		color: var(--fg2);
-		text-decoration: underline;
+	.chev {
+		width: 10px;
+		height: 10px;
+		transition: transform 0.15s;
 	}
-	.all:disabled {
-		color: var(--fg3);
-		opacity: 0.5;
-		text-decoration: none;
-		cursor: default;
+	.chev.rot {
+		transform: rotate(90deg);
 	}
-	.adv {
-		padding: 3px 9px;
-		white-space: nowrap;
-	}
-	.delta-format {
+
+	/* Active constraints. */
+	.pills {
+		list-style: none;
+		margin: 0;
+		padding: 0;
 		display: flex;
 		align-items: center;
 		gap: 6px;
+		min-width: 0;
+		flex: 1;
+		overflow-x: auto;
+		scrollbar-width: none;
+		mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+		padding-right: 24px;
 	}
-	.adv-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-		gap: 6px 18px;
+	.pills::-webkit-scrollbar {
+		display: none;
+	}
+	.pill {
+		display: inline-flex;
+		flex: none;
+		align-items: stretch;
+		height: 24px;
+		border: 1px solid var(--line2);
+		background: var(--bg3);
 		font-size: 12px;
-		border-top: 1px solid var(--line);
-		padding-top: 8px;
+		animation: pop 0.18s cubic-bezier(0.22, 1, 0.36, 1) both;
 	}
-	.kv {
+	.pill-body {
+		padding: 0 4px 0 8px;
+		color: var(--fg);
+		white-space: nowrap;
+	}
+	.pill-x {
+		display: grid;
+		place-items: center;
+		width: 22px;
+		color: var(--fg3);
+	}
+	.pill-x svg {
+		width: 9px;
+		height: 9px;
+		stroke: currentColor;
+		stroke-width: 1.6;
+		stroke-linecap: round;
+	}
+	.pill-x:hover {
+		color: var(--fg);
+		background: var(--hover);
+	}
+	.pill-none {
+		font-size: 12px;
+		white-space: nowrap;
+	}
+	.reset {
+		font-size: 12px;
+		color: var(--fg2);
+		white-space: nowrap;
+		padding: 0 4px;
+		text-decoration: underline;
+		text-decoration-color: var(--line2);
+		text-underline-offset: 3px;
+	}
+	.empty {
+		flex: none;
+		font-size: 12px;
+		color: var(--st-warn);
+		white-space: nowrap;
+	}
+	.runtimes.none .count b {
+		color: var(--st-warn);
+	}
+	.reset:hover {
+		color: var(--fg);
+	}
+	@keyframes pop {
+		from {
+			opacity: 0;
+			transform: scale(0.94);
+		}
+	}
+
+	.cohort {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	/* Display menu. */
+	.display {
+		position: relative;
+	}
+	.disp-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		height: 26px;
+		padding: 0 9px;
+		border: 1px solid var(--line2);
+		font-size: 12px;
+		color: var(--fg);
+	}
+	.disp-btn:hover,
+	.disp-btn[aria-expanded='true'] {
+		border-color: var(--fg3);
+	}
+	.sep {
+		margin: 0 -2px;
+	}
+	.menu {
+		position: absolute;
+		right: 0;
+		top: calc(100% + 6px);
+		z-index: 30;
+		width: 300px;
+		max-height: 70vh;
+		overflow: auto;
+		background: var(--bg2);
+		border: 1px solid var(--line2);
+		box-shadow: var(--shadow-float);
+		padding: 12px;
 		display: flex;
 		flex-direction: column;
-		min-width: 0;
+		gap: 14px;
+		animation: drop 0.16s cubic-bezier(0.22, 1, 0.36, 1) both;
 	}
-	.kv .mono {
+	@keyframes drop {
+		from {
+			opacity: 0;
+			transform: translateY(-4px);
+		}
+	}
+	.field {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 6px;
+	}
+	.field .cap {
+		color: var(--fg3);
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		font-size: 10.5px;
+	}
+	.hint {
+		margin: 0;
+		font-size: 11px;
+		color: var(--fg3);
+	}
+	.run-toggle {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 12px;
+		color: var(--fg2);
+	}
+	.run-toggle:hover {
+		color: var(--fg);
+	}
+	.run {
+		margin: 0;
+		display: grid;
+		grid-template-columns: auto 1fr;
+		gap: 4px 10px;
+		font-size: 11px;
+		border-top: 1px solid var(--line);
+		padding-top: 8px;
+		width: 100%;
+	}
+	.run dt {
+		color: var(--fg3);
+		white-space: nowrap;
+	}
+	.run dd {
+		margin: 0;
+		font-family: var(--mono);
 		overflow-wrap: anywhere;
 	}
 
-	@media (max-width: 720px) {
-		section {
-			padding: 0 max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left));
-			gap: 0;
+	/* Filter panel. */
+	.scrim {
+		position: fixed;
+		inset: 0;
+		z-index: 39;
+		border: 0;
+		background: rgb(0 0 0 / 0.38);
+		animation: fade 0.16s ease-out both;
+	}
+	.fpanel {
+		position: fixed;
+		z-index: 40;
+		inset: 0 0 0 auto;
+		width: min(440px, 100vw);
+		height: 100dvh;
+		background: var(--bg2);
+		border-left: 1px solid var(--line);
+		box-shadow: -16px 0 40px rgb(0 0 0 / 0.3);
+		animation: slide 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+		outline: none;
+	}
+	@keyframes slide {
+		from {
+			transform: translateX(32px);
+			opacity: 0.6;
 		}
-		.summary {
-			display: flex;
-			align-items: center;
-			gap: 10px;
-			width: 100%;
-			min-height: 48px;
-			padding: 6px 0;
-			text-align: left;
+	}
+	@keyframes fade {
+		from {
+			opacity: 0;
 		}
-		/* a compact two-row strip of the shown runtimes */
-		.swatches {
-			display: grid;
-			grid-auto-flow: column;
-			grid-template-rows: repeat(2, 7px);
-			gap: 3px;
-			flex: none;
-			max-width: 34vw;
-			overflow: hidden;
+	}
+	button:focus-visible {
+		outline: 2px solid var(--focus);
+		outline-offset: 1px;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.pill,
+		.menu,
+		.fpanel,
+		.scrim,
+		.strip i {
+			animation: none !important;
+			transition: none !important;
 		}
-		.sum-text {
-			display: flex;
-			flex-direction: column;
-			min-width: 0;
-			flex: 1;
-		}
-		.sum-machine,
-		.sum-meta {
-			white-space: nowrap;
-			overflow: hidden;
-			text-overflow: ellipsis;
-		}
-		.sum-machine {
-			font-size: 13px;
-		}
-		.sum-meta {
-			font-size: 11px;
-		}
-		.sum-action {
-			flex: none;
-			display: inline-flex;
-			align-items: center;
-			gap: 6px;
-			border: 1px solid var(--line2);
-			padding: 6px 10px;
-			font-size: 13px;
-			color: var(--fg2);
-		}
-		.caret {
-			font-size: 10px;
-			transition: transform 0.15s;
-		}
-		.open .caret {
-			transform: rotate(180deg);
-		}
-		.line {
+	}
+
+	@media (max-width: 1100px) {
+		.cohort .cap {
 			display: none;
-			flex-direction: column;
-			align-items: stretch;
-			gap: 12px;
-			padding: 4px 0 14px;
 		}
-		.open .line {
-			display: flex;
+	}
+	@media (max-width: 720px) {
+		.scope {
+			position: static;
+			padding: 8px max(16px, env(safe-area-inset-right)) 8px max(16px, env(safe-area-inset-left));
 		}
-		.main {
-			flex-direction: column;
-			align-items: stretch;
-			gap: 10px;
-		}
-		.main :global(.machine) {
-			width: 100%;
-		}
-		.pass-rate {align-self:flex-start}
-		.chips {
-			gap: 6px;
-		}
-		.chip {
-			padding: 7px 10px;
-			font-size: 13px;
-		}
-		.all {
-			padding: 7px 6px;
-			font-size: 13px;
-		}
-		/* the average-corpora toggle gets its own full-width row; the rest share the next one */
-		.side {
-			justify-content: space-between;
+		.scope-row {
 			flex-wrap: wrap;
-			gap: 10px;
+			gap: 8px;
+			min-height: 0;
 		}
-		.side > .delta-format:first-child {
+		.lead {
 			flex: 1 1 100%;
 		}
-		.side > .delta-format:first-child :global(.seg) {
-			display: flex;
-			flex-wrap: nowrap;
-			width: 100%;
-		}
-		.side > .delta-format:first-child :global(.seg button) {
+		.lead :global(.machine) {
 			flex: 1;
+			min-width: 0;
 		}
-		.adv {
-			padding: 7px 12px;
+		.runtimes {
+			height: 34px;
 		}
-		.adv-grid {
-			grid-template-columns: 1fr;
-			padding-bottom: 14px;
-			margin-top: -4px;
+		.strip {
+			max-width: 70px;
 		}
-		section:not(.open) .adv-grid,
-		section:not(.open) .chips {
+		.lbl {
 			display: none;
 		}
-		.chips {
-			padding-bottom: 14px;
+		.pills {
+			order: 3;
+			flex: 1 1 100%;
+		}
+		.tail {
+			order: 4;
+			margin-left: 0;
+			flex: 1 1 100%;
+			justify-content: space-between;
+		}
+		.menu {
+			position: fixed;
+			left: 16px;
+			right: 16px;
+			top: auto;
+			width: auto;
 		}
 	}
 </style>
