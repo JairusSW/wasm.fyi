@@ -1,6 +1,7 @@
 import {emptyRuntimeFilters, filterRuntimes, parseRuntimeFilters, type RuntimeFilters} from './runtime-filters';
 import {runtimeFilterRows} from './runtime-filter-data';
 import {datasetView} from './api/view.svelte';
+import {engineOrder} from './engine-order.svelte';
 // Global UI state. Filters are URL-backed: scope keys (machine, snapshot,
 // runtimes) persist across pages; page keys reset to their defaults when a
 // URL omits them, so any view can be shared by copying the address bar.
@@ -98,7 +99,8 @@ const FIELDS = {
 	runtimeFilters: { codec: {param:'filter',def:emptyRuntimeFilters(),parse:parseRuntimeFilters,ser:JSON.stringify} as Codec<RuntimeFilters>, routes:'*' },
 	passRate: { codec: int('pass', 100, 0, 100), routes: '*' },
 	cohortMode: { codec: str('cohort', 'shared', ['shared', 'per-engine'] as const), routes: '*' },
-	average: { codec: str('avg', 'geo', ['geo', 'mean'] as const), routes: '*' },
+	average: { codec: str('avg', 'mean', ['geo', 'mean'] as const), routes: '*' },
+	order: { codec: { param: 'order', def: [] as string[], parse: (s: string) => { const ids = [...new Set(s.split(',').filter(isCfg))]; return ids.length ? ids : undefined; }, ser: (v: string[]) => v.join(',') } as Codec<string[]>, routes: '*' },
 	deltaFormat: { codec: str('delta', 'percent', ['factor', 'percent'] as const), routes: '*' },
 	machine: { codec: str<MachineId>('m', 'm1', ['m1', 'm2', 'm3']), routes: '*' },
 	snap: { codec: str('snap', 's1', ['s1', 's2']), routes: '*' },
@@ -131,6 +133,20 @@ const FIELDS = {
 } satisfies Record<string, { codec: Codec<any>; routes: '*' | string[] }>;
 
 type Fields = typeof FIELDS;
+
+/**
+ * Server rendering does not memoize $derived, and every visibility check reads these rows, so a
+ * full workload scan per read made prerendering the workload matrix quadratic. Cache per dataset.
+ */
+let filterRowsCache: { view: unknown; key: string; rows: ReturnType<typeof runtimeFilterRows> } | undefined;
+function cachedFilterRows(machine: MachineId, features: boolean, average: 'geo' | 'mean') {
+	const view = datasetView.current;
+	const key = `${datasetView.generation}|${machine}|${features}|${average}|${CFG.map((c) => c.id).join()}`;
+	if (filterRowsCache?.view === view && filterRowsCache.key === key) return filterRowsCache.rows;
+	const rows = runtimeFilterRows(view, machine, CFG, features, average);
+	filterRowsCache = { view, key, rows };
+	return rows;
+}
 type FieldKey = keyof Fields;
 
 class UiState {
@@ -144,13 +160,16 @@ class UiState {
 	/** Implementation-language filter ('all' or a langOf group); combined like `exec`. */
 	lang = $state('all');
 	/** How workload results combine into one number. */
-	average = $state<'geo' | 'mean'>('geo');
+	average = $state<'geo' | 'mean'>('mean');
+	/** Reader-chosen engine order (empty = alphanumeric); lives in engineOrder so CFG can apply it. */
+	get order() { return engineOrder.ids; }
+	set order(ids: string[]) { engineOrder.ids = ids; }
 	runtimeFilters = $state<RuntimeFilters>(emptyRuntimeFilters());
 	/** Minimum measured workload pass rate required for a runtime to remain in the comparison. */
 	passRate = $state(100);
 	filterFeatures = $state(false);
 	filterOpen = $state(false);
-	filterRows = $derived(runtimeFilterRows(datasetView.current,this.machine,CFG,this.filterFeatures,this.average));
+	filterRows = $derived(cachedFilterRows(this.machine,this.filterFeatures,this.average));
 	baseHide: Partial<Record<CfgId,boolean>> = $derived({
 		...this.hide,
 		...Object.fromEntries(CFG.filter((c) => (this.exec !== 'all' && execOf(c) !== this.exec) || (this.lang !== 'all' && langOf(c) !== this.lang)).map((c) => [c.id, true]))

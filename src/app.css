@@ -533,3 +533,97 @@ td > .cellbtn::after {
 @media (prefers-reduced-motion: reduce) {
 	.skel { animation: none; }
 }
+
+/* Engine reordering (see engine-drag.ts). */
+.engine-draggable {
+	cursor: grab;
+}
+.engine-drag-active,
+.engine-drag-active * {
+	cursor: grabbing !important;
+	user-select: none;
+}
+.engine-dragging {
+	opacity: 0.3;
+}
+.engine-ghost {
+	position: fixed;
+	left: 0;
+	top: 0;
+	z-index: 1000;
+	pointer-events: none;
+	margin: 0;
+	box-sizing: border-box;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--bg2);
+	border: 1px solid var(--fg3);
+	box-shadow: var(--shadow-float);
+	opacity: 0.95;
+	list-style: none;
+}
+[data-drop='before'] {
+	box-shadow: inset 2px 0 0 var(--fg);
+}
+[data-drop='after'] {
+	box-shadow: inset -2px 0 0 var(--fg);
+}
+li[data-drop='before'] {
+	box-shadow: inset 0 2px 0 var(--fg);
+}
+li[data-drop='after'] {
+	box-shadow: inset 0 -2px 0 var(--fg);
+}
+.engine-drag-active [role='tooltip'] {
+	display: none !important;
+}
+
+/* Phones: numbers never wrap inside a cell, and names never split mid-word. Wide tables scroll
+   sideways inside their own container (.tbl-wrap / .ox) instead. */
+@media (max-width: 720px) {
+	table.mx td:not(.stick),
+	table.mx th:not(.stick),
+	table.t td.r,
+	table.t th.r,
+	table.t td.mono {
+		white-space: nowrap;
+	}
+	table.mx .stick {
+		min-width: 136px !important;
+		overflow-wrap: normal;
+	}
+	table.mx .stick .rl > :nth-child(2) {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.tbl-wrap,
+	.ox {
+		-webkit-overflow-scrolling: touch;
+		overscroll-behavior-x: contain;
+	}
+}
+/* iOS zooms into any focused field under 16px; keep text inputs at 16px on phones. */
+@media (max-width: 720px) {
+	input[type='search'],
+	input[type='text'],
+	input[type='number'],
+	select,
+	textarea {
+		font-size: 16px;
+	}
+}
+/* Phones: wide report tables keep their first (name) column in view while scrolling sideways. */
+@media (max-width: 720px) {
+	.ox > table.t th:first-child,
+	.ox > table.t td:first-child {
+		position: sticky;
+		left: 0;
+		z-index: 1;
+		background: var(--bg2);
+		max-width: 46vw;
+		box-shadow: 1px 0 0 var(--line2), 6px 0 8px -6px rgba(0, 0, 0, 0.3);
+	}
+}

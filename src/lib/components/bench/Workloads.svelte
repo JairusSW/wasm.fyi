@@ -11,6 +11,8 @@
 	import { siteHref } from '$lib/links';
 	import { goto } from '$lib/navigation';
 	import { CFG } from '$lib/data/runtimes';
+	import { engineDrag } from '$lib/engine-drag';
+	import { pinHead } from '$lib/pin-head';
 	import { BENCH, MET, PHASE_NOTE } from '$lib/data/snapshot';
 	import { ST } from '$lib/data/status';
 	import type { Bench, Cfg, MetricKey } from '$lib/data/types';
@@ -195,15 +197,18 @@
 </div>
 <div class="phase-note">{PHASE_NOTE[ui.metric]}</div>
 {#if apiView.phaseLoading}<p class="small fg3" role="status">Loading selected measurements…</p>{/if}
-<div class="tbl-wrap scroll" use:windowed.observe aria-busy={apiView.phaseLoading}>
-	<table class="mx wl-table" aria-rowcount={view.rows.length+1}>
+<div class="tbl-wrap scroll" use:windowed.observe use:pinHead aria-busy={apiView.phaseLoading}>
+	<table class="mx wl-table" aria-rowcount={view.rows.length+1} style:min-width="calc(var(--wl-w) + {Math.max(cols.length || 8, 6)} * 104px)">
+		<!-- Fixed layout: widths come from the columns, not from whichever rows are rendered, so
+		     scrolling the windowed body never resizes them. -->
+		<colgroup><col class="wl-col" />{#each cols as c (c.id)}<col />{/each}{#if !cols.length && skeleton}{#each { length: 8 } as _, k (k)}<col />{/each}{/if}</colgroup>
 		<thead>
 			<tr>
 				<th class="stick th-label wl">Workload</th>
 				{#each cols as c (c.id)}
 					{@const mark = ui.sortBy?.id === c.id ? (ui.sortBy.dir > 0 ? '↑' : '↓') : ''}
-					<th class="colh">
-						<button class="sort" onclick={() => sortClick(c)} aria-label="Sort by {c.rt} {c.be}">
+					<th class="colh" use:engineDrag={{ id: c.id, group: 'workload-cols' }}>
+						<button class="sort" onclick={() => sortClick(c)} aria-label="Sort by {c.rt} {c.be}" data-tip="Click to sort · drag to move · Alt+←/→">
 							<span class="rtn"><Swatch color={c.col} bg={c.hollow ? 'transparent' : c.col} />{c.rt}<span class="small fg3">{mark}</span></span>
 							<span class="mono micro fg3">{c.be}</span>
 						</button>
@@ -324,15 +329,21 @@
 		max-height: 68vh;
 	}
 	.wl-table {
-		min-width: 980px;
+		--wl-w: 280px;
+		table-layout: fixed;
+		width: 100%;
 	}
-	.wl {
-		min-width: 250px;
+	.wl-col {
+		width: var(--wl-w);
 	}
 	@media (max-width: 720px) {
 		.wl-table {
-			min-width: 760px;
+			--wl-w: 200px;
 		}
+	}
+	/* Follows the page's sticky bar while the page scrolls past the table (see pin-head.ts). */
+	.wl-table thead th {
+		top: var(--head-top, 0px);
 	}
 	.colh {
 		padding: 4px 10px;
@@ -344,6 +355,14 @@
 		align-items: flex-end;
 		gap: 1px;
 		margin-left: auto;
+		max-width: 100%;
+		min-width: 0;
+	}
+	.sort > span {
+		max-width: 100%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 	.rtn {
 		display: flex;

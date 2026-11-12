@@ -52,7 +52,7 @@ it('restores the initial history chart from its machine snapshot without a histo
  const {localDate}=await import('./calendar-date');
  const view=emptyView();view.configurations.A='wasmtime';view.hosts.m2.configurations.A={runtime:'wasmtime',version:'1',backend:'jit'};
  const summary={revision:'r',platforms:[platform,legacy]};
- const query=new URLSearchParams({platform:'apple',platforms:'apple',metric:'exec',engines:'wasmtime',baseline:'wasmtime',weighting:'workload',cohort:'shared',average:'geo',from:'2024-10-01',to:localDate()}).toString();
+ const query=new URLSearchParams({platform:'apple',platforms:'apple',metric:'exec',engines:'wasmtime',baseline:'wasmtime',weighting:'workload',cohort:'shared',average:'mean',from:'2024-10-01',to:localDate()}).toString();
  const result={revision:'history-r',platform:'apple',metric:'exec' as const,workloads:['applications/test'],items:['2026-10-01','2026-10-02'].map(date=>({date,lanes:[{engine:'wasmtime',value:1000,count:1,reference:1,version:'1',backend:'jit',latestCreated:date,fingerprint:'a'}]}))};
  const snapshot={schema:2 as const,revision:'r',machine:'m2' as const,path:'/history/',summary,view,slots:[],precomputed:{},loaded:[],phases:[],metadata:[['m2',JSON.stringify(['latest','latest'])]],history:{query,summary:result}} as import('./page-seed').BakedPageSeed;
  const request=vi.fn(async(path:string)=>{
@@ -71,10 +71,10 @@ it('restores the initial history chart from its machine snapshot without a histo
  ui.loadFromUrl(new URL('https://wasm.fyi/history/?m=m2'),'/history');
  expect(ui.histTo,'hydration keeps the full baked history window').toBe(1);
  expect(request.mock.calls.map(([path])=>path)).toEqual(['/api/summary','/data/startup/history/m2.json']);
- ui.average='mean';
+ ui.average='geo';
  await loadHistory({...ui.scope,machine:'m2',snapshot:'s1',metric:'steady'},'exec');
  expect(request.mock.calls).toHaveLength(3);
- expect(new URL(request.mock.calls[2][0],'https://wasm.fyi').searchParams.get('average')).toBe('mean');
+ expect(new URL(request.mock.calls[2][0],'https://wasm.fyi').searchParams.get('average')).toBe('geo');
  closeSite();
 });
 it('does not restore averages baked with an obsolete cohort policy',async()=>{

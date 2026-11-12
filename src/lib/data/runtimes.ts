@@ -2,6 +2,7 @@
 // registry remains descriptive; it is not a benchmark or conformance result.
 import {shortVersion,versionIdentity} from '../version-identity';
 import {datasetView} from '../api/view.svelte';
+import {engineOrder} from '../engine-order.svelte';
 import { viewData } from '../view-data';
 import type { Cfg, CfgId, Machine, MachineId, Runtime } from './types';
 
@@ -59,7 +60,18 @@ const aotCFG: Cfg[] = [
  {id:'U',rt:'w2c2',be:'GCC',ver:'not collected',kind:'C AOT · GCC',col:'var(--rt-w2c2)',hollow:false}
 ];
 const configurations: Cfg[] = [...applicationCFG,...additionalCFG,...aotCFG];
-export const CFG: readonly Cfg[] = new Proxy(configurations,{get:(target,key)=>{datasetView.generation;const value=Reflect.get(target,key);return typeof value==='function'?value.bind(target):value}});
+// Iterates in the reader's engine order when one is set; otherwise the array itself.
+let orderedCache:{ids:readonly string[];length:number;generation:number;view:Cfg[]}|undefined;
+function orderedConfigurations():Cfg[]{
+  const ids=engineOrder.ids;
+  if(!ids.length)return configurations;
+  const generation=datasetView.generation;
+  if(orderedCache&&orderedCache.ids===ids&&orderedCache.length===configurations.length&&orderedCache.generation===generation)return orderedCache.view;
+  const rank=new Map(ids.map((id,i)=>[id,i]));
+  const view=configurations.map((c,i)=>({c,i})).sort((a,b)=>(rank.get(a.c.id)??ids.length+a.i)-(rank.get(b.c.id)??ids.length+b.i)).map(x=>x.c);
+  orderedCache={ids,length:configurations.length,generation,view};return view;
+}
+export const CFG: readonly Cfg[] = new Proxy(configurations,{get:(_target,key)=>{datasetView.generation;const target=orderedConfigurations();const value=Reflect.get(target,key);return typeof value==='function'?value.bind(target):value}});
 export const FEATURE_CFG = CFG;
 /** Alphanumeric order with letters before digits, so wasm2go follows wasmtime and w2c2 follows wizard. */
 const alnum=(a:string,b:string)=>{

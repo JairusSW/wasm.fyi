@@ -5,25 +5,25 @@ vi.mock('./data/snapshot',()=>({SNAPS:[]}));
 vi.mock('./api/view.svelte',()=>({datasetView:{revision:''}}));
 import {ui} from './state.svelte';
 describe('engine filters before data loads',()=>{
- it('defaults to shared workloads and geometric mean on every comparison route',()=>{
-  expect(ui.cohortMode).toBe('shared');expect(ui.average).toBe('geo');
+ it('defaults to shared workloads and arithmetic mean on every comparison route',()=>{
+  expect(ui.cohortMode).toBe('shared');expect(ui.average).toBe('mean');
   for(const route of ['/benchmarks','/features','/history']){
    ui.loadFromUrl(new URL(`http://localhost${route}/`),route);
-   expect(ui.cohortMode).toBe('shared');expect(ui.average).toBe('geo');
+   expect(ui.cohortMode).toBe('shared');expect(ui.average).toBe('mean');
    const query=new URLSearchParams(ui.toSearch(route));
    expect(query.has('cohort')).toBe(false);expect(query.has('avg')).toBe(false);
   }
  });
- it('preserves explicit per-engine and arithmetic mean selections',()=>{
-  ui.loadFromUrl(new URL('http://localhost/benchmarks/?cohort=per-engine&avg=mean'),'/benchmarks');
+ it('preserves explicit per-engine and geometric mean selections',()=>{
+  ui.loadFromUrl(new URL('http://localhost/benchmarks/?cohort=per-engine&avg=geo'),'/benchmarks');
   const query=new URLSearchParams(ui.toSearch('/benchmarks'));
-  expect(query.get('cohort')).toBe('per-engine');expect(query.get('avg')).toBe('mean');
+  expect(query.get('cohort')).toBe('per-engine');expect(query.get('avg')).toBe('geo');
  });
  it('round-trips a dynamically loaded compiler in the shared feature comparison',()=>{
-  ui.loadFromUrl(new URL('http://localhost/features/?cohort=shared&avg=mean&m=m2&rt=G%2Cengine%3Aw2c2-gcc&view=perf'),'/features');
+  ui.loadFromUrl(new URL('http://localhost/features/?cohort=shared&avg=geo&m=m2&rt=G%2Cengine%3Aw2c2-gcc&view=perf'),'/features');
   const query=new URLSearchParams(ui.toSearch('/features'));
   expect(query.get('rt')).toBe('G,engine:w2c2-gcc');
-  expect(ui.cohortMode).toBe('shared');expect(query.has('cohort')).toBe(false);expect(query.get('avg')).toBe('mean');
+  expect(ui.cohortMode).toBe('shared');expect(query.has('cohort')).toBe(false);expect(query.get('avg')).toBe('geo');
  });
  it('round-trips runtime filter rules and rejects invalid URL values',()=>{
   const filter={name:'wago, llvm',rules:[{metric:'steady',top:10,limit:0.5},{metric:'pass',top:100,limit:95}]};

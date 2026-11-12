@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { siteHref } from '$lib/links';
 	import { tick } from 'svelte';
 	import Leaders from '$lib/components/bench/Leaders.svelte';
 	import Matrix from '$lib/components/bench/Matrix.svelte';
@@ -35,7 +34,6 @@
 <div class="head">
 	<h1>Benchmarks</h1>
 	<span class="s12 fg3">{ui.average === 'mean' ? 'Mean' : 'Geometric mean'} over {#if apiView.ready}{nShared}{:else}<span class="skel" style:width="3em"></span> application workloads{/if} · lower is better</span>
-	<a class="link-quiet push" href={siteHref(`/compare`)}>Startup vs throughput model →</a>
 </div>
 
 <Leaders onmetric={showMetric} onoverview={showOverview} />
@@ -56,8 +54,5 @@
 	}
 	.s12 {
 		font-size: 12px;
-	}
-	.push {
-		margin-left: auto;
 	}
 </style>

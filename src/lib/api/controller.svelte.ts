@@ -287,7 +287,7 @@ export async function bakePageSeed(origin:string,path:string,machine:MachineId='
  compactClient=new CompactClient((resource,options)=>fetch(new URL(String(resource),origin),options));
  summary=undefined;summaryCheckedAt=0;bakedMachines.clear();loadedMachines.clear();loadedPhases.clear();metadataMachines.clear();
  apiView.precomputed={};apiView.aggregateErrors={};datasetView.current=emptyView();
- ui.machine=machine;ui.hide={};ui.weighting='workload';ui.snap='s1';ui.cohortMode='shared';ui.average='geo';ui.metric='steady';ui.drawer=null;
+ ui.machine=machine;ui.hide={};ui.weighting='workload';ui.snap='s1';ui.cohortMode='shared';ui.average='mean';ui.metric='steady';ui.drawer=null;
  buildPath=path;
  try{
   await connectSite();

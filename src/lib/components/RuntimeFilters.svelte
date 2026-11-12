@@ -8,8 +8,11 @@
 	import { CFG, execOf, langOf, type Exec } from '$lib/data/runtimes';
 	import type { CfgId } from '$lib/data/types';
 	import { viewData } from '$lib/view-data';
-	import { emptyRuntimeFilters, nameMatcher, type FilterMetric, type RuntimeFilterRule } from '$lib/runtime-filters';
+	import { type FilterMetric, type RuntimeFilterRule } from '$lib/runtime-filters';
+	import { exclusions, passOf, resetScope, soloRuntime, toggleRuntime } from '$lib/runtime-scope';
 	import Seg from './Seg.svelte';
+	import { engineDrag } from '$lib/engine-drag';
+	import { flip } from 'svelte/animate';
 	import Swatch from './Swatch.svelte';
 
 	let { onclose }: { onclose: () => void } = $props();
@@ -40,8 +43,6 @@
 	const host = $derived(viewData.hosts[ui.machine].configurations);
 	const onMachine = $derived(CFG.filter((c) => host[c.id]));
 	const offMachine = $derived(CFG.filter((c) => !host[c.id]));
-	const rows = $derived(new Map(ui.filterRows.map((r) => [r.id, r])));
-	const passOf = (id: string) => rows.get(id)?.values.pass ?? null;
 	const shownCount = $derived(onMachine.filter((c) => !ui.scope.hide[c.id]).length);
 
 	const execCount = (k: 'compiler' | 'interpreter') => onMachine.filter((c) => execOf(c) === k).length;
@@ -51,55 +52,13 @@
 		return [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
 	});
 
-	type Why = { kind: 'shown' | 'manual' | 'exec' | 'lang' | 'pass' | 'name' | 'rank'; text: string };
-	/** Why a runtime on this host is in or out, naming the first constraint that removes it. */
-	const why = $derived.by(() => {
-		const matches = nameMatcher(ui.runtimeFilters.name);
-		const out = new Map<CfgId, Why>();
-		for (const c of onMachine) {
-			const pass = passOf(c.id);
-			let w: Why;
-			if (ui.exec !== 'all' && execOf(c) !== ui.exec) w = { kind: 'exec', text: execOf(c) === 'interpreter' ? 'interpreter' : 'compiler' };
-			else if (ui.lang !== 'all' && langOf(c) !== ui.lang) w = { kind: 'lang', text: langOf(c) };
-			else if (ui.hide[c.id]) w = { kind: 'manual', text: 'hidden' };
-			else if (!ui.scope.hide[c.id]) w = { kind: 'shown', text: '' };
-			else if (pass != null && pass < ui.passRate) w = { kind: 'pass', text: `below ${ui.passRate}%` };
-			else if (!matches(rows.get(c.id)?.name ?? c.rt)) w = { kind: 'name', text: 'name' };
-			else w = { kind: 'rank', text: 'outside ranking' };
-			out.set(c.id, w);
-		}
-		return out;
-	});
-
-	/** Show one runtime by lifting only the constraints that exclude it. */
-	function include(id: CfgId) {
-		const c = CFG.find((x) => x.id === id)!;
-		const w = why.get(id);
-		if (ui.exec !== 'all' && execOf(c) !== ui.exec) ui.exec = 'all';
-		if (ui.lang !== 'all' && langOf(c) !== ui.lang) ui.lang = 'all';
-		const pass = passOf(id);
-		if (pass != null && pass < ui.passRate) ui.passRate = Math.floor(pass);
-		if (w?.kind === 'name' || w?.kind === 'rank') ui.runtimeFilters = emptyRuntimeFilters();
-		ui.hide = { ...ui.hide, [id]: false };
-	}
-	function toggle(id: CfgId) {
-		if (why.get(id)?.kind === 'shown') ui.hide = { ...ui.hide, [id]: true };
-		else include(id);
-	}
-	function solo(id: CfgId) {
-		include(id);
-		ui.hide = Object.fromEntries(CFG.map((x) => [x.id, x.id !== id]));
-	}
+	const why = $derived(exclusions(onMachine.map((c) => c.id)));
+	const toggle = toggleRuntime;
+	const solo = soloRuntime;
 	const showAll = () => (ui.hide = {});
 	const hideAll = () => (ui.hide = Object.fromEntries(CFG.map((x) => [x.id, true])));
 	const invert = () => (ui.hide = Object.fromEntries(CFG.map((x) => [x.id, !ui.hide[x.id]])));
-	function reset() {
-		ui.runtimeFilters = emptyRuntimeFilters();
-		ui.exec = 'all';
-		ui.lang = 'all';
-		ui.passRate = 0;
-		ui.hide = {};
-	}
+	const reset = resetScope;
 
 	// Pass-rate dial: every runtime sits on the track at its own pass rate.
 	const ticks = $derived(onMachine.map((c) => ({ c, p: passOf(c.id) })).filter((t): t is { c: (typeof CFG)[number]; p: number } => t.p != null));
@@ -241,6 +200,7 @@
 					<button class="link" onclick={showAll}>All</button>
 					<button class="link" onclick={hideAll}>None</button>
 					<button class="link" onclick={invert}>Invert</button>
+					{#if ui.order.length}<button class="link" onclick={() => (ui.order = [])}>Reset order</button>{/if}
 				</span>
 			</h3>
 			<ul>
@@ -248,7 +208,7 @@
 					{@const w = why.get(c.id)}
 					{@const on = w?.kind === 'shown'}
 					{@const pass = passOf(c.id)}
-					<li class:on>
+					<li class:on animate:flip={{ duration: 200 }} use:engineDrag={{ id: c.id, group: 'panel', axis: 'y' }}>
 						<button class="rt" aria-pressed={on} onclick={() => toggle(c.id)} ondblclick={() => solo(c.id)}>
 							<span class="check" aria-hidden="true">
 								{#if on}<svg viewBox="0 0 12 12"><path d="M2.5 6.2l2.3 2.3 4.7-4.9" /></svg>{/if}
@@ -733,6 +693,11 @@
 		opacity: 1;
 		pointer-events: auto;
 	}
+	/* "only" takes the reason badge's place on hover rather than sitting on top of it. */
+	li:hover .why,
+	li:has(.only:focus-visible) .why {
+		visibility: hidden;
+	}
 	.only:hover {
 		color: var(--fg);
 		border-color: var(--fg3);
@@ -774,6 +739,72 @@
 	.rule input:focus-visible {
 		outline: 2px solid var(--focus);
 		outline-offset: 1px;
+	}
+	@media (max-width: 720px) {
+		header {
+			padding: 14px 16px 10px;
+		}
+		.body {
+			padding: 14px 16px 20px;
+		}
+		.search {
+			height: 44px;
+		}
+		.search input,
+		.rule select,
+		.rule input {
+			font-size: 16px;
+		}
+		.chip {
+			padding: 8px 12px;
+			font-size: 13px;
+		}
+		.chip.sm {
+			padding: 6px 12px;
+			font-size: 12.5px;
+		}
+		.rt {
+			padding: 11px 12px;
+			font-size: 14px;
+		}
+		.rule {
+			grid-template-columns: 56px minmax(0, 1fr) 36px;
+			row-gap: 8px;
+		}
+		.rule select:nth-of-type(2) {
+			grid-column: span 2;
+		}
+		.rm {
+			grid-column: 3;
+			width: 36px;
+			height: 36px;
+		}
+		.lim {
+			grid-column: 2 / span 2;
+		}
+		.lim input {
+			flex: 1;
+			width: auto;
+		}
+		input[type='range'] {
+			height: 28px;
+		}
+		input[type='range']::-webkit-slider-thumb {
+			width: 22px;
+			height: 22px;
+			margin-top: -9.5px;
+		}
+		footer {
+			padding: 10px 16px max(10px, env(safe-area-inset-bottom));
+		}
+		.done {
+			padding: 12px 18px;
+			font-size: 14px;
+		}
+		.link {
+			padding: 6px 0;
+			font-size: 13px;
+		}
 	}
 	@media (hover: none) {
 		kbd {
