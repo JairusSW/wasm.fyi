@@ -179,7 +179,21 @@ class UiState {
 		{ ...this.runtimeFilters, rules: [...this.runtimeFilters.rules, ...(this.filterRows.some(c => c.values.pass != null) ? [{ metric: 'pass' as const, top: 100, limit: this.passRate }] : [])] }
 	));
 	runtimeFilterActive = $derived(!!this.runtimeFilters.name.trim() || this.runtimeFilters.rules.length > 0 || this.filterRows.some(c => c.values.pass != null));
-	shownHide: Partial<Record<CfgId,boolean>> = $derived(!this.runtimeFilterActive ? this.baseHide : {...this.baseHide,...Object.fromEntries(CFG.filter(c=>!this.filterMatches.has(c.id)).map(c=>[c.id,true]))});
+	shownHide: Partial<Record<CfgId,boolean>> = $derived(this.cachedShownHide());
+	/**
+	 * Every cell reads scope.hide, and server rendering recomputes $derived on each read, so the
+	 * filter chain is cached on its inputs. All inputs are read before the cache check, so client
+	 * dependency tracking is unchanged.
+	 */
+	#shownCache: { inputs: unknown[]; value: Partial<Record<CfgId, boolean>> } | undefined;
+	private cachedShownHide(): Partial<Record<CfgId, boolean>> {
+		const inputs: unknown[] = [this.filterRows, this.hide, this.runtimeFilters, this.exec, this.lang, this.passRate, this.machine, datasetView.generation, CFG.length];
+		const hit = this.#shownCache;
+		if (hit && hit.inputs.length === inputs.length && hit.inputs.every((v, i) => v === inputs[i])) return hit.value;
+		const value = !this.runtimeFilterActive ? this.baseHide : { ...this.baseHide, ...Object.fromEntries(CFG.filter((c) => !this.filterMatches.has(c.id)).map((c) => [c.id, true])) };
+		this.#shownCache = { inputs, value };
+		return value;
+	}
 	baseline = $derived(comparisonBaseline(defaultConfig, CFG.filter(c => viewData.hosts[this.machine].configurations[c.id]).map(c => c.id)));
 	// Every workload counts equally in averages; no per-corpus weighting.
 	weighting = $state<'corpus' | 'workload'>('workload');
