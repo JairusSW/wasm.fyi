@@ -48,3 +48,40 @@ func TestBatchedAverageVariants(t *testing.T) {
 		}
 	}
 }
+
+// Averages accept every environment of one host and fill cells its newest
+// environment has not measured yet.
+func TestAggregatesMergeHostEnvironments(t *testing.T) {
+	db, err := sqldb.Open(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	put := func(kernel, captured, workload string, value float64) {
+		capture := benchdb.Capture{CapturedAt: captured, Platform: benchdb.Platform{OS: "linux", Arch: "amd64", CPU: "Fixture", Cores: 4, Kernel: kernel}}
+		capture.Results = []benchdb.Row{{Workload: workload, Wasm: "test.wasm", Artifact: strings.Repeat("a", 64), Contract: strings.Repeat("b", 63) + map[string]string{"applications/one": "1", "applications/two": "2"}[workload], Engine: "wasmtime", Version: "1", Backend: "cranelift", Phase: "steady", Status: "ok", Value: &value, MemoryStatus: "not-measured", CodeStatus: "not-measured"}}
+		if _, err := db.Put(context.Background(), capture); err != nil {
+			t.Fatal(err)
+		}
+	}
+	put("old", "2026-10-01T00:00:00Z", "applications/one", 100)
+	put("old", "2026-10-01T00:00:00Z", "applications/two", 400)
+	put("new", "2026-10-09T00:00:00Z", "applications/one", 100)
+	summary, err := db.Summary(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	ids := map[string]string{}
+	for _, p := range summary.Platforms {
+		ids[p.Kernel] = p.ID
+	}
+	handler, err := NewBenchmarks(db, strings.Repeat("x", 32), DefaultRequestLimits(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	response := request(t, handler, "GET", "/api/aggregates?platform="+ids["new"]+"&platforms="+ids["new"]+","+ids["old"]+"&metric=steady&average=mean&cohort=per-engine", nil, nil)
+	var result sqldb.AggregateResult
+	if response.Code != 200 || json.Unmarshal(response.Body.Bytes(), &result) != nil || len(result.Cards) != 1 || result.Cards[0].Count != 2 || len(result.Workloads) != 2 {
+		t.Fatal(response.Code, response.Body.String())
+	}
+}

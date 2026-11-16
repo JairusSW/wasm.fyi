@@ -15,6 +15,8 @@ import (
 type AggregateQuery struct {
 	Platform, Metric, Baseline, Weighting, Cohort, Average string
 	Engines                                                []string
+	// Platforms lists further environments of the same host, merged after Platform.
+	Platforms []string
 }
 type AggregateCard struct {
 	Engine            string          `json:"engine"`
@@ -212,13 +214,7 @@ func loadAggregateSnapshot(ctx context.Context, q queryer, pid int64) (*aggregat
 			out.engines[cfg.engine] = cfg
 		}
 	}
-	selected := out.rows[:0]
-	for _, r := range out.rows {
-		if out.engines[r.cfg.engine] == r.cfg {
-			selected = append(selected, r)
-		}
-	}
-	out.rows = selected
+	out.rows = latestAvailable(out.rows, out.engines)
 	return out, nil
 }
 func metricPhase(metric string) (string, string) {
@@ -317,29 +313,47 @@ func (s *Store) Aggregate(ctx context.Context, q AggregateQuery) (AggregateResul
 		return AggregateResult{}, e
 	}
 	defer tx.Rollback()
-	pid, e := platformLookup(ctx, tx, q.Platform)
-	if e != nil {
-		return AggregateResult{}, e
+	platforms := []string{q.Platform}
+	for _, p := range q.Platforms {
+		if p != q.Platform && !contains(platforms, p) {
+			platforms = append(platforms, p)
+		}
 	}
-	rev, e := revision(ctx, tx, fmt.Sprint("latest-revision/", pid))
-	if e != nil {
-		return AggregateResult{}, e
+	if len(platforms) > 16 {
+		return AggregateResult{}, wire.Invalid("too many platforms")
 	}
+	pids := make([]int64, len(platforms))
+	revs := make([]string, len(platforms))
+	for i, platform := range platforms {
+		if pids[i], e = platformLookup(ctx, tx, platform); e != nil {
+			return AggregateResult{}, e
+		}
+		if revs[i], e = revision(ctx, tx, fmt.Sprint("latest-revision/", pids[i])); e != nil {
+			return AggregateResult{}, e
+		}
+	}
+	rev := revs[0]
+	if len(platforms) > 1 {
+		rev = hash([]any{platforms, revs})
+	}
+	q.Platforms = platforms[1:]
 	key := "aggregate/" + rev + "/" + hash(q)
 	if cached, ok := s.aggregateHit(key); ok {
 		return cloneAggregate(*cached.result), nil
 	}
-	snapshotKey := "snapshot/" + q.Platform + "/" + rev
-	var snapshot *aggregateSnapshot
-	if cached, ok := s.aggregateHit(snapshotKey); ok {
-		snapshot = cached.snapshot
-	} else {
-		snapshot, e = loadAggregateSnapshot(ctx, tx, pid)
-		if e != nil {
+	parts := make([]*aggregateSnapshot, len(platforms))
+	for i, platform := range platforms {
+		snapshotKey := "snapshot/" + platform + "/" + revs[i]
+		if cached, ok := s.aggregateHit(snapshotKey); ok {
+			parts[i] = cached.snapshot
+			continue
+		}
+		if parts[i], e = loadAggregateSnapshot(ctx, tx, pids[i]); e != nil {
 			return AggregateResult{}, e
 		}
-		s.aggregateRemember(snapshotKey, aggregateCacheEntry{snapshot: snapshot, bytes: snapshot.bytes})
+		s.aggregateRemember(snapshotKey, aggregateCacheEntry{snapshot: parts[i], bytes: parts[i].bytes})
 	}
+	snapshot := mergeHistorySnapshots(parts)
 	result := computeAggregate(snapshot, q)
 	result.Revision = rev
 	result.Platform = q.Platform

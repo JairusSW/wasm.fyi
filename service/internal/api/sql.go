@@ -46,7 +46,7 @@ func (a *benchmarkAPI) serveSQL(w http.ResponseWriter, r *http.Request) bool {
 			fields += "|engine"
 		}
 	case "/api/aggregates":
-		fields += "|metric|metrics|engines|baseline|weighting|cohort|average"
+		fields += "|platforms|metric|metrics|engines|baseline|weighting|cohort|average"
 	case "/api/table":
 		fields += "|workload|engine|corpus|limit|offset|revision|phases|delta"
 	case "/api/matrix":
@@ -98,6 +98,9 @@ func (a *benchmarkAPI) serveSQL(w http.ResponseWriter, r *http.Request) bool {
 			average = "geo"
 		}
 		query := sqldb.AggregateQuery{Platform: q.Get("platform"), Metric: metric, Engines: engines, Baseline: q.Get("baseline"), Weighting: weighting, Cohort: cohort, Average: average}
+		if q.Get("platforms") != "" {
+			query.Platforms = strings.Split(q.Get("platforms"), ",")
+		}
 		if q.Get("metrics") == "" && average != "both" {
 			value, err = db.Aggregate(r.Context(), query)
 		} else {

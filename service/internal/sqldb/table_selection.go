@@ -25,8 +25,10 @@ func tableEngine(engine string) string {
 	return "wago"
 }
 
-// Match the frontend's pinned latest-version selection independently for feature
-// and application corpora. Failed fallback labels share their pinned source key.
+// Match the frontend's latest-available selection independently for feature and
+// application corpora: the newest pinned version per engine, with each cell it
+// has not measured yet taken from the most recent earlier version. Failed
+// fallback labels share their pinned source key.
 func activeTableCells(cells []Cell) []Cell {
 	configs := map[string]*aggregateConfiguration{}
 	chosen := map[string]*aggregateConfiguration{}
@@ -61,11 +63,31 @@ func activeTableCells(cells []Cell) []Cell {
 			chosen[groups[i]] = cfg
 		}
 	}
+	// Each cell comes from the engine's chosen configuration, or, until that
+	// configuration has measured it, from the most preferred earlier one.
+	best := map[string]int{}
+	for i, cell := range cells {
+		slot := groups[i] + "\x00" + cell.Workload + "\x00" + cell.Phase
+		j, ok := best[slot]
+		if !ok {
+			best[slot] = i
+			continue
+		}
+		a, b := configs[groups[i]+"\x00"+keys[i]], configs[groups[j]+"\x00"+keys[j]]
+		top := chosen[groups[i]]
+		if a == b {
+			if later(cell.CapturedAt, cells[j].CapturedAt) || cell.Backend == "turboshaft" && cells[j].Backend != "turboshaft" && !later(cells[j].CapturedAt, cell.CapturedAt) {
+				best[slot] = i
+			}
+		} else if a == top || b != top && (a.qualified && !b.qualified || a.qualified == b.qualified && (later(a.clock, b.clock) || !later(b.clock, a.clock) && a.key < b.key)) {
+			best[slot] = i
+		}
+	}
 	selected := make([]Cell, 0, len(cells))
 	corrected := map[string]bool{}
 	hasCorrected := map[string]bool{}
 	for i, cell := range cells {
-		if keys[i] != chosen[groups[i]].key {
+		if best[groups[i]+"\x00"+cell.Workload+"\x00"+cell.Phase] != i {
 			continue
 		}
 		selected = append(selected, cell)

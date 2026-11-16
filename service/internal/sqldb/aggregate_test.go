@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/JairusSW/wasm.fyi/service/internal/benchdb"
 	"math"
+	"strings"
 	"testing"
 )
 
@@ -107,7 +108,7 @@ func TestRSSAverageArithmeticPerPhaseLeastCoveredReference(t *testing.T) {
 		t.Fatal(r)
 	}
 }
-func TestAggregateNewestGlobalSnapshotExcludesOldFeatureCallsAndCacheMutation(t *testing.T) {
+func TestAggregateNewestSnapshotFallsBackPerWorkloadAndExcludesFeatureCalls(t *testing.T) {
 	ctx := context.Background()
 	s, e := Open(t.TempDir())
 	if e != nil {
@@ -139,7 +140,9 @@ func TestAggregateNewestGlobalSnapshotExcludesOldFeatureCallsAndCacheMutation(t 
 	}
 	q := AggregateQuery{Platform: hash(newest.Platform), Metric: "steady", Baseline: "wazero"}
 	r, e := s.Aggregate(ctx, q)
-	if e != nil || len(r.Workloads) != 1 || r.Workloads[0] != "apps/new" || len(r.Cards) != 1 || r.Cards[0].Count != 1 || r.Cards[0].Source.AsOf != src.AsOf {
+	// The newest source identifies the card; workloads it has not re-measured yet
+	// keep their latest earlier measurement. Feature and call cells stay out.
+	if e != nil || strings.Join(r.Workloads, ",") != "apps/new,apps/old-one,apps/old-two" || len(r.Cards) != 1 || r.Cards[0].Count != 3 || r.Cards[0].Source.AsOf != src.AsOf {
 		t.Fatal(r, e)
 	}
 	*r.Cards[0].Value = 999
@@ -147,7 +150,7 @@ func TestAggregateNewestGlobalSnapshotExcludesOldFeatureCallsAndCacheMutation(t 
 	r.Participants[0] = "mutated-engine"
 	r.Cards[0].Source.AsOf = "mutated"
 	again, e := s.Aggregate(ctx, q)
-	if e != nil || !closeFloat(*again.Cards[0].Value, 10) || again.Cards[0].Source.AsOf != src.AsOf || len(again.Workloads) != 1 || again.Workloads[0] != "apps/new" || len(again.Participants) != 1 || again.Participants[0] != "wazero" {
+	if e != nil || !closeFloat(*again.Cards[0].Value, 10) || again.Cards[0].Source.AsOf != src.AsOf || len(again.Workloads) != 3 || len(again.Participants) != 1 || again.Participants[0] != "wazero" {
 		t.Fatal(again, e)
 	}
 	newest.CapturedAt = "2026-10-11T00:00:00Z"
@@ -157,7 +160,7 @@ func TestAggregateNewestGlobalSnapshotExcludesOldFeatureCallsAndCacheMutation(t 
 		t.Fatal(e)
 	}
 	again, e = s.Aggregate(ctx, q)
-	if e != nil || !closeFloat(*again.Cards[0].Value, 25) || again.Revision == r.Revision {
+	if e != nil || !closeFloat(*again.Cards[0].Value, math.Cbrt(25*10*10)) || again.Revision == r.Revision {
 		t.Fatal(again, e)
 	}
 	var n int
@@ -331,5 +334,49 @@ func TestSharedGoRuntimeNonNestedPassSets(t *testing.T) {
 				t.Fatalf("%s: blank or mismatched shared average: %+v", metric, c)
 			}
 		}
+	}
+}
+
+// A host that gains a new environment identity mid-campaign keeps its earlier
+// results: the newest source labels the card, older cells fill the gaps.
+func TestAggregateMergesHostEnvironmentsWithLatestAvailableCells(t *testing.T) {
+	ctx := context.Background()
+	s, e := Open(t.TempDir())
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer s.Close()
+	put := func(c benchdb.Capture) {
+		if _, e := s.Put(ctx, c); e != nil {
+			t.Fatal(e)
+		}
+	}
+	older := fixture()
+	for i, name := range []string{"apps/one", "apps/two"} {
+		c := older
+		row := c.Results[0]
+		row.Workload, row.Contract, row.SamplesNs, row.Sampling, row.TimingSamples = name, fmt.Sprintf("%064x", 30+i), nil, nil, 0
+		c.Results = []benchdb.Row{row}
+		put(c)
+	}
+	newer := fixture()
+	newer.Platform.Kernel = "updated"
+	src := *newer.Source
+	src.AsOf = "2026-10-09T00:00:00Z"
+	newer.Source = &src
+	newer.CapturedAt = "2026-10-10T00:00:00Z"
+	row := newer.Results[0]
+	v := 40.0
+	row.Workload, row.Contract, row.Value, row.SamplesNs, row.Sampling, row.TimingSamples = "apps/one", fmt.Sprintf("%064x", 30), &v, nil, nil, 0
+	newer.Results = []benchdb.Row{row}
+	put(newer)
+
+	alone, e := s.Aggregate(ctx, AggregateQuery{Platform: hash(newer.Platform), Metric: "steady", Average: "mean"})
+	if e != nil || len(alone.Workloads) != 1 || alone.Cards[0].Count != 1 {
+		t.Fatal("newest environment alone", alone, e)
+	}
+	merged, e := s.Aggregate(ctx, AggregateQuery{Platform: hash(newer.Platform), Platforms: []string{hash(older.Platform)}, Metric: "steady", Average: "mean"})
+	if e != nil || strings.Join(merged.Workloads, ",") != "apps/one,apps/two" || len(merged.Cards) != 1 || merged.Cards[0].Count != 2 || merged.Cards[0].Source.AsOf != src.AsOf || !closeFloat(*merged.Cards[0].Value, 25) || merged.Revision == alone.Revision {
+		t.Fatal("merged environments", merged, e)
 	}
 }
