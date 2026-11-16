@@ -22,7 +22,7 @@ import type {ViewCell} from './view-contract';
 import {shortVersion} from '../version-identity';
 import {selectPlatformEngineVersions} from '../latency';
 import {platformGroups,historyPlatforms} from './platform-groups';
-import {machineLabel} from './machine-label';
+import {MACHINE_NAMES} from './machine-label';
 import {featureResults} from './feature-results';
 export type PageScope={machine:MachineId;snapshot:'s1'|'s2';metric:MetricKey;hide:Partial<Record<CfgId,boolean>>;baseline:CfgId;weighting:'corpus'|'workload';cohortMode?:'shared'|'per-engine';average?:'geo'|'mean';search?:string;tag?:string|null;sortBy?:{id:CfgId;dir:1|-1}|null;workload?:string};
 export const apiView=$state({baked:false,phaseLoading:false,serverAggregates:false,ready:false,loading:false,error:'',pageLoading:false,pageError:'',page:null as MatrixPage|null,cursors:[''],pageIndex:0,aggregates:{} as Record<string,Overview>,aggregateErrors:{} as Record<string,string>,coverage:{} as Partial<Record<CfgId,[number,number,number,number,number]>>,precomputed:{} as Record<string,CompactAggregate>,historyRevision:'',historyLoading:false,historyLoaded:{} as Partial<Record<MachineId,boolean>>});
@@ -204,7 +204,7 @@ export async function connectSite(_origin='',_revision?:string,retry=0){
    if(metadataMachines.get(ui.machine)===selectedRevision){apiView.ready=true;return}
    const view={...datasetView.current,hosts:{...datasetView.current.hosts},reports:{...datasetView.current.reports},statistics:{...datasetView.current.statistics}};
    for(const {machine,platforms:group} of platformGroups(platforms.items)){
-    const p=group[0] as Summary['platforms'][number];view.hosts[machine]={...view.hosts[machine],label:machineLabel(p.cpu),os:`${p.os}/${p.arch} · ${p.kernel}`,policy:{cores:String(p.cores),memory:p.memoryBytes?`${(p.memoryBytes/1024**3).toFixed(1)} GiB`:'not collected'},capturedAt:p.capturedAt,importedAt:p.importedAt,latestRows:p.latestRows};
+    const p=group[0] as Summary['platforms'][number];view.hosts[machine]={...view.hosts[machine],label:MACHINE_NAMES[machine],os:`${p.os}/${p.arch} · ${p.kernel}`,policy:{cores:String(p.cores),memory:p.memoryBytes?`${(p.memoryBytes/1024**3).toFixed(1)} GiB`:'not collected'},capturedAt:p.capturedAt,importedAt:p.importedAt,latestRows:p.latestRows};
    }
    const platform=platformTargets.find(target=>target.machine===ui.machine)!.platforms[0];
    const group=platformTargets.find(target=>target.machine===ui.machine)!.platforms;
@@ -225,7 +225,7 @@ export async function connectSite(_origin='',_revision?:string,retry=0){
   for(const {machine,platforms:group} of platformGroups(platforms.items)){
    const platform=group[0];
    const host=(machine===ui.machine?{...view.hosts[machine],configurations:reuse?{...view.hosts[machine].configurations}:{},snapshots:reuse?{s1:{...view.hosts[machine].snapshots.s1},s2:{...view.hosts[machine].snapshots.s2}}:{s1:{},s2:{}}}:{...view.hosts[machine]}) as typeof view.hosts[MachineId];
-   view.hosts[machine]=host;host.capturedAt=(platform as Summary['platforms'][number]).capturedAt;host.importedAt=(platform as Summary['platforms'][number]).importedAt;host.latestRows=(platform as Summary['platforms'][number]).latestRows;host.label=machineLabel(platform.cpu);host.os=`${platform.os}/${platform.arch} · ${platform.kernel}`;host.policy={cores:String(platform.cores),memory:platform.memoryBytes?`${(platform.memoryBytes/1024**3).toFixed(1)} GiB`:'not collected'};
+   view.hosts[machine]=host;host.capturedAt=(platform as Summary['platforms'][number]).capturedAt;host.importedAt=(platform as Summary['platforms'][number]).importedAt;host.latestRows=(platform as Summary['platforms'][number]).latestRows;host.label=MACHINE_NAMES[machine];host.os=`${platform.os}/${platform.arch} · ${platform.kernel}`;host.policy={cores:String(platform.cores),memory:platform.memoryBytes?`${(platform.memoryBytes/1024**3).toFixed(1)} GiB`:'not collected'};
    if(machine!==ui.machine)continue;
    view.featureVersions[machine]=[];
    const normalize=(row:ScalarResult):ScalarResult=>row.engine.startsWith('wago-')&&!isLocalComparison(row.engine)?{...row,engine:'wago'}:row;

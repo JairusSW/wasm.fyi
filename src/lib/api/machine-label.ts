@@ -1,7 +1,3 @@
-export function machineLabel(cpu:string):string {
- const apple=cpu.match(/Apple\s+(M\d+)\s*(Max|Pro|Ultra)?/i);
- if(apple)return ['Apple',apple[1].toUpperCase(),apple[2]?.toUpperCase()].filter(Boolean).join(' ');
- const ryzen=cpu.match(/AMD Ryzen\s+(?:\d\s+)?([\d]+[A-Za-z0-9]*)/i);
- if(ryzen)return 'AMD Ryzen '+ryzen[1].toUpperCase();
- return cpu.replace(/\s+\d+-Core Processor$/i,'').trim();
-}
+import type {MachineId} from '../data/types';
+/** The benchmark machines by name; shown before results load and after. */
+export const MACHINE_NAMES:Record<MachineId,string>={m1:'AMD Ryzen 7 7800X3D',m2:'Apple M4 Max',m3:'AMD Ryzen 9 5950X'};
