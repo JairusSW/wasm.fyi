@@ -22,6 +22,7 @@ test('binding upgrades the recorded dispatch label and is repeatable',async()=>{
   await mkdir(join(root,'adapters/native/src'),{recursive:true});await mkdir(join(root,'sdk'));
   await writeFile(join(root,'sdk/Cargo.toml'),sdk);await writeFile(join(root,'adapters/native/Cargo.toml'),manifest);
   const path=join(root,'adapters/native/src/main.rs');await writeFile(path,'"portable-dispatch; eager bytecode; no fuel; source-implemented proposals: memory64,simd"');
+  await writeFile(join(root,'adapters/native/src/wasmi.rs'),'let mut config = Config::default();\n        config.compilation_mode(CompilationMode::Eager);\n');
   await applyWasmiProposals(root,join(root,'sdk'));await applyWasmiProposals(root,join(root,'sdk'));
   assert.equal(await readFile(path,'utf8'),'"auto-dispatch; eager bytecode; no fuel; source-implemented proposals: memory64,simd"');
  }finally{await rm(root,{recursive:true,force:true})}

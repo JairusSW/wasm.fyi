@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {setTimeout as delay} from 'node:timers/promises';
-import {historyWorkloadFailure} from './lib/history-workload-failure.mjs';
+import {historyWorkloadFailure,workloadBudgetFor} from './lib/history-workload-failure.mjs';
 import {reusableCapture} from './lib/history-scope.mjs';
 
 const workload={id:'wago/coremark/2k-performance',sha256:'a'.repeat(64),artifactName:'coremark.wasm',abi:'core',export:'run',oracle:{expected:['1']}};
@@ -13,7 +13,9 @@ test('an expired workload budget produces terminal reusable zero-sample rows and
  const signal=AbortSignal.timeout(1);await delay(5);
  const error=new Error('Capture infrastructure failure: producer output incomplete',{cause:signal.reason});
  const {capture,note}=historyWorkloadFailure({workload,job,platform,error,signal,capturedAt:'2026-10-09T20:00:00.000Z'});
- assert.equal(note.kind,'timeout');assert.equal(note.budgetMs,300000);
+ // CoreMark is one of the workloads with the extended 15-minute budget.
+ assert.equal(note.kind,'timeout');assert.equal(note.budgetMs,900000);
+ assert.equal(workloadBudgetFor({id:'applications/audio-fir'}),300000);
  assert.equal(note.reason,String(error));assert.match(note.causes[1],/^TimeoutError:/);
  assert.equal(capture.capturedAt,note.capturedAt);
  assert.deepEqual(capture.results.map(row=>row.phase),['compile','instantiate','first-call','steady']);
