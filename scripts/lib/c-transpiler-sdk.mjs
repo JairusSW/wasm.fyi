@@ -1,4 +1,4 @@
-import {mkdir,readFile,readdir,cp,writeFile,chmod} from 'node:fs/promises';
+import {mkdir,readFile,readdir,cp,writeFile,chmod,stat} from 'node:fs/promises';
 import {join} from 'node:path';
 import {availableParallelism} from 'node:os';
 import {digest} from './wasmbench.mjs';
@@ -17,9 +17,28 @@ export async function packageWasm2cSIMDe({source,sdk,run}) {
  await cp(join(directory,'simde'),join(sdk,'include/simde'),{recursive:true});
  return {path:'third_party/simde',revision:pin.revision,headerSha256:digest(header),installed:'include/simde',submodules};
 }
+async function plannedW2c2Simde({sdk,env,run}) {
+ const campaignRoot=join(sdk,'../../..');
+ let plan;
+ try {plan=JSON.parse(await readFile(join(campaignRoot,'source-plan.json'),'utf8'));}
+ catch(error){if(error.code==='ENOENT')return null;throw error;}
+ const week=env.WASMFYI_HISTORY_WEEK||plan.weeks?.[0]?.end;
+ const pin=plan.pins?.find(candidate=>candidate.engine==='wasm2c'&&candidate.targetWeek===week&&['planned','reused'].includes(candidate.status));
+ if(!pin)return null;
+ const source=join(sdk,'../..',`${pin.configurations[0]}-${pin.targetType}-${pin.revision}`,'sources/wasm2c');
+ if(!await stat(source).catch(()=>null))return null;
+ let [dependency]=await verifySDKSubmodules(source,['third_party/simde'],run);
+ if(!dependency?.initialized){
+  await run('git',['submodule','update','--init','--recursive','--depth','1','--','third_party/simde'],{cwd:source});
+  [dependency]=await verifySDKSubmodules(source,['third_party/simde'],run);
+ }
+ if(!dependency?.initialized)throw Error('Pinned WABT SIMDe dependency is not initialized for W2C2');
+ return {source:join(source,'third_party/simde/simde'),revision:dependency.revision,repository:pin.repository,repositoryRevision:pin.revision,week};
+}
+
 // The SIMD fork's generated C needs transitive headers. Wait/notify also needs
 // the three futex translation units compiled with the same flags as the guest.
-export async function packageW2c2Runtime({source,sdk}) {
+export async function packageW2c2Runtime({source,sdk,simdeDependency=null}) {
  const files=[];
  async function copyFile(relative,installed=relative.replace(/^w2c2\//,'')) {
   const bytes=await readFile(join(source,relative));
@@ -42,7 +61,21 @@ export async function packageW2c2Runtime({source,sdk}) {
     else throw Error('Unsupported w2c2 SIMD dependency entry: '+child);
    }
   }
-  await copyTree('w2c2/simde');
+  if(await optional('w2c2/simde/wasm/simd128.h'))await copyTree('w2c2/simde');
+  else if(simdeDependency){
+   async function copyExternalTree(directory,relative='') {
+    for(const entry of (await readdir(join(directory,relative),{withFileTypes:true})).sort((a,b)=>a.name.localeCompare(b.name))) {
+     const child=relative?relative+'/'+entry.name:entry.name;
+     if(entry.isDirectory())await copyExternalTree(directory,child);
+     else if(entry.isFile()){
+      const bytes=await readFile(join(directory,child)),installed='simde/'+child;
+      await mkdir(join(sdk,installed,'..'),{recursive:true});await writeFile(join(sdk,installed),bytes);
+      files.push({source:simdeDependency.source+'/'+child,installed,sha256:digest(bytes)});
+     } else throw Error('Unsupported pinned W2C2 SIMDe entry: '+child);
+    }
+   }
+   await copyExternalTree(simdeDependency.source);
+  } else throw Error('W2C2 SIMD header requires a SIMDe tree, but neither its source nor pinned WABT provides one');
  }
  const nativeSources=[];
  if(await optional('futex/futex.c')) {
@@ -54,7 +87,7 @@ export async function packageW2c2Runtime({source,sdk}) {
    nativeSources.push(join(sdk,'futex',name+'.c'));
   }
  }
- return {files,nativeSources,nativeCompilePolicy:'compile runtime sources with the same bounds, SIMD and thread flags as generated guest C'};
+ return {files,nativeSources,...(simdeDependency?{simdeDependency}:{}),nativeCompilePolicy:'compile runtime sources with the same bounds, SIMD and thread flags as generated guest C'};
 }
 
 export async function buildCTranspilerSDK({source,sdk,target,engine,env,run}) {
@@ -83,7 +116,9 @@ export async function buildCTranspilerSDK({source,sdk,target,engine,env,run}) {
   }
   await run('cmake',['-S',join(source,'w2c2'),'-B',target,...flags]);await run('cmake',['--build',target,'--target','w2c2','--parallel',String(env.WASMFYI_BUILD_JOBS||availableParallelism())]);
   binary=join(target,'w2c2');await cp(binary,join(sdk,'bin/w2c2'));
-  runtimeSupport=await packageW2c2Runtime({source,sdk});
+  const localSimde=await stat(join(source,'w2c2/simde/wasm/simd128.h')).catch(()=>null);
+  const simdeDependency=localSimde?null:await plannedW2c2Simde({sdk,env,run});
+  runtimeSupport=await packageW2c2Runtime({source,sdk,simdeDependency});
  }
  env['WASMBENCH_'+engine.toUpperCase()]=join(sdk,'bin',engine);env['WASMBENCH_'+engine.toUpperCase()+'_SDK']=sdk;
  return {source,sdk,engine,flags,...(simde?{simde}:{}),...(runtimeSupport?{runtimeSupport}:{}),translator:env['WASMBENCH_'+engine.toUpperCase()],translatorSha256:digest(await readFile(binary))};

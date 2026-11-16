@@ -1,5 +1,5 @@
 [Unit]
-Description=Regenerate static wasm.fyi homepage after data publication
+Description=Regenerate baked wasm.fyi pages after data publication
 After=wasmfyi.service
 
 [Service]

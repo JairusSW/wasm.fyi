@@ -277,6 +277,13 @@ const wasmedgeRejections=[
  {revision:'bee78fc2e2fec55eb9e88f3d63463a3ba7eef0bb',feature:'compact-imports',reason:/malformed import kind/},
  // 0.18.1 retains the same five-kind loader and has no compact-import flag.
  {revision:'b2e483553ea7a1826be117180125c71e5d0b8958',feature:'compact-imports',reason:/malformed import kind/},
+ // This pinned SDK exposes no CompactImports proposal in its C API enum;
+ // its loader reports the source-confirmed MalformedImportKind diagnostic.
+ {revision:'fb93240ed45efe6b0ecc9417f8e08658e9e3b505',feature:'compact-imports',reason:/malformed import kind/},
+ // The interpreter returns RuntimeError for all four Wide Arithmetic opcodes
+ // and its LLVM compiler returns AOTNotImpl at this source revision.
+ {revision:'fb93240ed45efe6b0ecc9417f8e08658e9e3b505',engine:'wasmedge',feature:'wide-arithmetic',reason:/generic runtime error/},
+ {revision:'fb93240ed45efe6b0ecc9417f8e08658e9e3b505',engine:'wasmedge-jit',feature:'wide-arithmetic',reason:/Not implemented instructions in AOT\/JIT/},
  // The exact SDK proposal enum is the source of truth for these gaps. The
  // adapter enables every proposal exposed by that enum before validation.
  {feature:'shared-everything-threads',reason:/(?:integer representation too long|malformed mutability)/},
@@ -417,8 +424,8 @@ const graalWasmRejections=[
 ];
 
 // LibWasm Module/src/lib.rs exposes compile(bytes), with no feature switches.
-// At this revision parser.rs accepts import kinds 0..4 and memory flags 0x07;
-// validator.rs/instruction_tables.rs have no entries for these proposal opcodes.
+// The 0203ab20 and 770c596a pins both reject these exact encodings in
+// parser.rs/validator.rs; keep the runtime allowlist tied to those revisions.
 const libwasmRejections=[
  {feature:'wide-arithmetic',reason:/LibWasm compilation failed: Malformed\("illegal opcode 0xfc 0x1[3-6]"\)/},
  {feature:'compact-imports',reason:/LibWasm compilation failed: Malformed\("malformed import kind"\)/},
@@ -461,7 +468,7 @@ export function classifyFeatureRuntimeRejection({source,engine,workload,capture,
  const zwasm=source?.repository==='zwasm/zwasm'&&['zwasm-interpreter','zwasm-jit'].includes(engine);
  const endive=source?.repository==='bytecodealliance/endive'&&['endive-interpreter','endive-jit','endive-redline'].includes(engine);
  const graalwasm=source?.repository==='oracle/graal'&&engine==='graalwasm';
- const libwasm=source?.repository==='LadybirdBrowser/ladybird'&&source.revision==='0203ab20ca96c7f91cead4794053ee2d92df52c6'&&['libwasm','libwasm-jit'].includes(engine);
+ const libwasm=source?.repository==='LadybirdBrowser/ladybird'&&['0203ab20ca96c7f91cead4794053ee2d92df52c6','770c596a1c802e20d78fbf3725158f34cde61a79'].includes(source.revision)&&['libwasm','libwasm-jit'].includes(engine);
  if((!wasmtime&&!wago&&!wasmer&&!wazero&&!v8&&!wavm&&!spiderMonkey&&!jsc&&!wasmi&&!wamr&&!wasm3&&!w2c2&&!wasm2c&&!wazy&&!wasmedge&&!chicory&&!chasm&&!wizard&&!zwasm&&!endive&&!graalwasm&&!libwasm)||!/^[a-f0-9]{40}$/.test(source.revision||'')||!workload?.id?.startsWith('features/')||!sha(workload.sha256)||!capture?.results?.length)return null;
  if(capture.source?.revision!==source.revision||capture.source?.repository!==source.repository)return null;
  const contractSha256=workloadContract(workload),failed=capture.results.filter(row=>row.latencyStatus==='failed');

@@ -81,3 +81,12 @@ it('uses the newest host identity for duplicate cells and older identities only 
  expect(selectPlatformEngineVersions([current,old,oldOnly],['current','old'])).toEqual([current,oldOnly]);
  expect(selectPlatformEngineVersions([old,oldOnly,current],['current','old'])).toEqual([current,oldOnly]);
 });
+
+it('fills cells the newest engine version has not measured yet from earlier versions',()=>{
+ const oldBoth={...row('both','a',100),version:'1',capturedAt:'2026-10-01T00:00:00Z',platformId:'old'};
+ const oldOnly={...row('old-only','a',90),version:'1',capturedAt:'2026-10-01T00:00:00Z',platformId:'old'};
+ const latest={...row('both','a',5),version:'2',capturedAt:'2026-10-08T00:00:00Z',platformId:'current'};
+ expect(selectEngineVersions([oldBoth,oldOnly,latest])).toEqual([latest]);
+ expect(selectEngineVersions([oldBoth,oldOnly,latest],{},true)).toEqual([oldOnly,latest]);
+ expect(selectPlatformEngineVersions([oldBoth,oldOnly,latest],['current','old'])).toEqual([oldOnly,latest]);
+});

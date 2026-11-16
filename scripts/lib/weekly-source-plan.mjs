@@ -23,9 +23,27 @@ export async function planWeeklyEngine(engine,spec,calendar,upstream){
     const prior=(await upstream.commits(spec.repository,branch,week.end,1))[0];
     const until=nearestCommitSearchUntil(prior,week.end,sourceBounds);
     const candidates=[...([prior].filter(Boolean)),...(until===new Date(week.end).toISOString()?[]:await upstream.commits(spec.repository,branch,until,100,week.end))];
-    const selected=nearestCommit(candidates,week.end,sourceBounds);
+    let selected=nearestCommit(candidates,week.end,sourceBounds),ciStatus=null,fallbackFrom=null;
+    if(selected&&upstream.commitCI){
+     ciStatus=await upstream.commitCI(spec.repository,selected.sha);
+     if(ciStatus==='failed'||ciStatus==='pending'){
+      const history=await upstream.commits(spec.repository,branch,week.end,100);
+      const ordered=[...new Map(history.map(commit=>[commit.sha,commit])).values()]
+       .sort((a,b)=>Date.parse(b.commit?.committer?.date||b.commit?.author?.date||'')-Date.parse(a.commit?.committer?.date||a.commit?.author?.date||''));
+      const original=selected;
+      selected=null;
+      for(const candidate of ordered){
+       if(candidate.sha===original.sha)continue;
+       const eligible=nearestCommit([candidate],week.end,sourceBounds);
+       if(!eligible)continue;
+       const status=await upstream.commitCI(spec.repository,eligible.sha);
+       if(status==='failed'||status==='pending')continue;
+       selected=eligible;ciStatus=status;fallbackFrom=original.sha;break;
+      }
+     }
+    }
     if(!selected){pins.push({...base,targetType:'main',status:'unavailable',branch,reason:'No eligible default-branch commit existed by this weekly target within the one-year source-age limit.'});continue;}
-    pins.push({...base,targetType:'main',status:'planned',branch,revision:selected.sha.toLowerCase(),committedAt:selected.commit?.committer?.date||selected.commit?.author?.date,url:selected.html_url});
+    pins.push({...base,targetType:'main',status:'planned',branch,revision:selected.sha.toLowerCase(),committedAt:selected.commit?.committer?.date||selected.commit?.author?.date,url:selected.html_url,...(ciStatus?{ciStatus}:{}),...(fallbackFrom?{fallbackFrom}: {})});
    }
   }catch(error){pins.push({...base,status:'unavailable',reason:String(error.message||error)});}
  }

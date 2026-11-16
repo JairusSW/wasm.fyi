@@ -5,6 +5,7 @@ import {chicoryVectorOptions} from './lib/chicory-simd.mjs';
 import {rebuildWazeroSampling,assertWazeroInterruptsDisabled} from './lib/wazero-sampling.mjs';
 import {applyWasmEdgeFeaturePolicy} from './lib/wasmedge-feature-policy.mjs';
 import {applyWasmerCraneliftAdapter} from './lib/wasmer-cranelift-adapter.mjs';
+import {applyWasmiProposals} from './lib/wasmi-proposals.mjs';
 import {featureRepairPhases} from './lib/feature-repair-phases.mjs';
 import {upgradeFeatureHostProfileController} from './lib/feature-host-profile-policy.mjs';
 // Latest-only, source-bound compatibility followed by feature performance.
@@ -82,7 +83,8 @@ const inputIdentity=featureInputIdentity(suites);
 const ledgerPath=join(root,'ledger.json');const ledger=await readJSON(ledgerPath).catch(()=>({items:{},completedEngines:[]}));
 const state={status:'running',started:new Date().toISOString(),updated:'',current:null,completed:0,total:latest.reduce((n,p)=>n+p.configurations.filter(engine=>!selectedEngines.length||selectedEngines.includes(engine)).length,0),errors:[],inputIdentity,compatibilityWorkloads:suites.compatibility.length,performanceWorkloads:suites.performance.length+suites.compile.length+suites.lifecycle.length};
 const save=async()=>{state.updated=new Date().toISOString();await atomicJSON(join(root,'status.json'),state);await atomicJSON(ledgerPath,ledger)};
-const deadline=Infinity;
+const featureTimeBudget=Number(process.env.WASMFYI_FEATURE_TIME_BUDGET_MS||0);
+const deadline=featureTimeBudget>0?performance.now()+featureTimeBudget:Infinity;
 const platform=featureCampaignPlatform(template);
 const hostKey=digest(Buffer.from(JSON.stringify(platform)));
 const abort=writerAbort;
@@ -133,6 +135,20 @@ campaignLoop: for(const pin of latest)for(const engine of pin.configurations){
  }
  try{if(engine==='v8'){for(const name of await readdir(join(campaign,'sdk-builds')).catch(()=>[])){const dir=join(campaign,'sdk-builds',name),receipt=await readJSON(join(dir,'v8-build.json')).catch(()=>null);if(receipt?.pin?.revision===pin.revision){const release=await acquireFeatureProjectLock();let upgraded;try{upgraded=await ensureV8BindingPolicy(campaign,dir,receipt,{reserved:true,env:{...template.env,...plan.env,...job.env},featureJspi:true});const options=await runCommand(upgraded.env.WASMBENCH_NODE,['--v8-options'],{cwd:upgraded.root,env:{...process.env,...template.env,...upgraded.env,NODE_OPTIONS:''}});v8AvailableFlags=availableV8FeatureFlags(options.output);await atomicJSON(join(root,'binding-repairs/v8-available-feature-flags.json'),{revision:pin.revision,nodeSha256:upgraded.provenance.nodeSha256,flags:v8AvailableFlags,checkedAt:new Date().toISOString()})}finally{await release()};job={...job,controller:upgraded.controller,harness:upgraded.root,env:{...job.env,...upgraded.env},backend:'turboshaft'};break;}}}}catch(error){if(error.code==='FEATURE_PROJECT_OCCUPIED')throw error;state.errors.push({engine,kind:'adapter-binding-migration',error:String(error),source:job.source});await atomicJSON(join(root,'binding-repairs',engine+'.json'),{status:'repair-pending',source:job.source,error:String(error)});state.completed++;await save();continue;}
  const controller=job.controller||plan.controller,harness=job.harness||plan.harness;
+ if(repairEngines.includes(engine)&&engine==='wasmi'){
+  const release=await acquireFeatureProjectLock();
+  try{
+   const buildEnv={...process.env,...template.env,...plan.env,...job.env,GOWORK:'off',GOFLAGS:'-buildvcs=false'};
+   const manifestPath=join(harness,'adapters/native/Cargo.toml'),manifest=await readFile(manifestPath,'utf8');
+   const sdkPath=/^wasmi\s*=\s*\{[^\n]*\bpath\s*=\s*"([^"]+)"/m.exec(manifest)?.[1];
+   if(!sdkPath)throw Error('Pinned Wasmi SDK path is missing from the feature binding');
+   const sdk=resolve(harness,sdkPath);
+   await applyWasmiProposals(harness,sdk);
+   const target=join(harness,'adapters/native/target/wasmi');
+   await runCommand('cargo',['build','--release','--locked','--no-default-features','--features','wasmi','--target-dir',target,'--manifest-path',manifestPath],{cwd:harness,env:buildEnv,log:join(root,'wasmi-feature-policy-build.log')});
+   await cp(join(target,'release/adapter-native'),join(harness,'bin/adapter-wasmi'));
+  }catch(error){state.errors.push({engine,kind:'adapter-binding-migration',error:String(error),source:job.source});state.completed++;await save();continue}finally{await release()}
+ }
  if(engine.startsWith('wizard-')){
   const release=await acquireFeatureProjectLock();
   try{await upgradeWizardFeatureCommand(harness,engine,job.source.revision)}

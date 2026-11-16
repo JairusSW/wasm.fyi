@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import {historyFactor,scaledChange,type HistoricalChange} from './compact-history';
+import {carryLatestAvailable,historyFactor,scaledChange,type HistoricalChange,type HistoricalLane,type HistoricalSummary} from './compact-history';
 import {CompactClient} from './compact-client';
 
 describe('compact historical comparisons',()=>{
@@ -23,5 +23,19 @@ describe('compact historical comparisons',()=>{
   expect(a).toEqual(b);expect(calls).toBe(1);
   await client.load(path,abort.signal);expect(calls).toBe(1);
   client.close();
+ });
+});
+
+describe('latest available history',()=>{
+ const lane=(engine:string,value:number|null):HistoricalLane=>({engine,value,count:value==null?0:3,reference:3,version:'1',backend:'jit',latestCreated:'',fingerprint:''});
+ const summary=(items:{date:string;lanes:HistoricalLane[]}[]):HistoricalSummary=>({revision:'r',platform:'p',metric:'exec',workloads:['a','b','c'],items});
+ it('repeats an engine\'s last measurement at later dates of an unfinished campaign',()=>{
+  const out=carryLatestAvailable(summary([{date:'2026-11-01',lanes:[lane('a',1),lane('b',2)]},{date:'2026-11-08',lanes:[lane('a',null),lane('b',3)]},{date:'2026-11-16',lanes:[lane('b',4)]}]));
+  expect(out.items[1].lanes.map(l=>[l.engine,l.value,l.carried])).toEqual([['a',1,'2026-11-01'],['b',3,undefined]]);
+  expect(out.items[2].lanes.map(l=>[l.engine,l.value,l.carried])).toEqual([['b',4,undefined],['a',1,'2026-11-01']]);
+ });
+ it('keeps interior gaps and complete series unchanged',()=>{
+  const items=[{date:'1',lanes:[lane('a',1)]},{date:'2',lanes:[lane('a',null)]},{date:'3',lanes:[lane('a',2)]}];
+  expect(carryLatestAvailable(summary(items)).items).toBe(items);
  });
 });

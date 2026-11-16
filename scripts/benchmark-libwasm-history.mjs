@@ -53,7 +53,8 @@ const status=await readFile(statusPath,'utf8').then(JSON.parse,()=>({started:new
 for(const pin of plan.pins.filter(p=>historyPinAllowed(p,template)&&historyWeekMatches(p,process.env.WASMFYI_HISTORY_WEEK)&&p.engine==='libwasm'&&p.status==='planned'&&p.revision&&(!selectedRefs.size||selectedRefs.has(p.tag||p.revision))&&(!process.env.WASMFYI_LIBWASM_REVISION||p.revision===process.env.WASMFYI_LIBWASM_REVISION)).sort((a,b)=>Date.parse(b.targetWeek)-Date.parse(a.targetWeek))){
  if(Date.parse(pin.targetWeek)<Date.parse(plan.cutoff)||Date.parse(pin.targetWeek)>Date.parse(plan.anchor))throw Error('Pin outside authorized window');
  const pinKey=['libwasm',pin.targetType,pin.tag||pin.revision,pin.targetWeek].join('|');
- if(!prepareOnly&&status.completed.some(done=>done.pinKey===pinKey))continue;
+ if(!prepareOnly&&status.completed.some(done=>done.pinKey===pinKey&&!done.prepared&&done.captures===template.workloads.length*pin.configurations.length&&!done.workloadErrors?.length))continue;
+ if(!prepareOnly){status.completed=status.completed.filter(done=>done.pinKey!==pinKey);status.errors=status.errors.filter(error=>error.pinKey!==pinKey);}
  const dir=join(plan.buildCacheRoot||root,'libwasm-builds',pin.revision.slice(0,12)),checkout=join(dir,'source'),build=join(dir,'sdk'),harness=join(dir,'harness'),controller=join(dir,'controller');await mkdir(dir,{recursive:true});
  const releaseBuild=await acquireMeasurementLock(join(root,'measurement-lock'));
  try{

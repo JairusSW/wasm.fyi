@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Refresh static homepage files after any benchmark publication, off HTTP paths."""
+"""Refresh baked pages (home, Benchmarks, Features, History) after any benchmark publication, off HTTP paths."""
 import argparse
 import fcntl
 import json
@@ -46,7 +46,7 @@ def refresh(args):
             return False
         subprocess.run([args.node, str(frontend / '.homepage-baker.mjs'), str(frontend)],
                        env={**os.environ, 'WASMFYI_PRERENDER_API_ORIGIN': args.api},
-                       timeout=180, check=True)
+                       timeout=900, check=True)
         return True
 
 

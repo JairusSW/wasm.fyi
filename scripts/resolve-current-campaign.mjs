@@ -9,11 +9,19 @@ import {newWeeklyPlan,planWeeklyEngine} from './lib/weekly-source-plan.mjs';
 const directory=resolve(process.argv[2]);await mkdir(directory,{recursive:true});
 const path=join(directory,'source-plan.json');
 const plan=await readFile(path,'utf8').then(JSON.parse,()=>null) || newWeeklyPlan();
-plan.weeks=plan.weeks.slice(0,1);plan.cutoff=plan.weeks[0].start;
+if(process.env.WASMFYI_PRESERVE_WEEKS!=='1')plan.weeks=plan.weeks.slice(0,1);
+plan.cutoff=plan.weeks[0].start;
 plan.machines=['local-arm64','hub-amd64','remote-amd64'];plan.excludedEngines=[];
 const exec=promisify(execFile);
 async function github(path,paginate=false){const {stdout}=await exec('gh',['api',...(paginate?['--paginate','--jq','.[] | tojson']:[]),path],{timeout:120000,maxBuffer:32*1024*1024});return paginate?stdout.trim().split('\n').filter(Boolean).map(JSON.parse):JSON.parse(stdout)}
-const upstream={releases:releaseInventory,defaultBranch:async repository=>(await github('repos/'+repository)).default_branch,commits:(repository,branch,until,count,since)=>github(`repos/${repository}/commits?sha=${encodeURIComponent(branch)}&until=${encodeURIComponent(until)}&per_page=${count}${since?'&since='+encodeURIComponent(since):''}`,!!since),releaseRevision:async(engine,spec,release)=>{const tag=spec.provider==='firefox'?'FIREFOX_'+release.tag_name.replaceAll('.','_')+'_RELEASE':release.tag_name;return(await github(`repos/${spec.repository}/commits/${encodeURIComponent(tag)}`)).sha}};
+const upstream={releases:releaseInventory,defaultBranch:async repository=>(await github('repos/'+repository)).default_branch,commits:(repository,branch,until,count,since)=>github(`repos/${repository}/commits?sha=${encodeURIComponent(branch)}&until=${encodeURIComponent(until)}&per_page=${count}${since?'&since='+encodeURIComponent(since):''}`,!!since),commitCI:async(repository,sha)=>{
+ const [status,runs]=await Promise.all([github(`repos/${repository}/commits/${sha}/status`),github(`repos/${repository}/commits/${sha}/check-runs?per_page=100`)]);
+ const checks=runs.check_runs||[],contexts=status.statuses||[];
+ if(status.state==='failure'||status.state==='error'||checks.some(check=>check.conclusion&& !['success','neutral','skipped'].includes(check.conclusion)))return 'failed';
+ if(checks.some(check=>check.status!=='completed')||contexts.some(check=>check.state!=='success'))return 'pending';
+ if(checks.length||contexts.length)return 'passed';
+ return 'unconfigured';
+},releaseRevision:async(engine,spec,release)=>{const tag=spec.provider==='firefox'?'FIREFOX_'+release.tag_name.replaceAll('.','_')+'_RELEASE':release.tag_name;return(await github(`repos/${spec.repository}/commits/${encodeURIComponent(tag)}`)).sha}};
 for(const engine of [...new Set([...historyEngineOrder,...Object.keys(engineSources)])]){
  if(plan.pins.some(p=>p.engine===engine&&p.status==='planned'))continue;
  plan.pins=plan.pins.filter(p=>p.engine!==engine);

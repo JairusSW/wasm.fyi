@@ -7,7 +7,7 @@
  import {datasetView} from '$lib/api/view.svelte';
  import {metricSelectors} from '$lib/api/presentation';
  import {workloadBench} from '$lib/api/catalog';
- import { rankRows, tipCard, tipWho } from '$lib/tip';
+ import { lazyTipCard, rankRows, tipWho } from '$lib/tip';
 	import { siteHref } from '$lib/links';
 	import { goto } from '$lib/navigation';
 	import { CFG } from '$lib/data/runtimes';
@@ -243,7 +243,7 @@
 							</button>
 						</td>
 						{#each cells as cell, k (k)}
-							<td class="mono small fg2 r gcell" data-tip-card={tipCard({ kicker: `${MET[ui.metric].l} · group mean`, title: r.name, who: tipWho(cols[k]), value: cell.text, stats: [['workloads', String(cell.count)], ['weighting', 'equal']], note: 'Arithmetic mean of successful measurements.' })}>{cell.text}</td>
+							<td class="mono small fg2 r gcell" use:lazyTipCard={() => ({ kicker: `${MET[ui.metric].l} · group mean`, title: r.name, who: tipWho(cols[k]), value: cell.text, stats: [['workloads', String(cell.count)], ['weighting', 'equal']], note: 'Arithmetic mean of successful measurements.' })}>{cell.text}</td>
 						{/each}
 					</tr>
 				{:else}
@@ -270,7 +270,7 @@
 									class="cellbtn wcell"
 									style:color={x.color}
 									onclick={x.open}
-									data-tip-card={tipCard({ kicker: MET[ui.metric].l, title: r.name, who: tipWho(cols[k]), value: 'label' in x && x.label ? `${x.text} ${x.label}` : x.text, valueColor: x.color === 'var(--fg)' ? '' : x.color, sub: x.sub, heat: x.bg === 'transparent' ? '' : x.bg, stats: x.stats, action: 'distribution & run record' })}
+									use:lazyTipCard={() => ({ kicker: MET[ui.metric].l, title: r.name, who: tipWho(cols[k]), value: 'label' in x && x.label ? `${x.text} ${x.label}` : x.text, valueColor: x.color === 'var(--fg)' ? '' : x.color, sub: x.sub, heat: x.bg === 'transparent' ? '' : x.bg, stats: x.stats, action: 'distribution & run record' })}
 								>
 									<span class="mono s12 nowrap">{x.text}</span>
 									<span class="mono micro fg3 nowrap">{x.sub}</span>

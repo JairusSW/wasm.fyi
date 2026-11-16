@@ -38,3 +38,23 @@ it('fails a snapshot build when the API is unavailable',async()=>{
  const {bakePageSeed}=await import('./controller.svelte');
  await expect(bakePageSeed('https://example.test','/')).rejects.toThrow('unavailable');
 });
+it('opens a baked page in the browser without any API request',async()=>{
+ const platform={id:'linux',cpu:'Test CPU',os:'linux',arch:'amd64',cores:8,kernel:'test',latestRevision:'r'};
+ const rows={schema:3,revision:'r',platform:'linux',phase:'*',total:0,nextOffset:null,contracts:[],configurations:[],sources:[],sampling:[],capturedAt:[],rows:[]};
+ const request=vi.fn(async(resource:string|URL|Request)=>{
+  const url=new URL(String(resource),'https://example.test');
+  if(url.pathname==='/api/summary')return Response.json({revision:'r',platforms:[platform]});
+  if(url.pathname==='/api/aggregates')return Response.json({items:[]});
+  return Response.json(rows);
+ });
+ vi.stubGlobal('fetch',request);
+ const {bakePageSeed,activatePageSeed,connectSite,closeSite}=await import('./controller.svelte');
+ const {encodeBakedSeed,decodeBakedSeed}=await import('./baked-codec');
+ const seed=decodeBakedSeed(encodeBakedSeed(await bakePageSeed('https://example.test','/benchmarks/')));
+ closeSite();request.mockClear();
+ vi.stubGlobal('window',{});vi.stubGlobal('location',{pathname:'/benchmarks/',href:'https://example.test/benchmarks/'});
+ activatePageSeed(seed);
+ await connectSite();
+ expect(request).not.toHaveBeenCalled();
+ closeSite();
+});

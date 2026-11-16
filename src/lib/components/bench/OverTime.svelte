@@ -42,7 +42,9 @@ import MarkerKey from '../MarkerKey.svelte';
 	let hover = $state<{ i: number; row: CfgId } | null>(null);
  $effect(()=>{apiHistory.from;apiHistory.until;hover=null});
  let visible=$state(false);
- function observeHistory(node:HTMLElement){const observer=new IntersectionObserver(entries=>{visible=entries.some(entry=>entry.isIntersecting)});observer.observe(node);return {destroy(){observer.disconnect()}}}
+ // History loads once the section stays on screen; a layout shift while the
+ // page switches machines must not trigger it.
+ function observeHistory(node:HTMLElement){let timer:ReturnType<typeof setTimeout>|undefined;const observer=new IntersectionObserver(entries=>{clearTimeout(timer);if(entries.some(entry=>entry.isIntersecting))timer=setTimeout(()=>visible=true,300);else visible=false});observer.observe(node);return {destroy(){clearTimeout(timer);observer.disconnect()}}}
  $effect(()=>{
   if(!visible||!apiView.ready)return;
   apiView.historyRevision;

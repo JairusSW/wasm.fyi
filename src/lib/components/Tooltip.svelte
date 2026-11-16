@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { splitAction, type TipCard } from '$lib/tip';
+	import { lazyTipJson, splitAction, type TipCard } from '$lib/tip';
 	import Swatch from './Swatch.svelte';
 
 	// One delegated tooltip for the whole app: any element with `data-tip`
@@ -46,7 +46,7 @@
  clearTimeout(hideTimer);
 			const tip = target.getAttribute('data-tip');
 			const structured = target.getAttribute('data-tip-summary');
-			const cardJson = target.getAttribute('data-tip-card');
+			const cardJson = target.getAttribute('data-tip-card') ?? lazyTipJson(target);
 			if (!tip && !structured && !cardJson) return;
 			cur = target;
 			// Focus/scroll events can fire synchronously while Svelte removes
@@ -60,7 +60,7 @@
 			});
 		};
   const hide = () => {clearTimeout(hideTimer);hideTimer=setTimeout(()=>{cur=null;shown=false},180)};
-		const closest = (e: Event) => (e.target instanceof Element ? e.target.closest('[data-tip], [data-tip-card], [data-tip-summary]') : null);
+		const closest = (e: Event) => (e.target instanceof Element ? e.target.closest('[data-tip], [data-tip-card], [data-tip-lazy], [data-tip-summary]') : null);
 		// Touch has no hover: ignore the compatibility mouse events a tap emits, and let a tap
 		// on a non-interactive element toggle its tip instead.
 		let touchAt = 0;

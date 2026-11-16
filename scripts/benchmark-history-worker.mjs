@@ -1,7 +1,7 @@
 import {restoredWorkloadFailure,retryInfrastructureCapture} from './lib/resumed-workload-failure.mjs';
 import {selectRepairPhases,mergePhaseRepair} from './lib/phase-repair.mjs';
 import {workloadContract} from './lib/workload-contract.mjs';
-import {historyWorkloadFailure,workloadBudgetMs} from './lib/history-workload-failure.mjs';
+import {historyWorkloadFailure,workloadBudgetMs,workloadBudgetFor} from './lib/history-workload-failure.mjs';
 // Compact native collection for current builds and source-pinned historical jobs.
 import {readFile,writeFile,mkdir,stat,rm} from 'node:fs/promises';
 import {join,basename} from 'node:path';
@@ -58,6 +58,7 @@ for(const job of plan.jobs){
   const existing=await readFile(file,'utf8').then(JSON.parse,()=>null);
   let infrastructureNote;
   if(job.retryInfrastructureFailurePolicy&&existing?.results.some(row=>row.latencyStatus==='failed'))for(const notes of [join(directory,'failure-notes'),join(output,'..','failure-notes')]){infrastructureNote=await readFile(join(notes,key+'.json'),'utf8').then(JSON.parse,()=>null);if(infrastructureNote)break;}
+  if(job.retryInfrastructureFailurePolicy&&infrastructureNote?.recoveryPolicy===job.retryInfrastructureFailurePolicy&&!await stat(join(directory,'infrastructure-repair-originals',key+'.json')).catch(()=>null))delete infrastructureNote.recoveryPolicy;
   const recoverInfrastructure=retryInfrastructureCapture(existing,infrastructureNote,job,workload);
   const repairPhases=selectRepairPhases(existing,workload,job);
   if(repairPhases&&job.unavailableReason)throw Error('Cannot repair phases without a runnable adapter');
@@ -79,10 +80,13 @@ for(const job of plan.jobs){
   // The collector reads only this source descriptor; the controller pins actual adapter identities.
   process.env.WASMBENCH_SOURCE_JSON=env.WASMBENCH_SOURCE_JSON;
   if(job.engine==='wago'&&job.source.revision.length===40)process.env.WASMBENCH_WAGO_REVISION=job.source.revision;else delete process.env.WASMBENCH_WAGO_REVISION;
-  const workloadSignal=AbortSignal.any([abort.signal,AbortSignal.timeout(workloadBudgetMs)]);
+  const budgetMs=workloadBudgetFor(workload);
+  const workloadSignal=AbortSignal.any([abort.signal,AbortSignal.timeout(budgetMs)]);
   try{
    if(job.unavailableReason){const contractSha256=workloadContract(workload);const capture={capturedAt:new Date().toISOString(),source:job.source,platform:{os:process.platform,arch:process.arch==='x64'?'amd64':'arm64',cpu:cpus()[0].model,cores:plan.platformSpecs.cores,kernel:execFileSync('uname',['-srv']).toString().trim(),memoryBytes:plan.platformSpecs.memoryBytes},results:['compile','instantiate','first-call','steady'].map(phase=>({workload:workload.id,wasm:workload.artifactName,artifactSha256:workload.sha256,contractSha256,engine:job.engine,version:job.source.revision,backend:job.backend||job.engine,phase,timingSamples:0,latencyStatus:'unsupported',latencyNs:null,memoryStatus:'unsupported',peakRssBytes:null,codeStatus:'unsupported',codeBytes:null,codeKind:null}))};await atomicJSON(file,capture);recordResources(capture);status.completed++;await save();continue;}
-   let capture=await collectLatencies({directory:scratch,workloads:[workload],engines:[job.engine],collection:repairPhases?{...plan.collection,scenarios:repairPhases.join(',')}:plan.collection,onTiming:t=>{status.runnerMs+=t.runnerMs;status.captureMs+=t.captureMs},run:async(...args)=>{
+   const collection=repairPhases?{...plan.collection,scenarios:repairPhases.join(',')}:{...plan.collection};
+   if(budgetMs>workloadBudgetMs)collection.timeout=`${Math.ceil(budgetMs/60000)}m`;
+   let capture=await collectLatencies({directory:scratch,workloads:[workload],engines:[job.engine],collection,onTiming:t=>{status.runnerMs+=t.runnerMs;status.captureMs+=t.captureMs},run:async(...args)=>{
     const controller=job.controller||plan.controller;
     const pinned=process.platform==='linux'&&plan.cpu!=null;
     const foreground=process.platform==='darwin'&&plan.executionPolicy?.measurementCores===1;
@@ -101,13 +105,14 @@ for(const job of plan.jobs){
    if(failedPhases.length){
     const failures=await readFile(join(scratch,'failures.json'),'utf8').then(JSON.parse,()=>[]);
     const note={capturedAt:capture.capturedAt,source:job.source,engine:job.displayEngine||job.engine,workload:workload.id,kind:'failed-trials',phases:failedPhases,failures,reason:failures.map(f=>f.reason).filter(Boolean).join('; ')||'Producer returned failed latency trials'};
+    if(recoverInfrastructure&&job.retryInfrastructureFailurePolicy)note.recoveryPolicy=job.retryInfrastructureFailurePolicy;
     status.errors.push({...status.current,error:note.reason,kind:note.kind,phases:failedPhases});
     for(const notes of [join(directory,'failure-notes'),join(output,'..','failure-notes')]){await mkdir(notes,{recursive:true});await atomicJSON(join(notes,key+'.json'),note);}
    }
    console.log(JSON.stringify({event:'captured',...status.current,statuses:capture.results.map(r=>[r.phase,r.latencyStatus]),resources:capture.results.map(r=>({phase:r.phase,memory:r.memoryStatus,code:r.codeStatus}))}));
   }catch(error){if(!abort.signal.aborted){
    const {capture,note}=historyWorkloadFailure({workload,job,error,signal:workloadSignal,platform:{os:process.platform,arch:process.arch==='x64'?'amd64':'arm64',cpu:cpus()[0].model,cores:plan.platformSpecs.cores,kernel:execFileSync('uname',['-srv']).toString().trim(),memoryBytes:plan.platformSpecs.memoryBytes}});
-   if(job.retryInfrastructureFailurePolicy)note.recoveryPolicy=job.retryInfrastructureFailurePolicy;
+   if(recoverInfrastructure&&job.retryInfrastructureFailurePolicy)note.recoveryPolicy=job.retryInfrastructureFailurePolicy;
    status.errors.push({...status.current,error:note.reason,kind:note.kind,budgetMs:note.budgetMs});console.error(error);
    // Persist a failed outcome so resume cannot retry a timed-out/crashed
    // workload forever. The separate status record retains its actual reason.

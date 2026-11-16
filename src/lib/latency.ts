@@ -19,9 +19,21 @@ export function engineVersions(rows:LatencyRow[]) {
  for(const row of rows){const key=engineVersionKey(row);if(!engines.has(row.engine))engines.set(row.engine,new Map());const configs=engines.get(row.engine)!;const current=configs.get(key);if(!current||captureTimeCompare(row.source?.asOf||row.capturedAt,current.capturedAt)>0||(row.engine==='v8'&&row.backend==='turboshaft'&&current.backend!=='turboshaft'&&captureTimeCompare(row.source?.asOf||row.capturedAt,current.capturedAt)===0))configs.set(key,{key,version:row.version,backend:row.backend,capturedAt:row.source?.asOf||row.capturedAt,qualified:!!row.source&&(row.source.kind!=='current'||/^[a-f0-9]{40}(?:\/|$)/i.test(row.source.revision))})}
  return new Map([...engines].map(([id,configs])=>[id,[...configs.values()].sort((a,b)=>Number(b.qualified)-Number(a.qualified)||captureTimeCompare(b.capturedAt,a.capturedAt)||a.key.localeCompare(b.key))]));
 }
-export function selectEngineVersions(rows:LatencyRow[],selected:Record<string,string>={}) {
+/**
+ * One engine version per engine: the selected one, else the newest. With
+ * `fallback`, a cell that version has not measured yet keeps the most recent
+ * earlier version's measurement, so a half-finished campaign never hides results.
+ */
+export function selectEngineVersions(rows:LatencyRow[],selected:Record<string,string>={},fallback=false) {
  const versions=engineVersions(rows),chosen=new Map([...versions].map(([id,configs])=>[id,configs.find(c=>c.key===selected[id])?.key||configs[0].key]));
- const picked=rows.filter(row=>engineVersionKey(row)===chosen.get(row.engine));
+ let picked:LatencyRow[];
+ if(!fallback)picked=rows.filter(row=>engineVersionKey(row)===chosen.get(row.engine));
+ else{
+  const rank=new Map([...versions].flatMap(([,configs])=>configs.map((c,i)=>[c.key,i] as const)));
+  const ranks=rows.map(row=>rank.get(engineVersionKey(row))??Infinity),best=new Map<string,number>();
+  rows.forEach((row,i)=>{const cell=JSON.stringify([row.engine,row.workload,row.phase]);if(!(ranks[i]>=(best.get(cell)??Infinity)))best.set(cell,ranks[i])});
+  picked=rows.filter((row,i)=>ranks[i]===best.get(JSON.stringify([row.engine,row.workload,row.phase])));
+ }
  // A corrected compiler identity can preserve the original source/date and
  // sample timestamps. Keep its measurements separate from the retained legacy
  // optimizer rows, regardless of transport order. Unknown failed labels remain
@@ -34,11 +46,12 @@ export function selectEngineVersions(rows:LatencyRow[],selected:Record<string,st
 
 // A physical host may acquire a new platform identity after a kernel or memory
 // change. Merge those identities for coverage, but never let an older identity
-// replace a cell already measured on the preferred (newest) identity.
+// replace a cell already measured on the preferred (newest) identity. Cells the
+// newest engine version has not measured yet keep their latest earlier value.
 export function selectPlatformEngineVersions<T extends LatencyRow&{platformId?:string}>(rows:T[],platforms:string[]):T[] {
  const priority=new Map(platforms.map((id,index)=>[id,index]));
  const cells=new Map<string,T>();
- for(const row of selectEngineVersions(rows) as T[]){
+ for(const row of selectEngineVersions(rows,{},true) as T[]){
   const key=JSON.stringify([row.engine,row.workload,row.phase]);
   const current=cells.get(key);
   if(!current||(priority.get(row.platformId||'')??platforms.length)<(priority.get(current.platformId||'')??platforms.length))cells.set(key,row);

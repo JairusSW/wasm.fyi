@@ -62,7 +62,10 @@ for(const pin of plan.pins.filter(p=>historyPinAllowed(p,template)&&historyWeekM
   const pinKey=[configuration,pin.targetType,pin.tag||pin.revision,pin.targetWeek].join('|');
   await retainPreparedConfiguration(configuration);
   if(prepareOnly)status.completed=status.completed.filter(x=>x.pinKey!==pinKey);
-  else if(status.completed.some(x=>x.pinKey===pinKey))continue;
+  else {
+   if(status.completed.some(x=>x.pinKey===pinKey&&!x.prepared&&x.captures===suite.length&&!x.workloadErrors?.length))continue;
+   status.completed=status.completed.filter(x=>x.pinKey!==pinKey);
+  }
   const label=[configuration,pin.tag||pin.revision,pin.targetType,pin.targetWeek].join('-').replace(/[^a-zA-Z0-9.-]/g,'_');
   const directory=join(root,'engine-builds',label);await mkdir(directory,{recursive:true});
   // Cranelift and Winch use the same SDK executable, selected by --winch.
@@ -111,7 +114,7 @@ for(const pin of plan.pins.filter(p=>historyPinAllowed(p,template)&&historyWeekM
    }
    if(!unavailable)await pruneRustIntermediates(harness);
    if(engine==='wamr')buildEnv.WASMBENCH_WAMR_MODE=configuration==='wamr'?'interpreter':configuration.replace(/^wamr-/, '');
-   const job={id:'history-'+template.collection.samples+'-'+label,engine:configuration,harness,controller:jobController,env:Object.fromEntries(Object.entries(buildEnv).filter(([k])=>k.startsWith('WASMBENCH_'))),historical:true,source:{repository:pin.repository,revision,ref:pin.tag||'main@'+revision.slice(0,8),asOf:pin.targetWeek,kind:pin.targetType==='main'?'snapshot':'release',...(pin.dateBasis?{dateBasis:pin.dateBasis}:{})}};
+   const job={id:'history-'+template.collection.samples+'-'+label,engine:configuration,harness,controller:jobController,env:Object.fromEntries(Object.entries(buildEnv).filter(([k])=>k.startsWith('WASMBENCH_'))),historical:true,retryInfrastructureFailurePolicy:'weekly-capture-infra-retry-v1',source:{repository:pin.repository,revision,ref:pin.tag||'main@'+revision.slice(0,8),asOf:pin.targetWeek,kind:pin.targetType==='main'?'snapshot':'release',...(pin.dateBasis?{dateBasis:pin.dateBasis}:{})}};
    if(engine==='v8'&&buildEnv.WASMBENCH_V8_TURBOSHAFT_POLICY)job.backend='turboshaft';
    if(unavailable){job.unavailableReason=unavailable.reason;job.backend=configuration==='wamr-fast-jit'?'fast-jit':configuration;}
    if(!prepareOnly&&!unavailable&&env.WASMFYI_HISTORY_FAST!=='1')await qualifyHistoryStartup({directory,configuration,suite,harness,controller:jobController,source:job.source,env:buildEnv,run});

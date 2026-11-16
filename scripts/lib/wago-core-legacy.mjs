@@ -5,7 +5,7 @@ import {digest} from './wasmbench.mjs';
 const cut=(text,start,end)=>{const a=text.indexOf(start),b=text.indexOf(end,a);if(a<0||b<0)throw Error('Historical core boundary missing: '+start);return text.slice(0,a)+text.slice(b);};
 export async function adaptCoreLegacyWago({root,base,api,run}) {
  const dir=join(root,'adapters/wago');
- const slots=api.includes('func (in *Instance) Invoke(export string, args ...uint64)'),config=api.includes('func CompileWithConfig('),sync=api.includes('type SyncHostFunc ');
+ const slots=api.includes('func (in *Instance) Invoke(export string, args ...uint64)'),config=api.includes('func CompileWithConfig('),sync=api.includes('type SyncHostFunc '),imports=api.includes('func NewImports()'),unsafeMemory=api.includes('func (m *Memory) UnsafeBytes()');
  for(const file of await readdir(join(base,'adapters/wago')))if(file.endsWith('.go'))await cp(join(base,'adapters/wago',file),join(dir,file));
  await writeFile(join(dir,'wasi_readonly.go'),'package main\n// WASI is excluded from historical core captures.\n');
  await cp(join(base,'experiment/build.go'),join(root,'experiment/build.go'));
@@ -44,21 +44,24 @@ export async function adaptCoreLegacyWago({root,base,api,run}) {
  if(!api.includes('type TrapError '))await writeFile(join(dir,'traps.go'),stub('runTraps').replace('type unsupportedRequest string\nfunc (e unsupportedRequest) Error() string {return string(e)}\n',''));
  for(const file of await readdir(dir))if(file.endsWith('.go')&&!file.endsWith('_test.go')) {
   let text=await readFile(join(dir,file),'utf8');
-  text=text.replaceAll('*wago.Compiled','*historicalCompiled').replaceAll('*wago.Instance','*historicalInstance').replaceAll('*wago.WasmFunc','*historicalFunction').replaceAll('*wago.RuntimeConfig','*historicalRuntimeConfig').replaceAll('*wago.Imports','historicalImports').replaceAll('wago.Compile(','historicalCompile(').replaceAll('wago.LoadTrustedArtifact(','historicalLoad(').replaceAll('.UnsafeBytes()', '.Bytes()').replaceAll('a.compiled.CodeSize()', 'len(a.compiled.Code)').replaceAll('a.compiled.WriteCodeTo(&image)','image.Write(a.compiled.Code)').replaceAll('wago.ValF32','0x7d').replaceAll('wago.ValF64','0x7c');
+  text=text.replaceAll('*wago.Compiled','*historicalCompiled').replaceAll('*wago.Instance','*historicalInstance').replaceAll('*wago.WasmFunc','*historicalFunction').replaceAll('*wago.RuntimeConfig','*historicalRuntimeConfig').replaceAll('*wago.Imports','historicalImports').replaceAll('wago.Compile(','historicalCompile(').replaceAll('wago.LoadTrustedArtifact(','historicalLoad(').replaceAll('a.compiled.MarshalBinary()','historicalArtifact(a.compiled)').replaceAll('c.MarshalBinary()','historicalArtifact(c)').replaceAll('wago.ValF32','0x7d').replaceAll('wago.ValF64','0x7c');
+  if(!unsafeMemory)text=text.replaceAll('.UnsafeBytes()', '.Bytes()');
+  if(!api.includes('func (c *Compiled) CodeSize()'))text=text.replaceAll('a.compiled.CodeSize()', 'len(a.compiled.Code)').replaceAll('a.compiled.WriteCodeTo(&image)','image.Write(a.compiled.Code)');
   if(file!=='traps.go'||!api.includes('type TrapError '))text=text.replace(/\n\s*wago "github.com\/wago-org\/wago"/g,'');
   await writeFile(join(dir,file),text);
  }
- const bridge=`package main
-import ("fmt"; "math"; wago "github.com/wago-org/wago"${sync?'; "github.com/wasmbench/wasmbench/protocol"':''})
+const bridge=`package main
+import ("fmt"; "math"; wago "github.com/wago-org/wago"${sync||imports?'; "github.com/wasmbench/wasmbench/protocol"':''})
 ${config?'type historicalRuntimeConfig = wago.RuntimeConfig\nfunc historicalConfig() *historicalRuntimeConfig {return wago.NewRuntimeConfig()}':'type historicalRuntimeConfig struct{}\nfunc historicalConfig() *historicalRuntimeConfig {return &historicalRuntimeConfig{}}'}
 type historicalCompiled struct{*wago.Compiled}
+func historicalArtifact(*historicalCompiled)([]byte,error){return nil,unsupportedRequest("pinned Wago source removed trusted compiled-artifact serialization")}
 ${slots?'':`func (c *historicalCompiled) Signature(name string)([]byte,[]byte,error){p,r,e:=c.Compiled.Signature(name);if e!=nil{return nil,nil,e};params:=make([]byte,len(p));results:=make([]byte,len(r));for i,v:=range p{switch v{case wago.I32(0).Type:params[i]=0x7f;case wago.I64(0).Type:params[i]=0x7e;case wago.F32(0).Type:params[i]=0x7d;case wago.F64(0).Type:params[i]=0x7c;default:return nil,nil,unsupportedRequest("historical signature parameter type unavailable")}};for i,v:=range r{switch v{case wago.I32(0).Type:results[i]=0x7f;case wago.I64(0).Type:results[i]=0x7e;case wago.F32(0).Type:results[i]=0x7d;case wago.F64(0).Type:results[i]=0x7c;default:return nil,nil,unsupportedRequest("historical signature result type unavailable")}};return params,results,nil}`}
 func historicalCompile(cfg *historicalRuntimeConfig,b []byte)(*historicalCompiled,error) {c,e:=${config?'wago.CompileWithConfig(cfg,b)':'wago.Compile(b)'};if e!=nil{return nil,e};return &historicalCompiled{c},nil}
 func historicalLoad(b []byte)(*historicalCompiled,error){c,e:=wago.Load(b);if e!=nil{return nil,e};return &historicalCompiled{c},nil}
 ${api.includes('func (c *Compiled) Close()')?'':'func (c *historicalCompiled) Close() error {return nil}'}
-${sync?'type historicalImports = wago.Imports':'type historicalImports = map[string]wago.HostFunc'}
-func historicalIdentityImports()(historicalImports,error){${sync?'return wago.Imports{"wasmbench.identity":wago.SyncHostFunc(func(_ wago.HostModule,p,r []uint64){r[0]=p[0]})},nil':'return nil,unsupportedRequest("pinned SDK only supports void i32 host callbacks; identity return signature unavailable")'}}
-func historicalAbortImports()(historicalImports,error){${sync?'return wago.Imports{"env.abort":wago.SyncHostFunc(func(_ wago.HostModule,p,r []uint64){panic(protocol.AssemblyScriptAbort(uint32(p[0]),uint32(p[1]),uint32(p[2]),uint32(p[3])))})},nil':'return nil,unsupportedRequest("pinned SDK only supports void i32 host callbacks; AssemblyScript abort signature unavailable")'}}
+${imports?'type historicalImports = *wago.Imports':sync?'type historicalImports = wago.Imports':'type historicalImports = map[string]wago.HostFunc'}
+func historicalIdentityImports()(historicalImports,error){${imports?'im:=wago.NewImports();im.HostFunc("wasmbench","identity",func(v int32)int32{return v});return im,nil':sync?'return wago.Imports{"wasmbench.identity":wago.SyncHostFunc(func(_ wago.HostModule,p,r []uint64){r[0]=p[0]})},nil':'return nil,unsupportedRequest("pinned SDK only supports void i32 host callbacks; identity return signature unavailable")'}}
+func historicalAbortImports()(historicalImports,error){${imports?'im:=wago.NewImports();im.HostFunc("env","abort",wago.HostCallFunc(func(call wago.HostCall){panic(protocol.AssemblyScriptAbort(uint32(call.I32(0)),uint32(call.I32(1)),uint32(call.I32(2)),uint32(call.I32(3))))})).Params(wago.ValI32,wago.ValI32,wago.ValI32,wago.ValI32).Results();return im,nil':sync?'return wago.Imports{"env.abort":wago.SyncHostFunc(func(_ wago.HostModule,p,r []uint64){panic(protocol.AssemblyScriptAbort(uint32(p[0]),uint32(p[1]),uint32(p[2]),uint32(p[3])))})},nil':'return nil,unsupportedRequest("pinned SDK only supports void i32 host callbacks; AssemblyScript abort signature unavailable")'}}
 type historicalInstance struct{*wago.Instance;c *historicalCompiled}
 func (in *historicalInstance) nativeCodeInstance() any {return in.Instance}
 func historicalInstantiate(c *historicalCompiled,imports historicalImports)(*historicalInstance,error){m,e:=wago.Instantiate(c.Compiled,imports);if e!=nil{return nil,e};return &historicalInstance{m,c},nil}

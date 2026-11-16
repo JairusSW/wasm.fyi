@@ -21,6 +21,7 @@ import {applyWasmerCraneliftAdapter} from './lib/wasmer-cranelift-adapter.mjs';
 import {wasmerBuildEnvironment} from './lib/wasmer-build-environment.mjs';
 import {applyWagoColdCompile} from './lib/wago-cold-compile.mjs';
 import {applyWagoThreads} from './lib/wago-threads.mjs';
+import {applyWasmerCapiPolicy} from './lib/wasmer-c-api-policy.mjs';
 import {buildZwasmSDK} from './lib/zwasm-sdk.mjs';
 import {adaptWazyComponents,adaptWazyContextTermination,adaptWazyCoreFeatures} from './lib/wazy-adapter.mjs';
 import {applyLegacyWasmtimeAPI} from './lib/wasmtime-legacy-api.mjs';
@@ -66,6 +67,17 @@ await requireBuildCapacity(directory,engine,env);
 const sdkBudget=createSDKBuildBudget(env);
 const run=async(program,args,options={})=>{console.log(engine,program,args.join(' '));return withBuildReserve(directory,engine,env,signal=>sdkBudget.run(combined=>runCommand(program,args,{cwd:root,env,log,...options,signal:combined}),signal&&options.signal?AbortSignal.any([signal,options.signal]):signal||options.signal));};
 if(!(await stat(root).catch(()=>null)))await copyHistoricalHarness(base,root);
+if(engine==='submilli') {
+ const path=join(root,'experiment/extra_runtimes.go');let text=await readFile(path,'utf8');
+ const commandCase='case "wasmi", "wavm", "libwasm", "wamr", "wasm3", "wasmedge", "wasmer-llvm", "wasmer-singlepass":';
+ const runtimeList='if !slices.Contains([]string{"wamr-fast-jit", "wamr-llvm-jit", "wasmedge-jit", "wasmi", "wavm", "wamr", "wasm3", "wasmedge", "wasmer-llvm", "wasmer-singlepass", "spidermonkey", "jsc", "v8-shell", "chicory"}, id) {';
+ if(!text.includes('id == "submilli" { return true, nil }')) {
+  if(text.split(commandCase).length!==2||text.split(runtimeList).length!==2)throw Error('Submilli runtime registration anchors changed');
+  text=text.replace(commandCase,commandCase.replace('"wasmer-singlepass":','"wasmer-singlepass", "submilli":'));
+  text=text.replace(runtimeList,'if id == "submilli" { return true, nil }\n\t'+runtimeList.replace('"chicory"','"chicory", "submilli"'));
+  await writeFile(path,text);
+ }
+}
 if(['jsc','spidermonkey','chicory'].includes(engine)) {
  for(const path of ['adapters/js-shell/adapter.js','adapters/js-shell/jsc-host.cpp','experiment/aot.go','experiment/extra_runtimes.go','experiment/extra_runtimes_test.go','experiment/runner.go'])await cp(join(base,path),join(root,path));
 }
@@ -119,7 +131,9 @@ if(engine==='wago') {
  if(revision!==pin.revision || (await run('git',['-C',wago,'status','--porcelain','--untracked-files=no'])).output.trim())throw Error('Wago source pin differs or is dirty');
  const apiDirs=[wago];if(await stat(join(wago,'src/wago')).catch(()=>null))apiDirs.push(join(wago,'src/wago'));
  const api=(await Promise.all((await Promise.all(apiDirs.map(async dir=>(await readdir(dir)).filter(f=>f.endsWith('.go')&&!f.endsWith('_test.go')).map(f=>join(dir,f))))).flat().map(f=>readFile(f,'utf8')))).join('\n');
- if(!api.includes('func NewImports(')){
+ if(!api.includes('func LoadTrustedArtifact(')){
+  provenance.compatibility=await adaptCoreLegacyWago({root,base,run,api});
+ } else if(!api.includes('func NewImports(')){
   if(!api.includes('type Runtime struct'))provenance.compatibility=await adaptCoreLegacyWago({root,base,run,api});
   else {
   const module=JSON.parse((await run('go',['mod','download','-json','github.com/wago-org/wasi@v0.3.1'])).output);
@@ -128,7 +142,9 @@ if(engine==='wago') {
   }
  }
  provenance.coldCompile=await applyWagoColdCompile(root);
- provenance.threads=await applyWagoThreads(root,api);
+ if(provenance.compatibility?.scope?.startsWith('core only;')) {
+  provenance.threads={status:'not-applied',reason:'core-only historical adapter does not expose Wago thread feature profiles'};
+ } else provenance.threads=await applyWagoThreads(root,api);
  await build('--runtimes','wago','--wago-source',wago);
 } else if(engine==='wazero') {
  const localSource=process.env.WEEKLY_WAZERO_SOURCE;
@@ -207,9 +223,22 @@ if(engine==='wago') {
   measurementPatchSha256=digest(Buffer.from(getter));
  }
 
- await run('cargo',['build','--manifest-path',join(source,'lib/c-api/Cargo.toml'),'--release','--locked','--no-default-features','--features',features],{cwd:source,env:{...env,CARGO_TARGET_DIR:target}});
+ const buildEnv={...env,CARGO_TARGET_DIR:target};
+ const rustToolchain=env.WASMFYI_WASMER_RUST_TOOLCHAIN;
+ if(rustToolchain){
+  if(!/^\d+\.\d+(?:\.\d+)?$/.test(rustToolchain))throw Error('Invalid Wasmer Rust toolchain pin');
+  const installed=(await run('rustup',['toolchain','list'])).output.split(/\r?\n/).some(line=>line.trim().split(/\s+/)[0].startsWith(rustToolchain+'-')||line.trim().split(/\s+/)[0]===rustToolchain);
+  if(!installed)await run('rustup',['toolchain','install',rustToolchain,'--profile','minimal']);
+  buildEnv.RUSTUP_TOOLCHAIN=rustToolchain;
+ }
+ const cargoArgs=['build','--manifest-path',join(source,'lib/c-api/Cargo.toml'),'--release','--locked','--no-default-features','--features',features];
+ if(rustToolchain){
+  provenance.rustToolchain={requested:rustToolchain,rustc:(await run('rustup',['run',rustToolchain,'rustc','--version'],{cwd:source,env:buildEnv})).output.trim()};
+  await run('rustup',['run',rustToolchain,'cargo',...cargoArgs],{cwd:source,env:buildEnv});
+ } else await run('cargo',cargoArgs,{cwd:source,env:buildEnv});
  await mkdir(join(sdk,'include'),{recursive:true});await mkdir(join(sdk,'lib'),{recursive:true});
  for(const [from,to] of [['lib/c-api/wasmer.h','wasmer.h'],['lib/c-api/tests/wasm-c-api/include/wasm.h','wasm.h']])await cp(join(source,from),join(sdk,'include',to));
+ provenance.featurePolicy=await applyWasmerCapiPolicy({root,sdk,source});
  const lib=process.platform==='darwin'?'libwasmer.dylib':'libwasmer.so';await cp(join(target,'release',lib),join(sdk,'lib',lib));
  await atomicJSON(join(sdk,'receipt.json'),{revision:pin.revision,librarySha256:digest(await readFile(join(sdk,'lib',lib))),features,measurementPatchSha256});
  await applyWasmerCraneliftAdapter(root);

@@ -30,7 +30,7 @@ for(const engine of (selectedEngine?[selectedEngine]:['wago','wazero','wasm2go']
   if(Date.parse(pin.targetWeek)<Date.parse(sourcePlan.cutoff)||Date.parse(pin.targetWeek)>Date.parse(sourcePlan.anchor))continue;
   const pinKey=engine+'|'+pin.targetType+'|'+(pin.tag||pin.revision)+'|'+pin.targetWeek;
   if(prepareOnly)progress.completed=progress.completed.filter(p=>p.pinKey!==pinKey);
-  else if(progress.completed.some(p=>p.pinKey===pinKey&&!p.workloadErrors?.some(error=>error.kind==='capture-error')))continue;
+  else if(progress.completed.some(p=>p.pinKey===pinKey&&!p.prepared&&p.captures===template.workloads.length*pin.configurations.length&&!p.workloadErrors?.length))continue;
   progress.completed=progress.completed.filter(p=>p.pinKey!==pinKey);
   const label=pin.revision||pin.tag,dir=join(sourcePlan.buildCacheRoot||root,'builds',engine+'-'+label.replace(/[^a-zA-Z0-9.-]/g,'_'));await mkdir(dir,{recursive:true});
   try{

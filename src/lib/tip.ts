@@ -39,6 +39,18 @@ export const tipWho = (c: Pick<Cfg, 'rt' | 'be' | 'col' | 'hollow'> & {id?:Cfg['
 export const tipCard = (card: TipCard) =>
 	JSON.stringify(card, (key, v) => (v === '' || v == null || (Array.isArray(v) && !v.length) ? undefined : typeof v==='string'&&key!=='url'&&key!=='href'?shortVersion(v):v));
 
+const lazyCards=new WeakMap<Element,()=>TipCard>();
+/**
+ * Builds a cell's card only when it is hovered. Large tables use this so their
+ * server-rendered HTML does not carry a serialised card on every cell.
+ */
+export function lazyTipCard(node:Element,card:()=>TipCard){
+ lazyCards.set(node,card);node.setAttribute('data-tip-lazy','');
+ return {update(next:()=>TipCard){lazyCards.set(node,next)},destroy(){lazyCards.delete(node)}};
+}
+/** The serialised card of a `lazyTipCard` element, if any. */
+export const lazyTipJson=(node:Element)=>{const card=lazyCards.get(node);return card?tipCard(card()):null};
+
 /** Splits a trailing "Click to …" style line off plain tooltip text. */
 export function splitAction(lines: string[]): { lines: string[]; action: string } {
 	const last = lines.at(-1) ?? '';

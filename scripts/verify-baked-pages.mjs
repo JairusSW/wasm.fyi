@@ -38,7 +38,7 @@ export async function verifyBakedPages(directory){
    assert(html.includes(path),`Workload missing from baked HTML: ${workload.id}`);
   }
  }
- for(const view of ['features','history'])for(const machine of ['m1','m2','m3']){
+ for(const view of ['benchmarks','features','history'])for(const machine of ['m1','m2','m3']){
   const encoded=JSON.parse(await readFile(resolve(root,`data/startup/${view}/${machine}.json`),'utf8'));
   const seed=decodeBakedSeed(encoded);
   assert.equal(seed.machine,machine,`Invalid startup machine: ${view}/${machine}`);
@@ -52,5 +52,5 @@ export async function verifyBakedPages(directory){
   }
  }
  console.log(`Verified baked HTML and snapshots for ${routes.length} public routes.`);
- console.log('Verified Features and History startup snapshots for all three machines.');
+ console.log('Verified Benchmarks, Features and History startup snapshots for all three machines.');
 }
