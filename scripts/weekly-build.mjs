@@ -22,7 +22,7 @@ import {wasmerBuildEnvironment} from './lib/wasmer-build-environment.mjs';
 import {applyWagoColdCompile} from './lib/wago-cold-compile.mjs';
 import {applyWagoThreads} from './lib/wago-threads.mjs';
 import {buildZwasmSDK} from './lib/zwasm-sdk.mjs';
-import {adaptWazyComponents,adaptWazyCoreFeatures} from './lib/wazy-adapter.mjs';
+import {adaptWazyComponents,adaptWazyContextTermination,adaptWazyCoreFeatures} from './lib/wazy-adapter.mjs';
 import {applyLegacyWasmtimeAPI} from './lib/wasmtime-legacy-api.mjs';
 // Build the Saturday default-branch snapshots in an isolated native harness.
 import {readFile, writeFile, mkdir, cp, stat, readdir} from 'node:fs/promises';
@@ -285,13 +285,15 @@ if(engine==='wago') {
 } else if(engine==='wazy') {
  const adapter=join(root,'adapters/wazy');await mkdir(adapter,{recursive:true});
  const featureDefinitions=await readFile(join(source,'api/features.go'),'utf8');
+ const runtimeConfig=await readFile(join(source,'config.go'),'utf8');
  const hasComponentPackage=Boolean(await stat(join(source,'component')).catch(()=>null));
- let coreFeaturePolicy,componentPolicy;
+ let coreFeaturePolicy,componentPolicy,contextTerminationPolicy;
  for(const name of ['main.go','phases.go']){
   let text=(await readFile(join(process.cwd(),'adapters/qualification/wazy',name),'utf8')).replace('ed4381b865215e8f5e1575c382b2381422a5a8d6',pin.revision);
   if(name==='main.go'){
    ({source:text,policy:coreFeaturePolicy}=adaptWazyCoreFeatures(text,featureDefinitions));
    ({source:text,policy:componentPolicy}=adaptWazyComponents(text,hasComponentPackage));
+   ({source:text,policy:contextTerminationPolicy}=adaptWazyContextTermination(text,runtimeConfig));
   }
   await writeFile(join(adapter,name),text);
  }
@@ -299,7 +301,7 @@ if(engine==='wago') {
  const mod=join(root,'weekly-wazy.mod');await cp(join(root,'go.mod'),mod);await cp(join(root,'go.sum'),mod.replace(/\.mod$/,'.sum'));
  await run('go',['mod','edit','-modfile='+mod,'-require=github.com/samyfodil/wazy@v0.0.0','-replace=github.com/samyfodil/wazy='+source]);
  await run('go',['build','-mod=mod','-modfile='+mod,'-trimpath','-o',join(root,'bin/adapter-wazy'),'./adapters/wazy']);
- provenance.sdk={source,revision:pin.revision,coreFeaturePolicy,componentPolicy,measurement:'module-owned native code and entry preambles',adapterSha256:digest(await readFile(join(root,'bin/adapter-wazy')))};
+ provenance.sdk={source,revision:pin.revision,coreFeaturePolicy,componentPolicy,contextTerminationPolicy,measurement:'module-owned native code and entry preambles',adapterSha256:digest(await readFile(join(root,'bin/adapter-wazy')))};
 } else if(engine==='submilli') {
  provenance.sdk=await buildSubmilliSDK({source,root,version:pin.revision,env,run});
 } else if(engine==='endive') {

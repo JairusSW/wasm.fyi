@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {adaptWazyComponents,adaptWazyCoreFeatures} from './lib/wazy-adapter.mjs';
+import {adaptWazyComponents,adaptWazyContextTermination,adaptWazyCoreFeatures} from './lib/wazy-adapter.mjs';
 
 const adapter='WithCoreFeatures(api.CoreFeaturesV3|experimental.CoreFeaturesThreads)';
 test('historical Wazy releases use their declared WebAssembly 2 feature set plus threads',()=>{
@@ -17,4 +17,12 @@ test('Wazy sources predating the component package retain the core adapter',()=>
  const old=adaptWazyComponents(source,false);
  assert.equal(old.policy,'core-only-component-package-unavailable');assert.doesNotMatch(old.source,/component\.Call|wazy\/component|"component"/);assert.match(old.source,/exact_vectors/);
  assert.deepEqual(adaptWazyComponents(source,true),{source,policy:'component-enabled'});
+});
+
+test('Wazy releases without WithCloseOnContextDone build without it',()=>{
+ const source='wazy.NewRuntimeConfigCompiler().WithCoreFeatures(api.CoreFeaturesV3).WithCloseOnContextDone(true))';
+ assert.deepEqual(adaptWazyContextTermination(source,'WithCloseOnContextDone(bool) RuntimeConfig'),{source,policy:'close-on-context-done'});
+ const current=adaptWazyContextTermination(source,'type RuntimeConfig interface {}');
+ assert.equal(current.policy,'always-interruptible');assert.equal(current.source,'wazy.NewRuntimeConfigCompiler().WithCoreFeatures(api.CoreFeaturesV3))');
+ assert.throws(()=>adaptWazyContextTermination('wazy.NewRuntimeConfigCompiler()',''),/context-termination adapter seam changed/);
 });

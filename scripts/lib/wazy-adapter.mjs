@@ -19,3 +19,10 @@ export function adaptWazyComponents(source,hasComponentPackage){
  source=source.replace(importSeam,'').replace(prepare,'w.ABI != "core"').replace(oracles,'[]string{"exact_u64", "exact_vectors"}').replace('[]string{"core", "component"}','[]string{"core"}');
  return {source,policy:'core-only-component-package-unavailable'};
 }
+
+export function adaptWazyContextTermination(source,runtimeConfig){
+ const seam='.WithCloseOnContextDone(true)';
+ if(!source.includes(seam))throw Error('Wazy context-termination adapter seam changed');
+ if(runtimeConfig.includes('WithCloseOnContextDone('))return {source,policy:'close-on-context-done'};
+ return {source:source.replaceAll(seam,''),policy:'always-interruptible'};
+}
