@@ -135,6 +135,20 @@
 
 	type StripPoint = { c: Pick<Cfg, 'rt' | 'be' | 'col' | 'hollow'>; score: number; label: string; self: boolean; tie: boolean };
 	type StripSpec = ReturnType<typeof rankSpec>;
+	/**
+	 * Hover targets for plotted dots: each reaches halfway to its nearest
+	 * neighbour, so isolated dots are easy to hit and clumped ones stay distinct.
+	 */
+	function hitRadii(dots: { x: number | string; y: number | string }[], min = 5, max = 16) {
+		const pts = dots.map((d) => [Number(d.x), Number(d.y)]);
+		return pts.map(([x, y], i) => {
+			let near = Infinity;
+			pts.forEach(([u, v], j) => {
+				if (j !== i) near = Math.min(near, Math.hypot(u - x, v - y));
+			});
+			return Math.max(min, Math.min(max, near / 2));
+		});
+	}
 	/** Rank strip: every compared configuration on one line (lower score = better, left), this one ringed, ties banded. */
 	function rankSpec(points: StripPoint[], log: boolean, lead: string) {
 		const sorted = [...points].sort((a, b) => a.score - b.score);
@@ -862,8 +876,9 @@
 				{#if st.band}<rect x={st.band.x} width={st.band.w} y="3" height="42" rx="10" style="fill:var(--fg3)" opacity="0.14" />{/if}
 				{#each st.dots as p, i (i)}
 					{#if p.self}<circle cx={p.x} cy={p.y} r="9" style="fill:none;stroke:var(--fg);stroke-width:1.5" />{/if}
-					<circle cx={p.x} cy={p.y} r={p.self ? 5.5 : 3.5} style:fill={p.hollow ? 'var(--bg2)' : p.col} style:stroke={p.col} style="stroke-width:1.5" opacity={p.self ? 1 : 0.7}><title>{p.name}: {p.label}</title></circle>
+					<circle cx={p.x} cy={p.y} r={p.self ? 5.5 : 3.5} style:fill={p.hollow ? 'var(--bg2)' : p.col} style:stroke={p.col} style="stroke-width:1.5" opacity={p.self ? 1 : 0.7} class="dot" />
 				{/each}
+				{#each hitRadii(st.dots, 6, 20) as r, i (i)}<circle class="hit" cx={st.dots[i].x} cy={st.dots[i].y} {r} data-tip="{st.dots[i].name}: {st.dots[i].label}" />{/each}
 			</svg>
 			<div class="minmax mono"><span>{st.loL}</span><span></span><span>{st.hiL}</span></div>
 		</div>
@@ -1310,8 +1325,9 @@
 										<line x1={m.box.med} x2={m.box.med} y1="4" y2="24" style="stroke:var(--fg);stroke-width:1.5" />
 										{#each m.dots as p, i (i)}
 											{#if p.self}<circle cx={p.x} cy={p.y} r="7.5" style="fill:none;stroke:var(--fg);stroke-width:1.25" />{/if}
-											<circle cx={p.x} cy={p.y} r={p.self ? 4.5 : 3} style:fill={p.hollow ? 'var(--bg2)' : p.col} style:stroke={p.col} style="stroke-width:1.5" opacity={p.self ? 1 : 0.85}><title>{p.tip}</title></circle>
+											<circle cx={p.x} cy={p.y} r={p.self ? 4.5 : 3} style:fill={p.hollow ? 'var(--bg2)' : p.col} style:stroke={p.col} style="stroke-width:1.5" opacity={p.self ? 1 : 0.85} class="dot" />
 										{/each}
+										{#each hitRadii(m.dots, 6, 20) as r, i (i)}<circle class="hit" cx={m.dots[i].x} cy={m.dots[i].y} {r} data-tip={m.dots[i].tip} />{/each}
 										{@render rating(m.level)}
 									</svg>
 									<div class="minmax mono cmp-axis"><span>{m.loL}</span><span></span><span>{m.hiL}</span></div>
@@ -1525,6 +1541,17 @@
 		width: 100%;
 		height: auto;
 		display: block;
+		overflow: visible;
+	}
+	/* Invisible hover targets drawn above the dots (see hitRadii). */
+	.dist .hit {
+		fill: transparent;
+		pointer-events: all;
+		cursor: default;
+	}
+	.dist .dot {
+		pointer-events: none;
+		transition: r 0.12s;
 	}
 	.minmax {
 		display: grid;
