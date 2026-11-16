@@ -306,3 +306,49 @@ func TestLocalRunRoutesAndShellOnlyPreview(t *testing.T) {
 		t.Fatal(w.Code, w.Body.String())
 	}
 }
+
+func TestMachineBakedPageVariants(t *testing.T) {
+	dir := fixture(t)
+	if err := os.WriteFile(filepath.Join(dir, "baked-pages.json"), []byte(`{"schema":1,"routes":["/","/benchmarks"]}`), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(dir, "benchmarks"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	for name, body := range map[string]string{"index.html": "page m1", "index.m2.html": "page m2", "__data.json": `"m1"`, "__data.m2.json": `"m2"`, "__data.m3.json": `"m3"`} {
+		if err := os.WriteFile(filepath.Join(dir, "benchmarks", name), []byte(body), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	h, err := Open(dir, func(context.Context, string) (bool, error) { return true, nil })
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer h.Close()
+	get := func(target, agent string) string {
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest("GET", target, nil)
+		r.Header.Set("User-Agent", agent)
+		h.ServeHTTP(w, r)
+		if w.Code != 200 {
+			t.Fatal(target, w.Code)
+		}
+		return w.Body.String()
+	}
+	mac := "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Safari/605.1.15"
+	windows := "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/140.0"
+	for _, c := range [][3]string{
+		{"/benchmarks/", windows, "page m1"},
+		{"/benchmarks/", mac, "page m2"},
+		{"/benchmarks/?m=m1", mac, "page m1"},
+		{"/benchmarks/?m=m2", windows, "page m2"},
+		{"/benchmarks/?m=m3", mac, "page m1"}, // no m3 page baked: default page
+		{"/benchmarks/__data.json", mac, `"m2"`},
+		{"/benchmarks/__data.json?m=m3", windows, `"m3"`},
+		{"/benchmarks/__data.json", windows, `"m1"`},
+	} {
+		if got := get(c[0], c[1]); got != c[2] {
+			t.Fatal(c[0], c[1], got)
+		}
+	}
+}

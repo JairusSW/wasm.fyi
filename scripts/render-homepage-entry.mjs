@@ -42,6 +42,16 @@ for(const view of ['benchmarks','features','history']){
  const seed=JSON.parse(data).nodes.filter(Boolean).flatMap(node=>node.data||[]).find(value=>typeof value==='string'&&value.startsWith('{"root":'));
  if(!seed||Buffer.byteLength(html)>32*1024*1024)throw Error(`Incomplete ${view} render`);
  files.push([`${view}/index.html`,html],[`${view}/__data.json`,data]);
+  // Pages baked for the other machines; the host serves them by ?m= or by the
+  // visitor's platform, so first paint already shows that machine's results.
+  for(const machine of ['m2','m3']){
+   const response=await server.respond(new Request(`https://wasm.fyi/${view}/?m=${machine}`),{getClientAddress:()=> '127.0.0.1'});
+   if(response.status!==200)continue;
+   const variant=await response.text(),variantData=await render(`/${view}/__data.json?m=${machine}`);
+   const variantSeed=JSON.parse(variantData).nodes.filter(Boolean).flatMap(node=>node.data||[]).find(value=>typeof value==='string'&&value.startsWith('{"root":'));
+   if(!variantSeed||Buffer.byteLength(variant)>32*1024*1024)throw Error(`Incomplete ${view} render for ${machine}`);
+   files.push([`${view}/index.${machine}.html`,variant],[`${view}/__data.${machine}.json`,variantData]);
+  }
  for(const machine of ['m1','m2','m3']){
   const response=await server.respond(new Request(`https://wasm.fyi/data/startup/${view}/${machine}.json`),{getClientAddress:()=> '127.0.0.1'});
   // A machine without published results keeps no startup snapshot.

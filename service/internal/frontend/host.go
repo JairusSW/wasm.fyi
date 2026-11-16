@@ -308,6 +308,12 @@ func (h *Host) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if navigation != "" {
 				name = strings.TrimPrefix(navigation, "/") + "/index.html"
 			}
+			if variant := h.machineVariant(r, navigation, "index", "html"); variant != "" {
+				name = variant
+			}
+			if machinePages[navigation] {
+				w.Header().Set("Vary", "User-Agent")
+			}
 			f, err := h.openFile(name, MaxPreparedPageBytes)
 			if err != nil {
 				http.Error(w, "prepared page unavailable", 503)
@@ -350,6 +356,12 @@ func (h *Host) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	name := strings.TrimPrefix(p, "/")
+	if strings.HasSuffix(p, "/__data.json") {
+		if variant := h.machineVariant(r, strings.TrimSuffix(p, "/__data.json"), "__data", "json"); variant != "" {
+			name = variant
+			w.Header().Set("Vary", "User-Agent")
+		}
+	}
 	// HTML belongs to application routing; never expose stale prerendered pages
 	// or use a missing asset as an application-shell request.
 	if strings.HasSuffix(p, "/") || strings.EqualFold(path.Ext(name), ".html") || name == "" {
@@ -372,6 +384,39 @@ func (h *Host) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
 	}
 	http.ServeContent(w, r, name, info.ModTime(), io.NewSectionReader(f, 0, info.Size()))
+}
+
+// machinePages are baked once per benchmark machine; see machineVariant.
+var machinePages = map[string]bool{"/benchmarks": true, "/features": true, "/history": true}
+
+// machineVariant names the file baked for the visitor's machine, or "" for the
+// default (m1) file. An explicit ?m= wins; otherwise the client's own default
+// applies: Apple, ARM and mobile platforms open on the Apple Silicon machine.
+// The page then hydrates on the machine it was rendered for.
+func (h *Host) machineVariant(r *http.Request, navigation, base, ext string) string {
+	if !machinePages[navigation] {
+		return ""
+	}
+	machine := r.URL.Query().Get("m")
+	if machine == "" {
+		agent := strings.ToLower(r.UserAgent() + " " + r.Header.Get("Sec-CH-UA-Platform"))
+		for _, hint := range []string{"arm", "aarch64", "iphone", "ipad", "android", "macintosh", "macintel"} {
+			if strings.Contains(agent, hint) {
+				machine = "m2"
+				break
+			}
+		}
+	}
+	if machine != "m2" && machine != "m3" {
+		return ""
+	}
+	name := strings.TrimPrefix(navigation, "/") + "/" + base + "." + machine + "." + ext
+	f, err := h.openFile(name, MaxPreparedPageBytes)
+	if err != nil {
+		return ""
+	}
+	f.Close()
+	return name
 }
 
 // UseShellOnly keeps local datasets independent of production baked page seeds.
