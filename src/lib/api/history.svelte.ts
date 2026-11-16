@@ -2,7 +2,7 @@ import type {WireRecord} from './types';
 import type {Scope} from '../model';
 import type {CfgId,OtMetricKey} from '../data/types';
 import {localDate} from './calendar-date';
-export type TimelineLane={track:string;value:number|null;measured:number;reference:number;version:string;configuration:string;collectedAt:string;role:string;calls?:{hostWasm:number|null;wasmHostLoop:number|null};release:{version:string;publishedAt:string;url:string}|null;sourceReports:number;reports:string[];evidence:string};
+export type TimelineLane={track:string;value:number|null;measured:number;reference:number;version:string;configuration:string;collectedAt:string;role:string;calls?:{hostWasm:number|null;wasmHostLoop:number|null};release:{version:string;publishedAt:string;url:string}|null;sourceReports:number;reports:string[];evidence:string;/** Date of the measurement this point repeats (latest available). */carried?:string};
 export type Timeline={revision:string;items:{date:string;lanes:TimelineLane[]}[];changes:{track:string;before:number|null;after:number|null;count:number}[];reference:number;policy:string;timeAxis:string;uncertainty:string};
 export type HistoryReport={revision:string;workloads:{workload:string;group:string;before:WireRecord;after:WireRecord;ratio:number;reused:boolean}[];total:number;nextCursor:string;summaryCounts:Record<string,number>};
 export const historyKey=(scope:Scope,metric:OtMetricKey,workload='')=>JSON.stringify([scope.machine,scope.baseline,scope.weighting,Object.keys(scope.hide).filter(k=>scope.hide[k as CfgId]).sort(),metric,workload,scope.cohortMode||'shared',scope.average||'geo',apiHistory.from,apiHistory.until]);

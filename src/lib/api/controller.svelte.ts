@@ -121,7 +121,7 @@ function registerHistoricalSummary(scope:PageScope,result:HistoricalSummary,work
     history.versions[cid]||=result.items.map(()=> 'not collected');history.versions[cid][timeline.items.length]=version;
     history.sources||={};history.sources[cid]||=result.items.map(()=>undefined);history.sources[cid]![timeline.items.length]=lane.source;
     if(lane.source?.kind==='release')releases[cid]={version,publishedAt:point.date,url:lane.source.repository};
-    lanes.push({track:lane.engine,calls:lane.calls,value:lane.value,measured:lane.count,reference:lane.reference,version,configuration:lane.engine,collectedAt:lane.latestCreated,role:'retrospective-revision',release:null,sourceReports:0,reports:[],evidence:lane.fingerprint});
+    lanes.push({track:lane.engine,calls:lane.calls,value:lane.value,measured:lane.count,reference:lane.reference,version,configuration:lane.engine,collectedAt:lane.latestCreated,role:'retrospective-revision',release:null,sourceReports:0,reports:[],evidence:lane.fingerprint,...(lane.carried?{carried:lane.carried}:{})});
     if(lane.previous)rememberHistoryChange(key,{...lane.previous,engine:lane.engine},result.metric);if(lane.first)rememberHistoryChange(key,{...lane.first,engine:lane.engine},result.metric);
    }
    history.points.push({date:point.date,revision:result.revision,status:'measured',...(Object.keys(releases).length?{releases}:{})});

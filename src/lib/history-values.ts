@@ -152,7 +152,11 @@ export function historyCoverage(s:Scope,cid:CfgId,key:OtMetricKey,i:number) {
 /** Compare recorded values on exactly the same workloads at both dates. */
 export function historyComparison(s:Scope,cid:CfgId,key:OtMetricKey,before:number,after:number) {
  if(before<0||after<0)return null;
- if(datasetView.revision||apiHistory.compact){const timeline=apiHistory.series[historyKey(s,key)];const a=timeline?.items[before]?.date,b=timeline?.items[after]?.date;if(before===after){const lane=timeline?.items[before]?.lanes.find(l=>l.track===apiHistory.slots[cid]);if(lane?.value!=null){const factor=key==='mem'?1024**2:key==='code'?1024:key==='cov'?1:1e6;return {before:lane.value/factor,after:lane.value/factor,ratio:1,count:lane.measured}}}return a&&b?apiHistory.changes[JSON.stringify([historyKey(s,key),cid,a,b])]||null:null}
+ if(datasetView.revision||apiHistory.compact){const timeline=apiHistory.series[historyKey(s,key)];const a=timeline?.items[before]?.date,b=timeline?.items[after]?.date;if(before===after){const lane=timeline?.items[before]?.lanes.find(l=>l.track===apiHistory.slots[cid]);if(lane?.value!=null){const factor=key==='mem'?1024**2:key==='code'?1024:key==='cov'?1:1e6;return {before:lane.value/factor,after:lane.value/factor,ratio:1,count:lane.measured}}}// A carried point repeats an earlier measurement; compare from that date.
+  const measuredOn=(i:number,date:string|undefined)=>timeline?.items[i]?.lanes.find(l=>l.track===apiHistory.slots[cid])?.carried??date;
+  const from=measuredOn(before,a),to=measuredOn(after,b);
+  if(from&&from===to){const lane=timeline?.items[after]?.lanes.find(l=>l.track===apiHistory.slots[cid]);if(lane?.value!=null){const factor=key==='mem'?1024**2:key==='code'?1024:key==='cov'?1:1e6;return {before:lane.value/factor,after:lane.value/factor,ratio:1,count:lane.measured}}}
+  return from&&to?apiHistory.changes[JSON.stringify([historyKey(s,key),cid,from,to])]||null:null}
  if(!aggregateOf[key]){
   const values=historySeries(s,cid,key),a=values?.[before],b=values?.[after];
   return a!=null&&b!=null&&Number.isFinite(a)&&Number.isFinite(b)?{before:a,after:b,ratio:b/a,count:0}:null;
