@@ -97,7 +97,9 @@ const METRICS = ['compile', 'rssCompile', 'inst', 'rssInst', 'first', 'steady', 
 /** Each URL-backed field: its codec and the routes it belongs to (`*` = scope, every route). */
 const FIELDS = {
 	runtimeFilters: { codec: {param:'filter',def:emptyRuntimeFilters(),parse:parseRuntimeFilters,ser:JSON.stringify} as Codec<RuntimeFilters>, routes:'*' },
-	passRate: { codec: int('pass', 100, 0, 100), routes: '*' },
+	mainPassRate: { codec: int('pass', 100, 0, 100), routes: '*' },
+	// Feature comparisons start from every runtime: few pass every feature test.
+	featurePassRate: { codec: int('fpass', 0, 0, 100), routes: ['/features'] },
 	cohortMode: { codec: str('cohort', 'shared', ['shared', 'per-engine'] as const), routes: '*' },
 	average: { codec: str('avg', 'mean', ['geo', 'mean'] as const), routes: '*' },
 	order: { codec: { param: 'order', def: [] as string[], parse: (s: string) => { const ids = [...new Set(s.split(',').filter(isCfg))]; return ids.length ? ids : undefined; }, ser: (v: string[]) => v.join(',') } as Codec<string[]>, routes: '*' },
@@ -165,8 +167,13 @@ class UiState {
 	get order() { return engineOrder.ids; }
 	set order(ids: string[]) { engineOrder.ids = ids; }
 	runtimeFilters = $state<RuntimeFilters>(emptyRuntimeFilters());
-	/** Minimum measured workload pass rate required for a runtime to remain in the comparison. */
-	passRate = $state(100);
+	/** Minimum main-corpus workload pass rate for a runtime to remain in the comparison. */
+	mainPassRate = $state(100);
+	/** Minimum feature-test pass rate on feature comparisons. */
+	featurePassRate = $state(0);
+	/** The pass-rate floor of the current comparison. */
+	get passRate() { return this.filterFeatures ? this.featurePassRate : this.mainPassRate; }
+	set passRate(v: number) { if (this.filterFeatures) this.featurePassRate = v; else this.mainPassRate = v; }
 	filterFeatures = $state(false);
 	filterOpen = $state(false);
 	filterRows = $derived(cachedFilterRows(this.machine,this.filterFeatures,this.average));
@@ -251,6 +258,8 @@ class UiState {
 			else if (!global) (this as any)[key] = key === 'histTo' ? Math.max(0, (viewData.history[this.machine]?.points.length ?? 0) - 1) : structuredClone(f.codec.def);
 			else if (raw != null) (this as any)[key] = structuredClone(f.codec.def);
 		}
+		// Known from the route, before the scope bar mounts, so filters apply at once.
+		this.filterFeatures = routeId === '/features';
 		if (['roundTrip','hostWasm','wasmHostLoop'].includes(sp.get('ot')||'')) this.otMetric = 'callTotal';
 		if (this.histFrom >= this.histTo) this.histFrom = Math.max(0, this.histTo - 1);
 	}

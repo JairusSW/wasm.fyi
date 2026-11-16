@@ -36,3 +36,13 @@ describe('engine filters before data loads',()=>{
  });
 
 });
+describe('pass-rate floor per comparison',()=>{
+ it('requires every workload on benchmarks but any feature-test pass rate on features',()=>{
+  ui.loadFromUrl(new URL('http://localhost/benchmarks/'),'/benchmarks');expect(ui.passRate).toBe(100);
+  ui.loadFromUrl(new URL('http://localhost/features/'),'/features');expect(ui.passRate).toBe(0);
+  expect(new URLSearchParams(ui.toSearch('/features')).has('fpass')).toBe(false);
+  ui.passRate=90;expect(ui.featurePassRate).toBe(90);expect(ui.mainPassRate).toBe(100);
+  ui.loadFromUrl(new URL('http://localhost/benchmarks/'),'/benchmarks');expect(ui.passRate).toBe(100);
+  ui.loadFromUrl(new URL('http://localhost/features/?fpass=95'),'/features');expect(ui.passRate).toBe(95);
+ });
+});

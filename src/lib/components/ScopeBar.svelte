@@ -56,7 +56,7 @@
 		const out: { key: string; label: string; tip: string; clear: () => void }[] = [];
 		if (ui.exec !== 'all') out.push({ key: 'exec', label: ui.exec === 'compiler' ? 'Compilers' : 'Interpreters', tip: 'Execution model', clear: () => (ui.exec = 'all') });
 		if (ui.lang !== 'all') out.push({ key: 'lang', label: `Written in ${ui.lang}`, tip: 'Implementation language', clear: () => (ui.lang = 'all') });
-		if (ui.passRate > 0) out.push({ key: 'pass', label: ui.passRate === 100 ? 'Passes every workload' : `Passes ≥ ${ui.passRate}%`, tip: 'Minimum workload pass rate', clear: () => (ui.passRate = 0) });
+		if (ui.passRate > 0) out.push({ key: 'pass', label: ui.passRate === 100 ? (featureComparison ? 'Passes every feature test' : 'Passes every workload') : `Passes ≥ ${ui.passRate}%`, tip: featureComparison ? 'Minimum feature-test pass rate' : 'Minimum workload pass rate', clear: () => (ui.passRate = 0) });
 		const name = ui.runtimeFilters.name.trim();
 		if (name) out.push({ key: 'name', label: `“${name}”`, tip: 'Name, backend or version', clear: () => (ui.runtimeFilters = { ...ui.runtimeFilters, name: '' }) });
 		ui.runtimeFilters.rules.forEach((r, i) => {
