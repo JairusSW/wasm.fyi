@@ -295,7 +295,7 @@ export async function bakePageSeed(origin:string,path:string,machine:MachineId='
  compactClient=new CompactClient((resource,options)=>fetch(new URL(String(resource),origin),options));
  summary=undefined;summaryCheckedAt=0;bakedMachines.clear();loadedMachines.clear();loadedPhases.clear();metadataMachines.clear();
  apiView.precomputed={};apiView.aggregateErrors={};datasetView.current=emptyView();
- ui.machine=machine;ui.hide={};ui.weighting='workload';ui.snap='s1';ui.cohortMode='shared';ui.average='mean';ui.metric='steady';ui.drawer=null;
+ ui.machine=machine;ui.filterFeatures=path.replace(/\/$/,'')==='/features';ui.hide={};ui.weighting='workload';ui.snap='s1';ui.cohortMode='shared';ui.average='mean';ui.metric='steady';ui.drawer=null;
  buildPath=path;
  try{
   await connectSite();
@@ -393,8 +393,14 @@ function applyPageSeed(seed:BakedPageSeed,merge=false){
  apiView.baked=true;apiView.ready=true;apiView.error='';
 }
 export function activatePageSeed(seed:PageSeed|BakedPageSeed){
- if(seed.schema!==2||typeof window!=='undefined'&&apiView.ready)return;
- applyPageSeed(seed);
+ if(seed.schema!==2)return;
+ if(typeof window==='undefined'||!apiView.ready){applyPageSeed(seed);return}
+ // In-app navigation: a baked page of the publication already loaded fills in
+ // what this page needs without an API round trip or loading placeholders.
+ if(seed.machine!==ui.machine||!summary||machineRevision(seed.machine,seed.summary)!==machineRevision(seed.machine))return;
+ const baked=seed.loaded.find(([machine])=>machine===seed.machine)?.[1],phases=seed.phases.find(([machine])=>machine===seed.machine)?.[1]||[];
+ if(baked&&loadedMachines.get(seed.machine)===baked&&phases.every(phase=>loadedPhases.get(seed.machine)?.has(phase)))return;
+ applyPageSeed(seed,true);
 }
 export async function loadPage(_scope:PageScope,_index=0,_append=false){}
 export async function loadCalls(_scope:PageScope){}

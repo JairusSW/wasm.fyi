@@ -21,7 +21,7 @@
 	import { OTM_KEYS } from '$lib/data/snapshot';
 	import { PROPOSAL_IDS } from '$lib/links';
 	import { ui } from '$lib/state.svelte';
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { preferredMachine } from '$lib/preferred-machine';
 	import { animateFavicon } from '$lib/favicon';
 	import {decodeBakedSeed} from '$lib/api/baked-codec';
@@ -31,6 +31,9 @@
  // Run before rendering children, on both prerender and hydration.
  function activateInitialSeed(){if(data.pageSeed)activatePageSeed(decodeBakedSeed(data.pageSeed))}
  activateInitialSeed();
+ // Later navigations carry the next page's baked seed in its route data.
+ let activeSeed=untrack(()=>data.pageSeed);
+ $effect.pre(()=>{const seed=data.pageSeed;if(!seed||seed===activeSeed)return;activeSeed=seed;untrack(()=>activatePageSeed(decodeBakedSeed(seed)))});
 
 	// Share-card text and image for this page (see src/lib/og.ts).
 	const og = $derived(ogFor(page.route.id, page.params));
