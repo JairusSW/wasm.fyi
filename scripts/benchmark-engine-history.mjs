@@ -114,7 +114,7 @@ for(const pin of plan.pins.filter(p=>historyPinAllowed(p,template)&&historyWeekM
    }
    if(!unavailable)await pruneRustIntermediates(harness);
    if(engine==='wamr')buildEnv.WASMBENCH_WAMR_MODE=configuration==='wamr'?'interpreter':configuration.replace(/^wamr-/, '');
-   const job={id:'history-'+template.collection.samples+'-'+label,engine:configuration,harness,controller:jobController,env:Object.fromEntries(Object.entries(buildEnv).filter(([k])=>k.startsWith('WASMBENCH_'))),historical:true,retryInfrastructureFailurePolicy:'weekly-capture-infra-retry-v1',source:{repository:pin.repository,revision,ref:pin.tag||'main@'+revision.slice(0,8),asOf:pin.targetWeek,kind:pin.targetType==='main'?'snapshot':'release',...(pin.dateBasis?{dateBasis:pin.dateBasis}:{})}};
+   const job={id:'history-'+template.collection.samples+'-'+label,engine:configuration,harness,controller:jobController,env:Object.fromEntries(Object.entries(buildEnv).filter(([k])=>k.startsWith('WASMBENCH_')||k==='JAVA_TOOL_OPTIONS')),historical:true,retryInfrastructureFailurePolicy:'weekly-capture-infra-retry-v1',source:{repository:pin.repository,revision,ref:pin.tag||'main@'+revision.slice(0,8),asOf:pin.targetWeek,kind:pin.targetType==='main'?'snapshot':'release',...(pin.dateBasis?{dateBasis:pin.dateBasis}:{})}};
    if(engine==='v8'&&buildEnv.WASMBENCH_V8_TURBOSHAFT_POLICY)job.backend='turboshaft';
    if(unavailable){job.unavailableReason=unavailable.reason;job.backend=configuration==='wamr-fast-jit'?'fast-jit':configuration;}
    if(!prepareOnly&&!unavailable&&env.WASMFYI_HISTORY_FAST!=='1')await qualifyHistoryStartup({directory,configuration,suite,harness,controller:jobController,source:job.source,env:buildEnv,run});
