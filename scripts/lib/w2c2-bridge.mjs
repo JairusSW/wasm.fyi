@@ -21,6 +21,12 @@ export async function applyW2c2Bridge(root) {
   if(after.includes(old))after=after.replace(old,value);
   else if(!after.includes(value))throw Error('W2c2 generated symbol seam changed');
  }
+ const include='            args.push(format!("-I{}", c.sdk.display()));';
+ const simde='            if c.sdk.join("simde/wasm/simd128.h").is_file() {\n                args.push("-DW2C2_SIMDE_HEADER=\\"simde/wasm/simd128.h\\"".into());\n            }';
+ if(!after.includes('W2C2_SIMDE_HEADER')) {
+  if(!after.includes(include))throw Error('W2C2 compiler include seam changed');
+  after=after.replace(include,include+'\n'+simde);
+ }
  // Rename embedding exports and their Rust lookups together. The same-length
  // namespace keeps legacy wb_memory (and guest exports named new/call) distinct.
  after=after.replace(/\bwb_(error|trap|init|fini|new|free|call|memory)\b/g,'wm_$1');

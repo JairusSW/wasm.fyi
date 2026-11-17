@@ -174,6 +174,12 @@ if(engine==='wago') {
  for(const [name,path] of [['wasmtime','crates/wasmtime'],['wasmtime-wasi','crates/wasi'],['wasmtime-internal-jit-icache-coherence','crates/jit-icache-coherence']]){
   text=text.replace(new RegExp('('+name+' = \\{ )version = "=46\\.0\\.1"'),(_,prefix)=>prefix+'path = '+JSON.stringify(join(source,path)));
  }
+ if(pin.revision==='9905be28a6788d32d7935b871b6486afe418e624'){
+  const old='rustix = { version = "=1.1.5"',updated='rustix = { version = "=1.1.6"';
+  if(!text.includes(old)&&!text.includes(updated))throw Error('Wasmtime adapter rustix dependency seam changed');
+  text=text.replace(old,updated);
+  provenance.adapterRustix={version:'1.1.6',reason:'match the pinned Wasmtime workspace requirement'};
+ }
  await writeFile(cargo,text);
  const workspacePackage=workspace.match(/\[workspace\.package\]([\s\S]*?)(?=\n\[|$)/)?.[1];
  const sdkVersion=workspacePackage?.match(/^version\s*=\s*"([^"]+)"/m)?.[1];

@@ -380,6 +380,31 @@ test('wasm3 source-declared gaps are classified without hiding claimed feature f
  }
 });
 
+test('SIMD-capable w2c2 classifies exact proposal decoder rejections',()=>{
+ const source={repository:'turbolent/w2c2',revision:'bc3fd9ac23ea176555e2530503fffed13de48228'},engine='w2c2-gcc';
+ for(const [feature,opcode] of [['relaxed-simd','100'],['relaxed-simd','103'],['relaxed-simd','105'],['relaxed-simd','10B'],['half-precision','120'],['typed-function-references','14']]){
+  const w={id:`features/${feature}/case/1`,sha256:'f'.repeat(64),abi:'core',features:[feature],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+  const capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+  const failures=[{engine,workload:w.id,phase:'first-call',status:'error',reason:`error: translation failed: w2c2: unsupported opcode unknown (0x${opcode})`}];
+  assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures})?.status,'unsupported');
+  assert.equal(classifyFeatureRuntimeRejection({source:{...source,revision:'e'.repeat(40)},engine,workload:w,capture:{...capture,source:{...source,revision:'e'.repeat(40)}},failures}),null);
+ }
+});
+
+test('w2c2 nullable indexed reference local rejection is tied to the audited artifact',()=>{
+ const source={repository:'turbolent/w2c2',revision:'bc3fd9ac23ea176555e2530503fffed13de48228'},engine='w2c2-gcc';
+ const w={id:'features/typed-function-references/nullable-local-refinement/1',sha256:'031a2fb2090aef6af395785a1dc2032336771e7da82f7568269c49c652c5e400',abi:'core',features:['typed-function-references'],export:'benchmark',args:['1'],reset:'stateless',oracle:{kind:'exact_u64',expected:['0']}};
+ const capture={source,results:[{engine,workload:w.id,artifactSha256:w.sha256,contractSha256:workloadContract(w),phase:'first-call',latencyStatus:'failed',timingSamples:0,samplesNs:[]}]};
+ const failures=[{engine,workload:w.id,phase:'first-call',status:'error',reason:'w2c2: invalid code section local declarations'}];
+ assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:w,capture,failures})?.status,'unsupported');
+ const performance={...w,sha256:'178a1d91a6a94e37e1a005e832bd78785fafa90c26ddd37c3648a20d57b2bdb7'};
+ const performanceCapture={...capture,results:[{...capture.results[0],artifactSha256:performance.sha256,contractSha256:workloadContract(performance)}]};
+ assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:performance,capture:performanceCapture,failures})?.status,'unsupported');
+ const changed={...w,sha256:'f'.repeat(64)};
+ const changedCapture={...capture,results:[{...capture.results[0],artifactSha256:changed.sha256,contractSha256:workloadContract(changed)}]};
+ assert.equal(classifyFeatureRuntimeRejection({source,engine,workload:changed,capture:changedCapture,failures}),null);
+});
+
 test('w2c2 classifies only exact gaps outside its pinned declared feature set',()=>{
  const source={repository:'turbolent/w2c2',revision:'e'.repeat(40)},engine='w2c2-gcc';
  for(const [feature,reason] of [

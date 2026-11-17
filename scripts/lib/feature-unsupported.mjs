@@ -213,11 +213,19 @@ const w2c2Rejections=[
  // This exact upstream decoder's value-type switch has no v128 (0x7b).
  {revision:'700f556539ea7c7995e6645b9b80e3edf9c9b271',feature:'simd',reason:/invalid code section local declarations/},
  {feature:'relaxed-simd',reason:/(?:unsupported opcode unknown \(0xFD\)|invalid code section local declarations)/},
+ // This SIMD-capable revision decodes the SIMD prefix and reports the
+ // individual unsupported relaxed-SIMD subopcode instead of the prefix.
+ {revision:'bc3fd9ac23ea176555e2530503fffed13de48228',feature:'relaxed-simd',reason:/unsupported opcode unknown \(0x(?:100|103|105|10B)\)/},
  {feature:'gc',reason:/(?:invalid function type indicator|unsupported opcode unknown \(0xFB\))/},
  {feature:'exceptions',reason:/(?:unsupported section 13[\s\S]*unsupported opcode unknown \(0x1F\)|unsupported section 13[\s\S]*invalid block instruction: expected block type)/},
  {feature:'tail-call',reason:/unsupported opcode unknown \(0x1[23]\)/},
  {feature:'multi-memory',reason:/(?:invalid memory\.copy instruction: expected memory index 1 to be 0, got 1|guest trap: unreachable)/},
  {feature:'typed-function-references',reason:/(?:invalid element section offset expression|invalid table section table type)/},
+ {revision:'bc3fd9ac23ea176555e2530503fffed13de48228',feature:'typed-function-references',reason:/unsupported opcode unknown \(0x14\)/},
+ // This fixture declares a nullable indexed reference local; this revision's
+ // value-type decoder accepts only the unindexed funcref/externref forms.
+ {revision:'bc3fd9ac23ea176555e2530503fffed13de48228',feature:'typed-function-references',workload:/^features\/typed-function-references\/nullable-local-refinement\//,artifactSha256:'031a2fb2090aef6af395785a1dc2032336771e7da82f7568269c49c652c5e400',reason:/invalid code section local declarations/},
+ {revision:'bc3fd9ac23ea176555e2530503fffed13de48228',feature:'typed-function-references',workload:/^features\/typed-function-references\/nullable-local-refinement\//,artifactSha256:'178a1d91a6a94e37e1a005e832bd78785fafa90c26ddd37c3648a20d57b2bdb7',reason:/invalid code section local declarations/},
  {feature:'memory64',reason:/invalid limit kind/},
  {feature:'compact-imports',reason:/invalid import section import kind/},
  {feature:'custom-page-sizes',reason:/invalid limit kind/},
@@ -226,6 +234,7 @@ const w2c2Rejections=[
  {feature:'stack-switching',reason:/invalid function type indicator/},
  {feature:'memory-control',reason:/unsupported opcode unknown \(0x12\)/},
  {feature:'half-precision',reason:/unsupported opcode unknown \(0xFD\)/},
+ {revision:'bc3fd9ac23ea176555e2530503fffed13de48228',feature:'half-precision',reason:/unsupported opcode unknown \(0x120\)/},
  {feature:'stringref',reason:/unsupported opcode unknown \(0xFB\)/},
  {feature:'wide-arithmetic',reason:/unsupported opcode unknown \(0x1[3-6]\)/},
  {feature:'acquire-release-atomics',reason:/invalid i32\.atomic\.rmw\.(?:add|sub|xchg|xor|cmpxchg) instruction: expected alignment 2, got 34/},
@@ -473,7 +482,7 @@ export function classifyFeatureRuntimeRejection({source,engine,workload,capture,
  if(capture.source?.revision!==source.revision||capture.source?.repository!==source.repository)return null;
  const contractSha256=workloadContract(workload),failed=capture.results.filter(row=>row.latencyStatus==='failed');
  if(failed.length!==capture.results.length||failed.some(row=>row.engine!==engine||row.workload!==workload.id||row.artifactSha256!==workload.sha256||row.contractSha256!==contractSha256||(row.timingSamples||0)!==0||(row.samplesNs?.length||0)!==0))return null;
- const rejection=(libwasm?libwasmRejections:wasmtime?wasmtimeRejections:wago?wagoRejections:wasmer?wasmerRejections:wazero?wazeroRejections:v8?v8Rejections:wavm?wavmRejections:spiderMonkey?spiderMonkeyRejections:jsc?jscRejections:wasmi?wasmiRejections:wamr?wamrRejections:wasm3?wasm3Rejections:w2c2?w2c2Rejections:wasm2c?wasm2cRejections:wazy?wazyRejections:wasmedge?wasmedgeRejections:chicory?chicoryRejections:chasm?chasmRejections:wizard?wizardRejections:zwasm?zwasmRejections:endive?endiveRejections:graalWasmRejections).find(candidate=>(!candidate.engine||candidate.engine===engine)&&(!candidate.revision||candidate.revision===source.revision)&&(!candidate.workload||candidate.workload.test(workload.id))&&workload.features?.includes(candidate.feature)&&failures?.some(failure=>candidate.reason.test(failure.reason||'')));
+ const rejection=(libwasm?libwasmRejections:wasmtime?wasmtimeRejections:wago?wagoRejections:wasmer?wasmerRejections:wazero?wazeroRejections:v8?v8Rejections:wavm?wavmRejections:spiderMonkey?spiderMonkeyRejections:jsc?jscRejections:wasmi?wasmiRejections:wamr?wamrRejections:wasm3?wasm3Rejections:w2c2?w2c2Rejections:wasm2c?wasm2cRejections:wazy?wazyRejections:wasmedge?wasmedgeRejections:chicory?chicoryRejections:chasm?chasmRejections:wizard?wizardRejections:zwasm?zwasmRejections:endive?endiveRejections:graalWasmRejections).find(candidate=>(!candidate.engine||candidate.engine===engine)&&(!candidate.revision||candidate.revision===source.revision)&&(!candidate.workload||candidate.workload.test(workload.id))&&(!candidate.artifactSha256||candidate.artifactSha256===workload.sha256)&&workload.features?.includes(candidate.feature)&&failures?.some(failure=>candidate.reason.test(failure.reason||'')));
  if(!rejection||!failures?.length||failures.some(failure=>failure.engine!==engine||failure.workload!==workload.id||(!['error','preflight_failed'].includes(failure.status)&&!(rejection.allowIncorrectResult&&failure.status==='incorrect_result')&&!(failure.status==='unsupported'&&failure.reason==='scenario not advertised'))||(failure.samples?.length||0)!==0))return null;
  const sourceBound=failures.filter(failure=>rejection.reason.test(failure.reason||''));
  if(!sourceBound.length||failures.some(failure=>!sourceBound.includes(failure)&&failure.reason!=='scenario not advertised'))return null;

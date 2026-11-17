@@ -13,3 +13,10 @@ test('recovery never replaces measured phases or retries guest failures, timeout
  for(const row of [{latencyStatus:'ok',timingSamples:5,latencyNs:42},{latencyStatus:'failed',timingSamples:5,samplesNs:[42],latencyNs:null}])assert.equal(retryInfrastructureCapture({results:[row]},note,job,workload),false);
  assert.equal(retryInfrastructureCapture(capture,note,{...job,retryInfrastructureFailurePolicy:undefined},workload),false);
 });
+test('W2C2 retries the missing SIMDe adapter configuration without retrying other compiler errors',()=>{
+ const w2c2={...job,engine:'w2c2-gcc'};
+ const missing={...note,engine:w2c2.engine,kind:'failed-trials',failures:[{status:'error',reason:'native_compile failed: SIMD output requires SIMDe. Define W2C2_SIMDE_HEADER'}]};
+ assert.equal(retryInfrastructureCapture(capture,missing,w2c2,workload),true);
+ assert.equal(retryInfrastructureCapture(capture,{...missing,failures:[{status:'error',reason:'unrelated compiler failure'}]},w2c2,workload),false);
+ assert.equal(retryInfrastructureCapture(capture,{...missing,recoveryPolicy:w2c2.retryInfrastructureFailurePolicy},w2c2,workload),false);
+});

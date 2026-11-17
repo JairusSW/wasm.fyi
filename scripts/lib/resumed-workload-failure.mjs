@@ -1,7 +1,8 @@
 // Reusing a capture must preserve unresolved failures without rerunning it.
 export function retryInfrastructureCapture(capture,note,job,workload){
  const adapterExited=note?.kind==='failed-trials'&&note.failures?.length>0&&note.failures.every(failure=>failure.status==='unavailable'&&/adapter (?:description unavailable|terminated before response)/i.test(failure.reason||''));
- return Boolean(job.retryInfrastructureFailurePolicy&&(['capture-error','timeout'].includes(note?.kind)||adapterExited)&&note.recoveryPolicy!==job.retryInfrastructureFailurePolicy&&note.engine===(job.displayEngine||job.engine)&&note.workload===workload.id&&note.source?.revision===job.source.revision&&note.source?.asOf===job.source.asOf&&capture?.results?.length&&capture.results.every(row=>row.latencyStatus==='failed'&&!row.timingSamples&&!row.samplesNs?.length&&row.latencyNs==null));
+ const missingSimde=job.engine==='w2c2-gcc'&&note?.kind==='failed-trials'&&note.failures?.length>0&&note.failures.every(failure=>failure.status==='error'&&(failure.reason||'').includes('SIMD output requires SIMDe. Define W2C2_SIMDE_HEADER'));
+ return Boolean(job.retryInfrastructureFailurePolicy&&(['capture-error','timeout'].includes(note?.kind)||adapterExited||missingSimde)&&note.recoveryPolicy!==job.retryInfrastructureFailurePolicy&&note.engine===(job.displayEngine||job.engine)&&note.workload===workload.id&&note.source?.revision===job.source.revision&&note.source?.asOf===job.source.asOf&&capture?.results?.length&&capture.results.every(row=>row.latencyStatus==='failed'&&!row.timingSamples&&!row.samplesNs?.length&&row.latencyNs==null));
 }
 export function restoredWorkloadFailure(capture,note,job,workload) {
  const phases=[...new Set((capture?.results||[]).filter(row=>row.latencyStatus==='failed').map(row=>row.phase))];

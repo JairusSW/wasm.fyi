@@ -53,7 +53,7 @@ for(const job of plan.jobs){
  const env={...process.env,...plan.env,...job.env,GOWORK:'off',GOFLAGS:'-buildvcs=false',GOMAXPROCS:'1',OMP_NUM_THREADS:'1',RAYON_NUM_THREADS:'1',UV_THREADPOOL_SIZE:'1',WASMBENCH_CODE_SIZE_ONLY:'1',WASMBENCH_SINGLE_CORE:plan.executionPolicy?.measurementCores===1?'1':'0',WASMBENCH_RECORD_FAILURES:'1',WASMBENCH_SOURCE_JSON:JSON.stringify(job.source)};
  for(const workload of workloads){
   if(abort.signal.aborted)break;
-  if(process.platform==='darwin'&&performance.now()>=sliceDeadline){status.status='yielded';abort.abort();break;}
+  if(performance.now()>=sliceDeadline){status.status='yielded';abort.abort();break;}
   const key=job.id+'-'+digest(Buffer.from(workload.id)).slice(0,16),file=join(output,key+'.json');
   const existing=await readFile(file,'utf8').then(JSON.parse,()=>null);
   let infrastructureNote;
