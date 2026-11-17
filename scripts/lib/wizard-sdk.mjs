@@ -6,7 +6,7 @@ import {digest,site} from './wasmbench.mjs';
 
 // This compiler revision supplied the SDK used by both architecture proofs.
 // SDK history remains pinned independently; no moving compiler branch is used.
-export const wizardVirgilRevision='7cf038fc13a5474836bec8b14c7a3e796fd07fa5';
+export const wizardVirgilRevision='2652b0090acfeea0f8b385959e9392311530aa05';
 // These extensions are implemented by the pinned Wizard engine but remain
 // opt-in at its CLI. Keep the list beside command construction so SDK and
 // qualification executions cannot silently test different feature sets.
