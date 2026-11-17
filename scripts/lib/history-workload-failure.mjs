@@ -1,6 +1,11 @@
 import {workloadContract} from './workload-contract.mjs';
 
 export const workloadBudgetMs=300000;
+export function singleWorkloadBudgetOverride(value,workloadCount){
+ if(value===undefined)return 0;
+ if(!/^\d+$/.test(value)||Number(value)<workloadBudgetMs||Number(value)>3600000||workloadCount!==1)throw Error('Invalid single-workload budget override');
+ return Number(value);
+}
 const extendedWorkloads=new Set([
  'wago/pcre2/compile-match',
  'wago/yyjson/parse-edit-write',
