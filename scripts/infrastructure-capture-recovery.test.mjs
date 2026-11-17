@@ -20,3 +20,9 @@ test('W2C2 retries the missing SIMDe adapter configuration without retrying othe
  assert.equal(retryInfrastructureCapture(capture,{...missing,failures:[{status:'error',reason:'unrelated compiler failure'}]},w2c2,workload),false);
  assert.equal(retryInfrastructureCapture(capture,{...missing,recoveryPolicy:w2c2.retryInfrastructureFailurePolicy},w2c2,workload),false);
 });
+test('an unmeasured adapter exit reported as an error can be retried once',()=>{
+ const exit={...note,kind:'failed-trials',failures:[{status:'error',reason:'adapter terminated before response (see trial log)'},{status:'error',reason:'adaptive phase compile: adapter terminated before response'}]};
+ assert.equal(retryInfrastructureCapture(capture,exit,job,workload),true);
+ assert.equal(retryInfrastructureCapture(capture,{...exit,recoveryPolicy:job.retryInfrastructureFailurePolicy},job,workload),false);
+ assert.equal(retryInfrastructureCapture(capture,{...exit,failures:[...exit.failures,{status:'error',reason:'guest trap'}]},job,workload),false);
+});
