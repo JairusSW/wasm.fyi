@@ -31,7 +31,7 @@ export function javaScriptCoreCompilerFlags(prefix,standardLibrary='libc++') {
  if(!['libc++','libstdc++'].includes(standardLibrary))throw Error('Unsupported JavaScriptCore C++ standard library '+standardLibrary);
  const quote=value=>"'"+value.replaceAll("'","'\\''")+"'";
  const library=join(prefix,'lib/x86_64-unknown-linux-gnu');
- const linker='-fuse-ld='+quote(join(prefix,'bin/ld.lld'))+' -L'+quote(library)+' '+quote('-Wl,-rpath,'+library);
+ const linker='-fuse-ld='+quote(join(prefix,'bin/ld.lld'))+' -L'+quote(library)+' '+quote('-Wl,-rpath,'+library)+(standardLibrary==='libstdc++'?' -Wl,--no-as-needed -latomic':'');
  const cxx=standardLibrary==='libc++'?'-stdlib=libc++ -nostdinc++ -isystem '+quote(join(prefix,'include/c++/v1')):'-stdlib=libstdc++';
  return ['-DCMAKE_C_COMPILER='+join(prefix,'bin/clang'),'-DCMAKE_CXX_COMPILER='+join(prefix,'bin/clang++'),
   '-DCMAKE_CXX_FLAGS='+cxx+' -Wno-error=unused-const-variable -Wno-error=unused-command-line-argument',
