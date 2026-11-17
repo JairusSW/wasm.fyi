@@ -14,6 +14,13 @@
 	const ranked = $derived(machine?.metrics[sortBy].rows ?? []);
 	const rankedCount = $derived(machine?.metrics[sortBy].total ?? 0);
 	const benchHref = $derived(siteHref(href('/benchmarks', { metric: sortBy === 'e2e' ? 'steady' : sortBy })));
+	// Results span orders of magnitude, so bars grow with log2(value / best):
+	// the best gets the shortest bar and each doubling adds the same length.
+	const barOf = $derived.by(() => {
+		const top = ranked.slice(0, TOP), lo = Math.max(top[0]?.v ?? 1, 1e-6);
+		const span = 1 + Math.log2(Math.max(top.at(-1)?.v ?? lo, lo) / lo);
+		return (r: { v: number }) => ((1 + Math.log2(Math.max(r.v, lo) / lo)) / span) * 100;
+	});
 	const fmt = (v: number) => fmtU(v, UNIT[METRICS[sortBy].group]);
 	const updated = $derived(machine?.updated);
 	const host = $derived(machine?.host ?? '');
@@ -70,7 +77,7 @@
 								<span class="rt">{r.c.rt}</span>
 								<span class="be">{r.c.be}</span>
 							</span>
-							<span class="track"><span class="bar" style:width="{r.bar}%" style:background={r.c.col}></span></span>
+							<span class="track"><span class="bar" style:width="{barOf(r)}%" style:background={r.c.col}></span></span>
 							<span class="val mono">{fmt(r.v)}</span>
 						</a>
 					</li>
