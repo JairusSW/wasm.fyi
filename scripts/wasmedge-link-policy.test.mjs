@@ -20,5 +20,8 @@ test('LLVM SDK uses the explicit compatible C++ ABI and no duplicate standard he
  assert.ok(system.includes('-DCMAKE_CXX_FLAGS='));
  for(const key of ['CMAKE_AR','CMAKE_C_COMPILER_AR','CMAKE_CXX_COMPILER_AR'])assert.ok(system.includes('-D'+key+'=/usr/bin/gcc-ar'));
  for(const key of ['CMAKE_RANLIB','CMAKE_C_COMPILER_RANLIB','CMAKE_CXX_COMPILER_RANLIB'])assert.ok(system.includes('-D'+key+'=/usr/bin/gcc-ranlib'));
+ const llvm=wasmEdgeHostLinkFlags({WASMFYI_WASMEDGE_SYSTEM_CXX:'1',WASMFYI_WASMEDGE_LLVM_LIBRARY_DIR:'/usr/lib/llvm-18/lib'},'linux').join(' ');
+ assert.match(llvm,/CMAKE_SHARED_LINKER_FLAGS=.*-L\/usr\/lib\/llvm-18\/lib.*-Wl,-rpath,\/usr\/lib\/llvm-18\/lib/);
+ assert.throws(()=>wasmEdgeHostLinkFlags({WASMFYI_WASMEDGE_SYSTEM_CXX:'1',WASMFYI_WASMEDGE_LLVM_LIBRARY_DIR:'relative path'},'linux'),/Unsafe/);
  assert.throws(()=>wasmEdgeHostLinkFlags({WASMFYI_WASMEDGE_CXX_SDK:'/cache/unsafe prefix'},'linux'),/Unsafe/);
 });

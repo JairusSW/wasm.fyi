@@ -19,6 +19,11 @@ export function wasmEdgeHostLinkFlags(env,platform=process.platform) {
   // Clear archive tools retained from Clang too: LLVM ar cannot index GCC LTO.
   for(const key of ['CMAKE_AR','CMAKE_C_COMPILER_AR','CMAKE_CXX_COMPILER_AR'])flags.push('-D'+key+'=/usr/bin/gcc-ar');
   for(const key of ['CMAKE_RANLIB','CMAKE_C_COMPILER_RANLIB','CMAKE_CXX_COMPILER_RANLIB'])flags.push('-D'+key+'=/usr/bin/gcc-ranlib');
+  const llvmLibrary=env.WASMFYI_WASMEDGE_LLVM_LIBRARY_DIR;
+  if(llvmLibrary){
+   if(!llvmLibrary.startsWith('/')||/[\s"'`$]/.test(llvmLibrary))throw Error('Unsafe WasmEdge LLVM library directory');
+   linker.push('-L'+llvmLibrary,'-Wl,-rpath,'+llvmLibrary);
+  }
  }
  if(prefix){
   if(!prefix.startsWith('/')||/[\s"'`$]/.test(prefix))throw Error('Unsafe WasmEdge compiler SDK prefix');
