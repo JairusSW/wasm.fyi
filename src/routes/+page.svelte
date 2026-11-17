@@ -14,18 +14,20 @@
 	const ranked = $derived(machine?.metrics[sortBy].rows ?? []);
 	const rankedCount = $derived(machine?.metrics[sortBy].total ?? 0);
 	const benchHref = $derived(siteHref(href('/benchmarks', { metric: sortBy === 'e2e' ? 'steady' : sortBy })));
-	// Results span orders of magnitude, so bars grow with log2(value / best):
+	// Times and memory span orders of magnitude, so bars grow with log2(value / best):
 	// the best gets the shortest bar and each doubling adds the same length.
-	const barOf = $derived.by(() => {
-		const top = ranked.slice(0, TOP), lo = Math.max(top[0]?.v ?? 1, 1e-6);
-		const span = 1 + Math.log2(Math.max(top.at(-1)?.v ?? lo, lo) / lo);
-		return (r: { v: number }) => ((1 + Math.log2(Math.max(r.v, lo) / lo)) / span) * 100;
-	});
+	const logBar = (values: number[]) => {
+		const lo = values.length ? Math.max(Math.min(...values), 1e-6) : 1;
+		const span = 1 + Math.log2(Math.max(...values, lo) / lo);
+		return (v: number) => ((1 + Math.log2(Math.max(v, lo) / lo)) / span) * 100;
+	};
+	const barOf = $derived(logBar(ranked.slice(0, TOP).map((r) => r.v)));
 	const fmt = (v: number) => fmtU(v, UNIT[METRICS[sortBy].group]);
 	const updated = $derived(machine?.updated);
 	const host = $derived(machine?.host ?? '');
 	const samples = $derived(data.home?.samples ?? {all:0,latest:0});
 	const feat = $derived(machine?.features);
+	const speedBar = $derived(logBar((feat?.speed.top ?? []).map((x) => x.ms)));
 </script>
 
 <svelte:head>
@@ -77,7 +79,7 @@
 								<span class="rt">{r.c.rt}</span>
 								<span class="be">{r.c.be}</span>
 							</span>
-							<span class="track"><span class="bar" style:width="{barOf(r)}%" style:background={r.c.col}></span></span>
+							<span class="track"><span class="bar" style:width="{barOf(r.v)}%" style:background={r.c.col}></span></span>
 							<span class="val mono">{fmt(r.v)}</span>
 						</a>
 					</li>
@@ -130,7 +132,7 @@
 								<a href={siteHref('/features?view=perf')}>
 									<span class="rank mono">{i + 1}</span>
 									<span class="name"><Swatch color={c.col} bg={c.hollow ? 'transparent' : c.col} size={10} /><span class="rt">{c.rt}</span><span class="be">{c.be}</span></span>
-									<span class="track"><span class="bar" style:width="{(ms / feat!.speed.top.at(-1)!.ms) * 100}%" style:background={c.col}></span></span>
+									<span class="track"><span class="bar" style:width="{speedBar(ms)}%" style:background={c.col}></span></span>
 									<span class="val mono">{fmtU(ms, 'ms')}</span>
 								</a>
 							</li>
