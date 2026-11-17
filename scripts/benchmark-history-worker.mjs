@@ -20,6 +20,8 @@ if(!plan.platformSpecs){const memoryBytes=process.platform==='darwin'?Number(exe
 plan.jobs=plan.jobs.filter(job=>!['deno','wasm2js','wasm2rs'].includes(job.engine));
 const requested=plan.workloads?new Map(plan.workloads.map(w=>[w.id,w.sha256])):null;
 const workloads=(await readCache(plan.corpusRoot)).filter(w=>!requested||requested.has(w.id)).filter(w=>w.abi!=='wasi-command'&&!/^features\/wasi(?:-|\/)/.test(w.id));
+const budgetOverride=process.env.WASMFYI_HISTORY_SINGLE_WORKLOAD_BUDGET_MS;
+if(budgetOverride!==undefined&&(!/^\d+$/.test(budgetOverride)||Number(budgetOverride)<workloadBudgetMs||Number(budgetOverride)>3600000||workloads.length!==1))throw Error('Invalid single-workload budget override');
 if(requested)for(const w of workloads)if(w.sha256!==requested.get(w.id))throw Error(`Artifact differs from shared inventory: ${w.id}`);
 if(requested&&workloads.length!==requested.size)throw Error('Shared inventory is incomplete on this host');
 validateHistoricalScope(plan,workloads);
@@ -80,7 +82,7 @@ for(const job of plan.jobs){
   // The collector reads only this source descriptor; the controller pins actual adapter identities.
   process.env.WASMBENCH_SOURCE_JSON=env.WASMBENCH_SOURCE_JSON;
   if(job.engine==='wago'&&job.source.revision.length===40)process.env.WASMBENCH_WAGO_REVISION=job.source.revision;else delete process.env.WASMBENCH_WAGO_REVISION;
-  const budgetMs=workloadBudgetFor(workload);
+  const budgetMs=Math.max(workloadBudgetFor(workload),Number(budgetOverride||0));
   const workloadSignal=AbortSignal.any([abort.signal,AbortSignal.timeout(budgetMs)]);
   try{
    if(job.unavailableReason){const contractSha256=workloadContract(workload);const capture={capturedAt:new Date().toISOString(),source:job.source,platform:{os:process.platform,arch:process.arch==='x64'?'amd64':'arm64',cpu:cpus()[0].model,cores:plan.platformSpecs.cores,kernel:execFileSync('uname',['-srv']).toString().trim(),memoryBytes:plan.platformSpecs.memoryBytes},results:['compile','instantiate','first-call','steady'].map(phase=>({workload:workload.id,wasm:workload.artifactName,artifactSha256:workload.sha256,contractSha256,engine:job.engine,version:job.source.revision,backend:job.backend||job.engine,phase,timingSamples:0,latencyStatus:'unsupported',latencyNs:null,memoryStatus:'unsupported',peakRssBytes:null,codeStatus:'unsupported',codeBytes:null,codeKind:null}))};await atomicJSON(file,capture);recordResources(capture);status.completed++;await save();continue;}
@@ -111,7 +113,7 @@ for(const job of plan.jobs){
    }
    console.log(JSON.stringify({event:'captured',...status.current,statuses:capture.results.map(r=>[r.phase,r.latencyStatus]),resources:capture.results.map(r=>({phase:r.phase,memory:r.memoryStatus,code:r.codeStatus}))}));
   }catch(error){if(!abort.signal.aborted){
-   const {capture,note}=historyWorkloadFailure({workload,job,error,signal:workloadSignal,platform:{os:process.platform,arch:process.arch==='x64'?'amd64':'arm64',cpu:cpus()[0].model,cores:plan.platformSpecs.cores,kernel:execFileSync('uname',['-srv']).toString().trim(),memoryBytes:plan.platformSpecs.memoryBytes}});
+   const {capture,note}=historyWorkloadFailure({workload,job,error,signal:workloadSignal,budgetMs,platform:{os:process.platform,arch:process.arch==='x64'?'amd64':'arm64',cpu:cpus()[0].model,cores:plan.platformSpecs.cores,kernel:execFileSync('uname',['-srv']).toString().trim(),memoryBytes:plan.platformSpecs.memoryBytes}});
    if(recoverInfrastructure&&job.retryInfrastructureFailurePolicy)note.recoveryPolicy=job.retryInfrastructureFailurePolicy;
    status.errors.push({...status.current,error:note.reason,kind:note.kind,budgetMs:note.budgetMs});console.error(error);
    // Persist a failed outcome so resume cannot retry a timed-out/crashed
