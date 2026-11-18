@@ -13,6 +13,6 @@
  function setUntil(value:string){if(datasetView.revision)apiHistory.until=value;else {const index=dates.indexOf(value);if(index>=0)ui.histTo=index;}}
 </script>
 <div class="row small">
- <DatePicker label="History from" bind:value={()=>from,setFrom} max={until} {dates} />
- <DatePicker label="Until" bind:value={()=>until,setUntil} min={from} {dates} />
+ <DatePicker label="History from" bind:value={()=>from,setFrom} max={until} {dates} placeholder={dates[0]??'Earliest'} />
+ <DatePicker label="Until" bind:value={()=>until,setUntil} min={from} {dates} placeholder={dates.at(-1)??'Latest'} />
 </div>

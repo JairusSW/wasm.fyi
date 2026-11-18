@@ -2,7 +2,7 @@
  import {localDate,selectableDate} from '$lib/api/calendar-date';
  import {fly} from 'svelte/transition';
  import {cubicOut} from 'svelte/easing';
- let {value=$bindable(''),label,min='',max='',dates}:{value?:string;label:string;min?:string;max?:string;dates?:string[]}=$props();
+ let {value=$bindable(''),label,min='',max='',dates,placeholder='Choose date'}:{value?:string;label:string;min?:string;max?:string;dates?:string[];placeholder?:string}=$props();
  const today=localDate();
  let open=$state(false);
  let root:HTMLDivElement;
@@ -32,7 +32,7 @@
 <svelte:window onpointerdown={(event)=>{if(open&&root&&!root.contains(event.target as Node))open=false}} />
 <div class="picker" bind:this={root}>
  <span class="label small fg3">{label}</span>
- <button class="trigger mono" aria-label={label} aria-haspopup="dialog" aria-expanded={open} onclick={toggle} class:open><span>{value||'Choose date'}</span><svg class="cal-icon" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="2" width="10" height="9" /><path d="M1 5h10M4 1v2M8 1v2" /></svg></button>
+ <button class="trigger mono" aria-label={label} aria-haspopup="dialog" aria-expanded={open} onclick={toggle} class:open><span class:unset={!value}>{value||placeholder}</span><svg class="cal-icon" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="2" width="10" height="9" /><path d="M1 5h10M4 1v2M8 1v2" /></svg></button>
  {#if open}
   <div class="calendar" role="dialog" aria-label={label} tabindex="-1" onkeydown={keyboard} transition:fly={{y:-4,duration:140,easing:cubicOut}}>
    <div class="month"><button aria-label="Previous month" onclick={()=>move(-1)}>‹</button><span>{monthName}</span><button aria-label="Next month" onclick={()=>move(1)}>›</button></div>
@@ -67,4 +67,6 @@
  .actions{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:6px;margin-top:8px;font-size:11px}
  .actions button{color:var(--fg2)}
  @media (max-width:720px){.trigger{padding:7px 10px;font-size:13px}}
+
+ .unset{color:var(--fg3)}
 </style>
