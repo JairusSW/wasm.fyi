@@ -33,10 +33,18 @@ it('bakes scalar results, hydrates without fetching, and reuses them after a rev
  expect(datasetView.current.hosts.m1.snapshots.s1['applications/test|G|steady'].samples).toEqual([0.001,0.002]);
  closeSite();
 });
-it('fails a snapshot build when the API is unavailable',async()=>{
- vi.stubGlobal('fetch',vi.fn(async()=>Response.json({error:{message:'unavailable'}},{status:503})));
+it('fails a snapshot build when the API stays unavailable after retries',async()=>{
+ const request=vi.fn(async()=>Response.json({error:{message:'unavailable'}},{status:503}));
+ vi.stubGlobal('fetch',request);
  const {bakePageSeed}=await import('./controller.svelte');
- await expect(bakePageSeed('https://example.test','/')).rejects.toThrow('unavailable');
+ vi.useFakeTimers();
+ try{
+  const failed=expect(bakePageSeed('https://example.test','/')).rejects.toThrow('unavailable');
+  await vi.runAllTimersAsync();
+  await failed;
+ }finally{vi.useRealTimers()}
+ // Reads are retried with backoff before the build gives up.
+ expect(request.mock.calls.filter(([resource])=>String(resource).includes('/api/summary'))).toHaveLength(4);
 });
 it('opens a baked page in the browser without any API request',async()=>{
  const platform={id:'linux',cpu:'Test CPU',os:'linux',arch:'amd64',cores:8,kernel:'test',latestRevision:'r'};
