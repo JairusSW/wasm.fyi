@@ -91,8 +91,12 @@ import TipCalls from '$lib/components/TipCalls.svelte';
 		const ticks: { y: string; t: string; label: string }[] = [];
 		let Y: (v: number) => number;
 		if (ui.histMode === 'ratio') {
-			const lo = Math.log(Math.min(...allV) * 0.85);
 			const hi = Math.log(Math.max(...allV) * 1.15);
+			// Extend the floor to the next 1-2-5 tick below the lowest value when
+			// that costs little height, so the crowded fast end gets a labelled gridline.
+			const min = Math.min(...allV), e10 = Math.floor(Math.log10(min));
+			const nice = [5, 2, 1].map((m) => m * 10 ** e10).find((v) => v <= min * 0.95) ?? 0.5 * 10 ** e10;
+			const lo = Math.log(hi - Math.log(nice) > 0 && (Math.log(min * 0.85) - Math.log(nice)) / (hi - Math.log(nice)) < 0.15 ? nice * 0.92 : min * 0.85);
 			Y = (v) => pt + (1 - (Math.log(v) - lo) / (hi - lo)) * (HC - pt - pb);
 			const cand: number[] = [];
 			for (let e = Math.floor(lo / Math.LN10) - 1; e <= Math.ceil(hi / Math.LN10); e++)
@@ -139,12 +143,20 @@ import TipCalls from '$lib/components/TipCalls.svelte';
 		dash: e.kind === 'harness' ? 'none' : e.kind === 'corpus' ? '1 3' : '3 3',
 		stroke: e.kind === 'harness' ? 'var(--fg2)' : 'var(--fg3)'
 	})));
+	// Month labels sit at each month's first snapshot. A label too close to the
+	// next one (a range starting late in a month) yields to it, and the first
+	// label shown carries the year.
+	const monthLabels = $derived.by(() => {
+		const starts = SNAPS.filter((p) => p.i === 0 || p.date.slice(5, 7) !== SNAPS[p.i - 1]?.date.slice(5, 7));
+		const shown = starts.filter((p, k) => k + 1 >= starts.length || X(starts[k + 1].i) - X(p.i) >= W * 0.12);
+		return new Map(shown.map((p, k) => [p.i, MON[+p.date.slice(5, 7) - 1] + (k === 0 ? ' ' + p.date.slice(0, 4) : '')]));
+	});
 	const hits = $derived(SNAPS.map((p) => ({
 		i: p.i,
 		x: (X(p.i) - STEP / 2).toFixed(1),
-		label: MON[+p.date.slice(5, 7) - 1] + (p.i === 0 ? ' ' + p.date.slice(0, 4) : ''),
+		label: monthLabels.get(p.i) ?? '',
 		l: pc(X(p.i), W),
-		show: p.i === 0 || p.date.slice(5, 7) !== SNAPS[p.i - 1]?.date.slice(5, 7)
+		show: monthLabels.has(p.i)
 	})));
 
 	const tip = $derived.by(() => {
