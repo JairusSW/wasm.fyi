@@ -178,7 +178,7 @@
 
 <div class="head" id="workloads">
 	<h2>All workloads</h2>
-	<span class="s12 fg3">{MET[ui.metric].l} · {#if skeleton}<span class="skel" style:width="2em"></span>{:else}{view.shown}{/if} workloads · group averages · click a cell for details</span>
+	<span class="s12 fg3">{MET[ui.metric].l} · {#if skeleton}<span class="skel" style:width="2em"></span>{:else}{view.shown}{/if} {view.shown === 1 ? 'workload' : 'workloads'} · group averages · click a cell for details</span>
 </div>
 <div class="row">
 	<Seg
