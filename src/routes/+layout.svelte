@@ -49,7 +49,8 @@
 	let architectureReady = $state(false);
 	beforeNavigate(() => (synced = false));
 	afterNavigate(({ to }) => {
-		if (browser && navigator.doNotTrack !== '1' && !(navigator as Navigator & {globalPrivacyControl?: boolean}).globalPrivacyControl && !location.pathname.startsWith('/dashboard')) {
+		if (browser && navigator.doNotTrack !== '1' && !(navigator as Navigator & {globalPrivacyControl?: boolean}).globalPrivacyControl && !location.pathname.startsWith('/dashboard') && page.status < 400 && (to?.route.id ?? page.route.id)) {
+   // Unknown paths are not counted (the server rejects them), so not-found pages send nothing.
    let referrer='';try{referrer=document.referrer ? new URL(document.referrer).host : ''}catch{}
    const width=window.screen.width;const screenClass=width<768?'Mobile':width<1024?'Tablet':'Desktop';
    navigator.sendBeacon('/api/event',new Blob([JSON.stringify({path:location.pathname,referrer,screen:screenClass})],{type:'application/json'}));
