@@ -434,8 +434,22 @@
 			gap: 10px;
 			padding: 11px 14px;
 		}
+		/* The bar moves under the name as a thin rule instead of a column. */
+		.lb a {
+			row-gap: 6px;
+		}
 		.lb .track {
-			display: none;
+			grid-column: 2 / -1;
+			grid-row: 2;
+			height: 3px;
+		}
+		.seg {
+			display: flex;
+		}
+		.seg button {
+			flex: 1 0 auto;
+			padding: 6px 8px;
+			font-size: 12px;
 		}
 		.panel .lb a {
 			grid-template-columns: 14px minmax(0, 1fr) auto;
