@@ -1,4 +1,6 @@
 <script lang="ts">
+	/** Lower-cases words for mid-sentence use but keeps acronyms: "Peak RSS" → "peak RSS". */
+	const lowerWords = (text: string) => text.replace(/\b([A-Z])(?=[a-z])/g, (c) => c.toLowerCase());
  import ReportFiles from './ReportFiles.svelte';
  import RunLocally from './RunLocally.svelte';
  import {sourceNumber} from '$lib/api/presentation';
@@ -710,8 +712,8 @@
 		const configs = cfgs.map((c) => {
 			const tiles = metrics.map((m) => {
 				const v = value(c, m), p = place(v, visible.map((x) => value(x, m)));
-				if (p && p.of > 1 && p.n === 1) highlights.push({ lead: true, text: `${m.best[0].toUpperCase() + m.best.slice(1)} ${m.label.toLowerCase()}`, place: `${c.be} · 1st of ${p.of}` });
-				if (p && p.of > 2 && p.n === p.of) highlights.push({ lead: false, text: `${m.best === 'fastest' ? 'Slowest' : 'Largest'} ${m.label.toLowerCase()}`, place: `${c.be} · ${ordinal(p.n)} of ${p.of}` });
+				if (p && p.of > 1 && p.n === 1) highlights.push({ lead: true, text: `${m.best[0].toUpperCase() + m.best.slice(1)} ${lowerWords(m.label)}`, place: `${c.be} · 1st of ${p.of}` });
+				if (p && p.of > 2 && p.n === p.of) highlights.push({ lead: false, text: `${m.best === 'fastest' ? 'Slowest' : 'Largest'} ${lowerWords(m.label)}`, place: `${c.be} · ${ordinal(p.n)} of ${p.of}` });
 				return { label: m.label, v: v == null ? '—' : fmtU(v, unit[m.group]), place: p ? `${ordinal(p.n)}/${p.of}` : '', top: p?.n === 1 && p.of > 1 };
 			});
 			const total = e2e(c), tp = place(total, visible.map(e2e));
