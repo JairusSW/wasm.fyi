@@ -102,10 +102,14 @@
 		background: var(--bg2);
 		color: var(--fg3);
 	}
+	/* Wrapping flex rather than an auto-fit grid: cards on a short last row
+	   grow to fill it instead of leaving empty tiles. */
 	.leaders {
-		grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+		display: flex;
+		flex-wrap: wrap;
 	}
 	.leader {
+		flex: 1 1 320px;
 		padding: 12px 14px;
 		display: flex;
 		flex-direction: column;
@@ -124,6 +128,7 @@
 		gap: 7px;
 	}
 	.results {
+		max-width: 560px;
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
 		gap: 16px;
@@ -199,7 +204,12 @@
 	/* Phones: a zoomed-out 2×2 grid — winner on top, runners-up as compact lines beneath. */
 	@media (max-width: 720px) {
 		.leaders {
+			display: grid;
 			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+		/* An odd card out spans the row instead of leaving an empty tile. */
+		.leader:last-child:nth-child(odd) {
+			grid-column: 1 / -1;
 		}
 		.leader {
 			padding: 10px;
@@ -208,9 +218,6 @@
 		.leader .kicker {
 			font-size: 10px;
 			letter-spacing: 0.04em;
-			white-space: nowrap;
-			overflow: hidden;
-			text-overflow: ellipsis;
 		}
 		.results {
 			grid-template-columns: minmax(0, 1fr);
