@@ -34,7 +34,7 @@ it('bakes scalar results, hydrates without fetching, and reuses them after a rev
  closeSite();
 });
 it('fails a snapshot build when the API stays unavailable after retries',async()=>{
- const request=vi.fn(async()=>Response.json({error:{message:'unavailable'}},{status:503}));
+ const request=vi.fn(async(_resource:string|URL|Request)=>Response.json({error:{message:'unavailable'}},{status:503}));
  vi.stubGlobal('fetch',request);
  const {bakePageSeed}=await import('./controller.svelte');
  vi.useFakeTimers();
