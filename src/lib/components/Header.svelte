@@ -1,6 +1,8 @@
 <script lang="ts">
 	import Brand from '$lib/components/Brand.svelte';
-	import { siteHref } from '$lib/links';
+	import { benchHref, siteHref } from '$lib/links';
+	import { workloadName } from '$lib/format';
+	import { viewData } from '$lib/view-data';
 	import { goto } from '$lib/navigation';
 	import { page } from '$app/state';
 	import { ui } from '$lib/state.svelte';
@@ -26,13 +28,52 @@
 		}
 	}
 
+	// Workload suggestions under the field: arrow keys pick one, Enter opens its page.
+	// Enter with nothing picked keeps filtering the Benchmarks table.
+	let focused = $state(false);
+	let picked = $state(-1);
+	const suggestions = $derived.by(() => {
+		const q = ui.q.trim().toLowerCase();
+		if (q.length < 2) return [];
+		const scored = viewData.catalogue
+			.map((w) => {
+				const name = workloadName(w.id).toLowerCase();
+				const at = name.indexOf(q);
+				const rank = at === 0 ? 0 : at > 0 ? 1 : w.id.toLowerCase().includes(q) ? 2 : (w.purpose ?? '').toLowerCase().includes(q) || w.tags.some((t) => t.toLowerCase().includes(q)) ? 3 : -1;
+				return { w, rank };
+			})
+			.filter((x) => x.rank >= 0);
+		return scored.sort((a, b) => a.rank - b.rank || a.w.id.localeCompare(b.w.id)).slice(0, 8).map((x) => x.w);
+	});
+	const listOpen = $derived(focused && suggestions.length > 0);
+	$effect(() => {
+		suggestions;
+		picked = -1;
+	});
+	function open(id: string) {
+		focused = false;
+		input?.blur();
+		goto(benchHref(id));
+	}
+
 	function submit() {
+		if (picked >= 0 && suggestions[picked]) return open(suggestions[picked].id);
 		if (page.route.id !== '/benchmarks') goto('/benchmarks' + (ui.q ? '?q=' + encodeURIComponent(ui.q) : '') + '#workloads');
 		else document.getElementById('workloads')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 		input?.blur();
 	}
 
 	function onkey(e: KeyboardEvent) {
+		if (listOpen && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+			e.preventDefault();
+			const n = suggestions.length;
+			picked = e.key === 'ArrowDown' ? (picked + 1) % n : (picked - 1 + n) % n;
+			return;
+		}
+		if (e.key === 'Escape' && picked >= 0) {
+			picked = -1;
+			return;
+		}
 		if (e.key === 'Escape') {
 			ui.q = '';
 			searchOpen = false;
@@ -75,6 +116,13 @@
 			bind:this={input}
 			bind:value={ui.q}
 			onkeydown={onkey}
+			onfocus={() => (focused = true)}
+			onblur={() => (focused = false)}
+			role="combobox"
+			aria-expanded={listOpen}
+			aria-controls="gsearch-list"
+			aria-autocomplete="list"
+			aria-activedescendant={picked >= 0 ? `gsearch-opt-${picked}` : undefined}
 			placeholder="Search workloads"
 			aria-label="Search workloads"
 			enterkeyhint="search"
@@ -83,6 +131,18 @@
 			spellcheck="false"
 		/>
 		<kbd class="mono" aria-hidden="true">/</kbd>
+		{#if listOpen}
+			<ul class="suggest" id="gsearch-list" role="listbox" aria-label="Workloads">
+				{#each suggestions as w, i (w.id)}
+					<!-- mousedown keeps focus in the field until navigation starts -->
+					<li id="gsearch-opt-{i}" role="option" aria-selected={i === picked} class:on={i === picked} onmousedown={(e) => (e.preventDefault(), open(w.id))} onmouseenter={() => (picked = i)}>
+						<span class="mono sname">{workloadName(w.id)}</span>
+						<span class="small fg3 spurpose">{w.purpose ?? w.group}</span>
+					</li>
+				{/each}
+				<li class="hint small fg3" role="presentation">↑↓ to pick · Enter to open · Enter alone filters the table</li>
+			</ul>
+		{/if}
 	</form>
 	<div class="tools">
 		<button
@@ -170,6 +230,47 @@
 		position: relative;
 		display: flex;
 		align-items: center;
+	}
+	.suggest {
+		position: absolute;
+		top: calc(100% + 4px);
+		left: 0;
+		right: 0;
+		min-width: 320px;
+		z-index: 40;
+		margin: 0;
+		padding: 4px 0;
+		list-style: none;
+		background: var(--bg2);
+		border: 1px solid var(--line2);
+		box-shadow: 0 8px 24px rgb(0 0 0 / 0.14);
+	}
+	.suggest li {
+		display: flex;
+		flex-direction: column;
+		gap: 1px;
+		padding: 6px 10px;
+		cursor: pointer;
+		min-width: 0;
+	}
+	.suggest li.on {
+		background: var(--hover);
+	}
+	.suggest .sname {
+		font-size: 12px;
+		color: var(--fg);
+	}
+	.suggest .spurpose {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.suggest .hint {
+		cursor: default;
+		border-top: 1px solid var(--line);
+		margin-top: 4px;
+		padding-top: 6px;
+		font-size: 11px;
 	}
 	.glass {
 		position: absolute;
