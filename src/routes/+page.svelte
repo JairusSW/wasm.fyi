@@ -9,6 +9,14 @@
 	const IDS = Object.keys(METRICS) as MetricId[];
 	const TOP = 10;
 	let sortBy = $state<MetricId>('steady');
+	function tabKey(e: KeyboardEvent) {
+		const i = IDS.indexOf(sortBy);
+		const next = e.key === 'ArrowRight' ? (i + 1) % IDS.length : e.key === 'ArrowLeft' ? (i - 1 + IDS.length) % IDS.length : e.key === 'Home' ? 0 : e.key === 'End' ? IDS.length - 1 : -1;
+		if (next < 0) return;
+		e.preventDefault();
+		sortBy = IDS[next];
+		(e.currentTarget as HTMLElement).querySelectorAll<HTMLButtonElement>('[role=tab]')[next]?.focus();
+	}
 	let { data } = $props();
 	const machine = $derived(data.home?.machines[ui.machine]);
 	const ranked = $derived(machine?.metrics[sortBy].rows ?? []);
@@ -62,13 +70,14 @@
 			<span class="meta">{[host, `${machine?.workloads ?? 0} workloads`, updated && `updated ${updated}`].filter(Boolean).join(' · ')}</span>
 		</div>
 
-		<div class="seg" role="tablist" aria-label="Rank by">
+		<!-- Roving tabindex: arrow keys, Home and End move between metrics. -->
+		<div class="seg" role="tablist" aria-label="Rank by" tabindex="-1" onkeydown={tabKey}>
 			{#each IDS as id (id)}
-				<button role="tab" aria-selected={sortBy === id} class:on={sortBy === id} onclick={() => (sortBy = id)}>{METRICS[id].label}</button>
+				<button role="tab" aria-selected={sortBy === id} tabindex={sortBy === id ? 0 : -1} aria-controls="lb-list" class:on={sortBy === id} onclick={() => (sortBy = id)}>{METRICS[id].label}</button>
 			{/each}
 		</div>
 
-		<div class="box">
+		<div class="box" id="lb-list" role="tabpanel" aria-label="{METRICS[sortBy].label} leaderboard">
 			<ol class="lb">
 				{#each ranked.slice(0, TOP) as r, i (r.c.id)}
 					<li>
