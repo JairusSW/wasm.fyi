@@ -131,7 +131,7 @@
 	const spark = $derived(
 		vis.map((c) => {
 			const vals = otSeries(ui.scope, c.id, 'exec', b.id);
-			if (!vals) return { c, segments: [] as string[], now: 'not collected', delta: '', dColor: 'var(--fg3)' };
+			if (!vals) return { c, segments: [] as string[], bridge: '', now: 'not collected', delta: '', dColor: 'var(--fg3)' };
 			const finite = vals.filter(Number.isFinite);
 			const lo = Math.min(...finite), hi = Math.max(...finite);
 			const Y = (v: number) => 21 - ((v - lo) / (hi - lo || 1)) * 18;
@@ -141,6 +141,8 @@
 			return {
 				c,
 				segments: historySegments(vals, SX, Y),
+				// Snapshots that skipped this workload leave gaps; a faint dashed line spans them.
+				bridge: historySegments(vals, SX, Y, true)[0] ?? '',
 				now: last >= 0 ? fmtU(vals[last], 'ms') : ST.unavail[0],
 				delta: Number.isFinite(d) ? relative(1 + d, ui.deltaFormat) : ST.unavail[0],
 				dColor: Math.abs(d) < 0.02 ? 'var(--fg3)' : d < 0 ? 'var(--good)' : 'var(--bad)'
@@ -329,6 +331,7 @@
 										{#if !full}<rect class="sel-range" x={SX(ui.histFrom).toFixed(1)} y="0" width={(SX(ui.histTo) - SX(ui.histFrom)).toFixed(1)} height="24" />{/if}
 										{#if histRange.band}<rect class="drag-band" x={SX(histRange.band[0]).toFixed(1)} y="0" width={Math.max(0.5, SX(histRange.band[1]) - SX(histRange.band[0])).toFixed(1)} height="24" />{/if}
 										{#if histRange.anchor != null && !histRange.dragging}<line class="anchor" x1={SX(histRange.anchor).toFixed(1)} x2={SX(histRange.anchor).toFixed(1)} y1="0" y2="24" />{/if}
+										{#if h.segments.length > 1}<polyline points={h.bridge} style:stroke={h.c.col} class="ln bridge" />{/if}
 										{#each h.segments as points}<polyline {points} style:stroke={h.c.col} style:stroke-dasharray={h.c.hollow ? '4 3' : 'none'} class="ln" />{/each}
 									</svg>
 								{:else}<span class="fg3 small">not collected</span>{/if}
@@ -653,6 +656,11 @@
 		stroke-width: 1.5;
 		stroke-linejoin: round;
 		vector-effect: non-scaling-stroke;
+	}
+	.ln.bridge {
+		stroke-width: 1;
+		stroke-dasharray: 2 3;
+		opacity: 0.45;
 	}
 	.sel-range {
 		fill: var(--bg3);
