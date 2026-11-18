@@ -428,11 +428,16 @@
 	.item {
 		padding: 3px 12px;
 	}
+	/* Toggle in its own column so names and counts stay aligned and the
+	   toggle never wraps onto a line of its own. */
 	.item-line {
-		display: flex;
+		display: grid;
+		grid-template-columns: 14px minmax(0, 1fr);
+		column-gap: 6px;
 		align-items: center;
-		gap: 6px;
-		flex-wrap: wrap;
+	}
+	.item-line > :not(.corpus-toggle) {
+		grid-column: 2;
 	}
 	.name {
 		font-size: 12px;
