@@ -69,9 +69,14 @@
 	</div>
 	<div class="col">
 		<span class="kicker">Browsers</span>
-		{#each browsers as b (b.name)}
-			<div class="srow"><span>{b.name}</span><span class="mono pill" style:background={b.bg} style:color={b.color}>{b.glyph} {b.text}</span></div>
-		{/each}
+		{#if PF.b.some((v) => v && v !== '?')}
+			{#each browsers as b (b.name)}
+				<div class="srow"><span>{b.name}</span><span class="mono pill" style:background={b.bg} style:color={b.color}>{b.glyph} {b.text}</span></div>
+			{/each}
+		{:else}
+			<!-- Support claims are never copied in; browsers are simply not measured yet. -->
+			<p class="small fg3 nobrowser">{BROWSERS.join(', ')}: not measured. wasm.fyi only reports results it collects, and browser builds aren't collected yet.</p>
+		{/if}
 		<span class="kicker mt">Toolchains</span>
 		{#each tools as t (t.name)}
 			<div class="trow">
@@ -232,5 +237,9 @@
 	h2 {
 		font-size: 16px;
 		font-weight: 600;
+	}
+	.nobrowser {
+		margin: 6px 0 4px;
+		line-height: 1.5;
 	}
 </style>
