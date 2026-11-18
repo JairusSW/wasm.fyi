@@ -35,7 +35,13 @@
 		})
 	);
 	const ok = $derived(rows.filter((r) => r.sp));
-	const maxSp = $derived(Math.max(...ok.map((r) => r.sp!)));
+	// Speedups diverge from "no change": gains extend right of the midline, slowdowns left,
+	// on a log scale so 2× faster and 2× slower are the same length.
+	const maxLog = $derived(Math.max(0.05, ...ok.map((r) => Math.abs(Math.log(r.sp!)))));
+	const spBar = (sp: number) => {
+		const half = (Math.abs(Math.log(sp)) / maxLog) * 50;
+		return { w: half.toFixed(1) + '%', from: (sp >= 1 ? 50 : 50 - half).toFixed(1) + '%' };
+	};
 	const maxAbs = $derived(Math.max(...ok.map((r) => r.abs!)));
 	const bySp = $derived([...ok].sort((a, b) => b.sp! - a.sp!)[0]);
 	const byAbs = $derived([...ok].sort((a, b) => a.abs! - b.abs!)[0]);
@@ -128,12 +134,14 @@
 	{/if}
 	<div class="cards">
 		<div class="card">
-			<div><div class="card-title">Speedup within each configuration</div><div class="note">scalar time ÷ SIMD time, same runtime · higher = larger gain</div></div>
+			<div><div class="card-title">Speedup within each configuration</div><div class="note">scalar time ÷ SIMD time, same runtime · right of the line = SIMD faster, left = slower</div></div>
 			{#each rows as r (r.c.id)}
 				<BarRow
 					c={r.c}
 					ok={!!r.sp}
-					w={r.sp ? ((r.sp / maxSp) * 100).toFixed(1) + '%' : '0%'}
+					w={r.sp ? spBar(r.sp).w : '0%'}
+					from={r.sp ? spBar(r.sp).from : '0%'}
+					center
 					text={r.sp ? relative(r.sp,ui.deltaFormat) : ''}
 					status="—"
 					cols="130px 1fr 110px"
