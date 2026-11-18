@@ -289,10 +289,21 @@ export async function loadCellSamples(machine:MachineId,snapshot:'s1'|'s2',workl
  datasetView.current={...current,hosts:{...current.hosts,[machine]:{...host,snapshots:{...host.snapshots,[snapshot]:{...host.snapshots[snapshot],[key]:updated}}}}};
 }
 export function firstMachine(){return machines[0]}
+/** Baking talks to the live API, which can briefly time out while it publishes; retry reads before failing the build. */
+async function bakeFetch(url:URL,options?:RequestInit):Promise<Response>{
+ const read=!options?.method||options.method==='GET';
+ for(let attempt=1;;attempt++){
+  try{
+   const response=await fetch(url,options);
+   if(!read||response.status<500||attempt>=4)return response;
+  }catch(error){if(!read||attempt>=4||options?.signal?.aborted)throw error}
+  await new Promise(resolve=>setTimeout(resolve,1000*2**(attempt-1)));
+ }
+}
 /** Build uses the same conversion and ranking code as live API loads. */
 export async function bakePageSeed(origin:string,path:string,machine:MachineId='m1'):Promise<BakedPageSeed>{
  closeSite();
- compactClient=new CompactClient((resource,options)=>fetch(new URL(String(resource),origin),options));
+ compactClient=new CompactClient((resource,options)=>bakeFetch(new URL(String(resource),origin),options));
  summary=undefined;summaryCheckedAt=0;bakedMachines.clear();loadedMachines.clear();loadedPhases.clear();metadataMachines.clear();
  apiView.precomputed={};apiView.aggregateErrors={};datasetView.current=emptyView();
  ui.machine=machine;ui.filterFeatures=path.replace(/\/$/,'')==='/features';ui.hide={};ui.weighting='workload';ui.snap='s1';ui.cohortMode='shared';ui.average='mean';ui.metric='steady';ui.drawer=null;
