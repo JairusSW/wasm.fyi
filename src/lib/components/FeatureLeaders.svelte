@@ -39,14 +39,26 @@
 		// Performance in time units. Absolute times only compare over the same features, so each card
 		// ranks runtimes on the features measured by every ranked runtime.
 		const perfCard = (label: string, metric: 'steady' | 'compile', perfMetric: 'exec' | 'compile'): LeaderCard => {
-			const { ranked, shared, families: measured, minFamilies } = featureSpeed(s, cols, metric);
+			let speed = featureSpeed(s, cols, metric), narrowed = false;
+			// Many runtimes rarely pass the same contracts. As on the home page, pick the leaders
+			// on their own passed contracts, then compare those leaders over the contracts they share.
+			if (!speed.ranked.length && s.cohortMode !== 'per-engine' && cols.length > 2) {
+				const leaders = [...featureSpeed({ ...s, cohortMode: 'per-engine' }, cols, metric).ranked].sort((a, b) => a.v - b.v).slice(0, 5);
+				const retry = leaders.length > 1 ? featureSpeed(s, leaders.map((r) => r.c.id), metric) : null;
+				if (retry?.ranked.length) {
+					speed = retry;
+					narrowed = true;
+				}
+			}
+			const { ranked, shared, families: measured, minFamilies } = speed;
 			const fmt = (v: number) => fmtAverage(v,'ms');
 			return {
 				label,
 				points: [
 					`Per feature: ${metric==='compile'?'compilation time':'steady execution time per iteration'}, ${s.average==='mean'?'arithmetic mean':'geometric mean'} over its selected contracts`,
 					`${s.average==='mean' ? 'Arithmetic mean' : 'Geometric mean'} over the ${shared} features measured by every ranked runtime`,
-					`Contract selection: ${s.cohortMode==='per-engine'?'passed per engine':'passed on all shown engines'}; runtimes measured on fewer than ${minFamilies} of ${measured} measured features are not ranked`
+					`Contract selection: ${s.cohortMode==='per-engine'?'passed per engine':'passed on all shown engines'}; runtimes measured on fewer than ${minFamilies} of ${measured} measured features are not ranked`,
+					...(narrowed ? [`The shown runtimes share too few passed contracts, so this ranks the ${ranked.length} fastest on their own contracts, compared over the contracts they all pass`] : [])
 				],
 				onselect: () => {
 					ui.compatView = 'perf';
