@@ -138,7 +138,7 @@
 			</div>
 		{/each}
 	</div>
-	<div class="card g6">
+	<div class="card g6 chart-card">
 		<div><div class="card-title">Total vs invocations</div><div class="note">log–log · vertical line = current setting</div></div>
 		<div class="chart">
 			<svg viewBox="0 0 {W} {HC}">
@@ -172,6 +172,14 @@
 </div>
 
 <style>
+	/* The ranked list runs long; keep the chart in view beside it. */
+	@media (min-width: 820px) {
+		.chart-card {
+			align-self: start;
+			position: sticky;
+			top: 12px;
+		}
+	}
 	.head {
 		display: flex;
 		flex-wrap: wrap;
