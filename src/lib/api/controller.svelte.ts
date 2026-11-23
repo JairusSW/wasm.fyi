@@ -33,7 +33,7 @@ let abort:AbortController|undefined;
 let machines:MachineId[]=[];
 const slots=new Map<string,CfgId>();
 const wagoToolchains = new Map([
- ['wago-go', 'Big Go'],
+ ['wago-go', 'Go'],
  ['wago-tinygo', 'TinyGo'],
 ]);
 const isLegacyWagoAlias = (engine: string) =>

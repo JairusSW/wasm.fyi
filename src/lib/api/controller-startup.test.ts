@@ -122,7 +122,7 @@ it('requests one merged history for both Hub kernel environments',async()=>{
  closeSite();
 });
 
-it('gives Wago Big Go and TinyGo separate benchmark cells and a hollow TinyGo marker', async () => {
+it('gives Wago Go and TinyGo separate benchmark cells and a hollow TinyGo marker', async () => {
  const engines=['wago','wago-go','wago-tinygo'];
  const backends=['railshot','railshot-go','railshot-tinygo'];
  const platform={id:'apple',cpu:'Apple M4 Max',os:'darwin',arch:'arm64',cores:16,kernel:'test',latestRevision:'r'};
@@ -151,7 +151,7 @@ it('gives Wago Big Go and TinyGo separate benchmark cells and a hollow TinyGo ma
  expect(host.configurations['engine:wago-tinygo']?.backend).toBe('railshot-tinygo');
  expect(host.snapshots.s1['applications/test|engine:wago-go|steady']).toMatchObject({st:'ok',v:0.002});
  expect(host.snapshots.s1['applications/test|engine:wago-tinygo|steady']).toMatchObject({st:'ok',v:0.003});
- expect(CB['engine:wago-go']).toMatchObject({rt:'wago',be:'Big Go',col:'var(--rt-wago)',hollow:false});
+ expect(CB['engine:wago-go']).toMatchObject({rt:'wago',be:'Go',col:'var(--rt-wago)',hollow:false});
  expect(CB['engine:wago-tinygo']).toMatchObject({rt:'wago',be:'TinyGo',col:'var(--rt-wago)',hollow:true});
  closeSite();
 });
