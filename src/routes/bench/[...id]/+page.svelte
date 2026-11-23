@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { markerDash } from '$lib/data/engine-marker';
 	import { apiView, loadHistory, loadHistoryComparison } from '$lib/api/controller.svelte';
 	import { apiHistory } from '$lib/api/history.svelte';
 	import RunLocally from '$lib/components/RunLocally.svelte';
@@ -332,7 +333,7 @@
 										{#if histRange.band}<rect class="drag-band" x={SX(histRange.band[0]).toFixed(1)} y="0" width={Math.max(0.5, SX(histRange.band[1]) - SX(histRange.band[0])).toFixed(1)} height="24" />{/if}
 										{#if histRange.anchor != null && !histRange.dragging}<line class="anchor" x1={SX(histRange.anchor).toFixed(1)} x2={SX(histRange.anchor).toFixed(1)} y1="0" y2="24" />{/if}
 										{#if h.segments.length > 1}<polyline points={h.bridge} style:stroke={h.c.col} class="ln bridge" />{/if}
-										{#each h.segments as points}<polyline {points} style:stroke={h.c.col} style:stroke-dasharray={h.c.hollow ? '4 3' : 'none'} class="ln" />{/each}
+										{#each h.segments as points}<polyline {points} style:stroke={h.c.col} style:stroke-dasharray={markerDash(h.c)} class="ln" />{/each}
 									</svg>
 								{:else}<span class="fg3 small">not collected</span>{/if}
 							</td>

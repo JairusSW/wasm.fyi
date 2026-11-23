@@ -7,6 +7,8 @@ export type MetricKey = 'compile' | 'rssCompile' | 'inst' | 'rssInst' | 'first' 
 export type OvKey = 'lat' | 'calls' | 'mem' | 'code' | 'cov';
 export type OtMetricKey = 'exec' | 'callTotal' | 'hostWasm' | 'wasmHostLoop' | 'compile' | 'inst' | 'mem' | 'code' | 'cov';
 
+export type MarkerPattern = 'solid' | 'hollow' | 'diagonal' | 'split';
+
 /** A benchmarked runtime configuration: one runtime at one version with one backend. */
 export interface Cfg {
 	id: CfgId;
@@ -17,6 +19,7 @@ export interface Cfg {
 	col: string;
 	/** Alternate backend — drawn with a hollow swatch and dashed lines. */
 	hollow: boolean;
+	pattern?: MarkerPattern;
 	interp?: boolean;
 	/** Fixed backend label for chips, ordering and the compiler/interpreter split; never changes when data loads. */
 	label?: string;

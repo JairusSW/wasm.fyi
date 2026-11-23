@@ -155,3 +155,29 @@ it('gives Wago Go and TinyGo separate benchmark cells and a hollow TinyGo marker
  expect(CB['engine:wago-tinygo']).toMatchObject({rt:'wago',be:'tinygo',col:'var(--rt-wago)',hollow:true});
  closeSite();
 });
+
+it.each([
+ ['wasmtime', 'wasmtime-winch'],
+ ['wasmer-singlepass', 'wasmer-cranelift', 'wasmer-llvm'],
+ ['wazero', 'wazero-interpreter'],
+ ['wamr', 'wamr-fast-jit', 'wamr-llvm-jit'],
+ ['wasmedge', 'wasmedge-jit'],
+ ['chicory', 'chicory-jit'],
+ ['endive-interpreter', 'endive-jit'],
+ ['wizard-v3-int', 'wizard-fast-int', 'wizard-spc'],
+ ['zwasm-interpreter', 'zwasm-jit'],
+ ['libwasm', 'libwasm-jit'],
+])('uses one runtime color and distinct backend patterns for %s', async (...engines) => {
+ await import('./controller.svelte');
+ const {CB}=await import('../data/runtimes');
+ const {engineMarker,markerDash}=await import('../data/engine-marker');
+ const configs=engines.map(engine=>{
+  const {runtime,color,pattern}=engineMarker(engine);
+  const config=Object.values(CB).find(c=>c.rt===runtime&&c.col===color&&(c.pattern??(c.hollow?'hollow':'solid'))===pattern);
+  expect(config,engine).toBeDefined();
+  return config!;
+ });
+ expect(new Set(configs.map(c=>c.rt)).size).toBe(1);
+ expect(new Set(configs.map(c=>c.col)).size).toBe(1);
+ expect(new Set(configs.map(markerDash)).size).toBe(engines.length);
+});

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { markerDash } from '$lib/data/engine-marker';
 	import RtLabel from '$lib/components/RtLabel.svelte';
 	import Seg from '$lib/components/Seg.svelte';
 	import { CFG } from '$lib/data/runtimes';
@@ -145,7 +146,7 @@
 				{#each model.yTicks as t (t.y)}<line x1="50" x2="510" y1={t.y} y2={t.y} style="stroke:var(--line)" />{/each}
 				<line x1={model.curX} x2={model.curX} y1="12" y2="222" style="stroke:var(--fg2);stroke-dasharray:3 3" />
 				{#each model.lines as l (l.c.id)}
-					<polyline points={l.p} style:stroke={l.c.col} style:stroke-dasharray={l.c.hollow ? '4 3' : 'none'} class="ln" />
+					<polyline points={l.p} style:stroke={l.c.col} style:stroke-dasharray={markerDash(l.c)} class="ln" />
 				{/each}
 			</svg>
 			{#each model.yTicks as t (t.y)}<span class="axis-label" style:left="8.5%" style:top={t.t} style:transform="translate(-100%,-50%)">{t.label}</span>{/each}

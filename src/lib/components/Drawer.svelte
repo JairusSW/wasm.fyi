@@ -506,6 +506,7 @@
    reproduce:{engine:viewData.configurations[cfg.id]||cfg.rt,version:track.version,source:viewData.featureVersions[s.machine].find(v=>v.id===(viewData.configurations[cfg.id]||cfg.rt)&&v.version===track.version)?.description.source},
 			be: cfg.be,
 			hollow: cfg.hollow,
+			pattern: cfg.pattern,
 			name,
 			col,
 			version: shortVersion(track.version || '') || 'not collected',
@@ -754,7 +755,7 @@
 			title: `${info?.name ?? d.rt}${chosen ? ' · ' + chosen.be : ''}`,
 			rt: d.rt,
 			be: chosen?.be ?? '',
-			siblings: backends.filter((c) => c.id !== chosen?.id).map((c) => ({ id: c.id, be: c.be, col: c.col, hollow: c.hollow })),
+			siblings: backends.filter((c) => c.id !== chosen?.id).map((c) => ({ id: c.id, be: c.be, col: c.col, hollow: c.hollow, pattern: c.pattern })),
 			lang: info ? langOf({ rt: d.rt }) : '',
 			license: info?.lic && info.lic !== 'not reviewed' ? info.lic : '',
 			links: [
@@ -870,7 +871,7 @@
 				{#if st.ties.length}<span class="tie-chip small" data-tip={`Statistically tied (paired 95% interval includes no difference):\n${st.ties.join('\n')}`}>≈ {st.ties.length} tied</span>{/if}
 				<span class="lead small">
 					{#if st.best.self}<span class="fg3">{st.lead}</span>
-					{:else}<span class="fg3">{st.lead}</span><Swatch color={st.best.c.col} bg={st.best.c.hollow ? 'transparent' : st.best.c.col} size={7} /><span>{st.best.c.rt}</span><span class="mono">{st.best.label}</span>{/if}
+					{:else}<span class="fg3">{st.lead}</span><Swatch marker={st.best.c} size={7} /><span>{st.best.c.rt}</span><span class="mono">{st.best.label}</span>{/if}
 				</span>
 			</div>
 			<svg viewBox="0 0 420 48" class="dist" role="img" aria-label="{st.place} of {st.n}; each dot is one configuration, best on the left">
@@ -938,7 +939,7 @@
 		{#key d}<div class="body" in:fade={swapIn}>
 			{#if cell}
 				<div class="ident">
-					<Swatch color={cell.c.col} bg={cell.c.hollow ? 'transparent' : cell.c.col} size={9} />
+					<Swatch marker={cell.c} size={9} />
 					<span class="w5">{cell.c.rt}</span>
 					<VersionLink id={cell.c.id} />
 					<span class="chip mono">{cell.c.be}</span>
@@ -1001,7 +1002,7 @@
 				</section>
 			{:else if feature}
 				<div class="ident">
-					<Swatch color={feature.c.col} bg={feature.c.hollow ? 'transparent' : feature.c.col} size={9} />
+					<Swatch marker={feature.c} size={9} />
 					<span class="w5">{feature.c.rt}</span>
 					<VersionLink id={feature.c.id} />
 					<span class="chip mono">{feature.c.be}</span>
@@ -1085,7 +1086,7 @@
 				</section>
 			{:else if support}
 				<div class="ident">
-					<Swatch color={support.col} bg={support.hollow ? 'transparent' : support.col} size={9} />
+					<Swatch marker={support} size={9} />
 					<span class="w5">{support.rt}</span>
 					<span class="version-tag mono">{support.version}</span>
 					<span class="chip mono">{support.activeBackend || support.be}</span>
@@ -1168,7 +1169,7 @@
 			{:else if aggregatePanel}
 				{@const a = aggregatePanel}
 				<div class="ident">
-					<Swatch color={a.c.col} bg={a.c.hollow ? 'transparent' : a.c.col} size={9} />
+					<Swatch marker={a.c} size={9} />
 					<span class="w5">{a.c.rt}</span>
 					<VersionLink id={a.c.id} />
 					<span class="chip mono">{a.c.be}</span>
@@ -1237,7 +1238,7 @@
 				</section>
 			{:else if compat}
 				<div class="ident">
-					<Swatch color={compat.c.col} bg={compat.c.hollow ? 'transparent' : compat.c.col} size={9} />
+					<Swatch marker={compat.c} size={9} />
 					<span class="w5">{compat.c.rt} <VersionLink id={compat.c.id} /></span>
 					<span class="mono small fg3">{compat.c.be}</span>
 				</div>
@@ -1274,7 +1275,7 @@
 				<div class="note">Observed results for one configuration on one suite revision. Not a compliance certification.</div>
 			{:else if profile}
 				<div class="ident">
-					{#each profile.configs.slice(0, 1) as x (x.c.id)}<Swatch color={x.c.col} bg={x.c.col} size={9} />{/each}
+					{#each profile.configs.slice(0, 1) as x (x.c.id)}<Swatch marker={x.c} size={9} />{/each}
 					<span class="w5">{profile.rt}</span>
 					{#if profile.lang}<span class="chip mono">{profile.lang}</span>{/if}
 					{#if profile.license}<span class="chip mono" title="License">{profile.license}</span>{/if}
@@ -1288,7 +1289,7 @@
 					<div class="siblings small">
 						<span class="fg3">Other backends</span>
 						{#each profile.siblings as sb (sb.id)}
-							<button class="sib" onclick={() => ui.openProfile(profile.rt, sb.id)}><Swatch color={sb.col} bg={sb.hollow ? 'transparent' : sb.col} size={7} />{sb.be}<span class="ext" aria-hidden="true">→</span></button>
+							<button class="sib" onclick={() => ui.openProfile(profile.rt, sb.id)}><Swatch marker={sb} size={7} />{sb.be}<span class="ext" aria-hidden="true">→</span></button>
 						{/each}
 					</div>
 				{/if}
@@ -1298,7 +1299,7 @@
 					{#each profile.configs as x (x.c.id)}
 						<div class="pcfg">
 							<div class="pcfg-head">
-								<Swatch color={x.c.col} bg={x.c.hollow ? 'transparent' : x.c.col} />
+								<Swatch marker={x.c} />
 								<span class="w5">{x.c.be}</span>
 								<VersionLink id={x.c.id} />
 								<span class="small fg3">{x.kind}</span>

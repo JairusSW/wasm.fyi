@@ -256,7 +256,7 @@
 				ondblclick={(e) => { e.preventDefault(); soloRuntime(c.id); }}
 				data-tip={on ? `${c.rt} ${c.label ?? c.be} · click to hide · double-click for only this · drag to reorder` : `${c.rt} ${c.label ?? c.be} · excluded: ${w?.text} · click to show · drag to reorder`}
 			>
-				<Swatch color={c.col} bg={c.hollow ? 'transparent' : c.col} />{c.rt}<span class="ebe">{c.label ?? c.be}</span>
+				<Swatch marker={c} />{c.rt}<span class="ebe">{c.label ?? c.be}</span>
 			</button>
 		{/each}
 	</div>

@@ -180,7 +180,7 @@
 		{#if card.title}<strong class="tip-title">{card.title}</strong>{/if}
 		{#if card.who}
 			<div class="tip-who">
-				<Swatch color={card.who.col} bg={card.who.hollow ? 'transparent' : card.who.col} />
+				<Swatch marker={card.who} />
 				<strong>{card.who.rt}</strong>
 				<span class="mono fg3">{card.who.be}</span>
 				{#if card.who.ver}<span class="chip mono">{#if card.who.url}<a href={card.who.url} target="_blank" rel="noopener noreferrer">{card.who.ver}</a>{:else}{card.who.ver}{/if}</span>{/if}

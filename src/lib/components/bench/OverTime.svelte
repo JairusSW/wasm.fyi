@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { markerDash } from '$lib/data/engine-marker';
 	import VersionLink from '../VersionLink.svelte';
 	import {CALL_PATHS} from '$lib/call-paths';
 	import HistoryWindow from '../HistoryWindow.svelte';
@@ -214,7 +215,7 @@ import MarkerKey from '../MarkerKey.svelte';
 										{#if range.band}<rect class="drag-band" x={WX(range.band[0]).toFixed(1)} y="0" width={Math.max(1, WX(range.band[1]) - WX(range.band[0])).toFixed(1)} height="34" />{/if}
 										{#if range.anchor != null && !range.dragging}<line class="anchor" x1={WX(range.anchor).toFixed(1)} x2={WX(range.anchor).toFixed(1)} y1="0" y2="34" />{/if}
 										{#if h.hv}<line x1={h.hx} x2={h.hx} y1="0" y2="34" class="cross" />{/if}
-										{#each h.segments as points}<path d={historyCurve(points)} style:stroke={h.c.col} style:stroke-dasharray={h.c.hollow ? '4 3' : 'none'} />{/each}
+										{#each h.segments as points}<path d={historyCurve(points)} style:stroke={h.c.col} style:stroke-dasharray={markerDash(h.c)} />{/each}
 										{#each SNAPS as p (p.i)}
 											<rect
 												role="presentation"

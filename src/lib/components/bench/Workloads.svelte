@@ -209,7 +209,7 @@
 					{@const mark = ui.sortBy?.id === c.id ? (ui.sortBy.dir > 0 ? '↑' : '↓') : ''}
 					<th class="colh" use:engineDrag={{ id: c.id, group: 'workload-cols' }}>
 						<button class="sort" onclick={() => sortClick(c)} aria-label="Sort by {c.rt} {c.be}" data-tip="Click to sort · drag to move · Alt+←/→">
-							<span class="rtn"><Swatch color={c.col} bg={c.hollow ? 'transparent' : c.col} />{c.rt}<span class="small fg3">{mark}</span></span>
+							<span class="rtn"><Swatch marker={c} />{c.rt}<span class="small fg3">{mark}</span></span>
 							<span class="mono micro fg3">{c.be}</span>
 						</button>
 					</th>

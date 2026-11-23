@@ -3,7 +3,7 @@ import { featureColumns, featureSpeed, featureSupport } from './feature-leaders'
 import type { Scope } from './model';
 
 /** Display identity of a ranked configuration; engines outside the static list only exist once their data loads. */
-export type FeatureEntrant = Pick<Cfg, 'id' | 'rt' | 'be' | 'col' | 'hollow'>;
+export type FeatureEntrant = Pick<Cfg, 'id' | 'rt' | 'be' | 'col' | 'hollow' | 'pattern'>;
 /** Home-page preview of the Features leaders: support breadth and feature execution speed. */
 export interface FeatureSummary {
 	/** Feature families with corpus tests, and each leader's fully passed count. */
@@ -14,7 +14,7 @@ export interface FeatureSummary {
 
 const TOP = 5;
 
-const entrant = ({ id, rt, be, col, hollow }: Cfg): FeatureEntrant => ({ id, rt, be, col, hollow });
+const entrant = ({ id, rt, be, col, hollow, pattern }: Cfg): FeatureEntrant => ({ id, rt, be, col, hollow, pattern });
 
 export function summarizeFeatures(scope: Scope): FeatureSummary {
 	const { families, engines } = featureSupport(scope);

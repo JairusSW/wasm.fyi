@@ -12,7 +12,7 @@ export type TipCard = {
 	kicker?: string;
 	title?: string;
 	/** Runtime identity line rendered with its swatch. */
-	who?: { rt: string; be: string; col: string; hollow?: boolean; ver?: string; url?:string };
+	who?: Pick<Cfg, 'rt' | 'be' | 'col' | 'pattern'> & { hollow?: boolean; ver?: string; url?:string };
 	value?: string;
 	valueColor?: string;
 	/** Heatmap colour of the hovered cell, shown as a chip beside the value. */
@@ -28,11 +28,11 @@ export type TipCard = {
 	vis?: 'cohort-each' | 'cohort-shared' | 'avg-geo' | 'avg-mean';
 };
 
-export const tipWho = (c: Pick<Cfg, 'rt' | 'be' | 'col' | 'hollow'> & {id?:Cfg['id']}, ver?: string): TipCard['who'] => {
+export const tipWho = (c: Pick<Cfg, 'rt' | 'be' | 'col' | 'hollow' | 'pattern'> & {id?:Cfg['id']}, ver?: string): TipCard['who'] => {
  const config=c.id?viewData.hosts[datasetView.machine].configurations[c.id]:undefined;
  const identity=config?versionIdentity(config.version,config.source):null;
  const label=ver?shortVersion(ver):identity?.label;
- return {rt:c.rt,be:c.be,col:c.col,hollow:c.hollow,ver:label,...(identity?.url&&(!ver||label===shortVersion(config!.version)||label===identity.label)?{url:identity.url}:{})};
+ return {rt:c.rt,be:c.be,col:c.col,hollow:c.hollow,pattern:c.pattern,ver:label,...(identity?.url&&(!ver||label===shortVersion(config!.version)||label===identity.label)?{url:identity.url}:{})};
 };
 
 /** Serialises a card for the `data-tip-card` attribute, dropping empty fields. */

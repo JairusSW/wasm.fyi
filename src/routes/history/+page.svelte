@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { markerDash } from '$lib/data/engine-marker';
 	import VersionLink from '$lib/components/VersionLink.svelte';
 	import {CALL_PATHS} from '$lib/call-paths';
 	import {apiHistory,historyKey} from '$lib/api/history.svelte';
@@ -367,7 +368,7 @@ import TipCalls from '$lib/components/TipCalls.svelte';
 						style:stroke={l.c.col}
 						style:stroke-width={l.width}
 						style:opacity={l.op}
-						style:stroke-dasharray={l.c.hollow ? '4 3' : 'none'}
+						style:stroke-dasharray={markerDash(l.c)}
 						class="line"
 					/>
 				{/each}
@@ -400,7 +401,7 @@ import TipCalls from '$lib/components/TipCalls.svelte';
 				</div>
 				{#each tip.rows as r, k (r.c.id)}
 					<div class="htip-row" class:cur={r.sel}>
-						<Swatch color={r.c.col} bg={r.c.hollow ? 'transparent' : r.c.col} />
+						<Swatch marker={r.c} />
 						<span class="htip-name">{r.c.rt} <span class="fg3">{r.c.be}</span> <span class="mono fg3" class:rel={r.release}>{r.release ? '◆ ' : ''}<VersionLink id={r.c.id} version={viewData.history[ui.machine].versions[r.c.id]?.[hover!]} source={viewData.history[ui.machine].sources?.[r.c.id]?.[hover!]} /></span></span>
 						<span class="htip-bar" class:div={tip.diverging}><span style:left={tip.bars[k].left} style:width={tip.bars[k].width} style:background={r.c.col}></span></span>
 						<span class="mono r">{r.value}</span>
@@ -449,7 +450,7 @@ import TipCalls from '$lib/components/TipCalls.svelte';
 		<span class="small fg3 nowrap">Report for</span>
 		{#each plotC as c (c.id)}
 			<button class="chip" class:on={c.id === ui.histCfg} onclick={() => (ui.histCfg = c.id)}>
-				<Swatch color={c.col} bg={c.hollow ? 'transparent' : c.col} />{c.rt} <span class="small fg3">{c.be}</span>
+				<Swatch marker={c} />{c.rt} <span class="small fg3">{c.be}</span>
 			</button>
 		{/each}
 		<!-- phones: one dropdown instead of a wall of chips -->
@@ -468,7 +469,7 @@ import TipCalls from '$lib/components/TipCalls.svelte';
 	</tbody></table></div>
 	{:else}
 	<div class="rep-head">
-		<span class="rep-title"><Swatch color={rep.c.col} bg={rep.c.hollow ? 'transparent' : rep.c.col} size={9} />Change report — {rep.title}</span>
+		<span class="rep-title"><Swatch marker={rep.c} size={9} />Change report — {rep.title}</span>
 		<span class="mono small fg3">{rep.range}</span>
 		<span class="small fg3 push">threshold ±2% · the 95% CI must clear it where one exists</span>
 	</div>

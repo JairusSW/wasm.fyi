@@ -42,6 +42,7 @@
 			be: c.be,
 			col: c.col,
 			hollow: c.hollow,
+			pattern: c.pattern,
 			plugin: c.rt === 'wago' && FEATURE_CFG.find((x) => x.rt === 'wago')?.id === c.id,
 			release: shortVer(engineFeatureVersions(c.rt, ui.scope, 'stable', c.id)[0]),
 			main: shortVer(engineFeatureVersions(c.rt, ui.scope, 'development', c.id)[0])
@@ -70,10 +71,10 @@
 				color: plugin.official ? 'var(--fg)' : 'var(--fg3)',
 				full: plugin.official && plugin.total > 0 && plugin.passed === plugin.total,
 				href: plugin.official ? plugin.evidence : undefined,
-				tip: tipCard({ kicker: 'Feature compatibility · plugin', title: f.name, who: { rt: e.rt, be: 'plugin', col: e.col, hollow: e.hollow, ver: plugin.version }, value: plugin.official ? `${plugin.passed}/${plugin.total}` : 'unmeasured', sub: plugin.official ? `${plugin.failed} failed · ${plugin.skipped} skipped` : '', note: plugin.official ? `${plugin.scope || 'Official upstream suite'}; skips count toward the total. Performance remains unmeasured.` : 'Official suite not collected for this feature on this host.', action: 'open the suite evidence' })
+				tip: tipCard({ kicker: 'Feature compatibility · plugin', title: f.name, who: { rt: e.rt, be: 'plugin', col: e.col, hollow: e.hollow, pattern: e.pattern, ver: plugin.version }, value: plugin.official ? `${plugin.passed}/${plugin.total}` : 'unmeasured', sub: plugin.official ? `${plugin.failed} failed · ${plugin.skipped} skipped` : '', note: plugin.official ? `${plugin.scope || 'Official upstream suite'}; skips count toward the total. Performance remains unmeasured.` : 'Official suite not collected for this feature on this host.', action: 'open the suite evidence' })
 			};
 		}
-		const none = (why: string): CompatView => ({ text: ST.nm[0], sub: '', bg: 'transparent', color: 'var(--fg3)', full: false, tip: tipCard({ kicker: 'Feature compatibility', title: f.name, who: { rt: e.rt, be: e.be, col: e.col, hollow: e.hollow }, value: 'not measured', note: why }) });
+		const none = (why: string): CompatView => ({ text: ST.nm[0], sub: '', bg: 'transparent', color: 'var(--fg3)', full: false, tip: tipCard({ kicker: 'Feature compatibility', title: f.name, who: { rt: e.rt, be: e.be, col: e.col, hollow: e.hollow, pattern: e.pattern }, value: 'not measured', note: why }) });
 		if (!contracts) return none('No corpus contracts for this feature yet.');
 		const rel = runtimeFeatureTrack(e.rt, f, ui.scope, 'stable', undefined, e.id);
 		const main = runtimeFeatureTrack(e.rt, f, ui.scope, 'development', undefined, e.id);
@@ -103,7 +104,7 @@
 			tip: tipCard({
 				kicker: `Feature compatibility · ${track === rel ? 'release' : 'main branch'}`,
 				title: f.name,
-				who: { rt: e.rt, be: e.be, col: e.col, hollow: e.hollow, ver: shortVer(track.version) },
+				who: { rt: e.rt, be: e.be, col: e.col, hollow: e.hollow, pattern: e.pattern, ver: shortVer(track.version) },
 				value: text,
 				heat: bg,
 				sub: best ? `${best.failed} failed · ${best.skipped} skipped${best.missing ? ` · ${best.missing} not run` : ''}` : '',
@@ -133,7 +134,7 @@
 				count: `${rows.length} features · ${measuredRows.length} with corpus tests`,
 				cells: engines.map((e, k) => {
 					const full = measuredRows.filter((r) => r.cells[k].full).length;
-					return { text: measuredRows.length ? `${full}/${measuredRows.length}` : '—', tip: tipCard({ kicker: 'Fully passed features', title: g, who: { rt: e.rt, be: e.be, col: e.col, hollow: e.hollow, ver: e.release }, value: `${full} of ${measuredRows.length}`, note: 'Features in this group where every corpus test passed.' }) };
+					return { text: measuredRows.length ? `${full}/${measuredRows.length}` : '—', tip: tipCard({ kicker: 'Fully passed features', title: g, who: { rt: e.rt, be: e.be, col: e.col, hollow: e.hollow, pattern: e.pattern, ver: e.release }, value: `${full} of ${measuredRows.length}`, note: 'Features in this group where every corpus test passed.' }) };
 				})
 			};
 		})
@@ -222,7 +223,7 @@
 					{#each engines as e (e.id)}
 						<th class="colh">
 							<button class="sort" onclick={() => ui.openProfile(e.rt, e.id)} data-tip={`Open the ${e.rt} profile\nrelease ${e.release || '—'}${e.main ? ` · main ${e.main}` : ''}`}>
-								<span class="rtn"><Swatch color={e.col} bg={e.hollow ? 'transparent' : e.col} />{e.rt}</span>
+								<span class="rtn"><Swatch marker={e} />{e.rt}</span>
 								<span class="mono micro fg3 ver">{e.be || '—'}{e.release ? '' : e.main ? ' · main' : ''}</span>
 							</button>
 						</th>
@@ -293,7 +294,7 @@
 					{#each cols as c (c.id)}
 						<th class="colh">
 							<button class="sort" onclick={() => ui.openProfile(c.rt, c.id)} data-tip={`Open the ${c.rt} profile`}>
-								<span class="rtn"><Swatch color={c.col} bg={c.hollow ? 'transparent' : c.col} />{c.rt}</span>
+								<span class="rtn"><Swatch marker={c} />{c.rt}</span>
 								<span class="mono micro fg3 ver">{c.be}</span>
 							</button>
 						</th>

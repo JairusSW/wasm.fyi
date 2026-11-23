@@ -55,7 +55,7 @@
 						<span class="first" data-tip-card={first.tip}>
 							<span class="mono value">{first.value}</span>
 							<span class="who">
-								<Swatch color={first.who.col} bg={first.who.hollow ? 'transparent' : first.who.col} size={9} />
+								<Swatch marker={first.who} size={9} />
 								<span class="w5">{first.who.rt}</span>
 								<span class="mono small fg3 backend">{first.who.be}</span>
 							</span>
@@ -65,7 +65,7 @@
 						{#each l.places.slice(1, expanded ? undefined : 5) as p (p.who.id)}
 							<span class="place" data-tip-card={p.tip}>
 								<span class="mono small fg3">{ordinal(p.place)}</span>
-								<span class="entrant"><span class="who small"><Swatch color={p.who.col} bg={p.who.hollow ? 'transparent' : p.who.col} size={6} /><span>{p.who.rt}</span></span><span class="mono micro fg3 backend">{p.who.be}</span></span>
+								<span class="entrant"><span class="who small"><Swatch marker={p.who} size={6} /><span>{p.who.rt}</span></span><span class="mono micro fg3 backend">{p.who.be}</span></span>
 								<span class="mono small result-value">{p.value}</span>
 							</span>
 						{/each}

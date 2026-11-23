@@ -213,7 +213,7 @@
 							<span class="check" aria-hidden="true">
 								{#if on}<svg viewBox="0 0 12 12"><path d="M2.5 6.2l2.3 2.3 4.7-4.9" /></svg>{/if}
 							</span>
-							<Swatch color={c.col} bg={c.hollow ? 'transparent' : c.col} size={9} />
+							<Swatch marker={c} size={9} />
 							<span class="name">{c.rt}<span class="be">{c.label ?? c.be}</span></span>
 							{#if !on && w}<span class="why {w.kind}">{w.text}</span>{/if}
 							<span class="pct mono" class:low={pass != null && pass < 100}>{pass == null ? '—' : `${pass >= 99.95 || pass === 0 ? pass.toFixed(0) : pass.toFixed(1)}%`}</span>

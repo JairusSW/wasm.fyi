@@ -84,7 +84,7 @@
 						<a href={benchHref}>
 							<span class="rank mono">{i + 1}</span>
 							<span class="name">
-								<Swatch color={r.c.col} bg={r.c.hollow ? 'transparent' : r.c.col} size={10} />
+								<Swatch marker={r.c} size={10} />
 								<span class="rt">{r.c.rt}</span>
 								<span class="be">{r.c.be}</span>
 							</span>
@@ -119,7 +119,7 @@
 							<li>
 								<a href={siteHref('/features')}>
 									<span class="rank mono">{feat!.support.top.findIndex((x) => x.full === full) + 1}</span>
-									<span class="name"><Swatch color={c.col} bg={c.hollow ? 'transparent' : c.col} size={10} /><span class="rt">{c.rt}</span><span class="be">{c.be}</span></span>
+									<span class="name"><Swatch marker={c} size={10} /><span class="rt">{c.rt}</span><span class="be">{c.be}</span></span>
 									<span class="track"><span class="bar" style:width="{(full / feat!.support.families) * 100}%" style:background={c.col}></span></span>
 									<span class="val mono">{full} / {feat!.support.families}</span>
 								</a>
@@ -140,7 +140,7 @@
 							<li>
 								<a href={siteHref('/features?view=perf')}>
 									<span class="rank mono">{i + 1}</span>
-									<span class="name"><Swatch color={c.col} bg={c.hollow ? 'transparent' : c.col} size={10} /><span class="rt">{c.rt}</span><span class="be">{c.be}</span></span>
+									<span class="name"><Swatch marker={c} size={10} /><span class="rt">{c.rt}</span><span class="be">{c.be}</span></span>
 									<span class="track"><span class="bar" style:width="{speedBar(ms)}%" style:background={c.col}></span></span>
 									<span class="val mono">{fmtU(ms, 'ms')}</span>
 								</a>

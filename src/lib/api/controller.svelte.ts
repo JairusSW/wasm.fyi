@@ -12,6 +12,7 @@ import {datasetView,emptyView,viewData} from './view.svelte';
 import {ui} from '../state.svelte';
 import {CFG,CB,WF,sortCFG,registerConfiguration} from '../data/runtimes';
 import {legacySlots} from './catalog';
+import {engineMarker} from '../data/engine-marker';
 import type {CfgId,MachineId,MetricKey,OtMetricKey,Cfg,Bench} from '../data/types';
 import type {Scope} from '../model';
 import type {SiteDataset,MatrixPage} from './site-data';
@@ -44,7 +45,6 @@ const hasBothWagoToolchains = (engines: Iterable<string>) => {
 };
 const plannedBackends:Record<string,string>={'submilli':'interpreter','wasmtime-winch':'winch','wasmer-llvm':'llvm-jit','wasmer-singlepass':'singlepass-jit','wasmer-cranelift':'cranelift-jit','chicory-jit':'jvm-bytecode-compiler','endive-interpreter':'jvm-interpreter','endive-jit':'jvm-bytecode-compiler','wazy':'native-jit','chasm':'jvm-interpreter','wizard-v3-int':'v3-interpreter','wizard-fast-int':'fast-interpreter','wizard-spc':'spc','graalwasm':'truffle-graal','zwasm-interpreter':'interpreter','zwasm-jit':'jit','wazero-interpreter':'interpreter','wamr':'interpreter','wamr-fast-jit':'fast-jit','wamr-llvm-jit':'llvm-jit','wasmedge':'interpreter','wasmedge-jit':'jit','wasmi':'interpreter','wasm3':'interpreter','chicory':'interpreter','wasm2c-gcc':'GCC','w2c2-gcc':'GCC','wasm2go':'native-go-aot','jsc':'OMG (forced tier-up)','libwasm':'interpreter','libwasm-jit':'optimizing-jit-tiered','spidermonkey':'ion-only'};
 const status=(s:string):ViewCell['st']=>s==='not-measured'?'nm':s==='unavailable'?'unavail':s as ViewCell['st'];
-function engineColor(engine:string){let hash=0;for(const c of engine)hash=(Math.imul(hash,31)+c.charCodeAt(0))>>>0;return `hsl(${hash%360} 65% 60%)`;}
 function slot(engine:string):CfgId{
  const previous=slots.get(engine);if(previous)return previous;
  let id=Object.entries(legacySlots).find(([_,v])=>v===engine)?.[0] as CfgId|undefined;
@@ -54,10 +54,11 @@ function slot(engine:string):CfgId{
  if(engine==='wago-beta.11')id='C';
  if(!id){const available='HIJKMNOPQRS'.split('').find(c=>!CFG.some(x=>x.id===c));id=available?available as CfgId:`engine:${engine}`}
  if(!CFG.some(c=>c.id===id)){
-  const runtime=engine.startsWith('wago-')?'wago':engine.startsWith('wasmtime-')?'wasmtime':engine.startsWith('wasmer-')?'wasmer':engine.startsWith('wazero-')?'wazero':engine.startsWith('wamr-')?'wamr':engine.startsWith('wasmedge-')?'wasmedge':engine.startsWith('chicory-')?'chicory':engine.startsWith('endive-')?'endive':engine.startsWith('wizard-')?'wizard':engine.startsWith('zwasm-')?'zwasm':engine.endsWith('-gcc')?engine.slice(0,-4):engine;
+  const marker=engineMarker(engine);
+  const runtime=marker.runtime;
   const template=CFG.find(c=>c.rt===runtime);
   const toolchain=wagoToolchains.get(engine);
-  const cfg={...template,id,rt:runtime,ver:'not collected',be:plannedBackends[engine]||'',kind:'',col:toolchain?CB.G.col:engineColor(engine),hollow:engine==='wago-beta.11'||engine==='wago-tinygo',interp:/interpreter/.test(plannedBackends[engine]||''),label:toolchain||plannedBackends[engine]||''} as Cfg;
+  const cfg={...template,id,rt:runtime,ver:'not collected',be:plannedBackends[engine]||'',kind:'',col:marker.color,hollow:marker.pattern==='hollow',pattern:marker.pattern,interp:/interpreter/.test(plannedBackends[engine]||''),label:toolchain||plannedBackends[engine]||''} as Cfg;
   Object.defineProperty(cfg,'ver',{enumerable:true,get:()=> (viewData.hosts.m1.configurations[cfg.id]||viewData.hosts.m2.configurations[cfg.id]||viewData.hosts.m3.configurations[cfg.id])?.version?shortVersion((viewData.hosts.m1.configurations[cfg.id]||viewData.hosts.m2.configurations[cfg.id]||viewData.hosts.m3.configurations[cfg.id])!.version):'not collected'});
   Object.defineProperty(cfg,'be',{enumerable:true,get:()=>toolchain||(viewData.hosts.m1.configurations[cfg.id]||viewData.hosts.m2.configurations[cfg.id]||viewData.hosts.m3.configurations[cfg.id])?.backend||plannedBackends[engine]||''});
   registerConfiguration(cfg);

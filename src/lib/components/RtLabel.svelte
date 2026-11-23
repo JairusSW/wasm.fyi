@@ -20,20 +20,19 @@
 		tip
 	}: { c: Cfg; profile?: boolean; mono?: boolean; ver?: boolean; bold?: boolean; size?: number; tip?: string } = $props();
 
-	const bg = $derived(c.hollow ? 'transparent' : c.col);
 	const defaultTip = $derived(tipCard({ who: tipWho(c, configVersion(ui.machine,c.id)), note: c.kind, action: 'open runtime profile' }));
 </script>
 
 <span class="label">
 {#if profile}
 	<button class="rl" onclick={() => ui.openProfile(c.rt, c.id)} data-tip={tip} data-tip-card={tip ? undefined : defaultTip}>
-		<Swatch color={c.col} {bg} {size} />
+		<Swatch marker={c} {size} />
 		<span class:bold>{c.rt}</span>
 		<span class="be" class:mono>{c.be}</span>
 	</button>
 {:else}
 	<span class="rl" data-tip={tip}>
-		<Swatch color={c.col} {bg} {size} />
+		<Swatch marker={c} {size} />
 		<span class:bold>{c.rt}</span>
 		<span class="be" class:mono>{c.be}</span>
 	</span>

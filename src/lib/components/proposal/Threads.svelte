@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { markerDash } from '$lib/data/engine-marker';
 	import { siteHref } from '$lib/links';
 	import { CFG } from '$lib/data/runtimes';
 	import { viewData } from '$lib/view-data';
@@ -49,7 +50,7 @@
 				{#each yTicks as t (t.y)}<line x1="44" x2="588" y1={t.y} y2={t.y} style="stroke:var(--line)" />{/each}
 				<polyline points={ideal} style="fill:none;stroke:var(--fg3);stroke-dasharray:4 4" />
 				{#each lines as l (l.c.id)}
-					<polyline points={l.p} style:stroke={l.c.col} style:stroke-dasharray={l.c.hollow ? '4 3' : 'none'} class="ln" />
+					<polyline points={l.p} style:stroke={l.c.col} style:stroke-dasharray={markerDash(l.c)} class="ln" />
 				{/each}
 			</svg>
 			{#each yTicks as t (t.y)}<span class="axis-label" style:left="6.5%" style:top={t.t} style:transform="translate(-100%,-50%)">{t.label}</span>{/each}

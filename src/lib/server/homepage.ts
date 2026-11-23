@@ -19,7 +19,7 @@ export async function bakeHomepage(origin:string):Promise<Homepage>{
   for(const metric of Object.keys(HOME_METRICS) as HomeMetric[]){
    const rows=CFG.filter(c=>viewData.applicationConfigurations.includes(c.id)&&complete.has(c.id)&&isVisible(scope,c)).map(c=>{
     const v=metric==='e2e'?combinedLatency(scope,c,[0,1,2,3])?.total:metric==='compile'&&compileExcluded(scope,c,'compile')?null:absOf(scope,HOME_METRICS[metric].group,c.id,metric==='compile'?0:metric==='inst'?1:3)?.v;
-    return {c:{id:c.id,rt:c.rt,be:c.be,col:c.col,hollow:c.hollow},v};
+    return {c:{id:c.id,rt:c.rt,be:c.be,col:c.col,hollow:c.hollow,pattern:c.pattern},v};
    }).filter((r):r is {c:typeof r.c;v:number}=>r.v!=null&&Number.isFinite(r.v)&&r.v>0).sort((a,b)=>a.v-b.v);
    metrics[metric]={total:rows.length,rows:rows.slice(0,10).map(r=>({...r,bar:rows[0].v/r.v*100}))};
   }
