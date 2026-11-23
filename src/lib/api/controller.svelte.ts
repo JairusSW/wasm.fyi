@@ -33,8 +33,8 @@ let abort:AbortController|undefined;
 let machines:MachineId[]=[];
 const slots=new Map<string,CfgId>();
 const wagoToolchains = new Map([
- ['wago-go', 'Go'],
- ['wago-tinygo', 'TinyGo'],
+ ['wago-go', 'go'],
+ ['wago-tinygo', 'tinygo'],
 ]);
 const isLegacyWagoAlias = (engine: string) =>
  engine.startsWith('wago-') && !wagoToolchains.has(engine) && !isLocalComparison(engine);

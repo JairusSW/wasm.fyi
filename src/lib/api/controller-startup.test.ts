@@ -151,7 +151,7 @@ it('gives Wago Go and TinyGo separate benchmark cells and a hollow TinyGo marker
  expect(host.configurations['engine:wago-tinygo']?.backend).toBe('railshot-tinygo');
  expect(host.snapshots.s1['applications/test|engine:wago-go|steady']).toMatchObject({st:'ok',v:0.002});
  expect(host.snapshots.s1['applications/test|engine:wago-tinygo|steady']).toMatchObject({st:'ok',v:0.003});
- expect(CB['engine:wago-go']).toMatchObject({rt:'wago',be:'Go',col:'var(--rt-wago)',hollow:false});
- expect(CB['engine:wago-tinygo']).toMatchObject({rt:'wago',be:'TinyGo',col:'var(--rt-wago)',hollow:true});
+ expect(CB['engine:wago-go']).toMatchObject({rt:'wago',be:'go',col:'var(--rt-wago)',hollow:false});
+ expect(CB['engine:wago-tinygo']).toMatchObject({rt:'wago',be:'tinygo',col:'var(--rt-wago)',hollow:true});
  closeSite();
 });
