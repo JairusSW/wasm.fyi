@@ -90,6 +90,8 @@ type historicalDataset struct {
 
 const historyHostCall = "mechanisms/host-to-wasm-call"
 const historyWasmCall = "mechanisms/wasm-host-wasm-loop"
+const legacyWagoEngine = "wago"
+const wagoGoEngine = "wago-go"
 
 func historyMetric(metric string) (string, string) {
 	switch metric {
@@ -309,11 +311,19 @@ func loadHistoricalDataset(ctx context.Context, tx *sql.Tx, pids []int64, q Hist
 		where += " AND snap.as_of_ns<?"
 		args = append(args, t.AddDate(0, 0, 1).UnixNano())
 	}
+	// The previous Wago series used Go. Read its original observations for
+	// the Go lane, while still supporting explicit queries for the old lane.
+	attachLegacyWago := !contains(q.Engines, legacyWagoEngine) &&
+		(contains(q.Engines, wagoGoEngine) || len(q.Engines) == 0 && latest.engines[wagoGoEngine] != nil)
 	if len(q.Engines) > 0 {
 		marks := []string{}
 		for _, engine := range q.Engines {
 			marks = append(marks, "?")
 			args = append(args, engine)
+		}
+		if attachLegacyWago {
+			marks = append(marks, "?")
+			args = append(args, legacyWagoEngine)
 		}
 		where += " AND e.name IN(" + strings.Join(marks, ",") + ")"
 	}
@@ -354,8 +364,12 @@ func loadHistoricalDataset(ctx context.Context, tx *sql.Tx, pids []int64, q Hist
 		if q.From != "" && day < q.From || q.To != "" && day > q.To {
 			continue
 		}
+		engine := r.Engine
+		if attachLegacyWago && engine == legacyWagoEngine {
+			engine = wagoGoEngine
+		}
 		dates[day] = true
-		engineSet[r.Engine] = true
+		engineSet[engine] = true
 		key := configKey(r)
 		cfg := configs[key]
 		if cfg == nil {
@@ -370,10 +384,10 @@ func loadHistoricalDataset(ctx context.Context, tx *sql.Tx, pids []int64, q Hist
 		if d.lanes[day] == nil {
 			d.lanes[day] = map[string]*historyLane{}
 		}
-		lane := d.lanes[day][r.Engine]
-		if lane == nil || preferConfiguration(cfg, lane.cfg) {
+		lane := d.lanes[day][engine]
+		if lane == nil || preferHistoryConfiguration(cfg, lane.cfg, engine) {
 			lane = &historyLane{cfg: cfg, rows: map[string]historyScalar{}}
-			d.lanes[day][r.Engine] = lane
+			d.lanes[day][engine] = lane
 		}
 		if lane.cfg != cfg {
 			continue
@@ -424,7 +438,9 @@ func loadHistoricalDataset(ctx context.Context, tx *sql.Tx, pids []int64, q Hist
 		d.engines = append([]string(nil), q.Engines...)
 	} else {
 		for engine := range latest.engines {
-			engineSet[engine] = true
+			if !attachLegacyWago || engine != legacyWagoEngine {
+				engineSet[engine] = true
+			}
 		}
 		for engine := range engineSet {
 			d.engines = append(d.engines, engine)
@@ -454,6 +470,15 @@ func loadHistoricalDataset(ctx context.Context, tx *sql.Tx, pids []int64, q Hist
 	}
 	return d, nil
 }
+
+// Keep explicitly captured Go rows ahead of legacy rows on the same day.
+func preferHistoryConfiguration(candidate, current *aggregateConfiguration, engine string) bool {
+	if candidate.engine != current.engine {
+		return candidate.engine == engine
+	}
+	return preferConfiguration(candidate, current)
+}
+
 func historyRows(d *historicalDataset, q HistoricalQuery, date, engine string) map[string]historyScalar {
 	out := map[string]historyScalar{}
 	lane := d.lanes[date][engine]
@@ -735,7 +760,7 @@ func (s *Store) historical(ctx context.Context, q HistoricalQuery) (HistoricalSu
 		}
 		snapshots = append(snapshots, snapshot)
 	}
-	rev := hash([]any{revisions, q})
+	rev := hash([]any{"wago-go-history", revisions, q})
 	key := "history-summary/" + rev
 	if cached, ok := s.aggregateHit(key); ok {
 		return cloneHistory(*cached.historySummary), cached.historical, nil

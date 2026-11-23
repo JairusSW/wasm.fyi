@@ -341,3 +341,64 @@ func TestHistoryAcceptsLegacyUnknownCPUOnlyWithExactEnvironmentMatch(t *testing.
 		})
 	}
 }
+
+func TestHistoricalWagoGoIncludesLegacyWago(t *testing.T) {
+	ctx := context.Background()
+	s, err := Open(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	before := historyFixture("wago", "2026-10-01", 1, []float64{20})
+	putHistory(t, s, before)
+	putHistory(t, s, historyFixture("wago-go", "2026-10-02", 2, []float64{10}))
+	putHistory(t, s, historyFixture("wago-tinygo", "2026-10-02", 2, []float64{12}))
+	legacyOverlap := historyFixture("wago", "2026-10-02", 3, []float64{30})
+	legacyOverlap.Source.AsOf = "2026-10-02T18:00:00Z"
+	putHistory(t, s, legacyOverlap)
+
+	q := HistoricalQuery{Platform: hash(fixture().Platform), Metric: "exec", Cohort: "per-engine", Average: "mean", Engines: []string{"wago-go", "wago-tinygo"}}
+	history, err := s.HistoricalSummary(ctx, q)
+	if err != nil {
+		t.Fatal(err)
+	}
+	old := historyLaneAt(t, history, "2026-10-01", "wago-go")
+	new := historyLaneAt(t, history, "2026-10-02", "wago-go")
+	if old.Value == nil || *old.Value != 20 || old.Source.Revision != before.Source.Revision ||
+		new.Value == nil || *new.Value != 10 || new.Previous == nil || *new.Previous.Before != 20 {
+		t.Fatal(history)
+	}
+	if tiny := historyLaneAt(t, history, "2026-10-01", "wago-tinygo"); tiny.Value != nil || tiny.Source != nil {
+		t.Fatal(tiny)
+	}
+	if tiny := historyLaneAt(t, history, "2026-10-02", "wago-tinygo"); tiny.Value == nil || *tiny.Value != 12 || tiny.Previous != nil {
+		t.Fatal(tiny)
+	}
+	report, err := s.HistoricalReport(ctx, q, "wago-go", "2026-10-01", "2026-10-02")
+	if err != nil || len(report.Items) != 1 || report.Items[0].Ratio != 0.5 {
+		t.Fatal(report, err)
+	}
+
+	q.Engines = nil
+	history, err = s.HistoricalSummary(ctx, q)
+	if err != nil || len(history.Items) != 2 {
+		t.Fatal(history, err)
+	}
+	for _, lane := range history.Items[0].Lanes {
+		if lane.Engine == "wago" {
+			t.Fatal(history)
+		}
+	}
+	if old := historyLaneAt(t, history, "2026-10-01", "wago-go"); old.Value == nil || *old.Value != 20 {
+		t.Fatal(old)
+	}
+	q.Engines = []string{"wago"}
+	history, err = s.HistoricalSummary(ctx, q)
+	if err != nil {
+		t.Fatal(err)
+	}
+	legacy := historyLaneAt(t, history, "2026-10-02", "wago")
+	if legacy.Value == nil || *legacy.Value != 30 || legacy.Fingerprint == "" {
+		t.Fatal(legacy)
+	}
+}

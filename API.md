@@ -159,6 +159,9 @@ invalidate the merged cache. Original observations and platform metadata remain
 unchanged. This scope also applies to comparisons and reports.
 
 The current workload cohort is held fixed across the historical graph.
+The `wago-go` lane includes earlier `wago` captures with their original source
+and backend metadata. A same-day `wago-go` capture takes precedence. Request
+`wago` explicitly to browse the original lane separately.
 `callTotal` sums both directions and includes their individual values.
 
 `GET /api/history/comparison` takes the same scope plus `fromDate` and `toDate`.
