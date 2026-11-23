@@ -121,3 +121,37 @@ it('requests one merged history for both Hub kernel environments',async()=>{
  expect(request.mock.calls.some(([path])=>path.startsWith('/api/table?'))).toBe(false);
  closeSite();
 });
+
+it('gives Wago Big Go and TinyGo separate benchmark cells and a hollow TinyGo marker', async () => {
+ const engines=['wago','wago-go','wago-tinygo'];
+ const backends=['railshot','railshot-go','railshot-tinygo'];
+ const platform={id:'apple',cpu:'Apple M4 Max',os:'darwin',arch:'arm64',cores:16,kernel:'test',latestRevision:'r'};
+ vi.stubGlobal('location',{pathname:'/benchmarks/',href:'http://localhost/benchmarks/?m=m2'});
+ vi.stubGlobal('fetch',async(path:string)=>{
+  const url=new URL(path,'http://localhost');
+  if(url.pathname==='/api/summary')return Response.json({revision:'r',platforms:[platform]});
+  if(url.pathname==='/api/table')return Response.json({
+   schema:4,revision:'r',dataRevision:'r',platform:'apple',phase:'*',total:3,nextOffset:null,
+   contracts:[{workload:'applications/test',wasm:'test.wasm',artifactSha256:'a',contractSha256:'c'}],
+   configurations:engines.map((engine,i)=>({engine,version:'1',backend:backends[i]})),
+   sources:[null],sampling:[null],codeKinds:['native-image'],capturedAt:['date'],
+   rows:engines.map((_,i)=>[i+1,0,i,0,0,3,1000*(i+1),null,null,65,0,5,null]),
+  });
+  return Response.json({items:[]});
+ });
+ const {ui}=await import('../state.svelte');ui.machine='m2';ui.metric='steady';
+ const {connectSite,closeSite,apiView}=await import('./controller.svelte');
+ const {datasetView}=await import('./view.svelte');
+ const {CB}=await import('../data/runtimes');
+ await connectSite();
+ expect(apiView.error).toBe('');
+ const host=datasetView.current.hosts.m2;
+ expect(host.configurations.G).toBeUndefined();
+ expect(host.configurations['engine:wago-go']?.backend).toBe('railshot-go');
+ expect(host.configurations['engine:wago-tinygo']?.backend).toBe('railshot-tinygo');
+ expect(host.snapshots.s1['applications/test|engine:wago-go|steady']).toMatchObject({st:'ok',v:0.002});
+ expect(host.snapshots.s1['applications/test|engine:wago-tinygo|steady']).toMatchObject({st:'ok',v:0.003});
+ expect(CB['engine:wago-go']).toMatchObject({rt:'wago',be:'Big Go',hollow:false});
+ expect(CB['engine:wago-tinygo']).toMatchObject({rt:'wago',be:'TinyGo',hollow:true});
+ closeSite();
+});

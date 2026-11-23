@@ -5,6 +5,10 @@ import (
 )
 
 func tableEngine(engine string) string {
+	switch engine {
+	case "wago-go", "wago-tinygo":
+		return engine
+	}
 	if !strings.HasPrefix(engine, "wago-") {
 		return engine
 	}

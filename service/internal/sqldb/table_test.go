@@ -175,3 +175,17 @@ func TestActiveTableVersionsPreservePinnedFailuresAndSeparateCorpora(t *testing.
 		t.Fatal("V8 correction/failure identity lost", selected)
 	}
 }
+
+func TestActiveTableVersionsKeepWagoToolchainsSeparate(t *testing.T) {
+	base := fixture()
+	legacy := Cell{ObservationID: 1, Result: benchdb.Result{Row: base.Results[0], CapturedAt: base.CapturedAt}}
+	legacy.Engine = "wago"
+	bigGo := legacy
+	bigGo.ObservationID, bigGo.Engine, bigGo.Backend = 2, "wago-go", "railshot-go"
+	tinyGo := legacy
+	tinyGo.ObservationID, tinyGo.Engine, tinyGo.Backend = 3, "wago-tinygo", "railshot-tinygo"
+	selected := activeTableCells([]Cell{legacy, bigGo, tinyGo})
+	if len(selected) != 3 {
+		t.Fatalf("got %d Wago series, want 3", len(selected))
+	}
+}

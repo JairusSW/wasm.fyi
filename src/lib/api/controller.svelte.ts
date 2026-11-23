@@ -32,13 +32,23 @@ export const aggregateKey=(scope:Scope,metric:string)=>JSON.stringify([scope.mac
 let abort:AbortController|undefined;
 let machines:MachineId[]=[];
 const slots=new Map<string,CfgId>();
+const wagoToolchains = new Map([
+ ['wago-go', 'Big Go'],
+ ['wago-tinygo', 'TinyGo'],
+]);
+const isLegacyWagoAlias = (engine: string) =>
+ engine.startsWith('wago-') && !wagoToolchains.has(engine) && !isLocalComparison(engine);
+const hasBothWagoToolchains = (engines: Iterable<string>) => {
+ const available = new Set(engines);
+ return [...wagoToolchains.keys()].every(engine => available.has(engine));
+};
 const plannedBackends:Record<string,string>={'submilli':'interpreter','wasmtime-winch':'winch','wasmer-llvm':'llvm-jit','wasmer-singlepass':'singlepass-jit','wasmer-cranelift':'cranelift-jit','chicory-jit':'jvm-bytecode-compiler','endive-interpreter':'jvm-interpreter','endive-jit':'jvm-bytecode-compiler','wazy':'native-jit','chasm':'jvm-interpreter','wizard-v3-int':'v3-interpreter','wizard-fast-int':'fast-interpreter','wizard-spc':'spc','graalwasm':'truffle-graal','zwasm-interpreter':'interpreter','zwasm-jit':'jit','wazero-interpreter':'interpreter','wamr':'interpreter','wamr-fast-jit':'fast-jit','wamr-llvm-jit':'llvm-jit','wasmedge':'interpreter','wasmedge-jit':'jit','wasmi':'interpreter','wasm3':'interpreter','chicory':'interpreter','wasm2c-gcc':'GCC','w2c2-gcc':'GCC','wasm2go':'native-go-aot','jsc':'OMG (forced tier-up)','libwasm':'interpreter','libwasm-jit':'optimizing-jit-tiered','spidermonkey':'ion-only'};
 const status=(s:string):ViewCell['st']=>s==='not-measured'?'nm':s==='unavailable'?'unavail':s as ViewCell['st'];
 function engineColor(engine:string){let hash=0;for(const c of engine)hash=(Math.imul(hash,31)+c.charCodeAt(0))>>>0;return `hsl(${hash%360} 65% 60%)`;}
 function slot(engine:string):CfgId{
  const previous=slots.get(engine);if(previous)return previous;
  let id=Object.entries(legacySlots).find(([_,v])=>v===engine)?.[0] as CfgId|undefined;
- if(isLocalComparison(engine))id=`engine:${engine}`;
+ if(wagoToolchains.has(engine)||isLocalComparison(engine))id=`engine:${engine}`;
  if(engine==='wago-main')id='G';
  if(engine==='wago-beta.12')id='B';
  if(engine==='wago-beta.11')id='C';
@@ -46,23 +56,24 @@ function slot(engine:string):CfgId{
  if(!CFG.some(c=>c.id===id)){
   const runtime=engine.startsWith('wago-')?'wago':engine.startsWith('wasmtime-')?'wasmtime':engine.startsWith('wasmer-')?'wasmer':engine.startsWith('wazero-')?'wazero':engine.startsWith('wamr-')?'wamr':engine.startsWith('wasmedge-')?'wasmedge':engine.startsWith('chicory-')?'chicory':engine.startsWith('endive-')?'endive':engine.startsWith('wizard-')?'wizard':engine.startsWith('zwasm-')?'zwasm':engine.endsWith('-gcc')?engine.slice(0,-4):engine;
   const template=CFG.find(c=>c.rt===runtime);
-  const cfg={...template,id,rt:runtime,ver:'not collected',be:plannedBackends[engine]||'',kind:'',col:engineColor(engine),hollow:engine==='wago-beta.11',interp:/interpreter/.test(plannedBackends[engine]||''),label:plannedBackends[engine]||''} as Cfg;
+  const toolchain=wagoToolchains.get(engine);
+  const cfg={...template,id,rt:runtime,ver:'not collected',be:plannedBackends[engine]||'',kind:'',col:engineColor(engine),hollow:engine==='wago-beta.11'||engine==='wago-tinygo',interp:/interpreter/.test(plannedBackends[engine]||''),label:toolchain||plannedBackends[engine]||''} as Cfg;
   Object.defineProperty(cfg,'ver',{enumerable:true,get:()=> (viewData.hosts.m1.configurations[cfg.id]||viewData.hosts.m2.configurations[cfg.id]||viewData.hosts.m3.configurations[cfg.id])?.version?shortVersion((viewData.hosts.m1.configurations[cfg.id]||viewData.hosts.m2.configurations[cfg.id]||viewData.hosts.m3.configurations[cfg.id])!.version):'not collected'});
-  Object.defineProperty(cfg,'be',{enumerable:true,get:()=> (viewData.hosts.m1.configurations[cfg.id]||viewData.hosts.m2.configurations[cfg.id]||viewData.hosts.m3.configurations[cfg.id])?.backend||plannedBackends[engine]||''});
+  Object.defineProperty(cfg,'be',{enumerable:true,get:()=>toolchain||(viewData.hosts.m1.configurations[cfg.id]||viewData.hosts.m2.configurations[cfg.id]||viewData.hosts.m3.configurations[cfg.id])?.backend||plannedBackends[engine]||''});
   registerConfiguration(cfg);
  }
  WF[id]=1;slots.set(engine,id);return id;
 }
-for(const engine of ['wago','wasmtime','wasmtime-winch','wasmer-singlepass','wasmer-llvm','wazero','wazero-interpreter','v8','wavm','spidermonkey','jsc','wasmi','wamr','wamr-fast-jit','wamr-llvm-jit','wasm3','wasmedge','wasmedge-jit','chicory','wasm2go','wasm2c-gcc','w2c2-gcc','libwasm','libwasm-jit','wasmer-cranelift','chicory-jit','endive-interpreter','endive-jit','wazy','chasm','wizard-v3-int','wizard-fast-int','wizard-spc','graalwasm','zwasm-interpreter','zwasm-jit','submilli'])slot(engine);
+for(const engine of ['wago',...wagoToolchains.keys(),'wasmtime','wasmtime-winch','wasmer-singlepass','wasmer-llvm','wazero','wazero-interpreter','v8','wavm','spidermonkey','jsc','wasmi','wamr','wamr-fast-jit','wamr-llvm-jit','wasm3','wasmedge','wasmedge-jit','chicory','wasm2go','wasm2c-gcc','w2c2-gcc','libwasm','libwasm-jit','wasmer-cranelift','chicory-jit','endive-interpreter','endive-jit','wazy','chasm','wizard-v3-int','wizard-fast-int','wizard-spc','graalwasm','zwasm-interpreter','zwasm-jit','submilli'])slot(engine);
 let compactClient=new CompactClient();
 let buildPath:string|undefined;
 async function get<T>(path:string,signal:AbortSignal,revalidate=false):Promise<T>{return compactClient.load<T>(path,signal,revalidate)}
-async function rows(platform:string,phase:string,signal:AbortSignal,history=false,corpus='',phases:string[]=[],delta=false){
+async function rows(platform:string,phase:string,signal:AbortSignal,history=false,corpus='',phases:string[]=[],delta=false,engine=''){
  let limit=phase==='*'?16384:4096;
  for(let attempt=0;;attempt++){
   const all:ScalarResult[]=[];let offset=0;let revision='';let dataRevision:string|undefined;let activeVersions=true;
   try{do{
-   const query=new URLSearchParams({platform,...(phase==='*'?{}:{phase}),limit:String(limit),...(corpus?{corpus}:{}),...(phases.length?{phases:phases.join(',')}:{}),...(delta?{delta:'1'}:{}),...(offset?{offset:String(offset),revision}:{})});
+   const query=new URLSearchParams({platform,...(phase==='*'?{}:{phase}),limit:String(limit),...(corpus?{corpus}:{}),...(phases.length?{phases:phases.join(',')}:{}),...(delta?{delta:'1'}:{}),...(engine?{engine}:{}),...(offset?{offset:String(offset),revision}:{})});
    const page=await get<CompactMatrix>((history?'/api/timeline?':phase==='*'?'/api/table?':'/api/matrix?')+query,signal);
    if(dataRevision&&page.dataRevision&&dataRevision!==page.dataRevision)throw Object.assign(Error('Data changed during loading'),{status:409});dataRevision=page.dataRevision;activeVersions=activeVersions&&page.schema===4;
    all.push(...await unpackMatrixAsync(page,signal));revision=page.revision;offset=page.nextOffset??0;
@@ -210,7 +221,10 @@ export async function connectSite(_origin='',_revision?:string,retry=0){
    const group=platformTargets.find(target=>target.machine===ui.machine)!.platforms;
    const metadata=await get<CompactAggregate>('/api/aggregates?'+new URLSearchParams({platform,...(group.length>1?{platforms:group.join(',')}:{}),metric:'steady'}),signal);
    const host=view.hosts[ui.machine];host.configurations={};
-   for(const card of metadata.cards){const cid=slot(card.engine),cfg=CB[cid];view.configurations[cid]=card.engine;host.configurations[cid]={runtime:cfg.rt,version:card.version,backend:card.backend,source:card.source};if(card.latestCreated){const report=card.latestCreated+'|'+card.engine;view.reports[report]={runId:report,created:card.latestCreated,evidence:'',sha256:'',options:{},codeRecords:[],configurations:[card.engine],host:ui.machine}}}
+   const splitWago=hasBothWagoToolchains(metadata.cards.map(card=>card.engine));
+   for(const card of metadata.cards){
+    if(splitWago&&(card.engine==='wago'||isLegacyWagoAlias(card.engine)))continue;
+    const cid=slot(card.engine),cfg=CB[cid];view.configurations[cid]=card.engine;host.configurations[cid]={runtime:cfg.rt,version:card.version,backend:card.backend,source:card.source};if(card.latestCreated){const report=card.latestCreated+'|'+card.engine;view.reports[report]={runId:report,created:card.latestCreated,evidence:'',sha256:'',options:{},codeRecords:[],configurations:[card.engine],host:ui.machine}}}
    view.applicationConfigurations=[...slots.values()];view.statistics={...view.statistics,machines:platformTargets.length,measuredWorkloads:metadata.workloads?.length,timingSamples:fresh.platforms.reduce((n,p)=>n+(p.latestTimingSamples||0),0),allTimingSamples:fresh.platforms.reduce((n,p)=>n+(p.allTimingSamples||0),0)};
    signal.throwIfAborted();datasetView.current=view;datasetView.generation++;metadataMachines.set(ui.machine,selectedRevision);apiView.ready=true;
    if(!pagePath.startsWith('/history'))await loadOverview({...ui.scope,machine:ui.machine,snapshot:ui.snap,metric:ui.metric},'steady','',signal);return;
@@ -228,10 +242,32 @@ export async function connectSite(_origin='',_revision?:string,retry=0){
    view.hosts[machine]=host;host.capturedAt=(platform as Summary['platforms'][number]).capturedAt;host.importedAt=(platform as Summary['platforms'][number]).importedAt;host.latestRows=(platform as Summary['platforms'][number]).latestRows;host.label=MACHINE_NAMES[machine];host.os=`${platform.os}/${platform.arch} · ${platform.kernel}`;host.policy={cores:String(platform.cores),memory:platform.memoryBytes?`${(platform.memoryBytes/1024**3).toFixed(1)} GiB`:'not collected'};
    if(machine!==ui.machine)continue;
    view.featureVersions[machine]=[];
-   const normalize=(row:ScalarResult):ScalarResult=>row.engine.startsWith('wago-')&&!isLocalComparison(row.engine)?{...row,engine:'wago'}:row;
-   const current=await Promise.all(group.map(platform=>rows(platform.id,'*',signal,false,corpus,missing,reuse&&corpus==='main')));
+   const normalize=(row:ScalarResult):ScalarResult=>isLegacyWagoAlias(row.engine)?{...row,engine:'wago'}:row;
+   const current=await Promise.all(group.map(async platform=>{
+    const delta=reuse&&corpus==='main';
+    const table=await rows(platform.id,'*',signal,false,corpus,missing,delta);
+    // Production prerender can run against the API from the previous release,
+    // whose unfiltered table groups the two Wago engines into one.
+    if(buildPath!==undefined){
+     const present=[...wagoToolchains.keys()].filter(engine=>table.some(row=>row.engine===engine));
+     if(present.length===1){
+      const other=[...wagoToolchains.keys()].find(engine=>engine!==present[0])!;
+      const extra=await rows(platform.id,'*',signal,false,corpus,missing,delta,other);
+      if(extra.dataRevision!==table.dataRevision)throw Object.assign(Error('Dataset changed while loading'),{changed:true});
+      for(const row of extra)table.push(row);
+     }
+    }
+    return table;
+   }));
    if(current.some((rows,i)=>rows.dataRevision&&rows.dataRevision!==(group[i] as Summary['platforms'][number]).latestRevision))throw Object.assign(Error('Dataset changed while loading'),{changed:true});
-   const raw=current.flat().map(normalize);
+   const normalized=current.flat().map(normalize);
+   // Current application benchmarks use the two toolchain series once both
+   // are available. Legacy Wago remains available for feature evidence.
+   const splitWago=hasBothWagoToolchains([
+    ...Object.keys(host.configurations).map(id=>view.configurations[id as CfgId]),
+    ...normalized.filter(row=>!row.workload.startsWith('features/')).map(row=>row.engine),
+   ]);
+   const raw=splitWago?normalized.filter(row=>row.engine!=='wago'||row.workload.startsWith('features/')):normalized;
    // Schema 4 already selected each engine's current snapshot. Multiple physical
    // platform records still need a merged selection, as do older API servers.
    const platformOrder=group.map(platform=>platform.id);
@@ -243,7 +279,7 @@ export async function connectSite(_origin='',_revision?:string,retry=0){
    for(const row of all){
     const pause=checkpoint();if(pause)await pause;
     if(row.latencyStatus==='ok'){if(row.samplesNs?.length||row.timingSamples)timingSamples+=row.samplesNs?.length||row.timingSamples||0;else timingSamplesComplete=false;}
-    const cid=slot(row.engine);const cfg=CB[cid];if(!host.configurations[cid]||!reuse&&!row.workload.startsWith('features/'))host.configurations[cid]={runtime:cfg.rt,version:row.engine.startsWith('wago-')&&!isLocalComparison(row.engine)?row.engine.slice(5)+' · '+row.version:row.version,backend:row.backend,source:row.source};view.configurations[cid]=row.engine;
+    const cid=slot(row.engine);const cfg=CB[cid];if(!host.configurations[cid]||!reuse&&!row.workload.startsWith('features/'))host.configurations[cid]={runtime:cfg.rt,version:isLegacyWagoAlias(row.engine)?row.engine.slice(5)+' · '+row.version:row.version,backend:row.backend,source:row.source};view.configurations[cid]=row.engine;
     const report=row.capturedAt+'|'+row.engine;view.reports[report]={runId:report,created:row.capturedAt,evidence:'',sha256:'',options:{},codeRecords:[],configurations:[row.engine],host:machine};
     // Host-call mechanism workloads feed the call-latency view only; they are not listed as workloads.
     if(!row.workload.startsWith('mechanisms/')&&!catalogue.has(row.workload))catalogue.set(row.workload,{id:row.workload,artifactSha256:row.artifactSha256,baseline:row.display?.tags?.includes('baseline'),tags:row.display?.tags||[],kb:row.display?.bytes?row.display.bytes/1024:null,ms:null,group:row.display?.group||(row.workload.startsWith('mechanisms/')?'Host calls':row.workload.split('/')[1]||'Other workloads'),purpose:row.display?.purpose||undefined,abi:row.display?.abi||'',src:row.display?.source,reset:row.display?.reset,evidenceScope:phases.get(JSON.stringify([row.engine,row.workload]))?.has('steady')?'execution':phases.get(JSON.stringify([row.engine,row.workload]))?.has('instantiate')?'compile-and-instantiate':'compile-only'});
